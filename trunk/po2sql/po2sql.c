@@ -63,8 +63,8 @@ main(int argc, char *argv[]) {
 	const char *pmsgid, *pmsgstr;
 	char encoding[MAXENCLEN + 1];
 
-	if (argc == 1) {
-		printf("usage: %s pofile\n", argv[0]);
+	if (argc != 4) {
+		printf("usage: %s pofile project fpath\n", argv[0]);
 		return 1;
 	}
 	pof = po_file_read(argv[1]);
@@ -86,7 +86,8 @@ main(int argc, char *argv[]) {
 		exit(-1);
 	}
 	get_encoding(encoding, pmsgstr);
-	printf("encoding of this po file is :%s:\n", encoding);
+	/* printf("encoding of this po file is :%s:\n", encoding);
+	 */
 	
 	buflen = BUFLEN;
 	pbuf = (char *) malloc(sizeof(char) * buflen);
@@ -104,7 +105,7 @@ main(int argc, char *argv[]) {
 		printf("\"%s\", ", pbuf);
 		mysql_escape_string(pbuf, pmsgstr, strlen(pmsgstr));
 		// printf("message %i str:%s:\n", strlen(pmsgstr), pbuf);
-		printf("\"%s\", ", pbuf);
+		printf("\"%s\"", pbuf);
 		printf(");\n");
 	}
 
