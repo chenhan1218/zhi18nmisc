@@ -63,8 +63,8 @@ main(int argc, char *argv[]) {
 	const char *pmsgid, *pmsgstr;
 	char encoding[MAXENCLEN + 1];
 
-	if (argc != 4) {
-		printf("usage: %s pofile project fpath\n", argv[0]);
+	if (argc != 5) {
+		printf("usage: %s pofile project fpath lang\n", argv[0]);
 		return 1;
 	}
 	pof = po_file_read(argv[1]);
@@ -93,8 +93,8 @@ main(int argc, char *argv[]) {
 	pbuf = (char *) malloc(sizeof(char) * buflen);
 	while ((po_mg = po_next_message(po_mi))) {
 
-		printf ("insert into potb values (\"%s\", \"%s\", ",
-			argv[2], argv[3]);
+		printf ("insert into potb_%s values (\"%s\", \"%s\", ",
+			argv[4], argv[2], argv[3]);
 
 		pmsgid = po_message_msgid(po_mg);
 		pbuf = check_mysql_buf(pbuf, &buflen, pmsgid);
