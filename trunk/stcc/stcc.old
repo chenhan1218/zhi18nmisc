@@ -1,0 +1,181 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
+# version 0.1
+
+import codecs
+import getopt
+import re
+import string
+import sys
+import time
+
+DIRECTION_SC2TC = 1
+DIRECTION_TC2SC = 2
+
+DOCTYPE_NORMAL = 0
+DOCTYPE_WML = 1
+
+def sort_by_length(s1, s2):
+    if len(s1) > len(s2): return -1
+    else: return 0
+
+class Converter:
+    direction = None
+    doctype = None
+    tables = []
+
+    def __init__(self, direction, doctype):
+        self.direction = direction
+        self.doctype = doctype
+        return
+
+    def import_table(self, filename):
+        print "Importing from %s" % filename
+        value_length = 0
+        t = {}
+        wordfile = codecs.open(filename, 'r', 'utf8')
+        line = wordfile.readline()
+        while line != '':
+            words = line.split(',')
+            if len(words) >= 2:
+                if len(words) == 2: words[1] = words[1][:1]
+                if self.direction == DIRECTION_TC2SC:
+                    key = words[0]
+                    value = words[1]
+                else:
+                    key = words[1]
+                    value = words[0]
+                if not t.has_key(key) or key == value:
+                    t[key] = value
+                    if len(value) > value_length: value_length = len(value)
+            line = wordfile.readline()
+        wordfile.close()
+        keys = t.keys()
+        keys.sort(sort_by_length)
+        self.tables.append((t, value_length, keys))
+        return
+
+    def convert(self, line):
+        parts = []
+        if self.doctype == DOCTYPE_WML:
+            pattern = re.compile("\[(?:TWHK|CN):[^\[\]:]*:\]")
+            newparts = re.split(pattern, line)
+            splits = re.findall(pattern, line)
+            if (len(newparts) > 1):
+                while (len(newparts) > 1):
+                    if newparts[0] != '':
+                        parts.append([False, newparts[0]])
+                    del newparts[0]
+                    if self.direction == DIRECTION_TC2SC and \
+                       splits[0][0:4] == '[CN:' or \
+                       self.direction == DIRECTION_SC2TC and \
+                       splits[0][0:6] == '[TWHK:':
+                        parts.append([False, splits[0]])
+                    else:
+                        parts.append([True, splits[0]])
+                    del splits[0]
+                if newparts[0] != '':
+                    parts.append([False, newparts[0]])
+        else:
+            parts.append([False, line])
+
+        for t,value_length,keys in self.tables:
+            if value_length > 1:
+                for key in keys:
+                    i = 0
+                    while i < len(parts):
+                        part = parts[i]
+                        if part[0] or len(part[1]) < len(key):
+                            i = i + 1
+                            continue 
+                        if part[1] == key:
+                            part[1] = t[key]
+                        elif string.find(part[1], key) >= 0:
+                            newparts = string.split(part[1], key)
+                            if len(newparts) > 1:
+                                del parts[i]
+                                for j in range(len(newparts), 0, -1):
+                                    newpart = newparts[j-1]
+                                    if newpart != '':
+                                        parts.insert(i, [False, newpart])
+                                    parts.insert(i, [True, t[key]])
+                                del parts[i]
+                        i = i + 1
+            else:
+                for i in range(len(parts)):
+                    if parts[i][0]: continue
+                    newpart = ''
+                    for c in parts[i][1]:
+                        if t.has_key(c): c = t[c]
+                        newpart = newpart + c
+                    parts[i][1] = newpart
+        line = ''
+        for part in parts:
+            line = line + part[1]
+        return line
+
+def usage():
+    print """
+Simpilifed and Traditional Chinese Converter.
+Usage: stcc -t|-s [-w] [-d dictionary] srcfile destfile
+ Arguments               Meaning
+ -t --traditional        Convert into tranditional Chinese.
+ -s --simplified         Convert into simplified Chinese.
+ -w --wml                Document is in WML.
+ -h --help               Show this help message
+ -d --dictionary=        Additional dictionary
+ Source file and destination file should in UTF-8 encoding."""
+
+def main():
+
+    time1 = time.time()
+    dicts = []
+    try:
+        opts, args = getopt.getopt(sys.argv[1:], "htswd:",
+                                   ["help", "traditional", "simplified",
+                                    "wml", "dictionary="])
+    except getopt.GetoptError:
+        usage()
+        sys.exit(2)
+    direction = None
+    doctype = DOCTYPE_NORMAL
+    for o, a in opts:
+        if o in ("-h", "--help"):
+            usage()
+            sys.exit(0)
+        if o in ("-t", "--traditional"):
+            direction = DIRECTION_SC2TC
+        if o in ("-s", "--simplified"):
+            direction = DIRECTION_TC2SC
+        if o in ("-w", "--wml"):
+            doctype = DOCTYPE_WML
+        if o in ("-d", "--dictionary"):
+            dicts.append(a)
+    if len(args) < 2:
+        usage()
+        sys.exit(2)
+
+    wordcon = Converter(direction, doctype)
+    for d in dicts:
+        wordcon.import_table(d)
+    #wordcon.import_table('computer.tbl')
+    #wordcon.import_table('general.tbl')
+    #wordcon.import_table('character.tbl')
+
+    inf = codecs.open(args[0], 'r','utf8')
+    outf = codecs.open(args[1], 'w', 'utf8')
+
+    line = string.join(inf.readlines())
+    #while line != '':
+    line = wordcon.convert(line)
+    outf.write(line)
+    #    line = inf.readline()
+
+    inf.close()
+    outf.close()
+    time2 = time.time()
+    print time2 - time1
+
+if __name__ == "__main__":
+    main()
