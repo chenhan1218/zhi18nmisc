@@ -6,7 +6,7 @@
 include "config.php";
 
 echo "<p>";
-$cmd = "SELECT * FROM potb WHERE msgstr != \"\" and msgid like \"%" . $_GET['key'] . "%\" limit 500";
+$cmd = "SELECT * FROM potb_" . $_GET['lang'] . " WHERE msgstr != \"\" and msgid like \"%" . $_GET['key'] . "%\" limit 500";
 echo $cmd;
 
 mysql_select_db("podb", $sql_server);

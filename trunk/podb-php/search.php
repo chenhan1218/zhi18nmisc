@@ -8,7 +8,7 @@
 include "config.php";
 
 echo "<p>";
-$cmd = "SELECT * FROM potb WHERE MATCH (msgid) AGAINST (\"" . $_GET['key'] . "\")";
+$cmd = "SELECT * FROM potb_" . $_GET['lang'] . " WHERE MATCH (msgid) AGAINST (\"" . $_GET['key'] . "\") and msgstr != \"\" ";
 echo $cmd;
 
 mysql_select_db("podb", $sql_server);
