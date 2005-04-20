@@ -16,5 +16,5 @@ zh_CN.html/index.html: zh_CN.sgml
 	debiandoc2html -l zh_CN $<
 
 clean:
-	rm -rf tw*.sgml zh_TW.??ml
+	rm -rf tw*.sgml zh_*
 .PHONY: clean
