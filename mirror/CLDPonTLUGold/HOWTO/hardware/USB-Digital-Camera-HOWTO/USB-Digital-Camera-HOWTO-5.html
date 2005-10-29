@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+ 
+ <title>5. The Script Files</title>
+ 
+<link href="USB-Digital-Camera-HOWTO-6.html" rel="next" />
+ 
+<link href="USB-Digital-Camera-HOWTO-4.html" rel="previous" />
+<link href="../../style.css" rel="stylesheet" type="text/css" />
+<link href="http://tldp.org/HOWTO/USB-Digital-Camera-HOWTO/index.html" rel="alternate" title="原版" />
+<link href="index.html" rel="start" title="HOWTO：USB Digital Camera" />
+<link href="index.html#content" rel="contents" />
+<link href="index.html#appendix" rel="appendix" title="附錄" />
+<link href="USB-Digital-Camera-HOWTO-1.html" rel="chapter" title="1.許可" />
+<link href="USB-Digital-Camera-HOWTO-2.html" rel="chapter" title="2.建議閱讀" />
+<link href="USB-Digital-Camera-HOWTO-3.html" rel="chapter" title="3.假設" />
+<link href="USB-Digital-Camera-HOWTO-4.html" rel="chapter" title="4.預備的設定" />
+<link href="USB-Digital-Camera-HOWTO-5.html" rel="chapter" title="5.The Script Files" />
+<link href="USB-Digital-Camera-HOWTO-6.html" rel="chapter" title="6.設定成最佳狀態" />
+<link href="USB-Digital-Camera-HOWTO-7.html" rel="chapter" title="7.不要苦惱" />
+<link href="USB-Digital-Camera-HOWTO-8.html" rel="chapter" title="8.Troubleshooting or PANIC!" />
+<link href="USB-Digital-Camera-HOWTO-9.html" rel="chapter" title="9.最後" />
+<link href="USB-Digital-Camera-HOWTO-10.html" rel="appendix" title="A.Appendix A" />
+<link href="USB-Digital-Camera-HOWTO-11.html" rel="appendix" title="B.Appendix B" />
+<link href="USB-Digital-Camera-HOWTO-12.html" rel="appendix" title="C.Appendix C" />
+<link href="USB-Digital-Camera-HOWTO-13.html" rel="appendix" title="D.Appendix D. Gnu Free Documentation License" />
+
+ 
+ </head> <body >
+<table >
+  <tr> 
+    <th colspan="3" class="HdTitle">HOWTO：USB Digital Camera</th>
+  </tr>
+  <tr> 
+    <td class="TtdL"> <a href="index.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="TtdC">&nbsp;</td>
+    <td class="TtdR"> <a href="USB-Digital-Camera-HOWTO-2.html" accesskey="N">下一頁(N)</a> </td>
+  </tr>
+</table>
+<hr />
+<h1>5. The Script Files</h1>
+
+<p>下面這個script file是讀了幾個 Linux newsgroups 和很多 HOWTOs 與 manuals 
+之後寫出來的.它們都是間接或直接從別人那裡學習來的經驗.
+我非常感謝  newsgroups 裡回答我問題的人和在網路上po(張貼)這些資訊的人.</p>
+<p>如果想要開始設定,
+請使用你喜歡的 text editor 將下面的 script 設定一個名稱並且保存起來.</p>
+<h2><a name="ss5.1" id="ss5.1"></a>5.1 如果你使用user登入 </h2>
+
+<pre class="sample">
+echo "Please enter a directory name for the pictures."
+read DIRPATH
+mkdir ~/picture/$DIRPATH
+su -c "/sbin/modprobe usb-storage; mount -t vfat /dev/sda1 /mnt/camera;
+/etc/rc.d/init.d/usb start;
+mv /mnt/camera/dcim/100msdcf/*.jpg ~/picture/$DIRPATH;
+umount /mnt/camera;
+chown -R your_login_name ~/picture/$DIRPATH"
+</pre>
+
+
+<h2><a name="ss5.2" id="ss5.2"></a>5.2 如果你使用root登入 </h2>
+
+<pre class="sample">
+echo "Please enter a directory name for the pictures."
+read DIRPATH
+mkdir picture/$DIRPATH
+/sbin/modprobe usb-storage
+mount -t vfat /dev/sda1 /mnt/camera
+/etc/rc.d/init.d/usb start
+mv /mnt/camera/dcim/100msdcf/*.jpg picture/$DIRPATH;
+umount /mnt/camera
+chown -R your_login_name picture/$DIRPATH
+</pre>
+
+<h2><a name="ss5.3" id="ss5.3"></a>5.3 Make it Executable(讓它可以執行) </h2>
+
+<p>當你用user登入時:</p>
+<pre class="sample">
+bash $dollar su -c "chmod a=r+w+x your_script_file_name"
+</pre>
+<p>當你用root登入時:</p>
+<pre class="sample">
+bash# chmod a=r+w+x your_script_file_name
+</pre>
+
+<h2><a name="ss5.4" id="ss5.4"></a>5.4 script運行時都做哪些事 </h2>
+
+<p>當你運行它時, 將以DIRPATH裡的值來設定目錄. 如果你的script_file_name = getcamJ,(J for getting the 
+  pictures with .jpg extensions) 指令的順序看起來就像這樣: </p>
+<pre class="sample">
+bash $ getcamJ
+Please enter a directory name for the pictures.
+bash $ something
+Password: 
+bash $  your root password
+</pre>
+<p>你必需以root權限來運行它.
+所以 'su' 指令加上 -c 標緻可以讓你暫時擁有另外的權限執行指令然後又回到原來的狀態.
+""能使你執行多個指令, ;分號可以讓一個指令執行後繼續下一個指令.</p>
+<p>/sbin/modprobe usb-storage: modprobe 將USB mass storage 模組和其它設備的模組掛進來.
+主要是 SCSI driver. 
+確定在 /dev 有這些:
+sda0, sda1, sda2, sda3, sda4, sdb0, sdb1, sdb2, sdb3, sdb4. 
+如果你有其它 SCSI devices,請將sda1 進行正確的設定,可能是 sdb1.</p>
+<p>將SCSI driver 載入: mount -t vfat /dev/sda1 /mnt/camera</p>
+<p>運行 USB 程式: /etc/rc.d/init.d/usb start</p>
+<p>將你的pictures 從 camera 移至你的硬碟機. mv 同時將camera上的pictures移除: 
+mv /mnt/camera/dcim/100msdcf/*.jpg picture/$DIRPATH;</p>
+<p>卸下你的 SCSI driver: umount /mnt/camera</p>
+<p>指令: chown -R your_login_name picture/$DIRPATH
+完成的時候, pictures的所有者是root/superuser, 因為你是以 root/superuser指行上述指令的(script當中使用了su指令).
+當你以user權限訪問它們的時候會有permission denied error的警告. 解決這個問題的辦法是參考有關權限設定的manual. </p>
+
+<p>在我的機器裡, USB 或 SCSI 驅動程式是以模組的形式編譯的.
+所以 script file 也是假定你的系統和我的一樣.
+如果不是, 你將要做一些修改,請閱讀有關的e manuals 和 HOWTOs. 或 向 Linux newsgroups 請教.</p>
+<hr />
+<table >
+  <tr> 
+    <td class="BtdL"> <a href="index.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="BtdC"> <a href="index.html" accesskey="H">目錄(H)</a> </td>
+    <td class="BtdR"> <a href="USB-Digital-Camera-HOWTO-2.html">下一頁(N)</a> </td>
+  </tr>
+  <tr> 
+    <td class="BtdL">導言</td>
+    <td class="BtdC"><a href="USB-Digital-Camera-HOWTO-3.html"  accesskey="T">到頂層(T)</a></td>
+    <td class="BtdR">管理員的一般工作</td>
+  </tr>
+</table>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> 
+  <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a> 
+  <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img class="ImgLogo" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> 
+  <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> 
+  <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" title="網路內容分級協會" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

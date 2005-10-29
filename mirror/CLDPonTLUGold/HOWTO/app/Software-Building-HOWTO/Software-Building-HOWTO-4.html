@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>4. 克服困難</title>
+<link href="Software-Building-HOWTO-5.html" rel="next" title="5. 最後步驟" />
+<link href="Software-Building-HOWTO-3.html" rel="previous" title="3. 使用 Make" />
+<link href="http://tldp.org/HOWTO/Software-Building-HOWTO.html" rel="alternate" title="原版" />
+<link href="../../style.css" rel="stylesheet" type="text/css" />
+<link href="index.html" rel="start" title="HOWTO：Building and Installing Software Packages for Linux" />
+<link href="index.html#content" rel="contents" />
+<meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.rsac.org/ratingsv01.html" labels ratings (v 0 s 0 n 0 l 0))'/>
+<link href="Software-Building-HOWTO.rdf" rel="meta" title="各章節的說明資訊" />
+<link href="Software-Building-HOWTO-1.html" rel="chapter" title="1.簡介" />
+<link href="Software-Building-HOWTO-2.html" rel="chapter" title="2.從取得開始" />
+<link href="Software-Building-HOWTO-3.html" rel="chapter" title="3.使用 Make" />
+<link href="Software-Building-HOWTO-4.html" rel="chapter" title="4.克服困難" />
+<link href="Software-Building-HOWTO-5.html" rel="chapter" title="5.最後步驟 " />
+<link href="Software-Building-HOWTO-6.html" rel="chapter" title="6.第一個例子: Xscrabble" />
+<link href="Software-Building-HOWTO-7.html" rel="chapter" title="7.第二個例子: Xloadimage" />
+<link href="Software-Building-HOWTO-8.html" rel="chapter" title="8.第三個例子: Fortune" />
+<link href="Software-Building-HOWTO-8.html" rel="chapter" title="9.哪裏可找到原始碼檔案" />
+<link href="Software-Building-HOWTO-10.html" rel="chapter" title="10.結語" />
+<link href="Software-Building-HOWTO-11.html" rel="chapter" title="11.參考與進一步閱讀資料" />
+<link href="Software-Building-HOWTO-4.html#ss4.1" rel="section" title="4.1 連結錯誤" />
+<link href="Software-Building-HOWTO-4.html#ss4.2" rel="section" title="4.2 其它問題 " />
+<link href="Software-Building-HOWTO-4.html#ss4.3" rel="section" title="4.3 旋扭與微調" />
+<link href="Software-Building-HOWTO-4.html#ss4.3" rel="section" title="4.4 去哪取得進一步的協助" />
+<link href="ftp://sunsite.unc.edu" rel="bookmark" title="Sunsite" />
+<link href="ftp://tsx-11.mit.edu" rel="bookmark" title="TSX-11 archive" />
+</head> <body   >
+<table >
+  <tr>
+    <th colspan="3" class="HdTitle">HOWTO：在
+      Linux 下建立軟體套件</th>
+  </tr>
+  <tr>
+    <td class="TtdL"> <a href="Software-Building-HOWTO-3.html" accesskey="P">上一頁(P)</a> 
+    </td>
+    <td class="TtdC">&nbsp;</td>
+    <td class="TtdR"> <a href="Software-Building-HOWTO-5.html" accesskey="N">下一頁(N)</a> 
+    </td>
+  </tr>
+</table>
+<hr />
+<h1>4. 克服困難</h1>
+
+
+<p>如果用 xmkmf 和/或 make 很成功沒有錯誤,
+你可以著手於 
+<a href="Software-Building-HOWTO-5.html#finalsteps">next section</a>.
+然而, 在真實生活, 很少事情在第一次就正確的工作.
+這就是當你的機智豐富時,要勇於嘗試.</p>
+
+<h2><a name="ss4.1" id="ss4.1"></a>4.1 連結錯誤 </h2>
+
+<ul>
+  <li>如果 make 失敗而出現有 <code>Link error: -lX11: No such file or directory</code>, 
+    甚至是在使用 xmkmf 後. 這可能意味著 Imake 檔案沒有適當地裝好. 檢查 Makefile 的第一部分有沒有像這樣的幾行: 
+    <pre class="sample">
+LIB=            -L/usr/X11/lib
+INCLUDE=        -I/usr/X11/include/X11
+LIBS=           -lX11 -lc -lm
+</pre>
+
+
+
+    <code>-L</code> 和 <code>-I</code> 切換器(switches)會通告編譯器和連結器分別去哪裏尋找 library 和 include 
+    檔案. 在這例子, X11 libraries 應該是在 <code>/usr/X11/lib</code> 目錄, 而 X11 include 檔案 
+    應該是在 <code>/usr/X11/include/X11</code>目錄. 如果這在你的機器上是不對的, 必須改變 Makefile 而且再試試 
+    make.</li>
+</ul>
+<p></p>
+<ul>
+  <li>在非常少的情況, 以 root 身分跑一下 ldconfig 也許是個答案: # /etc/ldconfig -n /lib 將會更新共享式函式庫符號連結 
+    (shared library symbolic links). 這在正常的情形下不是需要的. </li>
+</ul>
+<ul>
+<li>目前另一件事是如果 xmkmf 失敗, 則試試下列 script:
+
+<pre class="sample">
+         make -DUseInstalled -I/usr/X386/lib/X11/config
+</pre>
+</li>
+</ul>
+
+<ul>
+  <li>有時原始碼需要使用舊版的 X11R5 libraries 來建立. 如果你有 R5 libs 在 /usr/X11R6/lib (當你首先在安裝 Linux 
+    時, 你是有選擇是否安裝它們的), 然後你只需要確定,你有連結到軟體所需要建立的地方. <code>R5 libs</code> 是有 <code>libX11.so.3.1.0</code>, 
+    <code>libXaw.so.3.1.0</code>, 和 <code>libXt.so.3.1.0</code>. 一般你需要連結至, 像是 
+    libX11.so.3 -&gt; libX11.so.3.1.0. 大概軟體也需要這個形式連結 libX11.so -&gt; libX11.so.3.1.0. 
+    當然, 要將這&quot;斷掉(missing)&quot;的連結建好, 要以 root 身分使用這指令 ln -s libX11.so.3.1.0 
+    libX11.so. </li>
+</ul>
+<ul>
+  <li>某些套件會要求你去安裝一個或以上的升級版本. 舉例而言, StarDivision GmbH 的 StarOffice 組件(suite)是惡名昭彰(notorious)的要求 
+    <code>libc</code> version 5.4.4 或更新. 以 root身分, 你需要複製一個或以上的函式庫(libraries)至合適的目錄, 
+    刪去舊的函式庫(libraries),然後重設符號連結. 小心: 在這要格外注意, 因為如果你弄糟, 你可能會付出你的系統不能運作的代價. 你通常可以找到升級的函式庫(libraries)在 
+    <a href="ftp://sunsite.unc.edu">Sunsite</a>. </li>
+</ul>
+<h2><a name="ss4.2" id="ss4.2"></a>4.2 其它問題
+</h2>
+
+
+<ul>
+  <li>在安裝好的 Perl 或 shell script 給你一個 <code>No such file or directory</code> 錯誤訊息. 
+    在這情況,檢查檔案權限來確定檔案可執行 以及檢查檔案標頭是否含有使用 shell 或程式, 指明 script 所在地方. 舉例而言, script 
+    開始如: 
+    <pre class="sample">
+#!/usr/local/bin/perl
+</pre>
+    如果 Perl 實際裝在你的 <code>/usr/bin</code> 目錄, 而不是 <code>/usr/local/bin</code> 目錄, 
+    那麼 script 無法執行. 有兩個方法來修改. script 檔案標頭改成 <code>#!/usr/bin/perl</code>, 或用符號連結至正確的目錄, 
+    ln -s /usr/bin/perl /usr/local/bin/perl. </li>
+</ul>
+
+<ul>
+  <li>某些 X11 軟體要求有 <code>Motif</code> 函式庫(libraries)才能建立. 而標準的 Linux 發行套件並沒有安裝 Motif 
+    libraries, 而且目前 Motif 還要額外 $100-$200 的花費 (雖然免費軟體 <a href="http://www.lesstif.org/">Lesstif</a> 
+    在某些場合也能夠用). 如果你需要 Motif 來建立某一套件, 但缺少 Motif libraries, 那麼也許可以取得 靜態連結的二元碼(statically 
+    linked binaries). 靜態連結在二元碼本身納入函式庫行程(library routines). 這造成二元碼檔案大了許多, 但是碼可在缺少該函式庫的系統上執行. 
+  </li>
+</ul>
+
+<ul>
+  <li>執行 configure script 會創造奇怪的 <code>Makefile</code>, 那像是與你所要設法建立的套件亳不相干. 這表示跑著錯誤的 
+    configure, 其找到你的 path 上某處其他的 configure. 所以要下 configure 指令 應該要下成 ./configure 
+    即目前目錄下的.</li>
+</ul>
+<ul>
+  <li>某些程式會要求有 setuid root, 為了要以有 root 權力 來執行. 要達成這目錄的指令是 以root 下指令 chmod u+s 
+    filename. (注意的是這程式已經是 root 所擁有了). 這在設定檔案權限中的 setuid bit 很有用. 這樣用在當程式在存取系統硬體,像是 
+    modem 或 CD ROM drive, 或當 SVGA libs 被使在於主控台模式(console mode), 像是在一個特別惡名昭彰的(notorious)模擬器(emulation)套件. 
+    如果程式正被 root 執行, 但給一般使用者一個 access denied 的錯誤訊息, 想像就是這樣造成的. 
+    <p>警告: 一個有 setuid 成 root 的程式可能提出對你的系統有安全上的風險. 這個程式可以 root 權力來跑而所以有某些破害的潛在性. 
+      在設定 setuid bit 前, 確定你知道該程式在做什麼, 必要時看一下原始碼.</p>
+</li>
+</ul>
+<h2><a name="ss4.3" id="ss4.3"></a>4.3 旋扭與微調
+</h2>
+
+
+<p>你可能希望檢查 <code>Makefile</code> 來確定有選用對你系統最佳編譯選項. 舉例來說, 設定 -O2 旗標來選最高層級的最佳化而 
+  -fomit-frame-pointer 旗標來造最小二元碼 (雖然 debugging 會沒有打開). 除非你知道你在做什麼, 而且在任何情況下, 除非艱苦建立的工作已完成, 
+  否則不要玩這些.</p>
+
+
+
+<h2><a name="ss4.4" id="ss4.4"></a>4.4 去哪取得進一步的協助
+</h2>
+
+<p>在我的經驗, 大概25%的應用程式建立&quot;完全沒有困難&quot;. 
+另外大約50%能&quot;被說服&quot;的建立, 要付出努力的範圍從無聊到極為困難.
+那仍然表示有某些套件無論如何都無法建立. 即使那樣, 那些
+Intel <code>ELF</code> 和/或 <code>a.out</code> 二元碼, 也可能在
+<a href="ftp://sunsite.unc.edu">Sunsite</a>, 
+<a href="ftp://tsx-11.mit.edu">TSX-11 archive</a> 或其它地方找到.
+也許, 軟體的創造者可以提供編譯好的二元碼給你的特別的機器使用.</p>
+
+<p><code>注意的是如果你取得預先編譯好的二元碼, 你會需要檢查是否與你的系統相容:</code> </p>
+<ul>
+<li><code>這二元碼必須在你的 硬體上跑 (i.e., Intel x86).</code>       </li>
+<li><code>這二元碼必須與你的核心(kernel)相容 (i.e., a.out 或 ELF).</code>     </li>
+<li><code>你的函式庫(libraries)必須是最新的.</code></li>
+</ul>
+
+<p>如果全都失敗, 你可以在合適的 新聞群組尋求幫忙, 像是在 <a href="news://comp.os.linux.x">comp.os.linux.x</a> 
+  或 <a href="news://comp.os.linux.development">comp.os.linux.development</a>. 
+  萬一你只是不夠幸運的話, 嘿, 試試也是有趣的.</p>
+
+
+
+
+
+<hr/>
+<table >
+  <tr>
+    <td class="BtdL"> <a href="Software-Building-HOWTO-3.html" accesskey="P">上一頁(P)</a> 
+    </td>
+    <td class="BtdC"> <a href="index.html" accesskey="H">目錄(H)</a> </td>
+    <td class="BtdR"> <a href="Software-Building-HOWTO-5.html">下一頁(N)</a> </td>
+  </tr>
+  <tr>
+    <td class="BtdL">使用 Make</td>
+    <td class="BtdC"><a href="Software-Building-HOWTO-4.html"  accesskey="T">到頂層(T)</a></td>
+    <td class="BtdR">最後步驟</td>
+  </tr>
+</table>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img class="ImgLogo" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" title="網路內容分級協會" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

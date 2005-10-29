@@ -1,0 +1,240 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>6. 資源描述架構正式的語法定義</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="style.css" rel="stylesheet" type="text/css" />
+</head>
+
+<body>
+<table width="100%" >
+  <caption>
+  資源描述架構模型暨語法規格書
+  </caption>
+  <tr>
+    <td class="TtdL"><a href="chapter5.html" accesskey="P">上一頁(P)</a></td>
+    <td class="TtdC"><a href="index.html" accesskey="T">上一層(T)</a></td>
+    <td class="TtdR"><a href="chapter7.html" accesskey="N">下一頁(N)</a></td>
+  </tr>
+  <tr>
+    <td class="TtdL">5. 正式的資源描述架構模型</td>
+    <td class="TtdC">&nbsp;</td>
+    <td class="TtdR">7. 範例</td>
+  </tr>
+</table>
+<hr />
+<h1><a name="grammar" id="grammar"></a>6.
+  資源描述架構正式的語法定義</h1>
+<p>資源描述架構所使用的 BNF 語法已在前一節中完完整整地列了出來，關於模型更精確的語法也在前一節加以解釋了。延伸標記語法的句法功能也不會在這一節解釋，這包含所有延伸標記語言的限制、屬性及等號可以圍繞空白字元、可用單引號或雙引號包圍屬性值…等。這一節是為了那些建立讀寫資、解釋源描述架構/延伸標記語言的語法工具的實作者。</p>
+<p>下以用〝 〞包含的關鍵字〝應該〞、〝必需〞、〝不必〞，這些字的解釋可在 RFC 2119[<a href="http://www.isi.edu/in-notes/rfc2119.txt">RFC2119</a>]找到解釋。</p>
+<pre class="sample">  [6.1] <a name="RDF" id="RDF">RDF</a>            ::= ['&lt;<i>rdf</i>:RDF&gt;'] <a href="#obj">obj</a>* ['&lt;/<i>rdf</i>:RDF&gt;']
+  [6.2] <a name="obj" id="obj">obj</a>            ::= <a href="#description">description</a> | <a href="#container">container</a>
+  [6.3] <a name="description" id="description">description</a>    ::= '&lt;<i>rdf</i>:Description' <a href="#idAboutAttr">idAboutAttr</a>? <a href="#bagIdAttr">bagIdAttr</a>? <a href="#propAttr">propAttr</a>* '/&gt;'
+                         | '&lt;<i>rdf</i>:Description' <a href="#idAboutAttr">idAboutAttr</a>? <a href="#bagIdAttr">bagIdAttr</a>? <a href="#propAttr">propAttr</a>* '&gt;'
+                                <a href="#propertyElt">propertyElt</a>* '&lt;/<i>rdf</i>:Description&gt;'
+                         | <a href="#typedNode">typedNode</a>
+  [6.4] <a name="container" id="container">container</a>      ::= <a href="#sequence">sequence</a> | <a href="#bag">bag</a> | <a href="#alternative">alternative</a>
+  [6.5] <a name="idAboutAttr" id="idAboutAttr">idAboutAttr</a>    ::= <a href="#idAttr">idAttr</a> | <a href="#aboutAttr">aboutAttr</a> | <a href="#aboutEachAttr">aboutEachAttr</a>
+  [6.6] <a name="idAttr" id="idAttr">idAttr</a>         ::= ' ID="' <a href="#IDsymbol">IDsymbol</a> '"'
+  [6.7] <a name="aboutAttr" id="aboutAttr">aboutAttr</a>      ::= ' about="' <a href="#URI-reference">URI-reference</a> '"'
+  [6.8] <a name="aboutEachAttr" id="aboutEachAttr">aboutEachAttr</a>  ::= ' aboutEach="' <a href="#URI-reference">URI-reference</a> '"'
+                         | ' aboutEachPrefix="' <a href="#string">string</a> '"'
+  [6.9] <a name="bagIdAttr" id="bagIdAttr">bagIdAttr</a>      ::= ' bagID="' <a href="#IDsymbol">IDsymbol</a> '"'
+ [6.10] <a name="propAttr" id="propAttr">propAttr</a>       ::= <a href="#typeAttr">typeAttr</a>
+                         | <a href="#propName">propName</a> '="' <a href="#string">string</a> '"' (with embedded quotes escaped)
+ [6.11] <a name="typeAttr" id="typeAttr">typeAttr</a>       ::= ' type="' <a href="#URI-reference">URI-reference</a> '"'
+ [6.12] <a name="propertyElt" id="propertyElt">propertyElt</a>    ::= '&lt;' <a href="#propName">propName</a> <a href="#idAttr">idAttr</a>? '&gt;' <a href="#value">value</a> '&lt;/' <a href="#propName">propName</a> '&gt;'
+                         | '&lt;' <a href="#propName">propName</a> <a href="#idAttr">idAttr</a>? <a href="#parseLiteral">parseLiteral</a> '&gt;'
+                               <a href="#literal">literal</a> '&lt;/' <a href="#propName">propName</a> '&gt;'
+                         | '&lt;' <a href="#propName">propName</a> <a href="#idAttr">idAttr</a>? <a href="#parseResource">parseResource</a> '&gt;'
+                               <a href="#propertyElt">propertyElt</a>* '&lt;/' <a href="#propName">propName</a> '&gt;'
+                         | '&lt;' <a href="#propName">propName</a> <a href="#idRefAttr">idRefAttr</a>? <a href="#bagIdAttr">bagIdAttr</a>? <a href="#propAttr">propAttr</a>* '/&gt;'
+ [6.13] <a name="typedNode" id="typedNode">typedNode</a>      ::= '&lt;' <a href="#typeName">typeName</a> <a href="#idAboutAttr">idAboutAttr</a>? <a href="#bagIdAttr">bagIdAttr</a>? <a href="#propAttr">propAttr</a>* '/&gt;'
+                         | '&lt;' <a href="#typeName">typeName</a> <a href="#idAboutAttr">idAboutAttr</a>? <a href="#bagIdAttr">bagIdAttr</a>? <a href="#propAttr">propAttr</a>* '&gt;'
+                               <a href="#propertyElt">propertyElt</a>* '&lt;/' <a href="#typeName">typeName</a> '&gt;'
+ [6.14] <a name="propName" id="propName">propName</a>       ::= <a href="#Qname">Qname</a>
+ [6.15] <a name="typeName" id="typeName">typeName</a>       ::= <a href="#Qname">Qname</a>
+ [6.16] <a name="idRefAttr" id="idRefAttr">idRefAttr</a>      ::= <a href="#idAttr">idAttr</a> | <a href="#resourceAttr">resourceAttr</a>
+ [6.17] <a name="value" id="value">value</a>          ::= <a href="#obj">obj</a> | <a href="#string">string</a>
+ [6.18] <a name="resourceAttr" id="resourceAttr">resourceAttr</a>   ::= ' resource="' <a href="#URI-reference">URI-reference</a> '"'
+ [6.19] <a name="Qname" id="Qname">Qname</a>          ::= [ <a href="#NSprefix">NSprefix</a> ':' ] <a href="#name">name</a>
+ [6.20] <a name="URI-reference" id="URI-reference">URI-reference</a>  ::= <a href="#string">string</a>, interpreted per [<a href="http://www.isi.edu/in-notes/rfc2396.txt">URI</a>]
+ [6.21] <a name="IDsymbol" id="IDsymbol">IDsymbol</a>       ::= (any legal <a href="http://www.w3.org/TR/REC-xml#NT-Nmtoken">XML name symbol</a>)
+ [6.22] <a name="name" id="name">name</a>           ::= (any legal <a href="http://www.w3.org/TR/REC-xml#NT-Nmtoken">XML name symbol</a>)
+ [6.23] <a name="NSprefix" id="NSprefix">NSprefix</a>       ::= (any legal XML namespace prefix)
+ [6.24] <a name="string" id="string">string</a>         ::= (any XML text, with "&lt;", "&gt;", and "&amp;" escaped)
+ [6.25] <a name="sequence" id="sequence">sequence</a>       ::= '&lt;<i>rdf</i>:Seq' <a href="#idAttr">idAttr</a>? '&gt;' <a href="#member">member</a>* '&lt;/<i>rdf</i>:Seq&gt;'
+                         | '&lt;<i>rdf</i>:Seq' <a href="#idAttr">idAttr</a>? <a href="#memberAttr">memberAttr</a>* '/&gt;'
+ [6.26] <a name="bag" id="bag">bag</a>            ::= '&lt;<i>rdf</i>:Bag' <a href="#idAttr">idAttr</a>? '&gt;' <a href="#member">member</a>* '&lt;/<i>rdf</i>:Bag&gt;'
+                         | '&lt;<i>rdf</i>:Bag' <a href="#idAttr">idAttr</a>? <a href="#memberAttr">memberAttr</a>* '/&gt;'
+ [6.27] <a name="alternative" id="alternative">alternative</a>    ::= '&lt;<i>rdf</i>:Alt' <a href="#idAttr">idAttr</a>? '&gt;' <a href="#member">member</a>+ '&lt;/<i>rdf</i>:Alt&gt;'
+                         | '&lt;<i>rdf</i>:Alt' <a href="#idAttr">idAttr</a>? <a href="#memberAttr">memberAttr</a>? '/&gt;'
+ [6.28] <a name="member" id="member">member</a>         ::= <a href="#referencedItem">referencedItem</a> | <a href="#inlineItem">inlineItem</a>
+ [6.29] <a name="referencedItem" id="referencedItem">referencedItem</a> ::= '&lt;<i>rdf</i>:li' <a href="#resourceAttr">resourceAttr</a> '/&gt;'
+ [6.30] <a name="inlineItem" id="inlineItem">inlineItem</a>     ::= '&lt;<i>rdf</i>:li' '&gt;' <a href="#value">value</a> &lt;/<i>rdf</i>:li&gt;'
+                         | '&lt;<i>rdf</i>:li' <a href="#parseLiteral">parseLiteral</a> '&gt;' <a href="#literal">literal</a> &lt;/<i>rdf</i>:li&gt;'
+                         | '&lt;<i>rdf</i>:li' <a href="#parseResource">parseResource</a> '&gt;' <a href="#propertyElt">propertyElt</a>* &lt;/<i>rdf</i>:li&gt;'
+ [6.31] <a name="memberAttr" id="memberAttr">memberAttr</a>     ::= ' <i>rdf</i>:_<i>n</i>="' <a href="#string">string</a> '"' (where <i>n</i> is an integer)
+ [6.32] <a name="parseLiteral" id="parseLiteral">parseLiteral</a>   ::= ' parseType="Literal"'
+ [6.33] <a name="parseResource" id="parseResource">parseResource</a>  ::= ' parseType="Resource"'
+ [6.34] <a name="literal" id="literal">literal</a>        ::= (any well-formed XML)</pre>
+<p>定義在這份文件中，屬性與類別正式的名稱空間為 http://www.w3.org/1999/02/22-rdf-syntax-ns#。當資源描述架構處理程式遇到一個延伸標記語言的元素或屬性時，而它們的名稱空間為 <a name="reservedURI" id="reservedURI"></a>http://www.w3.org/TR/REC-rdf-syntax，並且處理程式無法辦識名稱的語義，那麼會要求處理程式跳過(像是沒有產生
+  tuples)整個延伸標記語言的元素，還包含它的內容。它的名稱是無法辦識的或是有個無法辦識的屬性。<br />
+</p>
+<p>Each propertyElt <i>E</i> contained by a <tt>Description</tt> element
+  results in the creation of a triple {p,r,v} where:</p>
+<ol>
+  <li>p is the expansion of the namespace-qualified tag name (Generic
+    Identifier) of <i>E</i>. This expansion is generated by concatenating the namespace name given in the
+    namespace declaration with the <a href="http://www.w3.org/TR/REC-xml-names#NT-LocalPart">LocalPart</a> of the qualified name. </li>
+  <li>r is
+      <ul>
+        <li>the resource whose identifier is given by the value
+          of the <tt>about</tt> attribute of the <tt>Description</tt> or </li>
+        <li>a new resource whose identifier is the value of the <tt>ID</tt> attribute
+          of the <tt>Description</tt>, if present; else the new resource has no identifier. </li>
+      </ul>
+  </li>
+  <li>If <i>E</i> is an empty element (no content), v is the
+    resource whose identifier is given by the <tt>resource</tt> attribute of <i>E</i>. If the content of <i>E</i> contains no XML markup or if <tt>parseType="Literal"</tt> is specified in the start tag of <i>E</i> then v is the content of <i>E</i> (a literal). Otherwise, the content of <i>E</i> must be another <tt>Description</tt> or container and v is the resource named by the (possibly implicit) <tt>ID</tt> or <tt>about</tt> of that <tt>Description</tt> or container. </li>
+</ol>
+<p>parseType 屬性會改變元素內容的解釋。parseType 屬性的屬性值〝應該〞是 Literal 要不然就是 Resource，記住大小寫有別。屬性值為
+  Literal 指定元素內容當成資源描述架構/延伸標記語言的文字，內容〝不必〞由資源描述架構處理程式解釋。屬性值為 Resource 指定元素內容〝必需〞當成像是
+  Description 元素的內容。其它的屬性值則會保留給下一版的資源描述架構的規格書使用。在 資源描述架構 1.0 中，其它的屬性值〝必需〞當成 Literal。在所有的情況下，元素有指定
+  parseType 屬性的內容〝必需〞符合延伸標記語言的格式。元素有指定 parseType 屬性並且屬性值為 Resource 的內容〝必需〞進一步符合
+Descriptoin 元素的內容的限制。</p>
+<blockquote>The RDF Model and Syntax Working Group acknowledges
+  that the parseType='Literal' mechanism is a minimum-level solution to the requirement
+  to express an RDF statement with a value that has XML markup. Additional complexities
+  of XML such as canonicalization of whitespace are not yet well defined. Future
+  work of the W3C is expected to resolve such issues in a uniform manner for
+  all applications based on XML. Future versions of RDF will inherit this work
+  and may extend it as we gain insight from further application experience. </blockquote>
+<p>經由解析第一個統一資源識別符號的參考而成為絕對的形式[<a href="http://www.isi.edu/in-notes/rfc2396.txt">統一資源識別符號</a>](使用文件的基底統一資源識別符號，而這份文件需包含資源描述架構的陳述式)，而統一資源識別符號的參考會解析成資源識別符號。如果統一資源識別符號的參考包含片斷識別符號，那麼資源識別符號只會參考所包含資源的子元件，這個字元件是由所包含資源相對應的連結錨識別符號識別。並且子元件的元件是由連接所包含資源的內容型態的片斷識別符號定義，否則資源識別符號會參考整個指定的統一資源識別符號。</p>
+<blockquote>注意：儘管在<a href="http://www.isi.edu/in-notes/rfc2396.txt">統一資源識別符號</a>中不允許非ASCII字元，在延伸的統一資源識別符號語法中，[<a href="http://www.w3.org/TR/REC-xml">延伸標記語言</a>]指定一種方法以避免非必要不相容的問題。鼓勵資源描述架構的實作者避免進一步發生不相容的問題，而對於系統識別符號來說使用延伸標記語法的方法。也就是，統一資源識別符號中如果有非ASCII的字元，可表示成UTF-8的形式，有的字元是一個位元組，有的字元是兩個位元組，然後這些位元組會使用統一資源識別符號的跳脫機制跳脫字元。(像是每個位元組轉換成
+  %HH，而 HH 是以十六進位制表示位元組的值)。 </blockquote>
+<p>Description 元素本身可表示成一個 Bag 資源的實例。而這個 Bag 的成員是對應於 Description 元素內陳述式的每個
+  reification 的資源。如果不是 bagID 屬性的屬性值為這個 Bag 的識別符號，那麼 Bag 即為匿名的。</p>
+<p>當 Description 元素指定 about 屬性時，Description 元素內的陳述式 about 屬性所命名的資源。假設 Description
+  元素沒指定 about 屬性，那麼會表示成行內資源，而這個行內資源有個資源識別符號而形式為：包含資源描述架構陳述式的文件的基底統一資源識別符號加上等同於
+  Descriptoin 元素的 ID 屬性的屬性值，也就是連結錨識別符號，如果存在的話。當另一個 Description 元素或屬性值參考行內資源，那麼會使用
+  about 屬性的屬性值當成 ID 屬性的屬性值。當其它的 Description 元素參考 Bag 資源對應於 reified 陳述式，那麼會使用
+  about 屬性的屬性值當成 bagID 屬性的屬性值。Description 元素可以指定 ID 屬性也可以指定 about 屬性，但是不可同時在一個
+Descriptioin 元素中指定這兩個屬性。ID 及 badID 屬性的屬性值〝必需〞在一份文件中是唯一的。</p>
+<p>當 Description 元素指定 aboutEach 屬性時，Description 元素的陳述式會參考由 aboutEach 屬性所命名容器的成員。The
+  triples {p,r,v} represented by each contained propertyElt <i>E</i> as described above are duplicated for each r that is a member of the container.</p>
+<p>當 Description 元素指定 aboutEachPrefix 屬性時，Description 元素的陳述式會參考匿名 Bag 容器的成員。Bag
+  容器的成員都是資源，這些資源的絕對形式的資源識別符號是由 aboutEachPrefix 屬性的屬性值起始的。絕對形式的資源識別符號是解析統一資源識別符號產生的(演算法於5.2節有介紹)。在[統一資源識別符號]有說明如何解析相對參考成為絕對形式。The
+  triples {p,r,v} represented by each contained propertyElt <i>E</i> as described above are duplicated for each r that is a member of the container.</p>
+<a name="CollectionElement" id="CollectionElement"></a>
+<p>Seq、Bag、Alt 每個分別表示 Sequence、Bag、Alternative 容器資源型態的實例。A triple {RDF:type,c,t}
+  is created where c is the collection resource and t is one of RDF:Seq, RDF:Bag,
+  or RDF:Alt. The members of the collection are denoted by <tt>li</tt>. Each <tt>li</tt> element <i>E</i> corresponds to one member of the collection and results in the creation of a
+  triple {p,c,v} where:</p>
+<ol>
+  <li>p is assigned consecutively according to the (XML) order of lexical
+    appearance of each member starting with "RDF:_1" for each container. </li>
+  <li>c is the collection resource. The <tt>ID</tt> attribute,
+    if specified, provides the URI fragment identifier for c. </li>
+  <li>(same as rule 3 above) If <i>E</i> is
+    an empty element (no content), v is the resource whose resource identifier
+    is given by the <tt>resource</tt> attribute of <i>E</i>. If the content of <i>E</i> contains no XML markup or if <tt>parseType="Literal"</tt> is specified in the start tag of <i>E</i> then v is the content of <i>E</i> (a literal). Otherwise, the content of <i>E</i> must be another <tt>Description</tt> or container and v is the resource named by the(possibly implicit) <tt>ID</tt> or <tt>about</tt> of that <tt>Description</tt> or container. </li>
+</ol>
+<p>The URI identifies (after resolution) the target resource; i.e., the resource
+  to which the <tt>Description</tt> applies or the resource that is included in the container. The <tt>bagID</tt> attribute on a <tt>Description</tt> element and the <tt>ID</tt> attribute on a container element permit that <tt>Description</tt> or container to be referred to by other <tt>Description</tt>s. The <tt>ID</tt> on a container element is the name that is used in a <tt>resource</tt> attribute on a property element to make the collection the value of that property.</p>
+<a name="propertyElement" id="propertyElement"></a>
+<p>Within propertyElt (production [6.12]), the URI used in a <tt>resource</tt> attribute
+  identifies (after resolution) the resource that is the object of the statement
+  (i.e., the value of this property). The value of the <tt>ID</tt> attribute, if specified, is the identifier for the resource that represents
+  the reification of the statement. If an RDF expression (that is, content with
+  RDF/XML markup) is specified as a property value the object is the resource
+  given by the <tt>about</tt> attribute of the contained <tt>Description</tt> or the (possibly implied) <tt>ID</tt> of the contained <tt>Description</tt> or container resource. <tt>String</tt>s must be well-formed XML; the usual XML content quoting and escaping mechanisms
+  may be used if the string contains character sequences (e.g. "&lt;" and "&amp;") that violate the well-formedness rules or that otherwise might look like markup.
+  The attribute <tt>parseType="Literal"</tt> specifies that the element content is an RDF literal. Any markup that is part
+  of this content is included as part of the literal and not interpreted by RDF. </p>
+<p>It is recommended that property names always be qualified with a namespace
+  prefix to unambiguously connect the property definition with the corresponding
+  schema.</p>
+<a name="stringComparison" id="stringComparison"></a>
+<p>As defined by XML, the character repertoire of an RDF string is ISO/IEC
+  10646 [ISO10646]. An actual RDF string, whether in an XML document or in some
+  other representation of the RDF data model, may be stored using a direct encoding
+  of ISO/IEC 10646 or an encoding that can be mapped to ISO/IEC 10646. Language
+  tagging is part of the string value; it is applied to sequences of characters
+  within an RDF string and does not have an explicit manifestation in the data
+  model.</p>
+<p>Two RDF strings are deemed to be the same if their ISO/IEC 10646 representations
+  match. Each RDF application must specify which one of the following definitions
+  of 'match' it uses:</p>
+<ol type="a">
+  <li>the two representations are identical, or </li>
+  <li>the two representations are canonically equivalent as defined by
+    The Unicode Standard [Unicode]. </li>
+</ol>
+<blockquote>Note: The <a href="http://www.w3.org/International">W3C
+    I18N WG</a> is working on a definition for string identity matching. This definition will
+    most probably be based on canonical equivalences according to the Unicode
+    standard and on the principle of early uniform normalization. Users of RDF
+    should not rely on any applications matching using the canonical equivalents,
+    but should try to make sure that their data is in the normalized form according
+    to the upcoming definitions. </blockquote>
+<p>This specification does not state a mechanism for determining equivalence
+  between literals that contain markup, nor whether such a mechanism is guaranteed
+  to exist.</p>
+<a name="LangAttribute" id="LangAttribute"></a>
+<p>The <tt><a href="http://www.w3.org/TR/REC-xml#sec-lang-tag">xml:lang</a></tt> attribute
+  may be used as defined by [<a href="http://www.w3.org/TR/REC-xml">XML</a>] to associate a language with the property value. There is no specific data
+  model representation for <tt>xml:lang</tt> (i.e., it adds no triples to the data model); the language of a literal is considered
+  by RDF to be a part of the literal. An application may ignore language tagging
+  of a string. All RDF applications must specify whether or not language tagging
+  in literals is significant; that is, whether or not language is considered
+  when performing string matching or other processing.</p>
+<p>Attributes whose names start with "<tt><a href="http://www.w3.org/TR/REC-xml-names#dt-attdecl">xmlns</a></tt>" are
+  namespace declarations and do not represent triples in the data model. There
+  is no specific data model representation for such namespace declarations.</p>
+<p>Each property and value expressed in XML attribute form by productions
+  [6.3] and [6.10] is equivalent to the same property and value expressed as
+  XML content of the corresponding <tt>Description</tt> according to production [6.12]. Specifically; each XML attribute <i>A</i> specified with a <tt>Description</tt> start tag other than the attributes <tt>ID</tt>, <tt>about</tt>, <tt>aboutEach</tt>, <tt>aboutEachPrefix</tt>, <tt>bagID</tt>, <tt>xml:lang</tt>, or any attribute starting with the characters <tt>xmlns</tt> results in the creation of a triple {p,r,v} where:</p>
+<ol>
+  <li>p is the expansion of the namespace-qualified attribute name of <i>A</i>.
+    This expansion is generated by concatenating the namespace name given in
+    the namespace declaration with the <a href="http://www.w3.org/TR/REC-xml-names#NT-LocalPart">LocalPart</a> of the qualified name and then resolving this URI according to the algorithm
+    in Section 5.2., Resolving Relative References to Absolute Form, in [URI]. </li>
+  <li>r is the resource whose resource identifer is given by the value
+    of the <tt>about</tt> attribute, resolved as specified above, or whose anchor id is given by the value
+    of the <tt>ID</tt> attribute of the Description or is a member of the collection specified by the <tt>aboutEach</tt> or <tt>aboutEachPrefix</tt> attribute. </li>
+  <li>v is the attribute value of <i>A</i> (a
+    literal). </li>
+</ol>
+<p>Grammatically, production [6.11] is just a special case of the propName
+  production [6.10]. The value of the <tt>type</tt> attribute is interpreted as a URI-reference and expanded in the same way as
+  the value of the <tt>resource</tt> attribute. Use of [6.11] is equivalent to using <tt><i>rdf</i>:type</tt> as an element (property) name together with a <tt>resource</tt> attribute.</p>
+<a name="TypedNodeElement" id="TypedNodeElement"></a>
+<p>The typedNode form (production [6.13]) may be used to represent instances
+  of resources of specific types and to further describe those resources. A <tt>Description</tt> expressed in typedNode form by production [6.13] is equivalent to the same <tt>Description</tt> expressed by production [6.3] with the same <tt>ID</tt>, <tt>bagID</tt>, and <tt>about</tt> attributes plus an additional type property in the <tt>Description</tt> where the value of the type property is the resource whose identifier is given
+  by the fully expanded and resolved URI corresponding to the typeName of the
+  typedNode. Specifically, a typedNode represents a triple {RDF:type,n,t} where
+  n is the resource whose identifier is given by the value of the <tt>about</tt> attribute (after resolution) or whose anchor id is given by the value of the <tt>ID</tt> attribute of the typedNode element, and t is the expansion of the namespace-qualified
+  tag name. The remainder of the typedNode attributes and content is handled
+  as for <tt>Description</tt> elements above.</p>
+<p>Properties and values expressed in XML attribute form within an empty
+  XML element <i>E</i> by productions [6.10] and [6.12] are equivalent to the same properties and values
+  expressed as XML content of a single <tt>Description</tt> element <i>D</i> which would become the content of <i>E</i>. The referent of <i>D</i> is the value of the property identified by the XML element name of <i>E</i> according to productions [6.17], [6.2], and [6.3]. Specifically; each propertyElt
+  start tag containing attribute specifications other than <tt>ID</tt>, <tt>resource</tt>, <tt>bagID</tt>, <tt>xml:lang</tt>, or any attribute starting with the characters <tt>xmlns</tt> results in the creation of the triples {p,r<sub>1</sub>,r<sub>2</sub>}, {p<sub>a1</sub>,r<sub>2</sub>,v<sub>a1</sub>}, ..., {p<sub>an</sub>,r<sub>2</sub>,v<sub>an</sub>} where</p>
+<ol>
+  <li>p is the expansion of the namespace-qualified tag name. </li>
+  <li>r<sub>1</sub> is the resource being referred to by
+    the element containing this propertyElt expression. </li>
+  <li>r<sub>2</sub> is the resource named by the <tt>resource</tt> attribute
+    if present or a new resource. If the <tt>ID</tt> attribute is given it is the identifier of this new resource. </li>
+  <li>p<sub>a1</sub> ... p<sub>an</sub> are
+    the expansion of the namespace-qualified attribute names. </li>
+  <li>v<sub>a1</sub> ... v<sub>an</sub> are
+    the corresponding attribute values. </li>
+</ol>
+<p>The value of the <tt>bagID</tt> attribute,
+  if specified, is the identifier for the Bag corresponding to the <tt>Description</tt> <i>D</i>; else the Bag is anonymous.</p>
+
+</body>
+</html>

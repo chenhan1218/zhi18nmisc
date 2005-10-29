@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>3. 建立一個資料庫</title>
+<link href="Oracle-HOWTO-4.html" rel="next" title="4. 在伺服器上設定 SQL*Net" />
+<link href="Oracle-HOWTO-2.html" rel="previous" title="2. 安裝 Oracle 軟件" />
+<link href="http://tldp.org/HOWTO/Oracle-7-HOWTO.html" rel="alternate" title="原版" />
+<link href="../../style.css" rel="stylesheet" type="text/css" />
+<meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+<link href="Oracle-HOWTO-1.html" rel="chapter" title="1.導言" />
+<link href="Oracle-HOWTO-2.html" rel="chapter" title="2.安裝 Oracle 軟件" />
+<link href="Oracle-HOWTO-3.html" rel="chapter" title="3.建立一個資料庫" />
+<link href="Oracle-HOWTO-4.html" rel="chapter" title="4.在伺服器上設定 SQL*Net" />
+<link href="Oracle-HOWTO-5.html" rel="chapter" title="5.用戶的設定" />
+<link href="Oracle-HOWTO-6.html" rel="chapter" title="6.自動啟動及停止" />
+<link href="Oracle-HOWTO-7.html" rel="chapter" title="7.其他事宜" />
+<link href="Oracle-HOWTO-8.html" rel="chapter" title="8.疑難排解" />
+<link href="Oracle-HOWTO-9.html" rel="chapter" title="9.榮譽 " />
+<link href="Oracle-HOWTO-3.htm#ss3.1" rel="section" title="3.1 建立初始檔 (Initialisation File) " />
+<link href="Oracle-HOWTO-3.htm#ss3.2" rel="section" title="3.2 建立資料庫安裝命令稿" />
+<link href="Oracle-HOWTO-3.htm#ss3.3" rel="section" title="3.3 執行資料庫的安裝安令稿 " />
+<link href="Oracle-HOWTO-3.htm#ss3.4" rel="section" title="3.4 啟動資料庫" />
+<link href="Oracle-HOWTO-3.htm#ss3.5" rel="section" title="3.5 停止資料庫" />
+<link href="Oracle-HOWTO-3.htm#ss3.6" rel="section" title="3.6 建立內定用戶 (Default User)" />
+<link href="Oracle-HOWTO.rdf" rel="meta" title="各章節的說明資訊" />
+</head> <body   > 
+<table >
+  <tr>
+    <th colspan="3" class="HdTitle">HOWTO：Oracle
+      Database</th>
+  </tr>
+  <tr>
+    <td class="TtdL"> <a href="Oracle-7-HOWTO-2.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="TtdC">&nbsp;</td>
+    <td class="TtdR"> <a href="Oracle-7-HOWTO-4.html" accesskey="N">下一頁(N)</a> </td>
+  </tr>
+</table>
+<hr />
+<h1>3. 建立一個資料庫</h1>
+
+<p>Oracle 伺服器現已安裝了，我們需要建立一個資料庫來測試它。</p>
+<p><code>如果你使用 Oracle 7.2.x 或之前版本，請閱讀下面的疑難排解部分。</code></p>
+<h2><a name="ss3.1" id="ss3.1"></a>3.1 建立初始檔 (Initialisation File) </h2>
+
+<p>把 <code>$ORACLE_HOME/dbs/init.ora</code> 抄到 <code>$ORACLE_HOME/dbs/initorcl.ora</code>:</p>
+
+<pre class="sample">
+$ cd $ORACLE_HOME/dbs
+$ cp init.ora initorcl.ora
+</pre>
+<p>加上以下數行：</p>
+
+<pre class="sample">
+db_name = orcl
+COMPATIBLE=7.3.3.0.0
+</pre>
+<h2><a name="ss3.2" id="ss3.2"></a>3.2 建立資料庫安裝命令稿 </h2>
+
+<p>在 <code>$ORACLE_HOME/dbs</code> 目錄下建立一個名為 makedb.sql 的命令稿檔：</p>
+
+<pre class="sample">
+connect internal
+startup nomount
+set echo on
+spool makedb.log
+create database orcl
+        maxinstances 1
+        maxlogfiles  8
+        datafile '$ORACLE_HOME/dbs/orcl_syst_01.dbf' size 40M reuse
+        logfile
+                '$ORACLE_HOME/dbs/orcl_redo_01.dbf' size 1M reuse,
+                '$ORACLE_HOME/dbs/orcl_redo_02.dbf' size 1M reuse,
+                '$ORACLE_HOME/dbs/orcl_redo_03.dbf' size 1M reuse;
+@$ORACLE_HOME/rdbms/admin/catalog.sql
+create tablespace rollback
+        datafile '$ORACLE_HOME/dbs/orcl_roll_01.dbf' size 8.5M reuse;
+create tablespace temp
+        datafile '$ORACLE_HOME/dbs/orcl_temp_01.dbf' size 5M reuse 
+        temporary;
+create tablespace users
+        datafile '$ORACLE_HOME/dbs/orcl_user_01.dbf' size 10M reuse;
+create rollback segment r1 tablespace rollback
+        storage ( optimal 5M );
+alter rollback segment r1 online;
+connect system/manager
+@$ORACLE_HOME/rdbms/admin/catdbsyn.sql
+connect internal
+@$ORACLE_HOME/rdbms/admin/catproc.sql
+connect system/manager
+@$ORACLE_HOME/sqlplus/admin/pupbld.sql
+spool off
+exit
+</pre>
+<h2><a name="ss3.3" id="ss3.3"></a>3.3 執行資料庫的安裝安令稿 </h2>
+
+<p>開始 <code>svrmgrl</code> 及執行命令稿︰</p>
+
+<pre class="sample">
+$ cd $ORACLE_HOME/dbs
+$ svrmgrl
+
+Oracle Server Manager Release 2.3.3.0.0 - Production
+
+Copyright (c) Oracle Corporation 1994, 1995. All rights reserved.
+
+Oracle7 Server Release 7.3.3.0.0 - Production Release
+PL/SQL Release 2.3.3.0.0 - Production
+
+SVRMGR> connect internal
+Connected.
+SVRMGR> startup nomount
+ORACLE instance started.
+Total System Global Area       4313312 bytes
+Fixed Size                       41876 bytes
+Variable Size                  4140364 bytes
+Database Buffers                122880 bytes
+Redo Buffers                      8192 bytes
+SVRMGR> @makedb
+&lt;loads of messages>
+SVRMGR> exit
+Server Manager complete.
+</pre>
+<h2><a name="ss3.4" id="ss3.4"></a>3.4 啟動資料庫 </h2>
+
+<p>開始時，我們要親手啟動資料庫（我們稍後會把這工件自動化）。要啟動 Oracle 的資料庫，我們要來內部連接 (connected internally) 了的情況下執行 <code>startup</code> 指令：</p>
+
+<pre class="sample">
+$ svrmgrl
+
+Oracle Server Manager Release 2.3.3.0.0 - Production
+
+Copyright (c) Oracle Corporation 1994, 1995. All rights reserved.
+
+Oracle7 Server Release 7.3.3.0.0 - Production Release
+PL/SQL Release 2.3.3.0.0 - Production
+
+SVRMGR> connect internal
+Connected.
+SVRMGR> startup
+ORACLE instance started.
+Total System Global Area       4313316 bytes
+Fixed Size                       41876 bytes
+Variable Size                  4140368 bytes
+Database Buffers                122880 bytes
+Redo Buffers                      8192 bytes
+Database mounted.
+Database opened.
+SVRMGR> exit
+Server Manager complete.
+</pre>
+<h2><a name="ss3.5" id="ss3.5"></a>3.5 停止資料庫 </h2>
+
+<p>先旨聲明，在未關閉一個 Oracle 資料庫的情況下重新啟動 Linux 很有可能會使資料庫損毀。</p>
+<p>因此，在我們執行 Linux 的 <code>shutdown</code> 指令前最好先關閉資料庫：</p>
+
+<pre class="sample">
+$ svrmgrl
+
+Oracle Server Manager Release 2.3.3.0.0 - Production
+
+Copyright (c) Oracle Corporation 1994, 1995. All rights reserved.
+
+Oracle7 Server Release 7.3.3.0.0 - Production Release
+PL/SQL Release 2.3.3.0.0 - Production
+
+SVRMGR> connect internal
+Connected.
+SVRMGR> shutdown
+Database closed.
+Database dismounted.
+ORACLE instance shut down.
+SVRMGR> exit
+Server Manager complete.
+</pre>
+<h2><a name="ss3.6" id="ss3.6"></a>3.6 建立內定用戶 (Default User) </h2>
+
+<p>在建立資料庫時，會自動產生兩個特別的用戶：</p>
+
+<pre class="sample">
+Username                Password
+
+SYSTEM                  MANAGER
+SYS                     change_on_install
+</pre>
+<p>這些用戶通常是用來保存標準的資料字典 (data dictionary) 資料在資料庫中。盡快把密碼修改是一個好主意。</p>
+<p>可以這樣做：</p>
+
+<pre class="sample">
+sqlplus system/manager
+
+SQL*Plus: Release 3.3.3.0.0 - Production on Sat Feb 21 12:43:33 1998
+
+Copyright (c) Oracle Corporation 1979, 1996.  All rights reserved.
+
+
+Connected to:
+Oracle7 Server Release 7.3.3.0.0 - Production Release
+
+SQL> alter user system identified by &lt;newpassword>;
+
+User altered.
+
+SQL> alter user sys identified by &lt;newpassword>;
+
+User altered.
+
+SQL> exit;
+Disconnected from Oracle7 Server Release 7.3.3.0.0 - Production Release
+PL/SQL Release 2.3.3.0.0 - Production
+</pre>
+<p>用戶 <code>system/manager</code> 就如 UNIX 中的 <code>root</code>，因此我們要建立另一個權力較少的用戶以防損失。（記著要先開啟資料庫才建立用戶。）</p>
+<p>連接到 SQL*Plus 及建立用戶：</p>
+
+<pre class="sample">
+$ sqlplus system/manager
+
+SQL*Plus: Release 3.3.3.0.0 - Production on Sat Feb 21 12:43:33 1998
+
+Copyright (c) Oracle Corporation 1979, 1996.  All rights reserved.
+
+
+Connected to:
+Oracle7 Server Release 7.3.3.0.0 - Production Release
+PL/SQL Release 2.3.3.0.0 - Production
+
+SQL> create user &lt;user> identified by &lt;psw> 
+  2  default tablespace users 
+  3  temporary tablespace temp;
+
+User created.
+
+SQL> grant connect, resource to &lt;user>
+
+Grant succeeded.
+
+SQL> exit
+Disconnected from Oracle7 Server Release 7.3.3.0.0 - Production Release
+PL/SQL Release 2.3.3.0.0 - Production
+</pre>
+<p>系統中已有一個新用戶，你可以用他來試用新系統。要簽入 Oracle 資料庫：</p>
+
+<pre class="sample">
+$ sqlplus &lt;user>/&lt;password>
+</pre>
+<p>如果這在沒有錯誤訊息的情況下完成，你已有一個運作中的 Oracle 資料庫。如果你只會從這部電腦連接到這資料庫，而不會從其他地方，你可休息了！</p>
+<p>不過，如果你像大部分人般想設定網絡軟件使你可以從其他電腦連接，請繼續讀下去。</p>
+<hr />
+<table >
+  <tr>
+    <td class="BtdL"> <a href="Oracle-7-HOWTO-2.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="BtdC"> <a href="index.html" accesskey="H">目錄(H)</a> </td>
+    <td class="BtdR"> <a href="Oracle-7-HOWTO-4.html">下一頁(N)</a> </td>
+  </tr>
+  <tr>
+    <td class="BtdL">安裝 Oracle 軟件</td>
+    <td class="BtdC"><a href="Oracle-7-HOWTO-3.html"  accesskey="T">到頂層(T)</a></td>
+    <td class="BtdR">在伺服器上設定 SQL*Net</td>
+  </tr>
+</table>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img class="ImgLogo" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" title="網路內容分級協會" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

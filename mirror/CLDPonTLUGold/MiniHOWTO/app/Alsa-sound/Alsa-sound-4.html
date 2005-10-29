@@ -1,0 +1,368 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+ 
+ <title>Alsa-sound-mini-HOWTO: 載入驅動程式</title>
+ <link href="Alsa-sound-5.html" rel="next" />
+ <link href="Alsa-sound-3.html" rel="previous" />
+ <link href="../../style.css" rel="stylesheet" type="text/css" />
+   <link href="Alsa-sound-1.html" rel="chapter" title="1.介紹" />
+  <link href="Alsa-sound-2.html" rel="chapter" title="2.在開動之前" />
+  <link href="Alsa-sound-3.html" rel="chapter" title="3.如何安裝 ALSA 音效驅動程式" />
+  <link href="Alsa-sound-4.html" rel="chapter" title="4.載入驅動程式" />
+  <link href="Alsa-sound-5.html" rel="chapter" title="5.測試及使用" />
+  <link href="Alsa-sound-6.html" rel="chapter" title="6.小技巧及問題排除" />
+  <link href="http://www.tldp.org/HOWTO/mini/Alsa-sound.html" rel="alternate" title="原版" />
+  <link href="index.html" rel="start" />
+  <link href="index.html#content" rel="contents" />
+  <link href="Alsa-sound-4.html#ss4.1" rel="section" title="4.1 用 modprobe 安插驅動程式" />
+  <link href="Alsa-sound-4.html#ss4.2" rel="section" title="4.2 那張卡應該用哪個驅動程式?" />
+  <link href="Alsa-sound-4.html#ss4.3" rel="section" title="4.3 不自動偵測時怎麼載入驅動程式" />
+  <link href="Alsa-sound-4.html#ss4.4" rel="section" title="4.4 使用 kerneld 來載入" />
+  <link href="Alsa-sound-4.html#ss4.5" rel="section" title="4.5 向前相容" />
+  <meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+  <link href="Alsa-sound.rdf" rel="meta" title="各章節的說明資訊" />
+</head> <body> 
+
+<table
+
+
+
+
+>
+  <tr
+>
+    <th
+colspan="3" class="HdTitle"
+>Mini
+    HOWTO：Alsa-sound</th>
+  </tr
+>
+  <tr
+>
+    <td class="TtdL"
+><a href="Alsa-sound-3.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="TtdC"
+></td
+>
+    <td class="TtdR"
+><a href="Alsa-sound-5.html" accesskey="N">下一頁(N)</a></td
+>
+  </tr
+>
+</table
+>
+<hr />
+<h1><a name="s4" id="s4">4.</a> 載入驅動程式</h1>
+
+<p>有兩種使用 ALSA 音效模組的方法. 筆者個人比較喜歡使用手動的方法, 也就是在開機
+時安插驅動程式. ALSA 驅動程式是以可載入/卸除模組為目標來設計 -- 
+例如說它們不會在載入後重設音量 -- 所以您可以簡單地使用 kerneld 的方法.</p>
+<p>(譯注: 原文直譯為 ALSA 驅動程式設計成可載入/卸除模組, 但譯者認為 OSS 也可以
+這麼做(只差它會重設音量, 對模組使用者來說較不方便, 雖然解決辦法是有(見 Sound
+HOWTO)), 這麼翻無法凸顯 ALSA 的優點, 故翻成上面的意思. 希望沒誤解...)</p>
+<p>請一定要閱讀
+<a href="#backw-compat">向前相容</a>這節, 
+如果您想要和以前的程式相容的話.</p>
+
+<h2><a name="ss4.1" id="ss4.1">4.1</a> 用 modprobe 安插驅動程式
+</h2>
+
+<p>請注意: 如果您有 PnP 音效卡, 您首先要設定正確的(或至少是已知的) IO/IRQ/DMA.
+請讀 Plug-and-Play-HOWTO. 您已經設定過您的 隨插即用 音效卡了嗎? 好,
+那麼請繼續讀下去. 主要部份是 "modprobe snd-&lt;soundcard>", 這樣應該就可以. 
+不過並非所有安裝套件都把 /sbin 包含在您的 PATH 環境變數下. 如果您得到 "bash:
+modprobe: command not found" 這樣的回應, 可能是由於 modprobe 沒有在 path 中.
+試著用 "/sbin/modprobe snd-sb16", 或想辦法找出 modprobe 公用程式在哪.</p>
+<p>對 Crystal 晶片組的卡來說可能最困難. ALSA 驅動程式不對這些卡進行自動偵測.
+更進一步的資訊記載在驅動程式目錄下的 INSTALL 檔中. 接下來筆者舉兩個例子, 
+然後接著是個列表:</p>
+<p>Gravis UltraSound (GUS) 及相容卡:</p>
+
+<pre class="sample">
+/sbin/modprobe snd-gusclassic
+</pre>
+
+
+<p>對完全 16 位元的 SoundBlaster 卡 (SoundBlaster 16 (PnP), SoundBlaster
+AWE 32 (PnP), SoundBlaster AWE 64 (PnP):</p>
+
+<pre class="sample">
+/sbin/modprobe snd-sb16
+</pre>
+
+<h2><a name="ss4.2" id="ss4.2">4.2</a> 那張卡應該用哪個驅動程式?
+</h2>
+
+
+<h3>Gravis UltraSound Extreme</h3>
+
+
+<p><code>modprobe snd-gusextreme</code></p>
+<h3>Gravis UltraSound MAX</h3>
+
+
+<pre class="sample">modprobe snd-gusmax</pre>
+
+
+
+<h3>ESS AudioDrive</h3>
+
+<p>ESS AudioDrive ES-1688 及 ES-688 音效卡</p>
+<pre class="sample">modprobe snd-audiodrive1688</pre>
+
+<h3>Gravis UltraSound PnP</h3>
+
+<p>Gravis UltraSound PnP, Dynasonic 3-D/Pro, STB Sound Rage 32 以及其它用
+AMD InterWave (tm) 晶片的音效卡.</p>
+<pre class="sample">modprobe snd-interwave</pre>
+<h3>UltraSound 32-Pro</h3>
+
+<p>UltraSound 32-Pro (STB 製 Compaq 使用) 及其它使用
+AMD InterWave (tm) 晶片以及用 TEA6330T 電路來做 bass, treble 及主音量控制的卡.</p>
+<pre class="sample">modprobe snd-interwave-stb</pre>
+<h3>Soundblaster</h3>
+
+<p>8-bit Soundblaster 卡 (SoundBlaster 1.0, SoundBlaster 2.0, SoundBlaster
+Pro)</p>
+<pre class="sample">modprobe snd-sb8</pre>
+<h3>Soundblaster 16</h3>
+
+<p>16-bit SoundBlaster 卡 (SoundBlaster 16 (PnP), SoundBlaster AWE
+32 (PnP), SoundBlaster AWE 64 (PnP). 
+請注意本模組不支援 SoundBlaster VibraX16 音效卡.</p>
+<h6 class="sample">modprobe snd-sb16</h6>
+<h3>Yamaha OPL3-SA2/SA3 音效卡</h3>
+
+<p>光是 "modprobe snd-opl3sa" 是無效的, 驅動程式不會自動偵測. 請看後面.</p>
+
+<h3>S3 SonicVibes</h3>
+
+<p>S3 SonicVibes PCI 音效卡. (PINE Schubert 32 PCI)</p>
+<pre class="sample">modprobe snd-sonicvibes</pre>
+
+<h3>Ensoniq/Soundblaster PCI64</h3>
+
+<p>Ensoniq AudioPCI ES1370/1371 PCI 音效卡. (SoundBlaster PCI 64)</p>
+<pre class="sample">modprobe snd-audiopci</pre>
+
+<h3>CS4232/4232A</h3>
+
+<p>所有使用 CS4232/CS4232A 晶片的音效卡.
+光是 "modprobe snd-card-cs4232" 沒用, 不自動偵測, 看後面. </p>
+
+<h3>4235 以及其後的</h3>
+
+<p>所有使用 CS4235/CS4236/CS4236B/CS4237B/CS4238B/CS4239 晶片的. 
+光是 "modprobe snd-card-cs4236" 沒用, 不自動偵測, 看後面. </p>
+
+<h2><a name="ss4.3" id="ss4.3">4.3</a> 不自動偵測時怎麼載入驅動程式
+</h2>
+
+<p>如果您要用的驅動程式不自動偵測, 您必須在讓驅動程式運作前先提供額外資訊.
+更多資訊可在驅動程式目錄下的 INSTALL 檔中找到.</p>
+<h3>OPL3-SA2 及 OPL3-SA3</h3>
+
+<p>根據 INSTALL 檔, 您需要提供驅動程式一切資訊. 如果您用 isapnp-tools
+來初始化您的卡, 也許可以在 /etc/isapnp.conf 檔中看到像下面的值:</p>
+
+<pre class="sample">
+snd_port - control port # for OPL3-SA chip
+snd_wss_port - WSS port # for OPL3-SA chip (0x530,0xe80,0xf40,0x604)
+snd_midi_port - port # for MPU-401 UART (0x300,0x330), -1 = disable
+snd_fm_port - FM port # for OPL3-SA chip (0x388), -1 = disable
+snd_irq - IRQ # for OPL3-SA chip (5,7,9,10)
+snd_dma1 - first DMA # for Yamaha OPL3-SA chip (0,1,3)
+snd_dma1_size - max first DMA size in kB (4-64kB)
+snd_dma2 - second DMA # for Yamaha OPL3-SA chip (0,1,3), -1 = disable
+snd_dma2_size - max second DMA size in kB (4-64kB)
+</pre>
+
+<p>您要用
+"modprobe snd-opl3sa snd_port=0xNNN snd_wss_port=0x530 snd_midi_port=-1
+snd_fm_port=0x388 snd_irq=5 snd_dma1=0 snd_dma1_size=NN snd_dma2=1 snd_dma2_size=NN"
+命令來載入驅動程式(沒有 midi 支援, 我仍然相信如果您有合成器之類想連上 Linux
+主機, 您需要它. 如果只是聽 MIDI 檔就不必了.)</p>
+<p>上例的 "NN" 值您要給真正的值, 我不曉得合理值是多少, 所以才這麼寫. 
+我不曉得 dma 大小的參數是不是非要不可.</p>
+<h3>CS4232/CS4232A 晶片</h3>
+
+<p>根據 INSTALL 檔所言, 對這些卡您要提供 midi port 的資訊. 
+注意對下面例中的卡, 它使用給 3235/6/7/8/9 的驅動程式, 
+我給了所有資訊(除了 DMA 大小), 不然它不會動. 所以您也許就用這整段命令列來載
+入驅動程式吧! 如果您用了 isapnp-tools, 您可能在 /etc/isapnp.conf
+中看到這些值:</p>
+<pre class="sample">
+snd_port - port # for CS4232 chip (PnP setup - 0x534)
+snd_cport - control port # for CS4232 chip (PnP setup - 0x120)
+snd_mpu_port - port # for MPU-401 UART (PnP setup - 0x300), -1 = disable
+snd_fm_port - FM port # for CS4232 chip (PnP setup - 0x388), -1 = disable
+snd_jport - joystick port for CS4232 chip (PnP setup - 0x200), -1 =
+disable
+snd_irq - IRQ # for CS4232 chip (5,7,9,11,12,15)
+snd_mpu_irq - IRQ # for MPU-401 UART (9,11,12,15)
+snd_dma1 - first DMA # for CS4232 chip (0,1,3)
+snd_dma1_size - max first DMA size in kB (4-64kB)
+snd_dma2 - second DMA # for Yamaha CS4232 chip (0,1,3), -1 = disable
+snd_dma2_size - max second DMA size in kB (4-64kB)
+</pre>
+
+<p>對標準設定值的卡, 您要用
+"modprobe snd-card-cs4232 snd_port=0x534 snd_cport=0x120
+snd_mpu_port=-1 snd_fm_port=0x388 snd_jport=-1 snd_irq=5 snd_dma1=0 snd_dma1_size=NN
+snd_dma2=1 snd_dma2_size=NN"
+命令來載入驅動程式(沒有 midi 支援, 請看 Yamaha OPL-3 的注意事項, 又,
+沒有支援搖桿). 如果您的 /etc/isapnp.conf 中的值不同, 那麼這裡的值也該變一下.
+(用用您的頭腦想想比較好 ;)</p>
+<p>上例的 "NN" 值您要給真正的值, 我不曉得合理值是多少, 所以才這麼寫. 
+我不曉得 dma 大小的參數是不是非要不可.</p>
+<h3>CS4235/CS4236/CS4236B/CS4237B/CS4238B/CS4239 chips</h3>
+
+<p>根據 INSTALL 檔所言, 對這些卡您要提供 midi port 以及 control port 的資訊. 
+注意對 CS4237B 的卡,
+我給了所有資訊(除了 DMA 大小), 不然它不會動. 所以您也許就用這整段命令列來載
+入驅動程式, 不只是有 snd_port 及 snd_cport 而已. 
+如果您用了 isapnp-tools, 您可能在 /etc/isapnp.conf 中看到這些值:</p>
+<pre class="sample">
+snd_port - port # for CS4232 chip (PnP setup - 0x534)
+snd_cport - control port # for CS4232 chip (PnP setup - 0x120)
+snd_mpu_port - port # for MPU-401 UART (PnP setup - 0x300), -1 = disable
+snd_fm_port - FM port # for CS4232 chip (PnP setup - 0x388), -1 = disable
+snd_jport - joystick port for CS4232 chip (PnP setup - 0x200), -1 = disable
+snd_irq - IRQ # for CS4232 chip (5,7,9,11,12,15)
+snd_mpu_irq - IRQ # for MPU-401 UART (9,11,12,15)
+snd_dma1 - first DMA # for CS4232 chip (0,1,3)
+snd_dma1_size - max first DMA size in kB (4-64kB)
+snd_dma2 - second DMA # for Yamaha CS4232 chip (0,1,3), -1 = disable
+snd_dma2_size - max second DMA size in kB (4-64kB)
+</pre>
+
+<p>您要用
+"modprobe snd-card-cs4232 snd_port=0x534 snd_cport=0x120
+snd_mpu_port=-1 snd_fm_port=0x388 snd_jport=-1 snd_irq=5 snd_dma1=0 snd_dma1_size=NN
+snd_dma2=1 snd_dma2_size=NN"
+命令來載入驅動程式(沒有 midi 支援, 請看 Yamaha OPL-3 的注意事項, 又,
+沒有支援搖桿). </p>
+<p>注意事項:</p>
+<ul>
+<li>"NN" 值要給真正的, 我不知道合理值是多少才這麼寫.</li>
+<li>我的 CS4237B 卡沒有明白指定 DMA 大小也用得很好.</li>
+</ul>
+<h2><a name="ss4.4" id="ss4.4">4.4</a> 使用 kerneld 來載入
+</h2>
+
+<p><code>kerneld</code> 是個在需要時插入模組,
+並在不再使用時卸除它們的服務程式(daemon). 由於筆者沒用過 kerneld, 不曉得下
+面的資訊準不準確. 以下資訊來自 ALSA 驅動程式套件的 INSTALL 檔. 關於 kerneld
+的詳盡資訊可在 kerneld-mini-HOWTO 中找到.</p>
+<p>照以下步驟做:</p>
+<ul>
+<li>編輯 /etc/conf.modules(後有範例)</li>
+<li>執行 'modprobe snd-card', 其中 snd-card 是您的音效卡名稱 [ 我覺得奇怪,
+kerneld 應該負責載入它不是嗎? VS]</li>
+</ul>
+
+<p>這是 Gravis UltraSound PnP 音效卡的 /etc/conf.modules 範例:</p>
+<pre class="sample">
+alias char-major-14 snd
+alias snd-minor-oss-0 snd-interwave
+alias snd-minor-oss-3 snd-pcm1-oss
+alias snd-minor-oss-4 snd-pcm1-oss
+alias snd-minor-oss-5 snd-pcm1-oss
+alias snd-minor-oss-12 snd-pcm1-oss
+alias snd-card-0 snd-interwave
+options snd snd_major=14 snd_cards_limit=1
+options snd-interwave snd_index=1 snd_id="guspnp" snd_port=0x220 snd_irq=5
+snd_dma1=5 snd_dma2=6
+</pre>
+
+<p>如果您想插更多卡, 這兒有範例(是同時有 Gravis UltraSound Classic 及 Sound
+Blaster 16 的情形)
+</p>
+<pre class="sample">
+alias char-major-14 snd
+alias snd-minor-oss-0 snd-mixer
+alias snd-minor-oss-3 snd-pcm1-oss
+alias snd-minor-oss-4 snd-pcm1-oss
+alias snd-minor-oss-5 snd-pcm1-oss
+alias snd-minor-oss-12 snd-pcm1-oss
+alias snd-card-0 snd-sb16
+alias snd-card-1 snd-gusclassic
+options snd snd_major=14 snd_cards_limit=2
+options snd-sb16 snd_index=1 snd_port=0x220 snd_irq=5 snd_dma8=1 snd_dma16=5
+options snd-gusclassic snd_index=2 snd_irq=11 snd_dma1=6 snd_dma2=7
+</pre>
+
+<p>如果有兩片 Gravis UltraSound Classic 音效卡, 就像下例:
+</p>
+<pre class="sample">
+alias char-major-14 snd
+alias snd-minor-oss-0 snd-mixer
+alias snd-minor-oss-3 snd-pcm1-oss
+alias snd-minor-oss-4 snd-pcm1-oss
+alias snd-minor-oss-5 snd-pcm1-oss
+alias snd-minor-oss-12 snd-pcm1-oss
+alias snd-card-0 snd-gusclassic
+alias snd-card-1 snd-gusclassic
+options snd snd_major=14 snd_cards_limit=2
+options snd-gusclassic snd_index=1,2 snd_port=0x220,0x260 snd_irq=5,11
+snd_dma1=5,6 snd_dma2=7,3
+</pre>
+
+<h2><a name="backw-compat" id="backw-compat"></a> <a name="ss4.5" id="ss4.5">4.5</a> 向前相容
+</h2>
+
+<p>如果您想保留 OSS/Free 或 OSS/Linux 的相容性, 您還要再加一個驅動程式:
+snd-pcm1-oss 驅動程式, 提供 OSS 相容性. 下
+</p>
+<pre class="sample">
+modprobe snd-pcm1-oss
+</pre>
+
+
+<p>命令. 這將提供 /dev/audio 及 /dev/dsp 的支援, 就像 OSS/Free (核心)驅動程式及
+OSS/Linux (要 25 美金的)所做的一樣. 注意這只是模擬而已.</p>
+
+<hr />
+<table
+
+
+
+
+>
+  <tr
+>
+    <td class="BtdL"
+><a href="Alsa-sound-3.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="BtdC"
+><a href="index.html" accesskey="H">目錄(H)</a></td
+>
+    <td class="BtdR"
+><a
+href="Alsa-sound-5.html"
+>下一頁(N)</a
+></td
+>
+  </tr
+>
+  <tr
+>
+    <td class="BtdL"
+>如何安裝 ALSA 音效驅動程式</td
+>
+    <td class="BtdC"
+><a href="Alsa-sound-4.html" accesskey="T">到頂層(T)</a></td
+>
+    <td class="BtdR"
+>測試及使用</td
+>
+  </tr
+>
+</table
+>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img class="ImgLogo" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

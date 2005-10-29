@@ -1,0 +1,311 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+ 
+ <title>用 Linux 控制你的家電: 電路基本原理</title>
+ <link href="Home-Electrical-Device-Control-4.html" rel="next" />
+ <link href="Home-Electrical-Device-Control-2.html" rel="previous" />
+ <link href="Home-Electrical-Device-Control.html#toc3" rel="contents" />
+ <link href="../../style.css" rel="stylesheet" type="text/css" />
+</head> <body> 
+<table
+
+
+
+
+>
+  <tr
+>
+    <th
+colspan="3" class="HdTitle"
+>Mini
+      HOWTO：Linux Remote-Boot</th>
+  </tr
+>
+  <tr
+>
+    <td class="TtdL"
+><a href="index.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="TtdC"
+></td
+>
+    <td class="TtdR"
+><a href="3-Button-Mouse-2.html" accesskey="N">下一頁(N)</a></td
+>
+  </tr
+>
+</table
+>
+<hr />
+<h1><a name="s3" id="s3">3.</a> 電路基本原理</h1>
+
+<p></p>
+<hr />
+<pre class="sample">
+利用電腦的並列埠資料線1到並列埠資料線9可以提共0到5伏電的特性. 控制一個繼電器而達到控制電器的目的.
+</pre>
+<hr />
+</P>
+<p>需要重點說一下,這裡用的是 paralle port,就是接打印機的那個.不是RS232.
+因為收到不少E-mail,搞混 paralle port 和 RS232</p>
+<p>下面是電腦的並列埠和一個單一的簡單電路：</p>
+<p>我們需要用到的只有 pin 2 到 pin 9 這八個 pin （可以得到+5v）</p>
+<p>pin 18 一直到 pin 25 是通的, 是地線</p>
+<p></p>
+<hr>
+<pre class="sample">
+
+            ____________________________________________________________
+           /                                                            \
+           \     13  12  11  10   9   8   7   6   5   4   3   2   1     /
+            \                                                          /
+             \     25  24  23  22  21  20  19  18  17  16  15  14     /
+              \______________________________________________________/
+
+
+
+
+                                             | 這裡是給提繼電器共正電 Vcc
+                                             |
+                                             |
+                                    / -------+--------| |---------|
+P data              4.7K         B /  c      | 1N4002 |_|         |-------
+-----------/\/\/\/\---------+-----| NPN    __ __        | relay   |這裡接家電
+                            |     \   e     /_\       |-|         |-------
+                 LED        X      \         +--------| |---------|
+P Ground                    |       |        |
+----------------------------+-------+--------+
+給relay供電的Ground線                        |
+---------------------------------------------+
+
+</pre>
+<hr>
+</P>
+<p>原理和介紹：</p>
+<p>
+<hr>
+<pre class="sample">
+P data          並列埠資料線 （pin2 到 pin9 都是,這裡的簡單電路只用到了一條）
+
+p Ground        並列埠地線 （18~25隨便挑一條你覺得順眼的）
+
+Vcc             看你用那種繼電器而定,我用的是 12V 的繼電器所以就接個 12V 的直流電源供應器
+
+Ground          12V 直流電源供應器的地線
+
+4.7k            4.7K 電阻
+
+NPN             我是隨便找了個 NPN 的電晶體, 這個只要隨便找個差不多的 NPN 就可以了
+                我的是c2235,也可以用BC547A或者2N222A
+
+1N4002          1N4002 的二極體
+
+LED             發光二極體隨便找個會發光的就好了.這里當作指示燈
+                當家電的開關被打開後,燈就會亮
+
+relay           繼電器,功率看你需要的買,我最小的都用300W（自己算算就知道了,一個電燈通常45W）
+                這裡選擇的是coil relay. 主要是看你接甚麼家電.300W對大多數都沒有問題.
+                如果接空調之類的,最少3000W才安全
+</pre>
+<hr>
+</P>
+<p>
+<hr>
+<pre class="sample">
+這個電路通過電腦的並列埠得到一個+5v電壓打開繼電器,這樣繼電器那邊的家電就就被接通了.
+當並列埠的電壓變成0的時候,繼電器就會跳回關閉狀態,家電也就關閉了.
+</pre>
+<hr>
+</P>
+<p>這裡再講講relay的工作原理和如何把你的家電連結在relay上,這部份算是FAQ啦</p>
+<p>
+<hr>
+<pre class="sample">
+這裡是一個relay,及relay的內部工作原理：
+
+      ____________________________
+      |                          |
+  1   |                          |  3
+ -----|---------s     o----------|-------
+      |  coil   s      \switch   |
+  2   |         s       \        |  4
+ -----|---------s     o- \-------|-------
+      |                          |
+      |                          |
+      |                          |
+      |__________________________|
+
+上面畫的是一個4只腳的relay.這裡,relay pin3 和 pin4 平時是斷開的.
+當 pin1 和 pin2 之間加的電壓以後 (+12V）,通過coil,就會把 switch
+打開.這時候, pin3 和 pin4 就是通的了.實際上, pin1, pin2 起到的
+作用,只是控制開關而已.
+
+relay本身就是一個開關：
+
+
+這就是relay斷開的狀態                   relay打開的狀態
+
+       |3                                    |3
+       |                                     |
+       |                                     |  
+       o                                     o
+        \                                    |
+       o \                                   o
+       |                                     |
+       |                                     |
+       |                                     |
+       |4                                    |4
+
+還有人問我說,買到的relay是五只腳的,那麼就順便講講 5 個 pin 的 relay 啦
+
+
+           _______________________________
+           |                             |
+     1     |                             |       5
+  ---------|---+            o------------|----------------
+           |   |-----------/---- s       |
+           |              /      s       |
+     3     |             /       s       |
+  ---------|-----------o/        s       |       4
+           |                 o---s-------|----------------
+           |                     |       |
+           |                     |       |
+     2     |                     |       |
+ ----------|---------------------+       |
+           |_____________________________|
+
+不太好畫,差不多就這樣啦.現在來講原理：
+平時的狀態下, pin3 和 pin5 是通的. pin5 和 pin4 是斷開的.
+當在 pin1 和 pin2 之間加電以後（12v）, pin3 和 pin5 就斷開
+了,而 pin5 和 pin4 就接通了.看下面的原理：
+
+
+
+現在是 relay 關閉狀態             這是relay打開狀態
+     |5                                  |5
+     |                                   |  
+     |                                   |
+     o                                   o
+      \                                  |
+     o \                                 o  o
+     |  o                                |  |
+     |  |                                |  |
+     |  |                                |  |
+    4|  |3                              4|  |3
+
+relay 還有四只腳的五只腳的,這裡就不介紹了,原理上都一樣,只不過
+腳越多,也就說是個越複雜的開關而已.我們只有用到4只腳就夠了.
+
+這裡在聲明一下,每個 relay 的設計都會不一樣,也就是說, pin 放的
+位置不一樣.我上面畫的都是原理,具體那只腳長在 relay 的甚麼部位,
+還是要自己去判斷的,如果自己不會測,買的時侯問問老闆.
+有些 relay 會在 relay 有 pin 的地方標一個小小的 s ,那麼 s 兩邊
+的 pin 就是 pin1, pin2. 這裡的 s 是指 coil.
+
+
+接下來說說如何把家電連接到 relay 上.
+
+
+
+                         +-----+ 電源插座
+       1 _______3        |   __|________             ||   ||
+       --|     |---------+  |  |       |             ||   ||
+       2 |relay|4           | (o) (o)  |            _||___||__
+       --|_____|----+       |------|---|            |        |
+                    |              |                |        | 家電
+                    | +------------+                |        |的插頭
+                    | |                             |        |  
+                    | |                             |        |
+                  __|_|__                           |        |
+                  | | | |                           |________|
+                  | | | | 插頭 1
+                  | | | |
+                  |_|_|_| (不管畫的像不像,反正這就是個插頭啦）
+                   || ||
+                   || ||
+                    
+只要把家電的插頭插到那個電源插座裡面,就好啦.也就是說,不用對家電
+做任何的改變.只要改個插座就好.這樣任何家電都可以用.
+而插頭 1 呢,插到家裡牆上的電源插座就好.
+</pre>
+<hr>
+</P>
+<p>我自己寫了個程式可以很方便的控制並列埠的八條資料線.(需要 g++)</p>
+<p>
+<a HREF="http://home.att.net/~ruili/goldencat/paralle.tar.gz">http://home.att.net/~ruili/goldencat/paralle.tar.gz</a></p>
+<p>
+<hr>
+<pre class="sample">
+完整的電路可以控制八組繼電器也就是說可以控制八組不同的家電.
+你還需要一個DB25接頭(並列埠接頭)的接口,這樣利用一條並列埠排線就能簡單的把電腦和控制電路連接到一起了.
+</pre>
+<hr>
+</P>
+<p>我是建議接的時候,做個盒子,電路都放在盒子里.盒子的正面是開關,指示燈
+和DB25的接口.平實用並列埠排線和電腦連接.
+底下有些圖片可以讓你參考</p>
+<p>
+<a HREF="http://home.att.net/~ruili/goldencat/p1.jpg">http://home.att.net/~ruili/goldencat/p1.jpg</a></p>
+<p>
+<a HREF="http://home.att.net/~ruili/goldencat/p2.jpg">http://home.att.net/~ruili/goldencat/p2.jpg</a></p>
+<p>
+<a HREF="http://home.att.net/~ruili/goldencat/p3.jpg">http://home.att.net/~ruili/goldencat/p3.jpg</a></p>
+
+<p>
+<hr>
+<pre class="sample">
+完整的電路圖（控制八組繼電器)是用 gschem 做出來的.
+</pre>
+<hr>
+</P>
+<p>
+<a HREF="http://home.att.net/~ruili/goldencat/01.png">http://home.att.net/~ruili/goldencat/01.png</a></p>
+<p>如果需要把圖片放大(這樣看的會清楚很多)可以找我要我用 gschem 直接輸出的存檔
+但是這需要 gEDA </p>
+<p>下截 gEDA 
+<a HREF="http://www.geda.seul.org/">http://www.geda.seul.org/</a></p>
+<p>我的homepage:</p>
+<p>
+<a HREF="http://home.att.net/~ruili/goldencat/index.html">http://home.att.net/~ruili/goldencat/index.html</a></p>
+<hr>
+<table
+
+
+
+
+>
+  <tr
+>
+    <td class="BtdL"
+><a href="index.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="BtdC"
+><a href="index.html" accesskey="H">目錄(H)</a></td
+>
+    <td class="BtdR"
+><a
+href="3-Button-Mouse-2.html"
+>下一頁(N)</a
+></td
+>
+  </tr
+>
+  <tr
+>
+    <td class="BtdL"
+>目錄</td
+>
+    <td class="BtdC"
+><a href="index.html" accesskey="T">到頂層(T)</a></td
+>
+    <td class="BtdR"
+>介紹</td
+>
+  </tr
+>
+</table
+>
+</body>
+</html>

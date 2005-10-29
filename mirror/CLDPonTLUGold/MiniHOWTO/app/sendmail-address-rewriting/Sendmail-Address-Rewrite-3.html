@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+ 
+ <title>3. 配置 sendmail </title>
+ <link href="Sendmail-Address-Rewrite-4.html" rel="next" title="4. 進階閱讀" />
+ <link href="Sendmail-Address-Rewrite-2.html" rel="previous" title="2. 文件路徑映射" />
+ <link href="http://tldp.org/HOWTO/mini/Sendmail-Address-Rewrite.html" rel="alternate" title="原版" />
+  <link href="index.html" rel="start" />
+ <link href="index.html#content" rel="contents" />
+ <link href="Sendmail-Address-Rewrite-1.html" rel="chapter" title="1.導言" />
+ <link href="Sendmail-Address-Rewrite-2.html" rel="chapter" title="2.文件路徑映射" />
+ <link href="Sendmail-Address-Rewrite-3.html" rel="chapter" title="3.配置 sendmail" />
+ <link href="Sendmail-Address-Rewrite-4.html" rel="chapter" title="4.進階閱讀" />
+ <link href="../../style.css" rel="stylesheet" type="text/css" />
+ <meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+ <link href="Sendmail-Address-Rewrite-3.html#ss3.1" rel="section" title="3.1 主要的配置文件" />
+ <link href="Sendmail-Address-Rewrite-3.html#ss3.2" rel="section" title="3.2 地址重寫" />
+ <link href="Sendmail-Address-Rewrite-3.html#ss3.3" rel="section" title="3.3 別名" />
+</head> <body>
+<table    >
+  <tr>
+    <th colspan="3" class="HdTitle">Mini
+      HOWTO：sendmail address rewriting</th>
+  </tr>
+  <tr>
+    <td class="TtdL"> <a href="Sendmail-Address-Rewrite-2.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="TtdC"></td>
+    <td class="TtdR"> <a href="Sendmail-Address-Rewrite-4.html" accesskey="N">下一頁(N)</a> </td>
+  </tr>
+</table> 
+
+<hr />
+<h1>3. 配置 sendmail </h1>
+
+<h2><a name="ss3.1" id="ss3.1"></a>3.1 主要的配置文件
+</h2>
+
+<p>sendmail 在它的配置中使用相當復雜的規則系統。在你掌握許多配置竅門之前，通過手工寫一個 <code>sendmail.cf</code> 文件很不常見并且耗費大量時間。如果你對此感興趣，你可以停止閱讀本文而去看 O'Reilly 的 "Bat Book" 。</p>
+
+<p>取代使用手工配置的方法，我們使用 <code>m4</code> 宏處理器將預定義好的文件生成你的配置文件，這些預定義文件隨 sendmail 的發行版本一并提供。</p>
+
+<p>請看文件 <code>sendmail.mc</code> 的第一行：</p>
+<pre class="sample">
+include(/usr/lib/sendmail.cf/m4/cf.m4)
+VERSIONID(`sendmail.mc - roessler@guug.de')
+OSTYPE(debian)
+define(`ALIAS_FILE',`/etc/mail/aliases')
+</pre>
+<p>在第一行， <code>cf.m4</code> 被包含進來。這個 m4 宏文件包含了其它部分將用到的許多宏定義。 確定你提供的路徑是正確的 － 
+在我們這個例子中提供的這個路徑是Debian GNU/Linux的典型路徑。 <code>OSTYPE</code> 宏被用來給出一些非常有用的當前配置的缺省值。
+如果你不是使用Debian系統，你可以將這里的 "debian" 換成 "linux" 。 <code>ALIAS_FILE</code> 告訴 sendmail 到哪里去找到 aliases 文件。</p>
+
+<p>以下几行告訴 sendmail 使用 <code>genericstable</code> 特點和到哪里去找到使用該特點的配置文件：</p>
+<pre class="sample">
+FEATURE(masquerade_envelope) FEATURE(genericstable, `hash
+-o /etc/mail/genericstable')
+GENERICS_DOMAIN_FILE(`/etc/mail/genericsdomain') 
+</pre>
+<p><code>masquerade_envelope</code> 特點告訴 sendmail 去實現郵頭重寫到郵件的<em>信封</em> 傳送者。
+這是一個外部郵件投遞系統將用來直接投遞失敗報告和警告郵件的郵件地址。<code>generics*</code> 文件將在下面解釋。</p>
+
+<p>現在，我們必須定義一個所謂 smart 主機，就是將要負責為你的系統傳送外部郵件的主機。
+注意：這台主機有可能不是你的ISP的POP和IMAP服務器。 如果對此不太清楚，聯系你的ISP供應商。
+主配置文件的代碼如下：</p>
+<pre class="sample">
+define(`SMART_HOST',`mail-out.your.provider')
+</pre>
+<p>請替換 <em>mail-out.your.provider</em> 成你的ISP的主機地址。</p>
+
+<p>最后兩行包含 "mailer" 定義，sendmail 根據這些定義才能知道如何處理不同類型的郵件：</p>
+<pre class="sample">
+MAILER(local)
+MAILER(smtp)</pre>
+<p>為了從這個 <code>sendmail.mc</code> 生成 <code>sendmail.cf</code> 文件，輸入以下命令 (作為 root 用戶)：</p>
+<pre class="sample">
+# m4 sendmail.mc > _sendmail.cf
+# mv -f _sendmail.cf sendmail.cf
+</pre>
+<p>注意我們使用的技朮：將 <code>m4</code>  的輸出寫入一個臨時文件，再轉移到合適的地方。這將幫助我們避免sendmail讀入只寫了一部分的配置文件。</p>
+
+<h2><a name="ss3.2" id="ss3.2"></a>3.2 地址重寫
+</h2>
+
+<p>首先，我們必須告訴sendmail哪些地址將被認為是本地地址(然后將被重寫)。這很簡單：只要將你的機器的完整主機名放入文件 <code>/etc/mail/genericsdomain</code>。
+為了取得你的機器的完整主機名，輸入以下命令：</p>
+<pre class="sample">
+ $ hostname -f </pre>
+<p>現在，讓我們看一下重寫表：
+<code>/etc/mail/genericstable</code> 。這個文件由被空格分開的兩列組成。第一列包含本地地址，第二列包含替換后的郵件地址。
+文件看起來如下：</p>
+<pre class="sample">
+harry   harryx@your.isp
+maude   maudey@her.isp
+root    fredx@your.isp
+news    fredx@your.isp
+</pre>
+<p>注意<em>每一個</em>本地機器上的賬號都要有一行，這樣自動生成的外發郵件能帶上正確的頭信息。 </p>
+
+<p>為了性能的考慮， sendmail 并不直接使用這個文本文件，而是用“哈希”版本替代。為了生成這個版本，輸入以下命令：</p>
+<pre class="sample">
+# makemap -r hash genericstable.db &lt; genericstable</pre>
+<p>注意： <code>genericstable</code> 指定的重寫規則將<em>不</em> 作用在本地郵件或你從外部接收到的郵件 - 這種轉換只使用在從你本地機器通過你的ISP主機發往外部的郵件。</p>
+
+<h2><a name="ss3.3" id="ss3.3"></a>3.3 別名
+</h2>
+
+<p>別名文件包含只對你本地郵件有效的附加本地名字。這對管理員賬號象 <code>root</code> 非常有用，從你的系統接收自動轉換來的郵件。</p>
+
+<p><code>/etc/mail/aliases</code> 可能如下所示：</p>
+<pre class="sample">
+root: fred
+news: root
+postmaster: root
+mail: root
+www: root
+
+nobody: /dev/null
+MAILER-DAEMON: nobody
+</pre>
+<p>這個例子將路由送往 <code>root</code>, <code>news</code>, <code>postmaster</code>, <code>mail</code>, 和 <code>www</code> 用戶的本地郵件到 <code>fred</code> ， 
+而送往 <code>nobody</code> 和 <code>MAILER-DAEMON</code> 的郵件將重定向到 <code>/dev/null</code> 。</p>
+
+<p>就象 <code>genericstable</code>, <code>aliases</code> 可能包含<em>許多</em> 項。因此，就象我們上面所說的，sendmail直接使用文本文件將效率低下。
+<code>aliases</code> 采用和 <code>genericstable</code>  同樣的機制：生成一個哈希數據庫。
+取代直接使用 <code>makemap</code> ，這次你可以輸入命令 <code>newaliases</code> 。它將自動處理所需的一切。</p>
+
+<hr />
+<table
+
+
+
+
+>
+  <tr
+>
+    <td class="BtdL"
+><a href="Sendmail-Address-Rewrite-2.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="BtdC"
+><a href="index.html" accesskey="H">目錄(H)</a></td
+>
+    <td class="BtdR"
+><a
+href="Sendmail-Address-Rewrite-4.html"
+>下一頁(N)</a
+></td
+>
+  </tr
+>
+  <tr
+>
+    <td class="BtdL"
+>文件路徑映射</td
+>
+    <td class="BtdC"
+><a href="Sendmail-Address-Rewrite-3.html" accesskey="T">到頂層(T)</a></td
+>
+    <td class="BtdR"
+>進階閱讀</td
+>
+  </tr
+>
+</table
+>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img class="ImgLogo" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" title="網路內容分級協會" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

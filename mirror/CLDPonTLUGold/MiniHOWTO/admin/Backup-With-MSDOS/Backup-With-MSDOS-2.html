@@ -1,0 +1,428 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+ 
+ <title>Backup-With-MSDOS mini-HOWTO: 方法</title>
+ <link href="Backup-With-MSDOS-3.html" rel="next" title="3. 備忘錄" />
+ <link href="Backup-With-MSDOS-1.html" rel="previous" title="1. 前言 / 介紹" />
+<link href="../../style.css" rel="stylesheet" type="text/css" />
+<link href="ftp://sunsite.enc.edu:/pub/Linux/system/Backup/backup-1.03.tar.gz" rel="bookmark" title="備份命令稿" />
+<link href="ftp://sunsite.unc.edu/pub/Linux/kernel/tapes/ftape-2.05.tar.gz" rel="bookmark" title="ftape 模組" />
+<link href="Backup-With-MSDOS-1.html" rel="chapter" title="1.前言/介紹" />
+<link href="Backup-With-MSDOS-2.html" rel="chapter" title="2.方法" />
+<link href="Backup-With-MSDOS-3.html" rel="chapter" title="3.備忘錄" />
+<link href="Backup-With-MSDOS-4.html" rel="chapter" title="4.版權" />
+<link href="index.html" rel="start" />
+<link href="index.html#content" rel="contents" />
+<link href="http://tldp.org/HOWTO/mini/Backup-With-MSDOS.html" rel="alternate" title="原版" />
+<link href="Backup-With-MSDOS.rdf" rel="meta" title="各章節的說明資訊" />
+<meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+</head><body>
+<table
+
+
+
+
+>
+  <tr
+>
+    <th
+colspan="3" class="HdTitle"
+>Mini
+      HOWTO：Backup-With-MSDOS</th>
+  </tr
+>
+  <tr
+>
+    <td class="TtdL"
+><a href="Backup-With-MSDOS-1.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="TtdC"
+></td
+>
+    <td class="TtdR"
+><a href="Backup-With-MSDOS-3.html" accesskey="N">下一頁(N)</a></td
+>
+  </tr
+>
+</table
+>
+<hr />
+<h1><a name="s2" id="s2">2.</a> 方法</h1>
+
+<p>在這份文件的各處，我將會提到兩個機器如 ``<code>msdos</code>'' 與 ``<code>linux</code>''。``<code>msdos</code>''  是機器的名稱，它必須擁有一個磁帶機，而通常執行 MS-DOS。``<code>linux</code>''  是你嚐試去藉由磁帶機來備份或恢復它的磁碟的 Linux 機器。
+為簡單起見，我將第一部機器稱做 <code>msdos</code>'' 即使它在執行 Linux。
+此外，所有文件中的路徑﹝path﹞名稱應該加以考慮 Linux 機器與搜尋及救援﹝Search-And-Rescue (SAR)﹞的磁片裝置於何處，兩者在系統上的相對的關係。
+那意謂著如果檔案  <code>/etc/passwd</code> 是一個你的 Linux 機器的硬碟中的加密檔案﹝password file ﹞，此時在這種情況，<code>/tape144/etc/passwd</code> 是在軟碟機上的相對應檔案。</p>
+<p>我使用 Karel Kubat 的備份命令稿﹝scripts﹞，版本數 1.03，可於此處得到<a href="ftp://sunsite.enc.edu:/pub/Linux/system/Backup/backup-1.03.tar.gz">ftp://sunsite.enc.edu:/pub/Linux/system/Backup/backup-1.03.tar.gz</a>
+
+在文件各處，我將會簡單的提及這些``<code>備份命令稿</code>''。
+你不一定需要使用這個命令稿來備份你的東西到磁帶機上。
+我喜歡這些命令稿, 因為他們使用 afio 把壓縮檔解壓備份,    而不是把檔案壓縮備份. 前者比較安全, 因為 restore 時若有一點讀取錯誤, 不會造成所有檔案復原失敗。我聽聞 Karel 不再支援﹝supporting﹞檔案備份，但現在有產品 'tob' 或磁帶導向﹝tape oriented﹞的檔案備份。
+雖然我自己並未嚐試過新的套裝軟體，它不可能與此處程序的描述要點有重要的差異。
+</p>
+
+
+<p>所有的起頭，獲得 ftape 模組﹝module﹞。它是所有現代核心的一部份，但如果你使用較舊的核心，你可以在此處找到這個模組：<a href="ftp://sunsite.unc.edu/pub/Linux/kernel/tapes/ftape-2.05.tar.gz">ftp://sunsite.unc.edu/pub/Linux/kernel/tapes/ftape-2.05.tar.gz</a>
+
+接下來，取得 Slackware 開機磁碟
+﹝我使用網路磁碟，但這沒什麼不同﹞與 <code>tape144</code> 根磁碟，提供翻版﹝the
+images ﹞有關 3&quot;1/2 軟碟機。</p>
+
+
+<p>要用 ftape 這個模組，它的版本一定要和你在編譯 ftape 時用的那個核心的版本一樣才行。
+我不能在 <code>tape144</code> 根磁碟﹝ root disk﹞使用 <code>ftape.o</code> 模組，我想是因為該模組為符號﹝symbols ﹞所剝奪﹝stripped ﹞而沒有安裝。所以你現在必須自網路取得支援 ftape 新 <code>ftape.o</code> 的新核心﹝如果你使用舊的核心﹞。
+詳讀隨 <code>ftape</code> 檔案傳送的指引來指導此階段。
+記住，你所編譯的核心必須支援 Linux 與 MS-DOS 兩台機器的乙太網路卡。</p>
+<p>複製較新的核心副本覆蓋網路開機磁碟上的。
+使用 <code>/bin/cp</code>，而非利用 ``<code>dd</code>'' 命令建立一個開機磁碟，如同你建立一個可開機的核心副本﹝kernel image﹞。
+將開機磁碟寫上保護，標示它為 SAR#1。</p>
+<p>現在，裝上 <code>tape144</code> 根磁碟。
+我將假設裝設的點在 <code>/tape144</code>，來避免檔案名稱的混淆。
+我們需要去釋放它的一些空間，所以刪除接下來的檔案：</p>
+
+<pre class="sample">
+/tape144/bin/dialog
+/tape144/bin/elvis
+/tape144/bin/vi
+/tape144/boot/ftape.o
+</pre>
+
+<p>現在，建立一個新檔案：</p>
+
+<pre class="sample">
+/tape144/etc/exports
+</pre>
+
+
+<p>它將包括接如下的一行：</p>
+<pre class="sample">
+/mnt    msdos(ro)
+</pre>
+
+
+<p>此處的 ``<code>msdos</code>'' 應該要以有安裝磁帶機的 MS-DOS 機器的名字或 IP# 來取代。
+</p>
+
+<p>然後，如此你不需要去依賴姓名伺服器﹝name server﹞，加入幾行 Linux 與 MS-DOS 機器的名字與 IP 號碼到檔案 <code>/tape144/etc/hosts</code>。
+舉例來說，我的包括如下的兩行：</p>
+
+<pre class="sample">
+128.100.75.114  caliban.physics.utoronto.ca caliban caliban.physics
+128.100.75.111  ariel.physics.utoronto.ca ariel ariel.physics
+</pre>
+
+<p>現在，有一些關於 inetd 配置﹝configuration﹞這類的問題。我們在它中輸入 rsh daemon 完整的路徑。
+改變 <code>/tape144/etc/inetd.conf</code> 中第十九行成為：</p>
+
+<pre class="sample">
+shell   stream  tcp   nowait  root  /usr/etc/tcpd   /usr/etc/in.rshd
+</pre>
+
+<p>加入局部網路﹝local net ﹞通訊路徑資訊到 <code>/tape144/etc/rc.d/rc.inet1</code>，讓 MS-DOS 的機器能使用網路。
+這格式﹝format ﹞依靠你的網路配置而定，你可以自你的 Linux 中 <code>/etc/rc.d/rc.inet1</code>複製出適當的格式。
+在我的網路，需要被增加一行：</p>
+
+<pre class="sample">
+/etc/ifconfig eth0 128.100.75.111 broadcast 128.100.75.0 netmask 255.255.255.0
+/etc/route add -net 128.100.75.0 netmask 255.255.255.0
+</pre>
+
+
+<p>在進入 ifconfig  的 IP# 是 MS-DOS 機器的那個。
+</p>
+<p>現在，複製這個檔案到 <code>/tape144/etc/rc.d/rc.inet1-l</code>，並且在新的檔案改變 IP# 在此檔案中可反應此為 Linux 機器而    不是 MSDOS 機器.</p>
+<p>再來，剪下 <code>/tape144/etc/rc.local</code>中的第 3 到第 11 行。
+那是個執行檔案 <code>rc.inet*</code> 的指令。
+我們不希望這事在開機的時候發生。</p>
+<p>建立一個新的檔案：<code>/tape144/root/.rhosts</code> 包括此行：</p>
+
+<pre class="sample">
+linux root
+</pre>
+
+
+<p>此處，再一次的， ``<code>linux</code>''  代表替代所有的機器名稱﹝包括領域﹝domain﹞﹞或 Linux 機器的 IP#。
+</p>
+<p>在 <code>/tape144/etc/passwd</code> 的密碼區域填入密碼給 root login,並且你在做備份時, 避免別人 login 到 MS-DOS 機器。
+你可以藉由自你 Linux 機器的 <code>/etc/passwd file</code> 複製對應的領域來達成。</p>
+<p>複製 /usr/bin/rsh into /tape144/usr/bin.</p>
+<p>複製接下來的檔案，由 <code>/usr/etc</code> 到 <code>/tape144/usr/etc</code>：</p>
+
+<pre class="sample">
+in.rshd
+rpc.mountd
+rpc.nfsd
+rpc.portmap
+services
+tcpd
+</pre>
+
+<p>建立一個新的命令稿 ── <code>/tape144/bin/tapesetup</code>，它由接下來的所組成：
+﹝改變 ``<code>linux</code>'' 對應成為你的 Linux 機器的名字﹞。</p>
+
+<pre class="sample">
+#! /bin/sh
+
+/bin/sh /etc/rc.d/rc.inet1
+/bin/sh /etc/rc.d/rc.inet2
+
+/bin/mount linux:/nfs /mnt
+/bin/insmod /mnt/ftape.o
+</pre>
+
+
+<p>注意！最近的核心將不需要 insmod 這行。
+</p>
+<p>接下來，建立另外一個新的命令稿 ── <code>/tape144/bin/msdosset</code>，內容如下：
+﹝改變 ``<code>linux</code>'' 對應成為你的 Linux 機器的名字﹞。</p>
+
+<pre class="sample">
+#! /bin/sh 
+
+/bin/sh /etc/rc.d/rc.inet1
+/bin/sh /etc/rc.d/rc.inet2
+
+mount linux:/mnt /mnt
+/bin/insmod /mnt/ftape.o
+</pre>
+
+
+<p>如同上述的，新的核心將不需要 insmod 這行。
+</p>
+<p>建立一個易讀的檔案 ── <code>/tape144/root/notes</code>，它包括用來完全復原時此處所列的有用資訊：</p>
+
+<pre class="sample">
+為了完全復原一個垃圾硬碟，使用 SAR 磁片 #1 與 #2 
+來將你的 Linux 機器開機，然後如下輸入：
+
+   /bin/sh /etc/rc.d/rc.inet1-l
+   /bin/sh /etc/rc.d/rc.inet2
+
+   /usr/etc/rpc.portmap
+   /usr/etc/rpc.mountd
+   /usr/etc/rpc.nfsd
+
+接下來，插入 SAR disk #3 且輸入：
+
+   mount /dev/fd0 /mnt
+
+建立一個新的安裝點﹝mount point﹞，以：
+
+   mkdir /mnt2
+
+並安裝﹝mount ﹞你的 Linux 硬碟分割區在這個 點﹝point﹞上。
+首先你可能需去重新格式化﹝reformat ﹞分割區。如果如此，依循記述在
+ Linux 安裝 HOWTO﹝Linux Installation HOWTO﹞中的方法。
+SAR 磁片包括了所有執行重新格式化時所需的檔案。
+
+最後，使用磁片 SAR#1 與 SAR#2 將 MS-DOS 機器開機，並且在那個機器上執行
+ /bin/msdosset 命令稿。
+它可能需要耗費一點時間去執行那個命令稿，因為它必須由軟碟機上取得 NSF 檔案
+，所以請忍耐片刻。
+現在，在 Linux 機器上由磁帶機重建 /mnt2。
+</pre>
+
+<p>如果你使用備份命令稿﹝backup scripts ﹞，你將必須複製 'afio' 到 <code>/tape144/local/bin</code> 子目錄。
+此備份命令稿檔案不需要在重建的磁碟上有暫存空間，檔案﹝archive ﹞可以僅使用 'afio' and 'gzip' 就可以重建。</p>
+<p>當它們送來時，我還不會使用備份命令稿。
+這個磁帶備份似乎完整無缺 ,但無法復原(救回)。我發現升級區塊容量﹝block size ﹞與轉變指令來修正它。
+這裡所示的是 ``<code>netbackup</code>'' 命令稿的片段。
+利用這個修補程式來更改 Linux 機器硬碟上的和 SAR 磁碟上的 netbackup 程式。</p>
+
+<pre class="sample">
+*** netbackup.orig      Mon Jan  9 17:22:32 1995
+--- netbackup   Mon Jan  9 17:23:25 1995
+***************
+*** 35,41 ****
+                  "'mknod", devname, "p'");
+      exec ("su -", USERNAME, "-c",
+              "'rsh ", REMOTE_HOST, 
+!             "\"dd", "of=" REMOTE_DEVICE, "obs=20k", "conv=sync\"",
+              "&lt;", devname,
+              "'&amp;"
+         );
+--- 35,41 ----
+                  "'mknod", devname, "p'");
+      exec ("su -", USERNAME, "-c",
+                  "'rsh ", REMOTE_HOST, 
+!                       "\"dd", "of=" REMOTE_DEVICE, "\"",
+                        "&lt;", devname,
+                "'&amp;"
+         );
+***************
+*** 50,56 ****
+                  "'mknod", devname, "p'");
+      exec ("su", USERNAME, "-c", 
+          "'rsh ", REMOTE_HOST, 
+!        "\"dd", "if=" REMOTE_DEVICE, "ibs=20k", "conv=sync\"",
+           ">", devname,
+           "'&amp;"
+         );
+--- 50,56 ----
+                  "'mknod", devname, "p'");
+      exec ("su", USERNAME, "-c", 
+                  "'rsh ", REMOTE_HOST, 
+!                       "\"dd", "if=" REMOTE_DEVICE, "\"",
+                        ">", devname,
+                "'&amp;"
+         );
+</pre>
+
+<p>你現在完成你的 SAR 磁片 #2。
+請加上防寫保護。</p>
+<p>接下來，插入一個乾淨的、格式化完成的磁片﹝利用 <code>fdformat</code> 與 <code>mkfs</code> 來建立﹞。
+複製 <code>ftape.o</code> 檔案到磁片上，並且標示為 SAR#3。
+如果你對此磁片採用防寫保護，因著某些理由，事情將會變糟。
+所以請讓它可以寫入。</p>
+<p>在 Linux 機器上，為 NFS 檔案服務建立一個新的目錄。
+我建了一個目錄：</p>
+
+<pre class="sample">
+/nfs
+</pre>
+
+
+<p>將 <code>ftape.o</code> ﹝unstripped，約 500+ kB﹞，至此子目錄。
+  在你的 Linux 的輸出檔案 <code>/etc/exports</code> 上建立一個登錄﹝entry ﹞：</p>
+<pre class="sample">
+/nfs    msdos(ro)
+</pre>
+
+
+<p>注意！你的 NFS 目錄與其子目錄的所有檔案均為非安全的。
+  某些人也能夠利用他自己的開機磁片來開啟 MS-DOS 機器進入 Linux 並  mount 這個目錄。
+  如此一來，你不要放置任何敏感的東西在你的 NFS 子目錄。
+</p>
+<p>重新啟動你的 NFS 駐留程式﹝daemons﹞<code>rpc.mountd</code> 與 <code>rpc.nfsd</code>。
+它們似乎無法用 <code>SIGHUP</code> 重新啟動，所以刪除它們然後再重新引用﹝reinvoke ﹞它們。
+如果你並不是使用這些駐留程式在你的 <code>/etc/rc.d/rc.inet2</code>，你現在或許要去用它。</p>
+<p>好了，現在我們完成了備份與重建所有的設定。
+完全備份 Linux 機器，利用 SAR#1 來開啟你的 MS-DOS 機器。
+當出現第二片的提示時，放入 SAR#2 讀取。
+使用 root 登錄，執行命令稿：<code>/bin/tapesetup</code>。
+登出 MS-DOS 機器。
+如果你使用備份命令稿，則程式 netbackup 現在將會運作。
+你也可以使用 ``<code>-f msdos:/dev/ftape</code>'' 啟動 GNU <code>tar</code>、<code>cpio</code> 或 <code>mt</code>，並利用此法製作你的備份。
+如果你擁有備份程式，但它僅可以寫成局部檔案﹝local file﹞，如下操作。
+假定該備份程式被稱為``<code>局部備份﹝localbackup﹞</code>'' ，寫入的檔案藉由該程式命令列的引數﹝argument﹞來表示：</p>
+
+<pre class="sample">
+mknod /tmp/tapepipe p
+rsh msdos dd of=/dev/ftape &lt; /tmp/tapepipe &amp;
+localbackup /tmp/tapepipe
+</pre>
+
+
+<p>當它完成，刪除 <code>/tmp/tapepipe</code>。
+</p>
+<p>復原到一個活的﹝live ﹞Linux 機器：
+<code>netbackup</code> 命令稿、<code>tar</code>、<code>cpio</code> 與其他相似的在除了部分操作者使用的特別動作外將可完成全部的工作。
+如果你擁有一個備份程式，但它僅能寫到局部檔案﹝local file﹞，
+執行：</p>
+
+<pre class="sample">
+mknod /tmp/tapepipe p
+rsh -n msdos dd if=/dev/ftape >> /tmp/tapepipe &amp;
+localrecovery /tmp/tapepipe
+</pre>
+
+
+<p>刪除 <code>/tmp/tapepipe</code> 在你完成之後。
+</p>
+<p>留心我使用 '<code>rsh</code>' 成為在 MS-DOS 機器上的基本使用者。
+一個正確的 <code>.rhosts</code> 項目可以工作正常。
+這個在 '<code>tape144</code>' 磁碟上的配置准許 <code>rsh</code> 成為一個 root，但不准許 <code>telnet</code> 或 <code>rlogin</code> 成為 root，控制台﹝console﹞的登入是被限制的。
+如此有益於安全性。</p>
+<p>如果你擔心基礎的 <code>.rhost</code> 檔案，你可以建立一個新的使用者 ``<code>tapeuser</code>'' 在 SAR#2 上，以准許來操作磁帶機但並非磁碟﹝建立一個新的群組﹝group ﹞並將 tapeuser 置於該群組，然後 <code>chown</code> 與 <code>chmod</code> 檔案 <code>/dev/rft*</code> 與
+<code>/dev/nrft*</code>﹞。
+你的備份程式當時應該能了解 <code>rsh</code> 這個名字相較於 root 更適合。
+當然目前得有一個 <code>.rhosts</code> 檔案在 <code>~tapeuser</code> 在 SAR#2。
+在我自己的使用，相較於一個基礎 <code>.rhosts</code> 我會選擇此種方法。</p>
+<p>終於，這份文件圓滿的復原一個垃圾硬碟。
+假定現在 Linux 分割趨勢完全不能復原的。
+如果有需要，像 Linux 安裝 HOWTO上說的重新格式化該分割區。
+自 SAR 磁片 #1 啟動 Linux 機器，當出現提示，插入磁片 #2。
+現在，依循在檔案 <code>/root/notes</code> 中的敘述﹝這裡是 <code>/tape144/root/notes</code> ，在當它被安裝上你的 Linux 機器時﹞。
+一但兩台機器都被啟動完成，執行你需要的復原慣例﹝ recovery routine ﹞。
+如果你是使用備份命令稿，你可以如下操作：</p>
+<ol>
+<li>改變你將恢復的硬碟安裝點的指南﹝directory ﹞。</li>
+<li>如果任一 mounted volumnes 已在此備份上, 而你想把它們復原，你只要在硬碟上建一些 mount point, 然後把備份 mount 在這些 mount point 上。</li>
+<li>輸入命令：
+
+<pre class="sample">
+rsh -n msdos dd if=/dev/ftape | afio -i -v -Z -c 1024 -
+        
+</pre>
+
+
+or
+
+<pre class="sample">
+rsh -n -l tapeuser msdos dd if=/dev/ftape | afio -i -v -Z -c 1024 -
+        
+</pre>
+
+
+或
+
+<pre class="sample">
+mknod /tmp/backpipe p
+rsh -n msdos dd if=/dev/ftape >> /tmp/backpipe &amp;
+afio -i -v -Z -c 1024 /tmp/backpipe
+        
+</pre>
+
+</li>
+</ol>
+
+<p>這裡是讀取在遠方機器上的磁帶機，將結果寫到 stdout，那是 <code>afio</code> 所點取的地方。
+  '<code>-i</code>' 參數告訴它用相對於'目前目錄'來 recover    ﹝此處是硬碟分割區的根目錄﹞。
+  '<code>-v</code>' 是很冗長的，列出它們復原的檔案清單。
+  '<code>-Z</code>' 告訴 afio ，此為一個各別的壓縮檔案。
+  '<code>-c 1024</code>' 告訴它使用 5 MB 的流動緩衝區來避免太多的磁帶轉回動作。
+</p>
+<hr />
+
+<table
+
+
+
+
+>
+  <tr
+>
+    <td class="BtdL"
+><a href="Backup-With-MSDOS-1.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="BtdC"
+><a href="index.html" accesskey="H">目錄(H)</a></td
+>
+    <td class="BtdR"
+><a
+href="Backup-With-MSDOS-3.html"
+>下一頁(N)</a
+></td
+>
+  </tr
+>
+  <tr
+>
+    <td class="BtdL"
+>前言 / 介紹</td
+>
+    <td class="BtdC"
+><a href="Backup-With-MSDOS-2.html" accesskey="T">到頂層(T)</a></td
+>
+    <td class="BtdR"
+>備忘錄</td
+>
+  </tr
+>
+</table
+>
+  <div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img class="ImgLogo" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

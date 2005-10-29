@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+ 
+ <title>The Linux Bootdisk HOWTO: 把它們放在一起：製作磁片(組) -- Putting them together: Making the diskette(s)</title>
+ <link href="Bootdisk-HOWTO-7.html"  rel="next" title="7. 問題解決" />
+ <link href="Bootdisk-HOWTO-5.html"  rel="previous" title="5. 選擇一個 kernel" />
+ <link href="../../style.css" rel="stylesheet" type="text/css" />
+ <link href="Bootdisk-HOWTO-1.html" rel="chapter" title="1.前言" />
+<link href="Bootdisk-HOWTO-2.html" rel="chapter" title="2.簡介" />
+<link href="Bootdisk-HOWTO-3.html" rel="chapter" title="3.Bootdisks與開機流程" />
+<link href="Bootdisk-HOWTO-4.html" rel="chapter" title="4.建立一個root filesystem" />
+<link href="Bootdisk-HOWTO-5.html" rel="chapter" title="5.選擇一個 kernel" />
+<link href="Bootdisk-HOWTO-6.html" rel="chapter" title="6.把它們放在一起：製作磁片(組)" />
+<link href="Bootdisk-HOWTO-7.html" rel="chapter" title="7.問題解決 " />
+<link href="Bootdisk-HOWTO-8.html" rel="chapter" title="8.其它各種主題" />
+<link href="Bootdisk-HOWTO-9.html" rel="chapter" title="9.How the pros do it" />
+<link href="Bootdisk-HOWTO-10.html" title="10.常見問題 (FAQ) 列表" />
+<link href="Bootdisk-HOWTO-11.html" title="11.資源與指示" />
+<link href="Bootdisk-HOWTO-12.html" title="12.LILO boot error codes" />
+<link href="Bootdisk-HOWTO-13.html" title="13.Root filesystem 列表樣本" />
+<link href="Bootdisk-HOWTO-14.html" title="14.工具程式磁片 (utility disk) 目錄列表樣本" />
+<meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+<link href="http://tldp.org/HOWTO/Bootdisk-HOWTO/index.html" rel="alternate" title="原版" />
+<link href="Bootdisk-HOWTO.rdf" rel="meta" title="各章節的說明資訊" />
+<link href="Bootdisk-HOWTO-6.html#ss6.1" rel="section" title="6.1 用 LILO 傳送 kernel" />
+<link href="Bootdisk-HOWTO-6.html#ss6.2" rel="section" title="6.2 不使用 LILO 來傳送 kernel" />
+<link href="Bootdisk-HOWTO-6.html#ss6.3" rel="section" title="6.3 設定ramdisk" />
+<link href="Bootdisk-HOWTO-6.html#ss6.4" rel="section" title="6.4 傳送root filesystem" />
+<link href="index.html" rel="start" />
+<link href="index.html#content" rel="contents" />
+</head> <body   >
+<table >
+  <tr>
+    <th colspan="3" class="HdTitle">HOWTO：The
+      Linux Bootdisk</th>
+  </tr>
+  <tr>
+    <td class="TtdL"> <a href="Bootdisk-HOWTO-5.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="TtdC">&nbsp;</td>
+    <td class="TtdR"> <a href="Bootdisk-HOWTO-7.html" accesskey="N">下一頁(N)</a> </td>
+  </tr>
+</table>
+<hr />
+<h1>6. 把它們放在一起：製作磁片(組)</h1>
+
+
+<p>進行到這裡，你已經有一個 kernel 與一個壓縮的 root filesystem 。如果你正在製作一張 boot/root 磁片，請檢查它們的 size ，以確定它們都能放在同一張磁片上。如果你正在製作一套兩張磁片的 boot + root 磁片組。請檢查 root filesystem 以確定它能放在一張磁片上。</p>
+<p>你應該決定是否使用 LILO 以啟動 bootdisk的 kernel 。替代的方法是直接把 kernel copy 到磁片上，然後不使用 LILO 開機。使用 LILO 的好處在於讓你能夠提供一些參數給 kernel ，這些參數對初始化硬體來說可能是必要的(請檢查你系統上的 /etc/lilo.conf 檔。如果這個檔存在，而且有一行像``<code>append=...</code>''，你可能需要這個特點 (feature))。使用 LILO 的缺點在於建造 bootdisk 變得更為複雜，並且佔用稍嫌較多的空間。你將必須設定一個小型而獨立的 filesystem ，我們稱之為 <em>kernel filesystem</em>，在其中你傳送 kernel 以及一些 LILO 所需的其它檔案。</p>
+
+<p>如果你將要使用 LILO ，請繼續讀下去；如果你要直接傳送 kernel ，先跳過此，直接到 
+<a href="#TransferringWithoutLILO">Without using LILO</a> 這一節。</p>
+
+<h2><a name="ss6.1" id="ss6.1"></a>6.1 用 LILO 傳送 kernel</h2>
+
+<p>你所必須做的第一件事是為 LILO 編寫一個小型的組態檔。這個檔看起來像這樣：</p>
+<pre class="sample">
+        boot      =/dev/fd0
+        install   =/boot/boot.b
+        map       =/boot/map
+        read-write
+        backup    =/dev/null
+        compact
+        image     =KERNEL
+        label     =Bootdisk
+        root      =/dev/fd0
+</pre>
+<p>
+關於這些參數的說明請看 LILO's user documentation 。你或許也會想從你硬碟上的 /etc/lilo.conf 檔，加入一行 <code>append=...</code> 到這個組態檔中。</p>
+<p>把這個組態檔存成 bdlilo.conf 。</p>
+<p>現在你必須製作一個小型的檔案系統，我們稱之為 <em>kernel filesystem</em> ，有別於 root filesystem 。</p>
+<p>首先，指出這個 filesystem 應該會有多大。用 blocks 計算你 kernel 的 size (這個 size 用 ``<code>ls -l KERNEL</code>'' 顯示出來，是被 1024 所除並強迫進位)，然後加 50 。這個 50 blocks 是估計的空間，為 inodes 與其它檔案所需。如果你想要，你可以精確地計算這個數字，或是就用 50 就好了。如果你正在製作兩張磁片的磁片組，你會高估這個空間，因為無論如何第一張磁片只給 kernel 使用。我們稱這個數字會 <code>KERNEL_BLOCKS</code> 。</p>
+<p>請把軟碟片放入軟碟機 (為求簡便，我們假設是 /dev/fd0)，然後在其上製作 ext2 kernel filesystem 。</p>
+<pre class="sample">
+        mke2fs -i 8192 -m 0 /dev/fd0 KERNEL_BLOCKS
+</pre>
+
+
+<p>
+``<code>-i 8192</code>'' 指定我們想要每 8192 bytes 一個 node 。接下來， mount 這個 filesystem ，移除 lost+found 目錄，然後為 LILO 造出 dev 與 boot 這兩個目錄：</p>
+<pre class="sample">
+        mount /dev/fd0 /mnt
+        rm -rf /mnt/lost+found
+        mkdir /mnt/{boot,dev}
+</pre>
+
+<p>再來，造出設備檔 /dev/null 與 /dev/fd0 。不用尋找設備號碼，你只要從你的硬碟上用 <code>-R</code> copy它們：</p>
+<pre class="sample">
+        cp -R /dev/{null,fd0} /mnt/dev
+</pre>
+ 
+<p>LILO 需要一份它的 boot loader 的 copy ， boot.b ，你可以從你的硬碟得到它。它通常是放在 /boot 目錄內。</p>
+<pre class="sample">
+        cp /boot/boot.b /mnt/boot
+</pre>
+
+<p>最後，隨附你的 kernel ， copy 你在上一節所編寫的 LILO 組態檔。它們兩者可以被放在根目錄下。</p>
+<pre class="sample">
+        cp bdlilo.conf KERNEL /mnt
+</pre>
+<p>LILO 所需的每一項現在都在 kernel filesystem上，所以你已準備好去執行它。 LILO 的 
+<code>-r</code> 旗號(flag)被用作安裝 boot loader 在某個其它的 root 上：</p>
+<pre class="sample">
+        lilo -v -C bdlilo.conf -r /mnt
+</pre>
+
+<p>LILO 應該可以在無錯的情況下執行，在此之後，你可以看看你的 kernel filesystem ，應該長得像這樣：</p>
+<pre class="sample">
+total 361
+  1 -rw-r--r--   1 root     root          176 Jan 10 07:22 bdlilo.conf
+  1 drwxr-xr-x   2 root     root         1024 Jan 10 07:23 boot/
+  1 drwxr-xr-x   2 root     root         1024 Jan 10 07:22 dev/
+358 -rw-r--r--   1 root     root       362707 Jan 10 07:23 vmlinuz
+boot:
+total 8
+  4 -rw-r--r--   1 root     root         3708 Jan 10 07:22 boot.b
+  4 -rw-------   1 root     root         3584 Jan 10 07:23 map
+dev:
+total 0
+  0 brw-r-----   1 root     root       2,   0 Jan 10 07:22 fd0
+  0 crw-r--r--   1 root     root       1,   3 Jan 10 07:22 null           
+</pre>
+
+<p>如果檔案 size 和你自己的 filesystem 有稍微不同，請不用擔心。</p>
+<p>現在請把磁片留在軟碟機內，然後前進到 
+<a href="#SettingRamdiskWord">Setting the ramdisk word</a> 這一節。</p>
+
+<h2><a name="ss6.2" id="ss6.2"></a>6.2 不使用 LILO 來傳送 kernel</h2>
+
+
+<p>如果你 <em> 不 </em> 使用LILO，那麼就用 <code>dd</code> 指令來傳送 kernel 給 bootdisk ：</p>
+<pre class="sample">
+        % dd if=KERNEL of=/dev/fd0 bs=1k
+        353+1 records in
+        353+1 records out
+</pre>
+
+<p>在這個例子中， <code>dd</code> 寫入了 353 個完整記錄(records) + 1個partial record ，所以 kernel 佔用了 354 個軟碟片的 blocks 。這個數字稱為 <code>KERNEL_BLOCKS</code> ，請記得它，這個數字要給下一節使用。</p>
+<p>最後，請設定 root device 為軟碟片自己，然後再設定 root 要被載入成 read/write ：</p>
+<pre class="sample">
+        rdev /dev/fd0 /dev/fd0
+        rdev -R /dev/fd0 0
+</pre>
+
+
+<p>在第二個 <code>rdev</code> 指令中，請小心地使用 <code>-R</code> 。</p>
+
+<h2><a name="ss6.3" id="ss6.3"></a>6.3 設定ramdisk</h2>
+
+<p>在 kernel image內的是 <em>ramdisk word</em> ，它伴隨其它選項，指定了 root filesystem 應該在哪裡被找到。這個 word 會被以 <code>rdev</code> 指令，來進行存取與設定，而它的內容被解釋如下：</p>
+<pre class="sample">
+        bits  0-10:     Offset to start of ramdisk, in 1024 byte blocks
+        bits 11-13:     unused
+        bit     14:     Flag indicating that ramdisk is to be loaded
+        bit     15:     Flag indicating to prompt before loading rootfs
+</pre>
+
+<p>如果 bit 15 被設定，在開機時 (boot-up) ，會提示你把一張新的軟碟片放入軟碟機中。這對一套雙磁片的開機磁片組來說是必要的。</p>
+<p>依據你是建造一張單一的 boot/root 磁片，還是兩張 "boot + root" 的磁片組，這裡會產生兩種情況。</p>
+
+<ol>
+<li> 如果你是建造一張單一磁片，壓縮的 root filesystem 會被放置在 kernel 之後，所以 offset 會是第一塊 free block (這個值應該會與 <code>KERNEL_BLOCKS</code> 相等) 。 Bit 14 會被設定為 1 ，而 bit 15 會被設定為 0 。
+
+舉例來說，假設你正建造一張單一磁片，而 root filesystem 將自 block 253 (10進位)開始。那麼， ramdisk word 值應該是 253 (10進位) ， bit 14 設為 1 而 bit 15 設為 0 。要計算這個值，你可以簡單地加一加這個 10 進位數字。 253 + (2^14) = 253 + 16384 = 16637 。如果你並不十分了解這個數字從何而來，把這數字放到工程計算機上，然後把它轉換為 2 進位，
+</li>
+<li> 如果你建造的是一套雙磁片組，那麼 root filesystem 將自第二張磁片的 block 0 開始，所以 offset 為 0 。 Bit 14 設為 1 而 bit 15 設為 1 。在這個情況下， 10 進位值是 2^14 + 2^15 = 49152 。
+</li>
+</ol>
+
+
+<p>在仔細地為 ramdisk word 計算後，請用 <code>rdev -r</code> 設定它。請注意要使用 <em>10 進位 </em> 值。如果你使用 LILO ，傳給 <code>rdev</code> 的引數在此應該是 <em>mounted kernel path</em> ，比如說 /mnt/vmlinuz；如果你用 <code>dd</code> 來 copy kernel ，替換成使用軟碟機名稱(<em> 比如說 </em>/dev/fd0)。</p>
+<pre class="sample">
+        rdev -r KERNEL_OR_FLOPPY_DRIVE  VALUE
+</pre>
+
+<p>如果你使用 LILO ，現在請把磁片 unmount 。</p>
+
+<h2><a name="ss6.4" id="ss6.4"></a>6.4 傳送root filesystem</h2>
+
+
+<p>最後一步是要傳送 root filesystem 。</p>
+
+<ul>
+<li> 如果 root filesystem 將被放置在做為 kernel 之 <em> 相同 </em> 磁片上，請使用 <code>dd</code> 指令及其 <code>seek</code> 選項傳送它，這會指定要跳過多少個 blocks ：
+<pre class="sample">
+        dd if=rootfs.gz of=/dev/fd0 bs=1k seek=KERNEL_BLOCKS
+</pre>
+
+</li>
+<li> 如果 root filesystem 會被放置在 <em> 第二張 </em> 磁片上，請自磁碟機中拿走第一張軟碟片然後放入第二張磁碟片，接著將 root filesystem 傳送到其上：
+<pre class="sample">
+        dd if=rootfs.gz of=/dev/fd0 bs=1k
+</pre>
+</li>
+</ul>
+
+<p>恭喜你，已經完成了！</p>
+<p>在把 bootdisk 挪為緊急使用之前，請記得先測試它 !如果你的成品不能執行，請繼續讀下去。</p>
+
+<hr/>
+<table >
+  <tr>
+    <td class="BtdL"> <a href="Bootdisk-HOWTO-5.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="BtdC"> <a href="index.html" accesskey="H">目錄(H)</a> </td>
+    <td class="BtdR"> <a href="Bootdisk-HOWTO-7.html">下一頁(N)</a> </td>
+  </tr>
+  <tr>
+    <td class="BtdL">選擇一個 kernel</td>
+    <td class="BtdC"><a href="Bootdisk-HOWTO-6.html"  accesskey="T">到頂層(T)</a></td>
+    <td class="BtdR">問題解決</td>
+  </tr>
+</table>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img class="ImgLogo" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" title="網路內容分級協會" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

@@ -1,0 +1,3660 @@
+  KernelAnalysis-HOWTO
+  作者: Roberto Arcomano berto@bertolinux.com
+  v0.7, March 26, 2003
+  譯者: Jsona Laio <freeonfair [at] yahoo.co.uk>
+
+  這份文件試著解釋一些關於Linux核心的事項,比如說最重要的元件,它們
+  如何運作,等等. 這份文件幫助讀者免除瀏覽所有的核心原始碼以找到"正確
+  的函式",宣告及定義, 然後把彼此之間關係串聯起來.你可以在
+  http://www.bertolinux.com找到這份文件的最新版本; 如果你有任何好建議,
+  請把你的意見寄到下列電子郵件地址: berto@bertolinux.com
+
+  1.  前言
+
+  1.1.  前言
+
+  這份文件試著定義部份的Linux核心如何運作, 主要的功能是什麼 及 使用的
+  資料結構, 和 整體如何運作. 你可以在http://www.bertolinux.com找到這份
+  文件的最新版本. 如果你有好的建議請寄到下列 電子郵件地址: 
+  berto@bertolinux.com. 這份文件用的的Linux核心程式碼 版本為2.4.x, 
+  這是目前寫本文件時最新的穩定版本.
+
+  1.2   版權
+
+  Copyright (C) 2000,2001,2002 Roberto Arcomano. This document is free;
+  you can redistribute it and/or modify it under the terms of the GNU
+  General Public License as published by the Free Software Foundation;
+  either version 2 of the License, or (at your option) any later
+  version. This document is distributed in the hope that it will be
+  useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  General Public License for more details. You can get a copy of the GNU
+  GPL here <http://www.gnu.org/copyleft/gpl.html>
+
+  1.3.  翻譯
+
+  如果你想翻譯這份文件 請自由翻譯. 然而, 你必須要遵守下列規範:
+
+  1. 確認另一版的文件並不存在你所在地的LDP中
+  
+  2. 維護所有'序言'的章節  (包括'序言', 
+
+  注意! 你不必翻譯TXT或HTML檔, 你可以修改LYX檔案, 好讓這份文件可以轉換成其
+  他格式.(TXT, HTML, RIFF, 等等): 你可以使用"LyX"應用程式來幫助你修改這份
+  文件. LyX 可以從http://www.lyx.org下載
+    
+  不需要問我是否可以翻譯這份文件! 你只要讓我知道(如果你想的話)你翻譯好了.
+
+  謝謝你幫忙翻譯!
+
+  1.4.  功績
+
+  感謝 Linux 文件專案<http://www.tldp.org>迅速的上傳及發行這份文件.
+
+  謝謝 Klaas de Waal 的建議
+
+  2.  使用的語法
+
+  2.1. 函式語法
+
+  當提到一個函式時, 我會寫:
+
+  "function_name  [ file location . extension ]"
+
+  "函式名稱  [ 檔案路徑.延伸檔名]"
+
+  舉例:
+
+  "schedule [kernel/sched.c]"
+
+  這告訴我們
+
+  "schedule"
+
+  函式可以從
+
+  [ kernel/sched.c ]被找到
+
+  注意: 我們同樣假定 /usr/src/linux 是起始的目錄
+
+  2.2.  縮排
+
+  在原始碼內縮排通常是3個空白字元.
+
+  2.3.  內部呼叫 分析
+
+  2.3.1.  概要
+
+  我們使用 "內部呼叫分析" (ICA) 觀點來看(以縮排方式)核心如何相互呼叫.
+
+  舉例來說, sleep_on 命令 在ICA 的觀點用以下方式描述:
+
+  |sleep_on
+  |init_waitqueue_entry      --
+  |__add_wait_queue            |   enqueuing request
+     |list_add                 |
+        |__list_add          --
+     |schedule              ---     waiting for request to be executed
+        |__remove_wait_queue --
+        |list_del              |   dequeuing request
+           |__list_del       --
+
+                            sleep_on ICA
+
+
+  ICA的縮排是遵循函式的所在路徑:
+
+  ·  sleep_on [kernel/sched.c]
+
+  ·  init_waitqueue_entry [include/linux/wait.h]
+
+  ·  __add_wait_queue
+
+  ·  list_add [include/linux/list.h]
+
+  ·  __list_add
+
+  ·  schedule [kernel/sched.c]
+
+  ·  __remove_wait_queue [include/linux/wait.h]
+
+  ·  list_del [include/linux/list.h]
+
+  ·  __list_del
+
+  注意: 如果之前已提到過的檔案路徑,我們不再重覆描述.
+
+  2.3.2. 詳細內容
+
+  在ICA裡 一行看起來像下列
+
+   function1 -> function2
+
+  那表示 <函式1> 是通用的標示指到另一個函式. 在這個例子裡 <函式1> 指到 <函式2>.
+
+
+
+  當我們提到
+
+    function:
+
+  函式:
+
+  它表示<函式>並非一個真的副程式. 它是一個標籤(典型的組合語言的標籤).
+
+  在多個段落裡, 我們可能使用C程式語法或虛擬碼. 在真正的原始碼裡, 
+  你可以使用組合語法或是非結構的程式碼. 這之間的差別主要是提供學習用.
+  
+
+  2.3.3.  使用ICA 的 PROs
+
+  使用 ICA (內部呼叫分析)的 優點有很多:
+
+  ·  你可以了解當呼叫一個核心的函式時的整體概念.
+
+  ·  函式路徑通常附帶在函式之後, 所以 ICA 也可以 被看成 些許類似 "函式關聯"
+
+  ·  內部呼叫分析 (ICA) 在 蜇伏/驚蜇(sleep/awake) 機制裡 是很有用的, 
+     從那兒我們可以
+     看到在蜇伏(sleeping)之前我們作了什麼, 正確的 蜇伏(sleeping)動作, 
+     以及 在 驚蜇(waking up)後 我們將要作的行動 (排程之後).
+
+  2.3.4.  CONTROs of using ICA
+
+  2.3.4.  使用 ICA 的 CONTROs
+
+  ·  一些ICA的缺點如下表列:
+
+  如同所有理論上的模式, 我們簡化真實性以避免細節過於繁瑣,像原本的程式碼
+  及 特別的條件情況.
+
+  ·  應該加入額外的圖解以呈現較佳的堆疊情形, 資料數值, 等等.
+
+  ·  ???
+
+  3.  基礎
+
+  3.1. 什麼是核心?
+
+  核心是任何電腦系統的"精髓": 它允許使用者分享電腦資源的"軟體".
+
+
+  核心可以被看成作業系統(Operating System)主要的軟體, 作業系統可能包含
+  圖形的管理.
+
+  舉例來說, 在 Linux 裡面 (像其它 unix-like 作業系統), X 視窗環境並不屬
+  於 Linux 核心的部分, 因為它僅管理圖形操作(它採用使用者模式的I/O來存取
+  影像卡設備).
+
+  相反的, 微軟的視窗作業系統 (Win9x, WinME, WinNT, Win2K, WinXP, 等等)
+  是核心和圖形管理環境之間的混合.
+
+  3.2.  使用者模式和核心模式之間有什麼不同?
+
+  3.2.1. 概要
+
+  很多年以前, 當電腦還是是一個龐然大物時, 使用者的程式在上面運行有很多的難處,
+ 偶爾, 他們的程式會讓電腦整個當掉.
+
+  3.2.2. 操作的模式
+
+
+  避免這樣的程式持續的出問題, 較新的作業系統被設計成有兩種操作模式:
+  
+
+  1. 核心模式: 機器操作關鍵的資料結構, 管理硬體 (輸入/輸入 或 記憶體配置),
+     管理記憶體, IRQ, DMA, 等等.
+
+  2. 使用者模式: 使用者可以跑應用程式.
+
+
+                 |          Applications           /|\
+                 |         ______________           |
+                 |         | User Mode  |           |
+                 |         ______________           |
+                 |               |                  |
+  Implementation |        _______ _______           |   Abstraction
+      Detail     |        | Kernel Mode |           |
+                 |        _______________           |
+                 |               |                  |
+                 |               |                  |
+                 |               |                  |
+                \|/          Hardware               |
+
+
+                 |            應用程式             /|\
+                 |         ______________           |
+                 |         | 使用者模式 |           |
+                 |         ______________           |
+                 |               |                  |
+       實作      |         ______ _______           |    抽象程度
+       細節      |         |  核心模式  |           |
+                 |         ______________           |
+                 |               |                  |
+                 |               |                  |
+                 |               |                  |
+                \|/             硬體                |
+
+
+
+  核心模式"防止" 處在使用者模式的應用程式破壞系統或系統功能.
+
+
+  現代的微核心處理器在硬體的實作上至少有二種不同的狀態. 舉例來說, 在
+  Intel裡, 四種狀態決定PL(優先權等級). 可能使用0,1,2,3 狀態, 而0代表核心
+  模式.
+
+  Unix 作業系統僅需要兩種優先等級, 且我們將利用這樣的範例當切入點.
+
+  3.3. 使用者模式切換到核心模式
+
+  3.3.1. 何時我們作切換?
+
+  一但我們了解有兩種模式, 我們必需知道何時從當中一種模式切換到另一個.
+
+  典型的來說, 有兩個切換時機:
+
+  1. 當使用系統呼叫: 在系統呼叫後, 行程義務的呼叫部份核心模式的程式區段.
+
+  2. 當IRQ(或例外)發生時: 在IRQ發生後IRQ處理程式(或例外處理程式)會被呼叫,
+　　 然後控制權會回傳給被中斷的行程如同未發生任何事情一樣.
+
+  3.3.2. 系統呼叫
+
+  系統呼叫就像 特別用來處理存在於核心模式中作業系統例行程序的函式.
+
+  系統呼叫可以被使用的情形:
+
+ 
+  ·  存取輸出/輸入設備或檔案(舉例來說, 讀或寫)
+
+  ·  需要存取優先等級的資訊(像PID, 改變排程策略, 或其它資訊)  
+
+  ·  需要改變執行的關聯性(execution context)(像 forking 或是 執行某些
+     其他的應用程式)
+
+  ·  需要執行一個特別的命令(像"chdir", "kill")
+
+
+                                   |                |
+                           ------->| System Call i  | (Accessing Devices)
+  |                |       |       |  [sys_read()]  |
+  | ...            |       |       |                |
+  | system_call(i) |--------       |                |
+  |   [read()]     |               |                |
+  | ...            |               |                |
+  | system_call(j) |--------       |                |
+  |   [get_pid()]  |       |       |                |
+  | ...            |       ------->| System Call j  | (Accessing kernel data structures)
+  |                |               |  [sys_getpid()]|
+                                   |                |
+
+      USER MODE                        KERNEL MODE
+
+
+                          Unix System Calls Working
+
+
+  系統呼叫幾乎是使用者模式直接與低階資源溝通的僅有介面(硬體).唯一的例外是
+  當行程使用"ioperm"系統呼叫. 在這個例子中, 使用者模式的行程可以直接存取
+  設備(IRQ不能被使用)
+
+ 
+  注意: 不是每個C函式都是一個系統呼叫, 只有部份是.
+
+  下列是一組Linux核心2.4.17版本的系統呼叫列表, 檔案在 [arch/i386/kernel/entry.S]
+
+
+          .long SYMBOL_NAME(sys_ni_syscall)       /* 0  -  old "setup()" system call*/
+          .long SYMBOL_NAME(sys_exit)
+          .long SYMBOL_NAME(sys_fork)
+          .long SYMBOL_NAME(sys_read)
+          .long SYMBOL_NAME(sys_write)
+          .long SYMBOL_NAME(sys_open)             /* 5 */
+          .long SYMBOL_NAME(sys_close)
+          .long SYMBOL_NAME(sys_waitpid)
+          .long SYMBOL_NAME(sys_creat)
+          .long SYMBOL_NAME(sys_link)
+          .long SYMBOL_NAME(sys_unlink)           /* 10 */
+          .long SYMBOL_NAME(sys_execve)
+          .long SYMBOL_NAME(sys_chdir)
+          .long SYMBOL_NAME(sys_time)
+          .long SYMBOL_NAME(sys_mknod)
+          .long SYMBOL_NAME(sys_chmod)            /* 15 */
+          .long SYMBOL_NAME(sys_lchown16)
+          .long SYMBOL_NAME(sys_ni_syscall)                               /* old break syscall holder */
+          .long SYMBOL_NAME(sys_stat)
+          .long SYMBOL_NAME(sys_lseek)
+          .long SYMBOL_NAME(sys_getpid)           /* 20 */
+          .long SYMBOL_NAME(sys_mount)
+          .long SYMBOL_NAME(sys_oldumount)
+          .long SYMBOL_NAME(sys_setuid16)
+          .long SYMBOL_NAME(sys_getuid16)
+          .long SYMBOL_NAME(sys_stime)            /* 25 */
+          .long SYMBOL_NAME(sys_ptrace)
+          .long SYMBOL_NAME(sys_alarm)
+          .long SYMBOL_NAME(sys_fstat)
+          .long SYMBOL_NAME(sys_pause)
+          .long SYMBOL_NAME(sys_utime)            /* 30 */
+          .long SYMBOL_NAME(sys_ni_syscall)                               /* old stty syscall holder */
+          .long SYMBOL_NAME(sys_ni_syscall)                               /* old gtty syscall holder */
+          .long SYMBOL_NAME(sys_access)
+          .long SYMBOL_NAME(sys_nice)
+          .long SYMBOL_NAME(sys_ni_syscall)       /* 35 */                /* old ftime syscall holder */
+          .long SYMBOL_NAME(sys_sync)
+          .long SYMBOL_NAME(sys_kill)
+          .long SYMBOL_NAME(sys_rename)
+          .long SYMBOL_NAME(sys_mkdir)
+          .long SYMBOL_NAME(sys_rmdir)            /* 40 */
+          .long SYMBOL_NAME(sys_dup)
+          .long SYMBOL_NAME(sys_pipe)
+          .long SYMBOL_NAME(sys_times)
+          .long SYMBOL_NAME(sys_ni_syscall)                               /* old prof syscall holder */
+          .long SYMBOL_NAME(sys_brk)              /* 45 */
+          .long SYMBOL_NAME(sys_setgid16)
+          .long SYMBOL_NAME(sys_getgid16)
+          .long SYMBOL_NAME(sys_signal)
+          .long SYMBOL_NAME(sys_geteuid16)
+          .long SYMBOL_NAME(sys_getegid16)        /* 50 */
+          .long SYMBOL_NAME(sys_acct)
+          .long SYMBOL_NAME(sys_umount)                                   /* recycled never used phys() */
+          .long SYMBOL_NAME(sys_ni_syscall)                               /* old lock syscall holder */
+          .long SYMBOL_NAME(sys_ioctl)
+          .long SYMBOL_NAME(sys_fcntl)            /* 55 */
+          .long SYMBOL_NAME(sys_ni_syscall)                               /* old mpx syscall holder */
+          .long SYMBOL_NAME(sys_setpgid)
+          .long SYMBOL_NAME(sys_ni_syscall)                               /* old ulimit syscall holder */
+          .long SYMBOL_NAME(sys_olduname)
+          .long SYMBOL_NAME(sys_umask)            /* 60 */
+          .long SYMBOL_NAME(sys_chroot)
+          .long SYMBOL_NAME(sys_ustat)
+          .long SYMBOL_NAME(sys_dup2)
+          .long SYMBOL_NAME(sys_getppid)
+          .long SYMBOL_NAME(sys_getpgrp)          /* 65 */
+          .long SYMBOL_NAME(sys_setsid)
+          .long SYMBOL_NAME(sys_sigaction)
+          .long SYMBOL_NAME(sys_sgetmask)
+          .long SYMBOL_NAME(sys_ssetmask)
+          .long SYMBOL_NAME(sys_setreuid16)       /* 70 */
+          .long SYMBOL_NAME(sys_setregid16)
+          .long SYMBOL_NAME(sys_sigsuspend)
+          .long SYMBOL_NAME(sys_sigpending)
+          .long SYMBOL_NAME(sys_sethostname)
+          .long SYMBOL_NAME(sys_setrlimit)        /* 75 */
+          .long SYMBOL_NAME(sys_old_getrlimit)
+          .long SYMBOL_NAME(sys_getrusage)
+          .long SYMBOL_NAME(sys_gettimeofday)
+          .long SYMBOL_NAME(sys_settimeofday)
+          .long SYMBOL_NAME(sys_getgroups16)      /* 80 */
+          .long SYMBOL_NAME(sys_setgroups16)
+          .long SYMBOL_NAME(old_select)
+          .long SYMBOL_NAME(sys_symlink)
+          .long SYMBOL_NAME(sys_lstat)
+          .long SYMBOL_NAME(sys_readlink)         /* 85 */
+          .long SYMBOL_NAME(sys_uselib)
+          .long SYMBOL_NAME(sys_swapon)
+          .long SYMBOL_NAME(sys_reboot)
+          .long SYMBOL_NAME(old_readdir)
+          .long SYMBOL_NAME(old_mmap)             /* 90 */
+          .long SYMBOL_NAME(sys_munmap)
+          .long SYMBOL_NAME(sys_truncate)
+          .long SYMBOL_NAME(sys_ftruncate)
+          .long SYMBOL_NAME(sys_fchmod)
+          .long SYMBOL_NAME(sys_fchown16)         /* 95 */
+          .long SYMBOL_NAME(sys_getpriority)
+          .long SYMBOL_NAME(sys_setpriority)
+          .long SYMBOL_NAME(sys_ni_syscall)                               /* old profil syscall holder */
+          .long SYMBOL_NAME(sys_statfs)
+          .long SYMBOL_NAME(sys_fstatfs)          /* 100 */
+          .long SYMBOL_NAME(sys_ioperm)
+          .long SYMBOL_NAME(sys_socketcall)
+          .long SYMBOL_NAME(sys_syslog)
+          .long SYMBOL_NAME(sys_setitimer)
+          .long SYMBOL_NAME(sys_getitimer)        /* 105 */
+          .long SYMBOL_NAME(sys_newstat)
+          .long SYMBOL_NAME(sys_newlstat)
+          .long SYMBOL_NAME(sys_newfstat)
+          .long SYMBOL_NAME(sys_uname)
+          .long SYMBOL_NAME(sys_iopl)             /* 110 */
+          .long SYMBOL_NAME(sys_vhangup)
+          .long SYMBOL_NAME(sys_ni_syscall)       /* old "idle" system call */
+          .long SYMBOL_NAME(sys_vm86old)
+          .long SYMBOL_NAME(sys_wait4)
+          .long SYMBOL_NAME(sys_swapoff)          /* 115 */
+          .long SYMBOL_NAME(sys_sysinfo)
+          .long SYMBOL_NAME(sys_ipc)
+          .long SYMBOL_NAME(sys_fsync)
+          .long SYMBOL_NAME(sys_sigreturn)
+          .long SYMBOL_NAME(sys_clone)            /* 120 */
+          .long SYMBOL_NAME(sys_setdomainname)
+          .long SYMBOL_NAME(sys_newuname)
+          .long SYMBOL_NAME(sys_modify_ldt)
+          .long SYMBOL_NAME(sys_adjtimex)
+          .long SYMBOL_NAME(sys_mprotect)         /* 125 */
+          .long SYMBOL_NAME(sys_sigprocmask)
+          .long SYMBOL_NAME(sys_create_module)
+          .long SYMBOL_NAME(sys_init_module)
+          .long SYMBOL_NAME(sys_delete_module)
+          .long SYMBOL_NAME(sys_get_kernel_syms)  /* 130 */
+          .long SYMBOL_NAME(sys_quotactl)
+          .long SYMBOL_NAME(sys_getpgid)
+          .long SYMBOL_NAME(sys_fchdir)
+          .long SYMBOL_NAME(sys_bdflush)
+          .long SYMBOL_NAME(sys_sysfs)            /* 135 */
+          .long SYMBOL_NAME(sys_personality)
+          .long SYMBOL_NAME(sys_ni_syscall)       /* for afs_syscall */
+          .long SYMBOL_NAME(sys_setfsuid16)
+          .long SYMBOL_NAME(sys_setfsgid16)
+          .long SYMBOL_NAME(sys_llseek)           /* 140 */
+          .long SYMBOL_NAME(sys_getdents)
+          .long SYMBOL_NAME(sys_select)
+          .long SYMBOL_NAME(sys_flock)
+          .long SYMBOL_NAME(sys_msync)
+          .long SYMBOL_NAME(sys_readv)            /* 145 */
+          .long SYMBOL_NAME(sys_writev)
+          .long SYMBOL_NAME(sys_getsid)
+          .long SYMBOL_NAME(sys_fdatasync)
+          .long SYMBOL_NAME(sys_sysctl)
+          .long SYMBOL_NAME(sys_mlock)            /* 150 */
+          .long SYMBOL_NAME(sys_munlock)
+          .long SYMBOL_NAME(sys_mlockall)
+          .long SYMBOL_NAME(sys_munlockall)
+          .long SYMBOL_NAME(sys_sched_setparam)
+          .long SYMBOL_NAME(sys_sched_getparam)   /* 155 */
+          .long SYMBOL_NAME(sys_sched_setscheduler)
+          .long SYMBOL_NAME(sys_sched_getscheduler)
+          .long SYMBOL_NAME(sys_sched_yield)
+          .long SYMBOL_NAME(sys_sched_get_priority_max)
+          .long SYMBOL_NAME(sys_sched_get_priority_min)  /* 160 */
+          .long SYMBOL_NAME(sys_sched_rr_get_interval)
+          .long SYMBOL_NAME(sys_nanosleep)
+          .long SYMBOL_NAME(sys_mremap)
+          .long SYMBOL_NAME(sys_setresuid16)
+          .long SYMBOL_NAME(sys_getresuid16)      /* 165 */
+          .long SYMBOL_NAME(sys_vm86)
+          .long SYMBOL_NAME(sys_query_module)
+          .long SYMBOL_NAME(sys_poll)
+          .long SYMBOL_NAME(sys_nfsservctl)
+          .long SYMBOL_NAME(sys_setresgid16)      /* 170 */
+          .long SYMBOL_NAME(sys_getresgid16)
+          .long SYMBOL_NAME(sys_prctl)
+          .long SYMBOL_NAME(sys_rt_sigreturn)
+          .long SYMBOL_NAME(sys_rt_sigaction)
+          .long SYMBOL_NAME(sys_rt_sigprocmask)   /* 175 */
+          .long SYMBOL_NAME(sys_rt_sigpending)
+          .long SYMBOL_NAME(sys_rt_sigtimedwait)
+          .long SYMBOL_NAME(sys_rt_sigqueueinfo)
+          .long SYMBOL_NAME(sys_rt_sigsuspend)
+          .long SYMBOL_NAME(sys_pread)            /* 180 */
+          .long SYMBOL_NAME(sys_pwrite)
+          .long SYMBOL_NAME(sys_chown16)
+          .long SYMBOL_NAME(sys_getcwd)
+          .long SYMBOL_NAME(sys_capget)
+          .long SYMBOL_NAME(sys_capset)           /* 185 */
+          .long SYMBOL_NAME(sys_sigaltstack)
+          .long SYMBOL_NAME(sys_sendfile)
+          .long SYMBOL_NAME(sys_ni_syscall)               /* streams1 */
+          .long SYMBOL_NAME(sys_ni_syscall)               /* streams2 */
+          .long SYMBOL_NAME(sys_vfork)            /* 190 */
+          .long SYMBOL_NAME(sys_getrlimit)
+          .long SYMBOL_NAME(sys_mmap2)
+          .long SYMBOL_NAME(sys_truncate64)
+          .long SYMBOL_NAME(sys_ftruncate64)
+          .long SYMBOL_NAME(sys_stat64)           /* 195 */
+          .long SYMBOL_NAME(sys_lstat64)
+          .long SYMBOL_NAME(sys_fstat64)
+          .long SYMBOL_NAME(sys_lchown)
+          .long SYMBOL_NAME(sys_getuid)
+          .long SYMBOL_NAME(sys_getgid)           /* 200 */
+          .long SYMBOL_NAME(sys_geteuid)
+          .long SYMBOL_NAME(sys_getegid)
+          .long SYMBOL_NAME(sys_setreuid)
+          .long SYMBOL_NAME(sys_setregid)
+          .long SYMBOL_NAME(sys_getgroups)        /* 205 */
+          .long SYMBOL_NAME(sys_setgroups)
+          .long SYMBOL_NAME(sys_fchown)
+          .long SYMBOL_NAME(sys_setresuid)
+          .long SYMBOL_NAME(sys_getresuid)
+          .long SYMBOL_NAME(sys_setresgid)        /* 210 */
+          .long SYMBOL_NAME(sys_getresgid)
+          .long SYMBOL_NAME(sys_chown)
+          .long SYMBOL_NAME(sys_setuid)
+          .long SYMBOL_NAME(sys_setgid)
+          .long SYMBOL_NAME(sys_setfsuid)         /* 215 */
+          .long SYMBOL_NAME(sys_setfsgid)
+          .long SYMBOL_NAME(sys_pivot_root)
+          .long SYMBOL_NAME(sys_mincore)
+          .long SYMBOL_NAME(sys_madvise)
+          .long SYMBOL_NAME(sys_getdents64)       /* 220 */
+          .long SYMBOL_NAME(sys_fcntl64)
+          .long SYMBOL_NAME(sys_ni_syscall)       /* reserved for TUX */
+          .long SYMBOL_NAME(sys_ni_syscall)       /* Reserved for Security */
+          .long SYMBOL_NAME(sys_gettid)
+          .long SYMBOL_NAME(sys_readahead)        /* 225 */
+
+
+
+  3.3.3.  IRQ 事件
+
+  當 IRQ 發生時, 正在執行的行程被中斷以處理IRQ處理程序.
+
+  在處理完IRQ後,控制權 回傳到被中斷點, 行程會承接該點繼續未完的作業.
+
+
+                Running Task
+               |-----------|          (3)
+  NORMAL       |   |       | [break execution] IRQ Handler
+  EXECUTION (1)|   |       |     ------------->|---------|
+               |  \|/      |     |             |  does   |
+   IRQ (2)---->| ..        |----->             |  some   |
+               |   |       |<-----             |  work   |
+  BACK TO      |   |       |     |             |  ..(4). |
+  NORMAL    (6)|  \|/      |     <-------------|_________|
+  EXECUTION    |___________|  [return to code]
+                                      (5)
+                 USER MODE                     KERNEL MODE
+
+           User->Kernel Mode Transition caused by IRQ event
+
+
+  下列標示的步驟點出上面圖示的事件順序:
+
+  1. 正在執行的行程
+
+  2. 當行程正在執行時IRQ 事件發生 .
+
+  3. 行程被中斷, 呼叫"中斷處理程序".
+
+  4. 執行中斷處理程序程式碼.
+
+  5. 控制權回傳給使用者模式的行程(行程繼續未完的工作)
+
+  6. 行程回到正常的處理程序.
+
+  特別有趣的是計時器IRQ(Timer IRQ), 每個計時器毫秒(TIMER ms)處理:
+
+  1. 警告
+
+  2. 系統及行程計數器(由排程決定何時停止行程或提供給稽核使用)
+
+  3. 多工行程主要是基於轉換的時間(TIMESLICE)後
+     的甦醒機制(wake up mechanism)
+
+
+  3.4. 多工行程
+
+
+  3.4.1. 機制
+
+  現代作業系統主要的特色在於行程. 行程是在記憶體裡與其它行程分享所有資源
+  (包括CPU和記憶體)的應用程式.
+
+  "資源分享"是由"多工處理機制"來管理. 多工處理機制會從一個行程切換到
+  另一個在一段切換的時間單位(timeslice)後. 使用者會以為他們擁有所有的資源
+  的錯覺. 我們也可以想像單一使用者的腳本, 使用者會有同時間內跑很多行程的
+  錯覺.
+
+  實作多工行程, 行程使用狀態(the state)變數, 它可以是:
+
+ 
+  1. READY, 準備要執行.
+
+  2. BLOCKED, 等待資源
+
+  行程狀態是由它在相關的清單裡出現與否來管理: READY 清單和 BLOCKED 清單.
+
+
+  3.4.2. 行程切換
+
+  由一個行程換到另一個行程的活動稱為"行程切換".很多電腦有硬體命令會自動
+  執行這像操作.行程切換發生在下列的情況:
+
+  1. 在切換的時間(Timeslice)結束後:  我們需要排定一個"準備好要執行"的行程
+     讓它可以執行.
+     
+
+
+  2. 當一個行程必須等待存取設備資源: 我們需要排定一個新的行程然後
+     切換到該行程*
+
+
+  * 我們排定另一個行程以避免"忙著等待"的情況, 它會發生在我們正在等待
+    存取一個設備資源而不是執行其它工作.
+
+  行程切換 是由 排程(Schedule)實體來管理.
+
+
+  Timer    |           |
+   IRQ     |           |                            Schedule
+    |      |           |                     ________________________
+    |----->|   Task 1  |<------------------>|(1)Chooses a Ready Task |
+    |      |           |                    |(2)Task Switching       |
+    |      |___________|                    |________________________|
+    |      |           |                               /|\
+    |      |           |                                |
+    |      |           |                                |
+    |      |           |                                |
+    |      |           |                                |
+    |----->|   Task 2  |<-------------------------------|
+    |      |           |                                |
+    |      |___________|                                |
+    .      .     .     .                                .
+    .      .     .     .                                .
+    .      .     .     .                                .
+    |      |           |                                |
+    |      |           |                                |
+    ------>|   Task N  |<--------------------------------
+           |           |
+           |___________|
+
+              Task Switching based on TimeSlice
+
+   
+  一般正常的轉換的時間(Timeslice)在Linux裡面是10毫秒.
+
+
+   |           |
+   |           | Resource    _____________________________
+   |   Task 1  |----------->|(1) Enqueue Resource request |
+   |           |  Access    |(2)  Mark Task as blocked    |
+   |           |            |(3)  Choose a Ready Task     |
+   |___________|            |(4)    Task Switching        |
+                            |_____________________________|
+                                         |
+                                         |
+   |           |                         |
+   |           |                         |
+   |   Task 2  |<-------------------------
+   |           |
+   |           |
+   |___________|
+
+       Task Switching based on Waiting for a Resource
+
+
+
+  3.5. 微核心 vs 單一核心 作業系統
+
+  3.5.1   概要
+
+  直到現在我們檢視是所謂單一核心作業系統, 但也有另外一種型態的作業系統:
+  "微核心".
+
+  一個微核心作業系統利用行程, 不僅是給使用者模式, 而且也給真實的核心管理員,
+  像磁片行程(Floppy-Task), 硬碟行程(HDD-Task), 網路行程(Net-Task)等等. 
+  比如像 Amoeba, 及 Mach.
+
+  3.5.2   微核心作業系統的 PROs 及 CONTROs 
+
+  PROS:  
+
+  ·  作業系統之所以比較容易維護是因為每個行程管理一個單一形態的操作. 
+     所以如果你想要修改網路系統, 你可以修改網路行程(Net-Task)(理想的來
+     說, 如果它不需要結構上的變更)
+
+  CONS:
+
+  · 效能比單一核心的作業系統要差, 因為你必須要加上2倍的 行程切換次數
+    (TASK_SWITCH times)  (首先是進入該特別的行程, 接著是從該行程離開).
+
+  我個人的意見是, 微核心是 良好的教學範例 (像Minix), 但它們並不完美, 所以
+  不全然真的合適. Linux 使用 少數行程(Tasks), 稱為 核心執行緒 
+   "Kernel Thread" 來實作 部分微核心架構 (像 kswapd, 它用來從大量的儲存裝置
+   中回溯記憶體的分頁). 在這個例子裡, 這通常不會有效能上的問題 因為 
+   swapping是一個使用量不大的作業.
+  
+
+  3.6. 網路系統
+
+  3.6.1. ISO OSI 層級
+
+  標準的 ISO-OSI 以下列的層級描述一個網路架構:
+
+  1. 實體層 (例子: 點對點協定 和 乙太網路)
+
+
+  2. 資料鏈結層 (例子: 點對點協定 和 乙太網路)
+
+
+  3. 網路層 (舉例: IP 及 X.25)
+
+  4. 傳輸層 (examples: TCP, UDP)
+
+  5. 對話層(SSL)
+
+  6. 表達層 (FTP binary-ascii coding)
+
+  7. 應用程式層(應用程式如網景)
+
+  上列表的前兩層經常以硬體的方式實作. 以下層級常以軟體實作. 
+  (或給路由器的軔體)
+
+  一個作業系統會使用很多協定: 其中之一是 TCP/IP (在3-4層間最重要的協定)
+
+  3.6.2. 核心作那些事??
+
+  核心不曉得任何(只知道位址)關於ISO-OSI前兩層的任何作業.
+
+  在 串列匯流 (RX) 裡, 核心:
+
+  1. 管理 和低階設備的溝通 (像乙太網路卡或撥接器) 從設備那接收訊框.
+
+  2. 從訊框建立 TCP/IP 封包(像乙太網路或點對點協定),
+
+  3. 從Socket轉換封包 把它分派給正確的應用程式(使用阜號)或
+
+ 
+  4. 轉送封包給正確的佇列 
+
+
+  frames         packets              sockets
+  NIC ---------> Kernel ----------> Application
+                    |    packets
+                    --------------> Forward
+                          - RX -
+
+
+
+
+  在串列匯流(TX), 核心:
+
+ 
+  1. 轉換sockets或
+
+  2. 佇列資料到TCP/IP的封包內
+
+  3. 拆解 封包 成 訊框 (像乙太網路或點對點協定)
+
+  3. 使用硬體驅動程式傳送訊框
+
+
+  sockets       packets                     frames
+  Application ---------> Kernel ----------> NIC
+                packets     /|\
+  Forward  -------------------
+                          - TX -
+
+
+
+ 
+  3.7.  虛擬記憶體
+
+  3.7.1. 區段
+
+  區段是第一個解決劃分記憶體問題的方法: 它允許你編譯原始碼不用管應用程式
+  會被放在記憶體裡的位置. 事實上, 這個特徵 幫助 程式設計師 開發　獨立於
+  作業系統及應體的應用程式.
+
+  
+              |       Stack        |
+              |          |         |
+              |         \|/        |
+              |        Free        |
+              |         /|\        |     Segment <---> Process
+              |          |         |
+              |        Heap        |
+              | Data uninitialized |
+              |  Data initialized  |
+              |       Code         |
+              |____________________|
+
+                     Segment
+
+
+
+
+  我們可以說 一個區段是一個應用程式的邏輯實體, 或是應用程式在記憶體裡的映像.
+
+  當寫程式時, 我捫不用管資料的被放到記憶體的位置, 我們只要關心在區段
+  (我們的程式裡面)裡的位移.
+
+  我們分配一個區段給行程 反之亦然. 在 Linux裡 這並不是真的. Linux
+  只分配4個區段給核心或所有行程.
+
+  3.7.1.1. 區段的問題
+
+
+                                   ____________________
+                            ----->|                    |----->
+                            | IN  |     Segment A      | OUT
+   ____________________     |     |____________________|
+  |                    |____|     |                    |
+  |     Segment B      |          |     Segment B      |
+  |                    |____      |                    |
+  |____________________|    |     |____________________|
+                            |     |     Segment C      |
+                            |     |____________________|
+                            ----->|     Segment D      |----->
+                              IN  |____________________| OUT
+
+                       Segmentation problem
+
+
+
+
+  在上面圖解裡, 我們想從行程A, 及 D跳脫 並進入行程B.  如同我們所見有足夠
+  的空間給B 但我們無法把它切割成兩塊.所以我門不能取用它(記憶體不足)
+
+  這個問題發生的理由是因為純粹的區段是連續的空間(因為它們是邏輯區域)而無
+  法被分割.
+
+  3.7.2.  分頁
+
+
+
+               ____________________
+              |     Page 1         |
+              |____________________|
+              |     Page 2         |
+              |____________________|
+              |      ..            |     Segment <---> Process
+              |____________________|
+              |     Page n         |
+              |____________________|
+              |                    |
+              |____________________|
+              |                    |
+              |____________________|
+
+                     Segment
+
+
+  分頁把記憶體切割成n塊, 每一塊有固定的長度.
+
+  一個行程可以被載入一個或多個分頁. 當記憶體被釋放, 所有分頁同時被釋放
+  (參考之前的區段問題).
+
+  分頁也同時被用在另一個目的, "Swapping". 如果一個分頁沒有存在於實體的
+  記憶體裡, 它會產生一個例外(EXCEPTION), 那會讓核心在儲存的記憶體搜尋
+  新的分頁. 這個機制允許作業系統載入比只允許使用實體記憶體更多的
+  應用程式.
+
+  3.7.2.1. 分頁問題
+
+               ____________________
+     Page   X |     Process Y      |
+              |____________________|
+              |                    |
+              |       WASTE        |
+              |       SPACE        |
+              |____________________|
+
+                Pagination Problem
+
+  在上面的圖示裡, 我們可以看到分頁策略所產生的問題: 當行程Y載入分頁X, 
+  所有分頁的記憶體被劃分給該行程, 所以到結尾剩下的分頁空間被浪費掉了.
+
+
+  3.7.3. 區段和分頁
+
+
+  我們如何解決區段及分頁問題呢? 使用下列兩種策略其中一種.
+
+
+                                    |      ..            |
+                                    |____________________|
+                              ----->|      Page 1        |
+                              |     |____________________|
+                              |     |      ..            |
+   ____________________       |     |____________________|
+  |                    |      |---->|      Page 2        |
+  |      Segment X     |  ----|     |____________________|
+  |                    |      |     |       ..           |
+  |____________________|      |     |____________________|
+                              |     |       ..           |
+                              |     |____________________|
+                              |---->|      Page 3        |
+                                    |____________________|
+                                    |       ..           |
+
+
+
+  行程X, 分配給區段X, 被切割成三部分且每一部分被載入一個分頁裡.
+
+
+  我們沒有:
+
+  1. 區段問題: 我們分配每個分頁, 所以我們同時釋放分頁且我們可充分
+     管理運用空間.
+
+
+  2. 分頁問題: 只有最後一個分頁的部分空間會被浪費, 但我們可以決定使用
+     非常小的分頁, 舉例來說, 4096 bytes 長度 (最多失去4096*N_Tasks bytes)
+     且可管理階層性的分頁(使用2或3個層級的分頁)
+
+                            |         |           |         |
+                            |         |   Offset2 |  Value  |
+                            |         |        /|\|         |
+                    Offset1 |         |-----    | |         |
+                        /|\ |         |    |    | |         |
+                         |  |         |    |   \|/|         |
+                         |  |         |    ------>|         |
+                        \|/ |         |           |         |
+   Base Paging Address ---->|         |           |         |
+                            | ....... |           | ....... |
+                            |         |           |         |
+
+                       Hierarchical Paging
+
+
+
+  4.  Linux Startup
+
+  4. Linux 開機
+
+  我們從C原始碼執行的startup_32 組合語言標籤開始Linux核心:
+
+
+  |startup_32:
+     |start_kernel
+        |lock_kernel
+        |trap_init
+        |init_IRQ
+        |sched_init
+        |softirq_init
+        |time_init
+        |console_init
+        |#ifdef CONFIG_MODULES
+           |init_modules
+        |#endif
+        |kmem_cache_init
+        |sti
+        |calibrate_delay
+        |mem_init
+        |kmem_cache_sizes_init
+        |pgtable_cache_init
+        |fork_init
+        |proc_caches_init
+        |vfs_caches_init
+        |buffer_init
+        |page_cache_init
+        |signals_init
+        |#ifdef CONFIG_PROC_FS
+          |proc_root_init
+        |#endif
+        |#if defined(CONFIG_SYSVIPC)
+           |ipc_init
+        |#endif
+        |check_bugs
+        |smp_init
+        |rest_init
+           |kernel_thread
+           |unlock_kernel
+           |cpu_idle
+
+
+
+  ·  startup_32 [arch/i386/kernel/head.S]
+
+  ·  start_kernel [init/main.c]
+
+  ·  lock_kernel [include/asm/smplock.h]
+
+  ·  trap_init [arch/i386/kernel/traps.c]
+
+  ·  init_IRQ [arch/i386/kernel/i8259.c]
+
+  ·  sched_init [kernel/sched.c]
+
+  ·  softirq_init [kernel/softirq.c]
+
+  ·  time_init [arch/i386/kernel/time.c]
+
+  ·  console_init [drivers/char/tty_io.c]
+
+  ·  init_modules [kernel/module.c]
+
+  ·  kmem_cache_init [mm/slab.c]
+
+  ·  sti [include/asm/system.h]
+
+  ·  calibrate_delay [init/main.c]
+
+  ·  mem_init [arch/i386/mm/init.c]
+
+  ·  kmem_cache_sizes_init [mm/slab.c]
+
+  ·  pgtable_cache_init [arch/i386/mm/init.c]
+
+  ·  fork_init [kernel/fork.c]
+
+  ·  proc_caches_init
+
+  ·  vfs_caches_init [fs/dcache.c]
+
+  ·  buffer_init [fs/buffer.c]
+
+  ·  page_cache_init [mm/filemap.c]
+
+  ·  signals_init [kernel/signal.c]
+
+  ·  proc_root_init [fs/proc/root.c]
+
+  ·  ipc_init [ipc/util.c]
+
+  ·  check_bugs [include/asm/bugs.h]
+
+  ·  smp_init [init/main.c]
+
+  ·  rest_init
+
+  ·  kernel_thread [arch/i386/kernel/process.c]
+
+  ·  unlock_kernel [include/asm/smplock.h]
+
+  ·  cpu_idle [arch/i386/kernel/process.c]
+
+  最後一個函式 "rest_init"作了下列事情:
+
+  1. 開始核心執行緒"init"
+
+  2. 呼叫 unlock_kernel
+
+  3. 讓核心執行 cpu_idle 程序, 當沒有行程被排入則執行空循環(idle loop).
+
+  事實上 start_kernel 程序 不曾結束. 它無止盡的執行cpu_idle程序.
+
+  接著init說明, 它是第一個核心執行緒:
+
+  |init
+     |lock_kernel
+     |do_basic_setup
+        |mtrr_init
+        |sysctl_init
+        |pci_init
+        |sock_init
+        |start_context_thread
+        |do_init_calls
+           |(*call())-> kswapd_init
+     |prepare_namespace
+     |free_initmem
+     |unlock_kernel
+     |execve
+
+  5. Linux 特性
+
+  5.1 概要
+
+  Linux 有某些特性使得它和其他作業系統有所區別. 這些特性包括:
+
+
+  1. 僅有分頁
+
+ 
+  2. 軟體中斷
+
+
+  3. 核心執行緒
+
+  4. 核心模組
+
+  5. ''Proc'' 目錄
+
+  5.1.1. 彈性的要素
+
+   
+  第四點和第五點附予系統管理者作系統設定時巨大的彈性從使用者模式也允許他們
+  解決核心臭蟲或特別的問題而不用重新開機. 舉例來說, 如果你需要在伺服器上
+  作某些變更且你不想重新開機, 你可以準備核心模組讓它和核心作溝通.
+
+
+  5.2.  僅有分頁
+
+  Linux 不使用區段來分辨其它行程; 它使用分頁. (只有兩個區段被所有的行程使用,
+  程式碼及資料/堆疊)
+
+  我們也可以說內部行程分頁錯誤不曾發生, 因為每個行程使用一組和別的行程
+  不相同的分頁表.在某些案例中, 不同的行程指向相同的分頁表, 像共享程式庫:
+   這是必須用來減低記憶體使用; 記住 共享記憶體是程式碼僅導致所有資料被存
+  入真正的  行程堆疊中.
+
+
+  5.2.1.  Linux 區段
+
+  在Linux核心裡僅有4個區段存在
+
+ 
+  1. 核心程式碼[0x10]
+
+  2. 核心資料/堆疊[0x18]
+
+
+  3. 使用者程式碼[0x23]
+
+  4. 使用者資料/堆疊[0x2b]
+
+  [syntax is ''Purpose [Segment]'']
+
+  在Intel的架構下, 使用的區段的暫存器有:
+
+
+  ·  CS 給程式碼區段
+
+  ·  DS 給資料區段
+
+  ·  SS 給堆疊區段
+
+  ·  ES 給另一個區段(舉例來說, 用來讓記憶體在兩個不同的區段間複製)
+
+  So, every Task uses 0x23 for code and 0x2b for data/stack.
+
+  所以, 每個行程使用0x23區段給程式碼及0x2b給資料/堆疊
+
+
+  5.2.2. Linux 分頁
+
+  在Liunx 使用三種層級的分頁, 依據架構的不同.在Intel架構下, 只有支援兩種.
+  Linux 也支援 Copy on Write 機制 (請參考Cap.10以獲得更多的資訊)
+
+
+  5.2.3. 為什麼內部行程位址衝突不存在?
+
+
+  答案非常非常簡單: 內部行程位址衝突不能存在是因為那是不可能的事. 
+  線性記憶體映射到實體記憶體是由分頁完成, 所以只需要以單一方式指定實體
+  分頁即可.
+
+  5.2.4. 我們需要重組記憶體嘛?
+
+  不需要. 分頁指派是一個動態的行程.我們需要一個分頁只有再當行程要求時才
+  分配給它, 所以我們選擇從釋放的記憶體頁面依順序檢取.當我們希望釋放該頁
+  面, 我們只要把它加入被釋放的分頁清單上.
+
+  5.2.5. 什麼是核心分頁?
+
+  核心分頁有個問題: 它們可以被動態配置但是我們不能保證它們存在在一個連續性
+  的位址空間, 因為線性核心空間是相當於實體核心空間.
+
+  針對程式碼區段而言是沒有問題的. 開機程式碼在開機時被配置(所以我們有配置
+  固定量的記憶體), 而且對模組而言我門只要分配一塊可涵蓋模組的記憶體區域即可.
+
+  真正的問題是堆疊的區段 因為每個行程使用某些核心堆疊分頁. 堆疊區段必須是
+  連續的(依照堆疊的定義), 所以我門必須對每個行程設置最大限制堆疊範圍.如果
+  使用超過該限制, 問題就會發生.會導致覆寫核心模式行程的資料結構.
+
+  核心的資料結構能幫助我們避免上述問題, 因為核心功能不會:
+ 
+ 
+  ·  遞迴
+
+  ·  N次的內部呼叫
+
+  一但我們知道N的數目, 而且我們知道所有給核心函式的靜態變數平均值, 我們可以推估
+  堆疊的限制.
+
+  如果你想試著找出問題, 你可以建立一個自我呼叫多次的函式功能模組. 在固
+  定的次數裡, 因為分頁錯誤列外處理程序導致核心模組會掛掉.(寫到
+  唯讀頁面典型的情況)
+
+  5.3. 軟體中斷
+
+  當IRQ發生時, 行程切換會被延遲以獲得較好的效能表現.某些行程工作(在IRQ
+  之後可以被完成且在中斷時間內可以獲得較多的CPU資源, 比如說建立TCP/IP 堆疊)
+  會被佇列而且會在被排定的時間內完成(一旦轉換的時間單位結束).
+
+  目前核心(2.4.x)的軟體中斷 機制被賦予執行緒的特色: ''ksoftirqd_CPUn''. 
+  其中n表示CPU執行核心執行緒數字 (在單顆處理器系統 ''ksoftirqd_CPU0''
+  使用 PID 3).
+
+  5.3.1. 準備軟體中斷
+
+
+  5.3.2. 啟用軟體中斷
+
+  核心執行緒, 讓它管理佇列的工作.
+
+
+  |cpu_raise_softirq
+     |__cpu_raise_softirq
+     |wakeup_softirqd
+        |wake_up_process
+
+
+
+  ·  cpu_raise_softirq [kernel/softirq.c]
+
+  ·  __cpu_raise_softirq [include/linux/interrupt.h]
+
+  ·  wakeup_softirq [kernel/softirq.c]
+
+  ·  wake_up_process [kernel/sched.c]
+
+  描述軟體中斷過程.
+
+
+  核心執行緒.  
+
+  5.3.3. 執行軟體中斷
+
+  尚未完成:  描述軟體中斷機制牽涉的資料結構
+
+
+  當核心執行緒''ksoftirqd_CPU0'' 被喚醒, 它會執行佇列的工作.
+  
+
+  ''ksoftirqd_CPU0'' 程式碼 如下 (無窮迴圈)
+
+
+  for (;;) {
+     if (!softirq_pending(cpu))
+        schedule();
+        __set_current_state(TASK_RUNNING);
+     while (softirq_pending(cpu)) {
+        do_softirq();
+        if (current->need_resched)
+           schedule
+     }
+     __set_current_state(TASK_INTERRUPTIBLE)
+  }
+
+
+  ·  ksoftirqd [kernel/softirq.c]
+
+  5.4. 核心執行緒
+
+  即使Linux是單一核心的作業系統, 少數的核心執行緒存在著以處理核心內的事務.
+
+  這些行程並不利用使用者的記憶體; 它們共享核心的記憶體. 它們也在最高優先權
+  的情況下運作 (RING 0 在386的架構下) 就像核心模式裡的其他程式碼一樣.
+
+  核心執行緒被''kernel_thread [arch/i386/kernel/process]''函式建立, 
+  它從編譯器呼叫"clone"[arch/i386/kernel/process.c]系統呼叫函式(clone就像
+  fork 系統呼叫一樣):
+
+  int kernel_thread(int (*fn)(void *), void * arg, unsigned long flags)
+  {
+          long retval, d0;
+
+          __asm__ __volatile__(
+                  "movl %%esp,%%esi\n\t"
+                  "int $0x80\n\t"         /* Linux/i386 system call */
+                  "cmpl %%esp,%%esi\n\t"  /* child or parent? */
+                  "je 1f\n\t"             /* parent - jump */
+                  /* Load the argument into eax, and push it.  That way, it does
+                   * not matter whether the called function is compiled with
+                   * -mregparm or not.  */
+                  "movl %4,%%eax\n\t"
+                  "pushl %%eax\n\t"
+                  "call *%5\n\t"          /* call fn */
+                  "movl %3,%0\n\t"        /* exit */
+                  "int $0x80\n"
+                  "1:\t"
+                  :"=&a" (retval), "=&S" (d0)
+                  :"0" (__NR_clone), "i" (__NR_exit),
+                   "r" (arg), "r" (fn),
+                   "b" (flags | CLONE_VM)
+                  : "memory");
+          return retval;
+  }
+
+
+ 
+  一但被呼叫, 我們會有個新的行程(經常隨附著非常低的PID數字, 像 2, 3 等等)
+  等待低度使用資源,像是 swap 或 usb事件. 一個非常低度資源被使用的起因是
+  若非如此行程切換會是個負擔.
+
+  下列是一組大部分一般核心執行緒的列表 (從 ps x 命令得來)
+
+
+  PID      COMMAND
+   1        init
+   2        keventd
+   3        kswapd
+   4        kreclaimd
+   5        bdflush
+   6        kupdated
+   7        kacpid
+  67        khubd
+
+
+
+  它會呼叫 所有其他使用者模式的行程 (從 /etc/initab 檔案) 比如說 
+  螢幕服務, tty 及網路服務 (rc 指令稿)
+
+  5.4.1.  核心執行緒的例子: kswapd [mm/vmscan.c].
+
+
+  起始的程序:
+
+
+  |do_initcalls
+     |kswapd_init
+        |kernel_thread
+           |syscall fork (in assembler)
+
+
+
+  do_initcalls [init/main.c]
+
+
+  kswapd_init [mm/vmscan.c]
+
+
+  kernel_thread [arch/i386/kernel/process.c]
+
+
+  5.5  核心模組
+
+  5.5.1. 概要
+
+  Linux 核心模組是一組在核心模式下執行的程式碼 (舉例來說: 檔案系統, 
+  網路 及 硬體驅動程式) 讓你可以動態載入.
+
+  Linux核心不能被模組化:  排程及中斷管理或核心網路 等等.
+
+  在"/lib/modules/KERNEL_VERSION/"下 你可以找到所有安裝在你系統內的模組
+ 
+  5.5.2. 模組載入及卸除
+
+  載入模組, 輸入下列命令:
+
+  insmod MODULE_NAME parameters
+
+  舉例來說: insmod ne io=0x300 irq=9
+
+  注意: 你可以使用modprobe來取代insmode如果你希望核心自動搜尋某些參數(比如說
+  當使用PCI驅動程式, 或如果你有分配參數在/etc/conf.modules檔裡)
+
+
+  卸載模組, 輸入下列命令:
+
+
+   rmmod MODULE_NAME
+
+
+  5.5.3. 模組定義
+
+  模組永遠包括:
+
+
+  1. 起始模組(init_module)功能, 在insmode(或modporbe)命令時執行
+
+  2. 清除模組(clean_module)功能, 在rmmode命令時執行
+
+
+  如果這些功能不在模組裡, 你需要加入兩個巨集以分配哪些功能作用如同起始及
+  清除模組功能:
+
+  1. module_init(FUNCTION_NAME)
+
+  2. module_exit(FUNCTION_NAME)
+
+  注意: 一個模組可以看到核心變數僅在如果他已經被輸出(利用巨集EXPORT_SYMBOL)
+
+  5.5.4. 一個有用的技巧用來增加你的核心的彈性
+
+  // kernel sources side
+  void (*foo_function_pointer)(void *);
+
+  if (foo_function_pointer)
+    (foo_function_pointer)(parameter);
+
+
+
+  // module side
+  extern void (*foo_function_pointer)(void *);
+
+  void my_function(void *parameter) {
+    //My code
+  }
+
+  int init_module() {
+    foo_function_pointer = &my_function;
+  }
+
+  int cleanup_module() {
+    foo_function_pointer = NULL;
+  }
+
+  這個簡單的技巧讓你給予核心高度的彈性, 因為只有當你載入模組才會讓
+  "my_function"程序被執行. 這個程序會執行你要他完成的工作.舉例來說, 
+  rshaper模組, 它控制網路輸入的流量頻寬, 以上述的方式運作.
+
+  請注意到全部的模組機制是得要感謝某些全 域性的變數輸出到模組, 像標頭列表
+  (允許你儘可能的延伸清單). 典型的例子是檔案系統, 一般設備(char, block, net, 
+  telephony). 你必須要讓核心準備好接受新的模組; 在某些例子裡 你必須要
+  建立新的基礎架構 (像telephony, 最近才被新建立) 儘可能的標準化.
+
+  5.6   Proc 目錄
+
+  Proc 檔案系統是被劃分在 /proc目錄裡, 它是一個特別的目錄, 允許你直接與
+  核心溝通.
+
+
+  Linux 使用 proc 目錄 以支援直接和核心溝通:
+  在很多情況下這是必要的, 舉例來說當你想要看到主要行程的資料結構
+  或在某一個介面裡而非其他介面裡啟用proxy-arp 特性, 你想要改變執行緒的
+  最大數目的, 或你想要針對某些匯流排狀態除錯, 像ISA or PCI, 以了解哪一張
+  卡被安裝及何種輸出/輸入位址和IRQs被配置給它們.
+  
+
+  |-- bus
+  |   |-- pci
+  |   |   |-- 00
+  |   |   |   |-- 00.0
+  |   |   |   |-- 01.0
+  |   |   |   |-- 07.0
+  |   |   |   |-- 07.1
+  |   |   |   |-- 07.2
+  |   |   |   |-- 07.3
+  |   |   |   |-- 07.4
+  |   |   |   |-- 07.5
+  |   |   |   |-- 09.0
+  |   |   |   |-- 0a.0
+  |   |   |   `-- 0f.0
+  |   |   |-- 01
+  |   |   |   `-- 00.0
+  |   |   `-- devices
+  |   `-- usb
+  |-- cmdline
+  |-- cpuinfo
+  |-- devices
+  |-- dma
+  |-- dri
+  |   `-- 0
+  |       |-- bufs
+  |       |-- clients
+  |       |-- mem
+  |       |-- name
+  |       |-- queues
+  |       |-- vm
+  |       `-- vma
+  |-- driver
+  |-- execdomains
+  |-- filesystems
+  |-- fs
+  |-- ide
+  |   |-- drivers
+  |   |-- hda -> ide0/hda
+  |   |-- hdc -> ide1/hdc
+  |   |-- ide0
+  |   |   |-- channel
+  |   |   |-- config
+  |   |   |-- hda
+  |   |   |   |-- cache
+  |   |   |   |-- capacity
+  |   |   |   |-- driver
+  |   |   |   |-- geometry
+  |   |   |   |-- identify
+  |   |   |   |-- media
+  |   |   |   |-- model
+  |   |   |   |-- settings
+  |   |   |   |-- smart_thresholds
+  |   |   |   `-- smart_values
+  |   |   |-- mate
+  |   |   `-- model
+  |   |-- ide1
+  |   |   |-- channel
+  |   |   |-- config
+  |   |   |-- hdc
+  |   |   |   |-- capacity
+  |   |   |   |-- driver
+  |   |   |   |-- identify
+  |   |   |   |-- media
+  |   |   |   |-- model
+  |   |   |   `-- settings
+  |   |   |-- mate
+  |   |   `-- model
+  |   `-- via
+  |-- interrupts
+  |-- iomem
+  |-- ioports
+  |-- irq
+  |   |-- 0
+  |   |-- 1
+  |   |-- 10
+  |   |-- 11
+  |   |-- 12
+  |   |-- 13
+  |   |-- 14
+  |   |-- 15
+  |   |-- 2
+  |   |-- 3
+  |   |-- 4
+  |   |-- 5
+  |   |-- 6
+  |   |-- 7
+  |   |-- 8
+  |   |-- 9
+  |   `-- prof_cpu_mask
+  |-- kcore
+  |-- kmsg
+  |-- ksyms
+  |-- loadavg
+  |-- locks
+  |-- meminfo
+  |-- misc
+  |-- modules
+  |-- mounts
+  |-- mtrr
+  |-- net
+  |   |-- arp
+  |   |-- dev
+  |   |-- dev_mcast
+  |   |-- ip_fwchains
+  |   |-- ip_fwnames
+  |   |-- ip_masquerade
+  |   |-- netlink
+  |   |-- netstat
+  |   |-- packet
+  |   |-- psched
+  |   |-- raw
+  |   |-- route
+  |   |-- rt_acct
+  |   |-- rt_cache
+  |   |-- rt_cache_stat
+  |   |-- snmp
+  |   |-- sockstat
+  |   |-- softnet_stat
+  |   |-- tcp
+  |   |-- udp
+  |   |-- unix
+  |   `-- wireless
+  |-- partitions
+  |-- pci
+  |-- scsi
+  |   |-- ide-scsi
+  |   |   `-- 0
+  |   `-- scsi
+  |-- self -> 2069
+  |-- slabinfo
+  |-- stat
+  |-- swaps
+  |-- sys
+  |   |-- abi
+  |   |   |-- defhandler_coff
+  |   |   |-- defhandler_elf
+  |   |   |-- defhandler_lcall7
+  |   |   |-- defhandler_libcso
+  |   |   |-- fake_utsname
+  |   |   `-- trace
+  |   |-- debug
+  |   |-- dev
+  |   |   |-- cdrom
+  |   |   |   |-- autoclose
+  |   |   |   |-- autoeject
+  |   |   |   |-- check_media
+  |   |   |   |-- debug
+  |   |   |   |-- info
+  |   |   |   `-- lock
+  |   |   `-- parport
+  |   |       |-- default
+  |   |       |   |-- spintime
+  |   |       |   `-- timeslice
+  |   |       `-- parport0
+  |   |           |-- autoprobe
+  |   |           |-- autoprobe0
+  |   |           |-- autoprobe1
+  |   |           |-- autoprobe2
+  |   |           |-- autoprobe3
+  |   |           |-- base-addr
+  |   |           |-- devices
+  |   |           |   |-- active
+  |   |           |   `-- lp
+  |   |           |       `-- timeslice
+  |   |           |-- dma
+  |   |           |-- irq
+  |   |           |-- modes
+  |   |           `-- spintime
+  |   |-- fs
+  |   |   |-- binfmt_misc
+  |   |   |-- dentry-state
+  |   |   |-- dir-notify-enable
+  |   |   |-- dquot-nr
+  |   |   |-- file-max
+  |   |   |-- file-nr
+  |   |   |-- inode-nr
+  |   |   |-- inode-state
+  |   |   |-- jbd-debug
+  |   |   |-- lease-break-time
+  |   |   |-- leases-enable
+  |   |   |-- overflowgid
+  |   |   `-- overflowuid
+  |   |-- kernel
+  |   |   |-- acct
+  |   |   |-- cad_pid
+  |   |   |-- cap-bound
+  |   |   |-- core_uses_pid
+  |   |   |-- ctrl-alt-del
+  |   |   |-- domainname
+  |   |   |-- hostname
+  |   |   |-- modprobe
+  |   |   |-- msgmax
+  |   |   |-- msgmnb
+  |   |   |-- msgmni
+  |   |   |-- osrelease
+  |   |   |-- ostype
+  |   |   |-- overflowgid
+  |   |   |-- overflowuid
+  |   |   |-- panic
+  |   |   |-- printk
+  |   |   |-- random
+  |   |   |   |-- boot_id
+  |   |   |   |-- entropy_avail
+  |   |   |   |-- poolsize
+  |   |   |   |-- read_wakeup_threshold
+  |   |   |   |-- uuid
+  |   |   |   `-- write_wakeup_threshold
+  |   |   |-- rtsig-max
+  |   |   |-- rtsig-nr
+  |   |   |-- sem
+  |   |   |-- shmall
+  |   |   |-- shmmax
+  |   |   |-- shmmni
+  |   |   |-- sysrq
+  |   |   |-- tainted
+  |   |   |-- threads-max
+  |   |   `-- version
+  |   |-- net
+  |   |   |-- 802
+  |   |   |-- core
+  |   |   |   |-- hot_list_length
+  |   |   |   |-- lo_cong
+  |   |   |   |-- message_burst
+  |   |   |   |-- message_cost
+  |   |   |   |-- mod_cong
+  |   |   |   |-- netdev_max_backlog
+  |   |   |   |-- no_cong
+  |   |   |   |-- no_cong_thresh
+  |   |   |   |-- optmem_max
+  |   |   |   |-- rmem_default
+  |   |   |   |-- rmem_max
+  |   |   |   |-- wmem_default
+  |   |   |   `-- wmem_max
+  |   |   |-- ethernet
+  |   |   |-- ipv4
+  |   |   |   |-- conf
+  |   |   |   |   |-- all
+  |   |   |   |   |   |-- accept_redirects
+  |   |   |   |   |   |-- accept_source_route
+  |   |   |   |   |   |-- arp_filter
+  |   |   |   |   |   |-- bootp_relay
+  |   |   |   |   |   |-- forwarding
+  |   |   |   |   |   |-- log_martians
+  |   |   |   |   |   |-- mc_forwarding
+  |   |   |   |   |   |-- proxy_arp
+  |   |   |   |   |   |-- rp_filter
+  |   |   |   |   |   |-- secure_redirects
+  |   |   |   |   |   |-- send_redirects
+  |   |   |   |   |   |-- shared_media
+  |   |   |   |   |   `-- tag
+  |   |   |   |   |-- default
+  |   |   |   |   |   |-- accept_redirects
+  |   |   |   |   |   |-- accept_source_route
+  |   |   |   |   |   |-- arp_filter
+  |   |   |   |   |   |-- bootp_relay
+  |   |   |   |   |   |-- forwarding
+  |   |   |   |   |   |-- log_martians
+  |   |   |   |   |   |-- mc_forwarding
+  |   |   |   |   |   |-- proxy_arp
+  |   |   |   |   |   |-- rp_filter
+  |   |   |   |   |   |-- secure_redirects
+  |   |   |   |   |   |-- send_redirects
+  |   |   |   |   |   |-- shared_media
+  |   |   |   |   |   `-- tag
+  |   |   |   |   |-- eth0
+  |   |   |   |   |   |-- accept_redirects
+  |   |   |   |   |   |-- accept_source_route
+  |   |   |   |   |   |-- arp_filter
+  |   |   |   |   |   |-- bootp_relay
+  |   |   |   |   |   |-- forwarding
+  |   |   |   |   |   |-- log_martians
+  |   |   |   |   |   |-- mc_forwarding
+  |   |   |   |   |   |-- proxy_arp
+  |   |   |   |   |   |-- rp_filter
+  |   |   |   |   |   |-- secure_redirects
+  |   |   |   |   |   |-- send_redirects
+  |   |   |   |   |   |-- shared_media
+  |   |   |   |   |   `-- tag
+  |   |   |   |   |-- eth1
+  |   |   |   |   |   |-- accept_redirects
+  |   |   |   |   |   |-- accept_source_route
+  |   |   |   |   |   |-- arp_filter
+  |   |   |   |   |   |-- bootp_relay
+  |   |   |   |   |   |-- forwarding
+  |   |   |   |   |   |-- log_martians
+  |   |   |   |   |   |-- mc_forwarding
+  |   |   |   |   |   |-- proxy_arp
+  |   |   |   |   |   |-- rp_filter
+  |   |   |   |   |   |-- secure_redirects
+  |   |   |   |   |   |-- send_redirects
+  |   |   |   |   |   |-- shared_media
+  |   |   |   |   |   `-- tag
+  |   |   |   |   `-- lo
+  |   |   |   |       |-- accept_redirects
+  |   |   |   |       |-- accept_source_route
+  |   |   |   |       |-- arp_filter
+  |   |   |   |       |-- bootp_relay
+  |   |   |   |       |-- forwarding
+  |   |   |   |       |-- log_martians
+  |   |   |   |       |-- mc_forwarding
+  |   |   |   |       |-- proxy_arp
+  |   |   |   |       |-- rp_filter
+  |   |   |   |       |-- secure_redirects
+  |   |   |   |       |-- send_redirects
+  |   |   |   |       |-- shared_media
+  |   |   |   |       `-- tag
+  |   |   |   |-- icmp_echo_ignore_all
+  |   |   |   |-- icmp_echo_ignore_broadcasts
+  |   |   |   |-- icmp_ignore_bogus_error_responses
+  |   |   |   |-- icmp_ratelimit
+  |   |   |   |-- icmp_ratemask
+  |   |   |   |-- inet_peer_gc_maxtime
+  |   |   |   |-- inet_peer_gc_mintime
+  |   |   |   |-- inet_peer_maxttl
+  |   |   |   |-- inet_peer_minttl
+  |   |   |   |-- inet_peer_threshold
+  |   |   |   |-- ip_autoconfig
+  |   |   |   |-- ip_conntrack_max
+  |   |   |   |-- ip_default_ttl
+  |   |   |   |-- ip_dynaddr
+  |   |   |   |-- ip_forward
+  |   |   |   |-- ip_local_port_range
+  |   |   |   |-- ip_no_pmtu_disc
+  |   |   |   |-- ip_nonlocal_bind
+  |   |   |   |-- ipfrag_high_thresh
+  |   |   |   |-- ipfrag_low_thresh
+  |   |   |   |-- ipfrag_time
+  |   |   |   |-- neigh
+  |   |   |   |   |-- default
+  |   |   |   |   |   |-- anycast_delay
+  |   |   |   |   |   |-- app_solicit
+  |   |   |   |   |   |-- base_reachable_time
+  |   |   |   |   |   |-- delay_first_probe_time
+  |   |   |   |   |   |-- gc_interval
+  |   |   |   |   |   |-- gc_stale_time
+  |   |   |   |   |   |-- gc_thresh1
+  |   |   |   |   |   |-- gc_thresh2
+  |   |   |   |   |   |-- gc_thresh3
+  |   |   |   |   |   |-- locktime
+  |   |   |   |   |   |-- mcast_solicit
+  |   |   |   |   |   |-- proxy_delay
+  |   |   |   |   |   |-- proxy_qlen
+  |   |   |   |   |   |-- retrans_time
+  |   |   |   |   |   |-- ucast_solicit
+  |   |   |   |   |   `-- unres_qlen
+  |   |   |   |   |-- eth0
+  |   |   |   |   |   |-- anycast_delay
+  |   |   |   |   |   |-- app_solicit
+  |   |   |   |   |   |-- base_reachable_time
+  |   |   |   |   |   |-- delay_first_probe_time
+  |   |   |   |   |   |-- gc_stale_time
+  |   |   |   |   |   |-- locktime
+  |   |   |   |   |   |-- mcast_solicit
+  |   |   |   |   |   |-- proxy_delay
+  |   |   |   |   |   |-- proxy_qlen
+  |   |   |   |   |   |-- retrans_time
+  |   |   |   |   |   |-- ucast_solicit
+  |   |   |   |   |   `-- unres_qlen
+  |   |   |   |   |-- eth1
+  |   |   |   |   |   |-- anycast_delay
+  |   |   |   |   |   |-- app_solicit
+  |   |   |   |   |   |-- base_reachable_time
+  |   |   |   |   |   |-- delay_first_probe_time
+  |   |   |   |   |   |-- gc_stale_time
+  |   |   |   |   |   |-- locktime
+  |   |   |   |   |   |-- mcast_solicit
+  |   |   |   |   |   |-- proxy_delay
+  |   |   |   |   |   |-- proxy_qlen
+  |   |   |   |   |   |-- retrans_time
+  |   |   |   |   |   |-- ucast_solicit
+  |   |   |   |   |   `-- unres_qlen
+  |   |   |   |   `-- lo
+  |   |   |   |       |-- anycast_delay
+  |   |   |   |       |-- app_solicit
+  |   |   |   |       |-- base_reachable_time
+  |   |   |   |       |-- delay_first_probe_time
+  |   |   |   |       |-- gc_stale_time
+  |   |   |   |       |-- locktime
+  |   |   |   |       |-- mcast_solicit
+  |   |   |   |       |-- proxy_delay
+  |   |   |   |       |-- proxy_qlen
+  |   |   |   |       |-- retrans_time
+  |   |   |   |       |-- ucast_solicit
+  |   |   |   |       `-- unres_qlen
+  |   |   |   |-- route
+  |   |   |   |   |-- error_burst
+  |   |   |   |   |-- error_cost
+  |   |   |   |   |-- flush
+  |   |   |   |   |-- gc_elasticity
+  |   |   |   |   |-- gc_interval
+  |   |   |   |   |-- gc_min_interval
+  |   |   |   |   |-- gc_thresh
+  |   |   |   |   |-- gc_timeout
+  |   |   |   |   |-- max_delay
+  |   |   |   |   |-- max_size
+  |   |   |   |   |-- min_adv_mss
+  |   |   |   |   |-- min_delay
+  |   |   |   |   |-- min_pmtu
+  |   |   |   |   |-- mtu_expires
+  |   |   |   |   |-- redirect_load
+  |   |   |   |   |-- redirect_number
+  |   |   |   |   `-- redirect_silence
+  |   |   |   |-- tcp_abort_on_overflow
+  |   |   |   |-- tcp_adv_win_scale
+  |   |   |   |-- tcp_app_win
+  |   |   |   |-- tcp_dsack
+  |   |   |   |-- tcp_ecn
+  |   |   |   |-- tcp_fack
+  |   |   |   |-- tcp_fin_timeout
+  |   |   |   |-- tcp_keepalive_intvl
+  |   |   |   |-- tcp_keepalive_probes
+  |   |   |   |-- tcp_keepalive_time
+  |   |   |   |-- tcp_max_orphans
+  |   |   |   |-- tcp_max_syn_backlog
+  |   |   |   |-- tcp_max_tw_buckets
+  |   |   |   |-- tcp_mem
+  |   |   |   |-- tcp_orphan_retries
+  |   |   |   |-- tcp_reordering
+  |   |   |   |-- tcp_retrans_collapse
+  |   |   |   |-- tcp_retries1
+  |   |   |   |-- tcp_retries2
+  |   |   |   |-- tcp_rfc1337
+  |   |   |   |-- tcp_rmem
+  |   |   |   |-- tcp_sack
+  |   |   |   |-- tcp_stdurg
+  |   |   |   |-- tcp_syn_retries
+  |   |   |   |-- tcp_synack_retries
+  |   |   |   |-- tcp_syncookies
+  |   |   |   |-- tcp_timestamps
+  |   |   |   |-- tcp_tw_recycle
+  |   |   |   |-- tcp_window_scaling
+  |   |   |   `-- tcp_wmem
+  |   |   `-- unix
+  |   |       `-- max_dgram_qlen
+  |   |-- proc
+  |   `-- vm
+  |       |-- bdflush
+  |       |-- kswapd
+  |       |-- max-readahead
+  |       |-- min-readahead
+  |       |-- overcommit_memory
+  |       |-- page-cluster
+  |       `-- pagetable_cache
+  |-- sysvipc
+  |   |-- msg
+  |   |-- sem
+  |   `-- shm
+  |-- tty
+  |   |-- driver
+  |   |   `-- serial
+  |   |-- drivers
+  |   |-- ldisc
+  |   `-- ldiscs
+  |-- uptime
+  `-- version
+
+
+  在目錄裡也有很多行程使用PID如同檔案名稱(你存取所有行程資訊, 像 二進位檔
+   的路徑, 被使用的記憶體 等等).
+  有趣的地方在於 你不僅能看到核心值(舉例來說, 察看任何關於行程的訊息或
+  關於網路TCP/IP堆疊啟用選項)也可以修改其中一部分, 典型的例子像是 在
+   /proc/sys目錄:
+
+  /proc/sys/
+            acpi
+            dev
+            debug
+            fs
+            proc
+            net
+            vm
+            kernel
+
+
+
+  5.6.1.  /proc/sys/kernel
+
+  下列是非常重要且是眾所週知的核心數值, 隨時可以被修改:
+
+  overflowgid
+  overflowuid
+  random
+  threads-max // Max number of threads, typically 16384
+  sysrq // kernel hack: you can view istant register values and more
+  sem
+  msgmnb
+  msgmni
+  msgmax
+  shmmni
+  shmall
+  shmmax
+  rtsig-max
+  rtsig-nr
+  modprobe // modprobe file location
+  printk
+  ctrl-alt-del
+  cap-bound
+  panic
+  domainname // domain name of your Linux box
+  hostname // host name of your Linux box
+  version // date info about kernel compilation
+  osrelease // kernel version (i.e. 2.4.5)
+  ostype // Linux!
+
+
+
+  5.6.2.  /proc/sys/net
+
+  這可以被當成最有用的proc子目錄. 它允許你針對網路核心設定改變重要的參數.
+
+
+  core
+  ipv4
+  ipv6
+  unix
+  ethernet
+  802
+
+
+
+  5.6.2.1.  /proc/sys/net/core
+
+   下列是一般的網路設定, 像netdev_max_backlog (一般是300), 表示你網路
+   封包的長度. 這個值可以限定當接收封包時的網路頻寬, Linux必須等待排程
+   時間以便清除緩衝區(由於後續處理常式機制), 約 1000/HZ ms
+   
+
+
+
+    300    *        100             =     30 000
+  packets     HZ(Timeslice freq)         packets/s
+
+  30 000   *       1000             =      30 M
+  packets     average (Bytes/packet)   throughput Bytes/s
+
+
+
+  如果你想要獲得更高的效率, 你需要增加netdev_max_backlog, 藉由
+  輸入:
+
+  echo 4000 > /proc/sys/net/core/netdev_max_backlog
+
+  
+   注意: 針對某些HZ值的警告: 在某些架構下(像alpha or arm-tbox) 它是 1000,
+   所以你可以有300 MBytes/s 的平均效率.
+
+
+  5.6.2.2.  /proc/sys/net/ipv4
+
+  ip_forward, 在你的Linux系統內啟用或停用IP轉址. 這是一個針對所有設備
+  常用的設定, 你可以分配給你選擇的設備.
+
+
+  5.6.2.2.1.  /proc/sys/net/ipv4/conf/interface
+
+  我想這是一個最常用的/proc切入點, 因為它允許你改變某些網路設定以支援無線
+  網路(請查閱無線網路HOWTO<http://www.bertolinux.com>以獲得更多資訊)
+
+  這些是當你需要用的這些設定時的一些範例:
+
+   
+  .  forwarding, 啟用ip轉址給介面使用
+
+  . proxy_arp, 啟用proxy arp 特性. 更多的資訊在Proxy arp HOWTO 裡,在
+    Linux Document Project <http://www.tldp.org>及Wireless-HOWTO 
+    <http://www.bertolinux.com> 有更多關於無線網路proxy arp的使用.
+    
+   . send_redirects 以避免介面傳送ICMP_REDIRECT(如同前述, 參閱 
+      Wireless-HOWTO <http://www.bertolinux.com> 獲得更多資訊).
+
+  6. Linux 多工
+  
+  6.1. 概要
+
+  這一章將分析資料結構--用來管理Linux裡多工環境的機制.
+
+  6.1.1. 行程狀態
+   
+
+  Linux 行程可以是下列的其中一種(依據[include/linux.h]):
+
+  1. TASK_RUNNING, 它表示該行程在"READY List"
+
+  2. TASK_INTERRUPTIBLE, 行程等待訊號或資源(蟄伏中)
+
+  3. TASK_UNINTERRUPTIBLE, 行程等待資源 (蟄伏中), 等同於 等待佇列("Wait Queue")
+
+  4. TASK_ZOMBIE, 沒有父行程的子行程.
+
+  5. TASK_STOPPED, 正被除錯中的行程
+
+  6.1.2. 圖形化的交互作用
+
+
+         ______________     CPU Available     ______________
+        |              |  ---------------->  |              |
+        | TASK_RUNNING |                     | Real Running |
+        |______________|  <----------------  |______________|
+                             CPU Busy
+              |   /|\
+  Waiting for |    | Resource
+   Resource   |    | Available
+             \|/   |
+      ______________________
+     |                      |
+     | TASK_INTERRUPTIBLE / |
+     | TASK-UNINTERRUPTIBLE |
+     |______________________|
+
+                       Main Multitasking Flow
+
+
+
+  6.2. 切換的時間單位
+
+  6.2.1.  PIT 8253 Programming
+  
+  6.2.1.  PIT 8253 程式編寫
+
+  每10ms (依照HZ值) 會發出一個個IRQ0訊號, 它會在多工環境中提供幫助. 這個訊號來自
+  PIC 8259(在386+ 架構下) 連接到PIT 8253 每1.19318 MHz 一個週期.
+  
+
+
+      _____         ______        ______
+     | CPU |<------| 8259 |------| 8253 |
+     |_____| IRQ0  |______|      |___/|\|
+                                      |_____ CLK 1.193.180 MHz
+
+  // From include/asm/param.h
+  #ifndef HZ
+  #define HZ 100
+  #endif
+
+  // From include/asm/timex.h
+  #define CLOCK_TICK_RATE 1193180 /* Underlying HZ */
+
+  // From include/linux/timex.h
+  #define LATCH ((CLOCK_TICK_RATE + HZ/2) / HZ) /* For divider */
+
+  // From arch/i386/kernel/i8259.c
+  outb_p(0x34,0x43); /* binary, mode 2, LSB/MSB, ch 0 */
+  outb_p(LATCH & 0xff , 0x40); /* LSB */
+  outb(LATCH >> 8 , 0x40); /* MSB */
+
+
+  所以我們在 HZ=100 (default)時 以 LATCH = (1193180/HZ) = 11931.8 
+  編寫 8253 程式 (PIT, 可程式化的內部計時器). LATCH 意指 
+  頻率除以因數.
+
+  LATCH = 11931.8  給  8253 (在輸出方面) 一段 1193180 /
+  11931.8 頻率 = 100 Hz, 所以該時間約 為10ms
+
+  所以 轉換的時間單位為 1/HZ.
+
+
+  每個轉換的時間我們暫時中斷目前的行程執行(沒有作行程切換), 而且執行內部工作,
+  之後會回到之前的行程.
+
+  6.2.2. Linux 計時器 IRQ ICA
+
+
+  Linux Timer IRQ
+  IRQ 0 [Timer]
+   |
+  \|/
+  |IRQ0x00_interrupt        //   wrapper IRQ handler
+     |SAVE_ALL              ---
+        |do_IRQ                |   wrapper routines
+           |handle_IRQ_event  ---
+              |handler() -> timer_interrupt  // registered IRQ 0 handler
+                 |do_timer_interrupt
+                    |do_timer
+                       |jiffies++;
+                       |update_process_times
+                       |if (--counter <= 0) { // if time slice ended then
+                          |counter = 0;        //   reset counter
+                          |need_resched = 1;   //   prepare to reschedule
+                       |}
+           |do_softirq
+           |while (need_resched) { // if necessary
+              |schedule             //   reschedule
+              |handle_softirq
+           |}
+     |RESTORE_ALL
+
+
+
+  函式可以在下列找到:
+
+
+  ·  IRQ0x00_interrupt, SAVE_ALL [include/asm/hw_irq.h]
+
+  ·  do_IRQ, handle_IRQ_event [arch/i386/kernel/irq.c]
+
+  ·  timer_interrupt, do_timer_interrupt [arch/i386/kernel/time.c]
+
+  ·  do_timer, update_process_times [kernel/timer.c]
+
+  ·  do_softirq [kernel/soft_irq.c]
+
+  ·  RESTORE_ALL, while loop [arch/i386/kernel/entry.S]
+
+  注意:
+
+
+  1. 函式"IRQx00_interrupt" (像其他IRQxXY_interrupt)是直接被IDT(中斷描述表,
+     類似於真實模式下的中斷向量表, 參考11章), 所以每個中斷來到處理器是由
+     "IRQ0x#NR_interrupt"標準程序處理的, 其中#NR表示中斷數值. 
+     我們把它當作"包裝過的irq 處理程式".
+
+  2. 包裝過的程序被執行, 像  "do_IRQ", "handle_IRQ_event"
+     [arch/i386/kernel/irq.c].
+
+  3. 在這之後, 控制權被交付與正式的IRQ程序(handler()函式指標所到處),
+     先前以"request_irq"[arch/i386/kernel/irq.c]註冊, 在這個例子裡是
+     "timer_interrupt"     [arch/i386/kernel/time.c].
+
+  4. "timer_interrupt" [arch/i386/kernel/time.c] 程序被執行且, 當它結束時,  
+
+  5. 控制權回到某些組合語言的程序     [arch/i386/kernel/entry.S].
+
+  描述:
+
+  為了多工管理, Linux (如同其他unix) 使用行程. 所以, 在每個 IRQ 0, 計數器 
+  會被減少(point 4) 而且, 當它到達0時, 我們需要切換行程以便管理時間劃分 
+  (point 4 "need_resched" 變數被設成1, 然後, 在point 5的編譯器程序控制
+  "need_resched"並呼叫,如果需要的話, "schedule"  [kernel/sched.c]).
+
+  6.3. 排程
+
+  排程表是一段會選擇哪個行程在某段時間內應該被執行的程式碼.
+
+  任何一段時間你需要改變正在執行的行程, 選定下一個要被執行的候選程序.
+  下列是 ''schedule [kernel/sched.c]'' 函式.
+  
+
+  |schedule
+     |do_softirq // manages post-IRQ work
+     |for each task
+        |calculate counter
+     |prepare_to__switch // does anything
+     |switch_mm // change Memory context (change CR3 value)
+     |switch_to (assembler)
+        |SAVE ESP
+        |RESTORE future_ESP
+        |SAVE EIP
+        |push future_EIP *** push parameter as we did a call
+           |jmp __switch_to (it does some TSS work)
+           |__switch_to()
+            ..
+           |ret *** ret from call using future_EIP in place of call address
+        new_task
+
+
+
+
+  6.4.  後續處理常式, 程式佇列. 及 動態註冊的軟體中斷
+
+
+  6.4.1. 概要
+
+  典型的unix裡,  當IRQ發生時 (從設備), unix 讓 "行程切換" 詢問 
+  請求該設備的行程.
+
+  為了改善效能, Linux可以延遲非急迫性的工作, 以處理緊急的事件.
+
+  這個特色到了核心1.x由"後續處理"(BH)程序處理. 中斷處理 在排定時間裡標記 
+  一個會被稍後被執行的後續處理.
+  
+
+  在較新的核心裡有個比BH更動態的 行程佇列 且也有一個動態註冊的軟體中斷
+  以處理多個處理器的環境.
+
+  BH 綱要 :
+
+ 
+  1. 宣告
+
+
+  2. 註記
+
+
+  3. 執行
+
+
+  6.4.2.  宣告 
+
+  #define DECLARE_TASK_QUEUE(q) LIST_HEAD(q)
+  #define LIST_HEAD(name) \
+     struct list_head name = LIST_HEAD_INIT(name)
+  struct list_head {
+     struct list_head *next, *prev;
+  };
+  #define LIST_HEAD_INIT(name) { &(name), &(name) }
+
+        ''DECLARE_TASK_QUEUE'' [include/linux/tqueue.h, include/linux/list.h]
+
+
+
+  "DECLARE_TASK_QUEUE(q)" 巨集是被用來宣告一個名為q的結構以處理行程佇列.
+
+
+
+  6.4.3. 註記
+
+
+  這裡有ICA給"mark_bh" [include/linux/interrupt.h]的概要函式:
+
+
+  |mark_bh(NUMBER)
+     |tasklet_hi_schedule(bh_task_vec + NUMBER)
+        |insert into tasklet_hi_vec
+           |__cpu_raise_softirq(HI_SOFTIRQ)
+              |soft_active |= (1 << HI_SOFTIRQ)
+
+                     ''mark_bh''[include/linux/interrupt.h]
+
+
+
+  舉例來說, 當一個IRQ處理程序想要延遲某些工作, 它會"mark_bh(NUMBER)", 
+  在那兒NUMBER是被BH宣告的(查看前一個段落)
+
+
+  6.4.4. 執行
+
+   我們可以看到這個呼叫是從"do_IRQ" [arch/i386/kernel/irq.c]函式:
+
+
+  |do_softirq
+     |h->action(h)-> softirq_vec[TASKLET_SOFTIRQ]->action -> tasklet_action
+        |tasklet_vec[0].list->func
+
+
+
+  "h->action(h);"事先前被佇列的函式.
+
+
+  6.5. 非常低階的處理程序
+
+  set_intr_gate
+
+
+  set_trap_gate
+
+
+  set_task_gate (not used).
+
+
+  (*interrupt)[NR_IRQS](void) = { IRQ0x00_interrupt, IRQ0x01_interrupt,
+  ..}
+
+
+  NR_IRQS = 224 [kernel 2.4.2]
+
+
+  6.6. 行程切換
+
+  6.6.1. 何時行程切換發生?
+
+
+  現在我們將看到Linux核心如何從一行程切換到另一個行程.
+  
+  行程切換在很多情況下是必要的, 如下:
+
+  · 當轉換的時間結束, 我們需要存取某些其他的行程
+  
+
+  ·  當一個行程決定存取資源, 因此而蟄伏(sleeps), 所以我們必須選擇
+     另一個行程.
+
+  ·  當一個行程等待一個管線(pipe)導向的結果,  我們必須存取其他會把結果
+     寫入管線的 行程.
+
+  6.6.2. 行程切換
+
+                             TASK SWITCHING TRICK
+  #define switch_to(prev,next,last) do {                                  \
+          asm volatile("pushl %%esi\n\t"                                  \
+                       "pushl %%edi\n\t"                                  \
+                       "pushl %%ebp\n\t"                                  \
+                       "movl %%esp,%0\n\t"        /* save ESP */          \
+                       "movl %3,%%esp\n\t"        /* restore ESP */       \
+                       "movl $1f,%1\n\t"          /* save EIP */          \
+                       "pushl %4\n\t"             /* restore EIP */       \
+                       "jmp __switch_to\n"                                \
+                       "1:\t"                                             \
+                       "popl %%ebp\n\t"                                   \
+                       "popl %%edi\n\t"                                   \
+                       "popl %%esi\n\t"                                   \
+                       :"=m" (prev->thread.esp),"=m" (prev->thread.eip),  \
+                        "=b" (last)                                       \
+                       :"m" (next->thread.esp),"m" (next->thread.eip),    \
+                        "a" (prev), "d" (next),                           \
+                        "b" (prev));                                      \
+  } while (0)
+
+
+
+  Trick is here:
+
+  在這兒有點特別:
+
+    
+  1.  ''pushl %4'' 它把 future_EIP 放到堆疊內
+
+  2. 相反的, 在呼叫("call")裡, 我們將回傳被推送的值 到 point 1 
+     (所以產生新的行程)
+
+        U S E R   M O D E                 K E R N E L     M O D E
+
+   |          |     |          |       |          |     |          |
+   |          |     |          | Timer |          |     |          |
+   |          |     |  Normal  |  IRQ  |          |     |          |
+   |          |     |   Exec   |------>|Timer_Int.|     |          |
+   |          |     |     |    |       | ..       |     |          |
+   |          |     |    \|/   |       |schedule()|     | Task1 Ret|
+   |          |     |          |       |_switch_to|<--  |  Address |
+   |__________|     |__________|       |          |  |  |          |
+                                       |          |  |S |          |
+  Task1 Data/Stack   Task1 Code        |          |  |w |          |
+                                       |          | T|i |          |
+                                       |          | a|t |          |
+   |          |     |          |       |          | s|c |          |
+   |          |     |          | Timer |          | k|h |          |
+   |          |     |  Normal  |  IRQ  |          |  |i |          |
+   |          |     |   Exec   |------>|Timer_Int.|  |n |          |
+   |          |     |     |    |       | ..       |  |g |          |
+   |          |     |    \|/   |       |schedule()|  |  | Task2 Ret|
+   |          |     |          |       |_switch_to|<--  |  Address |
+   |__________|     |__________|       |__________|     |__________|
+
+  Task2 Data/Stack   Task2 Code        Kernel Code  Kernel Data/Stack
+
+
+
+ 
+  6.7.  Fork
+
+  6.7.1. 概要
+
+  Fork是用來建立另一個行程. 我們從父行程開始,  且我們複製很多資料結構給
+  子行程.
+  
+
+                                 |         |
+                                 | ..      |
+           Task Parent           |         |
+           |         |           |         |
+           |  fork   |---------->|  CREATE |
+           |         |          /|   NEW   |
+           |_________|         / |   TASK  |
+                              /  |         |
+               ---           /   |         |
+               ---          /    | ..      |
+                           /     |         |
+           Task Child     /
+           |         |   /
+           |  fork   |<-/
+           |         |
+           |_________|
+
+                         Fork SysCall
+
+  6.7.2. 什麼沒有被複製
+  
+  被建立的新行程(Task Child)是幾乎和父行程相同 (Task Parent), 
+  僅有一些地方不一樣:
+
+  1. 明顯的, PID不一樣
+
+  2. 子行程 fork()將回傳 0, 當父行程fork()將回傳子行程的PID, 以在
+     使用者模式中辨別兩者.
+
+
+  3. 所有子行程的資料分頁被標記為 "READ + EXECUTE", 沒有 "WRITE"
+     (當父行程對自己擁有的分頁有"WRITE"權利時) 所以, 當一個寫入的請求
+     發生時, 將會產生分頁錯誤, 該例外將建立新的分頁: 這個機制被稱作
+     "Copy on Write"(參考第十章節).
+
+  6.7.3. 分支的ICA (Fork ICA)
+
+
+  |sys_fork
+     |do_fork
+        |alloc_task_struct
+           |__get_free_pages
+         |p->state = TASK_UNINTERRUPTIBLE
+         |copy_flags
+         |p->pid = get_pid
+         |copy_files
+         |copy_fs
+         |copy_sighand
+         |copy_mm // should manage CopyOnWrite (I part)
+            |allocate_mm
+            |mm_init
+               |pgd_alloc -> get_pgd_fast
+                  |get_pgd_slow
+            |dup_mmap
+               |copy_page_range
+                  |ptep_set_wrprotect
+                     |clear_bit // set page to read-only
+            |copy_segments // For LDT
+         |copy_thread
+            |childregs->eax = 0
+            |p->thread.esp = childregs // child fork returns 0
+            |p->thread.eip = ret_from_fork // child starts from fork exit
+         |retval = p->pid // parent fork returns child pid
+         |SET_LINKS // insertion of task into the list pointers
+         |nr_threads++ // Global variable
+         |wake_up_process(p) // Now we can wake up just created child
+         |return retval
+
+                 fork ICA
+
+
+
+  ·  sys_fork [arch/i386/kernel/process.c]
+
+  ·  do_fork [kernel/fork.c]
+
+  ·  alloc_task_struct [include/asm/processor.c]
+
+  ·  __get_free_pages [mm/page_alloc.c]
+
+
+  ·  get_pid [kernel/fork.c]
+
+  ·  copy_files
+
+  ·  copy_fs
+
+  ·  copy_sighand
+
+  ·  copy_mm
+
+  ·  allocate_mm
+
+  ·  mm_init
+
+  ·  pgd_alloc -> get_pgd_fast [include/asm/pgalloc.h]
+
+  ·  get_pgd_slow
+
+  ·  dup_mmap [kernel/fork.c]
+
+  ·  copy_page_range [mm/memory.c]
+
+  ·  ptep_set_wrprotect [include/asm/pgtable.h]
+
+  ·  clear_bit [include/asm/bitops.h]
+
+  ·  copy_segments [arch/i386/kernel/process.c]
+
+  ·  copy_thread
+
+  ·  SET_LINKS [include/linux/sched.h]
+
+  ·  wake_up_process [kernel/sched.c]
+
+  6.7.4.  Copy on Write
+
+
+  Linux的Copy on Write 實作:
+
+
+  1. 註記所有被複製的分頁為唯讀, 當行程試圖寫入分頁會導致分頁錯誤
+
+   2. 分頁錯誤處理會建立新的分頁
+
+   | Page
+   | Fault
+   | Exception
+   |
+   |
+   -----------> |do_page_fault
+                   |handle_mm_fault
+                      |handle_pte_fault
+                         |do_wp_page
+                            |alloc_page      // Allocate a new page
+                            |break_cow
+                               |copy_cow_page // Copy old page to new one
+                               |establish_pte // reconfig Page Table pointers
+                                  |set_pte
+
+                Page Fault ICA
+
+
+
+  ·  do_page_fault [arch/i386/mm/fault.c]
+
+  ·  handle_mm_fault [mm/memory.c]
+
+  ·  handle_pte_fault
+
+  ·  do_wp_page
+
+  ·  alloc_page [include/linux/mm.h]
+
+  ·  break_cow [mm/memory.c]
+
+  ·  copy_cow_page
+
+  ·  establish_pte
+
+  ·  set_pte [include/asm/pgtable-3level.h]
+
+  7. Linux 記憶體管理
+
+
+  7.1. 概要
+
+  Linux 使用區段 加 分頁, 以簡化標記.
+
+  7.1.1. 區段
+
+
+  Linux 只使用四個區段:    
+
+
+  · 兩個給核心空間的區段(程式碼及資料/堆疊) 從[0xC000
+     0000] (3 GB) 到 [0xFFFF FFFF] (4 GB)
+
+ 
+  ·  兩個給使用者空間的區段(程式碼及資料/堆疊)from [0] (0 GB) 到
+     [0xBFFF FFFF] (3 GB)
+
+                                 __
+     4 GB--->|                |    |
+             |     Kernel     |    |  Kernel Space (Code + Data/Stack)
+             |                |  __|
+     3 GB--->|----------------|  __
+             |                |    |
+             |                |    |
+     2 GB--->|                |    |
+             |     Tasks      |    |  User Space (Code + Data/Stack)
+             |                |    |
+     1 GB--->|                |    |
+             |                |    |
+             |________________|  __|
+   0x00000000
+            Kernel/User Linear addresses
+
+
+
+  7.2. i386特別的實作
+
+
+  再一次, Linux使用三層的分頁來實作編頁碼, 但是在i386的架構下僅有兩個是
+  真的有被使用的:
+
+     ------------------------------------------------------------------
+     L    I    N    E    A    R         A    D    D    R    E    S    S
+     ------------------------------------------------------------------
+          \___/                 \___/                     \_____/
+
+       PD offset              PF offset                 Frame offset
+       [10 bits]              [10 bits]                 [12 bits]
+            |                     |                          |
+            |                     |     -----------          |
+            |                     |     |  Value  |----------|---------
+            |     |         |     |     |---------|   /|\    |        |
+            |     |         |     |     |         |    |     |        |
+            |     |         |     |     |         |    | Frame offset |
+            |     |         |     |     |         |   \|/             |
+            |     |         |     |     |---------|<------            |
+            |     |         |     |     |         |      |            |
+            |     |         |     |     |         |      | x 4096     |
+            |     |         |  PF offset|_________|-------            |
+            |     |         |       /|\ |         |                   |
+        PD offset |_________|-----   |  |         |          _________|
+              /|\ |         |    |   |  |         |          |
+               |  |         |    |  \|/ |         |         \|/
+   _____       |  |         |    ------>|_________|   PHYSICAL ADDRESS
+  |     |     \|/ |         |    x 4096 |         |
+  | CR3 |-------->|         |           |         |
+  |_____|         | ....... |           | ....... |
+                  |         |           |         |
+
+                 Page Directory          Page File
+
+                         Linux i386 Paging
+
+
+
+  7.3. 記憶體映射
+
+  Linux僅以分頁處理存取控制權, 所以不同的行程會有同樣的區段位址, 但不同的
+  CR3 (用來存目錄分頁位址的註冊機碼), 指向不同的分頁點.
+
+  在使用者模式, 一個行程不能超過3GB限制(0 x C0 00 00 00), 所以僅有第一個
+   768頁面的目錄入口是有意義的(768*4MB = 3GB).
+
+   
+  當一個行程進入到核心模式時 (藉由系統呼叫或是IRQ)其他的256分頁目錄入口
+  變得重要, 且它們指到同一頁的檔案等同於其他所有的行程(那些行程是和核
+  心相同的)
+
+   注意, 核心(且僅有核心) 線性空間同等於核心的實體空間, 所以:
+
+              ________________ _____
+             |Other KernelData|___  |  |                |
+             |----------------|   | |__|                |
+             |     Kernel     |\  |____|   Real Other   |
+    3 GB --->|----------------| \      |   Kernel Data  |
+             |                |\ \     |                |
+             |              __|_\_\____|__   Real       |
+             |      Tasks     |  \ \   |     Tasks      |
+             |              __|___\_\__|__   Space      |
+             |                |    \ \ |                |
+             |                |     \ \|----------------|
+             |                |      \ |Real KernelSpace|
+             |________________|       \|________________|
+
+             Logical Addresses          Physical Addresses
+
+
+
+
+  線性的核心空間依據實體核心空間轉換3GB (事實上分頁表有點像 { "00000000",
+  "00000001" }, 所以 它們不以虛擬的方式操作, 它們僅回報從線性位址得到的
+  實體位址)
+
+
+  注意在核心和使用者空間當中將沒有所謂的位址衝突  因為我們可以分頁表
+  處理實體位址 . 
+
+  7.4. 低階記憶體配置
+
+  7.4.1. 開機啟動
+
+ 
+  我們從kmem_cache_init開始(由start_kernel [init/main.c] 在開機時啟動 ).
+
+
+  |kmem_cache_init
+     |kmem_cache_estimate
+
+
+
+  kmem_cache_init [mm/slab.c]
+
+
+  kmem_cache_estimate
+
+
+  先在我們以mem_init (同樣由  start_kernel[init/main.c]啟動) 繼續
+
+  |mem_init
+     |free_all_bootmem
+        |free_all_bootmem_core
+
+
+
+  mem_init [arch/i386/mm/init.c]
+
+
+  free_all_bootmem [mm/bootmem.c]
+
+  free_all_bootmem_core
+
+
+  7.4.2. 執行期配置
+
+
+  在Linux下, 當我們想要配置記憶體, 舉例來說在"copy_on_write"機制期間
+  (參考第10章), 我們呼叫:
+
+  |copy_mm
+     |allocate_mm = kmem_cache_alloc
+        |__kmem_cache_alloc
+           |kmem_cache_alloc_one
+              |alloc_new_slab
+                 |kmem_cache_grow
+                    |kmem_getpages
+                       |__get_free_pages
+                          |alloc_pages
+                             |alloc_pages_pgdat
+                                |__alloc_pages
+                                   |rmqueue
+                                   |reclaim_pages
+
+
+
+
+  函式可以再下列被找到:
+
+
+  ·  copy_mm [kernel/fork.c]
+
+  ·  allocate_mm [kernel/fork.c]
+
+  ·  kmem_cache_alloc [mm/slab.c]
+
+  ·  __kmem_cache_alloc
+
+  ·  kmem_cache_alloc_one
+
+  ·  alloc_new_slab
+
+  ·  kmem_cache_grow
+
+  ·  kmem_getpages
+
+  ·  __get_free_pages [mm/page_alloc.c]
+
+  ·  alloc_pages [mm/numa.c]
+
+  ·  alloc_pages_pgdat
+
+  ·  __alloc_pages [mm/page_alloc.c]
+
+  ·  rm_queue
+
+  ·  reclaim_pages [mm/vmscan.c]
+
+  TODO: Understand Zones
+
+  
+
+
+  7.5. 置換(Swap)
+
+
+
+ 
+  7.5.1. 概要
+
+  置換是由kswapd服務處理(核心執行緒)
+
+  7.5.2.  kswapd
+
+  如同其他的執行緒, kswapd 有主要的迴圈等待執行.
+
+  |kswapd
+     |// initialization routines
+     |for (;;) { // Main loop
+        |do_try_to_free_pages
+        |recalculate_vm_stats
+        |refill_inactive_scan
+        |run_task_queue
+        |interruptible_sleep_on_timeout // we sleep for a new swap request
+     |}
+
+
+
+  ·  kswapd [mm/vmscan.c]
+
+  ·  do_try_to_free_pages
+
+  ·  recalculate_vm_stats [mm/swap.c]
+
+  ·  refill_inactive_scan [mm/vmswap.c]
+
+  ·  run_task_queue [kernel/softirq.c]
+
+  ·  interruptible_sleep_on_timeout [kernel/sched.c]
+
+  7.5.3. 何時我們需要置換(swapping)?
+
+  在我們必須存取不在實體記憶體裡的分頁時置換是必需的.
+
+
+  Linux 使用kswapd 核心執行緒來達到此目的. 當行程收到分頁錯誤時 我們會
+  執行下列:
+
+   | Page Fault Exception
+   | cause by all these conditions:
+   |   a-) User page
+   |   b-) Read or write access
+   |   c-) Page not present
+   |
+   |
+   -----------> |do_page_fault
+                   |handle_mm_fault
+                      |pte_alloc
+                         |pte_alloc_one
+                            |__get_free_page = __get_free_pages
+                               |alloc_pages
+                                  |alloc_pages_pgdat
+                                     |__alloc_pages
+                                        |wakeup_kswapd // We wake up kernel thread kswapd
+
+                     Page Fault ICA
+
+
+
+  ·  do_page_fault [arch/i386/mm/fault.c]
+
+  ·  handle_mm_fault [mm/memory.c]
+
+  ·  pte_alloc
+
+  ·  pte_alloc_one [include/asm/pgalloc.h]
+
+  ·  __get_free_page [include/linux/mm.h]
+
+  ·  __get_free_pages [mm/page_alloc.c]
+
+  ·  alloc_pages [mm/numa.c]
+
+  ·  alloc_pages_pgdat
+
+  ·  __alloc_pages
+
+  ·  wakeup_kswapd [mm/vmscan.c]
+
+  8. Linux 網路
+
+  8.1. Linux網路如何管理?
+
+
+  每種設備驅動程式有專門的NIC. 在裡頭Linux永遠呼叫標準高階的程序:"netif_rx
+  [net/core/dev.c]", 它控制訊框所屬的三層協定, 且它會呼叫三層協定裡正確的函式
+  (所以我們使用指標 以指到正確的函式)
+
+ 
+  8.2. TCP 例子
+
+  我們將檢視現行發生的例子當我們傳送一個TCP封包給Linux, 從 
+  ''netif_rx [net/core/dev.c]'' 呼叫開始.
+
+  8.2.1. 中斷管理: "netif_rx"
+
+  |netif_rx
+     |__skb_queue_tail
+        |qlen++
+        |* simple pointer insertion *
+     |cpu_raise_softirq
+        |softirq_active(cpu) |= (1 << NET_RX_SOFTIRQ) // set bit NET_RX_SOFTIRQ in the BH vector
+
+
+
+  函式:
+
+
+  ·  __skb_queue_tail [include/linux/skbuff.h]
+
+  ·  cpu_raise_softirq [kernel/softirq.c]
+
+  8.2.2.   中斷管理後續處理: "net_rx_action"
+
+  一旦IRQ交互作用結束, 我們需要尋著訊框的下一部分以及檢驗NET_RX_SOFTIRQ
+  作了那些事.
+
+   下一個我們呼叫函式''net_rx_action [net/core/dev.c]'', 依據  
+  "net_dev_init [net/core/dev.c]".
+ 
+
+  |net_rx_action
+     |skb = __skb_dequeue (the exact opposite of __skb_queue_tail)
+     |for (ptype = first_protocol; ptype < max_protocol; ptype++) // Determine
+        |if (skb->protocol == ptype)                               // what is the network protocol
+           |ptype->func -> ip_rcv // according to ''struct ip_packet_type [net/ipv4/ip_output.c]''
+
+      **** 現在我們知道封包是屬於IP層級 ****
+           |ip_rcv
+              |NF_HOOK (ip_rcv_finish)
+                 |ip_route_input // search from routing table to determine function to call
+                    |skb->dst->input -> ip_local_deliver // according to previous routing table check, destination is local machine
+                       |ip_defrag // reassembles IP fragments
+                          |NF_HOOK (ip_local_deliver_finish)
+                             |ipprot->handler -> tcp_v4_rcv // according to ''tcp_protocol [include/net/protocol.c]''
+
+       **** 現在我們知道封包是屬於TCP層級 ****
+                             |tcp_v4_rcv
+                                |sk = __tcp_v4_lookup
+                                |tcp_v4_do_rcv
+                                   |switch(sk->state)
+
+       *** 封包可以被分送到使用相關插槽的行程 ***
+                                   |case TCP_ESTABLISHED:
+                                      |tcp_rcv_established
+                                         |__skb_queue_tail // enqueue packet to socket
+                                         |sk->data_ready -> sock_def_readable
+                                            |wake_up_interruptible
+
+
+       *** 封包仍然需要經由TCP三向交握確認 ***
+                                   |case TCP_LISTEN:
+                                      |tcp_v4_hnd_req
+                                         |tcp_v4_search_req
+                                         |tcp_check_req
+                                            |syn_recv_sock -> tcp_v4_syn_recv_sock
+                                         |__tcp_v4_lookup_established
+                                   |tcp_rcv_state_process
+
+                      *** TCP三向交握 ***
+                                      |switch(sk->state)
+                                      |case TCP_LISTEN: // We received SYN
+                                         |conn_request -> tcp_v4_conn_request
+                                            |tcp_v4_send_synack // Send SYN + ACK
+                                               |tcp_v4_synq_add // set SYN state
+                                      |case TCP_SYN_SENT: // we received SYN + ACK
+                                         |tcp_rcv_synsent_state_process
+                                            tcp_set_state(TCP_ESTABLISHED)
+                                               |tcp_send_ack
+                                                  |tcp_transmit_skb
+                                                     |queue_xmit -> ip_queue_xmit
+                                                        |ip_queue_xmit2
+                                                           |skb->dst->output
+                                      |case TCP_SYN_RECV: // We received ACK
+                                         |if (ACK)
+                                            |tcp_set_state(TCP_ESTABLISHED)
+
+
+
+  函式可以再下列被找到:
+ 
+
+  ·  net_rx_action [net/core/dev.c]
+
+
+  ·  __skb_dequeue [include/linux/skbuff.h]
+
+  ·  ip_rcv [net/ipv4/ip_input.c]
+
+  ·  NF_HOOK -> nf_hook_slow [net/core/netfilter.c]
+
+  ·  ip_rcv_finish [net/ipv4/ip_input.c]
+
+  ·  ip_route_input [net/ipv4/route.c]
+
+  ·  ip_local_deliver [net/ipv4/ip_input.c]
+
+  ·  ip_defrag [net/ipv4/ip_fragment.c]
+
+  ·  ip_local_deliver_finish [net/ipv4/ip_input.c]
+
+  ·  tcp_v4_rcv [net/ipv4/tcp_ipv4.c]
+
+  ·  __tcp_v4_lookup
+
+  ·  tcp_v4_do_rcv
+
+  ·  tcp_rcv_established [net/ipv4/tcp_input.c]
+
+  ·  __skb_queue_tail [include/linux/skbuff.h]
+
+  ·  sock_def_readable [net/core/sock.c]
+
+  ·  wake_up_interruptible [include/linux/sched.h]
+
+  ·  tcp_v4_hnd_req [net/ipv4/tcp_ipv4.c]
+
+  ·  tcp_v4_search_req
+
+  ·  tcp_check_req
+
+  ·  tcp_v4_syn_recv_sock
+
+  ·  __tcp_v4_lookup_established
+
+  ·  tcp_rcv_state_process [net/ipv4/tcp_input.c]
+
+  ·  tcp_v4_conn_request [net/ipv4/tcp_ipv4.c]
+
+  ·  tcp_v4_send_synack
+
+  ·  tcp_v4_synq_add
+
+  ·  tcp_rcv_synsent_state_process [net/ipv4/tcp_input.c]
+
+  ·  tcp_set_state [include/net/tcp.h]
+
+  ·  tcp_send_ack [net/ipv4/tcp_output.c]
+
+  
+  描述:
+
+
+   
+  · 首先我們決定協定的型態(IP, then TCP)
+
+ 
+  ·  NF_HOOK (function) 是一個包裝過的程序,首先 處理網路過濾 (舉例來說 防火牆),
+     然後呼叫''function''.
+  
+  
+
+  ·  在處理TCP三向交握(three-way TCP handshake)後, TCP三向交握由下列方式組成:
+
+  SERVER (LISTENING)                       CLIENT (CONNECTING)
+                             SYN
+                     <-------------------
+
+
+                          SYN + ACK
+                     ------------------->
+
+
+                             ACK
+                     <-------------------
+
+                      3-Way TCP handshake
+
+
+
+  ·  在結尾我們只有啟動"tcp_rcv_established [net/ipv4/tcp_input.c]", 
+     該作用只傳送封包給客戶端的插槽(socket)並喚醒它.
+
+  9. Linux 檔案系統
+
+
+  尚未完成
+
+
+  10. 有用的技巧
+
+  10.1.  堆疊和 堆積
+
+  
+  10.1.1. 概要
+
+  這兒我們檢視堆疊和堆積如何在記憶體裡被配置
+
+  10.1.2. 記憶體配置
+
+  FF..        |                 | <-- bottom of the stack
+         /|\  |                 |   |
+   higher |   |                 |   |   stack
+   values |   |                 |  \|/  growing
+              |                 |
+  XX..        |                 | <-- top of the stack [Stack Pointer]
+              |                 |
+              |                 |
+              |                 |
+  00..        |_________________| <-- end of stack [Stack Segment]
+
+                     Stack
+
+
+
+  記憶體位址值從00..開始(那也是堆疊區段開始的地方)並且它們依
+  靠近FF..的位址值成長.
+
+
+  XX.. 是實際堆疊指標的值.
+
+  Stack is used by functions for:
+
+  堆疊是被函式使用來:
+
+ 
+  1. 全域變數
+
+  
+  2. 區域變數
+
+
+  3. 回傳位址
+
+  舉例來說, 對 一個 常用的 函式來說:
+
+   |int foo_function (parameter_1, parameter_2, ..., parameter_n) {
+      |variable_1 declaration;
+      |variable_2 declaration;
+        ..
+      |variable_n declaration;
+
+      |// Body function
+      |dynamic variable_1 declaration;
+      |dynamic variable_2 declaration;
+       ..
+      |dynamic variable_n declaration;
+
+      |// Code is inside Code Segment, not Data/Stack segment!
+
+      |return (ret-type) value; // often it is inside some register, for i386 eax register is used.
+   |}
+ 
+  我們有
+
+            |                       |
+            | 1. parameter_1 pushed | \
+      S     | 2. parameter_2 pushed |  | Before
+      T     | ...................   |  | the calling
+      A     | n. parameter_n pushed | /
+      C     | ** Return address **  | -- Calling
+      K     | 1. local variable_1   | \
+            | 2. local variable_2   |  | After
+            | .................     |  | the calling
+            | n. local variable_n   | /
+            |                       |
+           ...                     ...   Free
+           ...                     ...   stack
+            |                       |
+      H     | n. dynamic variable_n | \
+      E     | ...................   |  | Allocated by
+      A     | 2. dynamic variable_2 |  | malloc & kmalloc
+      P     | 1. dynamic variable_1 | /
+            |_______________________|
+
+              Typical stack usage
+
+
+  注意: 變數排列是依照硬體架構而有所不同的.
+
+
+  10.2. 應用程式vs行程
+
+  10.2.1. 基礎定義
+
+
+  我們必須區分出兩個觀點:
+
+  ·  應用程式: 那是我們想執行的程式碼
+
+
+  ·  程序: 程式在記憶體上的映像檔(它依據記憶體的策略而被使用, 區段 和/或 
+     分頁)
+
+  程序經常也經常被稱為行程或執行緒.
+
+  10.3.  鎖定
+
+
+  10.3.1. 概要
+
+  2 種鎖定的情況:
+
+  1. CPU內部鎖定
+
+  2. 在CPU之間鎖定
+
+  10.4.  Copy_on_write
+
+  Copy_on_write 是一種機制 用來減少記憶體的使用量. 它延遲記憶體配置直到
+  真的需要用到的時候.
+
+  舉例來說, 當一個行程執行"fork()" 系統呼叫 (以建立另一個行程), 我們
+  仍然使用同樣的唯讀記憶體頁面當父行程. 當一個行程寫(WRITES)到該頁, 
+  它會導致一個例外錯誤且該頁會被複製並標記為"rw"(read, write).
+
+  1-) 分頁 X  在父行程和子行程間是被分享的 
+
+   Task Parent
+   |         | RO Access  ______
+   |         |---------->|Page X|
+   |_________|           |______|
+                            /|\
+                             |
+   Task Child                |
+   |         | RO Access     |
+   |         |----------------
+   |_________|
+
+
+  2-) 寫入的請求
+ 
+   Task Parent
+   |         | RO Access  ______
+   |         |---------->|Page X|    Trying to write
+   |_________|           |______|
+                            /|\
+                             |
+   Task Child                |
+   |         | RO Access     |
+   |         |----------------
+   |_________|
+
+
+  3-) 最後設定: 父行程及子行程其中之一有個獨立的複製分頁, X 及 Y
+
+   Task Parent
+   |         | RW Access  ______
+   |         |---------->|Page X|
+   |_________|           |______|
+
+
+   Task Child
+   |         | RW Access  ______
+   |         |---------->|Page Y|
+   |_________|           |______|
+
+
+
+  11. 80386 特殊的細項
+
+  11.1. 開機程序
+  
+  bbootsect.s [arch/i386/boot]
+  setup.S (+video.S)
+  head.S (+misc.c) [arch/i386/boot/compressed]
+  start_kernel [init/main.c]
+
+
+
+  11.2.  80386 (及更多) 描述符號
+
+ 
+  11.2.1. 概要
+
+
+  描述符號是被Intel微處理器i386+用來虛擬化記憶體的的資料結構.
+
+  11.2.2. 描述符號的種類
+
+  ·  GDT (全域描述表)  
+
+
+  ·  LDT (區域描述表) 
+
+
+  ·  IDT (中斷描述表)
+
+  12. 中斷(IRQ)
+
+
+  12.1. 概要
+
+  IRQ 是傳送至微處理器的非同步訊號以通知請求的作業已被完成.
+
+  12.2.  交互作用的圖解
+
+                                   |<-->  IRQ(0) [Timer]
+                                   |<-->  IRQ(1) [Device 1]
+                                   | ..
+                                   |<-->  IRQ(n) [Device n]
+      _____________________________|
+       /|\      /|\          /|\
+        |        |            |
+       \|/      \|/          \|/
+
+      Task(1)  Task(2) ..   Task(N)
+
+
+               IRQ - Tasks Interaction Schema
+
+
+
+  12.2.1. 發生了什麼事?
+
+  一個典型的作業系統使用很多IRQ訊號以中斷一般行程執行並且會執行一些
+  內部事務的運作. 所以:
+
+  1.  IRQ (i) 發生 且 行程(j) 被中斷
+
+  2.  IRQ(i)_handler 被執行
+
+  3. 控制權回到 被中斷的Task(j) 
+
+  在Linux底下, 當 IRQ發生時, 一開始, IRQ外層的程序(稱之為interrupt0x??) 
+   被呼叫, 然後 正式的 IRQ(i)_handler 將會被執行. 這允許某些功能 像是 
+  先佔式的切換時間.
+
+  13.  Utility functions
+
+  13.1.  list_entry [include/linux/list.h]
+
+ 
+  定義:
+
+
+  #define list_entry(ptr, type, member) \
+  ((type *)((char *)(ptr)-(unsigned long)(&((type *)0)->member)))
+
+
+  
+  意義:
+
+  "list_entry" 巨集 被用來回溯上層結構的指標, 藉由使用僅有的內部
+  結構指標其中之一. 
+
+  舉例:
+
+
+  struct __wait_queue {
+     unsigned int flags;
+     struct task_struct * task;
+     struct list_head task_list;
+  };
+  struct list_head {
+     struct list_head *next, *prev;
+  };
+
+  // and with type definition:
+  typedef struct __wait_queue wait_queue_t;
+
+  // we'll have
+  wait_queue_t *out list_entry(tmp, wait_queue_t, task_list);
+
+  // where tmp point to list_head
+
+
+
+   所以, 在這個例子, 依據 *tmp 指標 [list_head] 我們回溯得到一個*out指標
+  [wait_queue_t].
+
+
+
+   ____________ <---- *out [we calculate that]
+  |flags       |             /|\
+  |task *-->   |              |
+  |task_list   |<----    list_entry
+  |  prev * -->|    |         |
+  |  next * -->|    |         |
+  |____________|    ----- *tmp [we have this]
+
+
+
+  
+  13.2.  蜇伏
+
+  13.2.1.   蜇伏程式碼
+
+  檔案:
+
+  ·  kernel/sched.c
+
+  ·  include/linux/sched.h
+
+  ·  include/linux/wait.h
+
+  ·  include/linux/list.h
+
+  函式:
+
+  ·  interruptible_sleep_on
+
+  ·  interruptible_sleep_on_timeout
+
+  ·  sleep_on
+
+  ·  sleep_on_timeout
+
+  被呼叫的函式:
+
+  ·  init_waitqueue_entry
+
+  ·  __add_wait_queue
+
+  ·  list_add
+
+  ·  __list_add
+
+  ·  __remove_wait_queue
+
+  內部呼叫分析:
+
+  |sleep_on
+     |init_waitqueue_entry  --
+     |__add_wait_queue        |   enqueuing request to resource list
+        |list_add              |
+           |__list_add        --
+     |schedule              ---     waiting for request to be executed
+        |__remove_wait_queue --
+        |list_del              |   dequeuing request from resource list
+           |__list_del        --
+
+
+
+
+  描述:
+
+
+  在Linux底下每項資源(理想的來說每個物件在很多使用者及行程間分享) 有個佇列
+  以管理所有行程請求.
+
+
+  這個佇列被稱為 "等待佇列" 而且 它由很多項目組成 我們稱為"等待佇列元素"
+
+
+  ***   等待佇列資料結構 [include/linux/wait.h]  ***
+
+
+  struct __wait_queue {
+     unsigned int flags;
+     struct task_struct * task;
+     struct list_head task_list;
+  }
+  struct list_head {
+     struct list_head *next, *prev;
+  };
+
+
+
+  圖解說明:
+
+          ***  wait queue element  ***
+
+                               /|\
+                                |
+         <--[prev *, flags, task *, next *]-->
+
+
+
+                   ***  wait queue list ***
+
+            /|\           /|\           /|\                /|\
+             |             |             |                  |
+  --> <--[task1]--> <--[task2]--> <--[task3]--> .... <--[taskN]--> <--
+  |                                                                  |
+  |__________________________________________________________________|
+
+
+
+                ***   wait queue head ***
+
+         task1 <--[prev *, lock, next *]--> taskN
+
+
+
+  "wait queue head"指向第一個(以next指標)  及上一個(以prev指標)
+  等待佇列清單裡的元素.
+
+
+  當新的元素必須被加入, "__add_wait_queue"
+  [include/linux/wait.h]會被呼叫, 在那之後一般的程序
+  "list_add" [include/linux/wait.h]將會被執行:
+
+  ***   function list_add [include/linux/list.h]  ***
+
+  // classic double link list insert
+  static __inline__ void __list_add (struct list_head * new,  \
+                                     struct list_head * prev, \
+                                     struct list_head * next) {
+     next->prev = new;
+     new->next = next;
+     new->prev = prev;
+     prev->next = new;
+  }
+
+
+
+  為了完成描述, 我們也檢視"__list_del"
+  [include/linux/list.h]函式在 "remove_wait_queue"
+  [include/linux/wait.h]裡被"list_del"
+  [include/linux/list.h]呼叫:
+
+
+  ***   function list_del [include/linux/list.h]  ***
+
+
+  // classic double link list delete
+  static __inline__ void __list_del (struct list_head * prev, struct list_head * next) {
+     next->prev = prev;
+     prev->next = next;
+  }
+
+
+
+  13.2.2. 堆疊論述
+
+  一個典型的清單(佇列)是經常被管理配置到堆積(Heap)裡(查看第10章針對堆疊和堆積定義
+  以及關於變數被配置的地方). 不然在這兒, 我們靜態的配置等待佇列資料在區域變
+  數裡(堆疊), 然後函式被排程中斷, 最後, (回到排程)我們將清除區域變數.
+
+
+    new task <----|          task1 <------|          task2 <------|
+                  |                       |                       |
+                  |                       |                       |
+  |..........|    |       |..........|    |       |..........|    |
+  |wait.flags|    |       |wait.flags|    |       |wait.flags|    |
+  |wait.task_|____|       |wait.task_|____|       |wait.task_|____|
+  |wait.prev |-->         |wait.prev |-->         |wait.prev |-->
+  |wait.next |-->         |wait.next |-->         |wait.next |-->
+  |..        |            |..        |            |..        |
+  |schedule()|            |schedule()|            |schedule()|
+  |..........|            |..........|            |..........|
+  |__________|            |__________|            |__________|
+
+     Stack                   Stack                   Stack
+
+
+
+  14. 靜態變數
+
+
+  14.1. 概要
+
+
+  Linux是由C語言寫成的, 且如同其他應用程式有著:
+
+  1. 區域變數
+
+  2. 模組變數 (在原始碼檔內且僅關聯於該模組)
+
+  3. 全域/靜態變數 僅有一份複製 (等同於給所有的模組)
+
+
+  當一個靜態變數被模組修改, 所有其他模組將會看到新的值.
+
+  靜態變數在Linux下是非常重要的, 因為它門是唯一的種類用來對核心加入新的支援: 
+  它們通常是指到被註冊元素清單標頭的指標, 它們可以是:
+
+
+  · 被加入的 
+
+
+  ·  被刪除的
+
+  · 可能被修改的
+                             _______      _______      _______
+  Global variable  -------> |Item(1)| -> |Item(2)| -> |Item(3)|  ..
+                            |_______|    |_______|    |_______|
+
+
+
+  14.2. 主要變數
+
+  14.2.1.  Current
+
+                            ________________
+  Current ----------------> | Actual process |
+                            |________________|
+
+
+
+
+  Current指向task_struct 結構, 它包含所有關於行程的資料像:
+
+  ·  pid, 名稱, 狀態, 計數器, 排程的政策
+
+  · 指向很多資料結構像: 檔案, vfs, 其他行程, 訊號 ...
+
+   
+  Current 並非真的變數, 它是
+  
+
+  static inline struct task_struct * get_current(void) {
+     struct task_struct *current;
+     __asm__("andl %%esp,%0; ":"=r" (current) : "0" (~8191UL));
+     return current;
+  }
+  #define current get_current()
+
+
+  上述僅是取esp註冊機碼的值(堆疊指標)且像個變數一樣的取用而已, 
+   從哪裡我們可以指到task_struct結構.
+
+
+  從"current"的元素我們可以存取到任何其他行程的目錄(read, stopped, 或 
+  在任何狀態下的行程) 核心資料結構, 舉例來說 , 改變狀態(像輸出/輸入
+  驅動程式作的一樣), PID, 在ready 清單內呈現或是被阻擋名單內, 等等.
+
+
+  14.2.2. 註冊的檔案系統
+
+
+                         ______      _______      ______
+  file_systems  ------> | ext2 | -> | msdos | -> | ntfs |
+   [fs/super.c]         |______|    |_______|    |______|
+
+
+  When you use command like ''modprobe some_fs'' you will add a new
+  entry to file systems list, while removing it (by using ''rmmod'')
+  will delete it.
+
+  當你使用命令像 ''modprobe some_fs''你將增加一個新的入口到檔案系統清單,
+  當移除時(藉由使用rmmod命令)將會刪除它.
+
+  14.2.3. 掛載的檔案系統
+                          ______      _______      ______
+  mount_hash_table  ---->|   /  | -> | /usr  | -> | /var |
+  [fs/namespace.c]       |______|    |_______|    |______|
+
+
+
+  當你使用掛載(mount)命令以增加一個檔案系統, 新的入口將會被新增到清單內,
+  而卸載(umount)命令會刪除該掛載點.
+
+  14.2.4. 註冊的網路封包型態
+
+                          ______      _______      ______
+       ptype_all  ------>|  ip  | -> |  x25  | -> | ipv6 |
+  [net/core/dev.c]       |______|    |_______|    |______|
+
+
+
+  舉例來說, 如果你加入IPv6支援(載入相關的模組)一個新的入口將被加入到清單內.
+
+
+  14.2.5. 註冊的網際網路協定
+   
+                            ______      _______      _______
+  inet_protocol_base ----->| icmp | -> |  tcp  | -> |  udp  |
+  [net/ipv4/protocol.c]    |______|    |_______|    |_______|
+
+
+
+  同樣的其他封包型態有很多內部協定在每個清單內(像IPv6).
+
+                            ______      _______      _______
+  inet6_protos ----------->|icmpv6| -> | tcpv6 | -> | udpv6 |
+  [net/ipv6/protocol.c]    |______|    |_______|    |_______|
+
+
+
+
+  14.2.6. 註冊的網路設備
+                            ______      _______      _______
+  dev_base --------------->|  lo  | -> |  eth0 | -> |  ppp0 |
+  [drivers/core/Space.c]   |______|    |_______|    |_______|
+
+
+
+  14.2.7. 註冊的字元設備
+
+                            ______      _______      ________
+  chrdevs ---------------->|  lp  | -> | keyb  | -> | serial |
+  [fs/devices.c]           |______|    |_______|    |________|
+
+
+
+  向量.
+
+
+  14.2.8. 註冊的區塊設備
+                            ______      ______      ________
+  bdev_hashtable --------->|  fd  | -> |  hd  | -> |  scsi  |
+  [fs/block_dev.c]         |______|    |______|    |________|
+
+
+
+  15. 詞彙
+
+  16. 連結
+
+
+  官方的Linux核心和修正程式下載點<http://www.kernel.org>
+
+  Linux的核心文件
+  <http://jungla.dit.upm.es/~jmseyas/linux/kernel/hackers-docs.html>
+
+  官方的核心郵件清單
+  <http://www.uwsg.indiana.edu/hypermail/linux/kernel/index.html>
+
+  Linux文件專案指引<http://www.tldp.org/guides.html>
+

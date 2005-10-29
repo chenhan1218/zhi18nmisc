@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>6. 對基本技術規格的解釋</title>
+<link href="XFree86-Video-Timings-HOWTO-7.html" rel="next" title="7. 配置系統時的權衡" />
+<link href="XFree86-Video-Timings-HOWTO-5.html" rel="previous" title="5. 了解關於顯示器和顯示卡的基本情況" />
+<link href="http://tldp.org/HOWTO/XFree86-Video-Timings-HOWTO/index.html" rel="alternate" title="原版" />
+<link href="index.html" rel="start" title="HOWTO：XFree86 Video Timings" />
+<link href="index.html#content" rel="contents" />
+<meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+<link href="../../style.css" rel="stylesheet" type="text/css" />
+<link href="XFree86-Video-Timings-HOWTO-6.html#ss6.1" rel="section" title="6.1 關於頻寬 " />
+<link href="XFree86-Video-Timings-HOWTO-6.html#ss6.2" rel="section" title="6.2 同步頻率和刷新率:" />
+<link href="XFree86-Video-Timings-HOWTO.rdf" rel="meta" title="各章節的說明資訊" />
+</head> <body   >
+<table >
+  <tr>
+    <th colspan="3" class="HdTitle">HOWTO：XFree86
+      Video Timings</th>
+  </tr>
+  <tr>
+    <td class="TtdL"> <a href="XFree86-Video-Timings-HOWTO-5.html" accesskey="P">上一頁(P)</a> 
+    </td>
+    <td class="TtdC">&nbsp;</td>
+    <td class="TtdR"> <a href="XFree86-Video-Timings-HOWTO-7.html" accesskey="N">下一頁(N)</a> 
+    </td>
+  </tr>
+</table>
+<hr />
+<h1> 6. 對基本技術規格的解釋</h1>
+
+
+<p>這一章解釋上述技術規格的含義,和其它一些你需要了解的東西.首先是定義.接著在括弧中的是我們作計算時指代它的變量名.</p>
+<p></p>
+<dl>
+  <dt>行頻(HSF)</dt>
+  <dd>
+    <p>每秒水平掃描次數(見上述).</p>
+  </dd>
+  <dt>場頻(VSF)</dt>
+  <dd>
+    <p>每秒垂直掃描次數(見上述).重要性在於是刷新率的上限.</p>
+  </dd>
+  <dt>點時鐘(DCF)</dt>
+  <dd>
+    <p>更正式的表述,'驅動時鐘頻率';顯示卡的晶振或壓控振盪器的頻率 --- 每秒它能發出的最大點數.</p>
+  </dd>
+  <dt>頻寬(VB)</dt>
+  <dd>
+    <p>你能饋入到顯示器視頻輸入且顯示內容仍可辨別時的最高頻率.如果你的顯示卡產生交替亮滅的圖案,它的最低頻率是點時鐘(DCF)的一半,所以理論上頻寬從 
+      DCF/2 開始才有意義.然而,為了在顯示器圖象中微小細節有可以接受的清晰的顯示,你不能讓它低於最高點時鐘太多,高於就更好.</p>
+  </dd>
+  <dt>幀長(HFL,VFL)</dt>
+  <dd> 
+    <p>水平幀長(HFL)是顯示器電子槍掃描包括不可見的左右邊界在內的水平一行的點數.垂直幀長(VFL)是包括不可見的上下邊界在內的整個圖象的掃描行數.</p>
+  </dd>
+  <dt>屏幕刷新率(RR)</dt>
+  <dd>
+    <p>每秒你的屏幕重畫的次數(這也叫"幀率").頻率越高越好,因為可以減少閃爍.60Hz就可以了,VESA標準的72Hz就更好.</p>
+    <p>這樣算出它的值 </p>
+    <pre class="sample">
+        RR = DCF / (HFL * VFL)
+</pre>
+    <p>注意分母中的乘積與顯示器的可視分辨率不一樣,一般稍微大點.我們將在下面講到細節.</p>
+    <p>通常隔行模式指出的頻率(象87Hz隔行)實際上是半幀率:對典型的顯示器整個屏幕看上去大概有那樣的閃爍頻率,但每一單行隻有一半的次數刷新過.</p>
+    <p>為了計算的方便我們把隔行掃描以其全幀率(刷新率)計算,也就是43.5Hz.隔行模式的圖象質量要好於相同全幀率的逐行模式,但明顯差於全幀率等於其半幀率的逐行模式.</p>
+  </dd>
+</dl>
+<h2><a name="ss6.1" id="ss6.1"></a>6.1 關於頻寬 </h2>
+
+
+<p>顯示器制造商喜歡以高頻寬作宣傳因為頻寬限制了屏幕的亮度和色彩變化的銳度.高頻寬意味著可以看到更小的細節.</p>
+<p>顯示器用電子信號在你眼前呈現出圖象.這些信號一旦由數字形式轉變為模擬形式,總是以波形形式輸入顯示器.它們可以看作由很多簡單波形組合而成,每一個簡單波形都有一個固定頻率,很多是在MHz范圍,例如,20MHz,40MHz,或甚至70MHz.顯示器的頻寬實際上是指它能不失真地顯示的頻率最高的模擬信號.</p>
+<p>對我們來說,頻寬主要作為一個能使用的最高點時鐘的近似截止點.</p>
+
+<h2><a name="ss6.2" id="ss6.2"></a>6.2 同步頻率和刷新率: </h2>
+
+
+<p>顯示器上的每一水平掃描行隻是掃描一幀長度的可視部分.在任何時刻屏幕上實際隻有一個點在亮,但在足夠快的刷新率下你眼睛的影像余輝使你能"看"到整個圖象.</p>
+<p>下面是一些幫助理解的示意圖:</p>
+<pre class="sample">
+     _______________________
+    |                       |     行頻是顯示
+    |-&gt;-&gt;-&gt;-&gt;-&gt;-&gt;-&gt;-&gt;-&gt;-&gt;-&gt; |     器電子束每
+    |                      )|     秒能描繪該
+    |&lt;-----&lt;-----&lt;-----&lt;--- |     圖案的次數
+    |                       |
+    |                       |
+    |                       |
+    |                       |
+    |_______________________|
+     _______________________
+    |        ^              |     場頻是顯示
+    |       ^ |             |     器電子束每
+    |       | v             |     秒能描繪該
+    |       ^ |             |     圖案的次數
+    |       | |             |
+    |       ^ |             |
+    |       | v             |
+    |       ^ |             |
+    |_______|_v_____________|
+</pre>
+<p>記住實際的光柵掃描是靠得很緊的Z字形圖案;換言之,電子束從左到右同時從上到下移動.</p>
+<p>現在你可以知道點時鐘和幀大小與刷新率的關系了.根據定義,一赫茲(Hz)指每秒一個周期.因此,如果水平幀長是HFL而垂直幀長是VFL,那麼覆蓋整個屏幕要有 
+  (HFL * VFL) 個點.因為根據定義顯示卡每秒發出DCF個點,所以很顯然顯示器的電子槍從左到右並從上到下往復掃過屏幕每秒 DCF /(HFL * 
+  VFL) 次.這就是你的屏幕刷新率,因為它就是指你的屏幕每秒被更新(從而被刷新)的次數!</p>
+<p>你必須理解這個概念,才能按適合你需要的某種方式更改分辨率設置防止閃爍.</p>
+<p>對那些理解圖象優於理解文字的人,這裡有一幅圖:</p>
+<pre class="sample">
+        RR                                      VB
+         |   min HSF                     max HSF |
+         |    |             R1        R2  |      |
+max VSF -+----|------------/----------/---|------+----- max VSF
+         |    |:::::::::::/::::::::::/:::::\     |
+         |    \::::::::::/::::::::::/:::::::\    |
+         |     |::::::::/::::::::::/:::::::::|   |
+         |     |:::::::/::::::::::/::::::::::\   |
+         |     \::::::/::::::::::/::::::::::::\  |
+         |      \::::/::::::::::/::::::::::::::| |
+         |       |::/::::::::::/:::::::::::::::| |
+         |        \/::::::::::/:::::::::::::::::\|
+         |        /\:::::::::/:::::::::::::::::::|
+         |       /  \:::::::/::::::::::::::::::::|\
+         |      /    |:::::/:::::::::::::::::::::| |
+         |     /     \::::/::::::::::::::::::::::| \
+min VSF -+----/-------\--/-----------------------|--\--- min VSF
+         |   /         \/                        |   \
+         +--/----------/\------------------------+----\- DCF
+           R1        R2  \                       |     \
+                          min HSF                |    max HSF
+                                                 VB
+</pre>
+<p>這是一幅普通的顯示器模式圖.圖上x軸顯示點時鐘(DCF),y軸代表刷新率(RR).圖上的填充區域描繪出了顯示器的特性:區域內的每一點都是一種可能的顯示模式.</p>
+<p>標記為'R1'和'R2'的直線代表一個固定的分辨率(例如640x480);它們畫出了怎樣通過點時鐘和刷新率的很多不同組合來實現一個分辨率.R2線代表了比R1更高的分辨率.</p>
+<p>允許區域的上下邊界是代表場頻限值的水平線.頻寬是點時鐘的上限,因此由一條在右邊限制了特性區域的垂直線代表.</p>
+<p>在
+<a href="XFree86-Video-Timings-HOWTO-16.html#cplot">繪制顯示器特性</a>你能找到一個程序幫你為自己的顯示器描繪與此類似的圖(但有X圖形界面,更好看).那一章還討論了有趣的部分;由行頻的限制而造成的邊界的引出.</p>
+
+<hr />
+<table >
+  <tr>
+    <td class="BtdL"> <a href="XFree86-Video-Timings-HOWTO-5.html" accesskey="P">上一頁(P)</a> 
+    </td>
+    <td class="BtdC"> <a href="index.html" accesskey="H">目錄(H)</a> </td>
+    <td class="BtdR"> <a href="XFree86-Video-Timings-HOWTO-7.html">下一頁(N)</a> 
+    </td>
+  </tr>
+  <tr>
+    <td class="BtdL">了解關於顯示器和顯示卡的基本情況</td>
+    <td class="BtdC"><a href="XFree86-Video-Timings-HOWTO-6.html"  accesskey="T">到頂層(T)</a></td>
+    <td class="BtdR">配置系統時的權衡</td>
+  </tr>
+</table>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a>  <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" title="網路內容分級協會" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

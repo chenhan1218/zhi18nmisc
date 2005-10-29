@@ -1,0 +1,119 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html lang="zh-TW">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <title>Optimizing GCC</title>
+  <link href="../../LGStyle.css" rel="stylesheet" type="text/css">
+  <link href="../../../style.css" rel="stylesheet" type="text/css">
+</head>
+<body>
+<div id="GazetteLogo"><a href="http://www.linuxgazette.com/"><img
+ src="../../gx/lglogo_200x41.png" alt="Linux Gazette 雜誌" width="200"
+ height="41" longdesc="../linuxgaette.rdf"> </a><br>
+<a href="http://www.linuxgazette.com/copying.html">Copyright</a>©1996-2003<br>
+Specialized Systems Consultants, Inc.</div>
+<div class="CLDPAddr">CLDP</div>
+<div class="CLDPFull">Chinese Linux Documentation Project</div>
+<hr>
+<p class="BarTop"><a href="../../../index.html" title="連到首頁"
+ hreflang="zh-TW" accesskey="H">首頁(H)</a>｜<a href="../../../howto/"
+ title="連到和 HOWTO  相關資訊" hreflang="zh-TW" accesskey="T">HOWTO(T)</a>｜<a
+ href="../../../guide/" title="連到和指南相關的資訊" hreflang="zh-TW"
+ accesskey="G">指南(G)</a>｜<a href="../../../FAQ/" title="連到和問答集相關的資訊"
+ hreflang="zh-TW" accesskey="F">FAQ(F)</a>｜<a href="../../../man/"
+ title="連到和手冊頁有關的資訊" hreflang="zh-TW" accesskey="M">手冊頁(M)</a>｜<a
+ href="../../index.html" title="Linux電子報為一個月發行一期的雜誌" hreflang="zh-TW"
+ accesskey="L">Linux電子報(L)</a>｜<a href="../../../LF/"
+ title="LinuxFocus 為兩個月發行一期的雜誌" hreflang="zh-TW" accesskey="S">LinuxFocus(S)</a></p>
+<hr>
+<div class="DivCover">
+<div class="TitleHead">Optimizing GCC <br>
+By <a href="../../authors/jpiszcz.html">Jpiszcz</a></div>
+<div>
+<p class="BarTop"><a href="../../index.html">Linux電子報首頁</a>｜<a
+ href="index.html">目錄</a>｜<a href="../../faq/index.html">FAQ</a><br>
+讓 Linux 更加有趣呦！</p>
+</div>
+<div>
+<h2>內容</h2>
+</div>
+<div>
+<p> I have a Pentium 3 866MHZ CPU. After reading the <a
+ href="http://freshmeat.net/articles/view/730/">freshmeat article on
+optimizing GCC</a> a few days ago, it got me thinking.    So I posed the
+following question:    How much faster would gcc compile the kernel if
+gcc itself was optimized?    I chose to benchmark kernel compilation
+times, because I think it is a good    benchmark, and many other people
+also use it to benchmark system performance.    Also, at one point or
+another, most Linux users will have to take the step and compile the
+kernel, so I thought I'd benchmark something that is useful and   
+something that people have a general idea of how long it takes to
+compile without    optimizations.    So my test is comprised of the
+following: </p>
+<ol>
+  <li> Run 10 kernel compilations and calculate the average time.
+    <ul>
+      <li> Regular GCC build. </li>
+      <li> Optimized GCC build. </li>
+    </ul>
+  </li>
+  <li> The kernel in question is the latest stable Linux kernel.
+    <ul>
+      <li> At this time, 2.4.20 remains the latest stable Linux kernel. </li>
+    </ul>
+  </li>
+  <li> The GCC used with this test is the latest stable gcc.
+    <ul>
+      <li> At this time, 3.2.2 remains the lastest stable gcc. </li>
+    </ul>
+  </li>
+</ol>
+<p> With an non-optimized compiler, (configure;make;make install)<br>
+Average of 10 'make bzImage':<br>
+TIME: 12.42 minutes (762 seconds) </p>
+<p> With an optimized compiler,    I specifically used: </p>
+<pre>-O3 -pipe -fomit-frame-pointer -funroll-loops -march=pentium3 -mcpu=pentium3<br>-mfpmath=sse -mmmx -msse<br></pre>
+In case you are wondering how to do this, it is in the FAQ of the gcc
+tarball. The following line is what I used:
+<pre>   ./configure ; make BOOT_CFLAGS="optimization flags" bootstrap ; make install<br></pre>
+Average of 10 'make bzImage'<br>
+TIME: 9.31 minutes (571 seconds)
+<p> I compile almost everything I run on my Linux box.    I use a
+package manager called <a href="http://relink.sourceforge.net/">relink</a>
+to manage    all of my installed packages. </p>
+<p> Optimizing the compiler alone:    offers a speed increase of: 33%
+(or 3:11 minutes, 191 seconds faster).    This may not seem like a lot,
+but for compiling big programs, it will significantly    reduce compile
+time making those QT &amp; Mozilla builds that much faster :)    The
+actual test consisted of this: </p>
+<pre>cd /usr/src/Linux<br><br>for i in `seq 1 10`<br><br>do<br><br>  make dep<br><br>  make clean<br><br>  /usr/bin/time bzImage 2&gt;&gt; /home/war/log<br><br>done<br></pre>
+In case you're wondering about the time elapsed per build and how much
+the CPU was utilized, here they are:
+<pre>No Optimization (Standard GCC-3.2.2):<br><br>   720.88user 34.54system 12:43.97elapsed 98%CPU (0avgtext+0avgdata 0maxresident)k<br><br>   719.06user 35.69system 12:42.09elapsed 99%CPU (0avgtext+0avgdata 0maxresident)k<br><br>   719.14user 34.37system 12:39.64elapsed 99%CPU (0avgtext+0avgdata 0maxresident)k<br><br>   720.52user 36.42system 12:46.68elapsed 98%CPU (0avgtext+0avgdata 0maxresident)k<br><br>   721.07user 33.86system 12:41.59elapsed 99%CPU (0avgtext+0avgdata 0maxresident)k<br><br>   718.95user 35.65system 12:41.31elapsed 99%CPU (0avgtext+0avgdata 0maxresident)k<br><br>   721.83user 36.26system 12:51.54elapsed 98%CPU (0avgtext+0avgdata 0maxresident)k<br><br>   720.29user 34.18system 12:40.63elapsed 99%CPU (0avgtext+0avgdata 0maxresident)k<br><br>   719.14user 34.80system 12:39.19elapsed 99%CPU (0avgtext+0avgdata 0maxresident)k<br><br>   721.16user 33.88system 12:41.93elapsed 99%CPU (0avgtext+0avgdata 0maxresident)k<br><br><br>Optimized Compiler (GCC-3.2.2 w/ "-O3 -pipe -fomit-frame-pointer -funroll-loops<br>-march=pentium3 -mcpu=pentium3 -mfpmath=sse -mmmx -msse")<br><br>   532.09user 33.62system 9:32.76elapsed 98%CPU (0avgtext+0avgdata 0maxresident)k<br><br>   531.57user 32.92system 9:29.25elapsed 99%CPU (0avgtext+0avgdata 0maxresident)k<br><br>   532.99user 33.12system 9:31.18elapsed 99%CPU (0avgtext+0avgdata 0maxresident)k<br><br>   532.58user 33.16system 9:30.57elapsed 99%CPU (0avgtext+0avgdata 0maxresident)k<br><br>   533.18user 32.96system 9:31.34elapsed 99%CPU (0avgtext+0avgdata 0maxresident)k<br><br>   534.01user 32.21system 9:32.50elapsed 98%CPU (0avgtext+0avgdata 0maxresident)k<br><br>   532.59user 33.41system 9:31.56elapsed 99%CPU (0avgtext+0avgdata 0maxresident)k<br><br>   532.76user 33.68system 9:32.01elapsed 99%CPU (0avgtext+0avgdata 0maxresident)k<br><br>   534.19user 32.54system 9:31.92elapsed 99%CPU (0avgtext+0avgdata 0maxresident)k<br><br>   534.11user 32.76system 9:32.40elapsed 99%CPU (0avgtext+0avgdata 0maxresident)k<br></pre>
+Note:    I realize some of the optimizations, most specifically
+(-fomit-frame-pointer) may    not be a good optimization feature,
+especially for debugging.  However, my    goal is to increase compiler
+performance and not worry about debugging.</div>
+<div>
+<h2>版權宣告</h2>
+</div>
+<div>
+<p> Copyright © 2003, Jpiszcz. Copying license <a
+ href="http://www.linuxgazette.com/copying.html">http://www.linuxgazette.com/copying.html</a><br>
+Published in Issue 88 of <i>Linux Gazette</i>, March 2003</p>
+</div>
+</div>
+<hr>
+<p class="BarTop"><a href="../../../index.html" title="連到首頁"
+ hreflang="zh-TW" accesskey="H">首頁(H)</a>｜<a href="../../../howto/"
+ title="連到和 HOWTO  相關資訊" hreflang="zh-TW" accesskey="T">HOWTO(T)</a>｜<a
+ href="../../../guide/" title="連到和指南相關的資訊" hreflang="zh-TW"
+ accesskey="G">指南(G)</a>｜<a href="../../../FAQ/" title="連到和問答集相關的資訊"
+ hreflang="zh-TW" accesskey="F">FAQ(F)</a>｜<a href="../../../man/"
+ title="連到和手冊頁有關的資訊" hreflang="zh-TW" accesskey="M">手冊頁(M)</a>｜<a
+ href="../../index.html" title="Linux電子報為一個月發行一期的雜誌" hreflang="zh-TW"
+ accesskey="L">Linux電子報(L)</a>｜<a href="../../../LF/"
+ title="LinuxFocus 為兩個月發行一期的雜誌" hreflang="zh-TW" accesskey="S">LinuxFocus(S)</a></p>
+<hr>
+</body>
+</html>

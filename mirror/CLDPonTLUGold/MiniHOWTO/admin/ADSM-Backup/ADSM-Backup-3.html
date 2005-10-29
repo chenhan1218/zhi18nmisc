@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>3. 安裝 ADSM 客戶端</title>
+<link href="ADSM-Backup-4.html" rel="next" title="4. 執行客戶端" />
+<link href="ADSM-Backup-2.html" rel="previous" title="2. 安裝 iBCS 模組" />
+<link href="ADSM-Backup-1.html" rel="chapter" title="1.介紹" />
+<link href="ADSM-Backup-2.html" rel="chapter" title="2.安裝 iBCS 模組" />
+<link href="ADSM-Backup-3.html" rel="chapter" title="3.安裝 ADSM客戶端" />
+<link href="ADSM-Backup-4.html" rel="chapter" title="4.執行客戶端" />
+<link href="ADSM-Backup-5.html" rel="chapter" title="5.已知的問題" />
+<link href="index.html" rel="start" />
+<link href="index.html#content" rel="contents" />
+<link href="http://tldp.org/HOWTO/mini/ADSM-Backup.html" rel="alternate" title="原版" />
+<link href="../../style.css" rel="stylesheet" type="text/css" />
+<link href="ADSM-Backup.rdf" rel="meta" title="各章節的說明資訊" />
+<meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+<style type="text/css">
+<!--
+-->
+</style>
+</head>
+<body>
+<table
+
+
+
+
+
+
+
+
+
+>
+
+  <tr
+
+>
+
+    <th
+
+colspan="3" class="HdTitle"
+
+>Mini
+
+      HOWTO：Linux ADSM</th>
+
+  </tr
+
+>
+
+  <tr
+
+>
+
+    <td class="TtdL"
+
+><a href="ADSM-Backup-2.html" accesskey="P">上一頁(P)</a></td
+
+>
+
+    <td class="TtdC"
+
+></td
+
+>
+
+    <td class="TtdR"
+
+><a href="ADSM-Backup-4.html" accesskey="N">下一頁(N)</a></td
+
+>
+
+  </tr
+
+>
+
+</table
+
+>
+
+<hr />
+
+<h1>3. 安裝 ADSM 客戶端</h1>
+
+
+
+<p>SCO 二進位元檔的是由三個 tar 檔案組成的，或者由磁碟提供.改變路徑到 根目錄,根據你的政策設定你的 umask ,然後 在一個目錄解開他們 (譬如 
+  根目錄).在目錄 /tmp,你會 找到一個程序檔;執行它</p>
+
+<p>這時必須手動編輯 <code>/usr/adsm/dsm.sys</code> <code>/usr/adsm/dsm.opt 檔。</code>在 
+  <code>dsm.sys</code> 檔中，重要的行數詳細說明如下：</p>
+<table  border="1" cellspacing="0" cellpadding="0" summary="dsm.sys 檔中較重要的行數" class="DataTable">
+  <caption>
+  <code>dms.sys</code> 檔中較重要的行數 
+  </caption>
+  <tr> 
+	<th style="width:20%">參數</th>
+	<th>說明</th>
+  </tr>
+  <tr> 
+	<td>Servername</td>
+	<td>伺服器的名稱</td>
+  </tr>
+  <tr> 
+	<td>TCPServeraddress</td>
+	<td>伺服器的 DNS 全名</td>
+  </tr>
+  <tr> 
+	<td>NODename</td>
+	<td>自己主機的名稱</td>
+  </tr>
+</table>
+<p>而在 <code>dsm.opt</code> 檔中，則必須詳細說明下列參數：</p>
+<table width="90%" border="1" cellspacing="0" cellpadding="0" summary="dsm.opt 檔中需指定的參數">
+  <caption>
+  <code>dsm.opt</code> 檔中需指定的參數 
+  </caption>
+  <tr> 
+	<th style="width:20%">參數</th>
+	<th>說明</th>
+  </tr>
+  <tr> 
+	<td>Server</td>
+	<td>伺服器的名稱</td>
+  </tr>
+  <tr> 
+	<td>Followsymbolic</td>
+	<td>需不需要跟隨符號連接點 (一般來說，不是一個好主意)</td>
+  </tr>
+  <tr>
+	<td>SUbdir</td>
+	<td>支援子目錄 (通常是需要的)</td>
+  </tr>
+  <tr> 
+	<td>domain</td>
+	<td>檔案系統備份</td>
+  </tr>
+</table>
+<p>這時必需使用 <code>/etc/fstab</code> 檔以建立一個和 SOC 相容的 <code>/etc/mnttab</code> 檔，而可以使用下列的 
+  Perl 程序檔做到：</p>
+
+<pre class="sample">
+
+#!/usr/bin/perl
+
+$mnttab_struct = &quot;a32 a32 I L&quot;;
+open(MTAB, &quot;/etc/mtab&quot;) || die &quot;Cannot open /etc/mtab: $!\n&quot;;
+open(MNTTAB, &quot;&gt;/etc/mnttab&quot;) || die &quot;Cannot open /etc/mnttab: $!\n&quot;;
+while(&lt;MTAB&gt;) {
+    next if /pid/;
+    chop;
+    /^(\S*)\s(\S*)\s(\S*)\s.*$/;
+    $device = $1;
+    $mountpt = $2;
+    $fstype = $3;
+    if($fstype ne &quot;nfs&quot; &amp;&amp; $fstype ne &quot;proc&quot;) {
+        $mnttab_rec =  pack($mnttab_struct, $device, $mountpt, 0x9d2f, time());
+        syswrite(MNTTAB, $mnttab_rec, 72);
+        print &quot;Made entry for: $device $mountpt $fstype\n&quot;;
+    }
+}
+close(MNTTAB);
+exit 0;</pre>
+
+<p>對於這些客戶端程式來說，不需要安裝任何的共享函式庫，因為這些客戶端程式都連接到固定的函式庫。 </p>
+
+  
+
+
+
+<hr />
+
+
+
+<table
+
+
+
+
+
+
+
+
+
+>
+
+  <tr
+
+>
+
+    <td class="BtdL"
+
+><a href="ADSM-Backup-2.html" accesskey="P">上一頁(P)</a></td
+
+>
+
+    <td class="BtdC"
+
+><a href="index.html" accesskey="H">目錄(H)</a></td
+
+>
+
+    <td class="BtdR"
+
+><a
+
+href="ADSM-Backup-4.html"
+
+>下一頁(N)</a
+
+></td
+
+>
+
+  </tr
+
+>
+
+  <tr
+
+>
+
+    <td class="BtdL"
+
+>安裝 iBCS 模組</td
+
+>
+
+    <td class="BtdC"
+
+><a href="ADSM-Backup-3.html" accesskey="T">到頂層(T)</a></td
+
+>
+
+    <td class="BtdR"
+
+>執行客戶端</td
+
+>
+
+  </tr
+
+>
+
+</table
+
+>
+
+  <div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img class="ImgLogo" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+
+</body>
+
+</html>
+

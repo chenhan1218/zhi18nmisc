@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+ 
+ <title>6. 字型以及 X 終端機</title>
+ <link href="NCD-X-Terminal-7.html" rel="next" title="7. 其他零瑣的事" />
+ <link href="NCD-X-Terminal-5.html" rel="previous" title="5. 設定 NCD X 終端機的開機程序" />
+  <link href="../../style.css" rel="stylesheet" type="text/css" />
+ <link href="http://tldp.org/HOWTO/mini/NCD-X-Terminal.html" rel="alternate" title="原版" />
+ <link href="index.html" rel="start" />
+ <link href="index.html#content" rel="contents" />
+ <meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+ <link href="NCD-X-Terminal.rdf" rel="meta" title="各章節的說明資訊" />
+ <link href="NCD-X-Terminal-1.html" rel="chapter" title="1.版權" />
+ <link href="NCD-X-Terminal-2.html" rel="chapter" title="2.引言" />
+ <link href="NCD-X-Terminal-3.html" rel="chapter" title="3.需求" />
+ <link href="NCD-X-Terminal-4.html" rel="chapter" title="4.設定 UNIX 主機" />
+ <link href="NCD-X-Terminal-5.html" rel="chapter" title="5.設定 NCD X 終端機的開機程序" />
+ <link href="NCD-X-Terminal-6.html" rel="chapter" title="6.字型以及 X 終端機" />
+ <link href="NCD-X-Terminal-7.html" rel="chapter" title="7.其他零瑣的事" />
+ <link href="NCD-X-Terminal-6.html#ss6.1" rel="section" title="6.1 字型伺服器 " />
+</head> <body>
+<table    >
+  <tr>
+    <th colspan="3" class="HdTitle">Mini
+      HOWTO：NCD X terminal</th>
+  </tr>
+  <tr>
+    <td class="TtdL"> <a href="NCD-X-Terminal-5.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="TtdC"></td>
+    <td class="TtdR"> <a href="NCD-X-Terminal-7.html" accesskey="N">下一頁(N)</a> </td>
+  </tr>
+</table> 
+
+<hr />
+<h1><a name="s6" id="s6">6.</a> 字型以及 X 終端機</h1>
+
+<p>X 終端機一開始是使用小型字的。在 X 終端機的設定選單還有設定檔裡面
+這些字型都是內建可供使用的。
+終端機能夠使用單獨使用這些字型，但是我們希望能夠使用更多的字型。
+字型能被在 X 終端機的設定選單中經由指定的路徑中被使用，或是使用 xset 來作設定。</p>
+
+<p>當 X server 的軟體在 X 終端機上執行時，你能使用 xset 來指定字型。</p>
+<p>查詢 X server ：</p>
+<pre class="sample">
+xset -q
+</pre>
+
+<p>將字型的路徑加入：</p>
+<pre class="sample">
+xset +fp &lt;path>
+</pre>
+
+<p>移除字型項目：</p>
+<pre class="sample">
+xset -fp &lt;path>
+</pre>
+<h2><a name="ss6.1" id="ss6.1">6.1</a> 字型伺服器
+</h2>
+
+<p>這個字型伺服器在一部網路主機上執行，其工作是幫忙 X 終端機還有其他在網路上的客服端取得字型。
+使用字型伺服器能夠讓 X server 的軟體允許使用除了點陣字型以外可變動的字型。
+在取得的過程中，這個字型伺服器能夠幫 X server 解壓縮，縮放以及轉換字型，
+並且更容易的幫助一群的 X 終端機以及網路上的客服端管理字型。
+字型伺服器的軟體被包含在許多的 Linux 發行版中，並且已被整合在 X 設群所發布的軟體中，你可以自
+<a href="ftp://ftp.x.org">ftp.x.org</a>取得。</p>
+<p>要注意的是，使用字型伺服器，在 X 終端機的設定檔或是設定選單中，
+一個 tcp 的服務要用來取代字型路徑。</p>
+<p>tcp 服務的格式：</p>
+<pre class="sample">
+tcp/&lt; 字型伺服器的 IP 位址 >:&lt; 字型伺服器所使用的接口 >
+</pre>
+<p>例子：</p>
+<pre class="sample">
+tcp/10.0.0.1:7100
+</pre>
+<p>一筆存放於開機主機的 X 終端機設定檔的例子：</p>
+<pre class="sample">
+xserver-default-font-path = {
+        { "tcp/10.0.0.1:7100" }
+        { "built-ins" }
+}
+</pre>
+<p>由 xset 附加上 tcp 參數也能將自行伺服器加入路徑之中：</p>
+<pre class="sample">
+xset +fp tcp/10.0.0.1:7100
+</pre>
+<p>警告：某些版本的 NCD 軟體要求自型伺服器的資訊為 X 終端機的第一項內建自型。
+這是和 NCD 命名為 "System Administrator's Guide for UNIX Systems" 的文件所相違背的。
+用 ' xset q ' 這道命令確定字型的路徑的順序。</p>
+
+<p>在自型伺服器這邊，這個伺服器的起始工作是 rc.local 這個啟動命令稿中。
+( 譯註：現在大多數的發行版本都包含這個字形伺服器，並擁有自己的啟動命令稿，其名稱為 xfs )
+字形伺服器以下列的命令開始工作：</p>
+<pre class="sample">
+xfs -config &lt; 設定檔路徑 > -port &lt; 字形伺服器接口 >
+</pre>
+<p>一般而言字形伺服器的接口為 7100。</p>
+<p>例子：</p>
+<pre class="sample">
+xfs -config /usr/X11/lib/X11/fs/config -port 7100
+</pre>
+<p>字形伺服器的設定檔例子：</p>
+<pre class="sample">
+   # 字形伺服器的設定檔
+
+   # 允所最多 10 個客戶端連接至字形伺服器
+   client-limit = 10
+
+   # 當字形伺服器客戶端的負載達它的極限時，將啟動另一個字形伺服器。
+   clone-self = on
+
+   # 利用 UNIX 的 syslog 紀錄錯誤的訊息。
+   use-syslog = on
+
+   # 可用字型的目錄
+   catalogue = /usr/X11R6/lib/X11/fonts/misc/,
+      /usr/X11R6/lib/X11/fonts/Speedo/,
+      /usr/X11R6/lib/X11/fonts/Type1/,
+      /usr/X11R6/lib/X11/fonts/75dpi/,
+      /usr/X11R6/lib/X11/fonts/100dpi/
+
+   # 如果 syslog 沒有被使用，所要存放的錯誤訊息位置
+   error-file = /usr/X11R6/lib/X11/fs/fs-errors
+
+   # 預設的字型大小為 12 pt
+   default-point-size = 120
+
+   # 100 x 100 以及 75 x 75
+   default-resolutions = 75,75,100,100
+</pre>
+
+
+<hr />
+<table
+
+
+
+
+>
+  <tr
+>
+    <td class="BtdL"
+><a href="NCD-X-Terminal-5.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="BtdC"
+><a href="index.html" accesskey="H">目錄(H)</a></td
+>
+    <td class="BtdR"
+><a
+href="NCD-X-Terminal-7.html"
+>下一頁(N)</a
+></td
+>
+  </tr
+>
+  <tr
+>
+    <td class="BtdL"
+>設定 NCD X 終端機的開機程序</td
+>
+    <td class="BtdC"
+><a href="NCD-X-Terminal-6.html" accesskey="T">到頂層(T)</a></td
+>
+    <td class="BtdR"
+>其他零瑣的事</td
+>
+  </tr
+>
+</table
+>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" width="88" height="31" style="border:0;width:88px;height:31px"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img style="border:0;width:88px;height:31px" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img style="border:0;width:88px;height:32px" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" style="border:0" alt="表示該網頁支援資源描述架構"/></a> </div>
+</body>
+</html>

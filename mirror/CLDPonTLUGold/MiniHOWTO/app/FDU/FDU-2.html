@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+ 
+ <title>XFree86 字體美化 Mini HOWTO: X Server 的設定</title>
+ <link href="FDU-3.html" rel="next" />
+ <link href="FDU-1.html" rel="previous" />
+  <link href="FDU-1.html" rel="chapter" title="1.簡介" />
+ <link href="FDU-2.html" rel="chapter" title="2.X Server 的設定" />
+ <link href="FDU-3.html" rel="chapter" title="3.TrueType 字型" />
+ <link href="FDU-4.html" rel="chapter" title="4.XFree86 4.x" />
+ <link href="FDU-5.html" rel="chapter" title="5.調整應用程式的字型" />
+ <link href="FDU-6.html" rel="chapter" title="6.雜項和結尾" />
+ <link href="index.html" rel="start" />
+ <link href="index.html#content" rel="contents" />
+ <link href="../../style.css" rel="stylesheet" type="text/css" />
+ <link href="http://www.tldp.org/HOWTO/mini/FDU/index.html" rel="alternate" title="原版" />
+ <meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+ <link href="FDU-2.html#ss2.1" rel="section" title="2.1 設定 FontPath " />
+ <link href="FDU-2.html#ss2.2" rel="section" title="2.2 X server 命令列選項 (command line options) " />
+ <link href="FDU.rdf" rel="meta" title="各章節的說明資訊" />
+</head> <body> 
+
+<table
+
+
+
+
+>
+  <tr
+>
+    <th
+colspan="3" class="HdTitle"
+>Mini
+      HOWTO：XFree86 Font De-uglification</th>
+  </tr
+>
+  <tr
+>
+    <td class="TtdL"
+><a href="FDU-1.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="TtdC"
+></td
+>
+    <td class="TtdR"
+><a href="FDU-3.html" accesskey="N">下一頁(N)</a></td
+>
+  </tr
+>
+</table
+>
+<hr />
+<h1><a name="s2" id="s2">2.</a> X Server 的設定</h1>
+
+<p>下面是一些很容易就可以讓 X 表現更好的步驟:</p>
+<h2><a name="ss2.1" id="ss2.1">2.1</a> 設定 FontPath
+</h2>
+
+<p>想要解決字型的問題，首先得看看 <code>XF86Config</code> 檔。(通常放在 <code>/usr/X11/lib/X11/XF86Config</code> 或 <code>/etc/X11/XF86Config</code>)。若你還沒猜出來的話， 其中對字型最重要的部份就是 <code>FontPath</code>。在鑽研它之前，最好先檢查 X 的其他設定。錯誤的螢幕設定比錯誤的字型設定更令人頭痛。確定你螢幕的更新頻率(refresh rate)在正常使用範圍中已經設到最高 (85Hz 很好，75Hz 普通，60 Hz 很不舒服)。</p>
+<p>用你最順手的文字編輯器來編輯 <code>XF86Config</code>。在檔案開頭的 File 那節，你應該會看到類似下面的東西:</p>
+<pre class="sample">
+FontPath        "/usr/X11R6/lib/X11/fonts/misc/"
+FontPath        "/usr/X11R6/lib/X11/fonts/Type1/"
+FontPath        "/usr/X11R6/lib/X11/fonts/Speedo/"
+FontPath        "/usr/X11R6/lib/X11/fonts/75dpi/"
+FontPath        "/usr/X11R6/lib/X11/fonts/100dpi/"
+</pre>
+<p>這部份在 XFree86 3.x 和 4.x 裡應該相同，或至少類似。<code>FontPath</code> 告訴 X 到那裡去找在顯示器上畫字用的字型。排列的順序是很重要的，當一個 X 應用程式向 X 要求畫一些字，X server 通常偏好採用正在使用的字型。然後它去檢查 <code>FontPath</code>，使用第一個能滿足 X client 要求的字型。請注意，Redhat 6.x 的 xfs 採用另一種方式來設定 FontPath。請參考第 3.2.2 節以了解 xfs。</p>
+<p>預設安裝通常將 75dpi 的字型放在 100dpi 前面。若你有一台高解析度的顯示器，這表示非常小的字。若你正是這種情形，第一個要用的方法就是將 75dpi 和 100dpi 的 FontPath 對調。</p>
+<pre class="sample">
+FontPath        "/usr/X11R6/lib/X11/fonts/misc/"
+FontPath        "/usr/X11R6/lib/X11/fonts/Type1/"
+FontPath        "/usr/X11R6/lib/X11/fonts/Speedo/"
+FontPath        "/usr/X11R6/lib/X11/fonts/100dpi/"
+FontPath        "/usr/X11R6/lib/X11/fonts/75dpi/"
+</pre>
+<p>然後指出你偏好使用不能縮放的點陣字。若你曾經使用 Netscape 或是其他使用較大字型來顯示標題的程式，你將會發現這些字型會呈現鋸齒狀。這樣很難看，必須要修正。所以在 misc，100dpi 和 75dpi 的後面加上 <code>:unscaled</code>。若想要的話，你也可以同時使用能縮放和不能縮放的字，只要將不能縮放的字的 <code>FontPath</code> 放在前面，告訴 X 說若可能的話，盡量使用不能縮放的字。</p>
+<pre class="sample">
+FontPath        "/usr/X11R6/lib/X11/fonts/misc:unscaled"
+FontPath        "/usr/X11R6/lib/X11/fonts/100dpi:unscaled"
+FontPath        "/usr/X11R6/lib/X11/fonts/75dpi:unscaled"
+FontPath        "/usr/X11R6/lib/X11/fonts/Type1"
+FontPath        "/usr/X11R6/lib/X11/fonts/Speedo"
+FontPath        "/usr/X11R6/lib/X11/fonts/misc"
+FontPath        "/usr/X11R6/lib/X11/fonts/100dpi"
+FontPath        "/usr/X11R6/lib/X11/fonts/75dpi"
+</pre>
+<p>做了這些改變後，重新啟動 X。桌面是不是已經比較漂亮呢?</p>
+<h2><a name="ss2.2" id="ss2.2">2.2</a> X server 命令列選項 (command line options)
+</h2>
+
+<p>下面一件要做的事是調整 X server 的命令列選項。您將會想要用 <code>-dpi</code> 來指定顯示的解析度是每英吋幾點。現今很多系統都使用高解析度的顯示器，可能它們需要用 100dpi。 </p>
+<p>若你是在 console 的提示列下啟動 X，鍵入</p>
+<pre class="sample">
+ $ startx -dpi 100
+</pre>
+<p>若你是採用 xdm 這類的圖形登錄介面，你需要編輯你的 <code>/usr/X11/lib/X11/xdm/Xservers</code> 檔 (或是 <code>/etc/X11/xdm/Xservers</code>)。在裡面有 Xserver 的命令列。我的檔案裡有下面這一行:</p>
+<pre class="sample">
+ :0 local /usr/X11R6/bin/X -dpi 100 -gamma 1.6
+</pre>
+<p>你可在 X 和 Xserver 的 manpage 中找到更多的資訊。</p>
+<hr />
+<table
+
+
+
+
+>
+  <tr
+>
+    <td class="BtdL"
+><a href="FDU-1.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="BtdC"
+><a href="index.html" accesskey="H">目錄(H)</a></td
+>
+    <td class="BtdR"
+><a
+href="FDU-3.html"
+>下一頁(N)</a
+></td
+>
+  </tr
+>
+  <tr
+>
+    <td  class="BtdL"
+>簡介</td
+>
+    <td class="BtdC"
+><a href="FDU-2.html" accesskey="T">到頂層(T)</a></td
+>
+    <td class="BtdR"
+>TrueType
+字型</td
+>
+  </tr
+>
+</table
+>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img class="ImgLogo" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

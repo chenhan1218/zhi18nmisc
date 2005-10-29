@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+ 
+ <title>Zip Drive Mini-HOWTO: 建立一個能使用 ZIP 磁碟機的核心</title>
+ <link href="ZIP-Drive-4.html" rel="next" title="4. ZIP 磁碟機" />
+ <link href="ZIP-Drive-2.html" rel="previous" title="2. 快速上手指引" />
+  <link href="index.html" rel="start" />
+ <link href="index.html#content" rel="contents" />
+ <link href="ZIP-Drive-1.html" rel="chapter" title="1.簡介" />
+ <link href="ZIP-Drive-2.html" rel="chapter" title="2.快速上手指引" />
+ <link href="ZIP-Drive-3.html" rel="chapter" title="3.建立一個能使用 ZIP 磁碟機的核心" />
+ <link href="ZIP-Drive-4.html" rel="chapter" title="4.ZIP 磁碟機" />
+ <link href="ZIP-Drive-5.html" rel="chapter" title="5.安裝過程故障排除 " />
+ <link href="ZIP-Drive-6.html" rel="chapter" title="6.使用 ZIP 磁碟機" />
+ <link href="ZIP-Drive-7.html" rel="chapter" title="7.性能表現 " />
+ <link href="ZIP-Drive-8.html" rel="chapter" title="8.常見問答集" />
+ <link href="ZIP-Drive-9.html" rel="chapter" title="9.取得更多最新資訊 " />
+ <link href="ZIP-Drive-3.html#ss3.1" rel="section" title="3.1 SCSI 版本" />
+ <link href="http://www.tldp.org/HOWTO/mini/ZIP-Drive.html" rel="alternate" title="原版" />
+ <link href="../../style.css" rel="stylesheet" type="text/css" />
+ <meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+ <link href="http://tldp.org/HOWTO/Kernel-HOWTO.html" rel="bookmark" title="Linux Kernel HOWTO" />
+ <link href="http://www.linux.org.tw/CLDP/HOWTO/os/Kernel-HOWTO/" rel="bookmark" title="CLDP Linux Kernel HOWTO" />
+ <link href="http://tldp.org/HOWTO/BootPrompt-HOWTO.html" rel="bookmark" title="BootPrompt HOWTO" />
+ <link href="http://www.linux.org.tw/CLDP/HOWTO/os/BootPrompt-HOWTO/" rel="bookmark" title="CLDP BootPrompt HOWTO" />
+ <link href="ZIP-Drive.rdf" rel="meta" title="各章節的說明資訊" />
+</head> <body> 
+
+<table
+
+
+
+
+>
+  <tr
+>
+    <th
+colspan="3" class="HdTitle"
+>Mini
+      HOWTO：Zip Drive</th>
+  </tr
+>
+  <tr
+>
+    <td class="TtdL"
+><a href="ZIP-Drive-2.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="TtdC"
+></td
+>
+    <td class="TtdR"
+><a href="ZIP-Drive-4.html" accesskey="N">下一頁(N)</a></td
+>
+  </tr
+>
+</table
+>
+<hr />
+<h1><a name="s3" id="s3">3.</a> 建立一個能使用 ZIP 磁碟機的核心</h1>
+
+<p>要在 Linux 下使用 ZIP 磁碟機，你必須要有一個支援 SCSI 裝置，支援 SCSI 磁碟，以及支援你所用的主配接器（Host Adapter）的核心。
+如果你對於如何建立核心並不熟悉，你可以由 
+<a href="http://tldp.org/HOWTO/Kernel-HOWTO.html">Linux Kernel HOWTO</a> 獲得相關資訊<code><b>[譯者註]</b></code>。</p>
+<p><b><code>[譯者註] 中文化的 Linux Kernel HOWTO 可以在 
+<a href="http://www.linux.org.tw/CLDP/HOWTO/os/Kernel-HOWTO/">CLDP Linux Kernel HOWTO</a> 中找到。</code></b></p>
+<p>建立核心的第一步是設定核心組態。下面會告訴你哪些核心設定選項必須要選定。
+首先， <code> cd /usr/src/linux</code>。有許多方法可以進行組態設定。
+在 X window 下我用 <b>make xconfig</b>。
+此外，在命令列下，還可以用 <code>make menuconfig</code> 或 <code>make config</code>。然而，最簡單的方法是用 xconfig。</p>
+<p>在 <b>SCSI Support</b> 組態群組中，選定 <b>SCSI support = Y</b>。另外也要選定 <b>SCSI disk support = Y</b>。</p>
+<p>在 <b>SCSI low-level drivers</b> 組態群組中，你要選定 <b>IOMEGA Parallel Port ZIP drive SCSI support = M</b>。 "M" 代表設定成模組。</p>
+<p>在 <b>Character Devices</b> 組態群組中，找到並選定
+<b>Parallell Printer support = M</b>。</p>
+<p>如果你對上面的步驟感到任何一點點的不確定，那麼在編譯核心時，請使用 <code>make zdisk</code> 的編譯方式。
+這樣會建立並安裝核心到軟碟機上。如此一來，如果你因為某些原因而搞砸了，在硬碟上你仍然還有一個可以正常開機的系統。</p>
+<p>現在，以下列的步驟建立核心：</p>
+<ul>
+<li> make dep</li>
+<li> make clean</li>
+<li> make zImage 或 zlilo 或 zdisk </li>
+<li> make modules</li>
+<li> make mdoules_install</li>
+</ul>
+<p><b>[小提示]</b> 如果你想記錄在 make zImage 過程中的螢幕輸出的話，你可以用下列指令：</p>
+
+<pre class="sample">
+   make zImage 2>&amp;1 | tee zImage.out
+</pre>
+
+
+<p>十分建議你將編譯過程記錄下來，尤其是當編譯過程有發生錯誤，或者核心組態設定有錯的時候，
+你可以在記錄檔中找到相關的錯誤訊息。這樣會方便你在向別人求助時能提供相關訊息。</p>
+<p>此外，你必須將模組載入。在我的系統上，我只是在 boot.local 中加了下面幾行：</p>
+<ul>
+<li> insmod ppa</li>
+<li> insmod lp</li>
+</ul>
+
+<p>我的系統是 SuSE 5.3 ，而這個檔案在 /etc/rc.d 下。 這個檔案的名稱和路徑在每個發行版本中都會略有不同，但總會有一個這樣的檔案，用來紀錄一些你自己希望在系統啟動時，自動執行的命令。
+你應該找到並使用你所安裝的發行版本中相對應的檔案<code><b>[譯者註]</b></code>。</p>
+<p><b><code>[譯者註] 在 RedHat 和 Slackware 這兩個發行版本中，這個檔案是 /etc/rc.d/rc.local。</code></b></p>
+<p>現在，<code>關閉系統並重新啟動</code>。</p>
+<p>你也可以將全部或者部分的 SCSI 裝置設定建成模組。
+如果你這樣做，在你試著使用 ZIP 磁碟機前，記得要先確定載入 scsi.o ，接下來載入 sd.o ，最後載入你的主配接器的模組。</p>
+
+<h2><a name="ss3.1" id="ss3.1">3.1</a> SCSI 版本
+</h2>
+
+
+<p>如果你已經有一台 SCSI 硬碟，而且你將 ZIP 磁碟機接在同一個 SCSI 控制器上，那麼你不需要變更核心的組態設定；否則，你很可能必須建立一個新的核心。</p>
+<p>如果你在建立一個可以使用 SCSI ZIP 磁碟機的核心，你應該要開啟支援 SCSI 以及 SCSI 磁碟機的設定選項。
+此外，你也必須選擇一個支援你所用的 SCSI 配接卡的驅動程式。如果你有 ZIP Zoom SCSI 配接卡，請選擇 aha152x 這個驅動程式。</p>
+<p>請務必讀過在 SCSI HOWTO 文件中，有關你所使用的 SCSI 配接卡的相關資訊，並且務必讀過在 Linux 核心原始程式碼目錄下，drivers/scsi 目錄下所有的 README 檔。
+請特別注意是否有必須傳給核心以驅動你的 SCSI 配接卡的相關核心啟動參數。</p>
+<p>例如，如果你是用 ZIP Zoom 介面卡，你將必須在開機出現 boot: 提示符號時，輸入類似</p>
+<pre class="sample">
+          aha152x=0x340,11,7,1
+</pre>
+
+<p>的核心參數（或者將這段參數加在你的 /etc/lilo.conf 中的 append 命令中）。
+這列參數告訴驅動程式有關你的 ZIP Zoom 卡的輸出入埠位址以及中斷（IRQ）- 務必確定所用的數值與你卡上的硬體跳線器（Jumper）設定相符。</p>
+<p>你也該看看 Paul Gortmaker 的
+<a href="http://tldp.org/HOWTO/BootPrompt-HOWTO.html">BootPrompt HOWTO</a> 以獲得更多有關如何設定與使用 LILO 或 LOADLIN<code><b>[譯者註]</b></code>。</p>
+<p><b><code>[譯者註] 中文化的 BootPrompt HOWTO 可以在 
+<a href="http://www.linux.org.tw/CLDP/HOWTO/os/BootPrompt-HOWTO/">CLDP BootPrompt HOWTO</a> 中找到。</code></b></p>
+
+
+<hr />
+<table
+
+
+
+
+>
+  <tr
+>
+    <td class="BtdL"
+><a href="ZIP-Drive-2.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="BtdC"
+><a href="index.html" accesskey="H">目錄(H)</a></td
+>
+    <td class="BtdR"
+><a
+href="ZIP-Drive-4.html"
+>下一頁(N)</a
+></td
+>
+  </tr
+>
+  <tr
+>
+    <td class="BtdL"
+>快速上手指引</td
+>
+    <td class="BtdC"
+><a href="ZIP-Drive-3.html" accesskey="T">到頂層(T)</a></td
+>
+    <td class="BtdR"
+>ZIP 磁碟機</td
+>
+  </tr
+>
+</table
+>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" width="88" height="31" style="border:0;width:88px;height:31px"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img style="border:0;width:88px;height:31px" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img style="border:0;width:88px;height:32px" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" style="border:0" alt="表示該網頁支援資源描述架構"/></a></div>
+</body>
+</html>

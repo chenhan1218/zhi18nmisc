@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+ 
+ <title>ISP-Connectivity-mini-HOWTO : 連接外面的世界</title>
+ <link href="ISP-Connectivity-3.html" rel="next" />
+ <link href="ISP-Connectivity-1.html" rel="previous" />
+ <link href="../../style.css" rel="stylesheet" type="text/css" />
+ <link href="index.html#content" rel="contents" title="目錄" />
+ <link href="index.html#content" rel="contents" title="目錄" />
+ <link href="ISP-Connectivity-1.html" rel="chapter" title="1. 介紹" />
+ <link href="ISP-Connectivity-2.html" rel="chapter" title="2. 連接外面的世界" />
+ <link href="ISP-Connectivity-3.html" rel="chapter" title="3.在你 Linux 中的電子郵件" />
+ <link href="ISP-Connectivity-1.html" rel="chapter" title="3.在你 Linux 中的電子郵件" />
+ <link href="ISP-Connectivity-2.html#ss2.1" rel="section" title="2.1 利用 pppd 和 chat 來連接" />
+ <link href="ISP-Connectivity-2.html#ss2.2" rel="section" title="2.2 IP 的 Doname Names 和次網域(Subnets) " />
+ <link href="http://www.ml.org" rel="bookmark" title="http://www.ml.org" />
+ <link href="http://www.tldp.org/HOWTO/mini/ISP-Connectivity.html" rel="alternate" title="原版" />
+ <link href="ISP-Connectivity.rdf" rel="meta" title="各章節的說明資訊" />
+</head> <body> 
+<table
+
+
+
+
+>
+  <tr
+>
+    <th
+colspan="3" class="HdTitle"
+>Mini
+      HOWTO：ISP-Connectivity</th>
+  </tr
+>
+  <tr
+>
+    <td class="TtdL"
+><a href="ISP-Connectivity-1.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="TtdC"
+></td
+>
+    <td class="TtdR"
+><a href="ISP-Connectivity-3.html" accesskey="N">下一頁(N)</a></td
+>
+  </tr
+>
+</table
+>
+<hr />
+<h1><a name="s2" id="s2">2.</a> 連接外面的世界</h1>
+
+<p>在這份文件中,我們將解釋如何使用網路上最常用的 PPP (點對點通訊協定)來連上網
+路.它讓你的數據機能和外界"通話".這就像是微軟視窗3.x中的 Winsock 小喇叭(Trumpet
+Winsock)以及許多其它你可能從沒見過的程式.</p>
+<p>在 Linux 中,我們使用一個叫 chat 的東西來幫我們做撥號至 ISP 的動作,
+接著再用一個叫 pppd 的工具來"利用"這個撥號至 ISP 的連線.你可以把 chat
+想成是你的撥號工具,而 pppd 是你的通訊協定.我們將在下面說明如何設定這兩種工具.</p>
+<h2><a name="ss2.1" id="ss2.1">2.1</a> 利用 pppd 和 chat 來連接
+</h2>
+
+<p>或許做這些事情最好的方法就是寫一個 shell script 在 root的家目錄下,
+取名為<code>ppp-connect</code>並且在每次你要連線時祈禱一下.我們將會討論這個方法.</p>
+<p>用root來login,並且用你最習慣的編輯器來編輯 &nbsp;/ppp-connect這個檔.
+你等一下將必須你的參數是些什麼.</p>
+<p><i>pppd connect 'chat -v "" "your_init_string" "" ATDTisp_number
+CONNECT "" ogin: your_username word: your_passwd' /dev/tty(0/1/2) speed
+modem</i></p>
+<p>pppd 在你系統中的 /usr/sbin/pppd ,然候在載入 chat 來幫你撥號. Chat 將會送出
+<i>你的初始字串</i>到數據機上,然後開始撥<i>你 ISP
+的電話</i>然後它就會開始等待螢幕上出現 CONNECT 以及 ogin:
+符號出現(這裡沒有開頭的 l
+是因為第一字元有時會在傳送時遺失),接著再送出<i>你的密碼</i>,
+到這裡 chat就結束了它的工作,將剩下來的部份交給 pppd 來表演.</p>
+<p>最後一個指令是指定你的數據機在那一個連接埠上(我的是在 /dev/ttyS1).
+通常它都是在 ttyS1 (DOS 底下的 COM2),ttyS0 (DOS 底下的 COM1),
+如果你是用 Slackware 的版本,就是 cua1 或是 cua0 .至於 spped 
+指的是你 modem 的速度.我是始用 115200 在我的數據機(33.6k)上.
+如果你是最近才買的電腦(有著 16550 UART ),那麼決對不要比 57600 來的低.
+此外,14.4k 的 modem 可以把它設成 38400.Modem 只會告訴 pppd 它是個 serial/modem.
+如果你不希望有冗長的記錄檔那就不要加上 -v 選項.</p>
+<p>下面的例子是一個人撥號到一個自動提供 PPP 連線的 ISP(例如:該 ISP
+沒有任何選擇使用何者協定的畫面.)時.這是他 &nbsp;/ppp-connect 裡的內容 :</p>
+<p><i>pppd connect 'chat "" "ATZ" "" ATDT555-1800
+CONNECT "" ogin: johnny word: blackjak' /dev/ttyS1 115200
+modem</i></p>
+<p>但是對有些人而言,他們的 ISP 會有選擇何種協定並且不會自動啟動 PPP
+服務的人,可能會造成一些問題(譯注:像 Hinet).幸運的是, chat
+也能處理這個問題.你只需要增加一些命令到你的 chat 的 script 中即可.
+例如,下面的 johnny 的 ISP 會丟給他一個畫面,需要他輸入 ppp 來建立 ppp
+連線.他的 shell prompt 是用 $.
+<i>pppd connect 'chat "" "ATZ" "" ATDT555-1800
+CONNECT "" ogin: johnny word: blackjak $ ppp' /dev/ttyS1 115200
+modem</i></p>
+<p>如果這些超過一個字,確定你有用引號夾住它.我希望你能了解這些意思,
+並且能寫出適合你連線的 script.只需改變第一個或第二個 script 中的 johnny
+來配合你的需要,連接埠, ISP ,等等並將它存檔.</p>
+<p>現在,你可以設定你的 scipt 並且確定只有 root 才能執行,讀,寫它.
+這是非常重要的.如果你決定保留 -v 選項,那要確定沒有人能看你的記錄檔.
+因為你的密碼將會在純文字的記錄檔中被看見.(我很少看見需要 -v 的情況,
+如果你不知道我說這段的意思,那麼請務必移去 -v 選項.</p>
+<h2><a name="ss2.2" id="ss2.2">2.2</a> IP 的 Doname Names 和次網域(Subnets)
+</h2>
+
+<p>對於大部份使用上面設定連線的人,一個不固定的 IP 位置並不會對他們造成困擾.
+這些人包括基本,一般的使用者,他們只要有撥接的帳號就好,並不需要很高深的技術.
+對於這些人可以跳過這一節,我將會告訴你必需作的重要工作來適切的設定你的系統.
+新手,可以跳過處理固定 IP ,Doname Names, Subnets,的這一節,而只要讀這節的
+最後一部份就可以了.</p>
+<p>向你的 ISP 取得固定的 IP 位置可能是免費的,所以,如果你不確定的話,
+可以向你的 ISP 詢問.至於我個人,則是要付費來取得固定的 IP 位置.
+固定 IP 或 doname 能讓你收發 e-mail 等等.如果你想為你自己獲得固定 IP ,
+寫 e-mail 給 root@你的ISP.com ,詢問他是否能給你一個固定的 IP.</p>
+<p>當你有了固定的 IP 位置,用 grep 在你的 /etc 目錄下尋找你舊的 IP 位置在那.
+我必需改變我 sendmail 目錄下和 /etc/hosts 檔案內容.還有一些必需改變的檔案.
+必需靠你自己用 grep 指令把他們給找出來.在你的 /etc/hosts 中用標準的格式加上你
+新的 IP 位置,重新啟動你的電腦,那麼你就可以準備連上網路了.</p>
+<p>你現在必需改變你的 script 來配合你新的設定.如果你被迫一開始連線就開啟 PPP
+那麼你需要告訴你 ISP 的系統管理者來確保他們的 PPP 系統知道你有固定的 IP
+位址,並且分配給你你自己的位置而不是任意的 IP 位置.如果你會有輸入何種協定的
+畫面,而且你必需打入 ppp 之類的東西才能開始連線.改變你的 &nbsp;/ppp-connect script
+來送出這些字串來代替你自己在看到 $ 或其它提示符號時自己所輸入的字串.</p>
+<p><i>/usr/sbin/pppd :你的 IP 位置</i></p>
+<p>把你的 ISP 所給你的位置填入.確定你在將位置填入你的 chat script
+時,有用 " "來將它夾住.如果這沒有用,詢問你的 ISP 說你的 PPP daemon
+在那裡,並且要求他下相關的命令.你可以試著保留這些設定,看看你的 ISP 
+是否認得你並且給予你正確的位置.</p>
+<p>下一件要做的事就是為你自己要到一個 domain name.
+我知道在澳洲, .asn.au 和 .org.au 是免費的.在美國,你可以拿到一個 .us
+的免費 domain ,但是可能要一段時間.如果你在澳洲,你一定要去
+<a href="http://www.aunic.net/">http://www.aunic.net/</a>
+來註冊你的 domain .在美國,則是到
+<a href="http://www.internic.net/">http://www.internic.net/</a> .</p>
+<p>要註冊網域( domain ),你必須提供 DNS 或其它類似的服務.如果你的 ISP
+不能提供 domain 給你,放棄一個公家的網域 .asn.au 或其它的網域名稱,
+並且向 Monolith Internet 要一個 Domain 吧.</p>
+<p>Monolith 為全世界任何人提供一個免費的 Domain.申請的過程完全不必接觸到人.
+全部藉由網路表單( web forms )的界面,透過你的網路瀏覽器( brower )來達成.
+你的 domain 將會是一個 *.ml.org(*是你的申請名字)的形式.
+Monolith 將會為你在當地設立 DNS .如果你希望用 domain 來收發信件,要求你的 ISP
+成為你的 mail exchanger.</p>
+<p>去
+<a href="http://www.ml.org/">http://www.ml.org/</a>
+並且填寫一份申請書.用你的帳號和密碼進入 NIC ,並且取好一個免費的 domain
+吧.你將必需輸入你的 IP 位置,所以事先準備好它.你的 domain 將會在幾天內
+存在於 DNS 中.</p>
+<p>好了,現在我們將談到新手的部份,或是那些無法擁有固定 IP 位置及 domain
+的人.你所要做的只有已 root 身份編輯 /etc/hosts 檔,叫你的位置為一個不
+會造成衝途的名字,給他一個 10.10.10.10 或是類似的位置,並且重新啟動你的電腦.</p>
+<p>現在起,你已經用 pppd 和 chat 設定好你的電腦在10分鐘內.現在,讓我們到下一段,
+處理有關電子郵件的部份.</p>
+<hr />
+<table
+
+
+
+
+>
+  <tr
+>
+    <td class="BtdL"
+><a href="ISP-Connectivity-1.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="BtdC"
+><a href="index.html" accesskey="H">目錄(H)</a></td
+>
+    <td class="BtdR"
+><a
+href="ISP-Connectivity-3.html"
+>下一頁(N)</a
+></td
+>
+  </tr
+>
+  <tr
+>
+    <td class="BtdL"
+>介紹</td
+>
+    <td class="BtdC"
+><a href="ISP-Connectivity-2.html" accesskey="T">到頂層(T)</a></td
+>
+    <td class="BtdR"
+>在你 Linux 中的電子郵件</td
+>
+  </tr
+>
+</table
+>
+<div><a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" width="88" height="31" style="border:0;width:88px;height:31px"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img style="border:0;width:88px;height:31px" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img style="border:0;width:88px;height:32px" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" style="border:0" alt="表示該網頁支援資源描述架構"/></a></div>
+</body>
+</html>

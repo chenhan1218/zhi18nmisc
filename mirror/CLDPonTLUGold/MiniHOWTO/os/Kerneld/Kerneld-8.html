@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+ 
+ <title>Mini HOWTO：Linux kerneld</title>
+ <meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+ <link href="../../style.css" rel="stylesheet" type="text/css" />
+ <link href="http://tldp.org/HOWTO/mini/Kerneld/index.html" rel="alternate" title="原版" />
+</head> <body> 
+<table    >
+  <tr>
+    <th colspan="3" class="HdTitle">Mini
+      HOWTO：Linux kerneld</th>
+  </tr>
+  <tr>
+    <td class="TtdL"> <a href="../Upgrade/Upgrade-10.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="TtdC"></td>
+    <td class="TtdR"> <a href="../Upgrade/Upgrade-12.html" accesskey="N">下一頁(N)</a> </td>
+  </tr>
+</table>
+<hr />
+<h1><a name="CommonProblems" id="CommonProblems"></a>8.
+  常見問題及你可能懷疑的事情</h1>
+<h3> 為何當我執行 ifconfig 時為何我會得到 &quot;Cannot locate
+  module for net-pf-X&quot; 訊息</h3>
+<p>在核心 1.3.80 左右，網絡的程式修改至容許把通訴協定 (protocol families，如 IPX, AX.25 和 AppleTalk)
+  載入為模組。這導致額外的 kerneld 要求：net-pf-X，X 是一個用以辨別通訊協定的數字（參看 /usr/src/linux/include/linux/socket.h
+  來找出不同數字的意思）。<br />
+  不幸地，ifconfig 會意外地造成這些訊息，所以很多人會在開機期間執行 ifconfig 來設定迴歸設備 (loopback device) 時收到。這些訊息並無壞處，你可在
+  /etc/conf.modules 中加入以下數行來避免它們：</p>
+<pre class="sample"><tt>        alias net-pf-3 off      # Forget AX.25
+        alias net-pf-4 off      # Forget IPX
+        alias net-pf-5 off      # Forget AppleTalk</tt>
+</pre>
+<p>當然，如果你把 IPX 編譯了為模組，你不可加上和它有關的一行。<br />
+</p>
+<h3> 開始 Kerneld 後，啟動 PPP 連線會使我的電腦慢如蝸牛</h3>
+<p>已經有多個這類個案。這似乎是因為 kerneld 和部分系統用來設定和監察 PPP 連線的 <b>tkPPP
+    script</b> 不正常地互相影嚮所致。因為那 script 在執行 ifconfig 時好像用到迴圈 (loops)。這樣會觸發 kerneld 找尋 net-pf-X
+    模組（見前），增加系統工作量和可能導致系統紀錄 (system log) 中出現大量 "Cannot locate module for net-pf-X" 訊息。除了不使用 tkPPP 或改用其他方法來監察連線，這問題未有其他解決方法。</p>
+<h3>kerneld 不載入我的 SCSI 驅動程式！</h3>
+<p>在你的 /etc/conf.modules 中加上一個 SCSI 配接器的項目。詳情這看之前有關 <a href="#scsidevs">scsi_hostadapter</a> 的部分。 </p>
+<h3>modprobe 投訴 'gcc2_compiled' 未定義 (undefined)</h3>
+<p>這是 module-utilities 的一個錯誤。它只在使用 binutils 2.6.0.9 或更新版本時出現，而且已在 binutils
+  的出版說明 (release note) 中說明。所以你應該看看它。你也可更新 module-utilities，如 modules-2.0.0 來解決這問題。</p>
+<h3>我的音響驅動程式 (sound driver) 老是忘記音量之類設定</h3>
+<p>模組載入後的設定是儲存在模組之內的。所以，當 kerneld 自動卸下模組時，你所做的設定都會被忘掉，下次載入時又回復原狀。</p>
+<p>你可使 kerneld 在自動載入模組後執行一個程式，以作出設定。請參看<a href="#pre_post">以上</a>有關
+  'post-install' 項目的部分。</p>
+<h3>DOSEMU 需要一些模組，我怎樣使 kerneld 載入它們？</h3>
+<p>你不能。不論是官方 (official) 或開發 (development) 版的 dosemu，都不支援用 kerneld 載入 dosemu
+  模組。不過，如果你有 2.0.26 或更新的核心，你不再需要那些 dosemu 模組 -- 你只需要更新 dosemu 至 0.66.1 版。（譯按︰目前最新的
+  DOSEMU 穩定版本 (stable version) 是 0.66.7。）</p>
+<h3>為何會有 &quot;Ouch, kerneld timed out, message failed&quot; 這訊息？</h3>
+<p>當核心對 kerneld 作出要求時，它會期望在 1 秒之內得到應答 (acknowledgement)。如果 kerneld 不作出回應，這個訊息會被記錄下來
+  (logged)。這要求會再被提出，直到完成為止。</p>
+<p>這通常在系統負荷 (load) 非常高時發生。因為 kerneld 也是一個使用者行程 (user-process)，它會如其他程序般排程
+  (scheduling)。負荷高時，它可能來不及在核心超時 (time out) 前作出回應。</p>
+<p>如果這問題在負荷低時也發生，請再啟動 kerneld （殺掉 kerneld 行程，以 <tt>/usr/sbin/kerneld</tt>指令來重新開始它）。如果仍有問題，你應該寄一份錯誤報告給<a href="mailto:linux-kernel@vger.rutgers.edu">linux-kernel@vger.rutgers.edu</a>，但在寄出前<b>請</b>先確保你的核心和
+  kerneld 都是最新的。</p>
+<h3>mount 不等待 kerneld 載入檔案系統模組</h3>
+<p>已經收到一定數目有關 mount (8) 指令不等待 kerneld 載入檔案系統模組的報告。 ismod 顯示模組已被載入，如果你立刻再執行
+  mount 的話便會成功。這似乎是 module-utilities 1.3.69f 版中一個會影響 Debian 使用者的錯誤，使用一個新版的 module-utilities
+  可解決這問題。</p>
+<h3>kerneld 不能載入 ncpfs 模組</h3>
+<p>你編譯 ncpfs utilities 時要用 -DHAVE_KERNELD。請參閱 ncpfs 的 Makefile。</p>
+<h3>kerneld 不能載入 smbfs 模組</h3>
+<p>你在使用一個舊的 smbmount utilities。請從 <a href="ftp://tsx-11.mit.edu/pub/linux/filesystems/smbfs/">ftp://tsx-11.mit.edu/pub/linux/filesystems/smbfs/</a> 下載最新版本
+  (0.10 或之後)。</p>
+<h3>我把所有東西都編譯成模組，現在我的系統不能啟動</h3>
+<h3>kerneld 不能載入根檔案系統 (root filesystem) 模組。</h3>
+<p>你不可把<b>所有東西</b>都編譯成模組︰核心要有足夠的驅動程式以使它能掛上 (mount) 根檔案系統，和執行所有要用於啟動
+  kerneld 的程式。所以你不能把以下東西模組化︰</p>
+<ul>
+  <li>根檔案系統所在的硬碟的驅動程式</li>
+  <li>根檔案系統的驅動程式</li>
+  <li>init, kerneld和其他程式的二元格式載入程式 (binary format loader)</li>
+</ul>
+<p>[事實上，這並不正確。新的 1.3.x 及所有 2.0.x 核心都容許 LILO 或 LOADLIN 載入初始的 ram-disk，而你可以在啟動的早期在這『磁碟』中載入模組。做法可在核心原程式碼中的
+  Documentation/initrd.txt 檔中可找到。] </p>
+<h3>kerneld 不能在啟動時載入 -- 投訴 libgdbm</h3>
+<p>較新版的 kerneld 要 GNU dbm 程式庫 libgdbm.so 才能執行。大多數的安裝程式都會把這檔案放在 /usr/lib，而你多數是在掛上
+  /usr 檔案系統前執行了 kerneld。這問題的其中一個症狀是 kerneld 在啟動時不能籍 rc-scripts 載入，但如果你在啟動系統後自己開始它，它便沒有問題。解決方法，一是把
+  kerneld 的啟動放在掛上 /usr 後，另一是把 gdbm 程式庫放到你的根檔案系統，如 /lib。</p>
+<h3>我重新設定核心至沒有 xxx 支援後出現 &quot;Cannot load module
+  xxx&quot;</h3>
+<p>Slackware（其他也可能）會在安裝時籍執行 modprobe 來建立一個預設的 /etc/rc.d/rc.modules。modprode
+  得出來的結果會因原本的核心的設定而異。你可能在重新設定時排除了一些在 rc.modules 的模組，因此造成錯誤。你可把你在 rc.modules 中不用的模組變為注釋
+  (comment out)，或刪除 rc.modules，讓 kerneld 在需要模組時自行載入。</p>
+<h3>我重新建立了核心及模組，但在啟動時仍出現未分辨的符號 (unresolved symbol) 訊息</h3>
+<p>你可能在設定或建立新核心時排除了一些模組，但已不用的舊模組仍在 /lib/modules 目錄下。最簡單的解決方法是刪除你的 /lib/modules/x.y.z
+  目錄及在核心的源程式碼的目錄下做一次 'make modules_install'。這問題只在重新設定同一版本的核心時發生。如果你在更新核心時遇到此問題，你有其他問題。</p>
+<h3><a name="2-1-problems" id="2-1-problems"></a>我安裝了
+  Linux 2.1 後不能載入任何模組</h3>
+<p>Linux 2.1 是目前的開發核心 (development kernel)。也就是說，它隨時可能出現錯誤。其中一樣大幅改變的是模組的處理方法，及核心和模組載入到什麼地方。Richard
+  Henderson 現正負責核心的模組發展。</p>
+<p>總結一句，如果你想在 2.1 版核心使用模組，你要︰</p>
+<ul>
+  <li>閱讀 Documentation/Changes 檔案及找出更新你的系統所需的模組</li>
+  <li>使用最新的 modutils，可從以下地方得到<a href="ftp://ftp.redhat.com/pub/alphabits/">ftp://ftp.redhat.com/pub/alphabits/</a> 或在<a href="ftp://tsx-11.mit.edu/pub/linux/packages/alphabits/">ftp://tsx-11.mit.edu/pub/linux/packages/alphabits/</a> 的映像站
+    (mirror site)</li>
+</ul>
+<p>如果你想在 2.1 版核心使用模組的話，我會建議最少使用 2.1.29 版的核心。</p>
+<br />
+<h3>自選撥號 (dial-on-demand) 網絡又怎樣？</h3>
+<p>kerneld 對有需要時建立網絡連線原本有些支援。嘗試在沒有連線時傳送訊息包 (packet) 會使 kerneld 執行 <b>/sbin/request_route</b> 命令稿來建立
+  PPP 或 SLIP 連線。</p>
+<p>這並不是一個好方法。Linux 網絡發展人員 Alan Cox 在 Linux 核心的通信論壇 (Mailing List) 中批評︰ </p>
+<pre class="sample">
+  路徑要求 (request-route) 的東西是過時、不對及無用的 [...]，它已在
+  2.1.x 的源程式碼中消失。</pre>
+<p>我誠心建議你從 http://www.dna.lth.se/~erics/diald.html 取 Eric Schenk 的 <a href="http://www.dna.lth.se/~erics/diald.html">diald</a> 套裝軟件來安裝，而不要使用路徑要求及
+  kerneld。</p>
+<hr />
+<table
+
+
+
+
+>
+  <tr
+>
+    <td class="BtdL"
+><a href="../Upgrade/Upgrade-10.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="BtdC"
+><a href="../Upgrade/index.html" accesskey="H">目錄(H)</a></td
+>
+    <td class="BtdR"
+><a
+href="../Upgrade/Upgrade-12.html"
+>下一頁(N)</a
+></td
+>
+  </tr
+>
+  <tr
+>
+    <td class="BtdL"
+>禁止簽入並備份/root及/home以下的檔案。</td
+>
+    <td class="BtdC"
+><a href="../Upgrade/Upgrade-11.html" accesskey="T">到頂層(T)</a></td
+>
+    <td class="BtdR"
+>用fdisk刪除linux分割區並重建它們。</td
+>
+  </tr
+>
+</table
+>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img class="ImgLogo" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" title="網路內容分級協會" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

@@ -1,0 +1,1178 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+ 
+ <title>Linux Remote-Boot mini-HOWTO:: 如何設定</title>
+ <link href="Remote-Boot-5.html" rel="next" />
+ <link href="Remote-Boot-3.html" rel="previous" />
+ <link href="../../style.css" rel="stylesheet" type="text/css" />
+ <meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+ <link href="index.html#content" rel="contents" />
+ <link href="index.html" rel="start" />
+  <link href="Remote-Boot-1.html" rel="chapter" title="1.免責聲明及版權" />
+ <link href="Remote-Boot-2.html" rel="chapter" title="2.有那些變更..." />
+ <link href="Remote-Boot-3.html" rel="chapter" title="3.簡介" />
+ <link href="Remote-Boot-4.html" rel="chapter" title="4.如何設定" />
+ <link href="Remote-Boot-5.html" rel="chapter" title="5.遠端啟動工具程式參考手冊" />
+ <link href="Remote-Boot-6.html" rel="chapter" title="6.特殊型的 TFTP 伺服器" />
+ <link href="Remote-Boot-4.html#ss4.1" rel="section" title="4.1 伺服器端的設定" />
+ <link href="Remote-Boot-4.html#ss4.2" rel="section" title="4.2 用戶端的設定 " />
+ <link href="Remote-Boot-4.html#ss4.3" rel="section" title="4.3 設定開機流程" />
+ <link href="Remote-Boot-4.html#ss4.4" rel="section" title="4.4 設定 Linux" />
+ <link href="Remote-Boot-4.html#ss4.5" rel="section" title="4.5 設定 DOS 6 及 Windows 3.1" />
+ <link href="Remote-Boot-4.html#ss4.6" rel="section" title="4.6 設定 Windows 95/98" />
+ <link href="Remote-Boot-4.html#ss4.7" rel="section" title="4.7 設定 Windows NT " />
+ <link href="Remote-Boot-4.html#ss4.8" rel="section" title="4.8 問題集 (FAQ) " />
+ <link href="http://www.tldp.org/HOWTO/mini/Remote-Boot.html" rel="alternate" title="原版" />
+ <link href="Remote-Boot.rdf" rel="meta" title="各章節的說明資訊" />
+</head> <body> 
+<table
+
+
+
+
+>
+  <tr
+>
+    <th
+colspan="3" class="HdTitle"
+>Mini
+      HOWTO：Linux Remote-Boot</th>
+  </tr
+>
+  <tr
+>
+    <td class="TtdL"
+><a href="Remote-Boot-3.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="TtdC"
+></td
+>
+    <td class="TtdR"
+><a href="Remote-Boot-5.html" accesskey="N">下一頁(N)</a></td
+>
+  </tr
+>
+</table
+>
+<hr />
+<h1><a name="s4" id="s4">4.</a> 如何設定</h1>
+
+<p>首先, 調整機器位置使手邊有下列兩台機器:</p>
+<ul>
+<li><b>伺服器</b>, 我們是用一台 Unix 主機或 Windows NT.</li>
+<li><b>用戶端</b>, 一台已經啟動 BootPROM 的個人電腦, 硬碟內不要有重要資料.
+</li>
+</ul>
+
+<p>如果你想要測試您的組態設定而您還沒有 BootPROM,
+你可以到
+<code>
+<a href="http://www.bootix.com">http://www.bootix.com</a></code>
+下載測試版磁片. 這個磁片可以使您的電腦就好像是插上 TCP/IP BootPROM 一般.</p>
+<p>如果你已有 Boot ROM, 你要先啟動它. 如果您使用 Bootix 的 TCP/IP BootPROM,
+你可以用網路卡製造商所提供的特殊程式來啟用它.
+如果你用 PXE BootPROM, 你只要經由 BIOS 設定, 改變預設的開機裝置
+(default boot device) 就可以了.</p>
+<p>學生所使用的電腦, 我們設定由網路開機, 而不能透過硬碟及軟碟開機.
+助教的電腦, 我們設定先由網路開機, 但也允許硬碟與軟碟開機.</p>
+
+<h2><a name="ss4.1" id="ss4.1">4.1</a> 伺服器端的設定
+</h2>
+
+<p>在伺服器端, 只需要下列的服務:</p>
+<ol>
+<li>一個 BOOTP/DHCP 伺服器.</li>
+<li>或許也要一個 Proxy DHCP 伺服器.</li>
+<li>一個 TFTP 伺服器.</li>
+</ol>
+
+<p><b>使用 PXE Boot ROM 必須注意:</b> 你要確定是使用最新版的 PXE.
+在寫本文的時候, 最新的版本是 PXE 2.0 但 PXE 0.99x bootrom 也支援,
+不過有部份的 DHCP 選項將不會透過 DHCP 伺服器送出. 特別是,
+如果 DHCP 選項 135 對 BpBatch 失效 (BpBatch 於啟動時, 顯示 "Cannot load file"),
+你就要升級到 PXE 2.0 .
+如果你的網路卡屬於 Intel EPRO100 族系, 你可以取得最新的
+Intel PXE Product Development Kit (PDK) 評估版,
+它還包含一個用來更新 BootPROM 的快閃記憶體工具程式.
+這個 PDK 放在 <code>
+<a href="http://developer.intel.com/ial/wfm/tools/pxepdk20/index.htm">http://developer.intel.com/ial/wfm/tools/pxepdk20/index.htm</a></code>.</p>
+
+<h3>設定 DHCP 伺服器</h3>
+
+<p>DHCP 伺服器所伴演的角色是傳送 IP 位址給用戶端並讓它自 TFTP 伺服器下載,
+名為 <code>bpbatch.P</code> 的檔案. DHCP 是重疊於 BOOTP 的通訊協定.
+如果你用 Bootix 的 TCP/IP BootPROM, 你可以不用 DHCP 伺服器 (用舊的 BOOTP 伺服器).</p>
+<p>在 Windows NT, 你也需要類似的原生 DHCP 伺服器.
+如果你用 Bootix 的 TCP/IP BootPROM, 你則要用一個小技巧來定義可開機檔的檔名
+(可由 Bootix 的 WWW 網頁獲得更多資訊). 如果你用 PXE BootPROM,
+你還需要一個用 DHCP 選項 67 定義可開機檔的檔名.
+還要設定 VendorClass (DHCP 選項 60) 為 "PXEClient" 及
+VendorOptions (DHCP 選項 43) 為 <code>01,04,00,00,00,00,ff</code>
+(參考下文).</p>
+<p>在 Linux, 最佳的選擇是來自 網際網路軟體協會 (Internet Software Consortium)
+的標準 DHCP 伺服器.
+如果你用 PXE BootPROM, 則在常見的設定外, 你還要多加下面兩個設定:</p>
+<ul>
+<li><code>option dhcp-class-identifier "PXEClient"</code>.</li>
+<li><code>option vendor-encapsulated-options 01:04:00:00:00:00:ff;</code>.</li>
+</ul>
+
+<p>如果你使用 ISC DHCP 3.0, 則語法上有些微出入. 以下是 DHCP 3.0 相容的設定檔:</p>
+<pre class="sample">
+# DHCP ISC 3.0 &amp; BpBatch 用的 DHCP 設定檔
+#
+
+# 全域選項
+option subnet-mask 255.255.255.0;
+default-lease-time -1;
+
+# 定義 PXE 規範的選項
+# Code 1: 指到開機檔所在位置機器的 IP 位址
+# Code 2: 用戶端電腦監控 MTFTP 回應的 UDP 埠號
+# Code 3: MTFTP 伺服器用來監聽 MTFTP 回應的 UDP 埠號
+# Code 4: 用戶端電腦在試著啟動一個新的 MTFTP 傳輸之前的等待秒數
+# Code 5: 用戶端電腦在試著重新啟動一個新的 MTFTP 傳輸之前的等待秒數
+option space PXE;
+option PXE.mtftp-ip    code 1 = ip-address;
+option PXE.mtftp-cport code 2 = unsigned integer 16;
+option PXE.mtftp-sport code 3 = unsigned integer 16;
+option PXE.mtftp-tmout code 4 = unsigned integer 8;
+option PXE.mtftp-delay code 5 = unsigned integer 8;
+
+# 規範子網域的選項
+subnet 192.168.1.0 netmask 255.255.255.0 {
+  option routers 192.168.1.1;
+
+# 規範主機的選項
+  host pctest {
+        hardware ethernet 00:01:02:03:04:05;
+        filename "bpbatch.P";
+        next-server 192.168.1.2;
+        fixed-address 192.168.1.100;
+        # BpBatch 命令列參數: -i == 交談式
+        # 你也可以定義一腳本程式檔名 (不要把副檔名 .bpb 寫進去)
+        option option-135 "-i";
+        # PXE 規範的選項
+        class "pxeclients"
+        {
+         match if substring (option vendor-class-identifier, 0, 9) =
+                "PXEClient";
+         option vendor-class-identifier "PXEClient";
+         # 至少設定一個 vendor-specific 選項.
+         # 我們設定 MCAST IP 位址為 0.0.0.0 也就告訴 BootPROM 繼續使用
+         # TFTP 通訊協定 (位址 0.0.0.0 意謂著 "沒有位址")
+         option PXE.mtftp-ip 0.0.0.0;
+         vendor-option-space PXE;
+        }
+  }
+}
+</pre>
+
+
+<p>在 Solaris 上, 你依然可以使用 網際網路軟體協會 的 DHCP 伺服器
+(可以在 Web 上找到), 或使用 Solaris 的 DHCP 伺服器 (Solaris 2.5 版以後都有附).
+然而, 用 Solaris DHCP 伺服器似乎無法在 DHCP 設定中提供, 用戶類別的辨識碼.
+你必須安裝一個 Proxy DHCP 伺服器.
+不過, 這個 Proxy DHCP 伺服器必須安裝在另一台電腦上,
+因為 Solaris DHCP 伺服器會鎖住 DHCP 埠.</p>
+<p>我們建議您設定用戶端電腦的 DHCP 參數為無限制的使用週期.
+別忘了 BOOTP/DHCP 的要求訊號受限於子網域內傳送.
+如果用戶端與伺服器不在同一個子網域你就必須安裝一個 BOOTP/DHCP Relay
+代理程式在兩個子網域之間. 但現在, 先假設兩台機器都在同一個子網域.</p>
+
+<p>如果您使用 PXE 2.0 BootPROM, 您只能使用 site-specific 選項第 128 至 135
+以傳遞訊息給 BpBatch. 大於 135 的選項會被 PXE 2.0 BootPROM 忽略掉.
+選項 135 用來傳遞 BpBatch 的命令列參數. 所以你還有 6 個選項可以用來自訂.</p>
+
+<h3>設定 Proxy DHCP 伺服器</h3>
+
+<p>Proxy DHCP 伺服器所伴演的角色是用來克服 DHCP 伺服器的限制並提供
+PXE 規範的延伸訊息. Proxy DHCP 伺服器只為了與 PXE BootPROM 搭配使用.
+因此, Proxy DHCP 伺服器不是必要的. 如果你的 DHCP 伺服器能回應所有 PXE BootPROM
+要求的選項, 則 PXE BootPROM 就不會去尋找 Proxy DHCP 伺服器 (aka BINL).
+而我們所說的 "所有 PXE BootPROM 要求的選項", 是指
+IP 選項 (IP 位址, 閘道器, 子網域, 主機名,...) 以及 PXE vendor-specific 選項
+(vendor-class -- 選項 60 -- 用以設定 "PXEClient" 而 vendor-encapsulated-options
+設定一些有意義的資訊給 PXE BootPROM.
+你可以用 01:04:00:00:00:00:ff 如果你不知道對 PXE BootPROM
+而言那一個資訊是有意義的). 更完整的敘述請看下面的說明.</p>
+<p>BpBatch 本身功能就很完整, 你不須使用任何 PXE 規範的 DHCP 延伸參數 (選單, 等.).
+然而, 如果您的 DHCP 伺服器不能提供最低限度的 PXE 相容,
+則您就需要一台 Proxy DHCP 伺服器, 否則您的 PXE BootPROM 無法繼續使用.
+最低限度的相容, 是指允許設定 VendorClass 及 VendorOptions (選項 60 及 43 ).</p>
+<p>在 Windows NT 下, 您可以試著用 Intel WfM PDK (可在他們的網頁找到),
+但它並不容易操作. 我們建議您找一台在子網域中,
+跑 Linux 的機器安裝我們的小型 Proxy DHCP 伺服器.
+我們的 Proxy DHCP 伺服器對 BpBatch 的最大優點是,
+讓你可以自訂選項 155 vendor 標籤讓 BpBatch 解釋為命令.</p>
+<p>在 Linux 及 Solaris 下, 您可以使用我們的 Proxy DHCP 伺服器程式,
+你只需設定好 TFTP 伺服器的 IP 位址, 可開機檔檔名及其它附加參數,
+就可以完成所有的工作. 如果在伺服器上的 DHCP 通訊埠已被其它伺服程式使用,
+則 Proxy DHCP 伺服器會改在 4011 埠上執行.
+在這種狀況下, 使用 DHCP 通訊埠的程式必須回應
+<code>PXEClinet</code> 給 client class.
+這樣 PXE 用戶端才會知道要去試著在 4011 埠上通連.</p>
+<p>如果你想更了解 PXE 對 DHCP 的延伸功能,
+可以在 Intel 的網頁上找到更多說明. 但是這些文章有點怪怪的,
+這個通訊協定竟然設定在額外的位置號碼上, 用以得到更大的彈性.
+對這個問題唯一的解釋是 PXE 用戶端需要完整的
+<em>增強型的 DHCP 回應</em>. 如果它只收到標準的 DHCP 要求,
+它會一直等到收到才停住.</p>
+<ol>
+<li>一個 client class (T60) 設定為 <code>PXEClient</code>.</li>
+<li>vendor encapsulated options (T43).
+(不可以是空的字串, 但你可以設為 16 進制的 <code>01:04:00:00:00:00</code>,
+這可以被 PXE BootPROM 所接受)</li>
+<li>一個非空白的可開機檔檔名.</li>
+<li>一個有效的主機名.</li>
+</ol>
+<p>
+PXE 規範協調的工作會在所有的資訊都取得後才結束,
+如果缺了某一部份的資訊, 將引發相當複雜的作業程序 (尋找安裝伺服器, 等問題.).</p>
+
+<h3>設定 TFTP 伺服器</h3>
+
+<p>TFTP 伺服器是相當簡單的檔案伺服器. 最基本的版本中,
+TFTP 通訊協定乃是採用每個區塊 512 位元組, 這個作法相當沒效率.
+Bootix 的 TCP/IP BootPROM 及 PXE BootPROM 允許使用較大的區塊來傳送
+(1408 位元組), 此法可以大幅加速傳輸速度. 但, 這只能在增強型的 TFTP 伺服器上工作.</p>
+<p>在 Windows NT 環境下, 我們建議採用 Intel 的 TFTP 伺服器,
+可以在 Intel PXE Product Development Kit for Windows 找到.
+你可以在這找到這個 PDK <code>
+<a href="http://developer.intel.com/ial/wfm/tools/pxepdk20/index.htm">http://developer.intel.com/ial/wfm/tools/pxepdk20/index.htm</a></code>.
+極重要的問題: 如果你計畫在 Windows NT 上使用 Intel 的 TFTP 伺服器,
+別忘記必須重新命名你的 BpBatch 載入器名稱, 由 bpbatch.P 改為 bpbatch.B.
+這將告知 BpBatch 採用與 Intel 相容的 TFTP 選項.</p>
+<p>Intel 的 PXE PDK 還包還含了評估版的 PXE BootPROM 程式碼,
+給 Intel 的 EPRO100 族系網路卡使用,
+亦包含了用來更新快閃記憶體的工具程式以升級為 BootPROM 內容為最新版的 PXE.</p>
+
+<p>在 Linux 環境下, 你可以使用大部份套件中所含的 tftp daemon,
+但不具備增強的 TFTP 模式 (1408 位元組的封包).
+我們建議使用 Bootix 的增強型 TFTP 伺服器, 可以在我們的目錄下找到
+(<code>
+<a href="http://cuiwww.unige.ch/info/pc/remote-boot/soft/">http://cuiwww.unige.ch/info/pc/remote-boot/soft/</a></code>),
+檔名為 <code>incomtftpdlx.tar.gz</code>.</p>
+<p>在 Solaris 環境下, 你可以使用 Bootix 增強型 TFTP 伺服器,
+也可以在我們的目錄下找到 (檔名為 <code>incomtftpdsun.tar.gz</code>).
+另一種可用的選擇:
+John Martin (<code>j.martin@abdn.ac.uk</code>) 已把 Linux 上的
+<code>tftpd</code> 移殖到 Solaris 上. 你可以在這找到 <code>
+<a href="http://www.csd.abdn.ac.uk/~jmartin/tftpd.tar.gz">http://www.csd.abdn.ac.uk/~jmartin/tftpd.tar.gz</a></code>.</p>
+
+<p><b>如果你較喜歡使用標準的 TFTP 伺服器, 把所有可開機映像檔檔名的副檔名 <code>P</code>
+拿掉, 這樣可以告知 BootPROM 採用標準的 TFTP 通訊埠通訊.
+(這個小技巧是 Bootix 給 TCP/IP BootPROM 使用. 我們也可以用這個簡單的方法來選擇
+預設的 TFTP 通訊埠給 PXE BootPROM 使用).</b></p>
+
+<p>摘要來說, 如果你計畫使用標準的 TFTP 伺服器,
+則把 BpBatch 載入器檔名的副檔名 移去 (也就是改為 bpbatch).
+如果你計畫使用 Bootix 支援在 59 埠, 以 1408 位元組封包的 TFTP 伺服器,
+則你的載入器檔名必須有副檔名 <code>.P</code> . 最後,
+如果你計畫使用 Intel 的 TFTP 伺服器 (或 Bootware 的那個伺服器),
+則把載入器命名為 <code>bpbatch.B</code>.</p>
+
+<h2><a name="ss4.2" id="ss4.2">4.2</a> 用戶端的設定
+</h2>
+
+<p>首先, 我們把所有作業系統相同的部份設定好.
+如: 批次檔的解譯器. 然後, 再針對各種作業系統來完成, 我們需要下列的步驟:</p>
+<ol>
+<li>設定單一的用戶端.</li>
+<li>儲存其設定到伺服器.</li>
+<li>測試它是否可以為遠端開機的用戶端電腦所使用.</li>
+<li>調整它的設定以適用於其他硬體配備類似的用戶端機器.</li>
+</ol>
+
+<p>如果這些都完成了, 你要加一台用戶端, 則只要插上 Boot ROM
+(或買台具 Wired for Management 的電腦...)
+然後再加一行設定到 DHCP 伺服器的設定檔.
+譯註: Wired for Management 應該是指本身具備 PXE 功能的品牌電腦.</p>
+<p>我們的範例是假設你的用戶端電腦的硬碟空間至少有 1.4 G 以上.
+如果低於這個值, 那就要縮小分割區, 但請記住你要保留幾百 MB 空間不被對應到
+(也就是, 不要連最後一個分割區都已畫分到最後一個磁柱)
+以保留空間給特別的快取分割區. 然而, 快取區通常接在最後一個對應到的磁柱開始對應,
+如果你不想用相同大小來做測試, 你將下載同樣的檔案數次 (快取區會被自動清除).</p>
+<p>別灰心. 如果你一直無法讓它正常工作, 先參考 <em>問題集</em> 那一節,
+搞不好你的問題已被解決過了 (請自網頁取得最新版本).
+再不行, 查一下 BpBatch 討論區. 或許有人跟你遇到同樣的問題,
+而解答可以在討論區找到. 討論區的網址是: 
+<code>
+<a href="forum/">http://cuiwww.unige.ch/info/pc/remote-boot/forum/</a></code>. 
+如果還是無法正常工作, 考慮看看監控一下網路流量是否是網路本身的問題
+(在 Linux 環境下, 可以用 <code>tcpdump</code> 而 Solaris 環境, 可以用 <code>snoop</code> ).
+如果你依然無法讓它正常工作, 送一封 E-mail 到 <code>support@bpbatch.org</code>. 
+如果你的問題與遠端開機的設定有密切關係, 我們會試著解決你的問題.</p>
+
+<h2><a name="ss4.3" id="ss4.3">4.3</a> 設定開機流程
+</h2>
+
+<p>取得 <code>BpBatch</code> 軟體, 不管是 <code>.zip</code> 或 <code>.tar.gz</code> 格式.
+可執行檔都放在</p>
+<ul>
+<li><code>
+<a href="soft/bpb-exe.zip">http://cuiwww.unige.ch/info/pc/remote-boot/soft/bpb-exe.zip</a></code>.</li>
+<li><code>
+<a href="soft/bpb-exe.tar.gz">http://cuiwww.unige.ch/info/pc/remote-boot/soft/bpb-exe.tar.gz</a></code>.</li>
+</ul>
+
+<p>在伺服器上的 <code>/tftpboot</code> 目錄下, 放入下面三個特別的可開機映像檔.
+他們是用來完成開機前的批次檔案解譯功能 (下面我們用 <code>bpbatch.P</code>
+為載入器的檔名. 如果你不是用 Bootix 的 TFTP 伺服器,
+則變更載入器檔名為 <code>bpbatch</code> (標準型 TFTP 伺服器)
+或 <code>bpbatch.B</code> (Intel/Bootware 的 TFTP 伺服器):</p>
+<ul>
+<li><code>bpbatch.P</code>, 動態載入器 (注意大小寫並參考 設定 TFTP 伺服器那節,
+以選擇適當的附檔名).</li>
+<li><code>bpbatch.ovl</code>, 中斷重導檔</li>
+<li><code>bpbatch.hlp</code>, 線上說明檔</li>
+</ul>
+
+<p>然後為你的用戶端加一些 DHCP 的設定工作, 其中: 可開機檔檔名設定為
+<code>"bpbatch.P"</code>. 定義 vendor 選項標籤 155 (十進制) 為
+<code>"-i"</code> (在標準型的 DHCP 伺服器, 可以用以下的指令完成:
+<code>option option-155 "-i";</code>). 它會被 <code>bpbatch</code> 解釋為命令列,
+而 <code>-i</code> 意謂著 "交談模式".</p>
+<p>啟動用戶端電腦. 你應該看到</p>
+<ul>
+<li>BootPROM 的版權宣告.</li>
+<li>當用戶端在等待 DHCP 回應時, 會出現 <code>DHCP</code> 字串.</li>
+<li>當用戶端在等待第一個 TFTP 封包時, 會出現 <code>TFTP</code> 字串.</li>
+<li>當載入器下載解譯器時, 會出現 <code>Loading BpBatch</code> 字串.</li>
+<li>最後是我們的旗幟, 隨著一個 <i>極大的</i> 提示符.</li>
+</ul>
+<p>
+恭喜 ! 你以經啟動了批次檔解譯器... 如果你很急於知道在這環境下你可以做舍事,
+那就繼續閱讀下一節. 如果你不急, 跳過它直接安裝你所選擇的作業系統.
+如果你有任何關於解譯器指令的疑問, 輸入 <code>help</code></p>
+<p>記住你可以在 DOS 及 Linux 下執行相同的解譯器, 只要執行 <code>MrBatch</code> 程式.
+只有一點點的差異 (Linux 版本不支援圖形化的功能,
+而 DOS 版本如果在 BootPROM 未被作業系統隱藏之前,
+只能送出 BOOTP 及 TFTP 的要求訊號).</p>
+<p>現在是閱讀 <code>BpBatch</code> <em>語法</em> 的時候了,
+尤其是 <em>參考檔案</em> 及 <em>快取檔案系統</em> 這兩段. 這將幫助你了解範例.</p>
+<p>當所有的作業系統都設定好,
+你要製作一個選單讓使用者去選擇它所要的是哪一種作業系統.
+你可自行探究如何去產生那種選單. 而所需的指令都在本文末端.</p>
+
+<h3>探討 BpBatch</h3>
+
+<p>試著輸入 <code>LogVars</code>. 你應該可以看到大約三十幾個變數被列出來.
+概括來說, 先出現 BpBatch 的變數設定, 然後是自 BOOTP/DHCP 通訊協定取得的回應,
+最後是硬碟大小的變數, 以百萬位元組為單位.</p>
+<p>輸入 <code>GetPartitions part</code>, 再輸入 <code>LogVars</code> 一次.
+就應該看到在你第一個硬碟機內的分割區定義資訊.
+假設第一個分割區有 BIGDOS, FAT32 或 LINUX-EXT2,
+試著打 <code>LogDir "{:1}"</code> 以取得根目錄的內容,
+然後輸入 <code>LogDir "{:1}/usr"</code> 如果有
+<code>usr</code> 目錄的話. 你也可以試著打
+<code>LogTree "{:1}/etc"</code> 以取得樹狀目錄.</p>
+<p>放一個 GIF 檔 (格式是 GIF-87a, 交錯或非交錯的都行, 但不可是 GIF-89a)
+到你的 TFTP 伺服器. 我們假設檔名是 <code>image.gif</code>.
+你可以用下列的指令把它複製到任何地方:
+<code>copy "image.gif" "{:1}/temp/image.gif"</code>.
+或者, 你可以自伺服器上直接使用. 現在輸入 <code>Logvars "V*"</code>
+並檢視 <code>VESA</code> 變數值. 如果它顯示 <code>On</code>, 那就相當可能意謂著,
+你的顯示卡有 VESA相容的功能.
+你可以用 <code>Echo "$VESA-Modes"</code> 列出有效的顯示模式.
+要秀出你的圖檔只要試著輸入以下的指令: <code>DrawGif "image.gif"</code>.
+這個圖檔應該顯示在螢幕左上角. 你可以在檔名後標定 X 及 Y 軸,
+把它擺在其他地方.
+你也可以用 <code>DrawText 200 200 "Hello world" yellow</code> 畫出文字.
+或用 <code>DrawWindow 200 200 300 150</code> 畫出一個空的視窗.
+而要在產生新視窗時插入主題, 可以試著用
+<code>DrawWindow 200 200 300 150 "My Window"</code>.
+如果你對圖形化模式感到厭煩只要打 <code>CloseGraph</code>.</p>
+<p>在圖形化模式下要注意: 預設情況下, 所有的圖形功能在 800x600 VESA 模式下工作
+(有 256 色階), 這是在 <code>VESA-Modes</code> 變數下的第一個欄位.
+如果你要使用不同的顯示模式, 則變更第一個欄位為你所要的顯示模式.</p>
+<p>現在用文字編輯器, 在 <code>tftpboot</code> 目錄下, 建一個名為 <code>test.bpb</code>
+的檔案內容是:</p>
+<pre class="sample">
+:again
+DrawWindow 150 200 400 160 "Identity check"
+TextAttr Black LightGray
+At 15,20 Print "Username : "
+Input username 8
+At 17,20 Print "Password : "
+Getpasswd userpass 8
+if "$username" != "smith" goto again
+if not "$userpass" match-passwd "BpR8oiIlRR9bo" goto again
+#
+clear
+DrawWindow 200 200 150 100 green blue "Congratulations"
+DrawText 220 250 "You got it !" yellow
+WaitForKey 3
+CloseGraph
+interact
+</pre>
+<p>在你的 BOOTP/DHCP 伺服器的設定檔中, 變更 選項-155 由 <code>"-i"</code> 為 <code>"test"</code>,
+  並把用戶端電腦重新開機.
+  這個小型的腳本程序可以自動執行, 並會尋問你的使用者名稱 (username) 及
+  判行密碼 (password). 如果你不輸入 <code>smith</code> 及 <code>justdoit</code>,
+  你就不能使電腦開機. 接著你將學得如何用 Unix, NT 或 Radius
+  伺服器以辨證有效的使用者.
+</p>
+
+<h2><a name="ss4.4" id="ss4.4">4.4</a> 設定 Linux
+</h2>
+
+<p>為了安裝 Linux, 你需要 RedHat Linux 套件所提供的可開機軟碟.
+BpBatch 含有一個可以指向軟碟開機的指令: <code>FloppyBoot</code>.</p>
+<p>安裝 
+<a href="http://www.redhat.com">RedHat Linux</a> 到你的用戶端電腦, 必需具備網路支援功能.
+以及你所需要的套件軟體. 你或許需要重新編譯一個 Kernel 以合於你的硬體配備,
+但這不是必需的.</p>
+
+<h3>設定用戶端電腦</h3>
+
+<p>在 Kernel 中加入對 BOOTP 通訊協定的支援將會是一個好主意,
+這樣你就不用手動去設定用戶端的 IP 位址.</p>
+<p>為了降低網路負載, 你應該安裝 <code>file cache</code> 以快取由 NFS 所載入的檔案到硬碟中.
+簡單的說, file cache 的功能是當有來自 <code>cache</code> 子目錄下的符號連結形成時,
+它會被它的目標所取代. 如果目標本身是子目錄,
+則在子目錄下的所有東西都會變成符號連結, 並指向外在檔案系統的原始資料.
+這個 file cache 由 Unifix GmbH 所寫, 已成為 Unifix Linux 2.0 的一部份.
+它可以自由散布, 你可以在
+<code>
+<a href="soft/filecache.tar.gz">http://cuiwww.unige.ch/info/pc/remote-boot/soft/filecache.tar.gz</a></code>
+取得必要的檔案.
+為了使用這個 file cache, 你必須要</p>
+<ul>
+<li>對 Kernel 加入一些修正 (檔案是 <code>patch-filecache</code>),
+透過 <code>make config</code> 或你所喜歡的方式來啟用這個功能, 並重新編譯 kernel.</li>
+<li>複製 file cache 的可執行檔到 <code>/sbin</code>.</li>
+<li>建一個可以掛上的點叫 <code>/mnt/nfs</code> (使用 <code>mkdir</code> 指令).</li>
+<li>複製 <code>filecache.conf</code> 到 <code>/etc</code>. 此檔的內容包含以下幾行:
+<pre class="sample">
+Max 100 MB 50 % #
+Cache /mnt/nfs/usr /usr
+Cache /mnt/nfs/opt /opt
+</pre>
+</li>
+<li>複製 <code>/usr</code> 及 <code>/opt</code> 內的資料到伺服器,
+以 <code>anon=0</code> (允許root 存取) 設定為唯讀屬性的分享並把它掛在 <code>/mnt/nfs</code> 下 (加入一行到 <code>/etc/fstab</code>)</li>
+<li>更名 <code>/usr</code> 為 <code>/usr.orig</code>.</li>
+<li>建立連結 <code>/usr</code> 指到 <code>/mnt/nfs/usr</code>.</li>
+<li>更名 <code>/opt</code> 為 <code>/opt.orig</code>.</li>
+<li>建立連結 <code>/opt</code> 指到 <code>/mnt/nfs/opt</code>.</li>
+<li>確定 <code>/usr</code> 及 <code>/opt</code> 目錄不是空的並應該包含正確的目錄資料.</li>
+<li>以遞迴的方式移除 <code>/usr.orig</code> 及 <code>/opt.orig</code>.</li>
+<li>複製 <code>filecache.init</code> 到 <code>/etc/rc.d/init.d</code>.</li>
+<li>最後建立連結 <code>/etc/rc.d/rc3.d/S35filecache</code>
+指到 <code>/etc/rc.d/init.d/filecache.init</code>.</li>
+</ul>
+
+<p>如果你完成上述的步驟, 你應該在下次開機時已具備 file cache 功能,
+只要你沒忘記修正你的 Kernel.</p>
+
+<h3>測試設定檔</h3>
+
+<p>複製你的壓縮 Kernel 映像檔 (<code>zImage</code>, <code>bzImage</code>,
+<code>vmlinuz</code> 或其它的命名) 到伺服器的 <code>/tftpboot</code> 目錄下,
+更名為 <code>linux.krn</code>. 如果你已經把 BootPROM 從你的 PC 拔起來了,
+那現在必須重插回去. 當 <code>BpBatch</code> 啟動, 輸入
+<code>LinuxBoot "linux.krn" "root=/dev/hda1 BOOT_IMAGE=linux"</code>
+(假設 根的 ext2 檔案系統在第一個分割區). 另一種狀況,
+如果你要在無 BootPROM 的電腦上設定你的組態,
+只要用你所安裝的載入器 (lilo, ...) 來開機就可以.
+但在後面的情況下, 如果你要使 file cache 正常工作,
+你就必須把 file cache 的支援功能正確的安裝到你的 Kernel.</p>
+<p>等到系統開機完成. 如果你已安裝 file cache, 你可以檢查 <code>/usr</code> 目錄下,
+已經直接變成一些目錄型式的符號連結到已劃分好的目錄. 現在啟動使用者常用的程式,
+幫他們把所需的資料載到硬碟中.</p>
+<p>你還可以調整你的設定, 讓它更像其他獨立運作的 Linux 工作站.</p>
+
+<h3>建立磁碟映像檔</h3>
+
+<p>當你覺得你的設定用起來很棒了, 就可以用 <code>root</code> 登入,
+並到 <code>/tmp</code> 目錄下, 執行我們的 <code>mrzip</code> 程式.
+<code>MrZip</code> 是一個像 <code>BpBatch</code> 的命令解譯器,
+但它可以了解比 <code>BpBatch</code> 更多的命令. 特別是, 它可以了解下列的命令:</p>
+<pre class="sample">
+showlog
+filter -"tmp/*"
+filter -"var/log/*"
+fullzip "/" "/tmp/linux.imz"
+</pre>
+<p>這將產生一個磁碟映像檔到 <code>/tmp/linux.imz</code>.
+  把它移到伺服器的 <code>/tftpboot</code> 目錄下. 然後複製下列的批次執行檔到 <code>/tftpboot/linux.bpb</code>:
+</p>
+<pre class="sample">
+hidelog
+setpartitions "linux-ext2:992 linux-swap:32"
+fullunzip "linux.imz" 1
+clean 2
+linuxboot "linux.krn" "root=/dev/hda1 BOOT_IMAGE=linux"
+</pre>
+  <p>這個 <code>BOOT_IMAGE</code> 參數是用來表示相容於 RedHat 5.1 的
+<code>lilo</code> 及之後的 <code>rc.sysinit</code>.</p>
+<p>你的 Linux 遠端開機設定組態已經就續! 你現在只要設定 BOOTP-option-155 為
+<code>"linux"</code>, 或在 BpBatch 下輸入 <code>include "linux.bpb"</code> 就可以測試它了.</p>
+
+<h3>系統維護與升級</h3>
+
+<p>如果你以後要更新軟體, 安裝程式臭蟲修正或安全性的修正, 處理程序如下:</p>
+<ul>
+<li>以遠端開機方式啟動一台用戶端電腦以得到一個全新的 Linux.</li>
+<li>完成你需要的改變.</li>
+<li>重製磁碟映像檔.</li>
+<li>複製新的磁碟映像檔到伺服器以取代舊的.</li>
+</ul><p>
+
+這就意謂著, 你可以就像在使用一台普通的電腦一樣來更新你的伺服器為基礎的組態設定.
+</p>
+<h2><a name="ss4.5" id="ss4.5">4.5</a> 設定 DOS 6 及 Windows 3.1
+</h2>
+
+<p>到用戶端電腦上, 用你所喜好的 DOS 磁片開機
+(可以移去 BootPROM 或在 BpBatch 環境下, 輸入 <code>FloppyBoot</code> ).
+用 <code>/S</code> 選項, 格式化磁碟中的 DOS 分割區, 以安裝作業系統.
+分割區的大小並不重要. 因為以 <code>MrZip</code> 產生磁碟映像檔案時, 是以檔案來認定的.
+而與分割區大小無關.</p>
+<p>建一個 <code>DOS</code> 子目錄, 把 DOS 複製進去. 安裝你所喜好的網路用戶端軟體
+(比如 Microsoft LanManager), Windows 3.1, 及其他你要的程式.
+如果你要用 Microsoft LanManager, 千萬別使用它的 DHCP 通訊協定來組態 IP 設定,
+因為它的實作方法相當爛, 在正常的網路負載下, 也絕對有可能失效. 但要得到相同效果,
+可以加入以下幾行到 <code>protocol.ref</code> 檔, 在載入 <code>tcptsr</code> 的同時
+(它會把 <code>xxx</code> 以你給定的真確 IP 參數值取代):</p>
+<pre class="sample">IPADDRESS0 = xxx xxx xxx xxx
+SUBNETMASK0 = 255 255 xxx xxx
+DEFAULTGATEWAY0 = xxx xxx xxx xxx
+DISABLEDHCP = 1
+</pre>
+<p>不用怕使用 EMM386 最佳化您所使用的記憶體,
+您可以把網路卡 ROM 所佔的區域納入管理, 因為它在這時已經用不到了.
+但要記得把網路卡所使用的 RAM 區塊不納入管理, 否則您將無法連接到您的伺服器.
+用 <code>NOEMS</code> 參數.</p>
+<p>如果你要確認用戶端電腦只允許已認可的使用者所使用,
+可以把我們的 <code>nobreak</code> 虛擬裝置驅動程式
+(可在這下載 <code>
+<a href="soft/nobreak.zip">http://cuiwww.unige.ch/info/pc/remote-boot/soft/nobreak.zip</a></code>)
+放在您 <code>config.sys</code> 檔的開頭處, 並把以下這些東西放到您的
+<code>autoexec.bat</code>: </p>
+<pre class="sample">
+rem -- we use the dummy file c:\logged as a flag
+del c:\logged >nul
+:loginneeded
+cls
+echo Please type in your login name and password
+echo.
+net logon *
+rem -- the login script should have created c:\logged
+if not exist c:\logged goto loginneeded
+del c:\logged
+rem -- now enable break again
+echo Yes >NOBRK
+
+</pre>
+<p>重開機, 確認你的用戶端電腦一切正常, 並試著在 <code>BpBatch</code>
+的交談模式下輸入以下指令:</p>
+<pre class="sample">HideBootprom
+HdBoot
+</pre>
+<p>
+如果你沒看到 BpBatch 則 PC 會採用硬碟來開機.</p>
+
+<h3>建立磁碟映像檔</h3>
+
+<p>回到伺服器上, 建立一個分享名稱為 <code>admin</code> 的目錄,
+用來放一些系統管理者用的東東. 如果伺服器是跑 Unix,
+建議您把 <code>/tftpboot</code> 子目錄用軟式連結方式放一份到 <code>admin</code> 目錄,
+這樣您可以直接由用戶端傳回開機映像檔. 在 <code>admin</code> 目錄內,
+建一個 <code>/utils</code> 子目錄並放入如下的工具:</p>
+<ul>
+<li><code>mrbatch.exe</code>, DOS 版的 <code>BpBatch</code>.</li>
+<li><code>mrzip.exe</code>, DOS 版的工具程式用來建立磁碟映像檔.</li>
+<li><code>bpbatch.hlp</code>, 線上說明檔.</li>
+</ul>
+
+<p>您也需要放一些簡便的 MrZip 腳本程序檔名為 <code>zipdos.mrz</code> 的檔案,
+  內含用來建立 DOS 磁碟映像檔的指令, 就像下面這樣:
+</p>
+
+<pre class="sample">
+showlog
+filter -"lanman.dos/lmuser.ini"
+filter -"temp/*"
+filter -"*.swp"
+fullzip "c:/" "L:/tftpboot/dos.imz"</pre>
+<p>現在回到你的用戶端電腦, 把 <code>admin</code> 掛到 <code>L:</code>,
+到你的 <code>utils</code> 子目錄下, 輸入以下指令:</p>
+<pre class="sample">mrzip -b zipdos
+</pre>
+<p>一分鐘之後, 你會在伺服器的 <code>/tftpboot</code> 子目錄下看到一個名為
+<code>dos.imz</code> 的檔案, 它就是你用戶端電腦硬碟的壓縮磁碟映像檔.
+把以下的批次檔內容複製到 <code>/tftpboot/dos.bpb</code>:</p>
+<pre class="sample">
+hidelog
+setpartitions "bigdos:1024"
+setbootpart 1
+fullunzip "dos.imz" 1
+hideBootprom
+hdboot :1
+</pre>
+<p>你的 DOS 遠端開機設定組態已經就續 ! 你現在只要設定 BOOTP-option-155 為
+  <code>"dos"</code>, 或在 BpBatch 下輸入 <code>include "dos.bpb"</code> 就可以測試它了.</p>
+<h3>調整設定以適用其他機器</h3>
+
+<p>如果你要針對某一些機器做一些特定的設定,
+最典型的是 IP 位址值的設定不過因為 Micro$oft 的 DHCP 做的很爛,
+你可以用 <code>BpBatch</code> 在開機時做一些修正. 首先到 <code>lanman.dos</code> 目錄下並執行</p>
+<pre class="sample">copy *.ini *.ref
+</pre>
+
+<p>接著編輯副檔名為 <code>.ref</code> 檔案, 把所有固定的參數用 BOOTP 的變數取代, 下面是範例:</p>
+<pre class="sample">computername = ${BOOTP-Host-Name}
+ipaddress0 = ${MS-IPAddress}
+subnetmask0 = ${MS-IPSubnet}
+defaultgateway = ${MS-IPRouter}
+</pre>
+<p>接著用先前的方式重建磁碟映像檔. 注意一下 IP 參數, 我們不能直接使用 BOOTP 變數給 LanManager 使用, 因為它需要以空格分隔而不是以點來分隔數字.
+把 <code>dos.bpb</code> 改成如下的樣子:</p>
+<pre class="sample">
+hidelog
+setpartitions "bigdos:1024"
+setbootpart 1
+fullunzip "dos.imz" 1
+set MS-IPAddress="$BOOTP-Your-IP"/.= /
+set MS-IPSubnet="$BOOTP-Subnet-Mask"/.= /
+set MS-IPRouter="$BOOTP-Routers"/.= /
+patch "{:1}lanman.dos/protocol.ref" "{:1}lanman.dos/protocol.ini"
+patch "{:1}lanman.dos/tcpputils.ref" "{:1}lanman.dos/tcputils.ini"
+patch "{:1}lanman.dos/lanman.ref" "{:1}lanman.dos/lanman.ini"
+hideBootprom
+hdboot :1
+</pre>
+<p>如果你喜歡, 你也可以把 <code>.ref</code> 的檔案放在伺服器上的 <code>/tftpboot</code> 目錄下, 而不放在磁碟映像檔裡.</p>
+<p>我們可以在不重建映像檔的狀態下, 輕鬆的變更電腦的設定.
+作法是, 複製你的 <code>autoexec.bat</code> 及 <code>config.sys</code> 為
+<code>autoexec.ref</code> 及 <code>config.ref</code> 到伺服器的 <code>/tftpboot</code> 目錄,
+把下面兩行加到批次檔中:</p>
+<pre class="sample">patch "autoexec.ref" "{:1}autoexec.bat"
+patch "config.ref" "{:1}config.sys"
+</pre>
+
+<p>你可以透過 BOOTP 通訊協定, 自由的變更檔案內容.
+即使是做一些根據機器而來的特殊化設定.</p>
+<p>在對用戶端電腦的設定檔做任何修改後, 如果你要預先做好修正.
+別忘了以 <code>MrZip</code> 重新製作磁碟映像檔.</p>
+
+<h3>系統維護與升級</h3>
+
+<p>如果你以後要更新軟體, 安裝程式臭蟲修正或安全性修正的程式, 其處理程序如下:</p>
+<ul>
+<li>以遠端開機方式啟動一台用戶端電腦以得到一個全新的 Linux.</li>
+<li>完成你需要的改變.</li>
+<li>重製磁碟映像檔.</li>
+<li>複製新的磁碟映像檔到伺服器以取代舊的.</li>
+</ul><p>
+
+這就意謂著, 你可以就像在使用一台普通的電腦一樣來更新你的伺服器為基礎的組態設定.
+</p>
+<h2><a name="ss4.6" id="ss4.6">4.6</a> 設定 Windows 95/98
+</h2>
+
+<p>在此份文件先前的版本, 我們使用過微軟公司的 Windows 95 以伺服器為基礎的安裝方式, 但是用這方法太過痛苦, 又不是那麼的有價值:</p>
+<ul>
+<li>它就真的是非常的虛擬.</li>
+<li>大部份的軟體套件都不支援它而且如果您試著去安裝最後的結果通常是失敗的.
+包括, Microsoft Internet Explorer, OnNet 32,
+Novell's Protected-mode client (這較 Microsoft Client for Netware安全).</li>
+<li>因為微軟公司不提供 Windows 95/98 在真實模式下的 TCP/IP
+相容的驅動程式所以您無法使用 Microsoft Network client over TCP/IP,
+而這也就意味著您不能使用 Samba.</li>
+<li>因為當用戶端一啟動就會鎖住一些動態連結檔造成許多程式幾乎無法更新,
+如果您試著去更新它則會出現 <em>違背分享 (sharing violations)</em> 的錯誤.</li>
+</ul>
+
+<p>因此幾個月前, 我們放棄這份本身就有問題的資料
+(您仍然可在這找到 <code>
+<a href="win95old/win95old.html">http://cuiwww.unige.ch/info/pc/remote-boot/win95old/win95old.html</a></code>)
+然後換到我們這個新的以硬碟機為基礎的遠端啟動概念.
+基本上, 在這種環境下 Windows 95/98 安裝方法就跟安裝 DOS 一樣容易.</p>
+
+<h3>建立一台獨立的用戶端</h3>
+
+<p>安裝一台尋常的 Windows 95/98 用戶端, 可以用我們先前所提的 DOS
+網路開機組態模式啟動電腦, 再透過網路安裝 (我們都這樣做).
+你也可以用已經安裝 Windows 的機器來做, 但若這樣你對硬碟裡有舍東西就比較不了解了.</p>
+<p>把它視為先前所提的 DOS 用戶端來處理. 但在 Windows 95/98 是不需使用 EMM386.
+如果你使用 Windows 98 或 Windows 95 OSR2 (別名為 MSWIN 4.1,
+也就是 Windows 95 service pack 1, 亦是 Windows 95 with Internet Explorer)
+你應該加入以下幾行到 <code>MSDOS.SYS</code> (沒錯, 他是文字檔) 的 <code>[Options]</code> 那一節:</p>
+<pre class="sample">
+AUTOSCAN=0
+</pre>
+<p>這樣可以使 Windows 知道您開機時, 不自動啟動 ScanDisk.</p>
+
+<p>當所有的軟體都放在伺服器時, 如果您要減輕網路及伺服器的負擔
+(這將增進您的系統效率), 您可以考慮安裝這套相當不錯的 Shared LAN Cache,
+由 Measurement Techniques, Inc 生產的
+(參考 <code>
+<a href="http://www.lancache.com">http://www.lancache.com</a></code>).</p>
+<p>這套軟體在每台用戶端電腦執行,
+它會把所有從網路上取得的資料放在區域性的硬碟中快取.
+即使像 MS-Office 這種怪物, 在您第二次執行時也會更快...
+您的每台客戶端電腦都要有一份版權, 不過它還不算太貴,
+這家公司對於大專院校有特惠價格. 更棒的是, 您可以到他們的網頁下載免費的評估版.</p>
+
+<h3>建立磁碟映像檔</h3>
+
+<p>在這個地方, 如果你是使用 Samba 檔案伺服器,
+你應該需要先關掉 Windows 98 的密碼傳輸前加密功能.
+這樣才能把 <code>admin</code> 掛上去當網路磁碟機.
+你只要把下面的登錄組態 <code>EnablePlainTextPassword</code>
+節的 DWORD 值設為 1</p>
+<pre class="sample">
+[HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\VxD\VNETSUP]
+</pre>
+<p>你的 MrZip 腳本程序檔可以命名為 <code>zipwin.mrz</code> 並包含以下內容:</p>
+<pre class="sample">
+showlog
+filter -"windows/schedlog.txt"
+filter -"windows/msimgsiz.dat"
+filter -"*/index.dat"
+filter -"*.swp"
+filter -"*.tmp"
+filter -"temp/*"
+fullzip "c:/" "L:/tftpboot/win.imz"
+</pre>
+<p>為了建立映像檔, 把 <code>admin</code> 掛到磁碟機 <code>L:</code>,
+並到你的 <code>utils</code> 目錄下並輸入以下指令:</p>
+<pre class="sample">mrzip -b zipwin
+</pre>
+<p>幾分鐘過後, 你可以在伺服器的 <code>/tftpboot</code> 子目錄下,
+找到名為 <code>win.imz</code> 的檔案, 它就是你硬碟的壓縮磁碟映像檔.
+如果你的映像檔超過 87 MB, 最好把它分割成兩個或更多的檔案.
+這些檔案會在我們需要它時自動地一個接著一個載入. 記住,
+如果你的映像檔超過 87 MB
+則系統花在解壓縮的時間會超過一分鐘而這會激怒你的使用者.
+我們的 Windows 95/98 映像檔止有 70 MB 大,
+因為大部份的軟體都擺在伺服器, 且只有在要求時才會載入.
+只有極少部份的軟體需要安裝到你的硬碟中. 如果你跟我們一樣在乎這問題,
+你應該讓解壓縮這個映像檔及完整回存到硬碟的時間低於一分鐘.</p>
+<p>把以下的批次檔內容複製到檔案 <code>/tftpboot/win.bpb</code>:</p>
+<pre class="sample">
+hidelog
+setpartitions "bigdos:1024"
+setbootpart 1
+fullunzip "win.imz" 1
+hide`
+hdboot :1
+</pre>
+<p>你的 Windows 95/98 遠端開機設定組態已經就續 !
+你現在只要設定 BOOTP-option-155 為 <code>"win"</code>,
+或在 BpBatch 下輸入 <code>include "win.bpb"</code> 就可以測試它了.</p>
+
+<h3>調整設定以適用其他機器</h3>
+
+<p>Windows 95/98 與 Windows 3.1 最大的不同是加入了即插即用的程式碼,
+即自動偵測您的硬體設備. 它本身無舍壞處, 但問題是出在它太過靈敏,
+而且有時後會出鎚.</p>
+<p>如果您試著用同樣的開機映像檔去啟動另一台用戶端機器,
+您將在收到一堆 Windows 偵測到新的硬體設備的訊息:
+一片新的音效卡, 一顆新的硬碟機, 一片新的網路卡, 或者一隻新的滑鼠...
+會這樣的原因有二:</p>
+<p></p>
+<ul>
+<li>這些設備可能使用不同的硬體資源 (比如, 滑鼠不是接在相同的連接埠,
+音效卡不是接在同樣的擴充槽 -.- 沒錯, 這會被偵測到).</li>
+<li>這些設備可能通知 Windows 95/98 它們的序號
+(比如, 每台跑 Windows 95/98 的網路卡, 從最根本的乙太網路位址
+就每台都不一樣了).</li>
+</ul>
+
+<p>事實上 , 如果 Windows 95/98 的即插即用功能可以正常工作的話,
+自動偵測變更的硬體設備並不會出問題, 所以如果即插即用功能失效時,
+問題就來了. 例如, Windows 95/98 對上我們的羅技 PS2 滑鼠時就不能即插即用,
+更糟的是滑鼠就消失了. 要解決這類問題方法就是, 盡可能使全部電腦有相同的硬體設備.</p>
+<p>您無法避免的問題是每台電腦的網路卡. 很不幸的,
+在搭配我們所用的 SMC EtherEX 網路卡時, 即插即用的程式碼會使電腦當機.
+唯一的解法是使 Windows 95/98 相信它已經知道有這片網路卡,
+且不需觸動即插即用機制. 這個技巧就是透過開機自動執行檔 <code>autoexec.bat</code>,
+自動的把關於這片網路卡的設定值加入 Windows 95/98 的系統登錄資訊. </p>
+<p>要注意的是大部份 PCI 的網路卡並不需要這個技巧.</p>
+<p>到您的用戶端電腦, 編輯開機自動執行檔 <code>autoexec.bat</code> 並加入下列幾行:</p>
+<pre class="sample">
+rem --- Patch Windows registry in order to avoid plug-and-play detection
+regedit /L:c:\windows\system.dat /R:c:\windows\user.dat c:\temp\patch.reg
+</pre>
+
+<p><code>regedit</code> 是標準 Windows 95/98 的程式. 如果您在 Windows 環境下執行它,
+它可以幫您流覽您的系統登錄資訊, 或者如果您在 DOS 下執行它,
+它可以對您的系統登錄資訊做一些簡單的修正.
+在視窗環境下執行 <code>regedit</code>, 尋找你的網路卡, 通常在</p>
+<pre class="sample">HKEY_LOCAL_MACHINE\Enum\ISAPNP
+</pre>
+
+<p>用 <em>登錄</em> 功能選單的 匯出登錄檔 功能. 這個動作將建立一個文字檔,
+你可以把它命名為 <code>patch.ref</code> 放在伺服器的 <code>/tftpboot</code> 目錄下.
+編輯這個檔案並找到這個網路卡的乙太網路位址放置的位置
+(如果你找不到它, 可以在不同機器上產生這兩個檔案, 比較他們就可以找到).
+用 <code>${MACID}</code> 的樣式來取代它.
+接著在 <code>win.bpb</code> 腳本程序檔中加入以下幾行:</p>
+<pre class="sample">set macid = "$BOOTP-Client-ID"
+patch "patch.ref" "{:1}temp/patch.reg"
+</pre>
+
+<p>(如果它不是用戶的正確乙太網路位址, 就必須對 <code>MACID</code> 字串設定值做必要的修正).
+就這樣, 你的用戶端電腦就不會再試著去自動偵測網路卡了.</p>
+<p>再提一次, 這整個技巧在使用 PCI 網路卡時, 是不需要的.
+另外, 當 Windows 不能在登入時透過 DHCP 通訊協定設定主機名 (hostname), 我們也可以用相同的手法來達到. 只要把下列幾行加到我們的 <code>patch.ref</code> 檔:</p>
+<pre class="sample">
+[HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\VxD\VNETSUP]
+"ComputerName"="${BOOTP-Host-Name}"
+
+[HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\VxD\MSTCP]
+"HostName"="${BOOTP-Host-Name}"
+
+[HKEY_LOCAL_MACHINE\System\CurrentControlSet\control\ComputerName\ComputerName]
+"ComputerName"="${BOOTP-Host-Name}"
+</pre>
+
+<p>使用登錄編輯程式的小技巧, 你的組態設定可以順利的轉移到有類似配備的機器上.
+如果你無法避免 Windows 去偵測你的某些硬體配備,
+可以試著在那機器上重建一個磁碟映像檔.
+這樣會把這台機器上的組態設定都含入這個映像檔中,
+希望這能解決問題.</p>
+
+<h3>系統維護與升級</h3>
+
+<p>如果你以後要更新軟體, 安裝臭蟲修正或安全性修正的程式, 處理程序如下:</p>
+<ul>
+<li>以遠端開機方式啟動一台用戶端電腦以得到一個全新的安裝.</li>
+<li>完成你需要的改變.</li>
+<li>重製磁碟映像檔.</li>
+<li>複製新的磁碟映像檔到伺服器以取代舊的.</li>
+</ul>
+
+<p>這就意謂著, 你可以就像在使用一台普通的電腦一樣來更新你的伺服器為基礎的組態設定.</p>
+
+<h2><a name="ss4.7" id="ss4.7">4.7</a> 設定 Windows NT
+</h2>
+
+<p>我們並沒有使用 Windows NT 來當遠端開機用戶端電腦的作業系統,
+但我們已經測試過, 它確定可以正常工作. 並且沒問題.</p>
+<p>由於我們的工具程式還沒支援到 NTFS 檔案系統
+(我們既沒有相關文件也沒有時間去做這件事,
+但我很樂意去幫助任何對這工作有興趣的人)
+所以你必須把 NT 安裝到 FAT16 檔案系統上
+(只要在安裝時, 不把你的分割區轉換為 NTFS 檔案系統就可以).</p>
+<p>把 <code>win.bpb</code> 開機腳本程序複製到 <code>winnt.bpb</code>.
+改變 <code>winnt.bpb</code> 中 <code>setpartitions</code> 那一行為如下:</p>
+<pre class="sample">setpartitions "BIGDOS:512 BIGDOS:512"
+</pre>
+
+<p>接著用這個腳本程序檔使 Windows 95/98 開機, 把 NT 用戶端安裝到 C 槽.
+先別管第二個分割區的問題. 別安裝太多東西進去,
+不然會產生一個又大解壓縮又很慢的映像檔.
+把 Windows 95/98 從 C 槽移除, Windows NT 的映像檔不需要它
+(開機選單是由 BootPROM 所控制, 不再是 NT 的開機載入器).</p>
+<p>在不覆寫硬碟資料狀況下, 重新啟動你的電腦,
+就是千萬別去執行 <code>winnt</code> 腳本程序檔. 只要做:</p>
+<pre class="sample">hideBootprom
+hdboot
+</pre>
+<p>
+你的 NT 工作站就可以正確的啟動. 然後就可以做其他的特殊修正了.</p>
+
+
+<h3>建立磁碟映像檔</h3>
+
+<p>Windows NT 麻煩的地方是出在: 磁碟直接存取的功能會被 Kernel 所禁止.
+意謂著, <code>MrZip</code> 無法讀取開機磁區.
+製作映像檔的最佳方式是以 Windows 95/98 開機, 在 DOS 視窗下,
+執行 <code>MrZip</code>. 要這麼做就要變更 <code>winnt.bpb</code> 腳本程序檔內容.
+使得 Windows 95/98 映像檔不回存到第一個分割區, 而是第二個:</p>
+<pre class="sample">
+hidelog
+setpartitions "BIGDOS:512 BIGDOS:512"
+setbootpart 2
+fullunzip "win.imz" 2
+hidebootprom
+hdboot :2
+</pre>
+<p>(如果你有其他補充的修正, 在把 <code>"{:1}"</code> 變為 <code>"{:2}"</code>).
+用這個腳本程序開機; 應該會讓 Windows 95/98 執行, 而新磁碟機 <code>D:</code> 槽會出現,
+裡頭放的就是 Windows NT.</p>
+
+<p>就如以往的方式建立你的磁碟映像檔 (只是改對 <code>D:</code> 做, 當然了),
+把它存為 <code>winnt.imz</code> 並放在伺服器上的 <code>/tftpboot</code> 目錄下.
+最後編輯 <code>winnt.bpb</code> 腳本程序檔改成如下:</p>
+<pre class="sample">
+hidelog
+setpartitions "BIGDOS:512 BIGDOS:512"
+setbootpart 1
+fullunzip "winnt.imz" 1
+clean 2
+#fullunzip "win.imz" 2
+hidebootprom
+hdboot :1
+  </pre>
+<p>  你的 Windows NT 遠端開機設定組態已經就續. 當然, 如果你不想有兩個分割區,
+你可以設定成單一個分割區. 但當你要重建映像檔時,
+你還是需要再設定第二個分割區以 Windows 95/98 開機.</p>
+
+<h3>系統維護與升級</h3>
+
+<p>如果你以後要更新軟體, 安裝程式臭蟲修正或安全性的修正, 處理程序如下:</p>
+<ul>
+<li>以遠端開機方式啟動一台用戶端電腦以得到一個全新的安裝.</li>
+<li>完成你需要的改變.</li>
+<li>編輯 <code>winnt.bpb</code>: 把 <code>clean</code> 及 winnt <code>fullunzip</code> 改成註解,
+把 win95 <code>fullunzip</code> 改成可執行.</li>
+<li>重製磁碟映像檔.</li>
+<li>複製新的磁碟映像檔到伺服器以取代舊的.</li>
+</ul>
+
+<p>就這樣, 搞定</p>
+
+<h2><a name="ss4.8" id="ss4.8">4.8</a> 問題集 (FAQ)
+</h2>
+
+<p>本節列出我們所統計最常遇到的問題.</p>
+<dl>
+<dt><b>不停地下載映像檔</b></dt>
+<dd><p>可能是因為你所使用的是標準型 TFTP 伺服器,
+而它不能處理超過 65535 個 512 位元組大小的封包
+(而 Solaris 伺服器, 在超過 32767 個封包就有這個問題).
+因為這樣, 你的映像檔必須拆成許多個不超過的檔案 30 MB
+(Solaris 的話, 是 15 MB).
+參考 <em>複製檔案(CopyArchive)</em> 的機制, 它會教你如何分割已存在的映像檔.
+如果你目前還在使用標準型 TFTP 伺服器,
+你應該慎重考慮改用 Bootix 或 Intel 的 TFTP 伺服器.
+參考下一個問題以探討這些伺服器的功能.</p>
+</dd>
+<dt><b>BpBatch 顯示 "Fragment is not complete" 的錯誤訊息</b></dt>
+<dd><p>這是 TFTP 通訊協定的問題. 你的載入器檔名的副檔名一定要設對
+(參考 TFTP 伺服器那節).
+如果你用 Bootix 的 TFTP 伺服器並用了 <code>-s 1408 59</code> 的選項,
+則你的載入器檔名應該是 <code>bpbatch.P</code>.
+如果你是用 Intel 或 Bootware 的 TFTP 伺服器有支援 blksize 的 TFTP 選項功能,
+則重命名你的載入器檔名為 <code>bpbatch.B</code>.
+最後, 如果你用標準型 TFTP 伺服器,
+則重新命名你的載入器檔名為 <code>bpbatch</code> (沒有副檔名).
+這個狀況下 BpBatch 會用 512 位元組大小的封包取代 1408 位元組大小.
+而這時分割檔的大小限制在 32MB (TFTP 內部限制) 不是 87MB.
+參考上一個問題, 探討 512 位元組大小的封包.</p>
+</dd>
+<dt><b>檔案解壓縮時直接失效</b></dt>
+<dd><p>有三種可能原因. 在伺服器上的映像檔葛屁了
+(可以試著用 MrZip 檢查是不是這個問題), 或是 TFTP 傳輸延誤以致檔案檔案傳送失敗,
+或是通訊協定不相容.</p>
+<p>當網路負載太重, 就會發生 TFTP 傳輸延誤的狀況
+(比如, 你想一次把一個極大的映像檔下載到超過四台的用戶端電腦).
+在這種情況下, <code>BpBatch</code> 不會一直重複傳輸. 因為那樣作毫無用處.
+關掉幾台電腦並試著在不超過四台用戶端電腦同時啟動的環境下測試
+(或者不超過三台). 如果你常常需要下載映像檔到許多台電腦,
+你可以試用我們所使用的特殊廣播型 TFTP 伺服器 (參考討論它的那一節內容).</p>
+<p>因標準型 TFTP 伺服器 (通常內建於你的 UNIX 伺服器) 所導致的通訊協定不相容.
+因為當 <code>BpBatch</code> 要以增強型的 TFTP 協定工作時,
+伺服器以標準型 TFTP 協定來對應. 如果你要用標準型 TFTP 伺服器,
+<b>你應該移去副檔名 .P </b> (參考下一個問題的解說會更清楚).</p>
+
+</dd>
+<dt><b>下載 / 解壓縮時(1) 電腦當機</b></dt>
+<dd><p>如果你用 Bootix 的 TFTP 伺服器, 試著在啟動電腦時於命令列上加入
+<code>-s 1408 59</code> . 如果你不是採用增強型 TFTP 伺服器,
+則移去在伺服器上 BpBatch 檔名及 <code>bootptab</code> 中的副檔名 <code>.P</code> .</p>
+<p>細部解說:
+這個問題發生在你沒有架設增強型 TFTP 伺服器但卻又使用了
+<code>bpbatch.P</code> 為你 DHCP/BOOTP 的可開機檔檔名的標籤.
+當可開機檔檔名以 <code>.P</code> 為副檔名時,
+BpBatch 將試著去連接到一台 Bootix 的 TFTP 伺服器. 要解決這個問題,
+你可以移去可開機檔檔名中的副檔名 <code>.P</code>
+(這就等於告訴 BpBatch 改用標準型 TFTP 協定) 或者安裝一台增強型 TFTP 伺服器.
+還有其他選擇, 你可以安裝 Intel 的 TFTP 伺服器並變更載入器檔名為
+<code>bpbatch.B</code>.
+記住: 要使 Bootix 的 TFTP 伺服器正確的在增強型 TFTP 特性下工作,
+你必須在命令列中加上 <code>-s 1408 59</code>.</p>
+</dd>
+<dt><b>下載 / 解壓縮時(2) 電腦當機</b></dt>
+<dd><p>可能是你的電腦對 VESA 的支援有問題. 試著在命令列參數中加入 <code>-v</code>
+或設定 VESA 變數為 <code>"OFF"</code>.</p>
+</dd>
+<dt><b>VESA 捲頁功能故障</b></dt>
+<dd><p>我們使用 VESA 1.1 的捲頁功能. 如果你的顯示卡不支援 VESA 1.1, 就別用這個功能.
+如果只捲一頁, 就會發生奇怪的條紋, 別急. 這是一個已知的程式臭蟲,
+我將在有空時修正 (VESA 捲頁功能不是那摸重要啦...).</p>
+</dd>
+<dt><b>快取中有壞掉的檔案</b></dt>
+<dd><p>如果一個存於快取區中的檔案, 被外在的程式弄壞了. 它會自動地從快取中被移除.
+如果一個正在寫入快取區的檔案沒完整寫入 (可能是電腦在檔案傳輸中被關機),
+則它也會被自動清除. 但如果伺服器傳送一個已損壞的檔案.
+或者發自伺服器的資料傳送取消. 則這類已毀損的檔案仍然會存在快取區中.
+你只要在 <code>BpBatch</code> 第一次存取快取區時, 同時按下兩個 shift 鍵,
+就可以把快取區內的資料清空. 還有一個方法, 在交談模式下輸入 <code>clean -1</code> .</p>
+</dd>
+<dt><b>在批次檔中的 EXIT 指令失效</b></dt>
+<dd><p>這不是一個程式臭蟲. Exit 並不是一個指令.
+沒有 exit 或 quit 指令是因為如果不開機, 則從開機腳本程序中退出是毫無意義的.
+而 MrBatch 完全跟 BpBatch 一樣是同一支程式.
+你可改以叫用 HdBoot 取代 exit. 這才有意義, 且在 DOS 版下,
+真的會取代重開機而完全退出.
+記住你可以在 DOS 版任何情況下按下 Ctrl-Break 然後退出.
+這將在離開前, 回存所有被攔截的中斷.</p>
+</dd>
+<dt><b>Print 指令失效</b></dt>
+<dd><p>如果你試著要印一些東西並直接進入交談模式, 你有可能來不及看到那些文字.
+這是因為你所印的字是顯示在 <em>執行時期</em> 顯示幕而 <code>Interact</code> 指令會切換到
+<em>記錄</em> 顯示幕. 因此只要放一個 <code>GetKey</code>
+指令在 print 指令之後你就可以看到你要的文字了.</p>
+</dd>
+<dt><b>MrZip 顯示 <code>Malloc failed</code></b></dt>
+<dd><p>MrZip 需要大量的傳統記憶體才能執行. 如果你遇到這個問題,
+先確定你已經用 <code>HideBootprom</code> 指令或 Bootix 的 <code>bputil</code> 卸載了
+BootPROM 所占的記憶體.
+如果你在單純的 MS-DOS 下執行 (非 Windows 95/98 DOS 視窗),
+你應該使用 EMM386 把網路卡驅動程式載到高層記憶體以取得更多的傳統記憶體.
+在 Windows 的 DOS 視窗下執行, 通常是沒舍問題的
+(只要你在安裝 Windows 時, 沒留下任何 16 位元的東西在你的 <code>autoexec.bat</code> 檔中).</p>
+</dd>
+<dt><b>MrZip 在讀取目錄時失效</b></dt>
+<dd><p>這個程式臭蟲已修正. 取得最新版 <code>MrZip</code>. 如果還有這個問題,
+試著在把變數 <code>Trace</code> 設為 <code>"ON"</code> (且把 <code>PauseLog</code> 設為 <code>"OFF"</code>) 下,
+重建你的映像檔; 這可以讓你發現導致問題的原因. 請回傳詳細的程式臭蟲報告.</p>
+</dd>
+<dt><b>MrZip 無法存取某些檔案</b></dt>
+<dd><p>MrZip 會試著去讀取已鎖住, 已開啟或其他特別的檔案, 如 Windows swap 檔.
+這類檔案應該不被含在映像檔中並應被過濾出來 (使用 <code>filter</code> 指令).
+當然也可能是作業系統在耍你. 如果 MrZip 沒告訴你哪個檔案導致問題,
+試著把變數 <code>Trace</code> 設為 <code>"ON"</code> (且把 <code>PauseLog</code> 設為 <code>"OFF"</code>) 下,
+重建你的映像檔. 你也可以試著用直接磁碟存取 (也就是, 不把來源分割區當成
+<code>"C:"</code> 或 <code>"/"</code> 改以 <code>"{:1}"</code> 表示).
+使用直接磁碟存取通常比較慢, 因為我們的緩衝區不若作業系統大, 但它有些時候比較可靠.</p>
+</dd>
+<dt><b>磁碟映像檔總是一直由伺服器上重新載入</b></dt>
+<dd><p>磁碟映像檔被存放在特殊快取區中, 如果伺服器上的沒變更, 照理說應該不需再下載一次.
+但是, 由於快取區是在最後一個使用到的分割區之後啟始,
+更動分割區的大小將移動快取區的位置並損毀其內容.
+另一個使檔案自快取區中消失的可能因素是先前的檔案已經變得比原來的大一倍半.
+則這個檔案就應該被覆寫並重新下載一次. 但這應該不會發生.
+第三個可能因素是快取區過小.
+如果分割區以外所剩的可用空間小於所有壓縮映像檔的一倍半,
+則只有最常使用的映像檔會在快取區中, 其他的就必需再重載一次.</p>
+</dd>
+<dt><b>Red Hat Linux 5.1 不能正常開機</b></dt>
+<dd><p>這個套件假設 Linux 都用 <code>lilo</code> 開機並會檢查 <code>BOOT_IMAGE</code> 命令列參數
+(在 <code>/etc/rc.d/rc.sysinit</code>).
+只要把它加在 <code>linuxboot</code> 呼叫中, 或者變更你的 <code>rc.sysinit</code>.</p>
+</dd>
+<dt><b>廣播型 TFTP 的 ramdisk 當掉 (<em>Got in bound state</em>)</b></dt>
+<dd><p>Linux 的 dhcp 用戶程式可以透過 DHCP 回應, 動態地改變用戶端的 IP 位址.
+如果提供的位址值是永久的 (無限制使用時間),
+則 DHCP 用戶端程式只設定位址值後就結束返回 (這就是我們所期望的).
+但是, 如果位址的使用時間有限制,
+則用戶端程式必須一直存在並每一分鐘就尋問新的位址值.
+而如果 DHCP 用戶端程式沒有結束返回, 則 MrBatch 就永遠不會被載入...
+這問題的解法就是設定無限期的位址使用時間 (有時候就當成是 -1).</p>
+</dd>
+<dt><b>在 BpBatch 下會檔案存取當機, 但在 MrBatch 不會</b></dt>
+<dd><p>這個問題發生在 AMI BIOS 日期為 94/07/25. 我們研究後, 發覺無解.
+這個問題好像是因為 BIOS 本身有程式臭蟲 (部份暫存器或記憶體位置會被毀壞).</p>
+</dd>
+<dt><b>對分割過的檔案解壓縮失效 (Malloc failed)</b></dt>
+<dd><p>這個問題是發生在 PXE 相容性上, 已被修正. 請取得最新版.</p>
+</dd>
+<dt><b>MrBatch 及 MrZip 不相容於 RedHat 5.x 的 terminal</b></dt>
+<dd><p>這個問題已在 MrBatch/MrZip 八月份第 9 個版本修正.
+與 RedHat 5.1 一起發行的新版 ncurses 函式庫有問題.</p>
+</dd>
+<dt><b>在 Linux 下出現 "libncurses.so.3.0: cannot open shared object file"</b></dt>
+<dd><p>MrZip 已改在 libncurses 3.0 版下連結.
+你只能使用其它比 3.0 版更新的 libncurses 才行.
+要用較新版的 libncurses, 而你所需要去做的只是建立一些軟性連結由
+libncurses.so.3.0 到你新的 libncurses.so.xx 檔案.
+在 RedHat 5.1, 你可以使用下列的指令 :
+<code>cd /usr/lib ; ln -s libncurses.4.2 libncurses.3.0</code>
+你也可以下載 mrzip/mrbatch 最新的版本. 自 10/25/98,
+MrBatch 已在 RedHat 5.1 環境下編譯.</p>
+</dd>
+<dt><b>MrBatch 及 MrZip 不能在 Linux 下執行(file not found)</b></dt>
+<dd><p>這個問題與前一個問題相反. 現在這個套件是預設在 libc6 環境下,
+它已不能再與 libc5 一併使用. 如果你遇到這個問題,
+只需要升級你的 Linux (當然, 如果我們聽到太多抱怨, 我們或許會試著保留兩種套件...).</p>
+</dd>
+<dt><b>除了預設的 800x600 VESA 模式, 我不能使用其他模式</b></dt>
+<dd><p>你應該先檢視 <code>VESA-Modes</code> 變數的內容,
+看看你的硬體設備是否可以支援你要使用的模式. 然後,
+試著用下列兩種方法之一來選用你要的 VESA 模式 :
+</p>
+  <ul>
+<li><code>InitGraph "mode"</code>: 試著用 InitGraph "1024x768",
+然後執行你所喜好的初始劃圖形 (即用 <code>DrawGif</code> 指令).</li>
+<li><code>VESA-Modes</code>: <code>VESA-Modes</code> 變數的第一欄是預設模式.
+如果你改變 VESA-Modes 變數, 所有的初始化圖形會依循你所設定的模式.</li>
+</ul>
+
+</dd>
+<dt><b>在回存多個分割映像檔時, BpBatch 顯示 "Malloc failed" 訊息</b></dt>
+<dd><p>我們已修正
+    BpBatch 一個記憶體對分配的問題.
+你應該確定你使用的 BpBatch 版本在 1998 年九月 22 日之後.</p>
+</dd>
+<dt><b>Linux 版的 MrBatch 使用 Fullunzip 總會失效</b></dt>
+<dd><p>我們已於 09/22/1998 的版本中, 修正這個問題.</p>
+</dd>
+<dt><b>Scandisk 顯示我的硬碟機已損毀</b></dt>
+<dd><p>10/25/98 的版本已修正一個與大映像檔有關的問題. 試著去下載最新版的 BpBatch.</p>
+</dd>
+<dt><b>我的 RedHat 開機磁碟片不能用 FloppyBoot 功能</b></dt>
+<dd><p>這個軟體臭蟲已經在 10/25/98 版本中修正.</p>
+</dd>
+<dt><b>我的 FAT32 磁碟映像檔無法正常開機</b></dt>
+<dd><p>這個軟體臭蟲已經在 02/09/99 版本中修正.</p>
+</dd>
+<dt><b>當你啟動 BpBatch 總是出現 "Cannot load file"</b></dt>
+<dd><p>你的 DHCP 伺服器不能送出有效的 option-135 到用戶端.
+BpBatch 使用 option 135 為它自身的命令列參數. 如果你想要進入交談模式,
+你可以設定為 "-i". 或者你可以把它設定為一個腳本程序檔名,
+如果你想要 BpBatch 按照你所選的腳本程序執行 (別把 .bpb 的副檔名納入名稱中).
+如果你使用 PXE BootPROM, 確定你使用 option-135 為命令列參數.
+PXE 2.0 BootPROM 已不再支援 Option-155.</p>
+</dd>
+</dl>
+<hr />
+<table
+
+
+
+
+>
+  <tr
+>
+    <td class="BtdL"
+><a href="Remote-Boot-3.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="BtdC"
+><a href="index.html" accesskey="H">目錄(H)</a></td
+>
+    <td class="BtdR"
+><a
+href="Remote-Boot-5.html"
+>下一頁(N)</a
+></td
+>
+  </tr
+>
+  <tr
+>
+    <td  class="BtdL"
+>簡介</td
+>
+    <td class="BtdC"
+><a href="Remote-Boot-4.html" accesskey="T">到頂層(T)</a></td
+>
+    <td class="BtdR"
+>遠端啟動工具程式參考手冊</td
+>
+  </tr
+>
+</table
+>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" width="88" height="31" style="border:0;width:88px;height:31px"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img style="border:0;width:88px;height:31px" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img style="border:0;width:88px;height:32px" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" style="border:0" alt="表示該網頁支援資源描述架構"/></a></div>
+</body>
+</html>

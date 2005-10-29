@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>6. 維護工作</title>
+<link href="DNS-HOWTO-7.html" rel="next" title="7.Bind version 8" />
+<link href="DNS-HOWTO-5.html" rel="previous" title="5.真實領域的例子"/>
+<link href="../../style.css" rel="stylesheet" type="text/css" />
+<link href="http://tldp.org/HOWTO/DNS-HOWTO.html" rel="alternate" title="原版" />
+<link href="index.html" rel="start" title="HOWTO：DNS" />
+<link href="index.html#content" rel="contents" />
+<link href="DNS-HOWTO-1.html" rel="chapter" title="1.前言" />
+<link href="DNS-HOWTO-2.html" rel="chapter" title="2.簡介" />
+<link href="DNS-HOWTO-3.html" rel="chapter" title="3.暫存專用名稱伺服器" />
+<link href="DNS-HOWTO-4.html" rel="chapter" title="4.一個簡單的領域" />
+<link href="DNS-HOWTO-5.html" rel="chapter" title="5.真實領域的例子" />
+<link href="DNS-HOWTO-6.html" rel="chapter" title="6.維護工作" />
+<link href="DNS-HOWTO-7.html" rel="chapter" title="7.Bind version 8" />
+<link href="DNS-HOWTO-8.html" rel="chapter" title="8.撥接連線的自動設定" />
+<link href="DNS-HOWTO-9.html" rel="chapter" title="9.常見問題解答" />
+<link href="DNS-HOWTO-10.html" rel="chapter" title="10.如何成為一個大型的 DNS 管理者" />
+<meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+<link href="DNS-HOWTO.rdf" rel="meta" title="各章節的說明資訊" />
+</head> <body>
+<table >
+  <tr> 
+    <th colspan="3" class="HdTitle">HOWTO：DNS</th>
+  </tr>
+  <tr> 
+    <td class="TtdL"> <a href="DNS-HOWTO-5.html" accesskey="P">上一頁(P)</a> 
+    </td>
+    <td class="TtdC">&nbsp;</td>
+    <td class="TtdR"> <a href="DNS-HOWTO-7.html" accesskey="N">下一頁(N)</a> 
+    </td>
+  </tr>
+</table>
+<hr />
+<h1> 6. 維護工作</h1>
+
+<p>維持它的運作．</p>
+<p>維持它們的繼續執行之外，對於 <code>named</code> 你還有個維護的任務得要做．
+那就是維持 <code>root.cache</code> 檔案的更新．最簡單的方法是使用 <code>dig</code> 程式，
+首先不加任何參數執行 <code>dig</code> 程式，你將會取得從你自己伺服器得到的 <code>root.cache</code>．
+然後以 <code>dig @rootserver . ns</code> 查問所列出的根伺服器其中之一．
+你將會注意到這份輸出看起來非常地像一個 <code>root.cache</code> 檔案，除了一堆額外的數字以外．這些數字不會有什麼妨礙．
+把它存放到檔案裡(<code>dig @e.root-servers.net . ns &gt;root.cache.new</code>)並且用它來取代原本舊的 <code>root.cache</code> 檔案．</p>
+<p>取代了原先的檔案之後要記得重新啟動 <code>named</code> 程式．</p>
+<p>Al Longyear 寄給我這個指令稿，它可以自動執行來更新 <code>named.cache</code>，為它安裝個 crontab 項目然後忘了它． 
+  這個指令稿假設你的電子郵件可以運作而且 `hostmaster' 這個郵件別名有定義．你應該修訂它以便符合你的設定．</p>
+<pre class="sample">
+#!/bin/sh
+#
+# Update the nameserver cache information file once per month.
+# This is run automatically by a cron entry.
+#
+(
+ echo &quot;To: hostmaster &lt;hostmaster&gt;&quot;
+ echo &quot;From: system &lt;root&gt;&quot;
+ echo &quot;Subject: Automatic update of the named.boot file&quot;
+ echo
+
+ export PATH=/sbin:/usr/sbin:/bin:/usr/bin:
+ cd /var/named
+
+ dig @rs.internic.net . ns &gt;root.cache.new
+
+ echo &quot;The named.boot file has been updated to contain the following information:&quot;
+ echo
+ cat root.cache.new
+
+ chown root.root root.cache.new
+ chmod 444 root.cache.new
+ rm -f root.cache.old
+ mv root.cache root.cache.old
+ mv root.cache.new root.cache
+ ndc restart
+ echo
+ echo &quot;The nameserver has been restarted to ensure that the update is complete.&quot;
+ echo &quot;The previous root.cache file is now called /var/named/root.cache.old.&quot;
+) 2&gt;&amp;1 | /usr/lib/sendmail -t
+exit 0
+</pre>
+<p>有些人可能用 ftp 從 Internic 得到 <code>root.cache</code> 檔案． 請不要用 ftp 來更新 <code>root.cache</code>，上面提到的方法更為便利．</p>
+
+<hr />
+<table >
+  <tr> 
+    <td class="BtdL"> <a href="DNS-HOWTO-5.html" accesskey="P">上一頁(P)</a> 
+    </td>
+    <td class="BtdC"> <a href="index.html" accesskey="H">目錄(H)</a> </td>
+    <td class="BtdR"> <a href="DNS-HOWTO-7.html">下一頁(N)</a> </td>
+  </tr>
+  <tr> 
+    <td class="BtdL">真實領域的例子</td>
+    <td class="BtdC"><a href="DNS-HOWTO-6.html"  accesskey="T">到頂層(T)</a></td>
+    <td class="BtdR">Bind version 8</td>
+  </tr>
+</table>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> 
+  <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a> 
+  <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img class="ImgLogo" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> 
+  <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> 
+  <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" title="網路內容分級協會" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

@@ -1,0 +1,432 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>I Broke the Console Barrier</title>
+<link href="../../LGStyle.css" rel="stylesheet" type="text/css" />
+<link href="../../../style.css" rel="stylesheet" type="text/css" />
+</head>
+
+<body>
+<div id="GazetteLogo"><a href="http://www.linuxgazette.com/"><img src="../../gx/lglogo_200x41.png" alt="Linux Gazette 雜誌" width="200" height="41"  longdesc="../linuxgaette.rdf" /></a><br />
+  <a href="http://www.linuxgazette.com/copying.html">Copyright</a>&copy;1996-2003<br />
+  Specialized Systems Consultants, Inc.</div>
+<div class="CLDPAddr">CLDP</div>
+<div class="CLDPFull">Chinese Linux Documentation Project</div>
+<hr />
+<p class="BarTop"><a
+        href="../../../index.html" title="連到首頁" hreflang="zh-TW" accesskey="H">首頁(H)</a>｜<a
+        href="../../../howto" title="連到和 HOWTO  相關資訊" hreflang="zh-TW" accesskey="T">HOWTO(T)</a>｜<a
+        href="../../../guide" title="連到和指南相關的資訊" hreflang="zh-TW" accesskey="G">指南(G)</a>｜<a
+        href="../../../faq" title="連到和問答集相關的資訊" hreflang="zh-TW" accesskey="F">FAQ(F)</a>｜<a
+        href="../../../man" title="連到和手冊頁有關的資訊" hreflang="zh-TW" accesskey="M">手冊頁(M)</a>｜<a
+        href="../../index.html" title="Linux電子報為一個月發行一期的雜誌" hreflang="zh-TW" accesskey="L">Linux電子報(L)</a>｜<a
+        href="../../../lf" title="LinuxFocus 為兩個月發行一期的雜誌" hreflang="zh-TW" accesskey="S">LinuxFocus(S)</a></p>
+<hr />
+<div class="DivCover"> 
+  <div class="TitleHead">I Broke the Console Barrier <br />
+	By <a href="../authors/bint.html">Stephen Bint</a> </div>
+  <div> 
+    <p class="BarTop"><a href="../../index.html">Linux電子報首頁</a>｜<a href="../../temp/sample/index.html">目錄</a>｜<a href="../../faq/index.html">FAQ</a><br />
+      讓 Linux 更加有趣呦！</p>
+  </div>
+  <div> 
+	<h2>摘要Colour text, keyboard and mouse under DOS and the Linux console </h2>
+  </div>
+  <div> 
+	<p>When I began using Linux I noticed that most Linux text editors are rubbish, 
+	  having little or no mouse support, no shift-selection and no menus or file 
+	  open dialogs. So I thought I could make a contribution, by writing an editor 
+	  which had all the features we have come to associate with DOS editors, for 
+	  the Linux console. Why shouldn't the better OS have editors which are at 
+	  least as good? </p>
+	<p>So I searched for a library that would give me a colour text-mode interface 
+	  to both platforms and I found Slang and curses. Neither were satisfactory. 
+	  In order to provide an interface to a huge list of platforms, many features 
+	  possible at the Linux console were disabled. Also, they were so big there 
+	  was no prospect of customising them for my own needs and bundling the modified 
+	  versions with my own sources. Out of frustration I set out to write my own. 
+	</p>
+	<p>I set myself the target of producing an interface with the widest possible 
+	  range of ctrl- and alt- key combinations, a function to report the state 
+	  of shift, ctrl and alt keys, full mouse reporting (including movement) and 
+	  direct access to a screen array of EGA-style character-colour pairs. I hoped 
+	  to produce something small and simple enough for programmers to bundle with 
+	  their own source, so they could modify it if they wish and distribute with 
+	  confidence. </p>
+  </div>
+    <div> 
+    <h2>目錄</h2>
+  </div>
+  <div> 
+	<ol>
+	  <li><a href="#ss1">The Mouse</a></li>
+	  <li><a href="#ss2">The Screen</a></li>
+	  <li><a href="#ss3">The Keyboard</a><br />
+		3.1 <a href="#ss3.1">The DOS Keyboard</a><br />
+		3.2 <a href="#ss3.2">The Linux Keyboard</a></li>
+	  <li><a href="#ss4">The Final Trial</a></li>
+	  <li><a href="#ss5">Return of the Jedi</a></li>
+	  <li><a href="#ss6">Credits</a></li>
+	  <li><a href="#ss7">作者介紹</a></li>
+	</ol>
+  </div>
+  <div> 
+	<h2><a name="ss1" id="ss1"></a>1. The Mouse</h2>
+  </div>
+  <div> 
+	<p>Programming for the mouse was relatively easy. Under DOS, I just used int86 
+	  and Ralf Brown's Interrupt List. Under Linux, I struggled for a while and 
+	  eventually mastered the gpm mouse driver, which has pretty good docs and 
+	  demo programs. </p>
+  </div>
+  <div> 
+	<h2><a name="ss2" id="ss2"></a>2. The Screen</h2>
+  </div>
+  <div> 
+	<p>Finding out how to output colour text to the Linux screen was more of a 
+	  struggle. I was saved by an article at Linux Gazette called <a href="../issue65/padala.html">&quot;So 
+	  You Like Color!!!&quot;</a>. I was shocked at what it said. </p>
+	<p>Unlike DOS, under which characters and colours are written directly to 
+	  video memory as byte pairs, the Linux screen is refreshed by using fwrite 
+	  to write to stdout! Instead of a colour being written with each character, 
+	  the output colour must be changed whenever a character is a different colour 
+	  to the one written before it. Changing the output colour involves writing 
+	  an 11-byte string to stdout. </p>
+	<p>Consequently, screen refresh is very slow under Linux. I did what I could 
+	  to speed it up. I keep a duplicate screen buffer which is updated as the 
+	  screen is refreshed. Comparing this to the screen buffer, I refresh only 
+	  parts of the screen which have changed. Even so, screen refresh takes twenty 
+	  times as long under Linux as it does under DOS. </p>
+	<p>It is possible to access video memory in recent versions of Linux, by opening 
+	  /dev/vcsa as a file. (see man vcs for details) There are two reasons not 
+	  to do this. One is that only programs run by the superuser are allowed to 
+	  do it. The second is that only the US ASCII character set is supported. 
+	  At least with fwrite, the local character set is respected, which is important 
+	  because Linux is an international thing, from its friendly welcome screen 
+	  to its big, warm heart. </p>
+	<p>I found out how to show, hide and position the text cursor by examining 
+	  the Slang sources and by using an excellent program bundled with Slang, 
+	  called untic. Untic reads the terminfo database and translates it into human-readable 
+	  form. (The terminfo database contains the command strings to write to stdout 
+	  to perform control operations on any terminal.) </p>
+	<p>There was one little niggle. Under Linux, box-drawing characters are not 
+	  part of the default character set. ASCII values which produce boxes under 
+	  DOS produce funny foreign letters under Linux unless you send a string to 
+	  stdout to switch to the alt character set. Switching to that charset permanently 
+	  was not an option. I wanted the library to be international like Linux, 
+	  supporting international character sets, so what to do? </p>
+	<p>I decided to use the high bit of the colour byte as a box bit. Programmers 
+	  wishing to draw boxes would have to set the box bit in the colour for any 
+	  characters they wish to be shown as box characters. This meant that blinking 
+	  text would not be available, because the high bit is otherwise used for 
+	  that, but I was happy. I never liked blinking text anyway. </p>
+  </div>
+  <div> 
+	<h2><a name="ss3" id="ss3"></a>3. The Keyboard</h2>
+  </div>
+  <div> 
+	<p>Interpreting keyboard events on either platform is a giant screaming nightmare 
+	  on stilts. Under DOS, the BIOS scancodes are so illogically allocated, they 
+	  might as well be random numbers. Under Linux, the terminal has to be specially 
+	  prepared and then, the function keys generate strings of bytes which need 
+	  to be converted to scancodes through a lookup table. </p>
+	<p>It was almost inconceivable to convert Linux key events to DOS, or vice 
+	  versa. I decided instead, to produce a pure key function, which would report 
+	  a key value which is unaffected by control or alt, but will be shifted if 
+	  shift is pressed. Programmers wishing to use a ctrl- or alt-key combination 
+	  for a hot key could examine the keyboard status word seperately. </p>
+	<h3><a name="ss3.1" id="ss3.1"></a>3.1 The DOS Keyboard</h3>
+	<p>You might hope that a two-byte BIOS scancode would use the high byte as 
+	  a key ID which never varies and the low byte for an ASCII value which depends 
+	  on whether shift, control or alt are pressed. Unfortunately, because of 
+	  a need to maintain compatability with the old XT keyboard, the high byte 
+	  varies as much much as the low byte. What is worse, different keys react 
+	  differently to control and alt. To avoid a time-consuming switch block, 
+	  I produced a tangle of &quot;if&quot; tests to sieve the identities out 
+	  of ctrl'd and alt'd scancodes. </p>
+	<p>Then I found that holding down shift reverses the sense of the numlock 
+	  under DOS, but not Linux. I had to complicate my key purifier still further 
+	  to undo that stupidity, so numlock means numbers, no matter what. So DOS 
+	  was conquered and I faced the horror of the Linux keyboard. </p>
+	<h3><a name="ss3.2" id="ss3.2"></a>3.2 The Linux Keyboard</h3>
+	<p>In its default state, the Linux keyboard is far from suitable for an interactive 
+	  program. The <code>fgetc()</code> function does not return until return is pressed, 
+	  then it returns a whole string at once, so moving the cursor with arrows 
+	  can't work. It echoes characters to the screen and ctrl-z, ctrl-q and ctrl-s 
+	  all generate interrupts. It's a nightmare. </p>
+	<p>I had hoped I could avoid using <code>fgetc()</code> and slip the keyboard 
+	  into raw mode (pure scancodes), but the gpm mouse driver offered me no choice. 
+	  It provides a single function to read events from both keyboard and mouse, 
+	  and the keyboard part uses <code>fgetc(stdin)</code>. There is a mouse-only 
+	  polling function, but I couldn't make it work. </p>
+	<p>I am glad of that now, because I have realised since that <code>fgetc()</code> 
+	  receives high-level keycodes which are likely to be the same on foreign 
+	  keyboards, where the layout and probably the scancodes would be different. 
+	  I resigned myself to translating strings of bytes into scancodes as a necessity 
+	  and it turned out to be easier than dealing with BIOS scancodes under DOS 
+	  had been. </p>
+	<p>I found out how to set up the terminal by examining the Slang sources. 
+	  You use a function called <code>tcsetattr()</code> to set flags and values in 
+	  a terminal control structure. So I fixed the keyboard to return characters 
+	  immediately without echo and to treat ctrl-z, ctrl-q and ctrl-s as ordinary 
+	  keys. </p>
+	<p>I still had no <code>kbhit()</code> function, nor any way to read the shift 
+	  state (whether ctrl, alt or shift are pressed). Google turned up an article 
+	  at Linux Gazette called <a href="../issue76/marinov.html">"Taming the Linux 
+	  Keyboard"</a>, which gave me both those functions, full source code. </p>
+  </div>
+  <div> 
+	<h2><a name="ss4" id="ss4"></a>4. The Final Trial</h2>
+  </div>
+  <div> 
+	<p>Still one bugbear remained. It may seem trivial to you but it was everything 
+	  to me. It seemed insurmountable and I don't mind admitting, it nearly broke 
+	  me. </p>
+	<p>You know how on DOS editors you can select text by holding down shift while 
+	  using cursor-movement keys, including page up and page down? Well under 
+	  Linux, shift-PageUp and shift-PageDown are reserved for a pointless function 
+	  called scrollback. That means applications receive nothing from <code>fgetc()</code> 
+	  when shift-PageUp/Down are pressed. The kernel spirits these keys away and 
+	  your program never sees them. </p>
+	<p>But that is not the worst of it by a long chalk. After weeks of brain-busting 
+	  work I found out at the final furlong, that if a user tries to select text 
+	  with shift-PageUp, half my lovely colour text screen disappears - scrolled 
+	  back! </p>
+	<p>There was no way I could release my library now. I felt like I had read 
+	  a thousand-page novel and found the last page missing. I went round and 
+	  round in circles of man pages and info files and searched the net to no 
+	  avail. Then I noticed that the <code>shift_state()</code> function I got from 
+	  that article I mentioned earlier, used a function called <code><b>ioctl()</b></code> 
+	  to work its magic. </p>
+	<p>I used <code>"apropos ioctl"</code> to search the man pages and found one 
+	  called <code>"console_ioctls"</code>. There I discovered that <code>ioctl()</code> 
+	  is the Linux equivalent of a DOS interrupt call. The same page gave a full 
+	  list of low-level system calls and a warning from a kernel programmer, never 
+	  to use these because they are <U>not guaranteed</U> and are <U>subject to 
+	  change</U> in future versions of the kernel. </p>
+	<p>But we all know we can ignore kernel programmers when they say things like 
+	  that. They are just denying responsibility, like when Scotty tells Captain 
+	  Kirk it's going to take twice as long as it really will. </p>
+	<p>In the list I found one to change the functions associated with keys - 
+	  including PageUp and PageDown. It involved filling a struct with three integers, 
+	  to indicate which table, which key and which command to assign. The problem 
+	  was, there were no docs telling me what these numbers should be, to disable 
+	  scrollback for shift-PageUp. </p>
+	<p>Further research turned up the kbd package, which contains great docs and 
+	  a bunch of utilities for changing the key mapping. You can dump the current 
+	  mapping to stdout by running dumpkeys. Here is an excerpt from my dumpkeys 
+	  output. Notice that it only gives me one of the three numbers I need - the 
+	  keycode. </p>
+	<pre class="sample">
+keycode 103 = Up              
+	alt	keycode 103 = KeyboardSignal  
+keycode 104 = Prior
+	shift	keycode 104 = Scroll_Backward
+keycode 105 = Left            
+	alt	keycode 105 = Decr_Console    
+keycode 106 = Right           
+	alt	keycode 106 = Incr_Console    
+keycode 107 = Select          
+keycode 108 = Down            
+keycode 109 = Next            
+	shift	keycode 109 = Scroll_Forward
+keycode 110 = Insert          
+</pre>
+	<p>If you redirect the output into a text file, you can edit it and pass it 
+	  to loadkeys to alter the mapping. Experiments revealed that you can delete 
+	  most of the file - only leaving the keys you want to change. So I reduced 
+	  it to two lines: </p>
+	<pre class="sample">
+shift	keycode 104 = Scroll_Backward 
+shift	keycode 109 = Scroll_Forward
+</pre>
+	<p>and changed the current functions to the ones for those keys without shift 
+	  pressed: </p>
+	<pre class="sample">shift	keycode 104 = Prior
+shift	keycode 109 = Next
+</pre>
+	<p>I called the file kmap and ran "loadkeys kmap". Then I tried my test program 
+	  and found that scrollback had been disabled - exactly the result I was looking 
+	  for. I knew now that it was possible. A peek at the source for loadkeys 
+	  revealed that it used the ioctl I had found, to change the key functions, 
+	  but I still did not know what numbers to use. </p>
+	<p>I had no choice but to use cunning. I found out that loadkeys has a -m 
+	  option, to produce a source file, which contains tables of 256 values. I 
+	  ran "loadkeys -m kmap" and found it produced one table with 254 null values 
+	  and two non-null. Counting elements I found that the non-null elements were 
+	  numbered 104 and 109 - the key codes in my kmap file. The values in the 
+	  table had to be the values of the "Prior" and "Next" commands. </p>
+	<p>I also saw that this table had a number. I tried changing "shift" to "control" 
+	  in one of the lines in kmap and got two tables, one for shift and one for 
+	  control. In both cases the shift table was table number 1. Along with the 
+	  actual values in the table, I had my three numbers. </p>
+	<p>To disable scrollback and scroll forward and make shift-PageUp/Down into 
+	  ordinary keys, you must save the existing values, then change them and install 
+	  an exit routine to restore them to normal function afterwards. </p>
+	<p>If you want to disable any key, such as the console switching keys for 
+	  example, you will need to mess about like I did with "loadkeys -m" to find 
+	  the numbers you are looking for. </p>
+	<p>This function changes a key's action and saves the old one in an integer 
+	  you pass in by reference (written for gcc): </p>
+	<p><a href="misc/bint/kbe.c.txt">(text version of all listings)</a> </p>
+	<pre class="sample">
+#include &lt;sys/ioctl.h&gt;
+#include &lt;linux/kd.h&gt;
+#include &lt;linux/keyboard.h&gt;
+#include &lt;stdio.h&gt;
+
+int set_kb_entry( unsigned short table, unsigned short keycode, 
+                  unsigned short value, unsigned short *oldvalue ) {
+
+   struct kbentry ke;
+
+   ke.kb_table = table;
+   ke.kb_index = keycode;
+
+/* Get old value, return error if table or keycode are duff */
+   if( ioctl( fileno(stdin), KDGKBENT, &amp;ke ) )
+      return -1;
+
+/* Unless oldvalue ptr is NULL, save old value to restore later */
+   if( oldvalue ) *oldvalue = ke.kb_value;
+
+/* The new action for this key */
+   ke.kb_value = value; 
+
+/* Do the business, return error if value is duff */
+   if( ioctl( fileno(stdin), KDSKBENT, &amp;ke ) )
+      return -1;
+   return 0;
+   }
+</pre>
+	<p>To use the above function to disable scrollback and restore it on exit: 
+	</p>
+	<pre class="sample">
+#include &lt;stdlib.h&gt;
+
+/* Old key action values will be stored in these */
+unsigned short scroll_forward = 0;
+unsigned short scroll_backward = 0;
+
+/* The magic numbers gleaned from dumpkeys and loadkeys -m */
+#define SHIFT_TABLE          1
+#define PAGE_UP_KEYCODE    104
+#define PAGE_DOWN_KEYCODE  109
+#define PAGE_UP_ACTION     0x0118 /* Prior */
+#define PAGE_DOWN_ACTION   0x0119 /* Next  */
+
+/* Restore default funcs for shift-PageUp and shift-PageDown */
+static void restore_scrollback() {
+
+   if( scroll_backward )
+      set_kb_entry( SHIFT_TABLE, PAGE_UP_KEYCODE, 
+                    scroll_backward, 0 );
+   if( scroll_forward )
+      set_kb_entry( SHIFT_TABLE, PAGE_DOWN_KEYCODE, 
+                    scroll_forward, 0 );
+   }
+
+/* Liberate shift-PageUp and shift-PageDown for normal use */
+int disable_scrollback() {
+   if( set_kb_entry( SHIFT_TABLE, PAGE_UP_KEYCODE, 
+                     PAGE_UP_ACTION, &amp;scroll_backward ) )
+      return -1;
+   if( set_kb_entry( SHIFT_TABLE, PAGE_DOWN_KEYCODE, 
+                     PAGE_DOWN_ACTION, &amp;scroll_forward ) )
+      return -1;
+   atexit( restore_scrollback );
+   return 0;
+   }</pre>
+  </div>
+  <div> 
+	<h2><a name="ss5" id="ss5"></a>5. Return of the Jedi</h2>
+  </div>
+  <div> 
+	<p>So I emerged from the dark underworld of the Linux console, prizes in hand, 
+	  triumphant. I have made it possible for programmers to write console apps 
+	  which behave exactly the same under DOS and Linux and (I think) secured 
+	  my place in legend. </p>
+	<p>And you know what? I never did write that text editor. I can't because 
+	  I am homeless and I was lucky to get access to a computer long enough to 
+	  do this little thing. Perhaps that is where you come in. </p>
+	<p>Linux is a virgin territory, about to be colonized by the people of India 
+	  and Africa. They can't afford flash computers that can run X, so they need 
+	  console apps. Now even those of you who don't have Linux installed can help 
+	  them. </p>
+	<p>Linux needs pioneers to carve out the infrastructure before the first big 
+	  wave of settlers can move in. Those settlers will need configuration dialogs 
+	  for common apps like Apache and for common filters like grep. They will 
+	  need a good text editor, with a right-click cut-copy-paste menu. </p>
+	<p>Programmers who mean to produce these tools will need a widget library 
+	  and especially, a file Open/Save dialog. They would benefit from a well-written 
+	  string array class with cut-copy-paste functions, provided separately to 
+	  be used in various, competing text editors. </p>
+	<p>The perfect editor wouldn't have many features, but would have a simple 
+	  facility for adding functions to its menus. It would be set up so that any 
+	  fool could write a C++ function which takes a pointer to an editor as an 
+	  argument and add that function to the editor's menu, just by adding a single 
+	  line to <code>main()</code>. Programmers could swap C++ editor functions with 
+	  eachother and we would be on course to the ultimate editor. </p>
+	<p>Will you be a pioneer? If no-one bothers, I fear that Linux may fall and 
+	  we may all end up the helpless playthings of the evil Darth Gates. So I 
+	  am hoping you will pick up my fallen standard. You may be our last, our 
+	  only hope. Good luck. </p>
+	<p>May the Source be with you. </p>
+	<p><a href="http://members.lycos.co.uk/ctio/ctio.zip">ctio.zip</a> (41.7kb) 
+	  <br />
+	  <a href="http://members.lycos.co.uk/ctio/ctio.tar">ctio.tar</a> (150kb) 
+	</p>
+  </div>
+  <div> 
+	<h2><a name="ss6" id="ss6"></a>6. Credits</h2>
+  </div>
+  <div> 
+	<p>Slang, by John E. Davis. Slang is easy to rob because it is well-written. 
+	  I learned how to init the keyboard and got most of the command strings for 
+	  the screen from the Slang sources. I got other command strings by using 
+	  the untic program that comes with it. But the best thing about Slang is 
+	  what enables Midnight Commander to run in a telnet window. Anyone who has 
+	  ever had to fix a web server remotely will know, it's a beautiful thing. 
+	</p>
+	<p><a href="../issue65/padala.html"> So You Like Color !!!</a> By Pradeep 
+	  Padala (LG #65). This article got me started on the Linux console screen. 
+	</p>
+	<p><a href="../issue76/marinov.html"> Taming The Linux Keyboard</a> By Petar 
+	  Marinov (LG #76). My <code>shift_status()</code> and <code>key_awaits()</code> functions 
+	  are modified versions of <code>shift_state()</code> and <code>kbhit()</code> given 
+	  away with this article. </p>
+	<p><a href="http://www-2.cs.cmu.edu/afs/cs/user/ralf/pub/WWW/files.html"> 
+	  Ralf Brown</a>, Patron Saint of DOS programmers </p>
+  </div>
+        
+  <div> 
+	<h2><a name="ss7" id="ss7"></a>7. 作者介紹</h2>
+  </div>
+  <div> 
+	<p>Stephen is a homeless Englishman who lives in a tent in the woods. He eats 
+	  out of bins and smokes cigarette butts he finds on the road. Though he once 
+	  worked for a short time as a C programmer, he prefers to describe himself 
+	  as a "keen amateur". </p>
+  </div>
+  <div> 
+    <h2>版權宣告</h2>
+  </div>
+  <div> 
+	<p>Copyright &copy; 2003, Stephen Bint. <a href="http://www.linuxgazette.com/copying.html">Copying 
+	  license</a> Published in Issue 86 of Linux Gazette, January 2003 </p>
+  </div>
+</div>
+<hr />
+<p class="BarTop"><a
+        href="../../../index.html" title="連到首頁" hreflang="zh-TW" accesskey="H">首頁(H)</a>｜<a
+        href="../../../howto" title="連到和 HOWTO  相關資訊" hreflang="zh-TW" accesskey="T">HOWTO(T)</a>｜<a
+        href="../../../guide" title="連到和指南相關的資訊" hreflang="zh-TW" accesskey="G">指南(G)</a>｜<a
+        href="../../../faq" title="連到和問答集相關的資訊" hreflang="zh-TW" accesskey="F">FAQ(F)</a>｜<a
+        href="../../../man" title="連到和手冊頁有關的資訊" hreflang="zh-TW" accesskey="M">手冊頁(M)</a>｜<a
+        href="../../index.html" title="Linux電子報為一個月發行一期的雜誌" hreflang="zh-TW" accesskey="L">Linux電子報(L)</a>｜<a
+        href="../../../lf" title="LinuxFocus 為兩個月發行一期的雜誌" hreflang="zh-TW" accesskey="S">LinuxFocus(S)</a></p>
+<hr />
+</body>
+</html>

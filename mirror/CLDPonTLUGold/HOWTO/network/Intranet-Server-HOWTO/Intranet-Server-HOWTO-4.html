@@ -1,0 +1,403 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>4. 連上 Linux 伺服器</title>
+<link href="Intranet-Server-HOWTO-5.html" rel="next" title="5.設立內部網路" />
+<link href="Intranet-Server-HOWTO-3.html" rel="previous" title="3.測試 HTTPd" />
+<link href="../../style.css" rel="stylesheet" type="text/css" />
+<link href="http://tldp.org/HOWTO/Intranet-Server-HOWTO.html" rel="alternate" title="原版" />
+<link href="index.html" rel="start" title="HOWTO：The Linux Intranet Server" />
+<link href="index.html#content" rel="contents" />
+<link href="Intranet-Server-HOWTO-1.html" rel="chapter" title="1.簡介" />
+<link href="Intranet-Server-HOWTO-2.html" rel="chapter" title="2.安裝 HTTP 伺服器" />
+<link href="Intranet-Server-HOWTO-3.html" rel="chapter" title="3.測試 HTTPd" />
+<link href="Intranet-Server-HOWTO-4.html" rel="chapter" title="4.連上 Linux 伺服器" />
+<link href="Intranet-Server-HOWTO-5.html" rel="chapter" title="5.設立內部網路" />
+<link href="Intranet-Server-HOWTO-6.html" rel="chapter" title="6.存取網路" />
+<link href="Intranet-Server-HOWTO-7.html" rel="chapter" title="7.更多需要做的事" />
+<link href="Intranet-Server-HOWTO-8.html" rel="chapter" title="8.感謝與合法性" />
+<link href="Intranet-Server-HOWTO-4.html#ss4.1" rel="section" title="4.1 設定 Linux 伺服器 " />
+<link href="Intranet-Server-HOWTO-4.html#ss4.2" rel="section" title="4.2 建定 Netware 伺服器 " />
+<link href="Intranet-Server-HOWTO-4.html#ss4.3" rel="section" title="4.3 設定 Netware 客戶端 " />
+<link href="Intranet-Server-HOWTO-4.html#ss4.4" rel="section" title="4.4 設定 Microsoft Client " />
+<link href="Intranet-Server-HOWTO-4.html#ss4.5" rel="section" title="4.5 在 Macintosh 內設立 TCP/IP " />
+<meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+<link href="Intranet-Server-HOWTO.rdf" rel="meta" title="各章節的說明資訊" />
+</head> <body>
+<table >
+  <tr> 
+    <th colspan="3" class="HdTitle">HOWTO：The Linux Intranet Server</th>
+  </tr>
+  <tr> 
+    <td class="TtdL"> <a href="Intranet-Server-HOWTO-3.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="TtdC">&nbsp;</td>
+    <td class="TtdR"> <a href="Intranet-Server-HOWTO-5.html" accesskey="N">下一頁(N)</a> </td>
+  </tr>
+</table>
+<hr />
+<h1>4. 連上 Linux 伺服器</h1>
+
+<p>請參考在  
+<a href="Intranet-Server-HOWTO-1.html#Intro">Introduction</a> 章節裏的圖示，那裏有被使用的定址方案。 Workstation 1
+(W/S1) 在網路  172.16.0.0 上並且可以直接存取到 Linux 伺服器。而 Workstation 2 (W/S2) 在網路 172.17.0.0 上
+且需要使用通訊閘(路由器) 172.17.0.254 來存取 Linux 機器。這個通訊閘資訊只有在建構 W/S2 這個客戶端時
+才需要。Netware 會把通訊閘當成'ip_router'。</p>
+
+<p>我使用 W/S2 來描述客戶端的設定。 要設定 W/S1 只需將位址 172.17.0.5 改變為 172.16.0.5 並且
+不要管所有與通訊閘／路由器的連結。</p>
+<p>如果你沒有路由器，現在可以跳過這章節 </p>
+<ul>
+  <li> <a href="#SetupNW">Setup Netware Server</a> 如果你使用 Netware 伺服器。</li>
+  <li> <a href="#MSClient">Setup MS Windows Client</a> 如果你使用 Microsoft Client。</li>
+</ul>
+<h2><a name="ss4.1" id="ss4.1"></a>4.1 設定 Linux 伺服器 </h2>
+
+<p>如果你沒有router的話，可以跳過這一章。</p>
+<p>你必須建構 Linux  伺服器去辦識路由器來讓 Workstation 2 與 Web 伺服器相連接。為了
+設立 Linux 伺服器你必須簽入成為 root。在伺服器的命令列提示下執行</p>
+<p> </p>
+<pre class="sample">
+   route add gw default 172.16.0.254
+</pre>
+
+
+<p>要在每一次你開啟這台Linux 伺服器時使用這個通訊閘的話，只要修改 <code>/etc/rc.d/rc.inet1</code> 將 含有通訊閘定義的那行更改成 
+  <code>GATEWAY = &quot;172.16.0.254&quot;</code>即可。請得前面沒有註解符號哦 !</p> <p></p>
+<p>或者是: 你可以由另一邊的路由器來改變網路。例如 </p>
+<pre class="sample">
+   route add -net 172.17.0.0 gw 172.16.0.254
+</pre>
+<p>想每一次開機時使用這條通道請將這個命令加入你的 <code>/etc/rc.d/rc.local</code> 檔案裏。</p> <p></p>
+<h2><a name="ss4.2" id="ss4.2"></a> 4.2 建定 Netware 伺服器 </h2>
+
+<p>為了能夠設定 Netware 伺服器， 你需要有 Supervisor 允許權或至少也要 有控制台 Console 的操作權。 如果這些你都沒有，請問你們的網路管理員 
+  看看是否能幫你做設定。 在伺服器上打入以下命令或是將它們包含到 AUTOEXEC.ncf 檔裏即可開啟網路上的 Ethernet_II 的 frame 
+  類型。</p>
+<pre class="sample">
+   load NE2000 frame=Ethernet_II name=IPNET
+   load TCPIP
+   bind IP to IPNET addr=172.16.0.2 mask=FF.FF.FF.0
+</pre>
+
+<p>在載入 NE2000  的驅動程式時， 你也許需要依照你的機器的建構來指定插
+槽或板子的號碼。 (例如: load NE2000 slot=3 frame=.....)</p>
+
+<h2><a name="ss4.3" id="ss4.3"></a> 4.3 設定 Netware 客戶端 </h2>
+
+<p>在一台電腦上， 你可以選擇使用 Win3.1、WFWG 或是 Win95。 如果你使用
+Microsoft  或 Novell  的 32 位元客戶端程式， 對於在 Win95 或早期的
+windows 上的安裝步驟就不同了。如果你要使用 16 位元的客戶端程式，那
+麼那些步驟就一樣了。 你可以參考 Windows 3.x 安裝指示。關於在 Win95
+上面安裝  32 位元客戶端程式， 請跳到 
+<a href="#NWWin95">  安 裝Windows 95</a>。</p>
+
+<h3><a name="NWWin" id="NWWin"></a> Windows 3.x</h3>
+
+<p>如果你使用 Win3.1 或 WFWG。你就可以安裝 Netware Client (VLMs) 以及
+和 TCP/IP 磁片放在一起的其他檔案，如下</p>
+
+<p>TCPIP.exe、VTCPIP.386、WINSOCK.dll 和 WLIBSOCK.dll</p>
+<p>附帶一提 WINSOCK.dll 檔案與 Win95 及 Trumpet 內所提供的那個是不同 的。 安裝有支援 windows 的 Netware 
+  Client。 將 VTCPIP.386、 WINSOCK.dll 及 WLIBSOCK.dll 拷貝到 SYSTEM 目錄內，TCPIP.exe 拷貝到 
+  NWCLIENT 目錄內。現在修改放在 NWCLIENT 內的 STARTNET.bat</p>
+<pre class="sample">
+   lsl
+   ne2000     ---&gt; 你的網路卡驅動程式
+   c:\windows\odihlp.exe     ----&gt;如果你使用 WFWG 的話
+   ipxodi
+   tcpip        ---&gt; 增加這一行
+   nwip         ---&gt; 如果你使用 Netware/IP 的話
+   vlm
+</pre>
+
+<p>建立一個子目錄 (如 ) <code>\NET\TCP</code>， 從你的 Linux 伺 服器的 <code>/etc</code> 目錄或是你的 
+  Netware 伺服器的 <code>SYS: ETC</code> 內拷貝 HOSTS、 NETWORKS、PROTOCOLS 以及 SERVICES 
+  。 經由修改拷貝的 HOSTS 檔案來增加一行給你的新 Linux 伺服器。 這樣可以使你使用你的網 頁瀏覽器看你的 Linux 伺服器時由 <code>http://172.16.0.1/</code> 
+  改為 <code>http://linux.mydomain/</code>。</p>
+<pre class="sample">
+   127.0.0.1      localhost
+   172.16.0.1      linux.mydomain
+</pre>
+
+<p>修改在 NWCLIENT 目錄內的 NET.cfg 檔案 </p>
+<pre class="sample">
+   Link Driver NE2000
+       port 300
+       int 3
+       MEM D0000
+       FRAME Ethernet_802.2
+
+; ---- 增加這幾行 ----
+
+      FRAME Ethernet_II
+
+   Protocol TCPIP
+      PATH TCP_CFG C:\NET\TCP
+      ip_address  172.17.0.5
+      ip_netmask  255.255.255.0
+      ip_router   172.17.0.254     ---&gt; 如果你必須使用你的通訊閘才能連接到你的HTTP 伺服器才需加上這行
+
+   Link Support
+      MemPool 6192       ---&gt; 最小值是 1024。可試看看不同的值
+      Buffers 10 1580    ---&gt; 這也可以自己調整
+
+;---------------------------------
+; 如果你使用 Netware/IP ，可以加入這幾行
+;
+   NWIP
+      NWIP_DOMAIN_NAME  mydomain
+      NSQ_BROADCAST   ON
+      NWIP1_1 COMPATIBILITY   OFF
+      AUTORETRIES     1
+      AUTORETRY SECS  10
+
+</pre>
+<p>編修 WINDOWS 目錄內的 SYSTEM.ini 檔案並為 VTCPIP.386加上這一行。</p> <p></p>
+<pre class="sample">
+   [386Enh]
+   .....
+   network=*vnetbios, vipx.386, vnetware.386, VTCPIP.386
+   .....
+</pre>
+
+<p>重新開機，執行 STARTNET.bat。 現在你可以使用你最喜歡的網頁瀏覽器來
+存取你的網頁了。  如果你使用  Trumpet  Winsock  的話，  你不需簽入
+Netware 裏面以及執行 TCPMAN。</p>
+
+<h3><a name="NWWin95" id="NWWin95"></a> Windows 95</h3>
+
+<p>本章節解釋如何在 Win95 上安裝 32 位元的客戶端程式。 首先你必須安裝 下列的軟體</p>
+<pre class="sample">
+   Client for Netware Networks (來自 Microsoft 或 Novell都可以)
+   Microsoft TCP/IP Protocol
+   Network Adapter
+</pre>
+
+<p>要安裝這些項目，按我的電腦→控制台→網路，按新增。現在你應該是在 一個顯示客戶端、介面卡、協定及服務的視窗裏。 安裝 the Client for Netware 
+  Networks: </p>
+<pre class="sample">
+  1. 在客戶端按(滑鼠)兩下
+  2. 在 Microsoft 或 Novell 上按一下
+  3. 在 Client for Netware Networks 按兩下
+</pre>
+
+<p>安裝 TCP/IP 協定: </p>
+<pre class="sample">
+  1. 在協定上按兩下
+  2. 按 Microsoft 一下
+  3. 按 TCP/IP 兩下
+</pre>
+
+<p>Windows 95 本身會自動安裝幾個不同的協定。指向他們並按移除鈕將他們移除。一般來說
+Win95 會安裝 Microsoft NetBeui 協定以及IPX/SPX 相容協定。你可以刪除 NetBEUI 協定，
+但如果你想簽入到 Netware 伺服器，那你會需要 IPX/SPX 協定。</p>
+<p>按 TCP/IP 一下設定它， 按內容，按 IP 位址一欄 </p>
+<pre class="sample">
+  在 &quot;指定 IP 位址 &quot; 對話盒中輸入你的 IP 位址 172.17.0.5
+  在子網路庶罩對話話中輸入 255.255.255.0
+</pre>
+
+
+<p>選取通訊閘 </p>
+<pre class="sample">
+  在新閘道對話盒裏輸入你的通訊閘(路由器)位址 172.17.0.254
+  按新增鈕
+</pre>
+
+
+<p>現在通訊閘位址應該在通訊閘對話盒內了。按確定</p> <p></p>
+<p>你會看到要你重新啟動系統的訊息，照做，現在你應該可以使用瀏覽器連接到你的 HTTP 伺服器。</p>
+
+<h2><a name="ss4.4" id="ss4.4"></a> 4.4 設定 Microsoft Client </h2>
+
+<p>如果你使用 Microsoft Client 來存取你的網路，那麼這章即在說明如何安 裝 TCP/IP 到</p>
+<ul>
+<li>
+<a href="#MSWFWG">Windows for Workgroups (WFWG)</a></li>
+<li>
+<a href="#MSWin95">Windows 95</a></li>
+<li>
+<a href="#MSWinNT">Windows NT 4.0</a></li>
+</ul>
+
+<p>附註: 要讓你的網頁瀏覽器或所有的內部網路命令在看你的 Linux 伺服器時是以 <code>http: //linux.mydomain/</code> 
+  來代替 <code>http://172.16.0.1/</code>。 你可以經由修改 <code>hosts</code> 檔案來 增加一行給你的新 
+  Linux 伺服器。 你當然也可以增加更多的條目給每一個 你的其他的主機 hosts (Netware、 Unix、 WinNT)。 Windows 家族會把它的 
+  HOSTS 檔案放在 <code>\WINDOWS</code> 或 <code>\WINDOWS\SYSTEM</code> 內， 端看它的版本。修改這個檔案並加上一行到你的 
+  Linux 伺服器成為：</p> <p></p>
+<p> </p>
+<pre class="sample">
+   127.0.0.1      localhost
+   172.16.0.1     linux.mydomain
+
+   172.16.0.2     netware.mydomain
+   172.16.0.3     winNT.mydomain
+   172.16.0.5     ws_1
+</pre>
+
+<h3><a name="MSWFWG" id="MSWFWG"></a> Windows for Workgroups</h3>
+
+<p>本章在解釋如何在 WFWG 上安裝 32bit 的客戶端。首先你必須下載由 Microsoft 所提供的Windows版 TCP/IP 驅動程式
+最新的版本是 3.11b ，你可以由 
+<a href="ftp://ftp.microsoft.com">ftp://ftp.microsoft.com</a> 或是
+其他網站裏下載 <code>tcp32b.exe</code>。請確定你在嚐試載入TCP/IP-32bit的驅動程式前載入Win32s 。</p>
+<p>將 TCP/IP 檔案展開到臨時存放目錄裏 (如 <code>C:\TEMP</code>)，檢查你的 <code>\WINDOWS\SYSTEM</code>
+目錄裏有否 <code>OEMSETUP.INF</code>。如果有，改它們的名字。現在從 TEMP 目錄裏拷貝 <code>OEMSETUP.INF</code> 檔
+到 <code>\WINDOWS\SYSTEM</code> 目錄。如果你已載入其他的 TCP/IP 堆疊到你的系統了，請
+在你繼續前移除它們。</p>
+<p>開啟網路設定或是 Windows 設定/更改網路設定 </p>
+<pre class="sample">
+    按一下 Networks 鈕
+    按一下 Install Microsoft Windows Network.
+      選擇支 support for additional networks (如果需要的話)
+    按確定
+</pre>
+
+
+<p>系統會提示你需要選擇一個適當的網路卡。如果沒有提示的話，那麼你應該 </p>
+<pre class="sample">
+     按一下 Adapter 鈕
+         選擇一張卡 (如 NE2000)
+         按確定
+     按一下 Protocol 鈕
+         選擇 MS TCP/IP-32 協定
+         按確定
+</pre>
+
+
+<p>系統會提示要你建構 TCP/IP 協定的一堆資料。在任何時候您想要重新建構 這項資料，你可以選擇 TCP/IP 協定後，再按一下內容即可做修改。 </p>
+<pre class="sample">
+   在 IP 位址對話盒裏輸入 172.17.0.5
+   在子網路遮罩對話盒內輸入 255.255.255.0
+   在內定通訊閘對話盒中輸入你的通訊閘 (router) 位址為 172.17.0.254
+</pre>
+
+
+<p>按確認。你會看到一個重新啟動的訊息。順著意做，你現在起就可以使用瀏 覽器來連接到你的 HTTP 伺服器了。</p> <p></p>
+<h3><a name="MSWin95" id="MSWin95"></a> Windows 95</h3>
+
+<p>本章節解釋如何在 Win95 上安裝 32 位元的微軟客戶端程式。 首先你必須 安裝下列的軟體 </p>
+<pre class="sample">
+   Client for Microsoft Networks
+   Microsoft TCP/IP Protocol
+   Network Adapter
+</pre>
+
+<p>要安裝這些項目，在按兩下我的電腦→控制台→網路，按增加。你現在會在 一個顯示著客戶端程式、控制卡、協定以及服務項目的一個視窗上。要安裝 微軟網路客戶端程式: 
+</p>
+<pre class="sample">
+  1. 在 Client 項目上按兩下
+  2. 按一下 Microsoft
+  3. 在 Client for Microsoft Networks項目上按兩下
+</pre>
+
+<p>安裝 TCP/IP 協定: </p>
+<pre class="sample">
+  1. 在 Protocol 上按兩下
+  2. 按一下 Microsoft
+  3. 在 TCP/IP 上按兩下
+</pre>
+
+<p>Windows 95 內定會自動地安裝數個協定在裏頭。 只要在按一下它們，再按
+下移走按鈕即可將它們移走。 典型地 Win95  會安裝 Microsoft  NetBeui
+協定。</p>
+<p>建定 TCP/IP 請在 TCP/IP 上按一下，按下內容，按下 IP 位址的表格:</p>
+<pre class="sample">
+  在 &quot; 指定一個 IP 位址 &quot; 上鍵入你的 IP 位址;
+                        方塊內為 172.17.0.5
+  在子網路遮罩方塊內鍵入 255.255.255.0
+</pre>
+
+
+<p>選取 Gateway 的表格: </p>
+<pre class="sample">
+  在新通訊閘方塊內鍵入你的通訊閘(轉送器)位址成為 172.17.0.254
+  按下新增按鈕
+</pre>
+
+
+<p>現在通訊閘位址應該會出現在已安裝的通訊閘方塊內。按下確認鈕。</p> <p></p>
+<p>你會看到一個重新啟動的訊息。順著意做，你現在起就可以使用瀏覽器來連
+接到你的 HTTP 伺服器了。</p>
+
+<h3><a name="MSWinNT" id="MSWinNT"></a> Windows NT</h3>
+
+<p>本章節解釋如何在 WinNT 4.0 上安裝 TCP/IP 客戶端程式。 開始→控制台 →網路 </p>
+<pre class="sample">
+    選擇控制卡表格
+        按下新增來增加一個新的控制卡 (如果你沒有半個的話)
+</pre>
+
+
+<p>系統會提示要你選一個適當的網路控制卡－選一個合適的。接著加入協定。 </p>
+<pre class="sample">
+    選擇協定表格
+        按新增
+        選擇 TCP/IP 協定
+        按確認
+</pre>
+
+
+<p>系統會提示要你建構 TCP/IP 協定的一堆資料。在任何時候您想要重新建構 這項資料，你可以選擇 TCP/IP 協定後，再按一下內容即可做修改。 </p>
+<pre class="sample">
+   選擇 IP 位址表格
+      在'指定 IP 位址'項目上打勾
+      在 IP 位址對話盒裏輸入 172.17.0.5
+      在子網路遮罩對話盒內輸入 255.255.255.0
+      在內定通訊閘對話盒中輸入你的通訊閘 (router) 位址為 172.17.0.254
+</pre>
+<p>按確認。你會看到一個重新啟動的訊息。順著意做， 你現在起就可以使用瀏覽器來連接到你的 HTTP 伺服器了。</p> <p></p>
+<h2><a name="ss4.5" id="ss4.5"></a> 4.5 在 Macintosh 內設立 TCP/IP </h2>
+
+<p>如果你使用 Macintosh 做為存取你的網路的。 那麼，本章就是在說明如何
+在 PowerMac 上安裝 MacTCP。</p>
+<p>附記: 要讓你在使用 WWW 瀏覽器時及所有的內部網路命令時使用 <code>http://linux.mydomain/</code> 來代替 <code>http://172.16.0.1/</code> 
+  來連上伺服器。你需要修改 <code>hosts</code> 檔。它的格式和使用 Unix 上的不同。 Mac 的hosts 檔是以 RFC-1035為主。你可以加上你的 
+  其他主機 (Netware, Unix, WinNT)。 MacOS 將它的 HOSTS 檔放在 <code>System folder</code>的<code>Preferences 
+  folder</code> 之下。修改這個檔案並為你的 Linux 伺服器加上： </p>
+<pre class="sample">
+  linux.mydomain    A  172.16.0.1
+
+  netware.mydomain  A  172.16.0.2
+  winNT.mydomain    A  172.16.0.3
+  ws_1              A  172.16.0.5
+</pre>
+
+<h3><a name="MacTCP" id="MacTCP"></a> MacTCP</h3>
+
+<p>這一章節旨在說明如何安裝 MacTCP。 首先， 你必須先從 Apple 那兒下載
+MacTCP 檔案或是從網際網路的連結 CD 來安裝它。 要建構 MacTCP， 請在
+Apple  Menu/ Control  Panels/  TCP/IP  裏按一下老鼠鍵， 在螢幕裏改
+'Connect  via: ' 的值成為  'Ethernet'。</p>
+<p>改變 'Configure' 設定成為 'Manually' </p>
+<pre class="sample">
+  在 IP address 對話盒裏輸入 172.17.0.5
+  在 Subnet Mask 對話盒裏輸入 255.255.255.0
+  在通訊閘裏輸入你的通訊閘 (路由器) 位址為 172.17.0.254
+</pre>
+
+
+<p>按確認。你現在起就可以使用瀏覽器來連接到你的 HTTP 伺服器了。</p> <p></p>
+<hr />
+<table >
+  <tr> 
+    <td class="BtdL"> <a href="Intranet-Server-HOWTO-3.html" accesskey="P">上一頁(P)</a> 
+    </td>
+    <td class="BtdC"> <a href="index.html" accesskey="H">目錄(H)</a> </td>
+    <td class="BtdR"> <a href="Intranet-Server-HOWTO-5.html">下一頁(N)</a> </td>
+  </tr>
+  <tr> 
+    <td class="BtdL">測試 HTTPd</td>
+    <td class="BtdC"><a href="Intranet-Server-HOWTO-4.html"  accesskey="T">到頂層(T)</a></td>
+    <td class="BtdR">設立內部網路</td>
+  </tr>
+</table>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> 
+  <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a> 
+  <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img class="ImgLogo" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> 
+  <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> 
+  <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" title="網路內容分級協會" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

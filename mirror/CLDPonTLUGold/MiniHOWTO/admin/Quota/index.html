@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+ 
+ <title>Mini HOWTO：Quota</title>
+ <link href="../../style.css" rel="stylesheet" type="text/css" />
+ <link href="http://tldp.org/HOWTO/mini/Quota.html" rel="alternate" title="原版" />
+ <link href="Quota-1.html" rel="next" title="1.什麼是 Quota?" />
+ <link href="Quota-1.html" rel="chapter" title="1.什麼是 Quota?" />
+ <link href="Quota-2.html" rel="chapter" title="2.Quota 目前在 Linux 上的情況" /> 
+ <link href="Quota-3.html" rel="chapter" title="3.在 Linux 上使用 Quota 的需求" />
+ <link href="Quota-4.html" rel="chapter" title="4.在 Linux 上設定 quota - 第一部份: 配置" />
+ <link href="Quota-5.html" rel="chapter" title="5.第二部份-為使用者和群組指定 Quota" />
+ <link href="Quota-6.html" rel="chapter" title="6.其它的 Quota 指令" />
+ <meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+ <meta name="Description" content="這份文件的版權由 Albert M.C. Tam (bertie@scn.org) 所保留。 同意這份文件的使用、複製，因此非商業性的散布是允許的，但是所有的 拷貝以及／或是沒有修改直接援用的文件上須有作者與編者的名字及這份 注意事項。這份文件是因為希望能有所幫助而散布的，但不負任何責任， 無論是明白的或隱含的。雖然能夠確定這份文件裡的資訊之正確性的所有 工作都做了，作者／編者／維護者對於錯誤，或是因為使用這份文件所含 的資訊而造成任何毀損的結果沒有任何責任。 這份文件描述如何在 Linux 主機上啟用檔案系統的 quota ， 為使用者 指定 quota ，以及其它 quota 指令的用法。它適用執行 2.x 版核心 的使用者（最近在 Red Hat 4.1 核心 2.0.27 上測試過）。建議舊版核 心的使用者進行更新。 如果你發現其中有錯誤，或者是遺漏了任何資訊，請不要在意將它們寄給 bertie@scn.org。我會很感激的!" />
+ <link href="Quota.rdf" rel="meta" title="各章節的說明資訊" />
+ <link href="index.html" rel="start" />
+ <link href="index.html#content" rel="contents" />
+</head> <body> 
+<h1>Mini HOWTO：Quota</h1>
+<p>Ralf van Dooren r.vdooren@snow.nl<br />
+v0.3, April 2002<br />
+翻譯日期：1996/09/20 1997/10/21<br />
+翻譯維護：asdchen@ms1.hinet.net<br />
+修 訂：cwhuang@phys.ntu.edu.tw (1997/10/21)</p>
+<h2>摘要</h2>
+<p>這份文件的版權由 Albert M.C. Tam (<a href="mailto:bertie@scn.org">bertie@scn.org</a>) 所保留。 同意這份文件的使用、複製，因此非商業性的散布是允許的，但是所有的 拷貝以及／或是沒有修改直接援用的文件上須有作者與編者的名字及這份 注意事項。這份文件是因為希望能有所幫助而散布的，但不負任何責任，
+  無論是明白的或隱含的。雖然能夠確定這份文件裡的資訊之正確性的所有 工作都做了，作者／編者／維護者對於錯誤，或是因為使用這份文件所含 的資訊而造成任何毀損的結果沒有任何責任。
+  這份文件描述如何在 Linux 主機上啟用檔案系統的 quota ， 為使用者 指定 quota ，以及其它 quota 指令的用法。它適用執行 2.x
+  版核心 的使用者（最近在 Red Hat 4.1 核心 2.0.27 上測試過）。建議舊版核 心的使用者進行更新。
+如果你發現其中有錯誤，或者是遺漏了任何資訊，請不要在意將它們寄給 <a href="mailto:bertie@scn.org">bertie@scn.org</a>。我會很感激的!</p>
+<h2><a name="content" id="content"></a>目錄</h2>
+<ol>
+  <li><a href="Quota-1.html">什麼是 Quota?</a></li>
+  <li><a href="Quota-2.html">Quota 目前在 Linux 上的情況</a></li>
+  <li><a href="Quota-3.html">在 Linux 上使用 Quota 的需求</a><br />
+  3.1 <a href="Quota-3.html#ss3.1">核心</a><br />
+  3.2 <a href="Quota-3.html#ss3.2">Quota 軟體</a></li>
+  <li><a href="Quota-4.html">在 Linux 上設定 quota - 第一部份: 配置</a><br />
+  4.1 <a href="Quota-4.html#ss4.1">配置你的核心</a><br />
+  4.2 <a href="Quota-4.html#ss4.2">編譯並安裝 quota 軟體</a><br />
+  4.3 <a href="Quota-4.html#ss4.3">修改你系統的啟動指令稿以檢查 quota 並且在啟動時期打開 quota</a><br />
+  4.4 <a href="Quota-4.html#ss4.4">修改 /etc/fstab</a><br />
+  4.5 <a href="Quota-4.html#ss4.5">建立 &quot;quota.user&quot; 這個
+  quota 記錄</a><br />
+  4.6 <a href="Quota-4.html#ss4.6">重新啟動</a></li>
+  <li><a href="Quota-5.html">第二部份-為使用者和群組指定 Quota</a><br />
+  5.1 <a href="Quota-5.html#ss5.1">為特定使用者指定 quota</a><br />
+  5.2 <a href="Quota-5.html#ss5.2">為特定群組指定 quota</a><br />
+  5.3 <a href="Quota-5.html#ss5.3">為一群使用者指定相同的 quota 值</a><br />
+  5.4 <a href="Quota-5.html#ss5.4">軟性限制</a><br />
+  5.5 <a href="Quota-5.html#ss5.5">硬性限制</a><br />
+  5.6 <a href="Quota-5.html#ss5.6">緩衝期間</a></li>
+  <li><a href="Quota-6.html">其它的 Quota 指令</a><br />
+  6.1 <a href="Quota-6.html#ss6.1">Quotacheck</a><br />
+  6.2 <a href="Quota-6.html#ss6.2">Repquota</a><br />
+  6.3 <a href="Quota-6.html#ss6.3">Quotaon 以及 Quotaoff</a> </li>
+</ol>
+<hr />
+<table
+
+
+
+
+>
+  <tr
+>
+    <td class="BtdL"
+>&nbsp;</td
+>
+    <td class="BtdC"
+><a href="../../os/Partition-Rescue/index.html" accesskey="H">目錄(H)</a></td
+>
+    <td class="BtdR"
+><a
+href="Quota-1.html"
+>下一頁(N)</a
+></td
+>
+  </tr
+>
+  <tr
+>
+    <td class="BtdL"
+>&nbsp;</td
+>
+    <td class="BtdC"
+><a href="index.html" accesskey="T">到頂層(T)</a></td
+>
+    <td class="BtdR"
+>什麼是 Quota?</td
+>
+  </tr
+>
+</table
+>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img class="ImgLogo" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" title="網路內容分級協會" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

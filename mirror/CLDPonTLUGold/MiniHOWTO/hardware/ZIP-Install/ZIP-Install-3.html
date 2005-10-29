@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head><title>3. 設定 ZIP 磁片</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link 
+href="ZIP-Install-4.html" rel="next" title="4. Red Hat 4.2 的安裝" />
+<link href="ZIP-Install-2.html" 
+rel="previous" title="2. 介紹" />
+<link href="ZIP-Install-1.html" rel="chapter" title="1.聲明" />
+<link href="ZIP-Install-2.html" rel="chapter" title="2.介紹" />
+<link href="ZIP-Install-3.html" rel="chapter" title="3.設定 ZIP 磁片" />
+<link href="ZIP-Install-4.html" rel="chapter" title="4.Red Hat 4.2 的安裝" />
+<link href="ZIP-Install-5.html" rel="chapter" title="5.Slackware 2.2 的安裝" />
+<link href="ZIP-Install-6.html" rel="chapter" title="6.設立 /etc/fstab " />
+<link href="ZIP-Install-7.html" rel="chapter" title="7.Debian 的安裝" />
+<link href="ZIP-Install-8.html" rel="chapter" title="8.後言" />
+<link href="index.html" rel="start" />
+<link href="index.html#content" rel="contents" />
+<link href="http://www.tldp.org/HOWTO/mini/ZIP-Install.html" rel="alternate" title="原版" />
+<meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+<link href="../../style.css" rel="stylesheet" type="text/css" />
+<link href="ZIP-Install-3.html#ss3.1" rel="section" title="3.1. 分割(Partitioning) ZIP 磁片" />
+<link href="ZIP-Install-3.html#ss3.2" rel="section" title="3.2. 格式化(Formatting)和掛載(Mounting) ZIP 磁片" />
+<link href="ZIP-Install-3.html#ss3.3" rel="section" title="3.3. 建立開機磁片(Boot disk)" />
+<meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+<link href="ZIP-Install.rdf" rel="meta" title="各章節的說明資訊" />
+</head>
+<body>
+<table
+
+
+
+
+>
+  <tr
+>
+    <th
+colspan="3" class="HdTitle"
+>Mini
+      HOWTO：Installing Linux on ZIP disk using ppa ZIP Drive</th>
+  </tr
+>
+  <tr
+>
+    <td class="TtdL"
+><a href="ZIP-Install-2.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="TtdC"
+></td
+>
+    <td class="TtdR"
+><a href="ZIP-Install-4.html" accesskey="N">下一頁(N)</a></td
+>
+  </tr
+>
+</table
+>
+<hr />
+
+<h1>3. 設定 ZIP 磁片</h1>
+<p> (適用於 Red Hat 和 Slackware 版本。) 在開始之前先確定你可以使用 ZIP 機;
+  在 kernel(核心) 中有支援 ppa 或是安裝 ppa 的模組(module)。
+有一個簡單的方法可以檢查:</p>
+<pre class="sample"> dmesg</pre>
+<p> 假如 dmesg 的內容相當長，你可以管式輸送(pipe)到 more 。</p>
+<p>  譯註: 即是  </p>
+<pre class="sample"> dmesg | more  </pre>
+<p> 下列是我的輸出的一部分:</p>
+<pre class="sample">scsi0 : PPA driver version 0.26 using 4-bit mode on port 0x3bc.
+scsi : 1 host.
+Vendor: IOMEGA Model: ZIP 100 Rev: D.08
+Type: Direct-Access ANSI SCSI revision: 02
+Detected scsi removable disk sda at scsi0, channel 0, id 6, lun 0
+SCSI device sda: hdwr sector= 512 bytes. Sectors= 196608 [96 MB] [0.1 GB]
+sda: Write Protect is off
+sda: sda1 sda2
+</pre>
+<p>假如你看到的東西像:</p>
+<pre class="sample">  scsi : 0 hosts.
+
+  scsi : detected total.</pre>
+<p> 表示你有 SCSI 的支援，但沒有發現 ZIP 機。</p>
+<h2><a name="ss3.1" id="ss3.1"></a>3.1. 分割(Partitioning) ZIP 磁片</h2>
+<p> 要分割 ZIP 磁片，執行 fdisk</p>
+<pre class="sample"> fdisk /dev/sda</pre>
+<p> 下面列出我設定的分割表(Partition table):</p>
+<pre class="sample">  Disk /dev/sda: 64 heads, 32 sectors, 96 cylinders
+  Units = cylinders of 2048 * 512 bytes
+  
+  Device Boot Begin Start End Blocks Id System
+/dev/sda1   1    1 81  82928 83 Linux native
+/dev/sda2  82   82 96  15360 82 Linux swap
+</pre>
+<p>  因為我想要能夠使用這個(ZIP 磁片)在任何機器上，我決定要有一個 Swap 分區
+(Partition)。</p>
+<h2><a name="ss3.2" id="ss3.2"></a>3.2. 格式化(Formatting)和掛載(Mounting) ZIP 磁片</h2>
+<p> 在執行 fidsk 之後，格式化新的分區(Partition):</p>
+<pre class="sample">   mke2fs -c /dev/sda1</pre>
+<p> 最後你將需要掛載上 ZIP 磁片:</p>
+<pre class="sample"> mount /dev/sda1 /iomega -t ext2</pre>
+<p>譯註:你也需要格式化 Swap 分區:</p>
+<pre class="sample"> mkswap -c /dev/sda2</pre>
+<h2><a name="ss3.3" id="ss3.3"></a>3.3. 建立開機磁片(Boot disk)</h2>
+<p> 因為 ppa (印表機埠)版本的 ZIP 驅動程式不是真正的 SCSI device(裝置)，即它
+  不是可開機的裝置。 所以需要一個核心(kernel)含有 ppa 支援而不是模組化的
+開機磁片。</p>
+<h3>3.3.1. 設定和製作核心(Kernel)</h3>
+<p> 首先你需要設定(Configure)和製作(Make)一個核心(kernel)，其中要有啟動 ppa
+支援的設定而不只是設定成可載入式的模組。</p>
+<p> 為了要有 ppa 的選擇，選擇 SCSI support:</p>
+<pre class="sample">  SCSI support (CONFIG_SCSI) Y/m/n/?</pre>
+<p> 另外，SCSI disk support:</p>
+<pre class="sample">  SCSI disk support (CONFIG_BLK_DEV_SD) Y/m/n/?</pre>
+<p> 最後，在 SCSI low-level drivers 之下是 ppa support:</p>
+<pre class="sample">IOMEGA Parallel Port ZIP drive SCSI support (CONFIG_SCSI_PPA) Y/m/n/?</pre>
+<p>  再一次提醒，確定不要包含 ppa 成為模組(module)而是要在核心(kernel)中。
+  另外，因未使用 parport kernel patch (見 4.1)， ppa 驅動程式不允許 ZIP 
+  機上的被動式埠給印表機使用，你可能必須在 parallel printer support 上
+選擇 no:</p>
+<pre class="sample">  Parallel printer support (CONFIG_PRINTER) N/y/m/?</pre>
+<p>  NOTE: 關於 ppa 驅動程式進一步的資料，請參考 ZIP-Drive mini-HOWTO。</p>
+<p> 一旦設定好核心(kernel)，製作(make)核心:</p>
+<pre class="sample"> make dep; make clean; make zImage</pre>
+<p> 新的核心(kernel)應該出現在 arch/i386/boot/zImage。</p>
+<h4>3.3.2.1. 安裝 LILO</h4>
+<p> 對於那些必須或是不管如何就是要有數個核心((kernel)在同一張磁片上的人，
+  或僅是要能夠傳參數(例如單一使用者模式)，我收到 email 關於如何在磁片上
+安裝 LILO。 </p>
+<h5>3.3.2.1.1. 建立 ext2 檔案系統</h5>
+<p> 在磁片上建立 ext2 檔案系統，只要做和 ZIP 磁片相同的命令:</p>
+<pre class="sample"> mke2fs -t /dev/fd0</pre>
+<h5>3.3.2.1.2. 拷貝基本的檔案</h5>
+<p> 再來是確定有一個目錄(directory)可做掛載點(mount point)，和掛載軟碟
+(我使用 /mnt/floppy): </p>
+<pre class="sample"> mount /dev/fd0 /mnt/floppy -t ext2</pre>
+<p> 為了要可順利開機，你需要用你現在安裝好的 Linux 中 LILO 使用的相同檔案。    </p>
+<p>  NOTE: 這些檔案是從我的機器中出現的位置，可能不是每個人的都相同。</p>
+<pre class="sample">cp /boot/boot.b /mnt/floppy
+
+cp /boot/map /mnt/floppy
+
+cp /usr/src/linux/arch/i386/boot/zImage /mnt/floppy/vmlinuzDESK
+
+</pre>
+<p> 現在為了建立 LILO 的 config 檔案，我忘了要有 liloconfig 這個程式 (感謝
+  Javier Rodriguez 提供這資料)。 首先給在 ZIP 磁片上的那些核心建立 LILO 
+  的 config 檔案 (/mnt/floppy/lilo.conf)。 下面是我使用的，能讓我同時有不
+  同的核心可測試:</p>
+<pre class="sample">boot=/dev/fd0
+map=/mnt/floppy/map
+install=/mnt/floppy/boot.b
+prompt
+compact
+timeout=50
+image=/mnt/floppy/vmlinuzLAP
+label=Laptop
+root=/dev/sda1
+read-only
+image=/mnt/floppy/vmlinuzDESK
+label=Desktop 
+root=/dev/sda1
+read-only
+image=/mnt/floppy/vmlinuzDESK
+label=rescue
+root=/dev/hdc1
+read-only </pre>
+<p> 我有兩個核心，一個是給需要在核心中有數學模擬程式的筆記型 486，另一是
+給我桌上型電腦用。 其中 rescue 是為了讓我可緊急開機到硬碟上。</p>
+<p> 最後，在軟碟仍然掛載時，執行 LILO 去安裝到軟碟上:</p>
+<pre class="sample"> lilo -C /mnt/floppy/lilo.conf</pre>
+<p> 一旦 LILO 被安裝好在磁片上，跳過下面兩個步驟，除非你喜歡再做一遍。 </p>
+<h4>3.3.2.2. 單獨核心的安裝</h4>
+<p>  NOTE:這不適於 LILO 的安裝。</p>
+<p> 拷貝新造的核心(kernel)到軟碟上:</p>
+<pre class="sample"> cp arch/i386/boot/zImage /dev/fd0</pre>
+<p> 或</p>
+<pre class="sample">  cat arch/i386/boot/zImage &gt; /dev/fd0</pre>
+<p>是的，雖然有許多方法可以拷貝核心到磁碟片上，但最後的方法是有一些神祕，
+  也是我的最喜歡的。 試著不要忘記 '&gt;'，除非你喜歡看二元檔案。 :)</p>
+<h5>3.3.2.2.1. 設定軟碟的根目錄(root)和 swap</h5>
+<p>  NOTE:這不適合於 LILO 的安裝。  </p>
+<p> 一旦核心在軟碟上，你需要設定根目錄設備(root device)到 ZIP磁片上:</p>
+<pre class="sample"> rdev /dev/fd0 /dev/sda1</pre>
+<p> 我不確定下一個選項是否必要，但我不管如何還是做了:</p>
+<pre class="sample">  ==&gt; rdev -s /dev/fd0 /dev/sda2</pre>
+<p>  譯註:根據作者的 ZIP 磁片分割法，/dev/sda1 是 Linux 的分區，/dev/sda2
+  是 swap 分區，若你的方法不同時，則必須改變 sda 後的數字為正確的分
+區號碼(Partition number)。</p>
+<p></p>
+<hr/>
+<table
+
+
+
+
+>
+  <tr
+>
+    <td class="BtdL"
+><a href="ZIP-Install-2.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="BtdC"
+><a href="index.html" accesskey="H">目錄(H)</a></td
+>
+    <td class="BtdR"
+><a
+href="ZIP-Install-4.html"
+>下一頁(N)</a
+></td
+>
+  </tr
+>
+  <tr
+>
+    <td class="BtdL"
+>介紹</td
+>
+    <td class="BtdC"
+><a href="ZIP-Install-3.html" accesskey="T">到頂層(T)</a></td
+>
+    <td class="BtdR"
+>Red Hat 4.2 的安裝</td
+>
+  </tr
+>
+</table
+>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" width="88" height="31" style="border:0;width:88px;height:31px"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img style="border:0;width:88px;height:31px" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img style="border:0;width:88px;height:32px" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" style="border:0" alt="表示該網頁支援資源描述架構"/></a></div>
+</body></html>

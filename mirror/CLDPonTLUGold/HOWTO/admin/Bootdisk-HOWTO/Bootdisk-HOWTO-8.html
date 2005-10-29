@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+ 
+ <title>The Linux Bootdisk HOWTO: 其它各種主題 -- Miscellaneous topics</title>
+ <link href="Bootdisk-HOWTO-9.html"  rel="next" title="9. How the pros do it" />
+ <link href="Bootdisk-HOWTO-7.html"  rel="previous" title="7. 問題解決" />
+ <link href="../../style.css" rel="stylesheet" type="text/css" />
+ <link href="Bootdisk-HOWTO-1.html" rel="chapter" title="1.前言" />
+<link href="Bootdisk-HOWTO-2.html" rel="chapter" title="2.簡介" />
+<link href="Bootdisk-HOWTO-3.html" rel="chapter" title="3.Bootdisks與開機流程" />
+<link href="Bootdisk-HOWTO-4.html" rel="chapter" title="4.建立一個root filesystem" />
+<link href="Bootdisk-HOWTO-5.html" rel="chapter" title="5.選擇一個 kernel" />
+<link href="Bootdisk-HOWTO-6.html" rel="chapter" title="6.把它們放在一起：製作磁片(組)" />
+<link href="Bootdisk-HOWTO-7.html" rel="chapter" title="7.問題解決 " />
+<link href="Bootdisk-HOWTO-8.html" rel="chapter" title="8.其它各種主題" />
+<link href="Bootdisk-HOWTO-9.html" rel="chapter" title="9.How the pros do it" />
+<link href="Bootdisk-HOWTO-10.html" title="10.常見問題 (FAQ) 列表" />
+<link href="Bootdisk-HOWTO-11.html" title="11.資源與指示" />
+<link href="Bootdisk-HOWTO-12.html" title="12.LILO boot error codes" />
+<link href="Bootdisk-HOWTO-13.html" title="13.Root filesystem 列表樣本" />
+<link href="Bootdisk-HOWTO-14.html" title="14.工具程式磁片 (utility disk) 目錄列表樣本" />
+<meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+<link href="http://tldp.org/HOWTO/Bootdisk-HOWTO/index.html" rel="alternate" title="原版" />
+<link href="Bootdisk-HOWTO.rdf" rel="meta" title="各章節的說明資訊" />
+<link href="Bootdisk-HOWTO-8.html#ss8.1" rel="section" title="8.1 減少 root filesystem 的 size" />
+<link href="http://metalab.unc.edu/pub/Linux/system/shells/" rel="bookmark" title="可替代的 Shell" />
+<link href="Bootdisk-HOWTO-8.html#ss8.2" rel="section" title="8.2 Non-ramdisk root filesystems " />
+<link href="Bootdisk-HOWTO-8.html#ss8.3" rel="section" title="8.3 建造一張工具磁片" />
+<link href="index.html" rel="start" />
+<link href="index.html#content" rel="contents" />
+</head> <body   >
+<table >
+  <tr>
+    <th colspan="3" class="HdTitle">HOWTO：The
+      Linux Bootdisk</th>
+  </tr>
+  <tr>
+    <td class="TtdL"> <a href="Bootdisk-HOWTO-7.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="TtdC">&nbsp;</td>
+    <td class="TtdR"> <a href="Bootdisk-HOWTO-9.html" accesskey="N">下一頁(N)</a> </td>
+  </tr>
+</table>
+<hr />
+<h1>8. 其它各種主題</h1>
+
+
+
+<h2><a name="ss8.1" id="ss8.1"></a>8.1 減少 root filesystem 的 size</h2>
+
+<p>有時 root filesystem 會因太大而無法塞入一張軟碟片內，甚至在壓縮過後還是這樣。這裡有一些方法可減少 filesystem 的 size ：</p>
+<ol>
+<li><em> 增加磁碟片密度 (density)</em> 。
+依照預設，軟碟片會以 1440 K 來進行格式化，但是現在也有更高密度的格式。 fdformat會為以下 sizes 的磁片進行格式化： 1600, 1680, 1722, 1743, 1760, 1840, 以及 1920 。大部分的 1440 K 軟碟機可支援 1722 K ，我一直都是使用這個來製作 bootdisks 。請參考 <code>fdformat</code> man page與 /usr/src/linux/Documentation/devices.txt 。
+</li>
+<li> <em> 替換你的 shell</em> 。
+一些在 Linux 上廣受歡迎的 shells ，諸如 <code>bash</code> 與 <code>tcsh</code> ，是相當大且需要許多函式庫。 Light-weight 的選擇於是存在，諸如 <code>ash</code>, <code>lsh</code>, <code>kiss</code> 與 <code>smash</code>，它們小很多而且只需要很少 (或是不需要)函式庫。大部分這些用來代替的 shells 可以在 
+<a href="http://metalab.unc.edu/pub/Linux/system/shells/">http://metalab.unc.edu/pub/Linux/system/shells/</a> 找得到。請確定你所使用的任何 shell ，能夠執行你放在你 bootdisk 內的所有 rc 檔案中的指令。
+</li>
+<li><em> 刪去函式庫與二進位檔 </em>。
+很多函式庫與二進位檔一般而言是未被刪去的 (包括debugging symbols)。如果如此，對這些檔案執行 <code>file</code> 會告訴你 ``<code>not stripped</code>''
+。
+
+
+當 copy 二進位檔到你的 root filesystem 時，這是一個好練習去使用：
+<pre class="sample">
+      objcopy --strip-all FROM TO
+</pre>
+當 copy 函式庫時，請確定使用的是 <code>strip-debug</code> 而不是 <code>strip-all</code> 。
+</li>
+<li> 如果你在製作 root filesystem 時，刪除或移動過多檔案，請再重新製作一次。請看上述關於不要在 filesystem 內有 dirty blocks 之重要性的注意事項。
+</li>
+<li> <em> 移動非關鍵檔案到工具磁片 (utility disk) 上 </em> 。
+如果你的一些二進位檔對 boot 或 login 來說並非立即需要，那麼你就可以把它們移到工具磁片上。細節請看 
+<a href="#UtilityDisk">Building a utility disk</a> 這一節。你同樣可考慮把 modules 移到工具磁片上。</li>
+</ol>
+
+
+<h2><a name="ss8.2" id="ss8.2"></a>8.2 Non-ramdisk root filesystems </h2>
+
+<p>
+<a href="Bootdisk-HOWTO-4.html#BuildRoot" >Building a root filesystem</a> 這一節曾給予指示以建造一個壓縮的 root filesystem ，它會在系統開機時被載入到 ramdisk 。這個方法有許多優點，所以通常都採用此法。然而，一些只有一點點記憶體的系統無法負擔此法所需的 RAM ，因此，這些系統必須使用直接從軟碟片掛上的 root filesystems 。</p>
+<p>這樣的 filesystems 實際上比壓縮的 root filesystems 更容易建造，因為它們可以被造在一張磁片上，而非某個其它的設備上，另外，它們也不必被壓縮。當異於前述的指示時，我們將敘述該程序的要點。如果你選擇這樣做，請記得你可獲得的剩餘 <em> 空間會變少 </em> 。</p>
+<ol>
+<li> 請計算你將有多少空間可供 root files 使用。
+
+如果你建造的是一張單一的 boot/root 磁片，你必須讓所有給 kernel 的 blocks 以及所有給 root filesystem 的 blocks 都能容納於同一張磁片上。
+</li>
+<li> 使用 <code>mke2fs</code> ，在適當 size 的軟碟片上造出一個 root filesystem 。
+</li>
+<li> 如同前述的方法殖入於此 filesystem 。
+</li>
+<li> 完成後， unmount 此 filesystem 並且傳送它使之成為一個磁片檔案，但是 <em> 不要壓縮它 </em> 。
+</li>
+<li> 以前述之方法，把 kernel 傳送到一張軟碟片上。當計算 ramdisk word 時， <em> 把 bit 14 設成 0</em> ，以指示不要把 root filesystem 載入到 ramdisk 。請以前述之方法執行 <code>rdev</code> 指令。</li>
+<li> 如同以往，傳送此 root filesystem 。</li>
+</ol>
+
+<p>有好幾種捷徑你可採用。如果你建造的是一套雙磁片組，你可以直接把完整的 root filesystem建造在第二張磁片上，而且你並不需要把它傳送成一個硬碟檔案然後再存回磁片上。同樣地，如果你建造的是一張單一的 boot/root 磁片而且使用 LILO ，你可以在整張磁片上建立 <em> 單一的 </em>filesystem，包含 kernel 、 LILO files 與 root files ，然後只要執行 LILO 做為最後一步。</p>
+
+<h2><a name="ss8.3" id="ss8.3"></a>8.3 建造一張工具磁片</h2>
+
+<p>建造一張工具磁片相對來說簡單多了 -- 只要在一張已格式化的磁片上造出一個 filesystem ，然後 copy 檔案於其上即可。為了跟 bootdisk 一起使用它，請在系統啟動以後，用手動的方式 mount 它。</p>
+<p>在前面的指示中，我們曾提及 utility disk 可以被 mount 做為 /usr 。在這個情況下，二進位檔可以被放在你 utility disk 之 /bin 目錄內，以便於將 /usr/bin 設入你的 path 中可以存取它們。二進位檔所需之其它函式庫被放在 utility disk 之 /lib 目錄內。</p>
+<p>當設計 utilitu disk 時，有幾個重點要記住：</p>
+<p></p>
+<ol>
+<li> 不要把關鍵的系統二進位檔或函式庫放到 utility disk 上，因為直到系統順利啟動之前， utility disk 不會被掛上，其上的檔案也無法供系統使用。
+</li>
+<li> 你不能同時存取一張軟碟片與一台磁帶機。意指如果你有一台磁帶機，那麼當你正在使用 (mount) utility disk 時，你將不能存取那台磁帶機。
+</li>
+<li> 存取 utility disk 上的檔案會很慢。</li>
+</ol>
+
+<p>
+<a href="Bootdisk-HOWTO-14.html#utilitylist" >Sample utility disk directory listing</a> 提供了utility disk的檔案之樣本。以下是一些建議關於一些你會發現有用的檔案：檢查與操作磁片(<code>format, fdisk</code>)、 filesystems (<code>mke2fs, fsck, debugfs, isofs.o</code>)的程式，小型的文書編輯器 (<code>elvis, jove</code>)，壓縮與檔案工具 (<code>gzip, tar, cpio, afio</code>), 磁帶工具 (<code>mt, tob, taper</code>)，通訊工具 (<code>ppp.o, slip.o, minicom</code>)與給設備使用的工具 (<code>setserial, mknod</code>)。</p>
+
+<hr/>
+<table >
+  <tr>
+    <td class="BtdL"> <a href="Bootdisk-HOWTO-7.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="BtdC"> <a href="index.html" accesskey="H">目錄(H)</a> </td>
+    <td class="BtdR"> <a href="Bootdisk-HOWTO-9.html">下一頁(N)</a> </td>
+  </tr>
+  <tr>
+    <td class="BtdL">問題解決</td>
+    <td class="BtdC"><a href="Bootdisk-HOWTO-8.html"  accesskey="T">到頂層(T)</a></td>
+    <td class="BtdR">How the pros do it</td>
+  </tr>
+</table>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img class="ImgLogo" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" title="網路內容分級協會" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

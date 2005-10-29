@@ -1,0 +1,312 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>So You Wanna Create Your Own x86 Operating System?</title>
+<link href="../../LGStyle.css" rel="stylesheet" type="text/css" />
+<link href="../../../style.css" rel="stylesheet" type="text/css" />
+</head>
+
+<body>
+<div id="GazetteLogo"><a href="http://www.linuxgazette.com/"><img src="../../gx/lglogo_200x41.png" alt="Linux Gazette 雜誌" width="200" height="41"  longdesc="../linuxgaette.rdf" /></a><br />
+  <a href="http://www.linuxgazette.com/copying.html">Copyright</a>&copy;1996-2003<br />
+  Specialized Systems Consultants, Inc.</div>
+<div class="CLDPAddr">CLDP</div>
+<div class="CLDPFull">Chinese Linux Documentation Project</div>
+<hr />
+<p class="BarTop"><a
+        href="../../../index.html" title="連到首頁" hreflang="zh-TW" accesskey="H">首頁(H)</a>｜<a
+        href="../../../howto/" title="連到和 HOWTO  相關資訊" hreflang="zh-TW" accesskey="T">HOWTO(T)</a>｜<a
+        href="../../../guide/" title="連到和指南相關的資訊" hreflang="zh-TW" accesskey="G">指南(G)</a>｜<a
+        href="../../../FAQ/" title="連到和問答集相關的資訊" hreflang="zh-TW" accesskey="F">FAQ(F)</a>｜<a
+        href="../../../man/" title="連到和手冊頁有關的資訊" hreflang="zh-TW" accesskey="M">手冊頁(M)</a>｜<a
+        href="../../index.html" title="Linux電子報為一個月發行一期的雜誌" hreflang="zh-TW" accesskey="L">Linux電子報(L)</a>｜<a
+        href="../../../LF/" title="LinuxFocus 為兩個月發行一期的雜誌" hreflang="zh-TW" accesskey="S">LinuxFocus(S)</a></p>
+<hr />
+<div class="DivCover"> 
+  <div class="TitleHead">So You Wanna Create Your Own x86 Operating System? <br />
+	By <a href="../authors/mahoney.html">Patrick Mahoney</a> </div>
+  <div> 
+    <p class="BarTop"><a href="../../index.html">Linux電子報首頁</a>｜<a href="index.html">目錄</a>｜<a href="../../faq/index.html">FAQ</a><br />
+      讓 Linux 更加有趣呦！</p>
+  </div>
+  <div> 
+    <h2>目錄</h2>
+  </div>
+  <div> 
+	<ol>
+	  <li><a href="#ss1">Introduction</a></li>
+	  <li><a href="#ss2">Description of the development environment</a><br />
+		2.1 <a href="#ss2.1">The development machine</a><br />
+		2.2 <a href="#ss2.2">The testbed machine </a></li>
+	  <li><a href="#ss3">Setup of the development environment</a><br />
+		3.1 <a href="#ss3.1">The development machine</a> <br />
+		3.2 <a href="#ss3.2">The testbed machine </a></li>
+	  <li><a href="#ss4">Testing your development environment setup...</a><br />
+		4.1 <a href="#ss4.1">...with Bochs</a> <br />
+		4.2 <a href="#ss4.2">...with your testbed machine</a></li>
+	  <li><a href="#ss5">Where to go from here </a></li>
+	  <li><a href="#ss6">Resources</a></li>
+	  <li><a href="#ss7">Thanks</a></li>
+	</ol>
+  </div>
+  <div> 
+	<h2><a name="ss1" id="ss1"></a>1. Introduction</h2>
+  </div>
+  <div> 
+	<p>One of the great difficulties a hobbyist programmer faces when trying to 
+	  start the development of his own OS is finding out where to start. Many 
+	  books describe in-depth theoretical OS concepts, yet noone seems to take 
+	  a hobyist programmer by the hand and bring him face to face with these concepts. 
+	  This is precisely what this article aims at doing. </p>
+	<p> Several articles related to this topic appeared in the last few issues 
+	  of the Linux Gazette. I plan to approach it in a much less programming oriented 
+	  manner, only presenting to the reader the tools and tips he will need to 
+	  begin the development of his own OS. Once done with this article, the interested 
+	  reader should be all set to start browsing the resources available to him 
+	  and start designing and coding.</p>
+	<p> You might not be aware of it, but operating system development doesn't 
+	  start at the beginning. (!!) Writing a solid bootloader is a whole project 
+	  in itself, and I would not advise one to begin an OS development project 
+	  by writing a bootloader. Many reliable ones are available for free (Grub, 
+	  lilo, ppcboot, etc...). If you plan on writing your own, I suggest you delay 
+	  this task to a later stage of the project. In this article, I will be using 
+	  GNU Grub, the Grand Unified Bootloader. </p>
+    </div>
+  <div> 
+	<h2><a name="ss2" id="ss2"></a>2. Description of the development environment</h2>
+  </div>
+  <div> 
+	<p>To ease the pain that OS development will bring to you, you will need to 
+	  set up an adapted development environment which meets a certain number of 
+	  requirements: </p>
+	<ul>
+	  <li>You should get to rapidly test your newly compiled kernel </li>
+	  <li>You should never have to reboot your development machine </li>
+	  <li>You should not need to use floppies as a storage medium for your OS 
+	  </li>
+	</ul>
+	<p> This article will present one of many possible environments which meets 
+	  these requirements. It will consist of a development machine and a testbed 
+	  machine that both lie on a common network. </p>
+	<h3><a name="ss2.1" id="ss2.1"></a>2.1 The development machine</h3>
+	<p>Obviously, this machine will need to be equipped with a good set of programming 
+	  tools: assembly and C compilers, a linker and a 'make' utility are musts. 
+	</p>
+	<p> A tool I found more useful than I initially thought it would be is an 
+	  emulator. Such a tool will help debug your kernel and will allow you to 
+	  rapidly test your newly added line of code. Don't be fooled, though. An 
+	  emulator never replaces a good ol' testbed machine. </p>
+	<p> Next, you need a TFTP server. This tool will allow your testbed machine's 
+	  tftp enabled bootloader to acquire a kernel from the development machine 
+	  via the network connection. </p>
+	<h3><a name="ss2.2" id="ss2.2"></a>2.2 The testbed machine</h3>
+	<p>All this machine needs is a network card and a TFTP enabled bootloader 
+	  that supports it. </p>
+	</div>
+  <div> 
+	<h2><a name="ss3" id="ss3"></a>3. Setup of the development environment</h2>
+  </div>
+  <div> 
+	<h3><a name="ss3.1" id="ss3.1"></a>3.1 The development machine</h3>
+	<p>The chosen programming tools are: </p>
+	<ul>
+	  <li>gcc 2.95.4 </li>
+	  <li>ld 2.13.90.0.10 </li>
+	</ul>
+	<p> Bochs version 1.4.1 is the chosen x86 emulator. Special care should be 
+	  taken to compile it with debugger mode enabled. These commands should do 
+	  the job: </p>
+	<pre class="sample">
+	$ ./configure --enable-x86-debugger
+	$ make
+</pre>
+	<p>In order to properly use Bochs, you need to create a disk image. This image 
+	  needs to have both a bootloader and a filesystem. This can be done using 
+	  the <a href="misc/mahoney/mkbimage">mkbimage</a> script. If you're too lazy 
+	  to do it yourself, grab <a
+href="misc/mahoney/c.img.gz">this</a> gzipped 10MB disk image and add </p>
+	<pre class="sample">
+	diskc: file=c.img, cyl=24, heads=16, spt=63
+</pre>
+	<p>to your .bochrc file. </p>
+	<p> As for the TFTP server, I chose to use atftpd. It's an easy to use linux-based 
+	  TFTP server implementation. </p>
+	<h3><a name="ss3.2" id="ss3.2"></a>3.2 The testbed machine</h3>
+	<p>The chosen bootloader is GNU Grub version 0.92. Special care should be 
+	  taken to enable Grub's tftp client to talk to your network card. My testbed 
+	  machine has a cheap NE2000 ISA clone. Following carefully the netboot/README.netboot 
+	  instructions, I used these commands: </p>
+	<pre class="sample">
+	$ ./configure --enable-ne --enable-ne-scan=0x220
+	$ make
+</pre>
+	<p>Note that a PnP PCI card would be easier to configure. Now, you can either 
+	  install the Grub images on the testbed machine's MBR or on a floppy which 
+	  your testbed machine will boot from. I prefer the latter, since my testbed 
+	  machine is also used for other purposes, and therefore, I'd rather not play 
+	  with its HD. </p>
+	<pre class="sample">
+	$ cat ./stage1/stage1 ./stage2/stage2 &gt; /dev/fd0
+</pre>
+	<p>Now just insert your floppy in your testbed machine to see if your network 
+	  card gets recognized. You can either configure it by hand or use a dhcp 
+	  server, if any. </p>
+	<pre class="sample">
+	grub&gt; dhcp
+	Probing... [NE*000]
+	NE2000 base 0x220, addr 00:C0:A8:4E:5A:76
+	Address: 192.168.22.14
+	Netmask: 255.255.255.0
+	Server: 192.168.22.1
+	Gateway: 192.168.22.1
+</pre>
+	<p>Note that you won't have to configure these parameters by hand each time 
+	  you boot. See the GNU Grub documentation and the 'grub-install' script for 
+	  details. </p>
+	<p> That's it! You're all set to test your setup! </p>
+  </div>
+  <div> 
+	<h2><a name="ss4" id="ss4"></a>4. Testing your development environment setup...</h2>
+  </div>
+  <div> 
+	<p>As I mentioned earlier, I will leave the core OS programming stuff to the 
+	  experts out there. So in order to test your setup, we will use the example 
+	  kernel from the GNU Grub sources located in the /docs directory. </p>
+	<p> The kernel is built from three source files: boot.S, kernel.c and multiboot.h. 
+	  You can build the kernel by doing: </p>
+	<pre class="sample">
+	$ gcc -I. -c ./boot.S
+	$ gcc -I. -c ./kernel.c
+	$ ld ./kernel.o ./boot.o -o kernel -Ttext 100000
+</pre>
+	<p>Here's a quick and incomplete explanation. Multiboot is a standard that 
+	  defines a way for the bootloader to pass information to the kernel it tries 
+	  to load. boot.S accepts this information, sets up a stack, and calls 'cmain'. 
+	  This function sets up the vga display, reads the information passed to him, 
+	  prints some stuff and leaves. Then, boot.S gets the control back, prints 
+	  the string 'Halted.', and enters an infinite loop. Pretty simple stuff, 
+	  right? The reader is invited to dig into the code to get more details. </p>
+	<h3><a name="ss4.1" id="ss4.1"></a>4.1 ...with Bochs</h3>
+	<p>The plan is to mount your disk image via a loopback device, copy your kernel 
+	  on the filsystem of the image, unmount it, and fire off Bochs. Of course, 
+	  you have to add an offset to the start of the filesystem. But you knew that, 
+	  right? </p>
+	<pre class="sample">
+	# /sbin/losetup -o 32256 /dev/loop1 ./c.img
+	# /bin/mount -t ext2 /dev/loop1 /mnt/osdev/
+	# cp <path-to-grub>/docs/kernel /mnt/osdev
+	# umount /mnt/osdev/
+	# /sbin/losetup /dev/loop1 -d
+	$ bochs
+</pre>
+	<p>Of course, that can be automated by your Makefile. Once in Grub, simply 
+	  do: </p>
+	<pre class="sample">
+	grub&gt; kernel (hd0,0)/kernel
+	grub&gt; boot
+</pre>
+	<a href="misc/mahoney/bochs_screenshot.jpg"> <img alt="Bochs screenshot" src="misc/mahoney/bochs_screenshot.jpg" width="400" height="220" /></a> 
+	<blockquote><em>(Click the image for the full size.)</em></blockquote>
+	<h3><a name="ss4.1" id="ss4.1"></a>4.2 ...with your testbed machine</h3>
+	<p>First, setup your TFTP server so that the client can retrieve your kernel: 
+	</p>
+	<pre class="sample">
+	# /usr/sbin/atftpd --daemon /home/bono/src/grub-0.92/docs
+</pre>
+	<p>Fire off your testbed machine. Configure your network connection as shown 
+	  above. Next, specify your devel machine's ip address as the TFTP server 
+	  address and the location of the kernel image. Note that this option can 
+	  be set by the dhcp server. Finally, start the boot process. </p>
+	<pre class="sample">
+	(...)
+
+	grub&gt; tftpserver 192.168.22.36
+	Address: 192.168.22.14
+	Netmask: 255.255.255.0
+	Server: 192.168.22.36
+	Gateway: 192.168.22.1
+
+	grub&gt; kernel (nd)/kernel
+	[Multiboot-elf, <0x100000:0x807:0x0>, <0x101808:0x0:0x4018>,
+	shtab=0x106190, entry=0x100568]
+
+	grub&gt; boot
+</pre>
+	<p>A screen similar to that of Bochs should appear on your testbed machine's 
+	  display. </p>
+	</div>
+  <div> 
+	<h2><a name="ss5" id="ss5"></a> 5. Where to go from here</h2>
+  </div>
+  <div> 
+	<p>Well you're pretty much set to start the development of your OS. Lots of 
+	  good documentation resides on the web. Browse, post, ask, think. Monolithic 
+	  or micro kernel? Segmentation or paging? </p>
+	<p> If your debugging needs come to outgrow both the emulator and your kernel's 
+	  printk's, one setup you could add to your OS is a serial debugger. This 
+	  can range from some bytes thrown on the serial port, to a gdb-compatible 
+	  remote-debugging extension. This information could be retrieved and processed 
+	  by your development machine through a null-modem serial cable. It's a handy 
+	  common practice in OS development. </p>
+</div>
+  <div> 
+	<h2><a name="ss6" id="ss6"></a>6. Resources</h2>
+  </div>
+  <div> 
+	<ul>
+	  <li><a href="http://cwx.prenhall.com/bookbind/pubbooks/tanenbaum/">Tanenbaum' 
+		os dev book</a> <br />
+		The bible of operating system development </li>
+	  <li><a href="http://groups.google.ca/groups?q=alt.os.development">alt.os.development</a> 
+		<br />
+		There, you'll find the solution to many of your problems! </li>
+	  <li>Freenode IRC's #osdev (irc.debian.org) <br />
+		Friendly folks who never go to bed! </li>
+	  <li><a href="http://osdev.berlios.de/">A few osdev tutorials</a> including 
+		Tim Robinson's. <br />
+		Tim's been there! </li>
+	  <li><a href="http://www.nondot.org/sabre/os/articles">The Operating System 
+		Resource Center</a> </li>
+	  <li><a href="http://inferno.cs.univ-paris8.fr/~am/tutorial/os/tutorial00.html">BosoKernel</a> 
+		<br />
+		Nicely done x86 beginner's tutorial. (French) </li>
+	  <li><a
+href="ftp://download.intel.com/design/PentiumII/manuals/24319202.pdf"> Intel Architecture 
+		Software Developer's Manual Volume 3: System Programming</a> <br />
+		Don't leave home without it. </li>
+	</ul>
+  </div>
+  <div> 
+	<h2><a name="ss7" id="ss7"></a>7. Thanks</h2>
+  </div>
+  <div> 
+	<p>Many thanks to all those who have accepted to patiently answer my never-ending 
+	  questions on #osdev: pavloskii, geist, oink, byrdkernel, air. </p>
+  </div>
+  <div> 
+    <h2>版權宣告</h2>
+  </div>
+  <div> 
+	<p>Copyright © 2002, Patrick Mahoney. <a href="http://www.linuxgazette.com/copying.html">Copying 
+	  license</a> Published in Issue 85 of Linux Gazette, December 2002 </p>
+  </div>
+</div>
+<hr />
+<p class="BarTop"><a
+        href="../../../index.html" title="連到首頁" hreflang="zh-TW" accesskey="H">首頁(H)</a>｜<a
+        href="../../../howto/" title="連到和 HOWTO  相關資訊" hreflang="zh-TW" accesskey="T">HOWTO(T)</a>｜<a
+        href="../../../guide/" title="連到和指南相關的資訊" hreflang="zh-TW" accesskey="G">指南(G)</a>｜<a
+        href="../../../FAQ/" title="連到和問答集相關的資訊" hreflang="zh-TW" accesskey="F">FAQ(F)</a>｜<a
+        href="../../../man/" title="連到和手冊頁有關的資訊" hreflang="zh-TW" accesskey="M">手冊頁(M)</a>｜<a
+        href="../../index.html" title="Linux電子報為一個月發行一期的雜誌" hreflang="zh-TW" accesskey="L">Linux電子報(L)</a>｜<a
+        href="../../../LF/" title="LinuxFocus 為兩個月發行一期的雜誌" hreflang="zh-TW" accesskey="S">LinuxFocus(S)</a></p>
+<hr />
+<a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" width="88" height="31" class="ImgLogo"/></a> 
+<a href="http://jigsaw.w3.org/css-validator/"><img src="../../../vcss.png"  alt="符合 CSS" width="88" height="31" class="ImgLogo"/></a> 
+<a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0" width="88" height="31" class="ImgLogo"/></a> 
+<a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" alt="表示該網頁支援資源描述架構" width="76" height="32" class="ImgLogo"/></a> 
+<a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" alt="網路內容分級協會" width="88" height="31" class="ImgLogo" title="網路內容分級協會"/></a> 
+</body>
+</html>

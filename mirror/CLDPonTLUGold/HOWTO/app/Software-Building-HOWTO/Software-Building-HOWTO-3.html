@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+ 
+ <title>3. 使用 Make</title>
+ <link href="Software-Building-HOWTO-4.html" rel="next" title="4. 克服困難" />
+ <link href="Software-Building-HOWTO-2.html" rel="previous" title="2. 從取得開始" />
+  <link href="http://tldp.org/HOWTO/Software-Building-HOWTO.html" rel="alternate" title="原版" />
+ <link href="../../style.css" rel="stylesheet" type="text/css" />
+ <link href="index.html" rel="start" title="HOWTO：Building and Installing Software Packages for Linux" />
+ <link href="index.html#content" rel="contents" />
+ <meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.rsac.org/ratingsv01.html" labels ratings (v 0 s 0 n 0 l 0))'/>
+ <link href="Software-Building-HOWTO.rdf" rel="meta" title="各章節的說明資訊" />
+ <link href="Software-Building-HOWTO-1.html" rel="chapter" title="1.簡介" />
+ <link href="Software-Building-HOWTO-2.html" rel="chapter" title="2.從取得開始" />
+ <link href="Software-Building-HOWTO-3.html" rel="chapter" title="3.使用 Make" />
+ <link href="Software-Building-HOWTO-4.html" rel="chapter" title="4.克服困難" />
+ <link href="Software-Building-HOWTO-5.html" rel="chapter" title="5.最後步驟 " />
+ <link href="Software-Building-HOWTO-6.html" rel="chapter" title="6.第一個例子: Xscrabble" />
+ <link href="Software-Building-HOWTO-7.html" rel="chapter" title="7.第二個例子: Xloadimage" />
+ <link href="Software-Building-HOWTO-8.html" rel="chapter" title="8.第三個例子: Fortune" />
+ <link href="Software-Building-HOWTO-8.html" rel="chapter" title="9.哪裏可找到原始碼檔案" />
+ <link href="Software-Building-HOWTO-10.html" rel="chapter" title="10.結語" />
+ <link href="Software-Building-HOWTO-11.html" rel="chapter" title="11.參考與進一步閱讀資料" />
+</head> <body   >
+<table >
+  <tr>
+    <th colspan="3" class="HdTitle">HOWTO：在
+      Linux 下建立軟體套件</th>
+  </tr>
+  <tr>
+    <td class="TtdL"> <a href="Software-Building-HOWTO-2.html" accesskey="P">上一頁(P)</a> 
+    </td>
+    <td class="TtdC">&nbsp;</td>
+    <td class="TtdR"> <a href="Software-Building-HOWTO-4.html" accesskey="N">下一頁(N)</a> 
+    </td>
+  </tr>
+</table>
+<hr />
+<h1>3. 使用 Make</h1>
+
+<p><code>Makefile</code> 是建立過程的重點. 在它的最簡單的形式, Makefile 
+就是個 script ,它是用來編譯或建立&quot;二元碼&quot;,套件的可執行部分.
+Makefile也可以提供軟體套件升級的工具,而不需要重新編譯每一個在套件中的原始檔案,
+但其有不同的情況(或是不同的約定).</p>
+<p>某些特點是, Makefile 開啟 <code>cc</code> 或 <code>gcc</code>.
+這實際上是個前處理器, C (or C++) 編譯器, 和 連結器, 按照那個順序.
+這過程轉換原始碼(source)為可真正去執行的二元碼(binaries).</p>
+<p>下指令 make 通常只要鍵入 make. 這通常建立討論中的套件所有需要的可執行檔. 然而, make 也做其他工作,像是安裝檔案至合適的目錄 (make 
+  install) 而且刪除舊的 object 檔案 (make clean). 執行 make -n 允許預覽建立過程, 就是列出所有 make 所喚起的(triggered)所有命令, 
+  但沒有真的去執行它們.</p>
+<p>只有在最簡單的軟體使用一般性的 Makefile. 較複雜的安裝需要根據函式庫(libraries), include 檔案以及你個別機器資源所在目錄來量身定製. 
+  這特別是當需要 <code>X11</code> libraries 來安裝建立時. Imake 和 xmkmf 可完成這樣的工作.</p>
+<p>引用自 man page,Imakefile 是個&quot;模板(template)&quot;的 Makefile.
+imake 工具參考 Imakefile 根據你的系統造出合適的 Makefile.
+然而,幾乎在所有的情況下,你要執行 xmkmf, 它是要下 imake 指令用的 shell script,
+也就是個前端介面(front end). 察閱一下內附在軟體檔案間的 README 或 INSTALL 
+檔案以取得特別的指示. 至於更詳細的步驟分析,請閱讀 imake 和 xmkmf 的 man pages.</p>
+<p>要知道的是 xmkmf 和 make 可能需要以 root 身分來下指令, 特別是當 make install 來搬移二元碼到 <code>/usr/bin</code> 
+  或 <code>/usr/local/bin</code> 目錄. 以一般使用者的身分而不具 root 權力 來使用 make 將可能會導致 <code>write 
+  access denied</code> 的錯誤訊息, 因為你缺少寫入(write)至系統目錄的權限. 也檢查一下, 所造出來的二元碼對你與任何其他適用的使用者有適合的執行(execute)權限.</p>
+<p>下指令 xmkmf 來使用 Imake 檔案, 建立一個新的而且適合你系統的 Makefile. 正常地下指令 xmkmf 都會附加 -a 引數, 因而自動地做 
+  make Makefiles, make includes, 和 make depend 的動作. 這會設定變數(variables)和給定函式庫(library) 
+  位置給編譯器和連結器. 有時會沒有 Imake 檔案, 引而代之的是有 INSTALL 和 configure 的 script, 也會到這樣的目的. 
+  注意的是如果你要執行 configure, 那要下指令 ./configure 以確保在目前目錄下正確的 script configure 是被呼叫. 
+  在大部分的情況, 在發行套件中的 README 檔案會說明安裝步驟.</p>
+<p>通常一個好的方法是從外觀檢視一下 <code>Makefile</code> 是 <code>xmkmf</code> 或
+其中一個安裝的 scripts 所造出來的.  Makefile 正常下會為你的系統而修正,
+但你偶而可能需要&quot;旋扭(tweak)&quot;或手動地修正錯誤.</p>
+
+<p>你的一般安裝步驟將會是:</p>
+<ul>
+  <li>讀一下 README 檔案和其它合用的文件.</li>
+  <li>執行 xmkmf -a, 還是 INSTALL 或 configure script.</li>
+<li>檢查一下 <code>Makefile</code>.</li>
+<li>如果需要, 執行一下 make clean, make Makefiles,  
+make includes, and make depend.</li>
+<li>執行 make.</li>
+<li>檢查一下權限.</li>
+<li>如果需要, 執行一下 make install.</li>
+</ul>
+
+
+
+<hr />
+<table >
+  <tr>
+    <td class="BtdL"> <a href="Software-Building-HOWTO-2.html" accesskey="P">上一頁(P)</a> 
+    </td>
+    <td class="BtdC"> <a href="index.html" accesskey="H">目錄(H)</a> </td>
+    <td class="BtdR"> <a href="Software-Building-HOWTO-4.html">下一頁(N)</a> </td>
+  </tr>
+  <tr>
+    <td class="BtdL">從取得開始</td>
+    <td class="BtdC"><a href="Software-Building-HOWTO-3.html"  accesskey="T">到頂層(T)</a></td>
+    <td class="BtdR">克服困難</td>
+  </tr>
+</table>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img class="ImgLogo" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" title="網路內容分級協會" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

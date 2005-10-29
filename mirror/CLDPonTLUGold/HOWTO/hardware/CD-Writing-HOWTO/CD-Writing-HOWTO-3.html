@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>3. 燒錄光碟</title>
+<link href="CD-Writing-HOWTO-4.html" rel="next" title="4. 常問問題及答案" />
+<link href="CD-Writing-HOWTO-2.html" rel="previous" title="設定你的 Linux 系統來燒錄光碟" />
+<link href="http://tldp.org/HOWTO/CD-Writing-HOWTO.html" rel="alternate" title="原版" />
+<link href="../../style.css" rel="stylesheet" type="text/css" />
+<link href="CD-Writing-HOWTO-1.html" rel="chapter" title="1.簡介" />
+<link href="CD-Writing-HOWTO-2.html" rel="chapter" title="2.設定你的 Linux 系統來燒錄光碟" />
+<link href="CD-Writing-HOWTO-3.html" rel="chapter" title="3.燒錄光碟" />
+<link href="CD-Writing-HOWTO-4.html" rel="chapter" title="4.常問問題及答案" />
+<link href="CD-Writing-HOWTO-5.html" rel="chapter" title="5.問題解決" />
+<link href="CD-Writing-HOWTO-6.html" rel="chapter" title="6.嗚謝 (這段不譯) " />
+<link href="CD-Writing-HOWTO-3.html#ss3.1" rel="section" title="3.1 燒錄光碟片 (純資料) " />
+<link href="CD-Writing-HOWTO-3.html#ss3.2" rel="section" title="3.2 燒錄音樂光碟 " />
+<link href="CD-Writing-HOWTO-3.html#ss3.3" rel="section" title="3.3 混合式光碟" />
+<meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+<link href="CD-Writing-HOWTO.rdf" rel="meta" title="各章節的說明資訊" />
+</head> <body >
+<table >
+  <tr>
+    <th colspan="3" class="HdTitle">HOWTO：CD-Writing</th>
+  </tr>
+  <tr>
+    <td class="TtdL"> <a href="CD-Writing-HOWTO-3.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="TtdC">&nbsp;</td>
+    <td class="TtdR"> <a href="CD-Writing-HOWTO-4.html" accesskey="N">下一頁(N)</a> </td>
+  </tr>
+</table>
+<hr />
+<h1>3. 燒錄光碟</h1>
+
+<p>"If to smoke you turn I shall not cease to fiddle while you burn." (Roman emperor 
+Nero about burning his own classic-CDs, AD64. He misunderstood it completely.) </p>
+<p>在 Linux 下燒錄光碟有以下兩個步驟：</p>
+<ul>
+  <li> 將所需的資籵 ( 檔案，音樂或全部 ) 包裝成一些特別格式的檔案。</li>
+  <li> 用<code>cdrecord</code> 將這些檔案寫入光碟中。</li>
+</ul>
+<p>這一章會詳盡講解燒錄資料及音樂光碟的步驟。</p>
+
+
+<h2><a name="ss3.1" id="ss3.1"></a>3.1 燒錄光碟片 (純資料) </h2>
+
+<p>請留意，由於收集軟件所需的時間總會比預計中的長，故此有一個需要考慮的
+問題，便是後期才找到的檔案不能寫入原先燒錄過或已完成燒錄的光碟。</p>
+<p>&lt;!-
+可重寫光碟隨時都可以在空餘的位置寫入資料，只要你沒有關閉光碟，再在光
+碟開一個區域，變成multi-session 光碟，便可寫入資料，不過這個做法也
+有缺點，就是會浪費檔案目錄表的空間。
+-->
+還要緊記光碟中有一定容量的空間會用作儲存ISO-9660-檔案系統的資料，通
+常會用上數MB，所以一隻650MB的光碟，實際上只有約620MB可用。</p>
+
+<h3>建立光碟影像檔</h3>
+
+<p>任何一種儲存媒體，不論軟片，硬碟，抑或光碟，在使用前都必須先建立
+檔案系統，在DOS而言即格式化，使其擁有一個檔案系統。這個檔案系統
+將會用作組織及合併儲存媒體上的檔案。</p>
+<p>一般用來格式化硬碟機分割區的工具都會先寫入一個空的檔案系統到硬碟分割區中，
+然後它便會被掛上和在使用者有需的時才抄寫檔案在其中。不過一隻可燒錄光碟只能
+寫入一次，如果我們寫入一個空的檔案系統，它就會被格式化 ─ 不過它永遠都會是
+一隻空的光碟。可重寫的光碟都是一樣的，因為你不能改變 arbritary sectors ，不
+過你可以消除整隻光碟的內容。</p>
+
+<p>所以我們需要一個工具能夠一邊抄寫檔案一邊建立檔案系統在 光碟中‧這工具叫做 <code>mkisofs</code>‧以下就是這工具的使用 例子：</p>
+<pre class="sample">
+mkisofs  -r   -o cd_image   private_collection/
+              `---------'   `-----------------'
+                   |               |
+                寫入至      以這個目錄做輸入
+</pre>
+
+<p>'-r' 選項設定所有在光碟中的檔案為公眾可讀和開啟 Rock Ridge 延伸。
+這是很多人想要的東西不過使用前你必須肯定知道你自己在做什麼。
+(提示：沒有 '-r' 選項的話那個 mount-point 就會變成 <code>private_collection</code>!)。</p>
+<p><code>mkisofs</code> 會嘗試將所有檔案的轉為 DOS 的8.3格式以確保最高的兼容性。
+若遇上命名衝突 (不同檔案有相同的名稱)，這時就會在檔案中使用數字而有關該檔
+案的資料就會在 STDERR (通常都是螢幕) 中顯示。 不要擔心：在 Linux 中你永遠
+不會看到 8.3 格式的檔案因為 Linux 會使用 Rock Ridge 延伸而所有檔案的資料都
+會在 Rock Ridge 延伸中 (使用權限，檔案名稱，等等)。</p>
+<p>到現在你可能會問為什麼 <code>mkisofs</code> 的輸出不直接寫入可寫光碟機中。這有 兩個原因：</p>
+<ul>
+  <li><code>mkisofs</code> 不曉得怎樣驅動可寫光碟。</li>
+  <li>你可能需要在燒錄前測試一下影像檔。</li>
+  <li>在慢的機器中它會可靠些 (看章節 4.).</li>
+</ul>
+<p>會在下面講述怎樣燒錄一隻光碟。</p>
+<p>有些人可能會想不如建立一個獨立的分割區來寫入影像以代替檔案。
+我並不贊同這同方法因為如果你寫入到錯誤的分割區(由打字錯誤所造成)的話
+，你便會遺失整個 Linux 系統 (我就試過這情況)。再者，這樣做會造成磁碟
+空間浪費因為光碟影像是一種暫時性的資料，當它被燒錄到光碟後它便可以刪
+除。不過用硬碟分割區可以節省你刪除一個 650 MB 檔案的時間。 (不過如果
+你有一個額外的分割區可以令你節省刪除影像檔的時間。)</p>
+
+
+<h3>測試光碟影像檔</h3>
+
+<p>Linux 可以好似磁碟分割區般將檔案掛上。這是一個很好用的功能它可以用來
+檢查目錄配置和檔案使用權限是不是你所要求那樣。雖然現在的光碟很便宜，
+但是燒錄過程依然是很費時的，所以你起碼需要做一個快速的測試。</p>
+<p>要將 <code>光碟影像檔</code> 掛上 <code>/cdrom</code> ，請用以下的指令</p>
+<pre class="sample">
+mount -t iso9660 -o ro,loop=/dev/loop0 cd_image /cdrom
+</pre>
+
+<p>你現在可以在 <code>/cdrom</code> 底下檢查下你的檔案 ─ 現在的位置便是它
+們在真正光碟中的位置。要卸除光碟影像檔，你只需要打 <code>umount /cdrom</code>
+。(警告：如果你是使用 Linux 核心 2.0.31 或以前的版本，你就有可能看不見
+最後的幾個檔案。 請使用較新的核心。 The option -pad for cdrecord applies to 
+audio-CDs only and the optional option -pad for mkisofs requires a patch, which is as much work to apply than to upgrade to a bug-free Linux-kernel.)</p>
+<p>注意: </p>
+
+<p>比較舊的 <code>mount</code> 是不能處理 loopback-devices。如果你是使用舊的 <code>mount</code> 的話現在是時候更新你的 Linux 了。</p>
+<p>有很多人都建議我增加一些關於如何取得最新 mout 工具的資料
+在這份 mini-HOWTO 中。但我都一一拒絕。如困你的 Linux 套件
+附送了舊版本的 <code>mount</code>：報告這是一個臭蟲。如果你的
+你的 Linux 套件是不能輕易升級，報告這是一個臭蟲。</p>  <p>如果我將所有有關怎樣更正設計不良 Linux 套件的資料，這份 mini-HOWTO 就會變得很長及很難閱讀。</p>
+
+<h3>寫入光碟影像到光碟中</h3>
+
+<p>沒有太多的東西要做。如果你未試過這個指令，現在是時候試下試了</p>
+<pre class="sample">
+cdrecord -scanbus
+</pre>
+
+<p>這個指令會告訴你你的可寫光碟機是掛在那個 SCIS-device 中。所有
+其他的嘗試方法都已經被刪除 (尤其是關於 generic SCSI devices 命
+名規則 (naming scheme) 的危險方法)。</p>
+<p>不過在介紹最後一個指今前先讓我提醒你件事，因為可寫入光碟機的緩
+衝區是很少，所以它要求所輸入的資料流是連續的。正因如此，在燒錄
+的過程中是不可中斷的，否則會燒錄失敗。如果你刪除一個很大的檔案
+就會很容易中斷資料流。例如：你刪除一個 650 MB 大小檔案的時候，
+核心便需要更新硬碟大約 650,000 個 blocks (假設你的檔案系統是 
+1k 一個 block 的話) 這需要很長的時間和很可能會令資料流延遲幾
+秒。不過，如果在一部很快的電腦上看電郵，瀏覽網頁或甚至編譯核心
+都不會影響燒錄程序。</p>
+<p>請注意世上是沒有一個燒錄器可以重置雷射的位置和它不能返回
+受干擾的點上再次進行燒錄。所以何任的震動或撞擊都能使你正
+在燒錄的光碟受到破壞。</p>
+
+<p>如果你準備好的話，你可以下以下的指今：</p>
+<pre class="sample">
+shell&gt; SCSI_BUS=0   # taken from listing 1 "scsibus0:"
+shell&gt; SCSI_ID=6    # taken from listing 1 "TOSHIBA XM-3401"
+shell&gt; SCSI_LUN=0
+shell&gt; cdrecord -v speed=2 dev=$SCSI_BUS,$SCSI_ID,$SCSI_LUN \
+                   -data  cd_image
+
+# 同上面一樣，不過短些：
+shell&gt; cdrecord -v speed=2 dev=0,6,0  -data  cd_image
+</pre>
+
+<p>為了增加可讀性，可寫入光碟機的資訊都儲存在這三個環境變數中：
+SCSI_BUS, SCSI_ID, SCSI_LUN。而選項 -data 則是用來燒錄資料光
+碟用的。</p>
+<p>如果你是使用 cdrecord 來覆寫 CD-RW，你一定要用 "blank= . . ." 
+來刪除所有舊有內容。請看 man-page 來學習有什麼方法來清除所有
+CD-RW 的所有內容。</p>
+<p>如果你有一部 400 Mhz 電腦，你可以將 mkisofs 的輸出直接輸出至 cdrecord 中：</p>
+<pre class="sample">
+shell&gt; IMG_SIZE=`mkisofs -R -q -print-size private_collection/`
+shell&gt; mkisofs -r  private_collection/  \
+|cdrecord  speed=2  dev=0,6,0
+            tsize=${IMG_SIZE}s  -data  -
+#       don't forget the s --^         ^-- read data from STDIN
+</pre>
+
+
+<p>第一個指令只是用來檢查一下光碟影像的內容並沒有實質用途 (你需要用 cdrecord-distribution 中的 mkisofs 才可使用這個指令)。你的可寫入 
+  光碟可能不需要知道光碟影像檔的大小，這樣你便不需要下這個指令。輸 出的大小必需用 tsize-parameter 來傳遞給 cdrecord。 (這個數字是儲 
+  存 IMG_SIZE 這個環境變數中)。最後的指令是用 pipe 來串連 mkisofs 和 cdrecord 這兩個指令。</p> <p></p>
+<h2><a name="ss3.2" id="ss3.2"></a>3.2 燒錄音樂光碟 </h2>
+
+<p>要燒錄一隻音樂光碟的步驟與燒錄資料光碟的步驟都大同小異。
+最主要的二個分別之一是音樂光碟包含音軌，而這些音軌必需組織成
+獨立的影像。所以如果你想燒錄十條音軌的話，你就要建立十個影像
+檔。另一個分別是光碟影像的格式不是 ISO-9660 (或者你想要的格或)，
+不過它是 "16 bit stereo samples in PCM coding at 44100 samples/second (44,1 kHz)".</p>
+<p>其中一個軟件叫做 sox 它可以將音樂檔案轉為所需的格式。 它的用法是很簡單直接：</p>
+<pre class="sample">
+shell&gt; sox  killing-my-software.wav  killing-my-software.cdr
+</pre>
+
+<p>這個指令會將 killing-my-software 這首歌由 WAV 格式轉為 CDR 格式。
+請看 man-page 來取得更多有關 sox 所確認的格式及延伸檔名。因為轉變
+過程需要耗用硬碟空間，所以 cdrecord 已內建支援 WAV 和 AU 格式了。
+所以如果你的音樂檔案有 .wav 或 .au (and the samplerate "stereo, 16 bit, 44,1 kHz")延伸的話，你便不需要做人手轉換。</p>
+<p>如果你有用 -audio 選項，cdrecord 就會將影像檔燒錄成音軌。而其他的選項 就如同燒錄一般資料一樣 (除非你有非特別的要求)。以下三個指令都是相同的不 
+  過它們讀取不同音樂檔案格式：</p>
+<pre class="sample">
+shell&gt; cdrecord -v speed=2 dev=0,6,0  -audio  track1.cdr track2.cdr...
+shell&gt; cdrecord -v speed=2 dev=0,6,0  -audio  track1.wav track2.wav...
+shell&gt; cdrecord -v speed=2 dev=0,6,0  -audio  track1.au  track2.au...
+</pre>
+
+<p>其中一個特別例子是 MPEG-3 檔案，它可以用 "mpg123 -s track1.mp3 > track.cdr"
+來轉換成所需要的格式。另一個方法是用 "8hz-mp3" 來轉換成 WAV 檔案格式。</p>
+<p>如果你現在燒錄音樂光碟的話，你會發現音軌之間會有 2 秒的延遲。
+如果你的可寫入光碟機支援 "disc at once" (DAO) 的話，你可以嘗試用最新的 cdrecord
+來解決此一問題。</p>
+
+
+<h2><a name="ss3.3" id="ss3.3"></a>3.3 混合式光碟 </h2>
+
+
+<p>沒有太多要說。只示範了怎樣混合使用 -data　和　-audio 選項以達到燒錄混合光碟：</p>
+<pre class="sample">
+cdrecord  -v dev=0,6,0  -data  cd_image  -audio  track*.cdr
+</pre>
+
+<p></p>
+
+
+
+<hr />
+<table >
+  <tr>
+    <td class="BtdL"> <a href="CD-Writing-HOWTO-3.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="BtdC"> <a href="index.html" accesskey="H">目錄(H)</a> </td>
+    <td class="BtdR"> <a href="CD-Writing-HOWTO-4.html">下一頁(N)</a> </td>
+  </tr>
+  <tr>
+    <td class="BtdL">設定你的 Linux 系統來燒錄光碟</td>
+    <td class="BtdC"><a href="CD-Writing-HOWTO-3.html"  accesskey="T">到頂層(T)</a></td>
+    <td class="BtdR">常問問題及答案</td>
+  </tr>
+</table>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img class="ImgLogo" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" title="網路內容分級協會" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

@@ -1,0 +1,346 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+ 
+ <title>Alsa-sound-mini-HOWTO: 測試及使用</title>
+ <link href="Alsa-sound-6.html" rel="next" />
+ <link href="Alsa-sound-4.html" rel="previous" />
+ <link href="../../style.css" rel="stylesheet" type="text/css" />
+   <link href="Alsa-sound-1.html" rel="chapter" title="1.介紹" />
+  <link href="Alsa-sound-2.html" rel="chapter" title="2.在開動之前" />
+  <link href="Alsa-sound-3.html" rel="chapter" title="3.如何安裝 ALSA 音效驅動程式" />
+  <link href="Alsa-sound-4.html" rel="chapter" title="4.載入驅動程式" />
+  <link href="Alsa-sound-5.html" rel="chapter" title="5.測試及使用" />
+  <link href="Alsa-sound-6.html" rel="chapter" title="6.小技巧及問題排除" />
+  <link href="http://www.tldp.org/HOWTO/mini/Alsa-sound.html" rel="alternate" title="原版" />
+  <link href="index.html" rel="start" />
+  <link href="index.html#content" rel="contents" />
+  <link href="Alsa-sound-5.html#ss5.1" rel="section" title="5.1 /proc 檔案系統" />
+  <link href="Alsa-sound-5.html#ss5.2" rel="section" title="5.2 混音器" />
+  <link href="Alsa-sound-5.html#ss5.3" rel="section" title="5.3 /dev/snd/ 下的設備" />
+  <link href="http://www.ldp.org/sounds/english.au" rel="bookmark" title="Linux 的發音" />
+  <link href="Alsa-sound-5.html#ss5.4" rel="section" title="5.4 額外的資訊" />
+  <meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+  <link href="Alsa-sound.rdf" rel="meta" title="各章節的說明資訊" />
+</head> <body> 
+
+<table
+
+
+
+
+>
+  <tr
+>
+    <th
+colspan="3" class="HdTitle"
+>Mini
+    HOWTO：Alsa-sound</th>
+  </tr
+>
+  <tr
+>
+    <td class="TtdL"
+><a href="Alsa-sound-4.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="TtdC"
+></td
+>
+    <td class="TtdR"
+><a href="Alsa-sound-6.html" accesskey="N">下一頁(N)</a></td
+>
+  </tr
+>
+</table
+>
+<hr />
+<h1><a name="s5" id="s5">5.</a> 測試及使用</h1>
+
+<p>現在應該是試試驅動程式是不是真能用的時候了. 接者就是使用它.</p>
+<h2><a name="ss5.1" id="ss5.1">5.1</a> /proc 檔案系統
+</h2>
+
+<p>您可以在 /proc 目錄下找到很多關於您的系統的有用資訊. /proc
+是一個"虛擬的"檔案系統, 意即它並非真正存在,
+而是和您正在執行的各程序間的連結. 要讓 /proc 可用, 您需要將它編譯進核心.
+多數 Linux 安裝套件已將它設為預設值, 但如果您重編譯並且並沒有將 /proc
+包進來, 那麼在 /proc 下將什麼也沒有.</p>
+<p>/proc/modules 記載了關於載入的模組的資訊. 當 ALSA 音效驅動程式載入後, 如果您
+打入 cat /proc/modules, 應該看到像這樣的東西:</p>
+
+<pre class="sample">
+snd-pcm1-oss      4            0
+snd-sb16          1            1
+snd-sb-dsp        4    [snd-sb16]      0
+snd-pcm1          4    [snd-pcm1-oss snd-sb-dsp]      0
+snd-pcm           3    [snd-pcm1-oss snd-sb16 snd-sb-dsp snd-pcm1]    0
+snd-mixer         3    [snd-pcm1-oss snd-sb16 snd-sb-dsp]      1
+snd-mpu401-uart   1    [snd-sb16]      0
+snd-midi          4    [snd-sb16 snd-sb-dsp snd-mpu401-uart]   0
+snd-opl3          1    [snd-sb16]      0
+snd-synth         1    [snd-sb16 snd-opl3]     0
+snd-timer         1    [snd-opl3]      0
+snd               8    [snd-pcm1-oss snd-sb16 snd-sb-dsp snd-pcm1 snd-pcm snd-mixer snd-mpu401-uart snd-midi snd-opl3 snd-synth snd-timer]    0
+</pre>
+
+
+<p>如果在安裝驅動程式時有哪步搞錯了, 您仍能看到一堆 "snd" 設備,
+  但沒有音效支援.
+</p>
+<p>例如說(請千萬不要照著下面下命令, cs4236 驅動程式需要參數):</p>
+
+<pre class="sample">
+win3:~# modprobe snd-card-cs4236
+/lib/modules/2.0.35/misc/snd-card-cs4236.o: init_module: Device or resource busy
+snd-mixer: Device or resource busy
+win3:~# cat /proc/modules
+snd-cs4236        2           0
+snd-cs4231        3    [snd-cs4236]    0
+snd-timer         1    [snd-cs4231]    0
+snd-pcm1          4    [snd-cs4236 snd-cs4231] 0
+snd-mixer         3    [snd-cs4236 snd-cs4231] 0
+snd-pcm           3    [snd-cs4236 snd-cs4231 snd-pcm1]       0
+snd-mpu401-uart   1           0
+snd-midi          4    [snd-mpu401-uart]       0
+snd-opl3          1           0
+snd-synth         1    [snd-opl3]      0
+snd-timer         1    [snd-cs4231 snd-opl3]   0
+snd               8    [snd-cs4231 snd-timer snd-pcm1 snd-mixer snd-pcm]     0
+</pre>
+
+<p>您可藉由看 /proc/asound/cards 內容來看音效卡是否存在. 例如:</p>
+
+<pre class="sample">
+bash$ cat /proc/asound/cards
+0 [card1          : SB16 - Sound Blaster 16
+                    Sound Blaster 16 at 0x220, irq 5, dma 1&amp;5
+</pre>
+
+
+<p>在剛剛的例子中(就是我忘了加參數的), 輸出會是像:</p>
+<pre class="sample">
+win3:~# cat /proc/asound/cards
+--- no soundcards ---
+</pre>
+
+
+<p>若 CS4236 卡能用, 將有以下輸出</p>
+<pre class="sample">
+0 [card1         ]: CS4236 - CS4237B
+                    CS4237B at 0x534, irq 7, dma 1&amp;0
+</pre>
+
+
+<p>如果您再三檢查您的設定正確後, 仍然找不到音效卡, 那麼去看看問題解決那節.
+</p>
+<p><code>/proc/asound/</code> 虛擬目錄顯示了關於此驅動程式的許多資訊. 請注意
+/proc/asound 在您載入第一個 ALSA 模組後才會出現. 如果沒有 /proc/asound,
+那麼就是 "snd" 模組沒有正確安裝好. 您可以在 /proc/asound/cards
+檔中找到安裝好的卡, 然後在 /proc/asound/0 找到關於 0 號卡, /proc/asound/1
+中關於 1 號卡的資訊.</p>
+<p>如果 <code>cat /proc/asound/</code> 顯示像</p>
+
+<pre class="sample">
+      ES1370 DAC2/ADC
+      Playback isn't active.
+      Record isn't active.
+</pre>
+
+
+<p>這是說您的驅動程式一切都很好, 但目前並沒有事做(所以一切正常).
+</p>
+<p>還有第三種找音效設備的方法, 就是如果您有 OSS 相容驅動程式, 那麼就有
+/dev/sndstat 設備檔. ALSA 驅動程式會體貼的提醒您不要依賴這些資訊, 它只是為跟
+OSS 相容而做的. 由 /proc/asound 可以簡單的得到更好的資訊.</p>
+<h2><a name="ss5.2" id="ss5.2">5.2</a> 混音器
+</h2>
+
+<p>一旦您的音效卡裝好, 而 /proc 檔案系統也這麼顯示後, 您可以試試真正發出聲音.
+首先呢, 安裝公用程式套件, 或至少把 "amixer" 命令放到一些合理的地方(如
+/usr/local/bin). 先用 "amixer" 看看混音器設定. amixer
+的輸出會隨卡的不同而有很大變化, 我的 SoundBlaster16 顯示:</p>
+
+<pre class="sample">
+Master         0  % (-14.00dB) : 0  % (-14.00dB)
+Bass           0  % (-14.00dB) : 0  % (-14.00dB)
+Treble         0  % (-14.00dB) : 0  % (-14.00dB)
+Synth          0  % (-62.00dB) : 0  % (-62.00dB)
+PCM            0  % (-62.00dB) : 0  % (-62.00dB)
+Line-In        0  % (-62.00dB) : 0  % (-62.00dB) Mute
+MIC            0  % (-62.00dB) : 0  % (-62.00dB) Mute
+CD             0  % (-62.00dB) : 0  % (-62.00dB) Mute
+In-Gain        0  % (-18.00dB) : 0  % (-18.00dB)
+Out-Gain       0  % (-18.00dB) : 0  % (-18.00dB)
+PC Speaker     0  % (-18.00dB) : 0  % (-18.00dB)
+</pre>
+
+
+<p>而我的 Crystal 4237B 的音效卡有很多其它選項:</p>
+<pre class="sample">
+Master D       0  % (-22.00dB) : 0  % (-22.00dB) Mute
+3D Center      0  % (-22.50dB) : 0  % (-22.50dB)
+3D Space       0  % (-22.50dB) : 0  % (-22.50dB) Mute
+Synth          0  % (-94.50dB) : 0  % (-94.50dB) Mute
+FM             0  % (-94.50dB) : 0  % (-94.50dB) Mute
+DSP            0  % (-94.50dB) : 0  % (-94.50dB) Mute
+PCM            0  % (-94.50dB) : 0  % (-94.50dB) Mute
+Line-In        0  % (-34.50dB) : 0  % (-34.50dB) Mute
+MIC            0  % (-22.50dB) : 0  % (-22.50dB) Mute
+CD             0  % (-34.50dB) : 0  % (-34.50dB) Mute
+Record-Gain    0  % (  0.00dB) : 0  % (  0.00dB)
+In-Gain        0  % (-18.00dB) : 0  % (-18.00dB)
+Loopback       0  % (-94.50dB) : 0  % (-94.50dB) Mute
+Mono           0  % (-45.00dB) : 0  % (-45.00dB) Mute
+Aux A          0  % (-34.50dB) : 0  % (-34.50dB) Mute
+</pre>
+
+<p>注意一下 "Mute" 那一欄, CS4237B 甚至連主音量也調靜音了. 對 CS4237B,
+我還要先打 <code>amixer "master d" unmute</code> 以後才能發出聲音. SoundBlaster
+的輸出就沒有靜音, 不過 <code>amixer master 100 unmute</code> 會將主音量解除靜音,
+還設為 100%. 您可以用數字, 或像 "mute" 及 "unmute" 的文字, 或都打,
+來控制. 打  <code>amixer "master d" 100; amixer pcm 100 unmute</code> 可以將
+CS4237B 卡的主音量設最大, 並將 PCM 音量解除靜音並設為最大. 如果左右要不一樣,
+可以用冒號, 如 <code>amixer CD 25:50</code>.(不, 我不曉得那一個是指左右聲道,
+不過我強調一下這也和您的喇叭擺放位置有密切關係.)</p>
+<p>您應該下 <code>amixer cd rec</code> 以將 CD 當做錄音的音源. 然後後下 <code>amixer
+cd norec</code>命令解除此設定. 如果您想要經由麥克風來錄些東西, 您也許可以下
+<code>amixer record-gain 100; amixer mic 100 rec mute</code>(如果不將麥克風輸入
+的放音設為靜音的話, 麥克風會從喇叭收到本身的信號, 會造成高音部份音量降低.)
+然而不幸的是我沒能夠用 amixer 來改變 3D center 及 3D space 的音量設定. 如果
+有人成功了, 請告知我. 這工作可由 alsamixer 來進行.</p>
+<p>ALSA FAQ 上面表示可以用 <code>cat &lt;file> >
+/proc/asound/#/mixerC0D0</code> 命令來回復混音設定, 其中 &lt;file>
+的內容是由 /proc/asound/#/mixerC0D0 中取得. 我無法重現相同的結果,
+我的電腦抱怨此設備找不到.</p>
+<h2><a name="ss5.3" id="ss5.3">5.3</a> /dev/snd/ 下的設備
+</h2>
+
+<p>ALSA 驅動程式在 /dev/snd/ 目錄下有自己的驅動程式. 如果您有一片音效卡,
+您可能看到以下設備:</p>
+<pre class="sample">
+/dev/snd/pcmC0D0 - 這張音效卡的原生音效設備.
+/dev/snd/mixerC0D0 - 第"零"號卡的混音器設備.
+/dev/snd/controlC0D0 - 第"零"號卡的控制設備.
+</pre>
+
+
+<p>第一個號碼是指第幾號音效卡. 第二個號碼是代表單卡上的設備號碼. 一張有兩個 PCM
+  設備的音效卡應該有 pcmC0D0 及 pcmc0D1 設備.
+</p>
+<p>請疝N: ALSA 的設備檔名和舊版已經不一樣了. 舊的 ALSA 驅動程式用
+/dev/snd/pcm00 (第一個是卡, 第二個是設備號). 如果看到本 HOWTO 中還有用舊的檔名的,
+請寫封 Email 給我以便更正.</p>
+<p>現在您可以將任何您想聽的音效檔丟進第一片卡的 PCM 設備中了. 現在試試用 cat
+把任何文字檔(或任何檔案)送進 /dev/snd/pcmC0D0, 就像這樣: <code>cat
+&lt;filename> > /dev/snd/pcmC0D0</code>. 其中 filename 可以是任意檔案,
+只要它夠大. 如果您已有現成的音效檔, 也可以試試. 您也可以抓 
+<a href="http://www.ldp.org/sounds/english.au">http://www.ldp.org/sounds/english.au</a>. 這是 Linux Torvalds 講 Linux
+這個字如何發音的話. </p>
+<p>音效設備預先被設定為 8000Hz, 8 位元. 這意味著剛提到的 "english.au"
+會發出講話聲, 而其它檔可能只會發出噪音. 如果您聽不到, 請檢查您的喇叭, 或再執行
+amixer 一遍或去看醫師(該不會是... 您的耳朵聾了!?) .
+(稍後您可以用您喜歡的播放程式如 sox 或 mpg123 , 簡單的來放完全的 48KHz, 
+16 位元聲音.)</p>
+<p>如果您載入了 "snd-pcm1-oss" 模組, 您也可以利用 OSS 的相容性來存取音效卡.
+兩者間有以下的對應關係:</p>
+<pre class="sample">
+/dev/snd/pcmC0D0 -> /dev/audio0 (/dev/audio) -> 次編號 4
+/dev/snd/pcmC0D0 -> /dev/dsp0 (/dev/dsp) -> 次編號 3
+/dev/snd/pcmC0D1 -> /dev/adsp0 (/dev/adsp) -> 次編號 12
+/dev/snd/pcmC1D0 -> /dev/audio1 -> 次編號 4+16 = 20
+/dev/snd/pcmC1D0 -> /dev/dsp1 -> 次編號 3+16 = 19
+/dev/snd/pcmC1D1 -> /dev/adsp1 -> 次編號 12+16 = 28
+/dev/snd/pcmC2D0 -> /dev/audio2 -> 次編號 4+32 = 36
+/dev/snd/pcmC2D0 -> /dev/dsp2 -> 次編號 3+32 = 39
+/dev/snd/pcmC2D1 -> /dev/adsp2 -> 次編號 12+32 = 44
+</pre>
+
+<h2><a name="ss5.4" id="ss5.4">5.4</a> 額外的資訊
+</h2>
+
+<p>在 ALSA 驅動程式目錄中的 INSTALL 檔也提到了一些小技巧,
+告訴驅動程式要作何調整設定. 依照播放聲音的用途, 您可能需要用這些命令.
+一般的播放程式, 如 mpg123, sox(常以 ``play'' 命令來執行), 或 X11 應用程式如
+RealPlayer都不必用到這些. 我本人也從沒用過.</p>
+
+<h3>/proc/asound/#/pcm#0</h3>
+
+
+<pre class="sample">
+"Playback erase" - 清除所有關於 OSS 應用程式的額外資訊.
+"Playback &lt;app_name> &lt;fragments> &lt;fragment_size> [&lt;options>]"
+"Record erase" - 清除所有關於 OSS 應用程式的額外資訊.
+"Record &lt;app_name> &lt;fragments> &lt;fragment_size> [&lt;options>]"
+</pre>
+
+<ul>
+  <li><code>&lt;app_name></code> - 應用程式名稱, 包含(較優先假定)或不包含路徑.</li>
+  <li><code>&lt;fragments></code> - 片斷(fragment)數, 給 0 則自動選擇.</li>
+  <li><code>&lt;fragment_size></code> - 一個片斷的 byte 數, 或 0 選擇自動.</li>
+  <li><code>&lt;options></code> - 選擇性的參數</li>
+</ul>
+<p><code>WR_ONLY</code> - 如果有個應用程式設開啟模式為O_RDWR,
+實際的權限將改為 O_WRONLY(播放), 對 Quake 等很有用...</p>
+<p>幾個範例:
+</p>
+<pre class="sample">
+echo "Playback x11amp 128 16384" > /proc/asound/0/pcm0o
+echo "Playback squake 0 0 WR_ONLY" > /proc/asound/0/pcm0o
+</pre>
+
+<h3>/proc/asound/#card#/sb16</h3>
+
+
+<pre class="sample">
+"Playback 8" -> 驅動程式播放時只使用 8-bit DMA 通道.
+"Playback 16" -> 驅動程式播放時只使用 16-bit DMA 通道.
+"Playback auto" (default) -> 驅動程式自動選擇(會先嘗試使用 16-bit DMA 通道)
+"Record 8" -> 驅動程式錄音時只使用 8-bit DMA 通道.
+"Record 16" -> 驅動程式錄音時只使用 16-bit DMA 通道.
+"Record auto" (default) -> 驅動程式自動選擇(會先嘗試使用 16-bit DMA 通道)
+</pre>
+
+<p>例如: <code>echo "Record 16" > /proc/asound/0/sb16</code></p>
+<p>更進一步的資訊請參考 INSTALL 檔.</p>
+<hr />
+<table
+
+
+
+
+>
+  <tr
+>
+    <td class="BtdL"
+><a href="Alsa-sound-4.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="BtdC"
+><a href="index.html" accesskey="H">目錄(H)</a></td
+>
+    <td class="BtdR"
+><a
+href="Alsa-sound-6.html"
+>下一頁(N)</a
+></td
+>
+  </tr
+>
+  <tr
+>
+    <td class="BtdL"
+>載入驅動程式</td
+>
+    <td class="BtdC"
+><a href="Alsa-sound-5.html" accesskey="T">到頂層(T)</a></td
+>
+    <td class="BtdR"
+>小技巧及問題排除</td
+>
+  </tr
+>
+</table
+>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img class="ImgLogo" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

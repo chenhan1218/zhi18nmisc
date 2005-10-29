@@ -1,0 +1,251 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+ 
+ <title>DHCP mini-HOWTO (DHCPd/DHCPcd): 設定 DHCP 伺服器</title>
+ <link href="DHCP-3.html" rel="previous" />
+ <link href="index.html" rel="contents" />
+ <link href="../../style.css" rel="stylesheet" type="text/css" />
+ <link href="index.html" rel="start" />
+ <link href="http://tldp.org/HOWTO/mini/DHCP/index.html" rel="alternate" title="原版" />
+ <link href="DHCP-4.html#ss4.1" rel="section" title="4.1 UNIX 上的 DHCP 伺服器 " />
+ <link href="DHCP-4.html#ss4.2" rel="section" title="4.2 設定網路組態。 " />
+ <link href="DHCP-4.html#ss4.3" rel="section" title="4.3 DHCPd 的選項設定" />
+ <link href="DHCP-4.html#ss4.4" rel="section" title="4.4 啟動伺服器" />
+ <link href="ftp://ftp.isc.org/isc/dhcp/" rel="bookmark" title="DHCPd 伺服端程式" />
+  <link href="DHCP-1.html" rel="chapter" title="1.介紹" />
+ <link href="DHCP-2.html" rel="chapter" title="2.DHCP 通訊協定" />
+ <link href="DHCP-3.html" rel="chapter" title="3.設定用戶端" />
+ <link href="DHCP-4.html" rel="chapter" title="4.設定 DHCP 伺服器" />
+ <meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+ <link href="DHCP.rdf" rel="meta" title="各章節的說明資訊" />
+</head> <body> 
+<table
+
+
+
+
+>
+  <tr
+>
+    <th
+colspan="3" class="HdTitle"
+>Mini
+      HOWTO：DHCP (DHCPd/DHCPcd)</th>
+  </tr
+>
+  <tr
+>
+    <td class="TtdL"
+><a href="DHCP-3.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="TtdC"
+></td
+>
+    <td class="TtdR"
+>&nbsp;</td
+>
+  </tr
+>
+</table
+>
+<hr />
+<h1><a name="s4" id="s4">4.</a> 設定 DHCP 伺服器</h1>
+
+<h2><a name="ss4.1" id="ss4.1">4.1</a> UNIX 上的 DHCP 伺服器
+</h2>
+
+<p>在各種 UNIX 相容的作業系統上，有許多商業或免費的 DHCP 伺服器程式可用。其中，
+較著名的免費伺服器程式是 Paul Vixie/ISC 版的 DHCPd。目前最新的版本是 2.0（
+建議大家使用），而 3.0 版正在做 beta 階段的測試。你可以到下面的網址取得：</p>
+<p>
+<a href="ftp://ftp.isc.org/isc/dhcp/">ftp://ftp.isc.org/isc/dhcp/</a></p>
+
+
+<p>在 RedHat（版本 5.2）這個 Linux 套件中包含了有 DHCP 伺服器二元碼的 RPM 包裝。
+該 RPM 包裝的檔名為 dhcp-2.0b1pl6-2.platform.rpm。安裝時只要輸入</p>
+
+
+<pre class="sample">rpm -i dhcp-2.0b1pl6-2.i386.rpm</pre>
+
+
+<p>若你使用上面的步驟，則你可以跳過下面的安裝說明。</p>
+
+
+<p>在你下載之後，你必須將它解開。然後進入解開的目錄，輸入：</p>
+<pre class="sample">./configure</pre>
+<p>要做好安裝前的設定工作，可能要花點時間。請隨後輸入：</p>
+<pre class="sample">make</pre>
+<p>以及</p>
+<pre class="sample">make install</pre>
+
+
+
+<h2><a name="ss4.2" id="ss4.2">4.2</a> 設定網路組態。
+</h2>
+
+
+<p>當完成安裝之後，請輸入 ifconfig -a，你將看到如下的訊息：</p>
+
+
+
+<pre class="sample">
+eth0      Link encap:10Mbps Ethernet  HWaddr 00:C0:4F:D3:C4:62
+          inet addr:183.217.19.43  Bcast:183.217.19.255  Mask:255.255.255.0
+          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+          RX packets:2875542 errors:0 dropped:0 overruns:0
+          TX packets:218647 errors:0 dropped:0 overruns:0
+          Interrupt:11 Base address:0x210
+</pre>
+
+
+<p>如果未顯示 MULTICAST 的訊息，你應該重新設定你的核心，加入對“多址傳播”
+（multicast）的支援。對於大多數的系統而言，你幾乎都不必如此做。</p>
+
+
+<p>下個步驟是，加入 255.255.255.255 的路由。以下的說明引述自 DHCPd 程式的
+“讀我檔案”（README）：</p>
+
+
+<p>“為了讓 dhcpd 能夠正確地服務過分挑剔的 DHCP 用戶端（例如，Windows 95），dhcpd 
+必須能夠送封包到 255.255.255.255 的 IP 位址上。不幸的是，Linux 會將 255.255.255.255
+做為本地子網路的廣播位址（此處為 192.5.5.223）。這將違反 DHCP 通訊協定，然而許多
+DHCP 用戶端並不受影響，有些（例如，所有 Microsoft DHCP 用戶端）卻會。有此類問題
+的用戶端，將會看不到來自伺服器的 DHCPOFFER 訊息。”</p>
+
+
+<p>輸入：</p>
+<pre class="sample">route add -host 255.255.255.255 dev eth0</pre>
+<p>如果你看到如下的訊息</p>
+<pre class="sample">"255.255.255.255: Unknown host"</pre>
+<p>你應該將下面的資訊加入到 /etc/hosts 檔案中：
+/etc/hosts file:</p>
+<pre class="sample">255.255.255.255 all-ones</pre>
+<p>然後，輸入：</p>
+<pre class="sample">route add -host all-ones dev eth0</pre>
+<p>或</p>
+<p class="sample">route add 255.255.255.0 dev eth0</p>
+<p>eth0 應該是你目前使用網路卡的裝置名稱。如果不是，你得配合實際情況做正確的修改。</p>
+
+
+
+<h2><a name="ss4.3" id="ss4.3">4.3</a> DHCPd 的選項設定
+</h2>
+
+
+<p>現在，你必須設定 DHCPd。為此，你必須產生或編輯 /etc/dhcpd.conf。</p>
+
+
+<p>通常你所要做的是，隨機地指派 IP 位址。為此，你必須按照下面的方式來設定：</p>
+
+
+<pre class="sample">
+default-lease-time 600;
+max-lease-time 7200;
+option subnet-mask 255.255.255.0;
+option broadcast-address 192.168.1.255;
+option routers 192.168.1.254;
+option domain-name-servers 192.168.1.1, 192.168.1.2;
+option domain-name "mydomain.org";
+
+subnet 192.168.1.0 netmask 255.255.255.0 {
+   range 192.168.1.10 192.168.1.100;
+   range 192.168.1.150 192.168.1.200;
+}
+</pre>
+
+
+
+<p>設定的結果為，DHCP 伺服器會提供用戶端，使用範圍 192.168.1.10-192.168.1.100 或
+192.168.1.150-192.168.1.200 的 IP 位址。如果，用戶端沒有特別約定 IP 位址的租用
+時間，則釋出時間預定為 600 秒，要不然，最大（允許）的釋出時間為 7200 秒。同時
+伺服器也會“通知”用戶端，要求它使用 255.255.255.0 做為子網路遮罩，192.168.1.255
+做為廣播位址，192.168.1.254 做為路由/閘道器，並以 192.168.1.2 做為 DNS 伺服器。</p>
+
+
+<p>你也可以依據用戶端的乙太網路位址，來指派特定的 IP 位址給用戶端，例如</p>
+<pre class="sample">
+host haagen {
+   hardware ethernet 08:00:2b:4c:59:23;
+   fixed-address 192.168.1.222;
+}
+</pre>
+
+
+<p>這個設定將會指派 IP 位址 192.168.1.222 給乙太網路位址為  08:00:2b:4c:59:23 的
+用戶端。</p>
+
+
+<p>網路上 IP 位址的指定，可以採混合雙軌制，譬如，你可以讓某些電腦擁有“靜態”的
+IP 位址（例如，伺服器），而讓其它的用戶端取得“動態”的IP 位址（例如，使用膝
+上型電腦，機動的使用者）。還有其它的選項，譬如，說 wins 伺服器的位址﹑時間伺服
+器等等，如果你需要進一步瞭解的話，可以請參閱 dhcpd.conf 的說明文件。</p>
+
+
+
+<h2><a name="ss4.4" id="ss4.4">4.4</a> 啟動伺服器
+</h2>
+
+
+<p>在啟動伺服器之前你只要做一件事情就行了。通常 DHCP 的安裝過程中並不會產生檔案
+dhcp.leases。伺服器 DHCPd 會使用這個檔案來儲存目前的租用資訊。該檔案採用一般
+文字的格式來儲存資料，所以在 DHCPd 操作期間你可以直接檢視它的內容。現在我們
+來產生檔案 dhcp.leases，請在命令列上輸入：</p>
+<pre class="sample">touch /etc/dhcp.leases</pre>
+<p>這個動作將會產生一個空白的檔案（檔案的大小 = 0）。你不需要對該檔案做任何的修改
+所以它應該是空白的。若你看到一個錯誤的訊息說該檔案是空白的，你可以不理會它並且
+請繼續以下的步驟。</p>
+
+<p>現在，你可以啟用 DHCP 伺服器了。只要輸入（或將下面的敘述加到開機設定檔中）</p>
+<pre class="sample">/usr/sbin/dhcpd</pre>
+<p>如果，你想要確定運作是否一切正常，你應該先開啟除錯模式，並把伺服器放到“幕前”
+（foreground）來執行。為此，你可以輸入</p>
+<pre class="sample">/usr/sbin/dhcpd -d -f</pre>
+<p>然後，開啟你任何一個用戶端機器，並察看伺服器端“操作控制台”（console）的螢幕，
+你將會看到一些除錯訊息被顯示出來。</p>
+
+
+<hr />
+<table
+
+
+
+
+>
+  <tr
+>
+    <td class="BtdL"
+><a href="DHCP-3.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="BtdC"
+><a href="index.html" accesskey="H">目錄(H)</a></td
+>
+    <td class="BtdR"
+>&nbsp;</td
+>
+  </tr
+>
+  <tr
+>
+    <td class="BtdL"
+>設定用戶端</td
+>
+    <td class="BtdC"
+><a href="DHCP-4.html" accesskey="T">到頂層(T)</a></td
+>
+    <td class="BtdR"
+>&nbsp;</td
+>
+  </tr
+>
+</table
+>
+<div>
+<a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" width="88" height="31" style="border:0;width:88px;height:31px"/></a>
+<a href="http://jigsaw.w3.org/css-validator/"><img style="border:0;width:88px;height:31px" src="../../../vcss.png"  alt="符合 CSS"/></a>
+<a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img style="border:0;width:88px;height:32px" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a>
+<a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" style="border:0" alt="表示該網頁支援資源描述架構"/></a>
+</div>
+</body>
+</html>

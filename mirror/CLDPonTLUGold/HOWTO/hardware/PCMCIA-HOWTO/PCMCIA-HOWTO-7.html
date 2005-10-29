@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>7. 除錯小技巧及程式設計資訊</title>
+<link href="PCMCIA-HOWTO-6.html" rel="previous" title="6. 使用未被支援的卡片" />
+<link href="http://tldp.org/HOWTO/PCMCIA-HOWTO.html" rel="alternate" title="原版" />
+<link href="../../style.css" rel="stylesheet" type="text/css" />
+<link href="PCMCIA-HOWTO-1.html" rel="chapter" title="1.一般資訊及硬體要求" />
+<link href="PCMCIA-HOWTO-2.html" rel="chapter" title="2.編譯與安裝" />
+<link href="PCMCIA-HOWTO-3.html" rel="chapter" title="3.解決安裝與建構的問題" />
+<link href="PCMCIA-HOWTO-4.html" rel="chapter" title="4.使用方法以及特色" />
+<link href="PCMCIA-HOWTO-5.html" rel="chapter" title="5.進階的主題" />
+<link href="PCMCIA-HOWTO-6.html" rel="chapter" title="6.使用未被支援的卡片" />
+<link href="PCMCIA-HOWTO-7.html" rel="chapter" title="7.除錯小技巧及程式設計資訊" />
+<meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+<link href="PCMCIA-HOWTO-7.html#ss7.1" rel="section" title="7.1 提出有用的小虫報告" />
+<link href="PCMCIA-HOWTO-7.html#ss7.2" rel="section" title="7.2 低階 PCMCIA 除錯輔助 " />
+<link href="PCMCIA-HOWTO-7.html#ss7.3" rel="section" title="7.3 為新卡片寫卡片服務驅動程式" />
+<link href="PCMCIA-HOWTO-7.html#ss7.4" rel="section" title="7.4 給 PCMCIA 客戶自定驅動程式的作者的指引 " />
+<link href="PCMCIA-HOWTO-7.html#ss7.5" rel="section" title="7.5 給 Linux 供應版本維護人員的導引 " />
+<link href="PCMCIA-HOWTO.rdf" rel="meta" title="各章節的說明資訊" />
+</head> <body >
+<table >
+  <tr>
+    <th colspan="3" class="HdTitle">HOWTO：Linux
+      PCMCIA</th>
+  </tr>
+  <tr>
+    <td class="TtdL"> <a href="PCMCIA-HOWTO-6.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="TtdC">&nbsp;</td>
+    <td class="TtdR">&nbsp; </td>
+  </tr>
+</table>
+<hr />
+<h1>7. 除錯小技巧及程式設計資訊</h1>
+
+<h2><a name="ss7.1" id="ss7.1"></a>7.1 提出有用的小虫報告
+</h2>
+
+<p>提出小虫報告的最好的方法是使用在 Linux PCMCIA 資訊站的超媒體新聞訊
+息列表。這樣可讓其他人知道最新的問題有哪些 (並修改或改變方法 )。這
+兒是小虫報告內應讓有的資料：</p>
+<p></p>
+<ul>
+<li>您的系統類型，以及 <code>probe</code> 命令的輸出訊息。</li>
+<li>您使用哪些 PCMCIA 卡。</li>
+<li>您的 Linux 核心程式版本及 PCMCIA 驅動程式版本。</li>
+<li>您對 <code>/etc/pcmcia</code> 檔或 PCMCIA 啟動手稿所做的改變。</li>
+<li> 在系統日誌檔內所有與 PCMCIA 有關的訊息。</li>
+</ul>
+<p></p>
+<p>所有的 PCMCIA 程式模組和 <code>cardmgr</code> 精靈所傳到系統日誌檔的訊息。
+通常為 <code>/var/log/messages</code>  或 <code>/usr/adm/messages</code>。
+當追蹤一個問題時這應該時第一個要察看的地方。當您提出小虫報告時請連
+同包括這個檔案。      如果您在找系統訊息有任何問題時，      請檢查
+<code>/etc/syslogd.conf</code> 來看有哪些不同的訊息類別被處理了。</p>
+<p>在提出小虫報告前，請您檢查一下確認您使用的是最新版的驅動程式套件。
+如果能先看已被我改正除錯後的報告的話會讓人稍稍高興一下，不然就有點
+沒建設性地辜負我的心血了。</p>
+<p>如果你的問題是核心的部份，從錯誤的地方之錯誤傾印只有你能夠追縱錯誤
+位址－ EIP 才有用。 如果錯誤是在主要核心內，看看在 <code>System.map</code>
+內的位址，找出錯誤的功能函數。如果出錯的地方是在可載入式模組內，那
+麼就很難追縱了。 使用目前的模組工具 ``<code>ksyms -m</code>'' 會提出一份每
+一個可載入模組的基位址。選取包含了 EIP 位址的模組，然後把 EIP 減掉
+基位址即可獲得模組內的位移。 然後， 執行 <code>gdb</code> 在該模組上，使用
+<code>list</code> 命令找到位移。 這項功能只有在你有使用 <code>-g</code> 選項在編譯
+該模組時加入了除錯資訊的功能。</p>
+<p>如果你沒有使用網路，小虫報告也可以寄到 <code>dhinds@hyper.stanford.edu</code>
+來給我，我較希望你能把小虫報告貼到我的網站上，這樣子其他人也都可以
+看到。</p>
+
+<h2><a name="ss7.2" id="ss7.2"></a>7.2 低階 PCMCIA 除錯輔助
+</h2>
+
+<p>PCMCIA 模組含有許多條件編譯的除錯碼。 大部份的這些碼都在前置處理器
+<code>PCMCIA_DEBUG</code> 定義的控制下。如果它沒被定義，除錯碼就不會被編譯
+。如果設定位 0，控制碼會被編譯進入但不會被啟用。愈大的數字指定會變
+得更冗長了。 以 <code>PCMCIA_DEBUG</code> 定義來建立的模組都會有個整數參數
+<code>pc_debug</code>，它會控制它的輸出之多寡。 這可以在模組被載入時加以調
+整，在不需重新編譯下使得輸出可以被控制成以每個模組為單位了。</p>
+<p>在 PCMCIA 供應版內的 <code>debug_tools/</code>  子目錄內有一些除錯的工
+具。 <code>dump_tcic</code> 和 <code>dump_i365</code> 兩個公用程式會產生 PCMCIA 控
+制器的完整暫存器的傾印，並且將許多暫存器資訊的解碼。如果你有對相關
+的控制晶片做存取的話，   這些資訊最最有用的了。   <code>dump_tuples</code>
+公用程式列出了卡片的 CIS (卡片資訊結構 )，並將一些較重要的資料解碼
+出來。  <code>dump_cisreg</code>  公用程式顯示卡片的本地端建構暫存器(local
+configuration registers)資料。</p>
+<p>有時候 <code>memory_cs</code> 記憶體卡驅動程式用來除錯很好用。它可以與任何
+的 PCMCIA 卡相連接，而且不會干擾到其他的驅動程式。它可以被用來對任
+何卡片的屬性記憶體或通用記憶體的直接存取。</p>
+
+<h2><a name="ss7.3" id="ss7.3"></a>7.3 為新卡片寫卡片服務驅動程式
+</h2>
+
+<p>Linux PCMCIA 程式設計師指引是 Linux PCMCIA 介面的最好文件。 最新的
+版本你都可以從 <code>hyper.stanford.edu</code> 的 <code>/pub/pcmcia/doc</code>
+目錄內或是在網站 
+<a href="http://hyper.stanford.edu/HyperNews/get/pcmcia/home.html">http://hyper.stanford.edu/HyperNews/get/pcmcia/home.html</a>
+內找到。</p>
+<p>對於那些接近於一般的   ISA  介面設備來說，  你也許可以使用已存在的
+Linux 驅動程式來驅動。有時候，最大的障礙是修改一個已存在的驅動程式
+使它可以在開機後處理加入或移出設備。在現行的驅動程式中，只有記憶體
+卡是唯一 `` 自我包含的 '' 驅動程式－並不依賴  Linux 的核心的其他部
+份來做苦工。</p>
+<p>在很多例子中，要支援一張新卡的最大障礙在於從它的製造版那兒得到技術
+資訊。    要知道問誰才對或是解釋哪些資訊是必需的也很難。    然而，
+只有少數例子外，在沒有從製造廠得到技術資訊的情況下要寫個該卡的驅動
+程式幾乎很難。</p>
+<p>我寫了一個含了備註來解說許多有關一個驅動程式如何與 Card 服務程式相
+灌通的架構驅動程式。       你可以在       PCMCIA        原始檔案的
+<code>modules/skeleton.c</code> 內找到。</p>
+
+<h2><a name="ss7.4" id="ss7.4"></a>7.4 給 PCMCIA 客戶自定驅動程式的作者的指引
+</h2>
+
+
+<p>我決定若要供應所有的 PCMCIA 客戶端驅動程式來成為 PCMCIA 套件的一部
+份的話，這樣並不適合我。每一個新的驅動程式都會讓主要套件漸漸地難以
+來維護。而且包含的這些驅動程式也會不請自來地將維護的工作從作者那兒
+轉移到我的身上。因此，我會基於使用者的需求以及可維護性來以個案的方
+式決定是否要包含哪些供應的驅動程式。對於那些不被包含在核心套裝的驅
+動程式，我建議這些驅動程式的作者可以使用下面的方案來打包您的驅動程
+式作為供應用。</p>
+<p>驅動程式的檔案應該被安排放在與 PCMCIA 來源供應版商的相同目錄結構下
+，如此，驅動程式就可被解開到完整的 PCMCIA 原始程式樹的上面了。一個
+驅動程式應該包含原始程式檔案 (在 <code>./modules/</code>)， man 頁 (在
+<code>./man/</code>)，建構檔案 (在 <code>./etc/</code>)。 在最上層的目錄內
+也應該有個 README 讀我檔案。</p>
+<p>最上層目錄也應該包含一個 makefile，它是一個組合用來執行 ``<code>make
+-f ...</code> all'' 以及 ``<code>make -f...  install</code>'' 編譯驅動程式並安裝
+適當的檔案。如果這個 makefile 有個 <code>.mk</code> 附加檔名，那麼它會自動
+地被上層的 <code>Makefile</code>  命令加上 <code>all</code> 以及 <code>install</code> 目標
+地時來執行。</p>
+<p>以下是一個   makefile   如何被建立的例子：</p>
+<p>
+
+</p><pre class="sample">
+# Sample Makefile for contributed client driver
+FILES = sample_cs.mk README.sample_cs \
+        modules/sample_cs.c modules/sample_cs.h \
+        etc/sample etc/sample.opts man/sample_cs.4
+all:
+        $(MAKE) -C modules MODULES=sample_cs.o
+install:
+        $(MAKE) -C modules install-modules MODULES=sample_cs.o
+        $(MAKE) -C etc install-clients CLIENTS=sample
+        $(MAKE) -C man install-man4 MAN4=sample_cs.4
+dist:
+        tar czvf sample_cs.tar.gz $(FILES)
+</pre>
+
+<p></p>
+<p>這個 makefile 使用 2.9.10 版本（含）以後的 PCMCIA 套裝程式所定義的
+安裝目標地。它還包含了一個 ``dist'' 目標地來給驅動程式的作者方便性
+。        你也許想要加上版本編號到最後的套裝檔名上。       (例如，
+<code>sample_cs-1.5.tar.gz</code>)。一個完整供應版可以如下：</p>
+<p>
+
+</p><pre class="sample">
+sample_cs.mk
+README.sample_cs
+modules/sample_cs.c
+modules/sample_cs.h
+etc/sample
+etc/sample.opts
+man/sample_cs.4
+</pre>
+
+<p></p>
+<p>以這樣的安排，當供應版本驅動程式被解開時，它會變為 PCMCIA 原始程式
+樹的必要成員。這樣它就可以使用 PCMCIA 檔頭檔案以及檢查使用者系統建
+構的機能、自動相關性檢查，就像是個 `` 一般的 '' 客戶端驅動程式一樣
+。</p>
+<p>我接受那些依照這個規格所準備的客戶端驅動程式將它們放在我的  FTP 檔
+案傳輸站  <code>hyper.stanford.edu</code>  的 <code>/pub/pcmcia/contrib</code>
+目錄內。在這個目錄內的 README 檔案會述明如何解開供應的驅動程式。</p>
+<p>PCMCIA 客戶端驅動程式介面一直以來都沒有變動很多， 並且還都有保留向
+後相容的功能。一客戶端驅動程式並不需在主要的 PCMCIA 套件小部份的改
+版時就得升級一次。我也會試著通知那些供應驅動程式的作者對於他們的驅
+動程式需要更動的地方。</p>
+
+<h2><a name="ss7.5" id="ss7.5"></a>7.5 給 Linux 供應版本維護人員的導引 
+</h2>
+
+
+<p>如果您使用的供應商版本提供系統建構工具程式使您須注意 PCMCIA 部份，
+請使用在 <code>/etc/pcmcia</code>  內的 <code>*.opts</code> 檔案來”掛上”
+那些功能。如果使用者編譯及安裝新版的 PCMCIA 套件時它們將不會被更動
+。如果您修改了主建構手稿後再安裝個新的 PCMCIA 套件時，這將會悄悄地
+把您已自訂的手稿給覆蓋而中斷您之前與建構工具間的連接。如果您不曉得
+怎麼來寫個合適的選項手稿，您可以與我連絡。</p>
+<p>如果您能將您使用的供應商版本中有關 PCMCIA 套件的使用與本文件之不同
+的地方寫成文件將對其他的使用者以及我本人有助益的。特別是，請在文件
+上付上啟動手稿及建構手構的不同處。</p>
+<p>如果您想做 Linux 供應版的 PCMCIA，最好也把非 PCMCIA 主要程式的其他
+分享驅動程式一起包括進去。為了方便維護，我會盡力地將核心套件的大小
+限制在一定範圍內，除非有我覺得會被大家感興趣的部份才會再加進去。如
+前面所說，其他的驅動程式會被分開地供應。對於被整合和分開於核心部份
+的驅動程式之界定是隨意且有些是有其歷史性的，因此我們不能以為它們在
+品質上有任何的不同。</p>
+
+<p>後記:</p>
+<p>譯者按: 在翻譯本篇文章的過程中，共遇到二次翻譯到一半而原作者修正文
+件及重新編排的狀況。因此，本譯文可能有翻譯不周延或錯字之處，煩請發
+現錯誤地方的朋友來信到 <code>
+<a href="mailto:linuxer.bbs@cis.nctu.edu.tw">linuxer.bbs@cis.nctu.edu.tw</a></code>
+給我，以便修正，謝謝您!</p>
+
+<hr />
+<table >
+  <tr>
+    <td class="BtdL"> <a href="PCMCIA-HOWTO-6.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="BtdC"> <a href="index.html" accesskey="H">目錄(H)</a> </td>
+    <td class="BtdR">&nbsp; </td>
+  </tr>
+  <tr>
+    <td class="BtdL">使用未被支援的卡片</td>
+    <td class="BtdC"><a href="PCMCIA-HOWTO-7.html"  accesskey="T">到頂層(T)</a></td>
+    <td class="BtdR">&nbsp;</td>
+  </tr>
+</table>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img class="ImgLogo" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" title="網路內容分級協會" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>2. 安裝 HTTP 伺服器</title>
+<link href="Intranet-Server-HOWTO-3.html" rel="next" title="3.測試 HTTPd" />
+<link href="Intranet-Server-HOWTO-1.html" rel="previous" title="1.簡介" />
+<link href="../../style.css" rel="stylesheet" type="text/css" />
+<link href="http://tldp.org/HOWTO/Intranet-Server-HOWTO.html" rel="alternate" title="原版" />
+<link href="index.html" rel="start" title="HOWTO：The Linux Intranet Server" />
+<link href="index.html#content" rel="contents" />
+<link href="Intranet-Server-HOWTO-1.html" rel="chapter" title="1.簡介" />
+<link href="Intranet-Server-HOWTO-2.html" rel="chapter" title="2.安裝 HTTP 伺服器" />
+<link href="Intranet-Server-HOWTO-3.html" rel="chapter" title="3.測試 HTTPd" />
+<link href="Intranet-Server-HOWTO-4.html" rel="chapter" title="4.連上 Linux 伺服器" />
+<link href="Intranet-Server-HOWTO-5.html" rel="chapter" title="5.設立內部網路" />
+<link href="Intranet-Server-HOWTO-6.html" rel="chapter" title="6.存取網路" />
+<link href="Intranet-Server-HOWTO-7.html" rel="chapter" title="7.更多需要做的事" />
+<link href="Intranet-Server-HOWTO-8.html" rel="chapter" title="8.感謝與合法性" />
+<link href="Intranet-Server-HOWTO-2.html#ss2.1" rel="section" title="2.1 下載前的準備工作 " />
+<link href="Intranet-Server-HOWTO-2.html#ss2.1" rel="section" title="2.2 編譯 HTTPd " />
+<meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+<link href="Intranet-Server-HOWTO.rdf" rel="meta" title="各章節的說明資訊" />
+</head> <body>
+<table >
+  <tr> 
+    <th colspan="3" class="HdTitle">HOWTO：The Linux Intranet Server</th>
+  </tr>
+  <tr> 
+    <td class="TtdL"> <a href="Intranet-Server-HOWTO-1.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="TtdC">&nbsp;</td>
+    <td class="TtdR"> <a href="Intranet-Server-HOWTO-3.html" accesskey="N">下一頁(N)</a> </td>
+  </tr>
+</table>
+<hr />
+<h1>2. 安裝 HTTP 伺服器</h1>
+
+<p>當你下載伺服器軟體時，你有兩個選擇: 取用原始程式檔再自己來編譯它，
+或是取用已經編譯好的二進位執行檔。 已編譯好的給  Linux (ELF 版本 )
+用的二進位檔可以在 NCSA 上取得，它們都非舊的版本哦!</p>
+
+<h2><a name="ss2.1" id="ss2.1"></a>2.1 下載前的準備工作 </h2>
+
+<p>在 NCSA 的伺服器會導引你做建構選項的步驟並為你料理許多檔案。但在您
+嚐試要下載 HTTPd 前請先回答下列問題</p>
+
+<h3>作業系統</h3>
+
+<p>首先，你必須選擇是要下載原始程式檔案呢? 還是已編譯好的軟體。如果你
+的系統並沒出現在選單上，那麼您就必須取回內定的原始檔案，再自己編譯
+它。</p>
+
+<p>要檢查你的 Linux 的版本，請回到你的 Linux 命令列上打入</p>
+<pre class="sample">
+  linux:~$  uname -a
+</pre>
+
+
+<p>它會回應像下面的內容 </p>
+<pre class="sample">
+   linux:~$  uname -a
+   Linux linux 2.0.29 #4 Tue Sep 13 04:05:51 CDT 1994 i586
+   linux:~$
+</pre>
+
+<p>是 Linux is 2.0.29 版本。</p>
+<p>其他的參數可以在下載前來指定，或是以修改在 <code>/usr/local/etc/httpd/conf</code>
+目錄內的 <code>srm.conf</code>  檔案來建構。  在<code>httpd.conf</code>檔案內所
+載明的實際目錄會顯示在裏頭。唯一的例外是<code>srm.conf</code>檔案內的直接的DocumentRoot。</p>
+
+<h3>處理類型 (伺服器類型)</h3>
+
+<p>這項是來指定你的機器會怎麼地執行你的  HTTPd  伺服器。 最好的方法是
+&quot;standalone&quot;。這樣可讓 HTTP 精靈一直地執行。如果您選擇載
+入 HTTPd 在 &quot;inetd&quot; 內，伺服器的二進位碼會在每一次的需求
+時被重載入記憶體內，這樣可能會減慢你的伺服器。</p>
+
+<h3>連接埠 (埠)</h3>
+
+<p>這項指定您的機器的哪一個埠會被  HTTPd  精靈使用來  bind  to 及聆聽
+HTTP 請求。如果你可以簽作成 &quot;root&quot;，請使用內定值 80。 或
+者請在 1025 到 65535 之間挑選一個。</p>
+
+<h3>伺服器使用者識別 (使用者)</h3>
+
+<p>這是伺服器在答覆要求時改變成為的及實際作用的檔案時所需的使用者識別。
+只有你將伺服器當 &quot;獨立單機&quot;時才需要回答這個問題。如果你
+沒有 root 的授權，只需使用你的遷入名稱即可。如果你是系統管理員，
+你可能會想建立一個特別的使用者來讓你控制檔案系統的授權。</p>
+
+<h3>伺服器群組識別 (群組)</h3>
+
+<p>這是群組識別名稱，伺服器會在回應需求及在這些檔案動件時改變成它們。
+它和伺服器使用者識別名稱有點相同，而且只有在你獨自執行伺服器時才可
+以使用。</p>
+
+<p>如果你沒有 root 的權限， 請使用你的主要群組的名義。 你可以在 Linux
+的命令列中打入 <b>groups</b> 得知您的群組名稱。</p>
+
+<h3>伺服器管理員電子郵件地址 (伺服器  Admin)</h3>
+
+<p>這是當使用者要報告在伺服器上有哪些問題時要寄電子郵件做報告的地址。
+你可以填上你的個人的 e-mail地址。</p>
+
+<h3>伺服器目錄的位置 (伺服器Root)</h3>
+
+<p>這是指伺服器位於你的系統的哪個地方。如果你有 root 的權限，請讓它就
+依照它所建議的地點 <code>/usr/local/etc/httpd</code> 內。 如果你無法以
+root 的身份簽入，請在你的 home 目錄內選擇一個次目錄。你可以使用ind
+out the path of your home directory with the <b>pwd</b> command.</p>
+
+<h3>HTML 檔案的位置 (DocumentRoot)</h3>
+
+<p>這兒是被伺服使用的     HTML     檔案被放置的地點。    內定的位置是
+<code>/usr/local/etc/httpd/htdocs</code>。然而你可以把它設定成你在伺服
+器使用者識別名稱內的特別的使用者的 home 目錄，或是你的 home 目錄內
+的一個子目錄 (假如你無法遷入成為 root 的話）。</p>
+
+<p>如果不曉得，請使用內定值。現在你已經有上面問題的答案了，你就可以
+從 
+<a href="http://hoohoo.ncsa.uiuc.edu/docs/setup/OneStep.html">http: //hoohoo.ncsa.uiuc.edu/docs/setup/OneStep.html</a> 下載 NCSA HTTPd。
+在安裝前你應該閱讀放在 
+<a href="http://hoohoo.ncsa.uiuc.edu/docs/">http: //hoohoo.ncsa.uiuc.edu/docs/</a>
+內的 HTTPd 文件。如果你計畫編譯執行碼，那你需要修改在<code>support,  src, cgi-src</code>
+三個目錄內的每一個 makefiles 檔。如果你的 Linux 版本已經支援了，那麼你只需
+在最上端的目錄上執行<b>make  linux</b>。(如 <code>/usr/local/etc/httpd</code>)</p>
+
+<h2><a name="ss2.2" id="ss2.2"></a>2.2 編譯 HTTPd </h2>
+
+<p>這很簡單，  只要在伺服器的   root  目錄內的命令列上鍵入   <code>make
+linux</code> 即可。  <b> 註: </b> 在編譯前，pre-ELF Linux 的使用者
+(沒有  ELF  功能的  Linux)  須將  <code>portability.h</code>  檔案內的
+<code>#define         NO_PASS</code>          列的註解符號拿掉並且設定
+<code>Makefile</code> 內的 <code>DBM_LIBS= -ldbm</code>。</p>
+
+<hr />
+<table >
+  <tr> 
+    <td class="BtdL"> <a href="Intranet-Server-HOWTO-1.html" accesskey="P">上一頁(P)</a> 
+    </td>
+    <td class="BtdC"> <a href="index.html" accesskey="H">目錄(H)</a> </td>
+    <td class="BtdR"> <a href="Intranet-Server-HOWTO-3.html">下一頁(N)</a> </td>
+  </tr>
+  <tr> 
+    <td class="BtdL">簡介</td>
+    <td class="BtdC"><a href="Intranet-Server-HOWTO-2.html"  accesskey="T">到頂層(T)</a></td>
+    <td class="BtdR">測試 HTTPd</td>
+  </tr>
+</table>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> 
+  <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a> 
+  <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img class="ImgLogo" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> 
+  <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> 
+  <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" title="網路內容分級協會" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+ 
+ <title>Mini HOWTO：Linux kerneld</title>
+ <meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+ <link href="../../style.css" rel="stylesheet" type="text/css" />
+ <link href="http://tldp.org/HOWTO/mini/Kerneld/index.html" rel="alternate" title="原版" />
+</head> <body> 
+<table    >
+  <tr>
+    <th colspan="3" class="HdTitle">Mini
+      HOWTO：Linux kerneld</th>
+  </tr>
+  <tr>
+    <td class="TtdL"> <a href="../Upgrade/Upgrade-10.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="TtdC"></td>
+    <td class="TtdR"> <a href="../Upgrade/Upgrade-12.html" accesskey="N">下一頁(N)</a> </td>
+  </tr>
+</table>
+<hr />
+<h1><a name="Setup" id="Setup"></a>3. 如何設定它？</h1>
+<p>首先要取得所需的東西：合用的核心部分及最新版的 modules-utilities。之後你要安裝 modules-utilities。十分簡單：只需把原程式碼解壓及執行 <b>make
+    install</b>. 這樣便會編譯 genksysm, insmod, lsmod, modprobe, depmod, kerneld，及把它們安裝到 /sbin。我建議你加數行到你的開機命令手稿
+    (startup-script) 來完成啟動時所需的設定。如果你使用 Slackware，請把以下數行加入你的 /etc/rc.d/rc.S 檔，如果你使用
+    SysVinit，如 Debian, RedHat, Caldera，請把以下數行加入你的 /etc/rc.d/rc.sysinit 檔。（譯按：據我所知，RedHat
+    5.0的 SysVinit已加入此功能）： </p>
+<pre class="sample"><tt>        # Start kerneld - this should happen very early in the
+        # boot process, certainly BEFORE you run fsck on filesystems
+        # that might need to have disk drivers autoloaded
+        if [ -x /sbin/kerneld ]
+        then
+                /sbin/kerneld
+        fi
+
+        # Your standard fsck commands go here
+        # And you mount command to mount the root fs read-write
+
+        # Update kernel-module dependencies file
+        # Your root-fs MUST be mounted read-write by now
+        if [ -x /sbin/depmod ]
+        then
+                /sbin/depmod -a
+        fi</tt>
+</pre>
+<p>第一部分啟動 kerneld。</p>
+<p>第二部分開始時執行 'depmod -a'。depmod 建立所有可找到的模組的清單及分析它們之間互相依賴的情況。所以，它會知道載入一個模組前是否需要先載入其他模組。</p>
+<p><b>注意</b>︰最新版本的 kerneld 可選擇鏈結 (link) GNU 的 dbm 程式庫 libgdbm。如果在編譯
+  module-utilities 時作了此抉擇，<i>找不到 libgdbm 時 kerneld 便不能啟動。</i>這很有可能當 /usr 在另一個磁碟分區 (partition)，而企圖在掛 (mount) /usr 前啟動 kerneld 時發生。建議的解決方法是把
+  libgdbm 從 /usr/lib 移到 /lib，或靜態連結 kerneld (link kerneld statically)。 </p>
+<p> 之後，你要把核心的源程式解壓，設定及建立一個你喜歡的核心。如果你未試過這樣做，你必須閱讀在 Linux 源程式碼頂層目錄 (top directory)
+  中的 README 檔。在執行 <b>make config</b> 設定核心時，你要注意數條在早期出現的問題：</p>
+<pre class="sample"><tt>  Enable loadable module support (CONFIG_MODULES) [Y/n/?] Y</tt>
+</pre>
+<p>你要選擇 loadable module support，否則根本不會有模組讓 kerneld 載入。答 Yes。 </p>
+<pre class="sample"><tt>  Kernel daemon support (CONFIG_KERNELD) [Y/n/?] Y</tt>
+</pre>
+<p> 當然，這也是需要的，很多東西都可建立為模組。你會見到類似的問題： </p>
+<pre class="sample"><tt>  Normal floppy disk support (CONFIG_BLK_DEV_FD) [M/n/y/?] </tt>
+</pre>
+<p>你可回答 'M' 來代表模組。通常只有開機時必須的驅動程式，如硬碟機驅動程式，和根目錄的檔案系統等必需建立在核心中。其他皆可建立為模組。 </p>
+<p>完成 'make config' 後，執行 'make dep', 'make clean', 'make zImage' 或 'make
+  zlilo', 'make modules' 和 'make modules_install'。</p>
+<p>成功！</p>
+<p>'make zImage' 會把你的新核心映像 (kernel image) 放到 arch/i386/boot/zImage。你要把它拷貝到你放置啟動映像的地方或用
+  LILO 安裝它。</p>
+<p>想得到更多有關設定，建立及安裝核心部分的資料，請閱讀定時貼上 comp.os.linux.answers 的<a href="http://sunsite.unc.edu/mdw/HOWTO/Kernel-HOWTO.html">Kernel-HOWTO</a> ，你也可在
+  sunsite.unc.edu 的 /pub/Linux/docs/HOWTO 找到它。（譯按：中文版可在 <a href="http://www.linux.org.tw/CLDP/Kernel-HOWTO.html">http://www.linux.org.tw/CLDP/Kernel-HOWTO.html</a>找到。） </p>
+<h2>&nbsp;</h2>
+<h2><a name="Testing" id="Testing"></a>3.1 試用 kerneld</h2>
+<p>現在你可用新的核心部分開機。在系統啟動後，執行 'ps -ax'，你應該會見到 kerneld 的一行：</p>
+<pre class="sample"><tt>    PID TTY STAT  TIME COMMAND
+     59  ?  S     0:01 /sbin/kerneld</tt>
+</pre>
+<p>kerneld 其中一個好處是只要你有所需的核心及安裝好監控程式，你只需作很少設定。現在，你可嘗試用一個建立成模組的驅動程式─它多數會不需再作設定而能使用。我把軟磁碟的驅動程式建立成模組，所以我放入一只
+  DOS 磁碟及 </p>
+<pre class="sample"><tt>  osiris:~ $ mdir a:
+   Volume in drive A has no label
+   Volume Serial Number is 2E2B-1102
+   Directory for A:/
+
+  binuti~1 gz       1942 02-14-1996  11:35a binutils-2.6.0.6-2.6.0.7.diff.gz
+  libc-5~1 gz      24747 02-14-1996  11:35a libc-5.3.4-5.3.5.diff.gz
+          2 file(s)        26689 bytes</tt>
+</pre>
+<p>即是說軟磁碟的驅動程式運作正常─當我嘗試使用軟磁碟時，它被自動載入。</p>
+<p>要看到軟磁碟的模組真的被載入，你可執行 /sbin/lsmod，它會列出現時載入了的模組。</p>
+<pre class="sample"><tt>  osiris:~ $ /sbin/lsmod 
+  Module:        #pages:  Used by:
+  floppy            11    0 (autoclean)</tt>
+</pre>
+<p>&quot;(autoclean)&quot; 代表如果有一分鐘沒用此模組，它就會被 kerneld
+  自動移走。所以，那 11 頁記憶體（44 kB，一頁等於 4kB）只會在我使用軟碟機時被佔用。如果我一分鐘不用軟碟，它會被釋放。如果你的記憶體不敷應用，這就太棒了</p>
+<p>&nbsp;</p>
+<hr />
+<table
+
+
+
+
+>
+  <tr
+>
+    <td class="BtdL"
+><a href="../Upgrade/Upgrade-10.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="BtdC"
+><a href="../Upgrade/index.html" accesskey="H">目錄(H)</a></td
+>
+    <td class="BtdR"
+><a
+href="../Upgrade/Upgrade-12.html"
+>下一頁(N)</a
+></td
+>
+  </tr
+>
+  <tr
+>
+    <td class="BtdL"
+>禁止簽入並備份/root及/home以下的檔案。</td
+>
+    <td class="BtdC"
+><a href="../Upgrade/Upgrade-11.html" accesskey="T">到頂層(T)</a></td
+>
+    <td class="BtdR"
+>用fdisk刪除linux分割區並重建它們。</td
+>
+  </tr
+>
+</table
+>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img class="ImgLogo" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" title="網路內容分級協會" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

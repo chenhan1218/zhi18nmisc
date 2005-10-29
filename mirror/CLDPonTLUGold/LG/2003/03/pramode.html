@@ -1,0 +1,174 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html lang="zh-TW">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <title>Programming the SA1110 Watchdog timer on the Simputer</title>
+  <link href="../../LGStyle.css" rel="stylesheet" type="text/css">
+  <link href="../../../style.css" rel="stylesheet" type="text/css">
+</head>
+<body>
+<div id="GazetteLogo"><a href="http://www.linuxgazette.com/"><img
+ src="../../gx/lglogo_200x41.png" alt="Linux Gazette 雜誌" width="200"
+ height="41" longdesc="../linuxgaette.rdf"> </a><br>
+<a href="http://www.linuxgazette.com/copying.html">Copyright</a>©1996-2003<br>
+Specialized Systems Consultants, Inc.</div>
+<div class="CLDPAddr">CLDP</div>
+<div class="CLDPFull">Chinese Linux Documentation Project</div>
+<hr>
+<p class="BarTop"><a href="../../../index.html" title="連到首頁"
+ hreflang="zh-TW" accesskey="H">首頁(H)</a>｜<a href="../../../howto/"
+ title="連到和 HOWTO  相關資訊" hreflang="zh-TW" accesskey="T">HOWTO(T)</a>｜<a
+ href="../../../guide/" title="連到和指南相關的資訊" hreflang="zh-TW"
+ accesskey="G">指南(G)</a>｜<a href="../../../FAQ/" title="連到和問答集相關的資訊"
+ hreflang="zh-TW" accesskey="F">FAQ(F)</a>｜<a href="../../../man/"
+ title="連到和手冊頁有關的資訊" hreflang="zh-TW" accesskey="M">手冊頁(M)</a>｜<a
+ href="../../index.html" title="Linux電子報為一個月發行一期的雜誌" hreflang="zh-TW"
+ accesskey="L">Linux電子報(L)</a>｜<a href="../../../LF/"
+ title="LinuxFocus 為兩個月發行一期的雜誌" hreflang="zh-TW" accesskey="S">LinuxFocus(S)</a></p>
+<hr>
+<div class="DivCover">
+<div class="TitleHead">Programming the SA1110 Watchdog timer on the
+Simputer <br>
+By <a href="../../authors/pramode.html">Pramode C.E</a></div>
+<div>
+<p class="BarTop"><a href="../../index.html">Linux電子報首頁</a>｜<a
+ href="index.html">目錄</a>｜<a href="../../faq/index.html">FAQ</a><br>
+讓 Linux 更加有趣呦！</p>
+</div>
+<div>
+<h2>目錄</h2>
+</div>
+<div>
+<ol>
+  <li><a href="#ss1">前言</a></li>
+  <li><a href="#ss2"> The Watchdog timer</a></li>
+  <li><a href="#ss3"> Resetting the SA1110</a></li>
+  <li><a href="#ss4"> The Operating System Timer</a></li>
+  <li><a href="#ss5">結論</a><br>
+  </li>
+</ol>
+</div>
+<div>
+<h2><a name="ss1"></a>1. 前言</h2>
+</div>
+<div>
+<p> In last month's article (Fun with Simputer and Embedded Linux), I
+had described the process of developing programs for the Simputer, a
+StrongArm based handheld device. The Simputer can be used as a platform
+for learning microprocessor and embedded systems programming. This
+article describes my attempts at programming the watchdog timer unit
+attached to the SA1110 CPU which powers the Simputer. The experiments
+should work on any Linux based handheld which uses the same CPU.</p>
+</div>
+<div>
+<h2><a name="ss2"></a>2. The Watchdog timer</h2>
+</div>
+<div>
+<p> Due to obscure bugs, your computer system is going to lock up once
+in a while - the only way out would be to reset the unit. But what if
+you are not there to press the switch? You need to have some form of
+`automatic reset'. The watchdog timer presents such a solution. </p>
+<p> Imagine that your microprocessor contains two registers - one which
+gets incremented every time there is a low to high (or high to low)
+transition of a clock signal (generated internal to the microprocessor
+or coming from some external source) and another one which simply stores
+a number. Let's assume that the first register starts out at zero and is
+incremented at a rate of 4,000,000 per second. Lets assume that the
+second register contains the number 4,000,000,0. The microprocessor
+hardware compares these two registers every time the first register is
+incremented and issues a reset signal (which has the result of rebooting
+the system) when the value of these registers match. Now, if we do not
+modify the value in the second register, our system is sure to reboot
+in 10 seconds - the time required for the values in both registers to
+become equal. </p>
+<p> The trick is this - we do not allow the values in these registers to
+become equal. We run a program (either as part of the OS kernel or in
+user space) which keeps on moving the value in the second register
+forward before the values of both become equal. If this program does not
+execute (because of a system freeze), then the unit would be
+automatically rebooted the moment the value of the two registers match.
+Hopefully, the system will start functioning normally after the reboot. </p>
+</div>
+<div>
+<h2><a name="ss3"></a>3.  Resetting the SA1110</h2>
+</div>
+<div>
+<p> The Intel StrongArm manual specifies that a software reset is
+invoked when the Software Reset (SWR) bit of a register called RSRR
+(Reset Controller Software Register) is set. The SWR bit is bit D0 of
+this 32 bit register. My first experiment was to try resetting the
+Simputer by setting this bit. I was able to do so by compiling a simple
+module whose `init_module' contained only one line: </p>
+<p> RSRR = RSRR | 0x1 </p>
+</div>
+<div>
+<h2><a name="ss4"></a>4.  The Operating System Timer </h2>
+</div>
+<div>
+<p> The StrongArm CPU contains a 32 bit timer that is clocked by a
+3.6864MHz oscillator. The timer contains an OSCR (operating system count
+register) which is an up counter and four 32 bit match registers (OSMR0
+to OSMR3). Of special interest to us is the OSMR3. </p>
+<p> If bit D0 of the OS Timer Watchdog Match Enable Register (OWER) is
+set, a reset is issued by the hardware when the value in OSMR3 becomes
+equal to the value in OSCR. It seems that bit D3 of the OS Timer
+Interrupt Enable Register (OIER) should also be set for the reset to
+occur. </p>
+<p> Using these ideas, it is easy to write a simple character driver
+with only one method - `write'. A write will delay the reset by a period
+defined by the constant `TIMEOUT'. </p>
+<p> [<a href="misc/pramode/watchdog.c.txt">Text version of this listing</a>]</p>
+<p> </p>
+<pre>/*<br> * A watchdog timer. <br> */<br><br>#include &lt;linux/module.h&gt;<br>#include &lt;linux/ioport.h&gt;<br>#include &lt;linux/sched.h&gt;<br>#include &lt;asm-arm/irq.h&gt;<br>#include &lt;asm/io.h&gt;<br><br>#define WME 1<br>#define OSCLK 3686400 /* The OS counter gets incremented<br>                       * at this rate<br>                       * every second <br>                       */<br><br>#define TIMEOUT 20 /*  20 seconds timeout */<br><br>static int major;<br>static char *name = "watchdog";<br><br>void<br>enable_watchdog(void)<br>{<br>    OWER = OWER | WME;<br>}<br><br>void<br>enable_interrupt(void)<br>{<br>    OIER = OIER | 0x8;<br>}<br><br>ssize_t <br>watchdog_write(struct file *filp, const char *buf, size_t<br>               count, loff_t *offp)<br>{<br>    OSMR3 = OSCR + TIMEOUT*OSCLK;   <br>    printk("OSMR3 updated...\n");<br>    return count;<br>}<br><br>static struct file_operations fops = {write:watchdog_write};<br><br>int<br>init_module(void)<br>{<br>    major = register_chrdev(0, name, &amp;fops);<br>    if(major &lt; 0) {<br>       printk("error in init_module...\n");<br>       return major;<br>    }<br>    printk("Major = %d\n", major);<br>    OSMR3 = OSCR + TIMEOUT*OSCLK;<br>    enable_watchdog();<br>    enable_interrupt();<br>    return 0;<br>}<br><br><br>void<br>cleanup_module()<br>{<br>    unregister_chrdev(major, name);<br>}<br><br></pre>
+<p> It would be nice to add an `ioctl' method which can be used at least
+for getting and setting the timeout period. </p>
+<p> Once the module is loaded, we can think of running the following
+program in the background (of course, we have to first create a device
+file called `watchdog' with the major number which `init_module' had
+printed). As long as this program keeps running, the system will not
+reboot. </p>
+<p> [<a href="misc/pramode/shutter_upper.c.txt">Text version of this
+listing</a>] </p>
+<p> </p>
+<pre>#include &lt;sys/types.h&gt;<br>#include &lt;sys/stat.h&gt;<br>#include &lt;fcntl.h&gt;<br><br>#define TIMEOUT 20<br><br>main()<br>{<br>        int fd, buf;<br>        fd = open("watchdog", O_WRONLY);<br>        if(fd &lt; 0) {<br>                perror("Error in open");<br>                exit(1);<br>        }<br>        while(1) {<br>                if(write(fd, &amp;buf, sizeof(buf)) &lt; 0) {<br>                        perror("Error in write, System may reboot any moment...\n");<br>                        exit(1);<br>                }<br>                sleep(TIMEOUT/2);<br>        }<br>}<br><br></pre>
+</div>
+<div>
+<h2><a name="ss5"></a>5. 結論</h2>
+</div>
+<div>
+<p> If you are not bored to death reading this, you may be interested in
+knowing more about Linux on handheld devices (and in general, embedded
+applications). So, till next time, Bye!</p>
+</div>
+<div>
+<h2>內容</h2>
+</div>
+<div>
+<p> I am an instructor working for IC Software in Kerala, India. I would
+have loved becoming an organic chemist, but I do the second best thing
+possible, which is play with Linux and teach programming! </p>
+</div>
+<div>
+<h2>版權宣告</h2>
+</div>
+<div>
+<p> Copyright © 2003, Pramode C.E. Copying license <a
+ href="http://www.linuxgazette.com/copying.html">http://www.linuxgazette.com/copying.html</a><a
+ href="file:///Data/CLDP/LG/2003/03/copying.html"></a><br>
+Published in Issue 88 of <i>Linux Gazette</i>, March 2003</p>
+</div>
+</div>
+<hr>
+<p class="BarTop"><a href="../../../index.html" title="連到首頁"
+ hreflang="zh-TW" accesskey="H">首頁(H)</a>｜<a href="../../../howto/"
+ title="連到和 HOWTO  相關資訊" hreflang="zh-TW" accesskey="T">HOWTO(T)</a>｜<a
+ href="../../../guide/" title="連到和指南相關的資訊" hreflang="zh-TW"
+ accesskey="G">指南(G)</a>｜<a href="../../../FAQ/" title="連到和問答集相關的資訊"
+ hreflang="zh-TW" accesskey="F">FAQ(F)</a>｜<a href="../../../man/"
+ title="連到和手冊頁有關的資訊" hreflang="zh-TW" accesskey="M">手冊頁(M)</a>｜<a
+ href="../../index.html" title="Linux電子報為一個月發行一期的雜誌" hreflang="zh-TW"
+ accesskey="L">Linux電子報(L)</a>｜<a href="../../../LF/"
+ title="LinuxFocus 為兩個月發行一期的雜誌" hreflang="zh-TW" accesskey="S">LinuxFocus(S)</a></p>
+<hr>
+</body>
+</html>

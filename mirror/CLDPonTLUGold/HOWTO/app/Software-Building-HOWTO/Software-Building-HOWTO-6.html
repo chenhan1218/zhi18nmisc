@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+ 
+ <title>6. 第一個例子: Xscrabble</title>
+ <link href="Software-Building-HOWTO-7.html" rel="next" title="7. 第二個例子: Xloadimage" />
+ <link href="Software-Building-HOWTO-5.html" rel="previous" title="5. 最後步驟" />
+  <link href="http://tldp.org/HOWTO/Software-Building-HOWTO.html" rel="alternate" title="原版" />
+ <link href="../../style.css" rel="stylesheet" type="text/css" />
+ <link href="index.html" rel="start" title="HOWTO：Building and Installing Software Packages for Linux" />
+ <link href="index.html#content" rel="contents" />
+ <meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.rsac.org/ratingsv01.html" labels ratings (v 0 s 0 n 0 l 0))'/>
+ <link href="Software-Building-HOWTO.rdf" rel="meta" title="各章節的說明資訊" />
+ <link href="Software-Building-HOWTO-1.html" rel="chapter" title="1.簡介" />
+ <link href="Software-Building-HOWTO-2.html" rel="chapter" title="2.從取得開始" />
+ <link href="Software-Building-HOWTO-3.html" rel="chapter" title="3.使用 Make" />
+ <link href="Software-Building-HOWTO-4.html" rel="chapter" title="4.克服困難" />
+ <link href="Software-Building-HOWTO-5.html" rel="chapter" title="5.最後步驟 " />
+ <link href="Software-Building-HOWTO-6.html" rel="chapter" title="6.第一個例子: Xscrabble" />
+ <link href="Software-Building-HOWTO-7.html" rel="chapter" title="7.第二個例子: Xloadimage" />
+ <link href="Software-Building-HOWTO-8.html" rel="chapter" title="8.第三個例子: Fortune" />
+ <link href="Software-Building-HOWTO-8.html" rel="chapter" title="9.哪裏可找到原始碼檔案" />
+ <link href="Software-Building-HOWTO-10.html" rel="chapter" title="10.結語" />
+ <link href="Software-Building-HOWTO-11.html" rel="chapter" title="11.參考與進一步閱讀資料" />
+</head> <body   >
+<table >
+  <tr>
+    <th colspan="3" class="HdTitle">HOWTO：在
+      Linux 下建立軟體套件</th>
+  </tr>
+  <tr>
+    <td class="TtdL"> <a href="Software-Building-HOWTO-5.html" accesskey="P">上一頁(P)</a> 
+    </td>
+    <td class="TtdC">&nbsp;</td>
+    <td class="TtdR"> <a href="Software-Building-HOWTO-7.html" accesskey="N">下一頁(N)</a> 
+    </td>
+  </tr>
+</table>
+<hr />
+<h1>6. 第一個例子: Xscrabble</h1>
+
+<p>Matt Chapman的 Xscrabble 似乎像是個頗有趣的程式,
+因為我曾是個貪婪的 Scrabble<code>&trade;</code>(拼字遊戲)玩家.我下載下,解壓, 
+而且建立它以 README 檔案中的下列步驟:
+</p>
+<pre class="sample">
+     xmkmf
+     make Makefiles
+     make includes
+     make
+</pre>
+
+<p>當然它不能正常運作...</p>
+<pre class="sample">
+gcc -o xscrab -O2 -O -L/usr/X11R6/lib 
+init.o xinit.o misc.o moves.o cmove.o main.o xutils.o mess.o popup.o
+widgets.o display.o user.o CircPerc.o
+-lXaw -lXmu -lXExExt -lXext -lX11 -lXt -lSM -lICE -lXExExt -lXext -lX11
+-lXpm -L../Xc -lXc
+
+BarGraf.o(.text+0xe7): undefined reference to `XtAddConverter'
+BarGraf.o(.text+0x29a): undefined reference to `XSetClipMask'
+BarGraf.o(.text+0x2ff): undefined reference to `XSetClipRectangles'
+BarGraf.o(.text+0x375): undefined reference to `XDrawString'
+BarGraf.o(.text+0x3e7): undefined reference to `XDrawLine'
+etc.
+etc.
+etc...
+</pre>
+<p>我在 
+<a href="news://comp.os.linux.x">comp.os.linux.x</a>
+的新聞群組詢問過, 而且有些人好心的指出似乎 Xt, Xaw, Xmu, 和 X11 libs
+沒有讓連結器(linker)找得到. 嗯...</p>
+<p>有兩個主要的 Makefiles, 而且在 <code>src</code> 目錄下的那個讓我感興趣. 在 Makefile 一行有定義 LOCAL_LIBS 
+  成: LOCAL_LIBS = $(XAWLIB) $(XMULIB) $(XTOOLLIB) $(XLIB) 這所指的 libs 並沒有被連結器找到</p>
+<p>找找下個指到 LOCAL_LIBS 的地方, 我看到該在 Makerfile 的495行:
+</p>
+<pre class="sample">
+      $(CCLINK) -o $@ $(LDOPTIONS) $(OBJS) $(LOCAL_LIBS) $(LDLIBS)
+$(EXTRA_LOAD_FLAGS)
+</pre>
+<p>而現在 LDLIBS 是什麼呢?
+</p>
+<pre class="sample">
+      LDLIBS = $(LDPOSTLIB) $(THREADS_LIBS) $(SYS_LIBRARIES)
+$(EXTRA_LIBRARIES)
+</pre>
+<p>SYS_LIBRARIES 是:
+</p>
+<pre class="sample">
+ SYS_LIBRARIES = -lXpm -L../Xc -lXc
+</pre>
+
+
+<p>是個! 就是這樣遺失 libraries. 
+
+</p>
+<p>大概連結器需要在 LOCAL_LIBS 之前看到 LDLIBS...
+所以, 第一件事要嘗試去修改 Makefile 就是改寫在495行的
+$(LOCAL_LIBS) 和 $(LDLIBS) , 所以它現在變成: 
+</p>
+<pre class="sample">
+        $(CCLINK) -o $@ $(LDOPTIONS) $(OBJS) $(LDLIBS) $(LOCAL_LIBS)
+$(EXTRA_LOAD_FLAGS)                          ^^^^^^^^^^^^^^^^^^^^^^^
+</pre>
+<p>在上面的改後,我試著再次執行 make , 瞧, 它這次可正常跑了.
+當然, Xscrabble 仍然需要一些微調(fine tuning]與玩弄(twiddling),
+像是重新命名字典以及標註某些輔助的敘述在原始碼檔案之一,
+但正因為那樣,它已給我好幾個小時的消遣.</p>
+<p>你可以寄 e-mail 
+<a href="mailto:matt@belgarath.demon.co.uk">Matt Chapman</a>, 而且從他的 
+<a href="http://www.belgarath.demon.co.uk/programs/index.html">home  page</a>
+下載 Xscrabble. </p>
+
+
+
+<pre class="sample">
+       Scrabble 是 Milton Bradley Co., Inc. 的註冊商標.
+</pre>
+
+
+
+
+<hr/>
+<table >
+  <tr>
+    <td class="BtdL"> <a href="Software-Building-HOWTO-5.html" accesskey="P">上一頁(P)</a> 
+    </td>
+    <td class="BtdC"> <a href="index.html" accesskey="H">目錄(H)</a> </td>
+    <td class="BtdR"> <a href="Software-Building-HOWTO-7.html">下一頁(N)</a> </td>
+  </tr>
+  <tr>
+    <td class="BtdL">最後步驟</td>
+    <td class="BtdC"><a href="Software-Building-HOWTO-6.html"  accesskey="T">到頂層(T)</a></td>
+    <td class="BtdR">第二個例子: Xloadimage</td>
+  </tr>
+</table>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img class="ImgLogo" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" title="網路內容分級協會" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

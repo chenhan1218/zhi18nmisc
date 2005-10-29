@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+ 
+ <title>5.第二部份-為使用者和群組指定 Quota</title>
+ <link href="../../style.css" rel="stylesheet" type="text/css" />
+ <link href="Quota-5.html#ss5.1" rel="section" title="5.1 為特定使用者指定 quota" />
+ <link href="Quota-5.html#ss5.2" rel="section" title="5.2 為特定群組指定 quota" />
+ <link href="Quota-5.html#ss5.3" rel="section" title="5.3 為一群使用者指定相同的 quota 值" />
+ <link href="Quota-5.html#ss5.4" rel="section" title="5.4 軟性限制" />
+ <link href="Quota-5.html#ss5.5" rel="section" title="5.5 硬性限制" />
+ <link href="Quota-5.html#ss5.6" rel="section" title="5.6 緩衝期間" />
+ <link href="http://tldp.org/HOWTO/mini/Quota.html" rel="alternate" title="原版" />
+ <link href="Quota-6.html" rel="next" title="6.其它的 Quota 指令" />
+ <link href="Quota-4.html" rel="prev" title="4.在 Linux 上設定 quota - 第一部份: 配置" />
+ <meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+ <link href="Quota-1.html" rel="chapter" title="1.什麼是 Quota?" />
+ <link href="Quota-2.html" rel="chapter" title="2.Quota 目前在 Linux 上的情況" /> 
+ <link href="Quota-3.html" rel="chapter" title="3.在 Linux 上使用 Quota 的需求" />
+ <link href="Quota-4.html" rel="chapter" title="4.在 Linux 上設定 quota - 第一部份: 配置" />
+ <link href="Quota-5.html" rel="chapter" title="5.第二部份-為使用者和群組指定 Quota" />
+ <link href="Quota-6.html" rel="chapter" title="6.其它的 Quota 指令" />
+ <link href="Quota.rdf" rel="meta" title="各章節的說明資訊" />
+ <link href="index.html" rel="start" />
+ <link href="index.html#content" rel="contents" />
+</head> <body> 
+<table    >
+  <tr>
+    <th colspan="3" class="HdTitle">Mini
+    HOWTO：Quota</th>
+  </tr>
+  <tr>
+    <td class="TtdL"> <a href="Quota-4.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="TtdC"></td>
+    <td class="TtdR"> <a href="Quota-6.html" accesskey="N">下一頁(N)</a> </td>
+  </tr>
+</table>
+<hr />
+<h1>5. 第二部份-為使用者和群組指定 Quota</h1>
+<h2><a name="ss5.1" id="ss5.1"></a>5.1 為特定使用者指定 quota</h2>
+<p>  這兒有個例子．在我的系統上有一個名叫 bob 的使用者．使用&quot;edquota bob&quot; 這個指令將會把你帶進 vi （或是在你的 $EDITOR
+環
+  境變數中所指定的編輯器）以便為使用者 &quot;bob&quot; 編輯在每個啟用 
+quota 的分割區上的 quota :</p>
+<pre class="sample">Quotas for user bob:
+ /dev/hda2: blocks in use: 2594, limits (soft = 5120, hard = 6400)
+inodes in use: 356, limits (soft = 1000, hard = 1500)</pre>
+<p> &quot;blocks in use&quot; 是使用者在某個分割區上已經使用的區塊總數（以千位
+  元組為單位）</p>
+<p> &quot;inodes in use&quot; 是使用者在某個分割區上所擁有的檔案總數。</p>
+<h2>  <a name="ss5.2" id="ss5.2"></a>5.2 為特定群組指定 quota</h2>
+<p> 現在在我的系統上有一群組叫 games．&quot;edquota -g games&quot; 再度將我帶入
+  vi 以便為 games 群組編輯 quota :</p>
+<pre class="sample"> Quotas for group games:
+  /dev/hda4: blocks in use: 5799, limits (soft = 8000, hard = 10000)
+  inodes in use: 1454, limits (soft = 3000, hard = 4000)</pre>
+<h2><a name="ss5.3" id="ss5.3"></a>5.3   為一群使用者指定相同的 quota 值</h2>
+<p>  為了快速地為我系統上的一群使用者，例如一百名，設定和 bob 相同的
+  quota 值，我首先以手動編輯 bob 的 quota 資訊，然後執行:</p>
+<pre class="sample"> edquota -p bob `awk -F: '$3 &gt; 499   {print $1}' /etc/passwd`</pre>
+<p> 這是假設你使用 csh，並且你的使用者 UID 從 500 開始． </p>
+<p> 除了 edquota 之外，還有三個你應該熟習的其它專有名詞: 軟性限制，
+  硬性限制，以及緩衝期間。</p>
+<h2> <a name="ss5.4" id="ss5.4"></a>5.4 軟性限制</h2>
+<p> 一般來說，軟性限制指出 quota 使用者在分割區上擁有的磁碟用量總數
+  。但是合併使用緩衝期間的時候，它的動作就如同一道臨界線，當 quota
+使用者超越時便發出有關他即將違犯 quota 的警告。</p>
+<h2> <a name="ss5.5" id="ss5.5"></a>5.5 硬性限制</h2>
+<p> 硬性限制只在設定有緩衝期間時才會運作。它指出磁碟用量的絕對限制，
+  quota 使用者不能超越他的硬性限制。</p>
+<h2> <a name="ss5.6" id="ss5.6"></a>5.6 緩衝期間</h2>
+<p> 以 &quot;edquota -t&quot; 指令執行，緩衝期間是對 quota 使用者實行軟性限制
+  之前的時間限制。可以使用的時間單位是秒、分、小時、日、星期、以及
+月。這是你使用 &quot;edquota -t&quot; 指令將會見到的:</p>
+<pre class="sample"> Time units may be: days, hours, minutes, or seconds
+  Grace period before enforcing soft limits for users:
+  /dev/hda2: block grace period: 0 days, file grace period: 0 days</pre>
+<p> 把 0 days 這個部份變更為你覺得合理的任何期限。我個人選擇 7 days
+  （或是 1 week ）。</p>
+<hr />
+<table
+
+
+
+
+>
+  <tr
+>
+    <td class="BtdL"
+><a href="Quota-4.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="BtdC"
+><a href="../../os/Partition-Rescue/index.html" accesskey="H">目錄(H)</a></td
+>
+    <td class="BtdR"
+><a
+href="Quota-6.html"
+>下一頁(N)</a
+></td
+>
+  </tr
+>
+  <tr
+>
+    <td class="BtdL"
+>在 Linux 上設定 quota - 第一部份: 配置</td
+>
+    <td class="BtdC"
+><a href="Quota-5.html" accesskey="T">到頂層(T)</a></td
+>
+    <td class="BtdR"
+>其它的 Quota 指令</td
+>
+  </tr
+>
+</table
+>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img class="ImgLogo" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" title="網路內容分級協會" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

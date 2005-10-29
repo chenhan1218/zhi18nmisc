@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+ 
+ <title>Saving Space mini-HOWTO : 程序</title>
+ <link href="Saving-Space-4.html" rel="next" />
+ <link href="Saving-Space-2.html" rel="previous" />
+ <link href="Saving-Space.html#toc3" rel="contents" />
+ <link href="../../style.css" rel="stylesheet" type="text/css" />
+</head> <body> 
+<table
+
+
+
+
+>
+  <tr
+>
+    <th
+colspan="3" class="HdTitle"
+>MiniHOWTO：Mini
+      HOWTO：Saving Space</th>
+  </tr
+>
+  <tr
+>
+    <td class="TtdL"
+><a href="index.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="TtdC"
+></td
+>
+    <td class="TtdR"
+><a href="3-Button-Mouse-2.html" accesskey="N">下一頁(N)</a></td
+>
+  </tr
+>
+</table
+>
+<hr />
+<h1><a name="s3" id="s3">3.</a> 程序</h1>
+
+
+
+
+<h2><a name="ss3.1" id="ss3.1">3.1</a> 移除核心原始檔
+</h2>
+
+<p>核心的原始檔會佔去約 20 MB 的空間, 所以你應該會想移除他.
+在你移除之前, 建議你先建立一個針對你機器組態專用的核心檔.</p>
+<p>我 <em>不建議</em> 把核心原始檔移除, 除非你確定你的機器已經設定完成.
+此外, 當你要編譯程式時, 你也需要核心的 #include 檔.</p>
+<p>如果你決定要移除核心原始檔, <em>不要</em> 移除掉 include/linux 這個路徑, 除非你以後不在這台機器上編譯程式.</p>
+
+
+<h2><a name="ss3.2" id="ss3.2">3.2</a> 刪減應用程式
+</h2>
+
+<p>首先決定有哪些程式是你 <em>真的</em> 需要的.
+哪些則是多餘的: 例如你覺得你不能沒有 <code>emacs</code> 嗎? 你也可以改用 <code>jed</code>.</p>
+<p>哪些程式應該要保留是由你決定的, 下面是一些一般性的要點:</p>
+<ul>
+<li><code>gcc</code> 是非常大的套件.
+但卻是編譯核心與任何原先沒有的應用程式所需要的.
+當然, 如果你自行撰寫 C 或是 Fortran 程式時, 其中的 <code>f2c</code> 或 <code>g77</code> 也是必須的.
+依據你的狀況來決定是否要移除他們.
+而其他的編譯器如 <code>lcc</code> 也還不錯, 只是沒有 <code>gcc</code> 高階, 我想你可能會留著他.
+</li>
+<li>X11 是嚇人的大, 但有他是一件好事.
+如果你決定不能沒有他, 至少作下面的事情:
+只留下必要的 X 伺服器, 使用一個簡單的視窗管理介面, 只留下 <code>xterm</code>, 不要安裝 100 dpi 的字型等等.
+</li>
+<li>TeX 與伴隨的套件也相當的大. 放棄 LaTeX 而使用單純的 TeX 能省下很多的空間;
+如果你使用 <code>dvitty</code> 或 <code>dvivga</code>, 則你可以放棄 X11 下的預覽程式, 例如 <code>xdvi</code> 與 <code>ghostview</code>.
+除去這些 X11 的軟體, 也能減少 X11 所需的空間.
+</li>
+<li>遊戲軟體是不需要的
+</li>
+</ul>
+<h2><a name="ss3.3" id="ss3.3">3.3</a> 壓榨二進位檔
+</h2>
+
+
+<p>我們可以開始減小二進位檔所佔的空間.
+首先將檔案搬到 /usr/bin, 並使用這個指令</p>
+<pre class="sample">
+machine:/usr/bin# strip *
+</pre>
+  <p>這會將所有嵌入於二進位檔中的符號移除.
+你可以在 /usr/X11R6/bin/ 與其他包含有執行檔的目錄下執行這個指令.
+(別忘了找 TeX 與 <code>gcc</code> 的執行檔)
+但是 <em>不要</em> 在 /sbin, /bin, 或 /usr/sbin/
+下面使用這個指令, 以免影響系統.</p>
+
+
+<h2><a name="ss3.4" id="ss3.4">3.4</a> 利用 <code>upx</code> 壓縮執行檔
+</h2>
+
+
+<p>首先安裝 <code>upx</code> 並閱讀相關說明文件.
+然後切換到 /usr/bin, 並且執行 <code>upx *</code>;
+他會把所有的執行檔壓縮, 包括有設定 suid 的檔案也會被壓縮 (<code>tcx</code> 不會壓這種檔案).
+如同前面一樣, 在所有目錄下執行這個指令.</p>
+<p>當你安裝了新的程式套件後, 記得把他壓起來.</p>
+
+
+<h2><a name="ss3.5" id="ss3.5">3.5</a> 把其他東西用 Gzip 壓起來
+</h2>
+
+
+<p>其他還有一堆檔案無法一次壓起來.
+首先我們由 /usr/doc/ 開始.
+移動到這個路徑後, 使用下面的指令:</p>
+<pre class="sample">
+machine:/usr/doc# find . -type f -exec gzip -9 {} \; 2> /dev/null
+</pre>
+  <p>當你安裝了新的程式套件後, 記得把他的說明檔壓起來.</p>
+<p>接著在包含 TeX 說明文件的目錄下重複上面的壓縮指令,
+對我的系統而言, 這些文件是存放在 /usr/lib/texmf/texmf/doc/.
+如果你希望的話, 也可以把這些東西直接殺掉.</p>
+<p>接著安裝 <code>zlibc</code>, 並編譯他. 如果你的系統和我相似的話, 編譯的程序會因為找不到靜態連結的 libc 而被中斷.
+不用管他, 你會找到一個叫做 <code>uncompress.o</code> 的檔案, 這就是我們要的了.
+把這個檔案移到 /usr/local/lib/ 下面, 並且把下面這行加到 /etc/profile 中.</p>
+<pre class="sample">
+export LD_ELF_PRELOAD=/usr/local/lib/uncompress.o
+</pre>
+  <p>現在除了文件檔可以用 <code>gzip</code> 壓縮外, 其他的資料檔也可以被壓縮.
+相關的程式應該還是可以存取這個資料檔.
+理論上這個方法可以用在各種程式上.</p>
+
+
+<hr />
+<table
+
+
+
+
+>
+  <tr
+>
+    <td class="BtdL"
+><a href="index.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="BtdC"
+><a href="index.html" accesskey="H">目錄(H)</a></td
+>
+    <td class="BtdR"
+><a
+href="3-Button-Mouse-2.html"
+>下一頁(N)</a
+></td
+>
+  </tr
+>
+  <tr
+>
+    <td class="BtdL"
+>目錄</td
+>
+    <td class="BtdC"
+><a href="index.html" accesskey="T">到頂層(T)</a></td
+>
+    <td class="BtdR"
+>介紹</td
+>
+  </tr
+>
+</table
+>
+</body>
+</html>

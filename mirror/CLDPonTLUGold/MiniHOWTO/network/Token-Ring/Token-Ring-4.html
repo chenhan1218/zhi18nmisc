@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+ 
+ <title>Token-Ring mini-HOWTO: 安裝和設定</title>
+ <link href="Token-Ring-5.html" rel="next" title="5. NetTools 安裝" />
+ <link href="Token-Ring-3.html" rel="previous" title="3. 軟體需求" />
+ <link href="../../style.css" rel="stylesheet" type="text/css" />
+ <meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+ <link href="Token-Ring.rdf" rel="meta" title="各章節的說明資訊" />
+  <link href="index.html" rel="start" />
+ <link href="index.html#content" rel="contents" />
+ <link href="Token-Ring-1.html" rel="chapter" title="1.版權和贅言" />
+ <link href="Token-Ring-2.html" rel="chapter" title="2.硬體需求" />
+ <link href="Token-Ring-3.html" rel="chapter" title="3.軟體需求" />
+ <link href="Token-Ring-4.html" rel="chapter" title="4.安裝和設定" />
+ <link href="Token-Ring-5.html" rel="chapter" title="5.NetTools 安裝" />
+ <link href="Token-Ring-6.html" rel="chapter" title="6.已知問題" />
+ <link href="Token-Ring-7.html" rel="chapter" title="7.問題與回答" />
+ <link href="Token-Ring-8.html" rel="chapter" title="8.套件特有安裝" />
+ <link href="http://tldp.org/HOWTO/mini/Token-Ring/index.html" rel="alternate" title="原版" />
+</head> <body> 
+<table
+
+
+
+
+>
+  <tr
+>
+    <th
+colspan="3" class="HdTitle"
+>Mini
+      HOWTO：Token-Ring</th>
+  </tr
+>
+  <tr
+>
+    <td class="TtdL"
+><a href="Token-Ring-3.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="TtdC"
+></td
+>
+    <td class="TtdR"
+><a href="Token-Ring-5.html" accesskey="N">下一頁(N)</a></td
+>
+  </tr
+>
+</table
+>
+<hr />
+<h1>4. 安裝和設定</h1>
+
+<p></p>
+<dl>
+<dt><b>留意事項 :</b></dt>
+<dd><p>這些說明是針對 1.2 版的 token ring 支援的核心修補程式.
+如果你用 2.0 版以上的核心,你只要在重新編譯目前的核心時,對支援 token
+ring 的選項選擇  "<code>y</code>es" 或 "<code>m</code>odule" 即可.</p>
+</dd>
+</dl>
+
+<ol>
+<li>把 Token Ring 網路卡安裝到電腦上並設定你想要使用的功能.
+最好能先在 DOS 環境下測試此卡無誤後再在 Linux 上使用.
+如果它能在 DOS 下工作,那它很有可能能用相同的設定值在 Linux 跑.
+如果這是 Plug and Play (隨插即用) 網路卡,當你的設定可以讓它工作時,記得把設定值記下來.
+</li>
+<li>替你原先的系統目錄作個備份.
+當你有需要將這修補程式從你的核心中完全移除並回到你原先的系統時,這就顯得很重要.
+  <pre class="sample">
+cd /usr/src
+tar cvzhf linuxbak.tar.gz linux
+</pre>
+</li>
+<li>解壓縮 Token Ring 修補程式.
+  <pre class="sample">
+cd /usr/src/patches/token
+gzip -d TokenRing.patch-1.2.0.gz
+</pre>
+</li>
+<li>替你的核心增加 TokenRing 功能.
+  <pre class="sample">
+cd /usr/src/linux
+patch -p1 &lt; /usr/src/patches/token/TokenRing.patch-1.2.0
+</pre>
+-或-
+    <pre class="sample">
+patch -p1 &lt; &lt;directory-of-patchfile>/TokenRing.patch-1.2.0
+</pre>
+</li>
+<li>從核心中搜尋因修補造成的 rejects (不合格) 並作適當的改變.
+  <pre class="sample">
+find . -name \*.rej -print
+</pre>
+</li>
+<li>從核心中搜尋 orig 檔案並刪除它們.
+  <pre class="sample">
+find . -name \*.orig -print | xargs rm
+</pre>
+</li><li>編譯核心.
+<dl>
+<dt><b>留意事項NOTE:</b></dt>
+<dd><p>如果你有 swap 分割區,請把他設成 active.</p>
+</dd>
+</dl>
+  <pre class="sample">
+cd /usr/src/linux
+make config
+</pre>
+(修補程式會將以下兩個選項加入 <code>config.in</code>
+  <pre class="sample">
+Token Ring support (CONFIG_TR) [y]
+</pre>
+(還有以下這行...)
+  <pre class="sample">
+IBM Tropic chipset based adaptor support (CONFIG_IBMTR) [y]
+
+
+make dep
+make clean
+make zImage
+</pre>
+</li>
+<li>設定 LILO.
+首先把你核心 <code>vmlinuz</code> 改名為 <code>vmlinuz.old</code> 再把新核心複製成 <code>vmlinuz</code>. 就我的系統而言,複製有以下幾步驟 
+  <code>/usr/src/linux/arch/i386/boot/zImage</code> to <code>/vmlinuz</code> 並編輯 <code>/etc/lilo.conf</code> 使核心能載入. 並在提示符號下打 "<code>lilo</code>". </li>
+<li>你現在可重新開機並使用 Token Ring 網路卡了.
+相關設定的資訊請參考套件特有段落 (distribution specific section).</li>
+</ol>
+
+<hr />
+<table
+
+
+
+
+>
+  <tr
+>
+    <td class="BtdL"
+><a href="Token-Ring-3.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="BtdC"
+><a href="index.html" accesskey="H">目錄(H)</a></td
+>
+    <td class="BtdR"
+><a
+href="Token-Ring-5.html"
+>下一頁(N)</a
+></td
+>
+  </tr
+>
+  <tr
+>
+    <td class="BtdL"
+>軟體需求</td
+>
+    <td class="BtdC"
+><a href="Token-Ring-4.html" accesskey="T">到頂層(T)</a></td
+>
+    <td class="BtdR"
+>NetTools 安裝</td
+>
+  </tr
+>
+</table
+>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img class="ImgLogo" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" title="網路內容分級協會" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

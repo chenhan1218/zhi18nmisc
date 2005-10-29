@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title> 雜項</title>
+<link href="Ethernet-HOWTO-8.html" rel="previous" title="8.便攜式/筆記本電腦聯網"/>
+<link href="../../style.css" rel="stylesheet" type="text/css" />
+<link href="http://tldp.org/HOWTO/Ethernet-HOWTO.html" rel="alternate" title="原版" />
+<link href="index.html" rel="start" title="HOWTO：Linux Ethernet" />
+<link href="index.html#content" rel="contents" />
+<link href="Ethernet-HOWTO-1.html" rel="chapter" title="1.導言" />
+<link href="Ethernet-HOWTO-2.html" rel="chapter" title="2.常見問題" />
+<link href="Ethernet-HOWTO-3.html" rel="chapter" title="3.性能小技巧" />
+<link href="Ethernet-HOWTO-4.html" rel="chapter" title="4.有關銷售商/制造廠家/型號的信息" />
+<link href="Ethernet-HOWTO-5.html" rel="chapter" title="5.電纜、同軸電纜、雙絞線" />
+<link href="Ethernet-HOWTO-6.html" rel="chapter" title="6.軟件設置與網卡診斷" />
+<link href="Ethernet-HOWTO-7.html" rel="chapter" title="7.技術信息" />
+<link href="Ethernet-HOWTO-8.html" rel="chapter" title="8.便攜式/筆記本電腦聯網" />
+<link href="Ethernet-HOWTO-9.html" rel="chapter" title="9.雜項" />
+<link href="Ethernet-HOWTO-9.html#ss9.1" rel="section" title="9.1 向內核傳遞以太網參數 " />
+<link href="Ethernet-HOWTO-9.html#ss9.2" rel="section" title="9.2 把以太網驅動程序作為模塊使用 " />
+<link href="Ethernet-HOWTO-9.html#ss9.3" rel="section" title="9.3 相關文檔 " />
+<link href="Ethernet-HOWTO-9.html#ss9.4" rel="section" title="9.4 聲明與版權 " />
+<link href="Ethernet-HOWTO-9.html#ss9.5" rel="section" title="9.5 結束語 " />
+<meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+<link href="Ethernet-HOWTO.rdf" rel="meta" title="各章節的說明資訊" />
+</head> <body>
+<table >
+  <tr> 
+    <th colspan="3" class="HdTitle">HOWTO：Linux Ethernet</th>
+  </tr>
+  <tr> 
+    <td class="TtdL"> <a href="Ethernet-HOWTO-8.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="TtdC">&nbsp;</td>
+    <td class="TtdR">&nbsp; </td>
+  </tr>
+</table>
+<hr />
+<h1> 9. 雜項</h1>
+
+
+<p>所有不適合放在別處的相關信息都堆在這里。可能不相干，也可能大家不感興趣，但還是放在這兒了。</p>
+
+<h2><a name="ss9.1" id="ss9.1"></a> 9.1 向內核傳遞以太網參數 </h2>
+
+
+<p>有兩個通用的內核命令可以在啟動時向內核傳遞以太網參數（<code>ether</code>      和<code>reserve</code>）。可以用LILO、loadlin或其它接受可選參數的啟動工具完成該操作。</p>
+<p>例如，如果命令為“blah”，希望接收3個參數（假定為123、456和789），那么在使用LILO時就應該如下：</p>
+<pre class="sample">LILO: linux blah=123,456,789</pre>
+<p>要了解啟動時參數的更多信息（和完全的列表），請參見
+<a href="http://metalab.unc.edu/mdw/HOWTO/BootPrompt-HOWTO.html">BootPrompt-HOWTO</a></p>
+
+<h3><a name="ether" id="ether"></a> <code>ether</code>命令</h3>
+
+
+<p><code>ether=</code>參數與直接構建在內核的驅動程序一起使用。<code>ether=</code>參數對一個模塊化的驅動程序<em>完全不起作用</em>。它的最通用形式如下：</p>
+<pre class="sample">  ether=IRQ,BASE_ADDR,PARAM_1,PARAM_2,NAME  </pre>
+<p>所有的參數都是可選的。第一個非數字的參數被用做NAME。</p>
+<p><b>IRQ:</b>
+很明顯。為“0”的IRQ值（一般為缺省值）意味著autoIRQ。首先設置IRQ而不是base_addr是一個歷史性的巧合──無論在改變別的什么時都可以順便改正這一點。</p>
+<p><b>BASE_ADDR:</b>
+也很明顯。值為“0”（一般為缺省值）意味著探測以太網卡的網卡類型特定的地址列表。</p>
+<p><b>PARAM_1:</b>
+這開始是用來覆蓋WD80*3這樣的共享內存網卡的起始內存的值。有些驅動程序使用該值的低4位來設置診斷信息級別。0──缺省值，1-7──級別1..7，（7是最完全的信息）8──級別0（沒有信息）。另外，LANCE驅動程序使用該值的低4位來選擇DMA通道。否則就使用auto-DMA。</p>
+<p><b>PARAM_2:</b>
+3c503驅動程序使用它來選擇內部還是外部收發器。0──缺省/內部，1──外部AUI。Cabletron的E21XX網卡還使用PARAM_2的低4位來選擇輸出媒介。否則就自動檢測。</p>
+<p><b>NAME:</b>
+選擇該值所指的網絡設備。標准內核對附屬于總線的以太網卡使用名稱“eth0”、“eth1”、“eth2”和“eth3”，對并口“袖珍”以太網適配器使用“atp0”。arcnet驅動程序使用名稱“arc0”。可以使用這些LILO參數明確設置基址來啟用多塊網卡。1.0內核把基于LANCE的以太網卡作為特殊情況進行處理：LILO參數被忽略，LANCE網卡總是被分配為從“eth0”開始的名稱“eth&lt;n&gt;”。附加的非LANCE網卡必須被明確指定為“eth&lt;n+1&gt;”，并用諸如“ether=0,-1,eth0”的方式禁止通常的“eth0”探測。（對，這是個Bug。）</p>
+
+<h3><a name="reserve" id="reserve"></a> <code>reserve</code>命令</h3>
+
+
+<p>這個緊接著的LILO命令用法與上面的“ether=”一樣，即附加在lilo.conf里指定的啟動選擇名稱后面。</p>
+<p>
+
+reserve=IO-base,extent{,IO-base,extent...}
+
+</p>
+<p>在某些機器上，可能需要防止設備驅動程序在某個特定區域里檢查設備（自動探測）。其原因可能是由于設計低劣的硬件使啟動<em>凍結</em>（如某些以太網卡）、被錯誤識別的硬件、在較早的探測中狀態被改變的硬件、或者僅僅是不想讓內核初始化硬件。</p>
+<p>啟動時的參數<code>reserve</code>通過指定無需探測的I/O端口區域來解決這個問題。該區域保留在內核的端口注冊表里，就象該區域里已經發現了一個設備一樣。注意，這一機制在大多數機器上是不必要的。只有在有問題或特定的情況下才有必要使用它。</p>
+<p>指定區域里的I/O端口受到保護，不被設備探測影響。在某些驅動程序被NE2000挂起，或其它設備被錯誤地識別為NE2000時使用這一方法。正確的設備驅動程序不該探測一個保留區域，除非另一個啟動參數明確指定它這么做。這隱含了<code>reserve</code>經常與其它啟動參數一起使用。因此，如果指定了一個<code>reserve</code>區域來保護某個特定設備，通常就必須明確指定對該設備的探測。大多數驅動程序在給定了明確地址后就忽略了端口注冊表。</p>
+<p>例如，啟動行</p>
+<p>
+
+LILO: linux  reserve=0x300,32  ether=0,0x300,eth0
+
+</p>
+<p>使以太網卡驅動程序以外的所有設備驅動程序都不探測0x300-0x31f。</p>
+<p>一般啟動時的參數限制是11個，因此每個<code>reserve</code>關鍵詞只能指定5個保留區域。如果請求很復雜，可以使用多個<code>reserve</code>指令。</p>
+
+<h2><a name="ss9.2" id="ss9.2"></a> 9.2 把以太網驅動程序作為模塊使用 </h2>
+
+
+<p>現在大多數Linux發行版里的內核都只包含很少几個內建的驅動程序。驅動程序都采用獨立的動態可加載模塊的形式提供。這些模塊化驅動程序通常由管理員使用<code>modprobe(8)</code>命令載入，或者在某些情況下由內核通過“kerneld”（在2.0版）或“kmod”（在2.1版）自動載入，然后調用<code>modprobe</code>。</p>
+<p>你所用的發行版可能會提供良好的圖形配置工具來設置以太網模塊。如果可能就先使用它們。下面描述了在這些花俏的配置程序下的信息，以及這些程序改變了哪些東西。</p>
+<p>控制使用哪些模塊和每個模塊提供哪些選項的信息一般保存在文件<code>/etc/conf.modules</code>里。在這個文件里使用的兩個感興趣的主要選項（對以太網卡而言）是<code>alias</code>和<code>options</code>。<code>modprobe</code>命令查閱該文件以了解模塊信息。</p>
+<p>實際的模塊本身一般保存在名為<code>/lib/modules/`uname -r`/net</code>的目錄下，其中<code>uname -r</code>命令給出內核的版本（如2.0.34）。你可以在這里看看哪一個模塊與你的網卡匹配。</p>
+<p>在你的<code>conf.modules</code>文件里首先需要的是告訴<code>modprobe</code>對于<code>eth0</code>（和<code>eth1</code>以及......）網絡接口使用什么驅動程序。為此要使用 
+</p>
+<pre class="sample">
+alias
+</pre>
+<p>命令。例如，有一塊使用<code>smc-ultra.o</code>驅動程序模塊的ISA SMC EtherEZ網卡，需要增加如下一行把該驅動程序<code>alias</code>到<code>eth0</code>上：</p>
+<pre class="sample">
+        alias eth0 smc-ultra
+</pre>
+<p>其次，可能需要一個<code>options</code>行來指出與某個特定模塊（或模塊別名）一起使用哪些選項。還采用上面那個例子，如果只有一行<code>alias</code>而沒有<code>options</code>行，內核會警告（參見<code>dmesg</code>）說自動探測ISA網卡不好。要消除這個警告，需要增加另一行來告訴模塊網卡被配置在哪個I/O基址上，比方說是16進制地址<code>0x280</code>。</p>
+<pre class="sample">
+        options smc-ultra io=0x280
+</pre>
+<p>大多數ISA模塊在<code>insmod</code>命令行接受<code>io=0x340</code>和<code>irq=12</code>這樣的參數。提供這些參數以避免探測該網卡是<em>必須的</em>或至少是<em>強烈建議的</em>。與PCI和EISA設備不同，對大多數ISA設備而言沒有真正安全的自動探測方法，所以在把驅動程序作為模塊使用時應當避免自動探測。</p>
+<p>每個模塊所接受的所有選項列表可以在以下文件中找到：</p>
+<p><code>/usr/src/linux/Documentation/networking/net-modules.txt</code></p>
+<p>推荐閱讀該文件以了解對你的特定網卡可以使用哪些選項。注意，對于單個模塊能夠處理多個設備的模塊，有些支持用逗號分開的值列表，如所有基于8390的驅動程序和PLIP驅動程序。例如：</p>
+<pre class="sample">
+        options 3c503 io=0x280,0x300,0x330,0x350 xcvr=0,1,0,1
+</pre>
+<p>上面就是一個模塊控制四塊3c503網卡，其中網卡2和4使用外部收發器。不要在“=”或逗號周圍使用空格。</p>
+<p>還要注意，一個<em>忙的</em>模塊不能被刪除。這也就是說在刪除模塊前需要使用<code>ifconfig eth0 down</code>（關閉以太網卡）。</p>
+<p>命令<code>lsmod</code>可以顯示哪些模塊被載入、它們是否正在被使用，而<code>rmmod</code>可以刪除這些模塊。</p>
+
+<h2><a name="ss9.3" id="ss9.3"></a>9.3 相關文檔 </h2>
+
+
+<p>本文檔的很多信息來自comp.os.linux新聞組保存的帖子，這表明該新聞組是一個有價值的信息源。其它的有用信息來自Donald自己的一大堆小文件。當然，如果你正在設置一塊以太網卡，你還要讀一下NET-2 Howto才能真正配置好你要用的軟件。另外，如果你想做個黑客，你總能從驅動程序的源碼里找到些有用的信息。在開始實際代碼之前，總有一到兩段描述關鍵點的文字。</p>
+<p>對于那些尋找不是Linux特有信息（如什么是10BaseT、什么是AUI、Hub是干什么的等等）的人，我強烈推荐使用新聞組<em>comp.dcom.lans.ethernet</em>或<em>comp.sys.ibm.pc.hardware.networking</em>。那些在<code>dejanews.com</code>上的新聞組檔案也是很有價值的信息源。你可以從以下URL的RTFM（保存所有新聞組的FAQ）獲取新聞組的FAQ：</p>
+<p>
+<a href="ftp://rtfm.mit.edu/pub/usenet-by-hierarchy/">Usenet FAQs</a></p>
+<p>你還可以在以下URL看一下可以說是“Ethernet-HomePage”的主頁：</p>
+<p>
+<a href="http://wwwhost.ots.utexas.edu/ethernet/ethernet-home.html">Ethernet-HomePage</a></p>
+
+
+<h2><a name="ss9.4" id="ss9.4"></a> 9.4 聲明與版權 </h2>
+
+<p>本文檔<em>不</em>是福音書。它可能是你所找到的最新的資料。除了你自己，沒人會對你的硬件出現的問題負責。如果你的以太網卡或其它的硬件冒煙的話（几乎不可能！），我們也不承擔任何責任。也就是說，本文作者不對任何使用本文信息采取行動造成的損失負責。</p>
+<p>Copyright (c) 1993-1999 本文的版權所有人為Paul Gortmaker。在保留版權信息和本許可內容的條件下，本文檔允許任意復制和傳播。</p>
+<p>在保留原始版權信息的條件下，允許復制和傳播本文檔修改后的版本﹔在本許可內容不變的條件下，允許傳播所有依據本文檔推導出的結果。</p>
+<p>在上述針對修改版本的條件下，允許復制和傳播本文檔的其它語言翻譯版本。</p>
+<p>對翻譯者的提示。首先，翻譯SGML源文件（可以用FTP從HowTo主站點獲得），這樣可以生成其它的輸出格式。請注意保留一份翻譯的原始英文SGML源文件！在發布更新后的HowTo時，獲取該版本的新SGML源文件，簡單地使用<code>diff -u old.sgml new.sgml</code>就可以知道何處有變動，并把這些變動放入你的翻譯版本，無需重新閱讀或重新翻譯全部內容。</p>
+<p>如果你想在公開出版物中使用本文檔，請聯系本文作者（通過e-mail），這樣可以獲得最新的資料。以前有些Linux HowTo的過時版本被公開出版，使得開發者為一些在更新版本中已經回答過的問題飽受折磨。</p>
+<p>This document is <em>not</em> gospel. However, it is probably the most
+up to date info that you will be able to find. Nobody is responsible
+for what happens to your hardware but yourself. If your ethercard
+or any other hardware goes up in smoke (...nearly impossible!)
+we take no responsibility. ie. THE AUTHORS ARE NOT RESPONSIBLE
+FOR ANY DAMAGES INCURRED DUE TO ACTIONS TAKEN BASED ON THE
+INFORMATION INCLUDED IN THIS DOCUMENT.</p>
+<p>This document is Copyright (c) 1993-1999 by Paul Gortmaker.
+Permission is granted to make and distribute verbatim copies
+of this manual provided the copyright notice and this permission
+notice are preserved on all copies.</p>
+<p>Permission is granted to copy and distribute modified versions
+of this document under the conditions for verbatim copying,
+provided that this copyright notice is included exactly as in
+the original, and that the entire resulting derived work is
+distributed under the terms of a permission notice identical
+to this one.</p>
+<p>Permission is granted to copy and distribute translations
+of this document into another language, under the above
+conditions for modified versions.</p>
+<p>A hint to people considering doing a translation.  First,
+translate the SGML source (available via FTP from the HowTo
+main site) so that you can then generate other output formats.
+Be sure to keep a copy of the original English SGML source that
+you translated from! When an updated HowTo is released,
+get the new SGML source for that version, and then a simple
+<code>diff -u old.sgml new.sgml</code> will show you exactly what has
+changed so that you can easily incorporate those changes into
+your translated SMGL source without having to re-read or
+re-translate everything.</p>
+<p>If you are intending to incorporate this document into a
+published work, please make contact (via e-mail) so that
+you can be supplied with the most up to date information
+available. In the past, out of date versions of the Linux
+HowTo documents have been published, which caused the developers
+undue grief from being plagued with questions that were already
+answered in the up to date versions.</p>
+
+<h2><a name="ss9.5" id="ss9.5"></a>9.5 結束語 </h2>
+
+
+<p>如果你在本文檔中發現有錯別字或過時信息，請給我發e-mail。本文檔比較大，所以很容易出現疏漏。如果你曾發e-mail要求改正，而在新版本中依然沒改過來，請把改正要求再發一遍，可能你的上一封e-mail被我平時收到的大量垃圾信件掩蓋了。</p>
+<p>謝謝！</p>
+<p>Paul Gortmaker, <code>p_gortmaker@yahoo.com</code>
+（戈紹男，<code>isaac_ge@yahoo.com</code>）</p>
+<hr />
+<table >
+  <tr> 
+    <td class="BtdL"> <a href="Ethernet-HOWTO-8.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="BtdC"> <a href="index.html" accesskey="H">目錄(H)</a> </td>
+    <td class="BtdR">&nbsp; </td>
+  </tr>
+  <tr> 
+    <td class="BtdL">便攜式/筆記本電腦聯網</td>
+    <td class="BtdC"><a href="Ethernet-HOWTO-9.html"  accesskey="T">到頂層(T)</a></td>
+    <td class="BtdR">&nbsp;</td>
+  </tr>
+</table>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> 
+  <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a> 
+  <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img class="ImgLogo" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> 
+  <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> 
+  <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" title="網路內容分級協會" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

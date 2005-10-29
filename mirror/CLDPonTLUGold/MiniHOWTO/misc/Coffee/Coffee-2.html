@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+ 
+ <title>COFFEE-HOWTO --如何用 Linux 來煮咖啡: 電路</title>
+ <link href="Coffee-3.html" rel="next" />
+ <link href="Coffee-1.html" rel="previous" />
+ <link href="../../style.css" rel="stylesheet" type="text/css" />
+  <link href="index.html" rel="start" />
+ <link href="index.html#content" rel="contents" />
+ <link href="http://www.tldp.org/HOWTO/mini/Coffee.html" rel="alternate" title="原版" />
+ <link href="Coffee-1.html" rel="chapter" title="1.選單" />
+ <link href="Coffee-2.html" rel="chapter" title="2.電路" />
+ <link href="Coffee-3.html" rel="chapter" title="3.軟件" />
+ <link href="Coffee-4.html" rel="chapter" title="4.用量過多的征將狀" />
+ <link href="Coffee-5.html" rel="chapter" title="5.功能擴展" />
+ <link href="Coffee-6.html" rel="chapter" title="6.參考" />
+ <link href="Coffee-7.html" rel="chapter" title="7.其他" />
+ <meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+</head> <body> 
+
+<table
+
+
+
+
+>
+  <tr
+>
+    <th
+colspan="3" class="HdTitle"
+>Mini
+    HOWTO：Coffee</th>
+  </tr
+>
+  <tr
+>
+    <td class="TtdL"
+><a href="Coffee-1.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="TtdC"
+></td
+>
+    <td class="TtdR"
+><a href="Coffee-3.html" accesskey="N">下一頁(N)</a></td
+>
+  </tr
+>
+</table
+>
+<hr />
+<h1><a name="s2" id="s2">2.</a> 電路</h1>
+
+<p>總的圖解如下:</p>
+<p></p>
+
+<pre class="sample">
+--------- 0-5V  --------- ~220V   ----------------
+|  PC   |===>===|電子回路|========|     咖啡機   |
+---------       ---------         ----------------
+</pre>
+
+</P>
+
+<p>我們的想法是從電腦輸出一個控制電壓，然后通過繼電器或者雙向晶閘管電路驅動被電隔離的電子回路。</p>
+
+<p>你必須選擇一個繼電器電路，如果你有一個大的咖啡機（功率大于200 W ），你還可以用一個雙向晶閘管電路。</p>
+<p>所有列出的電路都至少被測試過一次，不過使用者自己承擔所有的后果。
+如果你對電子學一點沒經驗，你不應嘗試這些，要不然，你會有一個糟糕的結局...</p>
+
+<p>對 220V 電壓的操作應該非常小心，而且還應用上一根合適的保險絲。</p>
+
+<h2><a name="ss2.1" id="ss2.1">2.1</a> 從電腦提取0-5V電源
+</h2>
+
+<p>下面是一個從電腦并口提取0-5V電源的例子：</p>
+<p>
+</p>
+<pre class="sample">
+      公 DB-25           -----    針腳 10 - ACK（應答）
+      連 接 器           |   |    針腳  9 - D7
+      后 視 圖           |   |                           針腳 2 - D0
+                         v   v                           v   針腳 1 -濾波
+
+       ____________________________________________________________
+      /                                                            \
+      \     13  12  11  10   9   8   7   6   5   4   3   2   1     /
+       \                                                          /
+        \     25  24  23  22  21  20  19  18  17  16  15  14     /
+         \______________________________________________________/
+</pre>
+
+</P>
+
+<p>針腳 1 濾波 (反邏輯)</p>
+<p>針腳 2-9 是數據總線的信號，通過一個 OUTB 命令發信給并口的門閂線路。</p>
+<p>針腳 10 是應答信號( ACK )，由你控制，所以你可以產生一個中斷信號給 CPU 。</p>
+<p>針腳 18-25 被短路了，都是地線 ( GND ) 。</p>
+
+<p>詳細地說明如下:
+</p>
+<pre class="sample">
+&lt;=發送   DB25    Cent   信號          寄存
+=>接收  pin     pin     定義          器位      功能注釋
+------  ----    ----    --------        ---     -----------------------------
+=>       1       1      -濾波           C0-     設置低位脈沖 > 0.5us 發送
+=>       2       2      數據線0         D0      設置最小有效數據
+=>       3       3      數據線1         D1      ...
+=>       4       4      數據線2         D2      ...
+=>       5       5      數據線3         D3      ...
+=>       6       6      數據線4         D4      ...
+=>       7       7      數據線5         D5      ...
+=>       8       8      數據線6         D6      ...
+=>       9       9      數據線7         D7      設置最大有效數據
+&lt;=      10      10      -應答           S6+ IRQ 接受應答后，低位脈沖 5us
+&lt;=      11      11      +忙             S7-     忙/出錯/斷線時高位
+&lt;=      12      12      +無紙           S5+     無紙時高位
+&lt;=      13      13      +已選擇         S4+     已選擇打印機時高位
+=>      14      14      -自動注入       C1-     低位時自動注入一行
+&lt;=      15      32      -錯誤           S3+     錯誤/斷線/無紙時低位
+=>      16      31      -初始化         C2+     設置低位脈沖 > 50us 初始化
+=>      17      36      -選擇           C3-     設置低位選擇打印機
+==      18-25   19-30,  地線
+</pre>
+
+</P>
+
+<h2><a name="ss2.2" id="ss2.2">2.2</a> 用繼電器電路控制
+</h2>
+
+<p>最簡單的電路如下:
+</p>
+<pre class="sample">
+
+                             Vcc
+                              |
+                              +------+
+                              |    __|__
+                           繼電器   /^\  二極管 1N4002
+                             線圈  /---\
+                              |      |
+                              +------+
+                              |
+                           | / 
+                 4.7K    B |/  C
+    并口數據腳>-\/\/\/\/---|        NPN 三極管: BC547A or 2N2222A
+                           |\  E
+                           | V
+                             |
+    并口地線  >--------------+
+                             |
+                           接地
+</pre>
+
+
+Vcc 的選擇應同所選繼電器型號的電壓一樣( 通常是 5V 或者是 12V )。很明顯，繼電器的規格應該由咖啡機的功率決定。</P>
+<p>酒保們通常傾向于在三極管之后再放置繼電器，然后用發射極( E 腳 ) 代替集電極( C 腳 ) 連接繼電器，這是一個錯誤的經歷，因為三極管被錯誤的偏置了，結果是得到了一杯糟糕的咖啡　:-)。二極管　1N4002　對保護三極管避免被從繼電器流出的電流燒壞很有幫助，如果你不用它，三極管很可能會變黑，發臭，且被燒壞。</p>
+
+<h2><a name="ss2.3" id="ss2.3">2.3</a> 用雙向晶閘管電路控制 #1
+</h2>
+
+<p>如果你只想要一個簡單的電路，你可以選用摩托羅拉的 MOC301[012] 雙向晶閘管驅動器，它跟通常用的 SC141D 雙向晶閘管一起搭配使用。這種電路有個優點就是它不需要額外的電源供給。</p>
+<p>以下是為非感應負荷設計的電路:
+</p>
+<pre class="sample">
+
+        270     1 +-------+ 6    180
+  +5v -VAVAVA-----+       +----VAVAVA-----+-------------- Line Hot
+                2 |  MOC  |               |
+  TTL in ---------+ 3012  +nc            VA  SC141D
+                  |       | 4           / |
+                nc+       +------------/  |
+                  +-------+               +----\/\/\/---- Line Neutral
+                                                LOAD
+</pre>
+
+</P>
+<p>如果你正在使用 220V 電壓，MOC3021 可能更好。
+感性負載應該和旁路電容相連，查閱 <em>摩托羅拉應用手冊 AN-780</em>.
+咖啡機一般是非感性負載（就象馬達一樣），但誰知道你的會是什么樣的.....</p>
+
+<h2><a name="ss2.4" id="ss2.4">2.4</a> 用雙向晶閘管電路控制 #2
+</h2>
+
+
+<p>
+</p>
+<pre class="sample">
++5VDC
+|    180                      180            2.2k
++---/\/\/\----+-----+   +----/\/\/-+--/\/\/\---+-------> 120V
+              |    1|   |6         |           |         Hot
+              |    +=====+         |           | MT1
+              |    | MC  | 雙向晶閘|          +-+
+              |    | 3032| 管驅動器|        G | | 雙向晶閘管
+              |    +=====+         |         /| |
+              \    2|   |4         |        / +-+
+       2N3904  |----+   |          |        |  | MT2
+              /     |   +--------- | -------+  |
+             V      \              |        |  |
+             |      /              |        \  |
+             |      \ 43    .01u  ---   10k /  |
+             |      /       500V  ---       \  |
+             |      |              |        /  |
+             +------+              |        |  |            Neutral
+             |                     +--------+--+---o    o--> 120V
+             /                                      load
+ >-/\/\--|  2N3904
+             \
+              V
+              |
+             ---
+            ///
+你應該以 220V 的標准調整電阻值。
+</pre>
+
+</P>
+<p>電路詳解:</p>
+<p>MC3032 是光隔離雙向晶閘管驅動器。
+180 歐姆的電阻設定了光隔離器里面的發光二極管的電流。如果需要，你可以調整這個電阻從而得到一個合理的電流。（比如 15 mA）。</p>
+<p>注意你不能在沒有負載的情況下測試電路。除非連上了交流電源，雙向晶閘管不會切換，所以你也不能在有交流電源和負載的情況下測試它的簡單切換，注意這個 .01u 的電容要達到 500V 的耐壓。</p>
+
+<hr />
+<table
+
+
+
+
+>
+  <tr
+>
+    <td class="BtdL"
+><a href="DHCP-2.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="BtdC"
+><a href="index.html" accesskey="H">目錄(H)</a></td
+>
+    <td class="BtdR"
+><a
+href="DHCP-4.html"
+>下一頁(N)</a
+></td
+>
+  </tr
+>
+  <tr
+>
+    <td class="BtdL"
+>DHCP 通訊協定</td
+>
+    <td class="BtdC"
+><a href="DHCP-3.html" accesskey="T">到頂層(T)</a></td
+>
+    <td class="BtdR"
+>設定 DHCP 伺服器</td
+>
+  </tr
+>
+</table
+>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" width="88" height="31" style="border:0;width:88px;height:31px"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img style="border:0;width:88px;height:31px" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img style="border:0;width:88px;height:32px" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" style="border:0" alt="表示該網頁支援資源描述架構"/></a> </div>
+</body>
+</html>

@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+ 
+ <title>The Loopback Root Filesystem HOWTO</title>
+ <link href="Loopback-Root-FS-1.html" rel="next" />
+
+
+ <link href="../../style.css" rel="stylesheet" type="text/css" />
+</head> <body> 
+<h1>Mini HOWTO：The Loopback Root Filesystem</h1>
+
+<h2>作者: Andrew M. Bishop, <code>
+<a href="mailto:amb@gedanken.demon.co.uk">amb@gedanken.demon.co.uk</a></code><br />
+譯者: Jing-Jong SHYUE, <code>
+<a href="mailto:shyue@sonoma.com.tw">shyue@sonoma.com.tw</a></code></h2>v1.1, 24 September 1999
+<hr />
+<p>這份文件解釋如何使用 Linux 的繞回設備來建立 Linux 的原生檔案系統, 使得 Linux 可以安裝在 DOS 分割區中, 並使用 Linux 原生檔案系統.
+  同時也討論此種技巧的其他用途.</p>
+<hr />
+<ol>
+  <li><a href="Loopback-Root-FS-1.html">簡介</a><br />
+    <a>1.1</a> <a href="Loopback-Root-FS-1.html#ss1.1">版權聲明(此段不譯)</a> <br />
+  <a>1.2</a> <a href="Loopback-Root-FS-1.html#ss1.2">版本演變(此段不譯)</a></li>
+  <li><a href="Loopback-Root-FS-2.html">繞回設備與記憶體磁碟的原理</a><br />
+    <a>2.1</a> <a href="Loopback-Root-FS-2.html#ss2.1">繞回設備</a> <br />
+    <a>2.2</a> <a href="Loopback-Root-FS-2.html#ss2.2">記憶體磁碟設備</a> <br />
+    <a>2.3</a> <a href="Loopback-Root-FS-2.html#ss2.3">起始記憶體磁碟</a> <br />
+    <a>2.4</a> <a href="Loopback-Root-FS-2.html#ss2.4">根目錄檔案系統</a> <br />
+    <a>2.5</a> <a href="Loopback-Root-FS-2.html#ss2.5">Linux
+  開機程序</a></li>
+  <li><a href="Loopback-Root-FS-3.html">如何建立繞回根目錄設備</a><br />
+    <a>3.1</a> <a href="Loopback-Root-FS-3.html#ss3.1">需求</a> <br />
+    <a>3.2</a> <a href="Loopback-Root-FS-3.html#ss3.2">建立
+    Linux 核心</a> <br />
+    <a>3.3</a> <a href="Loopback-Root-FS-3.html#ss3.3">建立初始化記憶體磁碟裝置</a> <br />
+    <a>3.4</a> <a href="Loopback-Root-FS-3.html#ss3.4">建立根目錄裝置</a> <br />
+    <a>3.5</a> <a href="Loopback-Root-FS-3.html#ss3.5">建立置換裝置</a> <br />
+    <a>3.6</a> <a href="Loopback-Root-FS-3.html#ss3.6">建立
+    MSDOS 目錄</a> <br />
+  <a>3.7</a> <a href="Loopback-Root-FS-3.html#ss3.7">建立開機軟碟</a> </li>
+  <li><a href="Loopback-Root-FS-4.html">啟動系統</a><br />
+    <a>4.1</a> <a href="Loopback-Root-FS-4.html#ss4.1">可能發生的問題與解決方式</a> <br />
+  <a>4.2</a> <a href="Loopback-Root-FS-4.html#ss4.2">參考文件</a></li>
+  <li><a href="Loopback-Root-FS-5.html">其他繞回根目錄裝置的可能用途</a><br />
+    <a>5.1</a> <a href="Loopback-Root-FS-5.html#ss5.1">將
+    Linux 安裝在僅有 DOS 分割區的硬碟上</a> <br />
+    <a>5.2</a> <a href="Loopback-Root-FS-5.html#ss5.2">利用
+    LILO 啟動</a> <br />
+    <a>5.3</a> <a href="Loopback-Root-FS-5.html#ss5.3">將
+    Linux 安裝在 VFAT / NTFS 檔案系統上</a> <br />
+    <a>5.4</a> <a href="Loopback-Root-FS-5.html#ss5.4">安裝
+    Linux 而不需重新格式化</a> <br />
+    <a>5.5</a> <a href="Loopback-Root-FS-5.html#ss5.5">從不可開機的設備上啟動
+  Linux</a>  </li>
+</ol>
+<hr />
+<table
+
+
+
+
+>
+  <tr
+>
+    <td class="BtdL"
+><a href="index.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="BtdC"
+><a href="index.html" accesskey="H">目錄(H)</a></td
+>
+    <td class="BtdR"
+><a
+href="3-Button-Mouse-2.html"
+>下一頁(N)</a
+></td
+>
+  </tr
+>
+  <tr
+>
+    <td class="BtdL"
+>目錄</td
+>
+    <td class="BtdC"
+><a href="index.html" accesskey="T">到頂層(T)</a></td
+>
+    <td class="BtdR"
+>介紹</td
+>
+  </tr
+>
+</table
+>
+</body>
+</html>

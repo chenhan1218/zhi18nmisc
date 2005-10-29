@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>5. 核心的 IDE 磁碟轉換</title>
+<link href="Large-Disk-HOWTO-6.html" rel="next" title="6. 結論" />
+<link href="Large-Disk-HOWTO-4.html" rel="previous" title="4. 轉換與磁碟管理程式" />
+<link href="http://tldp.org/HOWTO/Large-Disk-HOWTO.html" rel="alternate" title="原版" />
+<link href="../../style.css" rel="stylesheet" type="text/css" />
+<link href="Large-Disk-HOWTO-1.html" rel="chapter" title="1.問題所在" />
+<link href="Large-Disk-HOWTO-2.html" rel="chapter" title="2.啟動" />
+<link href="Large-Disk-HOWTO-3.html" rel="chapter" title="3.磁碟 geometry 以及分割區" />
+<link href="Large-Disk-HOWTO-4.html" rel="chapter" title="4.轉換與磁碟管理程式" />
+<link href="Large-Disk-HOWTO-5.html" rel="chapter" title="5.核心的 IDE 磁碟轉換" />
+<link href="Large-Disk-HOWTO-6.html" rel="chapter" title="6.結論" />
+<meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+<link href="Large-Disk-HOWTO.rdf" rel="meta" title="各章節的說明資訊" />
+<link href="Large-Disk-HOWTO-5.html#ss5.1" rel="section" title="5.1 EZD " />
+<link href="Large-Disk-HOWTO-5.html#ss5.2" rel="section" title="5.2 DM6:DDO " />
+<link href="Large-Disk-HOWTO-5.html#ss5.3" rel="section" title="5.3 DM6:AUX " />
+<link href="Large-Disk-HOWTO-5.html#ss5.4" rel="section" title="5.4 DM6:MBR " />
+<link href="Large-Disk-HOWTO-5.html#ss5.5" rel="section" title="5.5 PTBL " />
+<link href="Large-Disk-HOWTO-5.html#ss5.6" rel="section" title="5.1 EZD " />
+</head> <body > 
+<table >
+  <tr>
+    <th colspan="3" class="HdTitle">HOWTO：Large
+      Disk</th>
+  </tr>
+  <tr>
+    <td class="TtdL"> <a href="Large-Disk-HOWTO-4.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="TtdC">&nbsp;</td>
+    <td class="TtdR"> <a href="Large-Disk-HOWTO-6.html" accesskey="N">下一頁(N)</a> </td>
+  </tr>
+</table>
+<hr />
+<h1>5. 核心的 IDE 磁碟轉換</h1>
+
+<p>如果 Linux  偵測到 IDE  磁碟上有某些磁碟管理程式存在, 它將會試著使用與該磁碟管理程式相同的方式來重新對應磁碟, 所以 Linux  看到與, 例如 DOS  配合 OnTrack  或是 EZ-Drive 相同的磁碟分割．
+然而, 當你在指令列上指定 geometry 時, 就不會做任何的重新對應 -  所以一行 `<code>hd=</code><i>cyls</i><code>,</code><i>heads</i><code>,</code><i>secs</i>' 指令列選項可能取消掉與磁碟管理程式的相容．</p>
+<p>此重新對應的方式是嘗試 4,8,16,32,64,128,255 磁頭數(H*C 保持不變)直到 C &lt;= 1024  或是 H = 255．</p>
+<p>細節如下 -  小節的抬頭是出現在相對應之啟動訊息裡的字串．在此以及在這份文件任何其它地方中分割的型態都以十六進位數字表示．</p>
+
+<h2><a name="ss5.1" id="ss5.1"></a>5.1 EZD </h2>
+
+<p>偵測到 EZ-Drive , 因為第一個主要分割區型態為 55 ．如上述重新對應 geometry, 且忽略從第 0  磁區讀入的分割表 -  以第 1  磁區的分割表取代．磁碟的區塊號碼(block numbers) 沒有改變, 但對磁區 0  的寫入會轉向磁區 1．此動作可以藉由修改在 <i>ide.c</i> 中的
+
+<code> #define FAKE_FDISK_FOR_EZDRIVE  0 </code>
+
+
+並重新編譯核心來改變．</p>
+
+<h2><a name="ss5.2" id="ss5.2"></a>5.2 DM6:DDO </h2>
+
+<p>偵測到 OnTrack DiskManager(在第一個磁碟上), 因為第一個主要分割區型態為 54 ．如上述重新對應 geometry 而且整個磁碟平移 63 個磁區．
+(所以舊的磁區 63 變成磁區 0)然後從新的第 0  磁區讀入新的 MBR (與分割表)．此平移當然是為 DDO 留空間 -  這也就是為什麼其它磁碟不必平移．</p>
+
+<h2><a name="ss5.3" id="ss5.3"></a>5.3 DM6:AUX </h2>
+
+<p>偵測到 OnTrack DiskManager(在其它磁碟上), 因為第一個主要分割區型態為 51 或 53．如上述重新對應 geometry ．</p>
+
+<h2><a name="ss5.4" id="ss5.4"></a>5.4 DM6:MBR </h2>
+
+<p>偵測到某舊版的 OnTrack DiskManager, 並非藉由分割區型態, 而是簽名(signature)．(測試在 MBR  裡第 2,3  位元組的偏移值是否不大於 430, 而且在此偏移位址找到的 short 等於 0x55AA, 後面並跟著一個奇數的位元組) 再一次如上述重新對應 geometry ．</p>
+
+<h2><a name="ss5.5" id="ss5.5"></a>5.5 PTBL </h2>
+
+<p>最後, 核心會嘗試從主分割區的 <code>start</code> 以及 <code>end</code> 值推斷轉換方式: 若某些分割區的 <code>start</code> 以及 <code>end</code> 磁簇小於 256, 而且 <code>start</code> 以及 <code>end</code> 磁區號碼分別為 1  和 63 , 而且 end  磁頭為 31, 63,  或 127, 那麼, 因為依慣例分割區會在磁簇邊界結束, 而且更因為 IDE  介面最多使用 16  個磁頭, 故推測有開啟 BIOS 轉換, 分別使用 32, 64 或 128  磁頭數重新對應 geometry．
+(也許這裡有點瑕疵,  <i>genhd.c</i> 不應該測試磁簇號碼前兩個位元嗎?)無論如何, 當目前的 geometry 已經為每磁軌 63 個磁區且至少這麼多磁頭時, 不會做重新對應 (因為這可能意謂著重對應已完成)．</p>
+
+<hr />
+<table >
+  <tr>
+    <td class="BtdL"> <a href="Large-Disk-HOWTO-4.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="BtdC"> <a href="index.html" accesskey="H">目錄(H)</a> </td>
+    <td class="BtdR"> <a href="Large-Disk-HOWTO-6.html">下一頁(N)</a> </td>
+  </tr>
+  <tr>
+    <td class="BtdL">轉換與磁碟管理程式</td>
+    <td class="BtdC"><a href="Large-Disk-HOWTO-5.html"  accesskey="T">到頂層(T)</a></td>
+    <td class="BtdR">結論</td>
+  </tr>
+</table>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img class="ImgLogo" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" title="網路內容分級協會" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

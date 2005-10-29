@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+ 
+ <title>XFree86 字體美化 Mini HOWTO: 簡介</title>
+ <link href="FDU-2.html" rel="next" />
+  <link href="FDU-1.html" rel="chapter" title="1.簡介" />
+ <link href="FDU-2.html" rel="chapter" title="2.X Server 的設定" />
+ <link href="FDU-3.html" rel="chapter" title="3.TrueType 字型" />
+ <link href="FDU-4.html" rel="chapter" title="4.XFree86 4.x" />
+ <link href="FDU-5.html" rel="chapter" title="5.調整應用程式的字型" />
+ <link href="FDU-6.html" rel="chapter" title="6.雜項和結尾" />
+ <link href="index.html" rel="start" />
+ <link href="index.html#content" rel="contents" />
+ <link href="../../style.css" rel="stylesheet" type="text/css" />
+
+ <link href="http://www.tldp.org/HOWTO/mini/FDU/index.html" rel="alternate" title="原版" />
+ <meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+ <link href="FDU-1.html#ss1.1" rel="section" title="1.1 慣例 " />
+ <link href="FDU-1.html#ss1.2" rel="section" title="1.2 Change log " />
+ <link href="FDU-1.html#ss1.3" rel="section" title="1.3 新版 " />
+ <link href="FDU-1.html#ss1.4" rel="section" title="1.4 Copyright " />
+ <link href="FDU-1.html#ss1.5" rel="section" title="1.5 致謝 " />
+ <link href="FDU.rdf" rel="meta" title="各章節的說明資訊" />
+ <link href="http://www.xfree.org" rel="bookmark" title="XFree86" />
+ <link href="http://home.c2i.net/dark/linux.html" rel="bookmark" title="Some Linux for Beginners" />
+ <link href="index.html" rel="prev" />
+</head> <body> 
+
+<table
+
+
+
+
+>
+  <tr
+>
+    <th
+colspan="3" class="HdTitle"
+>Mini
+    HOWTO：XFree86 Font De-uglification</th>
+  </tr
+>
+  <tr
+>
+    <td class="TtdL"
+><a href="index.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="TtdC"
+></td
+>
+    <td class="TtdR"
+><a href="FDU-2.html" accesskey="N">下一頁(N)</a></td
+>
+  </tr
+>
+</table
+>
+<hr />
+<h1><a name="s1" id="s1">1.</a> 簡介</h1>
+
+<p>在我必須處理的一堆討厭事中，有一項就是糟透的 X 預設字型和字型設定 (這裡我專指 
+<a href="http://www.xfree.org">XFree86</a>，其他的 X 也許比較好)。有些程式預設使用固定寬度字型(fixed width fonts)，其實上可變寬度字型(variable width fonts)較為適當。有些程式使用小到不可思議且難以辨認的字型。伴隨 XFree86 而來的字型根本不適用。它的確有還算精緻的 courier 字型，但是它的 Times 和 Helvetica 只是簡單的點陣字，當縮放的時候就產生鋸齒狀。</p>
+<p>這份 HOWTO 嘗試說明如何調整各式各樣的字型設定，如何安裝新字體，和其他可以大幅改善 X Window 字型的外觀和增加可讀性的方法。這是藉由調整 XF86Config 檔中的 FontPath，在 startx 或 xdm (和類似的圖形登錄介面）加上 X server 命令列選項(command line options)，加入新的字型，安裝 TrueType 字型伺服器和字型，和使用 K Desktop Environment 1.1 的功能來調整許多應用程式的字型設定，包含設定讓非 KDE 應用程式的顏色和字型能夠與 KDE 一致。</p>
+<p>歡迎評論，更正，增修和批評。你可以在 
+<a href="mailto:meldroc@frii.com">meldroc@frii.com</a> 和 
+<a href="mailto:hburgiss@bellsouth.net">hburgiss@bellsouth.net</a> 聯絡到作者。</p>
+<p>譯按：若對中譯文有任何的建議和更正，歡迎寫信告訴我。我的聯絡方式 
+<a href="mailto:joezhang@ms10.hinet.net">joezhang@ms10.hinet.net</a>。</p>
+<h2><a name="ss1.1" id="ss1.1">1.1</a> 慣例
+</h2>
+
+<p>在一些命令的例子中，"#" 符號通常是表示只讓超級使用者執行，而 "$" 則表示一般的使用者就可以執行。</p>
+<p>在例子中，/usr/local/share/fonts/ttfonts 是我們 TrueType 字型的目錄。這並不是一個特殊位置，你也可以變更它。</p>
+<p>"xfs" 在這裡是指 Redhat 6.x 中包含的 xfs。在某一方面，它和一般指的 XFree86 xfs 有很大的出入。</p>
+<p>"Netscape" 指的是整套的 Netscape 程式。包含: Communicator, Navigator, Messenger 等。Mozilla 的字型的設定是相同的。</p>
+<h2><a name="ss1.2" id="ss1.2">1.2</a> Change log
+</h2>
+<ul>
+<li>0.1:  Feb. 21, 1999: 第一次公佈。</li>
+<li>0.11: Feb. 27, 1999: 放入 copyright 保護我的權利。</li>
+<li>0.12: Jun. 10, 1999: 放入請求援助。</li>
+<li>0.20: Sep. 14, 1999: 為 Redhat 的使用者加入有關於 xfs 的一節。感謝 Hal Burgiss 的貢獻。 </li>
+<li> 1.0: Nov. 23, 1999: 將文章轉為 SGML 格式，送入 Linux Document Project。將請求援助的部份移除。</li>
+<li> 1.5: July 25, 2000: 加入了有關 fonts.alias, XFree86 4.x 和 xfsft 的新章節，還有一些修改和增補。</li>
+</ul>
+<h2><a name="ss1.3" id="ss1.3">1.3</a> 新版
+</h2>
+
+<p>1.5 版包含了關於 xfsft, fonts.alias 和 XFree86 4.x 的新章節。除此之外，也增加了一個新的章節，是關於一些連結和記錄，並重寫 xfs 的那節。還有一些修改和增補。</p>
+<p>在 1.51 版中，感謝 Kristin Aanestad 對本文件的目的提出建議。</p>
+<p>本文件的新版可以在 
+<a href="http://feenix.eyep.net/ldp/fdu/index.html">http://feenix.eyep.net/ldp/fdu/index.html</a> 找到。</p>
+<h2><a name="ss1.4" id="ss1.4">1.4</a> Copyright
+</h2>
+
+<p>Copyright  1999 by Doug Holland.</p>
+<p>譯按: 為尊重作者原意，這部份不譯 (其實是偷懶啦)。</p>
+<p>   
+Unless otherwise stated, Linux HOWTO documents are copyrighted by their respective authors. Linux HOWTO documents may be reproduced and in whole or in part, in any medium physical or electronic, long as this copyright notice is retained on all copies. Commercial is allowed and encouraged; however, the author would to be notified of any such distributions.</p>
+<p>All translations, derivative works, or aggregate works incorporating Linux HOWTO documents must be covered under this copyright notice. is, you may not produce a derivative work from a HOWTO and impose restrictions on its distribution. Exceptions to these rules be granted under certain conditions; please contact the Linux coordinator for more information.</p>
+<p>In short, we wish to promote dissemination of this information through many channels as possible. However, we do wish to retain copyright the HOWTO documents, and would very much like to be notified of any to redistribute the HOWTOs, this one in particular! Web page are free to link to this HOWTO without restriction, though the would appreciate an email informing him of this, just so he can his ego by knowing who else reads and links to this document.</p>
+<p>Many of the terms mentioned in this document are trade names. Unless stated, all trademarks are property of their respective owners.</p>
+<h2><a name="ss1.5" id="ss1.5">1.5</a> 致謝
+</h2>
+
+<p>本文件由 Doug Holland 所撰寫<br />
+Email: 
+<a href="mailto:meldroc@frii.com">meldroc@frii.com</a><br />
+WWW: 
+<a href="http://www.frii.com/~meldroc/">http://www.frii.com/~meldroc/</a></p>
+<p>由 Hal Burgiss 更新<br />
+Email: 
+<a href="mailto:hburgiss@bellsouth.net">hburgiss@bellsouth.net</a><br />
+WWW: 
+<a href="http://feenix.eyep.net/">http://feenix.eyep.net/</a></p>
+<p>特別感謝</p>
+<ul>
+<li>
+<a href="http://www.xfree.org">XFree86 Project</a> 的發展者奉獻出他們的時間和精力。除此之外，Juliusz Chroboczek 的 xfsft，和 XFree86 4.x 讓 TrueType 進入實用階段。</li>
+<li>感謝字型天才 Kristin Aanestad 在 xfs, TrueType, Netscape 和特別是 fonts.alias 等章節的貢獻。你可以在 
+<a href="http://home.c2i.net/dark/linux.html">Some Linux for Beginners</a> 找到更多 Kristin 在其他主題的資料。</li>
+<li>在 
+<a href="news:comp.os.linux.x">comp.os.linux.x</a> 的人們，他們在我剛開始研究這些的時候對我伸出援手。</li>
+<li>最初讓這所有一切變為可能的 Linux 社群。</li>
+<li>Microsoft 和 Apple: 他們提供了字型，美化了我的桌面。</li>
+</ul>
+
+<hr />
+<table
+
+
+
+
+>
+  <tr
+>
+    <td class="BtdL"
+><a href="index.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="BtdC"
+><a href="index.html" accesskey="H">目錄(H)</a></td
+>
+    <td class="BtdR"
+><a
+href="FDU-2.html"
+>下一頁(N)</a
+></td
+>
+  </tr
+>
+  <tr
+>
+    <td  class="BtdL"
+>目錄</td
+>
+    <td class="BtdC"
+><a href="FDU-1.html" accesskey="T">到頂層(T)</a></td
+>
+    <td class="BtdR"
+>X Server 的設定</td
+>
+  </tr
+>
+</table
+>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img class="ImgLogo" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

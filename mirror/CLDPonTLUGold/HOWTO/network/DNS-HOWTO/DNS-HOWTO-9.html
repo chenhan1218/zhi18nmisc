@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>9. 常見問題解答</title>
+<link href="DNS-HOWTO-10.html" rel="next" title="10.如何成為一個大型的 DNS 管理者"/>
+<link href="DNS-HOWTO-8.html" rel="previous" title="8.撥接連線的自動設定"/>
+<link href="../../style.css" rel="stylesheet" type="text/css" />
+<link href="http://tldp.org/HOWTO/DNS-HOWTO.html" rel="alternate" title="原版" />
+<link href="index.html" rel="start" title="HOWTO：DNS" />
+<link href="index.html#content" rel="contents" />
+<link href="DNS-HOWTO-1.html" rel="chapter" title="1.前言" />
+<link href="DNS-HOWTO-2.html" rel="chapter" title="2.簡介" />
+<link href="DNS-HOWTO-3.html" rel="chapter" title="3.暫存專用名稱伺服器" />
+<link href="DNS-HOWTO-4.html" rel="chapter" title="4.一個簡單的領域" />
+<link href="DNS-HOWTO-5.html" rel="chapter" title="5.真實領域的例子" />
+<link href="DNS-HOWTO-6.html" rel="chapter" title="6.維護工作" />
+<link href="DNS-HOWTO-7.html" rel="chapter" title="7.Bind version 8" />
+<link href="DNS-HOWTO-8.html" rel="chapter" title="8.撥接連線的自動設定" />
+<link href="DNS-HOWTO-9.html" rel="chapter" title="9.常見問題解答" />
+<link href="DNS-HOWTO-10.html" rel="chapter" title="10.如何成為一個大型的 DNS 管理者" />
+<meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+<link href="DNS-HOWTO.rdf" rel="meta" title="各章節的說明資訊" />
+</head> <body>
+<table >
+  <tr> 
+    <th colspan="3" class="HdTitle">HOWTO：DNS</th>
+  </tr>
+  <tr> 
+    <td class="TtdL"> <a href="DNS-HOWTO-8.html" accesskey="P">上一頁(P)</a> 
+    </td>
+    <td class="TtdC">&nbsp;</td>
+    <td class="TtdR"> <a href="DNS-HOWTO-10.html" accesskey="N">下一頁(N)</a> 
+    </td>
+  </tr>
+</table>
+<hr />
+<h1> 9. 常見問題解答</h1>
+
+<p>本節中我將列出一些關於 DNS 以及本文件最常被提出的問題．還有解答 :-)
+在寫信給我前請先閱讀過本節．</p>
+<p> </p>
+<ol>
+<li>如何在防火牆之內使用 DNS ? 
+
+<p>一些提示: `<code>forwarders</code>', `<code>slave</code>', 
+以及參考本文件最後面的文獻列表．</p>
+
+</li>
+<li>如何利用 DNS 提供的可用位址於某一服務，如 <code>www.busy.site</code>，
+以獲得負荷平衡或類似的效果?
+
+    <p>為 <code>www.busy.site</code> 加上許多 A 記錄，而且使用 <code>bind 4.9.3</code> 或以後的版本． 
+      這樣 <code>bind</code> 會使用 round-robin 演算法找尋答案．這不能在更早版本的 <code>bind</code> 
+      上工作．</p>
+
+</li>
+<li>我想在一封閉的 Intranet 上架設 DNS．我該怎麼做?
+
+<p>把暫存檔案丟掉只留區域檔案．這也表示你將不需要更新暫存檔案．</p>
+
+</li>
+<li>我的系統沒有 <code>ndc</code> 程式．我該怎麼辦?
+
+<p>你的系統安裝過一舊的，可能過期的 <code>bind</code> 程式．
+如果安全性對你很重要: 立刻將 <code>bind</code> 升級．如果不是，你也可以用這舊的．
+你可直接執行 <code>named</code> 而不是 <code>ndc start</code>．
+<code>ndc reload</code> 變成 <code>named.reload</code> 而 <code>ndc restart</code> 變成 <code>named.restart</code>．
+所有這些程式可能都在 <code>/usr/sbin</code> 裡．</p>
+
+</li>
+<li>如何建立次要名稱伺服器?
+
+    <p>如果主要名稱伺服器的地址是 <code>127.0.0.1</code>， 在你的次要名稱伺服器的 <code>named.boot</code> 檔案中放一行: 
+    </p>
+    <pre class="sample">
+  secondary     linux.bogus             127.0.0.1       sz/linux.bogus
+  
+</pre>
+    <p></p>
+    </li>
+<li>我希望離線時 <code>bind</code> 仍繼續執行．
+
+    <p>我收到來自 Ian Clark &lt; <a href="mailto:ic@deakin.edu.au">ic@deakin.edu.au</a>&gt; 
+      的信件解釋他如何辦到這點． </p>
+    <pre class="sample">
+I run named on my 'Masquerading' machine here. I have 
+two root.cache files, one called root.cache.real which contains 
+the real root server names and the other called root.cache.fake 
+which contains...
+
+--------------
+; root.cache.fake
+; this file contains no information
+--------------
+
+When I go off line I copy the root.cache.fake file to root.cache and
+restart named.
+
+When I go online I copy root.cache.real to root.cache and restart
+named.
+
+This is done from ip-down &amp; ip-up respectively.
+
+The first time I do a query off line on a domain name named doesn't
+have details for it puts an entry like this in messages..
+
+Jan 28 20:10:11 hazchem named[10147]: No root nameserver for class IN
+
+which I can live with.
+         
+It certainly seems to work for me. I can use the nameserver for
+local machines while off the 'net without the timeout delay for
+external domain names and I while on the 'net queries for external
+domains work normally
+</pre>
+
+<p></p>
+
+</li>
+<li>名稱伺服器將暫存資料保存在那兒? 有任何方法可以控制它的大小嗎?
+
+    <p>所有的暫存資料都保存在記憶體中，任何時刻它都不會被寫入磁碟中． 每次你殺掉 <code>named</code> 時這些暫存資料就沒有了．沒有任何方法可以控制暫存資料． 
+      <code>named</code> 用一些簡單的法則來管理它．你不能用任何理由任何方法控制暫存資料或其大小． 如果你希望如此你可以自己去改 <code>named</code> 
+      的程式．不過最好別這麼做．</p>
+
+</li>
+<li>如何在重新起始 <code>named</code> 之間保存暫存資料? 我可以把它存下來嗎?
+
+    <p>不! <code>named</code> 被殺掉時不會保留暫存資料． 這就是說暫存資料必須在每次你殺掉並重新起始 <code>named</code> 
+      後重新建立． 沒有辦法讓 <code>named</code> 將暫存資料存到檔案裡． 如果你希望如此你可以自己去改 <code>named</code> 
+      的程式．不過最好別這麼做．</p>
+
+</li>
+</ol>
+<p></p>
+
+<hr />
+<table >
+  <tr> 
+    <td class="BtdL"> <a href="DNS-HOWTO-8.html" accesskey="P">上一頁(P)</a> 
+    </td>
+    <td class="BtdC"> <a href="index.html" accesskey="H">目錄(H)</a> </td>
+    <td class="BtdR"> <a href="DNS-HOWTO-10.html">下一頁(N)</a> </td>
+  </tr>
+  <tr> 
+    <td class="BtdL">撥接連線的自動設定</td>
+    <td class="BtdC"><a href="DNS-HOWTO-9.html"  accesskey="T">到頂層(T)</a></td>
+    <td class="BtdR">如何成為一個大型的 DNS 管理者</td>
+  </tr>
+</table>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> 
+  <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a> 
+  <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img class="ImgLogo" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> 
+  <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> 
+  <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" title="網路內容分級協會" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

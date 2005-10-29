@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>16. 繪制顯示器特性</title>
+<link href="XFree86-Video-Timings-HOWTO-17.html" rel="next" title="17. 致謝" />
+<link href="XFree86-Video-Timings-HOWTO-15.html" rel="previous" title="15. 解決圖象問題" />
+<link href="http://tldp.org/HOWTO/XFree86-Video-Timings-HOWTO/index.html" rel="alternate" title="原版" />
+<link href="index.html" rel="start" title="HOWTO：XFree86 Video Timings" />
+<link href="index.html#content" rel="contents" />
+<meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+<link href="../../style.css" rel="stylesheet" type="text/css" />
+<link href="XFree86-Video-Timings-HOWTO.rdf" rel="meta" title="各章節的說明資訊" />
+</head> <body   >
+<table >
+  <tr>
+    <th colspan="3" class="HdTitle">HOWTO：XFree86
+      Video Timings</th>
+  </tr>
+  <tr>
+    <td class="TtdL"> <a href="XFree86-Video-Timings-HOWTO-15.html" accesskey="P">上一頁(P)</a> 
+    </td>
+    <td class="TtdC">&nbsp;</td>
+    <td class="TtdR"> <a href="XFree86-Video-Timings-HOWTO-17.html" accesskey="N">下一頁(N)</a> 
+    </td>
+  </tr>
+</table>
+<hr />
+<h1> 16. 繪制顯示器特性</h1>
+
+
+<p>要繪制一份顯示器模式圖,你將需要gnuplot軟件包(一個類UNIX操作系統下的繪圖語言自由軟件)和<code>modeplot</code>工具.它是一個輸入命令行選項來繪制顯示器特性圖的shell/gnuplot腳本.</p>
+<p>這裡是<code>modeplot</code>的一份拷貝:</p>
+<pre class="sample">
+#!/bin/sh
+#
+# modeplot --- 生成顯示器可使用的X模式圖
+#
+# 執行'modeplot -?'獲知控制選項.
+#
+
+# 顯示器描述.頻寬以MHz為單位,行頻以KHz為單位,而場頻以Hz為單位.
+TITLE="Viewsonic 21PS"
+BANDWIDTH=185
+MINHSF=31
+MAXHSF=85
+MINVSF=50
+MAXVSF=160
+ASPECT="4/3"
+vesa=72.5       # VESA建議的最小刷新率
+
+while [ "$1" != "" ]
+do
+        case $1 in
+        -t) TITLE="$2"; shift;;
+        -b) BANDWIDTH="$2"; shift;;
+        -h) MINHSF="$2" MAXHSF="$3"; shift; shift;;
+        -v) MINVSF="$2" MAXVSF="$3"; shift; shift;;
+        -a) ASPECT="$2"; shift;;
+        -g) GNUOPTS="$2"; shift;;
+        -?) cat &lt;&lt;EOF
+modeplot control switches:
+
+-t "&lt;description>"   name of monitor            defaults to "Viewsonic 21PS"
+-b &lt;nn>              bandwidth in MHz           defaults to 185
+-h &lt;min> &lt;max>    min &amp; max HSF (KHz)        defaults to 31 85
+-v &lt;min> &lt;max>    min &amp; max VSF (Hz)         defaults to 50 160
+-a &lt;aspect ratio>    aspect ratio               defaults to 4/3
+-g "&lt;options>"       pass options to gnuplot
+
+The -b, -h and -v options are required, -a, -t, -g optional. You can use -g to pass a device type to gnuplot so that (for example) modeplot's output can be redirected to a printer. See gnuplot(1) for details.
+
+The modeplot tool was created by Eric S. Raymond &lt;esr@thyrsus.com> based on analysis and scratch code by Martin Lottermoser &lt;Martin.Lottermoser@mch.sni.de>
+
+This is modeplot $Revision: 1.13 $
+EOF
+                exit;;
+        esac
+        shift
+
+done
+
+gnuplot $GNUOPTS &lt;&lt;EOF
+set title "$TITLE Mode Plot"
+
+# 有魔力的數值.不幸的是特性圖對它們的改變相當敏感,而對某些顯示器它們不能代表實際值.我們需要糾
+# 正這些值以獲得更接近的模式圖.這些值是查找ModeDB數據庫中大量的值而得到的.
+F1 = 1.30       # 轉換水平分辨率到幀寬的倍數
+F2 = 1.05       # 轉換垂直分辨率到幀高的倍數
+
+# 函數定義(乘以1.0強迫進行實數運算)
+ac = (1.0*$ASPECT)*F1/F2
+refresh(hsync, dcf) = ac * (hsync**2)/(1.0*dcf)
+dotclock(hsync, rr) = ac * (hsync**2)/(1.0*rr)
+resolution(hv, dcf) = dcf * (10**6)/(hv * F1 * F2)
+
+# 在坐標軸上放置標記
+set xlabel 'DCF (MHz)'
+set ylabel 'RR (Hz)' 6  # 在Y軸右邊放置它
+
+# 生成圖形
+set grid
+set label "VB" at $BANDWIDTH+1, ($MAXVSF + $MINVSF) / 2 left
+set arrow from $BANDWIDTH, $MINVSF to $BANDWIDTH, $MAXVSF nohead
+set label "max VSF" at 1, $MAXVSF-1.5
+set arrow from 0, $MAXVSF to $BANDWIDTH, $MAXVSF nohead
+set label "min VSF" at 1, $MINVSF-1.5
+set arrow from 0, $MINVSF to $BANDWIDTH, $MINVSF nohead
+set label "min HSF" at dotclock($MINHSF, $MAXVSF+17), $MAXVSF + 17 right
+set label "max HSF" at dotclock($MAXHSF, $MAXVSF+17), $MAXVSF + 17 right
+set label "VESA $vesa" at 1, $vesa-1.5
+set arrow from 0, $vesa to $BANDWIDTH, $vesa nohead # style -1
+plot [dcf=0:1.1*$BANDWIDTH] [$MINVSF-10:$MAXVSF+20] \
+  refresh($MINHSF, dcf) notitle with lines 1, \
+  refresh($MAXHSF, dcf) notitle with lines 1, \
+  resolution(640*480,   dcf) title "640x480  " with points 2, \
+  resolution(800*600,   dcf) title "800x600  " with points 3, \
+  resolution(1024*768,  dcf) title "1024x768 " with points 4, \
+  resolution(1280*1024, dcf) title "1280x1024" with points 5, \
+  resolution(1600*1280, dcf) title "1600x1200" with points 6
+
+pause 9999
+EOF
+</pre>
+<p>一旦知道了<code>modeplot</code>和gnuplot軟件包已經在適當位置,你需要下列顯示器特性:</p>
+<ul>
+  <li>頻寬(VB)</li>
+  <li>行頻范圍(HSF)</li>
+  <li>場頻范圍(VSF)</li>
+</ul>
+<p>繪制程序需要進行一些不完全精確的簡化假定.因此得出的圖隻能是一個粗略描述.這些假定是:</p>
+<ol>
+<li>所有分辨率有單一的固定屏幕高寬比 AR = HR / VR .標準分辨率有 AR = 4/3 或 AR = 5/4 .<code>modeplot</code>程序默認假定4/3,但你可以替換它.</li>
+<li>對計算的模式,水平和垂直幀長分別是水平和垂直分辨率的固定倍數:
+
+
+    <pre class="sample">
+        HFL = F1 * HR
+        VFL = F2 * VR
+</pre>
+  </li>
+</ol>
+
+<p>作為一份粗略的指南,讓 F1 = 1.30 而 F2 = 1.05 (查閱
+<a href="XFree86-Video-Timings-HOWTO-9.html#frame">frame</a>
+"計算幀的大小").</p>
+<p>現在處理一個特殊的同步頻率,行頻(HSF).根據剛才提出的假定,其每個值對時鐘頻率DCF而言已經決定刷新率RR,也就是說,對行頻(HSF)每個值有一個函數RR(DCF).這可以依下列各項得出.</p>
+<p>刷新率等於時鐘頻率除以幀長的乘積:</p>
+<pre class="sample">
+        RR = DCF / (HFL * VFL)          (*)
+</pre>
+<p>另一方面,水平幀長等於時鐘率除以行頻:</p>
+<pre class="sample">
+        HFL = DCF / HSF                 (**)
+</pre>
+<p>根據上述兩個假定VFL可以化為HFL:</p>
+<pre class="sample">
+        VFL = F2 * VR
+            = F2 * (HR / AR)
+            = (F2 / F1) * HFL / AR      (***)
+</pre>
+<p>插入(**)和(***)到(*)我們得到:</p>
+<pre class="sample">
+        RR = DCF / ((F2 / F1) * HFL**2 / AR)
+           = (F1 / F2) * AR * DCF * (HSF / DCF)**2
+           = (F1 / F2) * AR * HSF**2 / DCF
+</pre>
+<p>對於固定的HSF,F1,F2和AR,在我們的圖中這是一條雙曲線.對行頻最小值和最大值畫兩條這樣的曲線我們就得到了允許區域的兩條邊界.</p>
+<p>穿過特性區域的直線代表特定的分辨率.這是基於(*)和第二個假定:</p>
+<pre class="sample">
+        RR = DCF / (HFL * VFL) = DCF / (F1 * HR * F2 * VR)
+</pre>
+<p>通過為某人感興趣的所有分辨率畫這樣的直線,他能立刻記住顯示器特性范圍內分辨率,時鐘頻率和刷新率之間可能的關系.注意這些線不依賴於顯示器的特性,但確實依賴於第二個假定.</p>
+<p><code>modeplot</code>工具提供給你容易的途徑繪制特性圖.運行<code>modeplot -?</code>看它的控制選項.一個典型調用類似這樣:</p>
+<pre class="sample">
+        modeplot -t "Swan SW617" -b 85 -v 50 90 -h 31 58
+</pre>
+<p>-b選項指定頻寬;-v和-h設置行頻和場頻范圍.</p>
+<p>當閱讀<code>modeplot</code>的輸出時,始終記住它隻給出近似的描述.例如,它忽視了由同步脈沖寬度的最小要求造成的水平幀長(HFL)的限制,而且它的精確度受限於兩個假定的精確度.因此它不是在
+<a href="XFree86-Video-Timings-HOWTO-11.html#synth">匯總以上討論</a>中出現的詳細計算(涉及某些巫術)的代替品.無論如何,對於什麼模式是可能的和有哪些相關權衡,它應該給了你更好的感覺.</p>
+
+<hr />
+<table >
+  <tr>
+    <td class="BtdL"> <a href="XFree86-Video-Timings-HOWTO-15.html" accesskey="P">上一頁(P)</a> 
+    </td>
+    <td class="BtdC"> <a href="index.html" accesskey="H">目錄(H)</a> </td>
+    <td class="BtdR"> <a href="XFree86-Video-Timings-HOWTO-17.html">下一頁(N)</a> 
+    </td>
+  </tr>
+  <tr>
+    <td class="BtdL">解決圖象問題</td>
+    <td class="BtdC"><a href="XFree86-Video-Timings-HOWTO-16.html"  accesskey="T">到頂層(T)</a></td>
+    <td class="BtdR">致謝</td>
+  </tr>
+</table>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img class="ImgLogo" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" title="網路內容分級協會" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

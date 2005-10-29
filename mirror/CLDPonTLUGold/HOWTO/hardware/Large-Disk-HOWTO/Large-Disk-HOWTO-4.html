@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>4. 轉換與磁碟管理程式</title>
+<link href="Large-Disk-HOWTO-5.html" rel="next" title="5. 核心的 IDE 磁碟轉換" />
+<link href="Large-Disk-HOWTO-3.html" rel="previous" title="3. 磁碟 geometry 以及分割區" />
+<link href="http://tldp.org/HOWTO/Large-Disk-HOWTO.html" rel="alternate" title="原版" />
+<link href="../../style.css" rel="stylesheet" type="text/css" />
+<link href="Large-Disk-HOWTO-1.html" rel="chapter" title="1.問題所在" />
+<link href="Large-Disk-HOWTO-2.html" rel="chapter" title="2.啟動" />
+<link href="Large-Disk-HOWTO-3.html" rel="chapter" title="3.磁碟 geometry 以及分割區" />
+<link href="Large-Disk-HOWTO-4.html" rel="chapter" title="4.轉換與磁碟管理程式" />
+<link href="Large-Disk-HOWTO-5.html" rel="chapter" title="5.核心的 IDE 磁碟轉換" />
+<link href="Large-Disk-HOWTO-6.html" rel="chapter" title="6.結論" />
+<meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+<link href="Large-Disk-HOWTO.rdf" rel="meta" title="各章節的說明資訊" />
+</head> <body > 
+<table >
+  <tr>
+    <th colspan="3" class="HdTitle">HOWTO：Large
+      Disk</th>
+  </tr>
+  <tr>
+    <td class="TtdL"> <a href="Large-Disk-HOWTO-3.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="TtdC">&nbsp;</td>
+    <td class="TtdR"> <a href="Large-Disk-HOWTO-5.html" accesskey="N">下一頁(N)</a> </td>
+  </tr>
+</table>
+<hr />
+<h1>4. 轉換與磁碟管理程式</h1>
+
+<p>沒有人對磁碟的'真實' geometry 有興趣．磁軌的磁區數通常是變動的 - 接近磁碟外圍的磁軌有比較多的磁區 -  所以沒有'真實'的每磁軌磁區數．
+對於使用者而言最好是把磁碟當作編號 0,1,..., 的磁區組合成的線性陣列, 讓控制器去找出磁區究竟位於磁碟的那裡．</p>
+<p>此線性編號一般通稱為 LBA．對於 geometry 為 (C,H,S)  的磁碟而言屬(c,h,s) 的線性位址為 c*H*S+h*S+(s-1)．所有 SCSI 控制器都使用 LBA, 某些 IDE  控制器也是．</p>
+<p>如果 BIOS 把這 24 個位元(c,h,s) 轉換成 LBA  並餵給懂得 LBA  的控制器, 那麼又可以定址到 7.875 GB ．並不足以應付所有的磁碟, 但仍然是個改進．注意此處 BIOS 使用的 CHS, 它不再與'實體'有任何關係．</p>
+<p>當控制器不懂何為 LBA  但是 BIOS 知道如何轉換時有些類似的方法可行．(在 BIOS 設定中通常稱為 'Large'．)現在 BIOS 將呈現 geometry 為(C',H',S')給作業系統, 而在與磁碟控制器溝通時則使用(C,H,S)．
+通常 S=S', C'=C/N  而 H'=H*N,  其中 N  是確保 C'&lt;=1024 之 2  的最小次方(所以 C'=C/N 時捨去的數浪費少許容量)．再一次, 這允許存取最多達 7.875 GB．</p>
+<p>如果 BIOS 不知道 'Large'  或是 'LBA', 那麼還是有軟體的解決方案．像是 OnTracker  或 EZ-Drive 這些個磁碟管理程式會以它們自己的函式(routines)替換掉 BIOS 的．
+通常這是藉由將磁碟管理程式放在 MBR  及其後幾個磁區(OnTrack 稱這些程式碼為 DDO: Dynamic Drive Overlay )來達成的, 所以它會在任何其它作業系統之前被啟動．
+這也就是為什麼在安裝磁碟管理程式後從軟碟啟動可能會出問題．</p>
+<p>這影響可能多於或少於 BIOS 轉換 -  但特別是在相同的磁碟上跑數種不同的作業系統時, 磁碟管理程式可能引起許多問題．</p>
+<p>Linux 從 1.3.14 版開始支援 OnTrack  磁碟管理程式, 從 1.3.29 開始
+支援 EZ-Drive ．下面有些更進一步的資訊．</p>
+
+
+<hr />
+<table >
+  <tr>
+    <td class="BtdL"> <a href="Large-Disk-HOWTO-3.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="BtdC"> <a href="index.html" accesskey="H">目錄(H)</a> </td>
+    <td class="BtdR"> <a href="Large-Disk-HOWTO-5.html">下一頁(N)</a> </td>
+  </tr>
+  <tr>
+    <td class="BtdL">磁碟 geometry 以及分割區</td>
+    <td class="BtdC"><a href="Large-Disk-HOWTO-4.html"  accesskey="T">到頂層(T)</a></td>
+    <td class="BtdR">核心的 IDE 磁碟轉換</td>
+  </tr>
+</table>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img class="ImgLogo" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" title="網路內容分級協會" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

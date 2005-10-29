@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>6. 結論</title>
+<link href="Large-Disk-HOWTO-5.html" rel="previous" title="5. 核心的 IDE 磁碟轉換" />
+<link href="http://tldp.org/HOWTO/Large-Disk-HOWTO.html" rel="alternate" title="原版" />
+<link href="../../style.css" rel="stylesheet" type="text/css" />
+<link href="Large-Disk-HOWTO-1.html" rel="chapter" title="1.問題所在" />
+<link href="Large-Disk-HOWTO-2.html" rel="chapter" title="2.啟動" />
+<link href="Large-Disk-HOWTO-3.html" rel="chapter" title="3.磁碟 geometry 以及分割區" />
+<link href="Large-Disk-HOWTO-4.html" rel="chapter" title="4.轉換與磁碟管理程式" />
+<link href="Large-Disk-HOWTO-5.html" rel="chapter" title="5.核心的 IDE 磁碟轉換" />
+<link href="Large-Disk-HOWTO-6.html" rel="chapter" title="6.結論" />
+<meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+<link href="Large-Disk-HOWTO.rdf" rel="meta" title="各章節的說明資訊" />
+<link href="Large-Disk-HOWTO-6.html#ss6.1" rel="section" title="6.1 IDE 細節" />
+<link href="Large-Disk-HOWTO-6.html#ss6.2" rel="section" title="6.2 SCSI 細節" />
+</head> <body >
+<table >
+  <tr>
+    <th colspan="3" class="HdTitle">HOWTO：Large
+      Disk</th>
+  </tr>
+  <tr>
+    <td class="TtdL"> <a href="Large-Disk-HOWTO-5.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="TtdC">&nbsp;</td>
+    <td class="TtdR">&nbsp; </td>
+  </tr>
+</table>
+<hr />
+<h1>6. 結論</h1>
+
+<p>這到底意謂著什麼? 對 Linux  的使用者而言只有一件事: 就是他們必須得確保 LILO 以及 fdisk  使用正確的 geometry , 其中'正確'的定義對 fdisk 而言是與其它在同一個磁碟上的作業系統所使用的 geometry 相同, 而對 LILO 而言是能夠在啟動時期成功地與 BIOS 交談的 geometry．(這兩者通常相符．)</p>
+<p>fdisk 如何得知該 geometry ? 它詢問核心, 使用 <code>HDIO_GETGEO</code> ioctl．但使用者可以交談式地或在指令列上重定 geometry．</p>
+<p>LILO  如何得知該 geometry ? 它詢問核心, 使用 <code>HDIO_GETGEO</code> ioctl．
+但使用者可以用 `<code>disk=</code>' 選項重定．也可以給 LILO 一個 <code>linear</code> 選項, 如此它將在其 map  檔中儲存 LBA  位址以取代 CHS  位址, 並且在啟動時期找出該 geometry 來使用(藉由 INT 13 功能呼叫 8 來詢問磁碟的 geometry)．</p>
+<p>核心如何知道該怎麼回答? 首先, 使用者可能以 `<code>hd=</code>cyls<code>,</code>heads<code>,</code>secs' 
+  指令列選項明確地指定 geometry, 否則核心將詢問硬體．</p>
+
+<h2><a name="ss6.1" id="ss6.1"></a>6.1 IDE 細節 </h2>
+
+<p>讓我詳細說明．IDE 驅動程式有四個關於 geometry 的資訊來源．第一個(G_user)是使用者在指令列上所指定的．
+第二個(G_bios)是 BIOS 的固定磁碟參數表(只用於第一及第二個磁碟), 在系統啟動時, 切換至 32 位元模式之前讀入．
+第三個(G_phys)及第四個(G_log) 是由 IDE  控制器傳回, 作為對 IDENTIFY 指令的回應 -  它們是 '實體的' 以及 '目前邏輯上的' geometries．</p>
+<p>另一方面, 對於 geometry 驅動程式需要兩個值: 其中之一是 G_fdisk, 由 <code>HDIO_GETGEO</code> ioctl  傳回, 另一個是 G_used , 這是執行輸出／入時實際使用的．
+如果給定 G_user 則 G-fdisk  以及 G_used 兩者都會設為 G_user, 當此資訊是根據 CMOS 所提供時則設為 G_bios , 其它情形設為 G_phys．如果 G_log  看起來合理則 G_used 就設為 G_log．
+不然, 如果 G_used  不合理而 G_phys 看起來合理那麼 G_used 就設為 G_phys．此處的'合理'代表磁頭數在 1-16 的範圍內．</p>
+<p>換個方式說: 指令列選項大於 BIOS , 並且決定 fdisk  看到的樣子, 但如果它指定轉換的 geometry(磁頭數大於 16),  則核心會藉由 IDENTIFY 指令的輸出重定它．</p>
+
+<h2><a name="ss6.2" id="ss6.2"></a>6.2 SCSI 細節 </h2>
+
+<p>在 SCSI 方面情況有一點點不同, 因為 SCSI 指令已經使用邏輯區塊號碼, 所以 'geometry' 對實際的輸出／入完全沒關係．
+然而, 分割區的格式仍然是相同的, 所以 fdisk  必須得捏造些 geometry , 並且也在此使用 <code>HDIO_GETGEO</code> - 真的, fdisk 不會分辨 IDE  以及 SCSI 磁碟．
+你可以從下面的詳細描述見到各種驅動程式捏造一些個不同的 geometry ．真是, 一團混亂．</p>
+<p>如果你沒有使用 DOS  或這類系統, 那麼避免使用所有額外的轉換設定, 可能的話, 儘管使用 64 磁頭, 每磁軌 32 磁區 (良好的, 方便每磁簇 1 MB), 如此當你把磁碟從一個控制器換到另一個去時不會遇到任何問題．
+某些 SCSI 磁碟驅動程式 (aha152x,pas16,ppa,qlogicfas,qlogicisp)非常在意與 DOS  的相容性而不允許只有 Linux  的系統使用超過  8 GB 的容量, 這是隻臭蟲．</p>
+<p>真實的 geometry 是什麼? 最簡單的答案是沒有這種東西．如果真有的話, 你不會想知道, 而且的的確確從不, 永不需告訴 fdisk  或是 LILO 或核心有關它的事．這絕對是 SCSI 控制器與磁碟之間的事．
+讓我重覆這句話: 只有蠢蛋會告訴 fdisk/LILO/Kernel SCSI 磁碟真實的 geometry ．</p>
+<p>但如果你好學且堅持, 可以問磁碟機自己．有個重要指令 READ CAPACITY 將會傳回磁碟的總容量, 而且有個 MODE SENSE 指令  Rigid Disk Drive Page(page 04) 會傳回磁簇以及磁頭的數目(這是不能改變的資訊), 而在 Format Page(page 03)有每磁區的位元組, 以及每磁軌的磁區數．
+這數字一般與 notch  有關, 而且每磁軌的磁區數是變動的 -  外圍的磁軌擁有比內圈磁軌多的磁區．Linux 程式 scsiinfo 會給予這項資訊．
+其中有許多繁瑣的細節, 而且很明白的, 沒有人(也許甚至是作業系統)需要使用這項資訊．
+還有, 因為我們只關心 fdisk  以及 LILO , 一般得到的回答像 C/H/S=4476/27/171 - 這樣的值 fdisk  根本不能使用, 因為分割表只保留 10resp. 8resp. 6 bits  給 C/H/S．</p>
+<p>那核心之 <code>HDIO_GETGEO</code> 從何處取得其資訊? 嗯, 不是從 SCSI 控制器, 就是推論猜測．
+有些驅動程式似乎認為我們想知道 '真相' , 但我們當然只想知道 DOS  或 OS/2 FDISK (或 Adaptec AFDISK 等等)所用的．</p>
+<p>注意, Linux fdisk 需要磁頭數 H  以及每磁軌磁區數 S  以便轉換 LBA 磁區號碼成為 c/h/s  位址, 但磁簇數 C  在此轉換中並未扮演什麼角色．
+有些驅動程式使用 (C,H,S) = (1023,255,63)  來表示磁碟容量至少為 1023*255*63 個磁區．這是不幸的, 因為這不能顯示實際的大小, 而且將限制大部份版本之 fdisk  的使用者其磁碟最大到 8 GB - 現今實際的限制．</p>
+<p>在下面的描述中, M 表示磁碟的全部容量, 而 C,H,S  是磁簇, 磁頭以及每磁軌磁區數．如果我們把 C  當作 M/(H*S) 那給 H,S 就可以滿足．</p>
+<p>依預設, H=64, S=32.</p>
+<p></p>
+<dl>
+  <dt>aha1740, dtc, g_NCR5380, t128, wd7000:</dt>
+<dd><p>H=64, S=32.</p>
+
+</dd>
+  <dt>aha152x, pas16, ppa, qlogicfas, qlogicisp:</dt>
+<dd>
+    <p>H=64, S=32 除非 C &gt; 1024, 此情況下 H=255, S=63, C = min(1023, M/(H*S)). (故 
+      C 被截斷, 且 H*S*C 不是磁碟容量的近似值. 這將會混搖淆大部份版本的 fdisk.) ppa.c 程式碼使用 M+1 取代 M 並認為這是因為在 
+      sd.c 裡的一隻臭蟲使 M 的值少一．</p>
+
+</dd>
+  <dt>advansys:</dt>
+<dd>
+    <p>H=64, S=32 除非 C &gt; 1024 而且還開啟 BIOS 中的 `&gt; 1 GB' 選項, 此情況下 H=255, S=63.</p>
+
+</dd>
+  <dt>aha1542:</dt>
+<dd>
+    <p>詢問控制器使用兩種可能的 schemes 中的那一種, 並且使用 H=255, S=63 或 H=64, S=32. 前者有個啟動訊息 &quot;aha1542.c: 
+      Using extended bios translation&quot;.</p>
+
+</dd>
+  <dt>aic7xxx:</dt>
+<dd>
+    <p>H=64, S=32 除非 C &gt; 1024, 而且還給了 &quot;extended&quot; 啟動參數, 或在 SEEPROM 
+      或 BIOS 設了 `extended' 位元, 此情況下 H=255, S=63.</p>
+
+</dd>
+  <dt>buslogic:</dt>
+<dd>
+    <p>H=64, S=32 除非 C &gt;= 1024, 而且還啟動控制器的擴充轉換, 此情況下若 M &lt; 2^22 則 H=128, S=32; 
+      否則 H=255, S=63. 然而, 選擇 (C,H,S) 之後, 讀入分割表, 若三種可能的 (H,S) = (64,32), (128,32), 
+      (255,63) 中 endH=H-1 的值看來可行則使用該對 (H,S) , 並印出啟動訊息 &quot;Adopting Geometry 
+      from Partition Table&quot;.</p>
+
+</dd>
+  <dt>fdomain:</dt>
+<dd><p>從 BIOS Drive Parameter Table 找出 geometry 資訊, 或從分割表讀取並使用 H=endH+1,
+S=endS 給第一個分割區, 若非空, 或使用 H=64, S=32 for M &lt; 2^21 (1 GB), H=128, S=63 for M &lt;
+63*2^17 (3.9 GB) and H=255, S=63 otherwise.</p>
+
+</dd>
+  <dt>in2000:</dt>
+<dd><p>使用 (H,S) = (64,32), (64,63), (128,63), (255,63) 中第一個讓 C &lt;= 1024 的.
+此情況下, 在 1023 截掉 C .</p>
+
+</dd>
+  <dt>seagate:</dt>
+<dd>
+    <p>從磁碟讀取 C,H,S. (真誠實!) 如果 C 或 S 太大, 放入 S=17, H=2 並倍增 H 直到 C &lt;= 1024. 這表示 
+      H 將為 0 如果 M &gt; 128*1024*17 (1.1 GB). 這是隻臭蟲.</p>
+
+</dd>
+  <dt>ultrastor and u14_34f:</dt>
+<dd><p>三種對應之一 ((H,S) = (16,63), (64,32), (64,63)) 根據控制器的對應模式而定.</p>
+
+</dd>
+</dl>
+
+如果驅動程式沒有指定 geometry , 我們就回到使用分割表或磁碟總容量來推斷猜測．<p></p>
+<p>仔細看看分割表．因為依慣例分割區在磁簇邊界結束, 我們可以為任何分割區定 end=(endC,endH,ednS) , 只要放入 H = <code>endH+1</code> 及 S = <code>endS</code>．
+(記得磁區由 1 起算．)更明確地的說．如果有個不是空的分割區, 則以最大的 <code>beginC</code> 計．
+對於此分割區, 看看 <code>end+1</code>, 計算加上 <code>start</code> 以及 <code>length</code> 並且假設此分割區在某磁簇邊界結束．
+如果兩個值都相符, 或 <code>endC</code> = 1023 且 <code>start+length</code> 是 <code>(endH+1)*endS</code>  的倍數, 那麼假定此分割區真的是在磁簇邊界, 並放入 H = <code>endH+1</code> 以及 S = <code>endS</code>．
+如果不對, 不是因為沒有分割區, 就是因為它們的大小很奇怪, 那麼只看磁碟容量 M．
+演算法: 放入 H = M/(62*1024)(無條件進位),S = M/(1024*H)(無條件進位), C = M/(H*S)(無條件捨去)．這能產生一 (C,H,S) 其中 C 最大 1024 而 S 最大 62．</p>
+
+<hr />
+<table >
+  <tr>
+    <td class="BtdL"> <a href="Large-Disk-HOWTO-5.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="BtdC"> <a href="index.html" accesskey="H">目錄(H)</a> </td>
+    <td class="BtdR">&nbsp; </td>
+  </tr>
+  <tr>
+    <td class="BtdL">核心的 IDE 磁碟轉換</td>
+    <td class="BtdC"><a href="Large-Disk-HOWTO-6.html"  accesskey="T">到頂層(T)</a></td>
+    <td class="BtdR">&nbsp;</td>
+  </tr>
+</table>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img class="ImgLogo" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" title="網路內容分級協會" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

@@ -1,0 +1,292 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>An Undeletion Experience</title>
+<link href="../../LGStyle.css" rel="stylesheet" type="text/css" />
+<link href="../../../style.css" rel="stylesheet" type="text/css" />
+</head>
+
+<body>
+<div id="GazetteLogo"><a href="http://www.linuxgazette.com/"><img src="../../gx/lglogo_200x41.png" alt="Linux Gazette 雜誌" width="200" height="41"  longdesc="../linuxgaette.rdf" /></a><br />
+  <a href="http://www.linuxgazette.com/copying.html">Copyright</a>&copy;1996-2003<br />
+  Specialized Systems Consultants, Inc.</div>
+<div class="CLDPAddr">CLDP</div>
+<div class="CLDPFull">Chinese Linux Documentation Project</div>
+<hr />
+<p class="BarTop"><a
+        href="../../../index.html" title="連到首頁" hreflang="zh-TW" accesskey="H">首頁(H)</a>｜<a
+        href="../../../howto" title="連到和 HOWTO  相關資訊" hreflang="zh-TW" accesskey="T">HOWTO(T)</a>｜<a
+        href="../../../guide" title="連到和指南相關的資訊" hreflang="zh-TW" accesskey="G">指南(G)</a>｜<a
+        href="../../../faq" title="連到和問答集相關的資訊" hreflang="zh-TW" accesskey="F">FAQ(F)</a>｜<a
+        href="../../../man" title="連到和手冊頁有關的資訊" hreflang="zh-TW" accesskey="M">手冊頁(M)</a>｜<a
+        href="../../index.html" title="Linux電子報為一個月發行一期的雜誌" hreflang="zh-TW" accesskey="L">Linux電子報(L)</a>｜<a
+        href="../../../lf" title="LinuxFocus 為兩個月發行一期的雜誌" hreflang="zh-TW" accesskey="S">LinuxFocus(S)</a></p>
+<hr />
+<div class="DivCover"> 
+  <div class="TitleHead">An Undeletion Experience <br />
+	By <a href="../../temp/authors/artime.html">C.E.C. Artime</a> and <a href="../../temp/authors/baro.html">J.A. 
+	Baro</a> </div>
+  <div> 
+    <p class="BarTop"><a href="../../index.html">Linux電子報首頁</a>｜<a href="../../temp/sample/index.html">目錄</a>｜<a href="../../faq/index.html">FAQ</a><br />
+      讓 Linux 更加有趣呦！</p>
+  </div>
+  <div> 
+    <h2>摘要</h2>
+  </div>
+  <div> 
+	<p>We describe an attempt of recovering data unadvertedly deleted on a ext2 
+	  filesystem. Aware that the course of events was far from desirable, we are 
+	  committed that our readers will not make the same mistakes and, in order 
+	  to illustrate the bunch of things that one can learn during a crisis, we 
+	  detail the whole story. </p>
+  </div>
+    <div> 
+    <h2>目錄</h2>
+  </div>
+  <div> 
+	<ol>
+	  <li><a href="#ss1">Prelude: the disaster spells</a><br />
+		1.1 <a href="#ss1.1">The arena</a><br />
+		1.1.1 <a href="#ss1.1.1">Hardware</a><br />
+		1.2 <a href="#ss1.2">How we buggered it up</a></li>
+	  <li><a href="#ss2">Back-up</a><br />
+		2.1 <a href="#ss2.1">First attempt</a><br />
+		2.2 <a href="#ss2.2">Secure tunnelling</a></li>
+	  <li><a href="#ss3">Seeking lost data</a><br />
+		3.1 <a href="#ss3.1">Lazy attempt</a><br />
+		3.2 <a href="#ss3.2">It pays reading</a><br />
+		3.2.1 <a href="#ss3.2.1">Crane's undeletion howto </a><br />
+		3.2.2 <a href="#ss3.2.2">Ericsson's directory undeletion howto </a><br />
+		3.2.3 <a href="#ss3.2.3">Man pages </a></li>
+	  <li><a href="#ss4">Epilogue</a><br />
+		4.1 <a href="#ss4.1">RTFM</a><br />
+		4.2 <a href="#ss4.2">Magnetic tapes</a><br />
+		4.3 <a href="#ss4.3">Regexps</a><br />
+		4.4 <a href="#ss4.4">PDA</a></li>
+	  <li><a href="#ss5">附註</a></li>
+	</ol>
+  </div>
+  <div> 
+	<h2><a name="ss1" id="ss1"></a>1. Prelude: the disaster spells</h2>
+  </div>
+  <div> 
+	<h3><a name="ss1.1" id="ss1.1"></a>1.1 The arena</h3>
+	<h4><a name="ss1.1.1" id="ss1.1.1"></a>1.1.1 Hardware</h4>
+	<p>Two boxes, called Fish and Bell. Fish is a Sun E250. Bell is a Pentium 
+	  3 (450 MHz). They are in the same Ethernet subnetwork. </p>
+	<h4><a name="ss1.2.2" id="ss1.2.2"></a>1.1.2 Software</h4>
+	<p>Bell runs Debian GNU/Linux 3.0r0 after a painless upgrade from 2.2r7. Kernel 
+	  is Linux 2.4.18. </p>
+	<p> Fish also runs a Debian 3.0r0, port Sparc64. A recent upgrade from 2.2r7 
+	  led to a unique problem: XFree does not work for normal users (it does for 
+	  <code>root</code>). Kernel is Linux 2.4.18-SMP. </p>
+	<p> All filesystems are <code>ext2</code>. </p>
+	<h3><a name="ss1.2" id="ss1.2"></a>1.2 How we buggered it up</h3>
+	<p>On Fish, Xfree works for <code>root</code>, but not for normal users. Rationale: 
+	  either a problem with permissions or user configuration files. Solution: 
+	  let us add a user and copy <code>root</code>'s dot-files to its home directory: 
+	</p>
+	<pre class="sample">
+root@fish# adduser judas
+Enter new UNIX password:
+Retype new UNIX password:
+root@fish# cp --recursive /root/.[a-zA-Z]* /home/judas
+root@fish# chown --recursive judas:judas /home/judas/.*
+</pre>
+	<p> [Did you spot the difference between regexp arguments for <code>cp</code> 
+	  and <code>chown</code>?] </p>
+	<p> After enough trail &amp; error, the X problem is finally solved; it is 
+	  about time to remove the user. While trying to speed up the procedure a 
+	  bit, thorough study of a terse man page reveals an appealing option: </p>
+	<pre class="sample">
+root@fish# deluser --remove-all-files judas
+</pre>
+	<p> Cha-ching! Enters disaster! The unfortunate option makes <code>deluser</code> 
+	  search the entire disk looking for files owned by <code>judas</code> and 
+	  erasing them! </p>
+	<p> Contents of <code>/home</code> disappeared. Two minutes later, we unmounted 
+	  its corresponding device (<code>/dev/sda8</code>). </p>
+
+</div>
+  <div> 
+	<h2><a name="ss2" id="ss2"></a>2. Back-up</h2>
+  </div>
+  <div> 
+	<h3><a name="ss2.1" id="ss2.1"></a>2.1 First attempt</h3>
+	<p>First cares involve taking a copy of the raw bytes inside the doomed device. 
+	  There is no room in Fish, so let us make a copy onto Bell's hard drive: 
+	</p>
+	<pre class="sample">
+root@fish# ftp bell
+ftp&gt; put '|dd if=/dev/sda8' fishbackup
+</pre>
+	<p> In fact, this step was not so easy due to a problem with the net: transmission 
+	  of big files is interrupted after a while. The file must be split. Partition 
+	  <code>/dev/sda8</code> is size 10142 MiB. Resorting to the <code>factor</code> 
+	  tool of GNU <code>shellutils</code>: </p>
+	<pre class="sample">
+root@fish# factor 10142
+10142: 2 11 461
+</pre>
+	<p> This led us to an appropriate size for each chunk of device. </p>
+	<h3><a name="ss2.2" id="ss2.2"></a>2.2 Secure tunnelling</h3>
+	<p>Instead FTP, we used the OpenSSL suite for the next step. First we interchange 
+	  passwords in order to use batch mode: </p>
+	<pre class="sample">
+root@fish# ssh-keygen 
+artime@bell$ ssh-keygen
+root@fish# scp /root/.ssh/identity.pub artime@bell:/home/artime/.ssh/authorized.keys
+root@fish# scp artime@bell:~/.ssh/identity.pub ~/.ssh/authorized.keys
+</pre>
+	<p> Let us execute this script in Fish: </p>
+	<pre class="sample">
+#!/bin/sh
+for i in $(seq 0 460)
+do
+  dd if=/dev/sda8 bs=$((2*11*1024)) skip=$i of=fula
+  scp --batch fula artime@bell:~/fiback.$i
+done
+</pre>
+	<p> Just join the pieces in Bell: </p>
+	<pre class="sample">
+for i in $(seq 0 460)
+do cat fiback.$i &gt;&gt; fiback.raw
+done
+</pre>
+	<p> Equivalently we could do the same in one step by executing in Fish: </p>
+	<pre class="sample">
+#!/bin/sh
+for i in $(seq 0 460)
+do
+  dd if=/dev/sda8 bs=$((2*11*1024)) skip=$i | ssh artime@bell "cat &gt;&gt; fiback.raw"
+done</pre>
+  </div>
+  <div> 
+	<h2><a name="ss3" id="ss3"></a>3. Seeking lost data</h2>
+  </div>
+  <div> 
+	<p>We can resort to the <a
+ href="http://www.tldp.org/HOWTO/mini/Ext2fs-Undeletion.html">Linux Ext2fs undeletion 
+	  mini-HOWTO</a>, by Aaron Crane; the <a
+ href="http://www.tldp.org/HOWTO/mini/Ext2fs-Undeletion.html">Ext2fs undeletion 
+	  of directory structures mini-HOWTO</a>, by Tomas Ericsson; the <a
+ href="http://recover.sourceforge.net/linux/recover">recover</a> program by Tom 
+	  Pycke; <a href="http://twerner.debian.net">Torsten Werner</a>'s patch for 
+	  debugfs working on i386. </p>
+	<h3><a name="ss3.1" id="ss3.1"></a>3.1 Lazy attempt</h3>
+	<p><code>Recover</code> is a tool for recovering individual files. As in our 
+	  case we have suddenly lost hundreds of files, it seems this is not the best 
+	  choice to begin with. The most direct way is using Werner's <code>debugfs</code> 
+	  patch; we already have a copy of the damaged filesystem stored in a i386 
+	  box, so we can use the binary found at <code>twerner.debian.org</code>: 
+	</p>
+	<pre class="sample">
+artime@bell$ ./debugfs fishback.raw
+debugfs&gt; restore
+debugfs&gt; quit
+artime@bell$ mkdir mnt
+artime@bell$ mount -t ext2 -o loop fishback.raw mnt
+artime@bell$ ls -l mnt
+</pre>
+	<p> We find no files there! It seems we unmounted <code>/dev/sda8</code> a 
+	  little too late. As T. Werner indicates on his page, his tool can only recover 
+	  files that still <i>have a name</i>. </p>
+	<h3><a name="ss3.2" id="ss3.2"></a>3.2 It pays reading</h3>
+	<h4><a name="ss3.2.1" id="ss3.2.1"></a>3.2.1 Crane's undeletion howto</h4>
+	<p>This tool we pick in <a href="http://www.tldp.org">The Linux Documentation 
+	  Project</a> taught us how to find the inodes (more or less, the locations) 
+	  of lost files and how to recover them with the <code>dump</code> command 
+	  of <code>debugfs</code>. We finish with a lot of assorted files in the same 
+	  directory, but they are just a small subset of the deleted ones. As mentioned 
+	  before, a thorough, file by file recovery scheme as indicated in this HOWTO 
+	  is unfeasible in our case. </p>
+	<h4><a name="ss3.2.2" id="ss3.2.2"></a>3.2.2 Ericsson's directory undeletion 
+	  howto</h4>
+	<p>Here we learnt how to tell between deleted files from directories. We followed 
+	  the indications. <br />
+	  The script in section 7 was in need for some further adaptation to our version 
+	  of <code>debugfs</code> </p>
+	<pre class="sample">
+#!/bin/sh
+awk '{ print "mi &lt;" $1 "&gt;\n"\
+             "\n\n\n\n\n\n\n"\
+             "0\n"\
+             "1\n"\
+             "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n" }'
+</pre>
+	<p> Anyway, we fail to find the directory names and proceed to section 8. 
+	  So we must look elsewhere. </p>
+	<h4><a name="ss3.2.3" id="ss3.2.3"></a>3.2.3 Man pages</h4>
+	<p>A last chance was </p>
+	<pre class="sample">
+$ man debugfs
+</pre>
+	<p> where we found the command <code>rdump</code>, unmentioned in the howtos. 
+	  Applying the following script to the directory inodes located in <code>lsdel.out</code> 
+	  of section 6 of Ext2fs Undeletion of Directory Structures mini-HOWTO: </p>
+	<pre class="sample">
+#!/bin/sh
+awk '{ print "rdump &lt;" $1 "&gt; folders\n" }'
+</pre>
+	<p> most directories are recovered into the directory <code>folders</code>. 
+	  But unnamed! So finally we have to individually assign two hundred folders 
+	  to users by looking their contents! Even after that, we miss some files, 
+	  notably an e-mail box. Let us try a quest by hand: </p>
+	<pre class="sample">
+$ strings fishback.raw | grep -B1 -A99 "To: lisistrata" &gt; lisistrata.mbox
+</pre>
+</div>
+  <div> 
+	<h2><a name="ss4" id="ss4"></a>4. Epilogue</h2>
+  </div>
+  <div> 
+	<p>Further things we would like to outline.</p>
+	<h3><a name="ss4.1" id="ss4.1"></a>4.1 RTFM</h3>
+	<p>And never use a new option as <code>root</code> for the first time. </p>
+	<h3><a name="ss4.2" id="ss4.2"></a>4.2 Magnetic tapes</h3>
+	<p>Fish has a magnetic tape unit. GNU <code>mt</code> and <code>tar</code> 
+	  are useful tools for a backup schedule. Aaron Crane's howto includes interesting 
+	  links regarding this issue. </p>
+	<h3><a name="ss4.3" id="ss4.3"></a>4.3 Regexps</h3>
+	<p>The use of regular expressions in shell commands is very dangerous, especially 
+	  when dealing with dot-files. Perhaps the superuser <code>root</code> should 
+	  use a shell with limited (rather than "extended") regular expression support. 
+	  We are considering <a href="http://olympus.het.brown.edu/doc/esh/esh.html">esh</a>. 
+	</p>
+	<h3><a name="ss4.4" id="ss4.4"></a>4.4 PDA</h3>
+	<p>This article was mostly written with an <a
+ href="http://www.agendawiki.com">Agenda</a> <a
+ href="http://www.softfield.com">VR3</a>, a rather unique free software PDA, in 
+	  a beach of Gran Canaria. </p>
+  </div>
+  <div> 
+	<h2><a name="ss5" id="ss5"></a>附註</h2>
+  </div>
+  <div> 
+	<ul>
+	  <li> C.E.C. Artime is a GNU fan and a free software advocator since 2000。</li>
+	  <li>J.A. Baro is a Linux user and a Perl hacker since 1996.。</li>
+	</ul>
+  </div>
+  <div> 
+    <h2>版權宣告</h2>
+  </div>
+  <div> 
+	<p>Copyright &copy; 2003, C.E.C. Artime and J.A. Baro. <a href="http://www.linuxgazette.com/copying.html">Copying 
+	  license</a> Published in Issue 86 of Linux Gazette, January 2003 </p>
+  </div>
+</div>
+<hr />
+<p class="BarTop"><a
+        href="../../../index.html" title="連到首頁" hreflang="zh-TW" accesskey="H">首頁(H)</a>｜<a
+        href="../../../howto" title="連到和 HOWTO  相關資訊" hreflang="zh-TW" accesskey="T">HOWTO(T)</a>｜<a
+        href="../../../guide" title="連到和指南相關的資訊" hreflang="zh-TW" accesskey="G">指南(G)</a>｜<a
+        href="../../../faq" title="連到和問答集相關的資訊" hreflang="zh-TW" accesskey="F">FAQ(F)</a>｜<a
+        href="../../../man" title="連到和手冊頁有關的資訊" hreflang="zh-TW" accesskey="M">手冊頁(M)</a>｜<a
+        href="../../index.html" title="Linux電子報為一個月發行一期的雜誌" hreflang="zh-TW" accesskey="L">Linux電子報(L)</a>｜<a
+        href="../../../lf" title="LinuxFocus 為兩個月發行一期的雜誌" hreflang="zh-TW" accesskey="S">LinuxFocus(S)</a></p>
+<hr />
+</body>
+</html>

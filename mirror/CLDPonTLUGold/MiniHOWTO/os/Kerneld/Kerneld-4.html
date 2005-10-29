@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+ 
+ <title>Mini HOWTO：Linux kerneld</title>
+ <meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+ <link href="../../style.css" rel="stylesheet" type="text/css" />
+ <link href="http://tldp.org/HOWTO/mini/Kerneld/index.html" rel="alternate" title="原版" />
+</head> <body> 
+<table    >
+  <tr>
+    <th colspan="3" class="HdTitle">Mini
+      HOWTO：Linux kerneld</th>
+  </tr>
+  <tr>
+    <td class="TtdL"> <a href="../Upgrade/Upgrade-10.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="TtdC"></td>
+    <td class="TtdR"> <a href="../Upgrade/Upgrade-12.html" accesskey="N">下一頁(N)</a> </td>
+  </tr>
+</table>
+<hr />
+<h1><a name="Configuration" id="Configuration"></a>4.
+kerneld 如何知道該載入什麼模組？</h1>
+<p>雖然 kerneld 本身對常用的模組有所認識，有時它會不知如何應付核心提出的要求。例如光碟機驅動程式或網絡驅動程式等可能需要超過一個模組的情形。 </p>
+<p>kerneld 從核心部分會收到以下種類的要求：</p>
+<ul>
+  <li><a href="#blockdev">區塊設備驅動程式 (a block-device
+      driver)</a> </li>
+  <li><a href="#chardev">字元設備驅動程式 (a character-device
+      driver)</a> </li>
+  <li><a href="#binfmt">二元格式 (a binary format)</a> </li>
+  <li><a href="#ldisc">tty 連線規則 (a tty line discipline)</a> </li>
+  <li><a href="#fs">檔案系統 (a filesystem)</a> </li>
+  <li><a href="#eth0">網絡設備 (a network device)</a> </li>
+  <li>網絡服務 (a network service)，如 rarp</li>
+  <li><a href="#net-pf">網絡協定 (a network protocol)</a>，如
+    IPX </li>
+</ul>
+<p>kerneld 從架構檔案 (configuration file) <b>/etc/conf.modules</b> 中得知有什麼模組需要載入。這裡有兩類項目：路徑
+  (paths)（模組檔案的位置）和代號 (aliases)（要載入什麼模組）。如果你未有此檔，你可用以下方法自己製造： </p>
+<pre class="sample"><tt>  /sbin/modprobe -c | grep -v '^path' &gt;/etc/conf.modules</tt>
+</pre>
+<p>如果你想加多一個路徑到預定路徑中，你<u>必須包括所有現有的路徑</u>。因為在
+  /etc/conf.modules 裡的一個路徑項目會<u>取代 </u>所有
+  modprobe 內置的路徑！</p>
+<p>通常你是不用自己加上路徑的，因為預設的路行將己照顧到所有正常的設定。我可保證！</p>
+<p>另一方面，如果你只想加入代號 (alias) 或者選項 (option directive)，你在 /etc/conf.modules 的新項目會加入到
+  modprobe 所知的。如果你想再定義一個代號或選擇，你在 /etc/conf.modules 中的項目會凌駕預設那個。</p>
+<h3><a name="blockdev" id="blockdev"></a>區塊設備</h3>
+<p>如果你執行 '/sbin/modprobe -c'，你會得到一個 kerneld 已知的模組的名單及它們所對應的要求。例如，導致載入軟碟驅動程式的要求是主號碼
+  (major number) 是 2 的區塊設備。 </p>
+<pre class="sample"><tt>  osiris:~ $ /sbin/modprobe -c | grep floppy
+  alias block-major-2 floppy</tt>
+</pre>
+<p>為什麼是 block-major-2？因為軟碟設備 /dev/fd* 的主號碼 (major number) 是 2 ，又是區塊設備。</p>
+<pre class="sample"><tt>  osiris:~ $ ls -l /dev/fd0 /dev/fd1
+  brw-rw-rw-   1 root     root       2,   0 Mar  3  1995 /dev/fd0
+  brw-r--r--   1 root     root       2,   1 Mar  3  1995 /dev/fd1</tt>
+</pre>
+<h3><a name="chardev" id="chardev"></a>字元設備</h3>
+<p>字元設備的方法處理也差不多。例如 ftape floppy tape driver 的是 major-device 27：</p>
+<pre class="sample"><tt>  osiris:~ $ ls -lL /dev/ftape 
+  crw-rw----   1 root     disk      27,   0 Jul 18  1994 /dev/ftape</tt>
+</pre>
+<p>但 kerneld 本身並不知道 ftape 驅動程式，它不會在 '/sbin/modprobe -c' 的結果中出現。</p>
+<p>所以，要使 kerneld 載入 ftape 驅動程式，我要加一行到 kerneld 的設定檔 /etc/conf.modules 中：</p>
+<pre class="sample"><tt>  alias char-major-27 ftape</tt>
+</pre>
+<h3><a name="eth0" id="eth0"></a>網絡設備</h3>
+<p>你也可以用設備的名稱來代替那些 'char-major-xxx' 或 'block-major-yyy' 設定。這樣對網絡設備尤其有用，例如把
+  ne2000 網絡卡用作 eth0 可以籍此載入：</p>
+<pre class="sample"><tt>  alias eth0 ne</tt>
+</pre>
+<p>如果你需要傳遞一些選項給你的驅動程式，例如告訴模組這網絡卡使用什麼 IRQ，你可加上如下一 'options' 行：</p>
+<pre class="sample"><tt>  options ne irq=5</tt>
+</pre>
+<p>這樣會使 kerneld 用以下指令來載入 NE2000 驅動程式︰</p>
+<pre class="sample"><tt>  /sbin/modprobe ne irq=5</tt>
+</pre>
+<p>當然，實際上所用的選項會因應所用模組而有所不同。</p>
+<h3><a name="binfmt" id="binfmt"></a>二元格式</h3>
+<p>二元格式也以相似的方法處理。每當你嘗試執行一個核心不懂載入的程式，kerneld 便會收到一個 &quot;binfmt-xxx&quot; 的要求，
+  xxx 是一個由檔案開頭數個字元決定的數字。使 kerneld 為 ZMAGIC (a.out) 執行檔載入 binfmt_aout 模組的設定是：</p>
+<pre class="sample"><tt>  alias binfmt-267 binfmt_aout</tt>
+</pre>
+<p>因為 ZMAGIC 檔的幻數 (magic number) 是 267。（如果你查看 /etc/magic，你會見到 0413 這個數字，但
+  /etc/magic 使用八進位數 (octal numbers) 而 kerneld 使用十進數 (decimal)，而八進位的 413 即十進數的
+  267。）由於 a.out 格式共有三款稍為稍為不同的可執行檔 (NMAGIC, QMAGIC and ZMAGIC)，要全面支援 binfmt_aout
+  模組我們需要 </p>
+<pre class="sample"><tt>  alias binfmt-264 binfmt_aout  # pure executable (NMAGIC)
+  alias binfmt-267 binfmt_aout  # demand-paged executable (ZMAGIC)
+  alias binfmt-204 binfmt_aout  # demand-paged executable (QMAGIC)</tt>
+</pre>
+<p>kerneld 可自動辨認 a.out, Java 和 iBCS 二元格式，毋須特別設定。</p>
+<h3><a name="ldisc" id="ldisc"></a>連線規則 (slip,
+  cslip and ppp)</h3>
+<p>連線規則用 &quot;tty-ldisc-x&quot;來作要求，而 x 一般是
+  1 (slip) 或 3 (ppp)。kerneld 本身都認識這兩樣。</p>
+<p>說起 ppp，如果你想 kerneld 載入 bsd_comp 資料壓縮模組，你需要加兩行到 /etc/conf.modules 中：</p>
+<pre class="sample"><tt>  alias tty-ldisc-3 bsd_comp
+  alias ppp0 bsd_comp</tt>
+</pre>
+<h3><a name="net-pf" id="net-pf"></a>網絡協定
+  (IPX, AppleTalk, AX.25)</h3>
+<p>部分網絡協定也可以模組載入。核心要用到一個網絡家族 (network family)（如 IPX）時，會向 kerneld 作出對一個類似 &quot;net-pf-X&quot; 的要求，而
+  X 是一個代表所屬家族的數字。例如 net-pf-3 是 AX.25，net-pf-4 是 IPX，而 net-pf-5 是 AppleTalk。（這些數字是由
+  linux 源程式檔 include/linux/socket.h 中 AF_AX25, AF_IPX 的定義而來的。）故此要自動載入 IPX 模組，你要加一個類似以下的項目到
+  /etc/conf.modules 中：</p>
+<pre class="sample"><tt>  alias net-pf-4 ipx</tt>
+</pre>
+<p>也請閱讀以下有關防止開機時出現關於未定義的協定的<a href="#CommonProblems">常見問題</a>。</p>
+<h3><a name="fs" id="fs"></a>檔案系統</h3>
+<p>有關檔案系統的 kerneld 要求就是檔案系統的名稱。一個常見的用途是為光碟載入 isofs 的模組，例如 &quot;iso9660&quot; 檔案系統：</p>
+<pre class="sample"><tt>  alias iso9660 isof</tt></pre>
+<h1></h1>
+<h1>&nbsp;</h1>
+
+
+<hr />
+<table
+
+
+
+
+>
+  <tr
+>
+    <td class="BtdL"
+><a href="../Upgrade/Upgrade-10.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="BtdC"
+><a href="../Upgrade/index.html" accesskey="H">目錄(H)</a></td
+>
+    <td class="BtdR"
+><a
+href="../Upgrade/Upgrade-12.html"
+>下一頁(N)</a
+></td
+>
+  </tr
+>
+  <tr
+>
+    <td class="BtdL"
+>禁止簽入並備份/root及/home以下的檔案。</td
+>
+    <td class="BtdC"
+><a href="../Upgrade/Upgrade-11.html" accesskey="T">到頂層(T)</a></td
+>
+    <td class="BtdR"
+>用fdisk刪除linux分割區並重建它們。</td
+>
+  </tr
+>
+</table
+>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img class="ImgLogo" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" title="網路內容分級協會" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

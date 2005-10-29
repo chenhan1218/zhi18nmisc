@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>5. 真實領域的例子</title>
+<link href="DNS-HOWTO-6.html" rel="next" title="6.維護工作"/>
+<link href="DNS-HOWTO-4.html" rel="previous" title="4.一個簡單的領域" />
+<link href="../../style.css" rel="stylesheet" type="text/css" />
+<link href="http://tldp.org/HOWTO/DNS-HOWTO.html" rel="alternate" title="原版" />
+<link href="index.html" rel="start" title="HOWTO：DNS" />
+<link href="index.html#content" rel="contents" />
+<link href="DNS-HOWTO-1.html" rel="chapter" title="1.前言" />
+<link href="DNS-HOWTO-2.html" rel="chapter" title="2.簡介" />
+<link href="DNS-HOWTO-3.html" rel="chapter" title="3.暫存專用名稱伺服器" />
+<link href="DNS-HOWTO-4.html" rel="chapter" title="4.一個簡單的領域" />
+<link href="DNS-HOWTO-5.html" rel="chapter" title="5.真實領域的例子" />
+<link href="DNS-HOWTO-6.html" rel="chapter" title="6.維護工作" />
+<link href="DNS-HOWTO-7.html" rel="chapter" title="7.Bind version 8" />
+<link href="DNS-HOWTO-8.html" rel="chapter" title="8.撥接連線的自動設定" />
+<link href="DNS-HOWTO-9.html" rel="chapter" title="9.常見問題解答" />
+<link href="DNS-HOWTO-10.html" rel="chapter" title="10.如何成為一個大型的 DNS 管理者" />
+<link href="DNS-HOWTO-5.html#ss5.1" rel="section" title="5.1 /etc/named.boot (或 /var/named/named.boot) " />
+<link href="DNS-HOWTO-5.html#ss5.2" rel="section" title="5.2 /var/named/root.cache" />
+<link href="DNS-HOWTO-5.html#ss5.3" rel="section" title="5.3 /var/named/zone/127.0.0" />
+<link href="DNS-HOWTO-5.html#ss5.4" rel="section" title="5.4 /var/named/zone/land-5.com" />
+<link href="DNS-HOWTO-5.html#ss5.5" rel="section" title="5.5 /var/named/zone/206.6.177 " />
+<meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+<link href="DNS-HOWTO.rdf" rel="meta" title="各章節的說明資訊" />
+</head> <body>
+<table >
+  <tr> 
+    <th colspan="3" class="HdTitle">HOWTO：DNS</th>
+  </tr>
+  <tr> 
+    <td class="TtdL"> <a href="DNS-HOWTO-4.html" accesskey="P">上一頁(P)</a> 
+    </td>
+    <td class="TtdC">&nbsp;</td>
+    <td class="TtdR"> <a href="DNS-HOWTO-6.html" accesskey="N">下一頁(N)</a> 
+    </td>
+  </tr>
+</table>
+<hr />
+<h1> 5. 真實領域的例子</h1>
+
+<p>這裡我們列出一些真正的區域檔案</p>
+<p>使用者建議我加上一個可以運作的真實例子，因為我對真正可運作的領域及虛擬範例之間差別解釋的不夠清楚．</p>
+<p>關於這個例子有件事必須聲明: 千萬不要把它放到你的名稱伺服器上! 把它當作參考資料來閱讀就好．如果你想做實驗，用上面虛擬的例子． 我經過 LAND-5 
+  的 David Bullock 的同意才使用這個例子．這些檔案的日期是 1996 年九月二十日， 因此如果你現在查詢 LAND-5 的名稱伺服器可能會發現有所不同． 
+  還有，請記住，刪去前面的空白 :-)</p>
+
+<h2><a name="ss5.1" id="ss5.1"></a>5.1 /etc/named.boot (或 /var/named/named.boot) 
+</h2>
+
+<p>我們發現需要兩行 <code>primary</code> 的反向區域: 一個是 <code>127.0.0</code>，另一個是 LAND-5 的子網路 
+  <code>206.6.177</code>． 還有一行給 <code>land-5.com</code> 的正向區域．還有一點要注意的是不像我在這篇文章裡將檔案放在 
+  <code>pz</code> 目錄裡， 他將它們放到叫做 <code>zone</code> 的目錄．</p>
+<pre class="sample">
+;  Boot file for LAND-5 name server
+;
+directory /var/named
+;
+; type          domain                          source file or host
+cache           .                               root.cache
+primary         0.0.127.in-addr.arpa            zone/127.0.0
+primary         177.6.206.in-addr.arpa          zone/206.6.177
+primary         land-5.com                      zone/land-5.com
+</pre>
+<h2><a name="ss5.2" id="ss5.2"></a>5.2 /var/named/root.cache </h2>
+
+<p>記住這個檔案是動態的，這邊列出來的是舊的．你最好自己用 <code>dig</code> 產生一個新的．</p>
+<pre class="sample">
+; &lt;&lt;&gt;&gt; DiG 2.1 &lt;&lt;&gt;&gt; 
+;; res options: init recurs defnam dnsrch
+;; got answer:
+;; -&gt;&gt;HEADER&lt;&lt;- opcode: QUERY, status: NOERROR, id: 6
+;; flags: qr rd ra; Ques: 1, Ans: 9, Auth: 0, Addit: 9
+;; QUESTIONS:
+;;      ., type = NS, class = IN
+
+;; ANSWERS:
+ .       518357  NS      H.ROOT-SERVERS.NET.
+ .       518357  NS      B.ROOT-SERVERS.NET.
+ .       518357  NS      C.ROOT-SERVERS.NET.
+ .       518357  NS      D.ROOT-SERVERS.NET.
+ .       518357  NS      E.ROOT-SERVERS.NET.
+ .       518357  NS      I.ROOT-SERVERS.NET.
+ .       518357  NS      F.ROOT-SERVERS.NET.
+ .       518357  NS      G.ROOT-SERVERS.NET.
+ .       518357  NS      A.ROOT-SERVERS.NET.
+
+;; ADDITIONAL RECORDS:
+H.ROOT-SERVERS.NET.     165593  A       128.63.2.53
+B.ROOT-SERVERS.NET.     165593  A       128.9.0.107
+C.ROOT-SERVERS.NET.     222766  A       192.33.4.12
+D.ROOT-SERVERS.NET.     165593  A       128.8.10.90
+E.ROOT-SERVERS.NET.     165593  A       192.203.230.10
+I.ROOT-SERVERS.NET.     165593  A       192.36.148.17
+F.ROOT-SERVERS.NET.     299616  A       192.5.5.241
+G.ROOT-SERVERS.NET.     165593  A       192.112.36.4
+A.ROOT-SERVERS.NET.     165593  A       198.41.0.4
+
+;; Total query time: 250 msec
+;; FROM: land-5 to SERVER: default ---- 127.0.0.1
+;; WHEN: Fri Sep 20 10:11:22 1996
+;; MSG SIZE  sent: 17  rcvd: 312
+</pre>
+<h2><a name="ss5.3" id="ss5.3"></a>5.3 /var/named/zone/127.0.0 </h2>
+
+<p>不過是基本的，不能省略的 SOA 記錄，以及將 <code>127.0.0.1</code> 指向 <code>localhost</code> 的記錄． 
+  兩者都是必須的．不應有其它的東西在此檔案中．這個檔案可能永遠不必更新，除非你的名稱伺服器或管理人地址改變．</p>
+<pre class="sample">
+@               IN      SOA     land-5.com. root.land-5.com. (
+                                199609203       ; Serial
+                                28800   ; Refresh
+                                7200    ; Retry
+                                604800  ; Expire
+                                86400)  ; Minimum TTL
+                        NS      land-5.com.
+        
+1                       PTR     localhost.
+</pre>
+<h2><a name="ss5.4" id="ss5.4"></a>5.4 /var/named/zone/land-5.com </h2>
+
+<p>在這裡我們看到這個必須的 SOA 記錄，必要的 NS 記錄． 我們可以看到它有一個次要的名稱伺服器於 <code>ns2.psi.net</code>． 
+  這也應該是必要的，總是保有一個次要的伺服器做為備份． 我們還看到做為 LAND-5 負責所有不同服務的主機，它以許多的 CNAME 記錄做到這點 (另一個做法是用 
+  A 記錄)．</p>
+<p>就像你從 SOA 記錄看到的一樣，區域檔案以 <code>land-5.com</code> 開始，管理人是 <code>root@land-5.com</code>． 
+  序號(serial)以 yyyymmdd 的格式加上當天的號碼; 它可能是 1996 年九月二十號那天的第六個版本的區域檔案． 請記住序號必須單調地遞增，這裡它只用一位數字表示當天的號碼， 
+  因此在編輯九次之後他必須等到明天才能再編輯這個檔案．[<code>譯註</code>] 因此應該考慮用兩位數字． </p>
+<dl>
+  <dt>[譯註]</dt>
+  <dd> 
+    <p>讀者可能會奇怪為什麼不能用 1996092010 ? 這個數字也是遞增的，所以當然可以． 但到了明天第一次編檔案時該用什麼呢? 如果用 199609211，那麼這個數字就比 
+      1996092010 要小了． 這樣會有麻煩．因此作者建議應用兩位數字，如 1996092006． </p>
+  </dd>
+</dl>
+
+<pre class="sample">
+@       IN      SOA     land-5.com. root.land-5.com. (
+                        199609206       ; serial, todays date + todays serial #
+                        10800           ; refresh, seconds
+                        7200            ; retry, seconds
+                        10800           ; expire, seconds
+                        86400 )         ; minimum, seconds
+                NS      land-5.com.
+                NS      ns2.psi.net.
+                MX      10 land-5.com.  ; Primary Mail Exchanger
+
+localhost       A       127.0.0.1
+
+router          A       206.6.177.1
+        
+land-5.com.     A       206.6.177.2
+ns              CNAME   land-5.com.
+ftp             CNAME   land-5.com.
+www             CNAME   land-5.com.
+mail            CNAME   land-5.com.
+news            CNAME   land-5.com.
+
+funn            A       206.6.177.3
+illusions       CNAME   funn.land-5.com.
+@               TXT     &quot;LAND-5 Corporation&quot;
+
+;
+;       Workstations
+;
+ws_177200       A       206.6.177.200
+                MX      10 land-5.com.   ; Primary Mail Host
+ws_177201       A       206.6.177.201
+                MX      10 land-5.com.   ; Primary Mail Host
+ws_177202       A       206.6.177.202
+                MX      10 land-5.com.   ; Primary Mail Host
+ws_177203       A       206.6.177.203
+                MX      10 land-5.com.   ; Primary Mail Host
+ws_177204       A       206.6.177.204
+                MX      10 land-5.com.   ; Primary Mail Host
+ws_177205       A       206.6.177.205
+                MX      10 land-5.com.   ; Primary Mail Host
+; {Many repetitive definitions deleted - SNIP}
+ws_177250       A       206.6.177.250
+                MX      10 land-5.com.   ; Primary Mail Host
+ws_177251       A       206.6.177.251
+                MX      10 land-5.com.   ; Primary Mail Host
+ws_177252       A       206.6.177.252
+                MX      10 land-5.com.   ; Primary Mail Host
+ws_177253       A       206.6.177.253
+                MX      10 land-5.com.   ; Primary Mail Host
+ws_177254       A       206.6.177.254
+                MX      10 land-5.com.   ; Primary Mail Host
+</pre>
+<p>另一件值得注意的事所有的工作站都沒有個別的名稱，而是用一開頭加上最後兩位的 IP 數字．
+用這樣的慣例可以大量地簡化維護工作，但可能有點不方便，而且，事實上可能是你的客戶不滿的來源．</p>
+
+<h2><a name="ss5.5" id="ss5.5"></a>5.5 /var/named/zone/206.6.177 </h2>
+
+<p>我將在後面說明這個檔案．</p>
+<pre class="sample">
+@               IN      SOA     land-5.com. root.land-5.com. (
+                                199609206       ; Serial
+                                28800   ; Refresh
+                                7200    ; Retry
+                                604800  ; Expire
+                                86400)  ; Minimum TTL
+                        NS      land-5.com.
+                        NS      ns2.psi.net.
+;
+;       Servers
+;
+1       PTR     router.land-5.com.
+2       PTR     land-5.com.
+3       PTR     funn.land-5.com.
+;
+;       Workstations
+;
+200     PTR     ws_177200.land-5.com.
+201     PTR     ws_177201.land-5.com.
+202     PTR     ws_177202.land-5.com.
+203     PTR     ws_177203.land-5.com.
+204     PTR     ws_177204.land-5.com.
+205     PTR     ws_177205.land-5.com.
+; {Many repetitive definitions deleted - SNIP}
+250     PTR     ws_177250.land-5.com.
+251     PTR     ws_177251.land-5.com.
+252     PTR     ws_177252.land-5.com.
+253     PTR     ws_177253.land-5.com.
+254     PTR     ws_177254.land-5.com.
+</pre>
+<p>反向區域似乎是整個設定中最讓人頭痛的部份．它是在你有機器的 IP 數字時查詢機器名稱用的．
+例如: 你有一部 irc 伺服器接受 irc 客戶端的連線．
+但你是挪威的伺服器因此你只希望接受來自挪威及其它斯堪地那維亞國家的連線．
+當你接到來自客戶端的連線時 C 程式庫能夠告訴你連線機器的 IP 位址，因為客戶端的 IP 數字是包含在傳入的網路封包中的．
+然後你可以呼叫一函式 <code>gethostbyaddr</code> 以給定的 IP 查詢機器名稱．
+<code>gethostbyaddr</code> 函式會向 DNS 詢問，DNS 就會出去查詢這台機器名稱．
+假設客戶端來自 <code>ws_177200.land-5.com</code>，C 程式庫提供給 irc 伺服器的 IP 是 <code>206.6.177.200</code>．
+為找出機器的名稱我們要查詢 <code>200.177.6.206.in-addr.arpa</code>．DNS 伺服器首先找到負責 <code>arpa.</code> 的伺服器．
+然後找到 <code>in-addr.arpa.</code> 的伺服器，再來是反過來的 <code>206</code>，然後是 <code>6</code>，
+最後找到在 LAND-5 負責 <code>177.6.206.in-addr.arpa</code> 區域的伺服器．
+由此我們得到 <code>200.177.6.206.in-addr.arpa</code> 的答案是 '<code>PTR ws_177200.land-5.com</code>' 記錄，
+意指擁有 IP <code>206.6.177.200</code> 的名稱是 <code>ws_177200.land-5.com</code>．
+不過就像在解釋 <code>prep.ai.mit.edu</code> 如何查詢時所說，這過程稍微有點不對．</p>
+<p>回到 irc 伺服器的例子．irc 伺服器只接再來自斯堪地那維亞國家的連線，也就是， *.no, *.se, *.dk．<code>ws_177200.land-5.com</code> 
+  這個名字顯然並不符合任何這些． 因此伺服器會拒絕連線．如果沒有經由 <code>in-addr.arpa</code> 區域到 <code>206.2.177.200</code> 
+  的反向對應， 伺服器將無法查到機器名稱而將會拿 <code>206.2.177.200</code> 來和 *.no, *.se 及 *.dk 比較，當然找不到符合的．</p>
+<p>有些人會告訴你反向對應查詢只對伺服器重要，或是一點也不重要． 當然不是: 許多 ftp, news, irc 甚至 http 伺服器將不接受無法查到名稱的機器連線． 
+  因此事實上機器的反向名稱對應是必須的．</p>
+
+<hr />
+<table >
+  <tr> 
+    <td class="BtdL"> <a href="DNS-HOWTO-4.html" accesskey="P">上一頁(P)</a> 
+    </td>
+    <td class="BtdC"> <a href="index.html" accesskey="H">目錄(H)</a> </td>
+    <td class="BtdR"> <a href="DNS-HOWTO-6.html">下一頁(N)</a> </td>
+  </tr>
+  <tr> 
+    <td class="BtdL">簡介</td>
+    <td class="BtdC"><a href="DNS-HOWTO-5.html"  accesskey="T">到頂層(T)</a></td>
+    <td class="BtdR">維護工作</td>
+  </tr>
+</table>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> 
+  <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a> 
+  <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img class="ImgLogo" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> 
+  <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> 
+  <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" title="網路內容分級協會" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

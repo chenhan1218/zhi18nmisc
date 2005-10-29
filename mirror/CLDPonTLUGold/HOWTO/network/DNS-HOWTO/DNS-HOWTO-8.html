@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>8. 撥接連線的自動設定</title>
+<link href="DNS-HOWTO-9.html" rel="next" title="9.常見問題解答"/>
+<link href="DNS-HOWTO-7.html" rel="previous" title="7.Bind version 8"/>
+<link href="../../style.css" rel="stylesheet" type="text/css" />
+<link href="http://tldp.org/HOWTO/DNS-HOWTO.html" rel="alternate" title="原版" />
+<link href="index.html" rel="start" title="HOWTO：DNS" />
+<link href="index.html#content" rel="contents" />
+<link href="DNS-HOWTO-1.html" rel="chapter" title="1.前言" />
+<link href="DNS-HOWTO-2.html" rel="chapter" title="2.簡介" />
+<link href="DNS-HOWTO-3.html" rel="chapter" title="3.暫存專用名稱伺服器" />
+<link href="DNS-HOWTO-4.html" rel="chapter" title="4.一個簡單的領域" />
+<link href="DNS-HOWTO-5.html" rel="chapter" title="5.真實領域的例子" />
+<link href="DNS-HOWTO-6.html" rel="chapter" title="6.維護工作" />
+<link href="DNS-HOWTO-7.html" rel="chapter" title="7.Bind version 8" />
+<link href="DNS-HOWTO-8.html" rel="chapter" title="8.撥接連線的自動設定" />
+<link href="DNS-HOWTO-9.html" rel="chapter" title="9.常見問題解答" />
+<link href="DNS-HOWTO-10.html" rel="chapter" title="10.如何成為一個大型的 DNS 管理者" />
+<meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+<link href="DNS-HOWTO.rdf" rel="meta" title="各章節的說明資訊" />
+</head> <body>
+<table >
+  <tr> 
+    <th colspan="3" class="HdTitle">HOWTO：DNS</th>
+  </tr>
+  <tr> 
+    <td class="TtdL"> <a href="DNS-HOWTO-7.html" accesskey="P">上一頁(P)</a> 
+    </td>
+    <td class="TtdC">&nbsp;</td>
+    <td class="TtdR"> <a href="DNS-HOWTO-9.html" accesskey="N">下一頁(N)</a> 
+    </td>
+  </tr>
+</table>
+<hr />
+<h1> 8. 撥接連線的自動設定</h1>
+
+<p>這一節解釋我如何設定以便讓每個過程自動化．
+我的方法可能一點都不適合你，但是你可能從我所作的一些事情裡得到一些點子．
+同時，我使用 PPP 撥接，然而有許多人使用 slip 或是 cslip 連線方式，
+所以你的設定裡幾乎每個地方都可能跟我的不同．
+但是 slip 使用的 <code>dip</code> 程式應該能夠完成我所作的許多事情．</p>
+<p>一般來說，當我沒有連上網路時我的 <code>resolv.conf</code> 檔案單純地包含這一行 </p>
+<pre class="sample">
+domain uio.no
+</pre>
+
+<p>這確保我不必等待主機名稱解析函式庫去嘗試聯繫某台不可能幫助我的名稱伺服器．
+但是當我連上線的時候我想要起始我的 <code>named</code> 並且擁有一個看起來像前面所描述的 <code>resolv.conf</code> 檔案．
+我藉由保持兩份 <code>resolv.conf</code> 的‘樣板’檔案，<code>resolv.conf.local</code> 以及 <code>resolv.conf.connected</code> 來解決問題．
+後面這一個看起來像前面所描述過的 <code>resolv.conf</code> 檔案．</p>
+<p>要自動化連線到網路的過程我執行一個稱為 `ppp-on' 的指令稿: </p>
+<pre class="sample">
+#!/bin/sh
+echo calling...
+pppd
+</pre>
+<p>pppd 有個稱為 <code>options</code> 的檔案，它告訴 pppd 如何取得連線的一些特殊事項． 一旦我的 ppp 連線完成後 pppd 
+  起始一個稱為 <code>ip-up</code> 的指令(這在 pppd 的線上使用手冊裡有描述)． 這裡是該指令稿裡面的一部份</p>
+<pre class="sample">
+#!/bin/sh
+interface=&quot;$1&quot;
+device=&quot;$2&quot;
+speed=&quot;$3&quot;
+myip=&quot;$4&quot;
+upip=&quot;$5&quot;
+ ...
+cp -v /etc/resolv.conf.connected /etc/resolv.conf
+ ...
+/usr/sbin/named
+</pre>
+<p>換句話說，我在這裡起始我的 <code>named</code> 程式．當 ppp 離線時 pppd 執行一個稱為 <code>ip-down</code> 
+  的指令稿:</p>
+<pre class="sample">
+#!/bin/sh
+cp /etc/resolv.conf.local /etc/resolv.conf
+read namedpid &lt; /var/run/named.pid
+kill $namedpid
+</pre>
+<p>所以這在連線時配置並設定相關事宜並且在離線時解除該配置並結束相關程式．</p>
+<p>某些程式，例如我想起 irc 與 talk，做了過多的假定，為了讓其工作正常你必須修改你的 <code>hosts</code> 檔案． 我在 <code>ip-up</code> 
+  上加入</p>
+<pre class="sample">
+cp /etc/hosts.ppp /etc/hosts
+echo $myip      roke &gt;&gt;/etc/hosts
+</pre>
+<p><code>hosts.ppp</code> 是簡單地包含了</p>
+<pre class="sample">
+127.0.0.1       localhost
+</pre>
+<p>而 <code>echo</code> 指令插入了我收到的 IP 號碼做為我機器的名稱(roke)．
+你應該改用你自己機器的名稱，可以用 <code>hostname</code> 指令查出．</p>
+<p>當你沒有連線到網路上時執行 <code>named</code> 可能並不聰明，
+這是因為 <code>named</code> 將會嘗試送出查詢到網路上而且其終止時限(timeout)很長，
+而每次有某些個程式嘗試解析一個名稱的時候你就得等待到這個終止時限．
+如果你使用撥接的話你應該在連上網時起始 <code>named</code> 並且在離線時殺掉它．
+不過請參考 
+<a href="DNS-HOWTO-9.html#qanda">FAQ</a> 一節的提示．</p>
+<p>某些人喜歡在慢速的連線上使用 <code>forwarders</code> 指令． 如果你的網際網路提供者在 <code>1.2.3.4</code> 
+  以及 <code>1.2.3.5</code> 設有 DNS 伺服器那麼你可以插入這麼一行</p>
+<pre class="sample">
+forwarders 1.2.3.4 1.2.3.5
+</pre>
+<p>到 <code>named.boot</code> 檔案裡去．
+這將會減低源自你主機的 IP 流量，可能稍微提昇速度．如果你是依線路的資料量付費的話這點特別重要．
+這還有個附加價值，讓你脫離作為一個暫存的 <code>named</code> 維護者所應負起的責任: 
+你不需要去更新一個空的 <code>root.cache</code> 檔案．</p>
+
+<hr />
+<table >
+  <tr> 
+    <td class="BtdL"> <a href="DNS-HOWTO-7.html" accesskey="P">上一頁(P)</a> 
+    </td>
+    <td class="BtdC"> <a href="index.html" accesskey="H">目錄(H)</a> </td>
+    <td class="BtdR"> <a href="DNS-HOWTO-9.html">下一頁(N)</a> </td>
+  </tr>
+  <tr> 
+    <td class="BtdL">Bind version 8</td>
+    <td class="BtdC"><a href="DNS-HOWTO-8.html"  accesskey="T">到頂層(T)</a></td>
+    <td class="BtdR">常見問題解答</td>
+  </tr>
+</table>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> 
+  <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a> 
+  <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img class="ImgLogo" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> 
+  <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> 
+  <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" title="網路內容分級協會" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

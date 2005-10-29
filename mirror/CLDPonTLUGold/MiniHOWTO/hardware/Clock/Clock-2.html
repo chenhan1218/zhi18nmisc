@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		
+		<title>如何設定與維持準確的電腦時鐘: 使用``clock''程式</title>
+		<link href="Clock-3.html" rel="next" title="3. xntpd 簡介" />
+		<link href="Clock-1.html" rel="previous" title="1. 介紹" />
+		<link href="../../style.css" rel="stylesheet" type="text/css" />
+	    <meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+	    <link href="http://tldp.org/HOWTO/mini/Clock.html" rel="alternate" title="原版" />
+	    <link href="Clock.rdf" rel="meta" title="各章節的說明資訊" />
+			    <link href="Clock-1.html" rel="chapter" title="1.介紹 " />
+	    <link href="Clock-2.html" rel="chapter" title="2.使用``clock''程式" />
+	    <link href="Clock-3.html" rel="chapter" title="3.xntpd 簡介 " />
+	    <link href="index.html" rel="start" />
+	    <link href="index.html#content" rel="contents" />
+	    <link href="Clock.rdf" rel="meta" title="各章節的說明資訊" />
+	    <link href="Clock-2.html#ss2.1" rel="bookmark" title="2.1 檢查你的作業系統 " />
+	    <link href="Clock-2.html#ss2.2" rel="bookmark" title="2.2 量測時鐘的偏差率 " />
+	    <link href="Clock-2.html#ss2.3" rel="bookmark" title="2.3 實例" />
+	</head>
+	<body>
+		<table    >
+			<tr>
+				<th colspan="3" class="HdTitle">Mini
+				  HOWTO：The Clock</th>
+			</tr>
+			<tr>
+				<td class="TtdL">
+					<a href="Clock-1.html" accesskey="P">上一頁(P)</a>
+				</td>
+				<td class="TtdC"></td><td class="TtdR">
+					<a href="Clock-3.html" accesskey="N">下一頁(N)</a>
+				</td>
+			</tr>
+		</table>
+		<hr />
+		<h1>
+			<a name="s2" id="s2">2.</a> 使用``<code>clock</code>''程式</h1>
+		<p>所有你須要知道的內容都在 <code>clock(8)</code> 的說明中,
+而本文將帶領各位完成整個設定程序.</p>
+		<dl>
+			<dt>
+				<b>注意</b>
+			</dt>
+			<dd>
+				<p>要執行``<code>clock</code>''或是其它會影響到系統時間和 CMOS 時鐘的程式,
+你必須擁有 <b>root</b> 的權限.</p>
+			</dd>
+		</dl>
+		<h2>
+			<a name="ss2.1" id="ss2.1">2.1</a> 檢查你的作業系統
+</h2>
+		<p>檢查你作業系統的開機執行檔中是否有類似``<code>clock -a</code>''或
+``<code>clock -ua</code>''的命令.
+這個命令可能放在 <code>/etc/rc.local</code> ,或 <code>/etc/rc.d/rc.sysinit</code> ,
+或其它類似的地方, 這要看你安裝的是那一套 Linux 作業系統.</p>
+		<p>如果找到的命令是 ``<code>clock -s</code>'' 或 ``<code>clock -us</code>'' ,
+請將 ``<code>s</code>'' 更改成 ``<code>a</code>'' ,
+接著檢查看看是否有 <code>/etc/adjtime</code> 這個檔案,
+該檔案的內容只有一行看起來像是這樣:
+</p>
+		<pre class="sample">
+0.000000 842214901 0.000000
+</pre>
+		<p>這些數字依序是校正因子 (每天偏差的秒數),
+上一次校正時鐘的時間 (由 Jan 1, 1970 開始起算的秒數),
+上一次校正所扣除的秒數.
+如果你找不到這個檔案, 請以 <b>root</b> 的身份產生此檔案,
+其內容只有一行看起來像是這樣 (全部是零):
+</p>
+		<pre class="sample">
+0.0 0 0.0
+</pre>
+		<p>然後透過 shell 手動執行 ``<code>clock -a</code>'' 或 ``<code>clock -ua</code>''
+以便更新第二個數字
+(如果你的時鐘被設定成協調國際時間而不是本地時間
+你得使用 ``<code>u</code>''這個參數).</p>
+		<h2>
+			<a name="ss2.2" id="ss2.2">2.2</a> 量測時鐘的偏差率
+</h2>
+		<p>首先你得知道現在到底是幾點鐘 <code>:-)</code>.
+你機器的本地時間可能是不準確的.
+我最喜歡的方法是撥電話到 WWV 的 (303)499-7111 電話報時台
+(這是個付費電話).
+如果你能夠與網路校時伺服器連上線,
+你也可以使用 <code>xntpd</code> 程式集所提供的 <code>ntpdate</code> 程式來校時
+(使用 <code>-b</code> 選項以避免系統弄亂 CMOS 時鐘).
+或者使用 ``<code>date -s hh:mm:ss</code>'' 以手動方式設定系統時鐘,
+不論那一種方法最後都得使用 ``<code>clock -w</code>'' 將系統時間寫入 CMOS 時鐘.
+你必須記得最後一次設定時鐘的日期,
+所以你得將該日期寫下來放在不會遺失的地方.
+如果你使用的是 <code>ntpdate</code> 程式, 執行 ``<code>date +%s</code>''
+然後寫下自從 Jan 1,1970 算起到該程式執行的秒數.</p>
+		<p>然後等待幾天或幾個星期後之後再回來看看時鐘到底偏差了多少時間.
+如果你以手動的方式設定時鐘, 建議至少得等待二個星期之後,
+再來計算時鐘偏差率將可得到趨近 .1 sec/day 的結果.
+幾個月之後偏差率應該會趨近  .01 sec/day
+(有些人宣稱應該更準確, 但是我個人持保留的態度).
+如果你使用 <code>ntpdate</code> 程式來設定時鐘你可能不必等待太久的時間,
+然而不論使用那種方式之後都得做些微調的工作.</p>
+		<p>你可以使用 cron 在一定的時間周期內執行 ``<code>clock -a</code>''
+以便系統時間能夠與 (校正過的) CMOS時間維持一致性.
+其實在你每次開機的時候都會從開機執行檔來執行這個命令,
+然而只要常常做上面這個動作就可以達到你準確機器時間的目的. </p>
+		<p>注意如果系統時間的修正一次超過一秒或是時間往回修正,
+有些系統的 clock 程式可能會無法執行.
+如果你有這方面的問題, 則可以使用 <code>xntpd</code> 或 <code>ntpdate</code> 程式
+來逐步地修正時間. </p>
+		<h2>
+			<a name="ss2.3" id="ss2.3">2.3</a> 實例
+</h2>
+		<h3>設定時間</h3>
+		<p>簽入系統並成為 <b>root</b>.
+撥電話至 (303)499-7111 (語音), 來聆聽報時的內容.
+然後使用鍵盤打出下面幾個字:
+</p>
+		<pre class="sample">
+date -s hh:mm:ss
+</pre>
+		<p>一直等到嗶的一聲纔按下 enter 鍵.
+  (如果在此處使用 ``<code>ntpdate</code>'' 程式, 則你可以省略撥電話的動作)
+  這個步驟在設定 ``系統時間''.
+  接著執行:
+</p>
+		<pre class="sample">
+clock -w
+</pre>
+		<p>這個步驟將系統時間寫回 CMOS 時鐘讓二者時間一致.
+  接著執行:
+</p>
+		<pre class="sample">
+date +%j
+</pre>
+		<p>(如果在前面使用 ``<code>ntpdate</code>'' 程式你得執行 ``<code>date +%s</code>'')
+  將其執行的結果記錄下來.
+ </p>
+		<h3>重新設定時間與檢查偏差率</h3>
+		<p>找出你上次寫下來日期.
+簽入系統並成為 <b>root</b>.
+然後執行:
+</p>
+		<pre class="sample">
+clock -a
+</pre>
+		<p>這個步驟將 CMOS 時間寫入系統時鐘讓二者時間一致.
+  撥電話至 (303)499-7111 (語音), 來聆聽報時的內容.
+  接著使用鍵盤打出下面幾個字:
+</p>
+		<pre class="sample">
+date
+</pre>
+		<p>一直等到嗶的一聲纔按下 enter 鍵, 但是當你等待的時候, 寫下報時的內容, 並且還不要掛上電話. 這個動作是讓你知道目前真正的時間是幾點, 而此時相對你的機器上的時間是幾點.
+  現在使用鍵盤打出下面幾個字:
+</p>
+		<pre class="sample">
+date -s hh:mm:00
+</pre>
+		<p>其中分針部分所設定的數字就是目前報時內容 *<b>之後的</b>* 下一分鐘,
+  一直等到嗶的一聲纔按下 enter 鍵 (現在可以掛上電話了).
+  而 <code>hh</code> 的部分則使用機器本地的時針數字即可.
+  這個步驟在設定 ``系統時間''.
+  然後執行:
+</p>
+		<pre class="sample">
+clock -w
+</pre>
+		<p>將新的 (校正過的) 系統時間寫回 CMOS 時鐘.
+  然後執行:
+</p>
+		<pre class="sample">
+date +%j
+</pre>
+		<p>(或是執行 ``<code>date +%s</code>'' )
+ </p>
+		<p>你現在手上有三個數字 (二個校正日期及一個正確時間)
+於是你可以開始計算偏差率了.</p>
+		<h3>計算校正因子</h3>
+		<p>當你在某一分鐘執行 ``<code>date</code>'' 程式時, 你機器的本地時間是慢還是快呢?
+如果是快了, 你必須將之減去一些秒數以符合正確時間,
+所以你應該寫下一個負的偏差數值.
+如果是慢了,你必須將之加上一些秒數以符合正確時間, 所以你應該寫下一個正的偏差數值.</p>
+		<p>現在將二個校正日期相減.
+如果之前你使用的是 ``<code>date +%j</code>'',
+則數值所代表意義為一年的第幾天 (1-365, 或 1-366 如果是閏年).
+如果自從你上一次設定時鐘到現在經過1 月1 日你還須要將第二個校正日期加 365 (或 366)
+如果之前你使用的是 ``<code>date +%s</code>'' 則數值的單位為秒數,
+你必須將之除以 86400 以便取得日數.</p>
+		<p>如果你的檔案 <code>/etc/adjtime</code> 中已經有校正因子,
+你必須將先前已校正過的秒數考慮進來,
+如果你校正過度, 這個校正因子的正負號將與你量測到偏差數值相反; 
+如果你校正不足則二者正負號相同.
+將舊的校正因子乘以日數,
+然後加上新獲得的偏差秒數
+(附註--
+如果二者正負號相同, 你將取得一個較大的偏差數值,
+如果二者正負號相反, 你將取得一個較小的偏差數值).</p>
+		<p>接著將這個總偏差秒數除以日數以便取得新的校正因子,
+然後將檔案 <code>/etc/adjtime</code> 中舊的校正因子代換成新的.
+最後寫下新的校正日期 (以秒數或日數為單位) 以便下次使用. </p>
+		<p>這裡是我的 <code>/etc/adjtime</code> 檔案內容:
+</p>
+		<pre class="sample">
+-9.600000 845082716 -0.250655
+</pre>
+		<p>
+  (注意每天 9.6 秒則一個月將近有 5 分鐘的偏差!)
+</p>
+		<hr />
+		<table
+
+
+
+
+>
+          <tr
+>
+            <td class="BtdL"
+><a href="Clock-1.html" accesskey="P">上一頁(P)</a></td
+>
+            <td class="BtdC"
+><a href="index.html" accesskey="H">目錄(H)</a></td
+>
+            <td class="BtdR"
+><a
+href="Clock-3.html"
+>下一頁(N)</a
+></td
+>
+          </tr
+>
+          <tr
+>
+            <td class="BtdL"
+>介紹</td
+>
+            <td class="BtdC"
+><a href="Clock-2.html" accesskey="T">到頂層(T)</a></td
+>
+            <td class="BtdR"
+>xntpd 簡介</td
+>
+          </tr
+>
+        </table
+>
+		<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" width="88" height="31" style="border:0;width:88px;height:31px"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img style="border:0;width:88px;height:31px" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img style="border:0;width:88px;height:32px" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" style="border:0" alt="表示該網頁支援資源描述架構"/></a> </div>
+	</body>
+</html>

@@ -1,0 +1,402 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+ 
+ <title>The Loopback Root Filesystem HOWTO: 如何建立繞回根目錄設備</title>
+ <link href="Loopback-Root-FS-4.html" rel="next" />
+ <link href="Loopback-Root-FS-2.html" rel="previous" />
+ <link href="Loopback-Root-FS.html#toc3" rel="contents" />
+ <link href="../../style.css" rel="stylesheet" type="text/css" />
+</head> <body> 
+<table
+
+
+
+
+>
+  <tr
+>
+    <th
+colspan="3" class="HdTitle"
+>MiniHOWTO：The
+      Loopback Root Filesystem</th>
+  </tr
+>
+  <tr
+>
+    <td class="TtdL"
+><a href="index.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="TtdC"
+></td
+>
+    <td class="TtdR"
+><a href="3-Button-Mouse-2.html" accesskey="N">下一頁(N)</a></td
+>
+  </tr
+>
+</table
+>
+<hr />
+<h1><a name="s3" id="s3">3.</a> 如何建立繞回根目錄設備</h1>
+
+<p>下面將介紹如何建立繞回設備</p>
+
+
+<h2><a name="ss3.1" id="ss3.1">3.1</a> 需求
+</h2>
+
+<p>要建立一個繞回根目錄設備必須要有下列事項.</p>
+
+<p></p>
+<ul>
+<li>一個可以運作的 Linux 系統</li>
+<li>必須能夠複製一個大檔案到 DOS 分割區中
+</li>
+</ul>
+<p>最重要的是必須能存取一個安裝好可運作的 Linux 系統.
+這是因為繞回設備只能在 Linux 下建立.
+也就是說你不可能從無中生有.
+而且你必須要能在這個系統上編譯核心.</p>
+
+<p>當繞回設備建立之後, 這將是一個很大的檔案.
+我使用了一個 80 MB 的檔案, 如此我才能建立一個 X 終端機; 但如果你希望能做更多事, 這可能也不夠.
+這個檔案必須被複製到 DOS 分割區中, 所以網路或是一堆軟碟是必須的.</p>
+
+<p>你所需要的軟體包括:</p>
+<ul>
+<li><code>LOADLIN</code> 1.6版以上</li>
+<li>任何一個支援繞回設備的 <code>mount</code> 程式</li>
+<li>支援所需選項的核心</li>
+</ul>
+</P>
+<p>對現在的 Linux 而言, 應該都能符合以上需求.</p>
+
+
+<h2><a name="ss3.2" id="ss3.2">3.2</a> 建立 Linux 核心
+</h2>
+
+<p>我是用 2.0.31 版的核心來使用繞回裝置, 其他版本的核心應該也可以用.
+但他們至少必須要有以下的功能.</p>
+
+<p>你必須將核心的列功能啟動</p>
+<ul>
+<li>記憶體磁碟支援 (<code>CONFIG_BLK_DEV_RAM</code>).</li>
+<li>初始化記憶體 (initrd) 支援 (<code>CONFIG_BLK_DEV_INITRD</code>).</li>
+<li>繞回裝置支援 (<code>CONFIG_BLK_DEV_LOOP</code>).</li>
+<li>fat 檔案系統支援 (<code>CONFIG_FAT_FS</code>).</li>
+<li>msdos 檔案系統支援 (<code>CONFIG_MSDOS_FS</code>).</li>
+</ul>
+<p>前面二個是用來使用記憶體磁碟裝置與初始化記憶體磁碟裝置.
+第三個是繞回檔案系統的支援,
+最後二個則是用來掛載 DOS 分割區所必須的支援.</p>
+
+<p>編譯核心且不使用模組支援是最簡單的選擇. 但如果你希望使用模組化支援應該也是可以, 雖然我沒有試過.
+如果你使用模組化支援, 你必須確定上列的選項是直接編譯在核心內而不是編譯成模組.</p>
+
+<p>依據核心版本的不同, 你可能需要使用一些修補.
+下面是一些簡單的修補用來讓核心可以將繞回裝置作為根目錄檔案系統使用.</p>
+<ul>
+<li>2.0.0 版之前的核心: 我沒有相關資訊.</li>
+<li>2.0.0 到 2.0.34 之間的核心版本: 你必須使用下列給 2.0.x 版的核心修補.</li>
+<li>2.0.35 到 2.0.x 之間的核心不需要修補.</li>
+<li>2.1.x 版的核心必須依據您的確實版本而使用下列給 2.0.x 或 2.2.x 版的核心修補.</li>
+<li>2.2.0 到 2.2.10 之間的核心版本: 你必須使用下列給 2.2.x 版的核心修補.</li>
+<li>2.3.x 版的核心: 你必須使用下列給 2.2.x 版的核心修補.</li>
+</ul>
+<p>對於 2.0.x 版的核心, 必須將 <code>"loop", 0x0700</code> 這一行加到 <code>/init/main.c</code> 的原始碼中而成為下面的樣子.</p>
+<pre class="sample">
+static void parse_root_dev(char * line)
+{
+        int base = 0;
+        static struct dev_name_struct {
+                const char *name;
+                const int num;
+        } devices[] = {
+                { "nfs",     0x00ff },
+                { "loop",    0x0700 },
+                { "hda",     0x0300 },
+
+...
+
+                { "sonycd",  0x1800 },
+                { NULL, 0 }
+        };
+
+...
+
+}
+  </pre>
+  </P>
+
+<p>對於 2.2.x 版的核心, 必須將 <code>"loop", 0x0700</code> 與前後各一行(共三行)加到 <code>/init/main.c</code> 的原始碼中而成為下面的樣子</p>
+<pre class="sample">
+static struct dev_name_struct {
+        const char *name;
+        const int num;
+} root_dev_names[] __initdata = {
+#ifdef CONFIG_ROOT_NFS
+        { "nfs",     0x00ff },
+#endif
+#ifdef CONFIG_BLK_DEV_LOOP
+        { "loop",    0x0700 },
+#endif
+#ifdef CONFIG_BLK_DEV_IDE
+        { "hda",     0x0300 },
+
+...
+
+        { "ddv", DDV_MAJOR &lt;&lt; 8},
+#endif
+        { NULL, 0 }
+};
+</pre>
+  </P>
+<p>當核心組態設好後, 他必須被編譯成 <code>zImage</code> 檔 (<code>make zImage</code>).
+編譯好的檔案會被放在 <code>arch/i386/boot/zImage</code>.</p>
+
+
+<h2><a name="ss3.3" id="ss3.3">3.3</a> 建立初始化記憶體磁碟裝置
+</h2>
+
+<p>建立初始化記憶體磁碟最簡單的方式是將它當成繞回裝置掛載.
+你必須使用 root 的權限來做這件事.
+建立程序如下所示, 這些指令是在 root 的家目錄 (<code>/root</code>) 中執行的.</p>
+
+<p></p>
+<pre class="sample">
+mkdir /root/initrd
+dd if=/dev/zero of=initrd.img bs=1k count=1024
+mke2fs -i 1024 -b 1024 -m 5 -F -v initrd.img
+mount initrd.img /root/initrd -t ext2 -o loop
+cd initrd
+[建立必須的檔案]
+cd ..
+umount /root/initrd
+gzip -c -9 initrd.img &gt; initrdgz.img
+</pre>
+  </P>
+<p>這些指令的作用如下所述.
+<ol>
+<li>建立一個給初始化記憶體使用的掛載點 (一個空目錄).</li>
+<li>建立一個指定大小的空檔案, 此處我建立一個 1024kB 的檔案, 你必須依據你所要放置檔案的量來決定這個檔案的大小. (檔案大小是最後一個參數)</li>
+<li>將這個檔案格式化成 ext2 檔案系統.</li>
+<li>將這個檔案以繞回的方式掛載倒掛載點上.</li>
+<li>切換目錄到繞回設備的掛載點中.</li>
+<li>建立必須的檔案 (細節將在後面討論).</li>
+<li>離開繞回檔案所掛載的目錄.</li>
+<li>將繞回設備卸載.</li>
+<li>建立一個壓縮的版本以供後續使用.</li>
+</ol>
+</P>
+<p><b>初始化記憶體磁碟的內容</b></p>
+<p>你必須至少有下列的檔案放置於初始化記憶體磁碟中, 否則將不能使用任何指令.</p>
+<p>
+<ul>
+<li><code>/linuxrc</code> 掛載 DOS 檔案系統的指令稿. (如下所示)</li>
+<li><code>/lib/*</code> 程式所需要的動態連結器與函式庫.</li>
+<li><code>/etc/*</code> 動態連結所需的快取, 雖然靜態連結程式不需要, 但可以避免警告訊息.</li>
+<li><code>/bin/*</code> 使用者命令解譯器 (此處我使用 <code>ash</code>, 因為它比 <code>bash</code> 小).
+而 <code>mount</code> 與 <code>losetup</code> 程式是用於掛載 DOS 磁碟與設定繞回裝置.</li>
+<li><code>/dev/*</code> 必須的裝置控制檔, 你至少需要 <code>/dev/zero</code> 以供 <code>ld-linux.so</code> 使用, <code>/dev/hda*</code> 以掛載 DOS 磁碟, 以及 <code>/dev/loop*</code> 以掛載繞回裝置.</li>
+<li><code>/mnt</code> 一個空的掛載點, 以供 DOS 磁碟掛載.</li>
+</ul>
+</P>
+<p>下面是我所用的起始化記憶體磁碟之內容, 所需空間約 800 kB.</p>
+<pre class="sample">
+total 18
+drwxr-xr-x   2 root     root         1024 Jun  2 13:57 bin
+drwxr-xr-x   2 root     root         1024 Jun  2 13:47 dev
+drwxr-xr-x   2 root     root         1024 May 20 07:43 etc
+drwxr-xr-x   2 root     root         1024 May 27 07:57 lib
+-rwxr-xr-x   1 root     root          964 Jun  3 08:47 linuxrc
+drwxr-xr-x   2 root     root        12288 May 27 08:08 lost+found
+drwxr-xr-x   2 root     root         1024 Jun  2 14:16 mnt
+
+./bin:
+total 168
+-rwxr-xr-x   1 root     root        60880 May 27 07:56 ash
+-rwxr-xr-x   1 root     root         5484 May 27 07:56 losetup
+-rwsr-xr-x   1 root     root        28216 May 27 07:56 mount
+lrwxrwxrwx   1 root     root            3 May 27 08:08 sh -&gt; ash
+
+./dev:
+total 0
+brw-r--r--   1 root     root       3,   0 May 20 07:43 hda
+brw-r--r--   1 root     root       3,   1 May 20 07:43 hda1
+brw-r--r--   1 root     root       3,   2 Jun  2 13:46 hda2
+brw-r--r--   1 root     root       3,   3 Jun  2 13:46 hda3
+brw-r--r--   1 root     root       7,   0 May 20 07:43 loop0
+brw-r--r--   1 root     root       7,   1 Jun  2 13:47 loop1
+crw-r--r--   1 root     root       1,   3 May 20 07:42 null
+crw-r--r--   1 root     root       5,   0 May 20 07:43 tty
+crw-r--r--   1 root     root       4,   1 May 20 07:43 tty1
+crw-r--r--   1 root     root       1,   5 May 20 07:42 zero
+
+./etc:
+total 3
+-rw-r--r--   1 root     root         2539 May 20 07:43 ld.so.cache
+
+./lib:
+total 649
+lrwxrwxrwx   1 root     root           18 May 27 08:08 ld-linux.so.1 -&gt; ld-linux.so.1.7.14
+-rwxr-xr-x   1 root     root        21367 May 20 07:44 ld-linux.so.1.7.14
+lrwxrwxrwx   1 root     root           14 May 27 08:08 libc.so.5 -&gt; libc.so.5.3.12
+-rwxr-xr-x   1 root     root       583795 May 20 07:44 libc.so.5.3.12
+
+./lost+found:
+total 0
+
+./mnt:
+total 0
+</pre>
+  </P>
+<p>比較複雜的步驟是建立 <code>dev</code> 目錄下面的裝置控制檔.
+你可以用 <code>/dev</code> 下面現有的裝置控制檔為範本, 並以 <code>mknod</code> 程式來建立他們.</p>
+
+<p><b>/linuxrc 指令檔</b></p>
+<p>起始化記憶磁碟中的 <code>/linuxrc</code> 指令稿是用來完成掛載繞回裝置所需的前置準備.</p>
+<p>下面的範例是以 <code>/dev/hda1</code> 為 DOS 分割區, 並在成功掛載 DOS 分割區後, 將<code>/linux/linuxdsk.img</code> 設定為 <code>/dev/loop0</code> ;並將 <code>/linux/linuxswp.img</code> 設定為 <code>/dev/loop1</code>.</p>
+<pre class="sample">
+#!/bin/sh
+
+echo INITRD: Trying to mount /dev/hda1 as msdos
+
+if /bin/mount -n -t msdos /dev/hda1 /mnt; then
+
+   echo INITRD: Mounted OK
+   /bin/losetup /dev/loop0 /mnt/linux/linuxdsk.img
+   /bin/losetup /dev/loop1 /mnt/linux/linuxswp.img
+   exit 0
+
+else
+
+   echo INITRD: Mount failed
+   exit 1
+
+fi
+</pre>
+  <p>前面的 <code>/dev/loop0</code> 裝置將被掛載為根目錄, 後面的 <code>/dev/loop1</code> 則將被作為記憶體置換區使用.</p>
+
+<p>如果你希望 root 以外的使用者也能寫入 DOS 分顆區, 你必須改成使用 <code>mount -n -t msdos /dev/hda1 /mnt -o uid=0,gid=0,umask=000,quiet</code>.
+這會將所有對 DOS 分割區的存取對應成 root, 並且適當的設定權限.</p>
+
+
+<h2><a NAME="ss3.4">3.4</a> 建立根目錄裝置
+</h2>
+
+<p>你所使用的根目錄裝置將是 <code>linuxdsk.img</code> 這個檔案.
+你可以用與建立起始記憶體磁碟相同的方法建立這個檔案, 所不同處僅在於必須較大, 足以容納你要安裝的程式.</p>
+
+<p>最簡單的辦法是將現有的 Linux 系統複製到這個檔案系統中.
+當然你也可以重新安裝一套新的 Linux 系統.</p>
+
+<p>假設你已經做過這些事, 你只要作一些小改變.</p>
+
+<p><code>/etc/fstab</code> 檔案必須將根目錄磁碟與置換區對應到你在啟示記憶體磁碟中的繞回設備.</p>
+<pre class="sample">
+/dev/loop0     /      ext2   defaults 1 1
+/dev/loop1     swap   swap   defaults 1 1
+</pre>
+  </P>
+<p>這將確保核心會使用正確的根目錄裝置.
+也可以用相同的方法加入置換磁碟.
+你也必須移除其他根目錄磁碟與置換區的對應.</p>
+
+<p>如果你希望在 Linux 啟動後能夠讀取 DOS 分割區, 你必須作下面這些額外的小修改.</p>
+
+<p>建立叫做 <code>/initrd</code> 的目錄, 這是再繞回根目錄系統掛載後, 初始記憶體磁碟掛載的地方.</p>
+<p>建立一個符號連接 <code>/DOS</code> 指向 <code>/initrd/mnt</code>, 也就是 DOS 分割區被掛載的地方.</p>
+<p>在 rc 檔中加入類似 <code>mount -f -t msdos /dev/hda1 /initrd/mnt</code> 的指令, 以建立一個 "假的" 掛載, 如此例如 <code>df</code> 等程式才會知道這個掛載.
+如果你在 <code>/linuxrc</code> 中用不同的設定, 請自行修正以符合設定.</p>
+
+<p>由於核心在之前便會被載入, 所以你不需要在根目錄裝置中放置系統核心.
+但如果你使用了核心的模組, 你仍然必須將這些模組放在根目錄裝置中.</p>
+
+
+<h2><a NAME="ss3.5">3.5</a> 建立置換裝置
+</h2>
+
+<p>你所使用的置換裝置將是 <code>linuxswap.img</code>.
+這個置換裝置相當容易建立.
+首先如同之前的做法建立一個空檔案, 然後執行 <code>mkswap linuxswap.img</code> 來格式化這個置換檔.</p>
+
+<p>置換空間的大小依據個人的使用而不同, 但我建議將它設為大於 8MB, 但小於實體記憶體量.</p>
+
+
+<h2><a NAME="ss3.6">3.6</a> 建立 MSDOS 目錄
+</h2>
+
+<p>你所要使用的檔案必須被搬移到 DOS 分割區中.</p>
+
+<p>必須被放在 <code>C:\LINUX</code> 目錄下的檔案包括</p>
+<p>
+<ul>
+<li><code>LINUXDSK.IMG</code> 作為根目錄裝置的影像檔.</li>
+<li><code>LINUXSWP.IMG</code> 置換裝置.</li>
+</ul>
+</P>
+
+<h2><a NAME="ss3.7">3.7</a> 建立開機軟碟
+</h2>
+
+<p>開機軟碟的製作與標準 DOS 開機軟碟相同.</p>
+<p>在 DOS 下使用 <code>format a: /s</code> 以建立開機軟碟.</p>
+
+<p>在這張軟碟上, 你必須建立一個 <code>AUTOEXEC.BAT</code> 檔, 如下所示.
+並且複製 Linux 系統核心與壓縮過的起始記憶體磁碟檔案, 以及 <code>LOADLIN</code> 執行檔.</p>
+<ul>
+<li><code>AUTOEXEC.BAT</code> - DOS 下的開機自動執行批次檔.</li>
+<li><code>LOADLIN.EXE</code> - <code>LOADLIN</code> 執行檔.</li>
+<li><code>ZIMAGE</code> - Linux 系統核心.</li>
+<li><code>INITRDGZ.IMG</code> - 壓縮過的起始記憶體磁碟檔.</li>
+</ul>
+<p><code>AUTOEXEC.BAT</code> 僅需要下面這行.</p>
+<p>
+
+<pre class="sample">
+\loadlin \zImage initrd=\initrdgz.img root=/dev/loop0 ro
+</pre>
+  <p>這會指定要用的系統核心與起始化記憶體磁碟檔以及根目錄磁碟的位置, 並將根目錄以唯讀的方式掛載.</p>
+
+<hr>
+<table
+
+
+
+
+>
+  <tr
+>
+    <td class="BtdL"
+><a href="index.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="BtdC"
+><a href="index.html" accesskey="H">目錄(H)</a></td
+>
+    <td class="BtdR"
+><a
+href="3-Button-Mouse-2.html"
+>下一頁(N)</a
+></td
+>
+  </tr
+>
+  <tr
+>
+    <td class="BtdL"
+>目錄</td
+>
+    <td class="BtdC"
+><a href="index.html" accesskey="T">到頂層(T)</a></td
+>
+    <td class="BtdR"
+>介紹</td
+>
+  </tr
+>
+</table
+>
+</body>
+</html>

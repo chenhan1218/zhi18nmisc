@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>5. 相關鏈接 </title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+<link href="../../style.css" rel="stylesheet" type="text/css" />
+<link href="index.html" rel="contents" />
+<link href="index.html" rel="start" />
+<link href="IP-Alias-2.html" rel="prev" />
+<link href="http://www.tldp.org/HOWTO/mini/IP-Alias/" rel="alternate" title="原版" />
+<link href="IP-Alias.rdf" rel="meta" title="各章節的說明資訊" />
+<link href="IP-Alias-4.html" rel="next" />
+<link href="IP-Alias-3.html#ss31" rel="section" title="3.1問: 如何在重新啟動機器後保持設定?" />
+<link href="IP-Alias-3.html#ss32" rel="section" title="3.2 問: 我如何在具 IP 別名的機器上在不同的 IP 別名號碼上接收電子郵件(在一部用 sendmail 的機器上)?" />
+</head>
+
+<body>
+<table
+
+
+
+
+>
+  <tr
+>
+    <th
+colspan="3" class="HdTitle"
+>Mini
+      HOWTO：Setting up IP Aliasing on A Linux Machine</th>
+  </tr
+>
+  <tr
+>
+    <td class="TtdL"
+><a href="IP-Alias-2.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="TtdC"
+></td
+>
+    <td class="TtdR"
+><a href="IP-Alias-4.html" accesskey="N">下一頁(N)</a></td
+>
+  </tr
+>
+</table
+>
+<hr />
+<h1>3. 問答集</h1>
+<h2><a name="ss31" id="ss31"></a>3.1問: 如何在重新啟動機器後保持設定?</h2>
+<p>答: 不論你是用 BSD 形式或是 SysV 形式(例如 Red Hat)的 init 啟動，你都可以把它放在 <code>/etc/rc.d/rc.local</code> 中．下面是我在我的
+  SysV init 系統(Red Hat 3.0.3 及 4.0)中的設定：</p>
+<p> 我的 <code>/etc/rc.d/rc.local</code>: (修改過只顯示相關的部份)</p>
+<pre class="sample"> #setting up IP alias interfaces
+
+  echo &quot;Setting 172.16.3.1, 172.16.3.10, 172.16.3.100 IP Aliases
+  ...&quot;
+  /sbin/ifconfig lo 127.0.0.1
+  /sbin/ifconfig eth0 up
+  /sbin/ifconfig eth0 172.16.3.1
+  /sbin/ifconfig eth0:0 172.16.3.10
+  /sbin/ifconfig eth0:1 172.16.3.100
+  #setting up the routes
+  echo &quot;Setting IP routes ...&quot;
+  /sbin/route add -net 127.0.0.0
+  /sbin/route add -net 172.16.3.0 dev eth0
+  /sbin/route add -host 172.16.3.1 eth0
+  /sbin/route add -host 172.16.3.10 eth0:0
+  /sbin/route add -host 172.16.3.100 eth0:1
+  /sbin/route add default gw 172.16.3.200
+  #</pre>
+<h2><a name="ss32" id="ss32"></a>3.2  問: 我如何在具 IP 別名的機器上在不同的 IP 別名號碼上接收電子郵件(在一部用 sendmail 的機器上)?</h2>
+<p>答: 建立(如果還沒有的話)一個檔案，例如叫 <code>/etc/mynames.cw</code>．不需要真的是這個名字，也不一定要放在 <code>/etc</code> 目錄下．</p>
+<p> 在那個檔案中，放上別名 IP 號碼的完整領域名稱．如果別名的 IP 沒有領域名稱，你可以用這個 IP 本身．</p>
+<pre class="sample">/etc/mynames.cw:
+
+  ----------------
+
+  # /etc/mynames.cw - include all aliases for your machine here;
+  # is a comment.
+
+  domain.one.net
+
+  domain.two.com
+
+  domain.three.org
+
+  4.5.6.7</pre>
+<p>  在你的 <code>sendmail.cf</code> 檔中，在它定義檔案類別巨集 Fw 的地方，加上:</p>
+<pre class="sample">
+  ##################
+  # local info #
+  ##################
+
+
+  # file containing names of hosts for which we receive email
+  Fw/etc/mynames.cw
+</pre>
+<p> 這樣應該就可以了．以測試模式執行 <code>sendmail</code> 以測試新的設定:</p>
+<pre class="sample"> ganymede$ /usr/lib/sendmail -bt
+
+  ADDRESS TEST MODE (ruleset 3 NOT automatically invoked)
+
+  Enter &lt; ruleset&gt; &lt; address&gt;
+&gt; 0 me@4.5.6.7
+  rewrite: ruleset 0 input: me @ 4 . 5 . 6 . 7
+  rewrite: ruleset 98 input: me @ 4 . 5 . 6 . 7
+  rewrite: ruleset 98 returns: me @ 4 . 5 . 6 . 7
+  rewrite: ruleset 97 input: me @ 4 . 5 . 6 . 7
+  rewrite: ruleset 3 input: me @ 4 . 5 . 6 . 7
+  rewrite: ruleset 96 input: me &lt; @ 4 . 5 . 6 . 7 &gt;
+  rewrite: ruleset 96 returns: me &lt; @  4 . 5 . 6 . 7 . &gt;
+  rewrite: ruleset 3 returns: me &lt; @  4 . 5 . 6 . 7 . &gt;
+  rewrite: ruleset 0 input: me &lt; @ 4 .  5 . 6 . 7 . &gt;
+  rewrite: ruleset 98 input: me &lt; @ 4  . 5 . 6 . 7 . &gt;
+  rewrite: ruleset 98 returns: me &lt; @  4 . 5 . 6 . 7 . &gt;
+  rewrite: ruleset 0 returns: $# local $: me
+  rewrite: ruleset 97 returns: $# local $: me
+  rewrite: ruleset 0 returns: $# local $: me
+&gt; 0 me@4.5.6.8
+  rewrite: ruleset 0 input: me @ 4 . 5 . 6 . 8
+  rewrite: ruleset 98 input: me @ 4 . 5 . 6 . 8
+  rewrite: ruleset 98 returns: me @ 4 . 5 . 6 . 8
+  rewrite: ruleset 97 input: me @ 4 . 5 . 6 . 8
+  rewrite: ruleset 3 input: me @ 4 . 5 . 6 . 8
+  rewrite: ruleset 96 input: me &lt; @ 4 . 5 . 6 . 8 &gt;
+  rewrite: ruleset 96 returns: me &lt; @  4 . 5 . 6 . 8 &gt;
+  rewrite: ruleset 3 returns: me &lt; @  4 . 5 . 6 . 8 &gt;
+  rewrite: ruleset 0 input: me &lt; @ 4 .  5 . 6 . 8 &gt;
+  rewrite: ruleset 98 input: me &lt; @ 4  . 5 . 6 . 8 &gt;
+  rewrite: ruleset 98 returns: me &lt; @  4 . 5 . 6 . 8 &gt;
+  rewrite: ruleset 95 input: &lt; &gt; me &lt; @  4 . 5 . 6 . 8 &gt;
+  rewrite: ruleset 95 returns: me &lt; @  4 . 5 . 6 . 8 &gt;
+  rewrite: ruleset 0 returns: $# smtp $@ 4 . 5 . 6 . 8 $: me &lt; @
+  4 . 5 . 6 . 8 &gt;
+  rewrite: ruleset 97 returns: $# smtp $@ 4 . 5 . 6 . 8 $: me &lt; @
+  4 . 5 . 6 . 8 &gt;
+  rewrite: ruleset 0 returns: $# smtp $@ 4 . 5 . 6 . 8 $: me &lt; @
+  4 . 5 . 6 . 8 &gt;
+&gt;</pre>
+<p> 注意，當我測試 me@4.5.6.7 時，它將信件送到本地機器上，因為 me@4.5.6.8 會被 smtp mailer 拒絕．這是正常的回應．</p>
+<p> 所有都設定完成了．</p>
+<hr />
+<table
+
+
+
+
+>
+  <tr
+>
+    <td class="BtdL"
+><a href="IP-Alias-2.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="BtdC"
+><a href="index.html" accesskey="H">目錄(H)</a></td
+>
+    <td class="BtdR"
+><a
+href="IP-Alias-4.html"
+>下一頁(N)</a
+></td
+>
+  </tr
+>
+  <tr
+>
+    <td class="BtdL"
+>指令</td
+>
+    <td class="BtdC"
+><a href="IP-Alias-3.html" accesskey="T">到頂層(T)</a></td
+>
+    <td class="BtdR"
+>感謝</td
+>
+  </tr
+>
+</table
+>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" width="88" height="31" style="border:0;width:88px;height:31px"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img style="border:0;width:88px;height:31px" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img style="border:0;width:88px;height:32px" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" style="border:0" alt="表示該網頁支援資源描述架構"/></a></div>
+</body>
+</html>

@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+ 
+ <title>The Linux Bootdisk HOWTO: Bootdisks與開機流程 -- Bootdisks and the boot process</title>
+ <link href="Bootdisk-HOWTO-4.html"  rel="next" title="4. 建立一個root filesystem" />
+ <link href="Bootdisk-HOWTO-2.html"  rel="previous" title="2. 簡介" />
+<link href="../../style.css" rel="stylesheet" type="text/css" />
+<link href="Bootdisk-HOWTO-1.html" rel="chapter" title="1.前言" />
+<link href="Bootdisk-HOWTO-2.html" rel="chapter" title="2.簡介" />
+<link href="Bootdisk-HOWTO-3.html" rel="chapter" title="3.Bootdisks與開機流程" />
+<link href="Bootdisk-HOWTO-4.html" rel="chapter" title="4.建立一個root filesystem" />
+<link href="Bootdisk-HOWTO-5.html" rel="chapter" title="5.選擇一個 kernel" />
+<link href="Bootdisk-HOWTO-6.html" rel="chapter" title="6.把它們放在一起：製作磁片(組)" />
+<link href="Bootdisk-HOWTO-7.html" rel="chapter" title="7.問題解決 " />
+<link href="Bootdisk-HOWTO-8.html" rel="chapter" title="8.其它各種主題" />
+<link href="Bootdisk-HOWTO-9.html" rel="chapter" title="9.How the pros do it" />
+<link href="Bootdisk-HOWTO-10.html" title="10.常見問題 (FAQ) 列表" />
+<link href="Bootdisk-HOWTO-11.html" title="11.資源與指示" />
+<link href="Bootdisk-HOWTO-12.html" title="12.LILO boot error codes" />
+<link href="Bootdisk-HOWTO-13.html" title="13.Root filesystem 列表樣本" />
+<link href="Bootdisk-HOWTO-14.html" title="14.工具程式磁片 (utility disk) 目錄列表樣本" />
+<meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+<link href="http://tldp.org/HOWTO/Bootdisk-HOWTO/index.html" rel="alternate" title="原版" />
+<link href="Bootdisk-HOWTO.rdf" rel="meta" title="各章節的說明資訊" />
+<link href="Bootdisk-HOWTO-3.html#ss3.1" rel="section" title="3.1 開機流程" />
+<link href="Bootdisk-HOWTO-3.html#ss3.2" rel="section" title="3.2 磁碟類型" />
+<link href="index.html" rel="start" />
+<link href="index.html#content" rel="contents" />
+</head> <body   > 
+<table >
+  <tr>
+    <th colspan="3" class="HdTitle">HOWTO：The
+      Linux Bootdisk</th>
+  </tr>
+  <tr>
+    <td class="TtdL"> <a href="Bootdisk-HOWTO-2.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="TtdC">&nbsp;</td>
+    <td class="TtdR"> <a href="Bootdisk-HOWTO-4.html" accesskey="N">下一頁(N)</a> </td>
+  </tr>
+</table>
+<hr />
+<h1>3. Bootdisks與開機流程</h1>
+
+<p>bootdisk 基本上是放在軟碟片內的一個小型而自足的 Linux 系統。它必須執行許多和完整又 full-size 的 Linux 系統相同的功能。在建造 bootdisk 之前，你應該了解基本的 Linux 開機流程。我們在此只做基本的介紹，但已足夠讓你了解本文之後的內容。很多細節與替代選項已被省略。</p>
+<h2><a name="ss3.1" id="ss3.1"></a>3.1 開機流程</h2>
+
+<p>所有 PC 系統開始開機流程都是藉由執行 ROM (明確地說，就是 BIOS) 中的程式，從開機磁碟機的第 0 磁區、第 0 磁柱載入可供開機的磁區。開機磁碟機通常是第一台軟碟機 (如 DOS 的 <code>A槽 </code> 與 Linux 的 /dev/fd0)。接著 BIOS 會嘗試執行這個磁區。在大部分可開機的 disks 上，第 0 磁區、第 0 磁柱包含以下兩者之一：</p>
+<ul>
+<li> 開機載入程式 (boot loader ，如 LILO)的程式碼，它會找出 kernel 所在位置，接著載入並執行它以啟動開機程序。
+</li>
+<li> 一個作業系統 kernel 的開頭 (start) ，諸如 Linux 。</li>
+</ul>
+
+<p>如果一個 Linux kernel 已利用 raw-copied 的方式置入一張磁片內，那麼這張磁片的第一個磁區就是 Linux kernel 本身的第一個磁區。這個磁區將從開機設備載入 kernel 的剩餘部分以繼續開機流程。</p>
+<p>一旦 kernel 載入完畢，一些基本設備也完成初始化 (initialization) 。然後系統將嘗試從某個設備載入以及掛上 (mount) <b>root filesystem</b> 。所謂的 root filesystem 只是一個被掛上當作 ``/'' 目錄的 filesystem 。 kernel 必須被告知可從哪裡找到此 root filesystem ；如果 kernel 在那裡找不到一個可載入的影像檔 (image) ，系統就會停止運作 (halt) 。</p>
+<p>在某些開機情況下 -- 常常是從軟碟片開機 -- root filesystem 會被載入到 <b>ramdisk</b> 中，也就是被系統所存取的 RAM ，如同系統存取磁碟一般。為何系統會載入到 ramdisk 的理由有二。第一， RAM 是幾個比軟碟片快的有序磁性體，所以系統在其上運作較快； 第二， kernel 可以從軟碟片載入一個 <b>壓縮的filesystem</b> 並且在解壓縮後放到 ramdisk 上，如此可讓更多的檔案儲存在軟碟片上。</p>
+<p>一旦 root filesystem 被載入並掛上，你會看到一行訊息像：</p>
+<pre class="sample">
+        VFS: Mounted root (ext2 filesystem) readonly.
+</pre>
+
+<p>此時系統會在 root filesystem 上找到 <code>init</code> 程式 ( 在 /bin or /sbin) 並執行它。 init 讀取它的組態設定檔 (configuration file) /etc/inittab ，找出檔中標明 <code>sysinit</code> 的一行，並執行被指名的script。這個 <code>sysinit</code> script 通常類似 /etc/rc 或 /etc/init.d/boot 這兩個檔。這個 script 是一組建立基本系統服務的 shell 指令，諸如：</p>
+<ul>
+<li> 對所有磁碟執行 <code>fsck</code>,</li>
+<li> 載入必備的核心模組 (modules),</li>
+<li> 啟動 swapping,</li>
+<li> 進行網路初始化,</li>
+<li> 將指定在 <code>fstab</code> 內的磁碟掛上。</li>
+</ul>
+
+<p>這個 script 常會啟動其它各種不同的 scripts 執行模組的 (modular) 初始化。舉例來說，在一般的 SysVinit 架構下， /etc/rc.d/ 這個目錄包含一個複雜的子目錄架構，其中的檔案指出如何啟動與關閉大部分的系統服務。然而，在一張 bootdisk 上，這樣的 sysinit script 常常是非常簡單的。</p>
+<p>當 sysinit script 結束後，控制權回到 <code>init</code> 上，接著進入 <em> 預設的runlevel</em> ，此預設的 runlevel 以 <code>initdefault</code> 這個關鍵字被指定在 inittab 內。此 runlevel line 通常指定一個像  <code>getty</code> 的程式，這個程式負責處理 console 與 ttys 之間的通訊。事實上，就是 <code>getty</code> 程式在螢幕上印出熟悉的 ``<code>login:</code>'' 提示。 <code>getty</code> 程式並轉而呼叫 <code>login</code> 程式以處理 login 是否有效，並於之後建立 user sessions 。</p>
+
+<h2><a name="ss3.2" id="ss3.2"></a>3.2 磁碟類型</h2>
+
+
+<p>如果你已了解基本的開機流程，那麼我們現在可以定義所涉及到之各種不同類型的磁碟。我們將磁碟分類成四種。本文與在此討論所稱之 ``磁碟 (disk)'' 除非有特別聲明，否則都是指軟碟片，雖然絕大部分的討論也同樣可應用在硬碟上。</p>
+<dl>
+
+<dt><b>boot</b></dt>
+<dd><p>一張包含可被啟動之 kernel 的磁片。這張磁片被用來啟動 kernel ，接著這個 kernel 會載入在另一張磁片上的 root file system 。在 bootdisk 上的 kernel 通常必須被告知到哪去找它的 root filesystem 。</p>
+<p>bootdisk 常會從另一張磁片載入一個 root filesystem ，但是相反地， bootdisk 也有可能被設定成載入硬碟的 root filesystem 。一般在測試新 kernel 時會這樣做 (事實上， ``<code>make zdisk</code>'' 會自動地從 kernel 的原始碼製造出這樣的一張 bootdisk 。</p>
+
+</dd>
+<dt><b>root</b></dt>
+<dd><p>在其 filesystem 上包含運作 Linux 系統必備檔案的一張磁片。這張磁片不一定有 kernel 或 boot loader 。 
+
+</p>
+<p>一旦 kernel 被啟動後， root disk 就可以獨立於其它磁片來運作系統。通常 root disk 的內容會被自動地 copy 到 RAM 而成為 ramdisk 。這使得 root disk 的存取變得更為快速，而且可釋放一台軟碟機給工具程式磁片 (utility disk)。</p>
+
+</dd>
+<dt><b>boot/root</b></dt>
+<dd><p>一張同時包含 kernel 與 root filesystem 的磁片。換句話說，這張磁片包含不用硬碟而能啟動與運作 Linux 系統之所有必備項目。這種磁片的優點在於簡單輕便 -- 每一項必備的東西都放在同一張磁片上。然而，隨著檔案 size 的逐漸增加，讓所有東西都存在同一張磁片上就越顯困難，甚至利用壓縮也一樣。</p>
+
+</dd>
+<dt><b>utility</b></dt>
+<dd><p>一張包含 filesystem 的磁片，但是並不是要掛上做為 root file system 來使用。這張磁片可視為額外的資料片 (data disk) 。你可以利用這種磁片把原本過多而不能放在 root disk 上的工具程式放在其上。
+</p></dd>
+
+</dl>
+
+<p>一般而言，當我們提及 ``建造一張 bootdisk'' 時，是指造出 boot ( kernel ) 與 root (files) 這兩個部分。這兩個部分不是放在一起 (一張單張的boot/root disk) ，就是兩張分開的磁片 (boot + root disks) 。對救援磁片而言最具彈性之做法，可能是使用兩張分開的 boot 與 root 磁片，再加上一張或多張的 utility diskettes 以處理多出來的東西。</p>
+
+<hr />
+<table >
+  <tr>
+    <td class="BtdL"> <a href="Bootdisk-HOWTO-2.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="BtdC"> <a href="index.html" accesskey="H">目錄(H)</a> </td>
+    <td class="BtdR"> <a href="Bootdisk-HOWTO-4.html">下一頁(N)</a> </td>
+  </tr>
+  <tr>
+    <td class="BtdL">簡介</td>
+    <td class="BtdC"><a href="Bootdisk-HOWTO-3.html"  accesskey="T">到頂層(T)</a></td>
+    <td class="BtdR">建立一個root filesystem</td>
+  </tr>
+</table>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img class="ImgLogo" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" title="網路內容分級協會" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

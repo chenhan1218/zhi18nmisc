@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+ 
+ <title>Zip Drive Mini-HOWTO: 使用 ZIP 磁碟機</title>
+ <link href="ZIP-Drive-7.html" rel="next" title="7. 性能表現" />
+ <link href="ZIP-Drive-5.html" rel="previous" title="5. 安裝過程故障排除" />
+  <link href="index.html" rel="start" />
+ <link href="index.html#content" rel="contents" />
+ <link href="ZIP-Drive-1.html" rel="chapter" title="1.簡介" />
+ <link href="ZIP-Drive-2.html" rel="chapter" title="2.快速上手指引" />
+ <link href="ZIP-Drive-3.html" rel="chapter" title="3.建立一個能使用 ZIP 磁碟機的核心" />
+ <link href="ZIP-Drive-4.html" rel="chapter" title="4.ZIP 磁碟機" />
+ <link href="ZIP-Drive-5.html" rel="chapter" title="5.安裝過程故障排除 " />
+ <link href="ZIP-Drive-6.html" rel="chapter" title="6.使用 ZIP 磁碟機" />
+ <link href="ZIP-Drive-7.html" rel="chapter" title="7.性能表現 " />
+ <link href="ZIP-Drive-8.html" rel="chapter" title="8.常見問答集" />
+ <link href="ZIP-Drive-9.html" rel="chapter" title="9.取得更多最新資訊 " />
+ <link href="http://www.tldp.org/HOWTO/mini/ZIP-Drive.html" rel="alternate" title="原版" />
+ <link href="../../style.css" rel="stylesheet" type="text/css" />
+ <meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+ <link href="ZIP-Drive-6.html#ss6.1" rel="section" title="6.1 Fdisk, mke2fs, mount, 等等" />
+ <link href="ZIP-Drive-6.html#ss6.2" rel="section" title="6.2 使用一片已經用 DOS 格式化好的磁片" />
+ <link href="ZIP-Drive-6.html#ss6.3" rel="section" title="6.3 重新將磁片格式化成 Linux 格式的磁片" />
+ <link href="ZIP-Drive-6.html#ss6.4" rel="section" title="6.4 fstab 檔" />
+ <link href="ZIP-Drive-6.html#ss6.5" rel="section" title="6.5 ZIP Tools 工具磁片" />
+ <link href="ZIP-Drive.rdf" rel="meta" title="各章節的說明資訊" />
+</head> <body> 
+
+<table
+
+
+
+
+>
+  <tr
+>
+    <th
+colspan="3" class="HdTitle"
+>Mini
+      HOWTO：Zip Drive</th>
+  </tr
+>
+  <tr
+>
+    <td class="TtdL"
+><a href="ZIP-Drive-5.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="TtdC"
+></td
+>
+    <td class="TtdR"
+><a href="ZIP-Drive-7.html" accesskey="N">下一頁(N)</a></td
+>
+  </tr
+>
+</table
+>
+<hr />
+<h1><a name="s6" id="s6">6.</a> 使用 ZIP 磁碟機</h1>
+
+<p>如果你已經建立好所有需要的元件，那麼核心應該能在開機時辨識出你的配接卡以及磁碟機。
+如果你是用可載入式模組的方式建立驅動程式的話，接下來的討論僅適用於模組以載入後的情形。</p>
+<p>在大部分情形下，SCSI 和 並列埠版本的磁碟機表現相同，除了並列埠版本的比較慢以外。</p>
+
+
+<h2><a name="ss6.1" id="ss6.1">6.1</a> Fdisk, mke2fs, mount, 等等
+</h2>
+
+<p>一旦你知道你的 ZIP 磁碟機所屬的磁碟裝置名稱，你就已經準備就緒。
+你能夠使用 Linux 的磁碟管理命令來對該磁碟裝置進行操作。
+<code>fdisk</code>（或者 <code>cfdisk</code>）是用來規劃磁碟的分割表。
+<code>mke2fs</code> 能用來將分割區格式化（Format）成 ext2 檔案系統 -- 這是 Linux 下最常使用的檔案系統。
+<code>mount</code> 則是用來將格式化好的分割區連接到你的目錄體系中。</p>
+<p>如果你對這些工具並不熟悉，你應該研讀一下這些工具的手冊。
+請小心注意 <code>fdisk</code> 程式現在有許多十分不一樣的版本 - 請務必小心。</p>
+<p>我將陳述兩個常見的案例。</p>
+
+<h2><a name="ss6.2" id="ss6.2">6.2</a> 使用一片已經用 DOS 格式化好的磁片
+</h2>
+
+<p>如果你有一張原本由 Iomega 的工具程式格式化成 DOS 檔案結構的 ZIP 磁片，那麼掃瞄分割表時應該會發現磁片上有一個分割區 <code>/dev/sda4</code>。</p>
+<p>你應該先建立一個用來掛載 ZIP 磁片的目錄，例如 <code>/zip</code>，然後以 MS-DOS 檔案系統格式將磁片掛載起來：</p>
+<pre class="sample">
+       mkdir /zip
+       mount -t vfat /dev/sda4 /zip
+</pre>
+
+<p>你也可以用 msdos 來取代上面的 vfat。兩者的差別在於， vfat 支援長檔名，而 msdos 不支援。
+現在，磁片上的檔案應該會出現在 /zip 目錄下。
+當磁片被掛載了，你將無法由磁碟機中將磁片退出。
+當你完成了對磁片的存取，你可以卸載磁片來切斷磁片和目錄體系的連接，並取出磁片：</p>
+<pre class="sample">
+       umount /zip
+</pre>
+
+<p>一旦你已經建好 /zip 這個掛載點 - 你不需要再建立一次。
+所以稍後你能再將另一片磁片掛載在那兒。</p>
+
+<h2><a name="ss6.3" id="ss6.3">6.3</a> 重新將磁片格式化成 Linux 格式的磁片
+</h2>
+
+
+<p>如果你想要消去 ZIP 磁片上原有的檔案系統，並建立 Linux 的檔案系統，你應該使用 fdisk 來重新規劃整片磁片的分割區：</p>
+<pre class="sample">
+       fdisk /dev/sda
+</pre>
+
+<p>並且刪除所有已存在的分割區（用 fdisk 的 <code>d</code> 命令）。
+接著，用 <code>n</code> 命令建立一個新的分割區，選擇主分割區號碼 1 ，用 <code>w</code> 命令將分割表寫到磁片上，然後用 <code>q</code> 命令離開 fdisk 程式。</p>
+<p>接著格式化分割區：</p>
+<pre class="sample">
+       mke2fs /dev/sda1
+</pre>
+
+<p>（數字 1 就是你在 <code>fdisk</code> 中給定該分割區的分割區編號）。
+現在，你可以將磁片掛載起來：</p>
+<pre class="sample">
+       mount -t ext2 /dev/sda1 /zip
+</pre>
+
+<p>（再次使用我們之前建立的掛載點）。</p>
+
+<h2><a name="ss6.4" id="ss6.4">6.4</a> fstab 檔
+</h2>
+
+<p>/etc/fstab 能讓你對 mount 命令進行設定。
+我希望系統上登錄的任何使用者都能掛載及寫入 ZIP 磁片，因此我在 fstab 的檔案結尾加了兩列像這樣的內容：</p>
+<pre class="sample">/dev/sda1 /zip    ext2 noauto,rw,user,nosuid,sync
+/dev/sda4 /zipdos vfat noauto,rw,user,nosuid,sync,mode=0777
+   
+</pre>
+<p>這裡假設你有一個 /zip 目錄和一個 /zipdos 目錄。
+如果你要所有使用者都能夠讀寫 ZIP 磁片，請確定你設定了適當的存取權限，例如 <b>chmod 666 /zip</b>。
+你必須以 root 的身份執行 chmod 命令。
+上面 fstab 的內容也假設了你的 DOS 格式 ZIP 磁片的分割區編號是 4 （在我的系統是 sda4），以及 ext2（Linux）格式的磁片分割區編號是 1（sda1）。
+你可以用 <b>man mount</b> 找到更多 fstab 檔案的設定選項資料。</p>
+<p>如果你在 fstab 檔案中加入上面兩列設定，那麼你可以用 <b> mount /zipdos </b> 掛載 DOS 格式磁片。
+如果你要掛載 Linux ext2 格式的磁片，那麼命令是 <b> mount /zip </b>。</p>
+
+
+<h2><a name="ss6.5">6.5</a> ZIP Tools 工具磁片
+</h2>
+
+
+<p>如果你想使用隨 ZIP 磁碟機附贈的磁片，還有一點額外的工作要做。
+這些磁片在出貨時，軟體控制的寫入保護功能是被開啟的。
+大部分的人在要在 Linux 下使用 ZIP 磁片時，會先在 DOS 下將寫入保護功能關閉。
+Linux 無法存取被寫入保護鎖定的磁片，所以必須先用 Iomega 的工具程式來解除鎖定。</p>
+<p>相信在 Linux 下，能用來管理磁片的寫入保護以及其他功能的程式，將在不久的將來發展完成<code><b>[譯者註]</b></code>。</p>
+<p><b><code>[譯者註] 現在已經有一些工具程式可以用來控制 ZIP 磁片的各種狀態，計有 mtools 中的 mzip(1) ，以及現在由 Mirko Kraft 所發展維護的 ziptool 等等。</code></b></p>
+
+<hr/>
+<table
+
+
+
+
+>
+  <tr
+>
+    <td class="BtdL"
+><a href="ZIP-Drive-5.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="BtdC"
+><a href="index.html" accesskey="H">目錄(H)</a></td
+>
+    <td class="BtdR"
+><a
+href="ZIP-Drive-7.html"
+>下一頁(N)</a
+></td
+>
+  </tr
+>
+  <tr
+>
+    <td class="BtdL"
+>安裝過程故障排除</td
+>
+    <td class="BtdC"
+><a href="ZIP-Drive-6.html" accesskey="T">到頂層(T)</a></td
+>
+    <td class="BtdR"
+>性能表現 </td
+>
+  </tr
+>
+</table
+>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" width="88" height="31" style="border:0;width:88px;height:31px"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img style="border:0;width:88px;height:31px" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img style="border:0;width:88px;height:32px" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" style="border:0" alt="表示該網頁支援資源描述架構"/></a></div>
+</body>
+</html>

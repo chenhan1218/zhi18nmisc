@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+ 
+ <title>Mini HOWTO：Linux kerneld</title>
+ <meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+ <link href="../../style.css" rel="stylesheet" type="text/css" />
+ <link href="http://tldp.org/HOWTO/mini/Kerneld/index.html" rel="alternate" title="原版" />
+</head> <body> 
+<table    >
+  <tr>
+    <th colspan="3" class="HdTitle">Mini
+      HOWTO：Linux kerneld</th>
+  </tr>
+  <tr>
+    <td class="TtdL"> <a href="../Upgrade/Upgrade-10.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="TtdC"></td>
+    <td class="TtdR"> <a href="../Upgrade/Upgrade-12.html" accesskey="N">下一頁(N)</a> </td>
+  </tr>
+</table>
+<hr />
+<h1><a name="special-devs" id="special-devs"></a>5.
+  需要特別設定的設備</h1>
+<p>部分設備不只要使用代碼 (aliasing)，還要其他設定，如模組的設備 (a device to a module)。 </p>
+<ul>
+  <li>主數碼 10 的字元設備：<a href="#miscdevs">雜項設備
+      (The miscellaneous devices)</a> </li>
+  <li><a href="#scsidevs">SCSI 設備</a> </li>
+  <li><a href="#pre_post">需特別初始化 (initialization)
+      的設備</a> </li>
+</ul>
+<p><br />
+</p>
+<h3><a name="miscdevs" id="miscdevs"></a>char-major-10：滑鼠、看門狗和隨機數
+  (Mice, watchdogs and randomness)</h3>
+<p>大多數硬件設備都以主數碼分辨，例如 ftape 是 char-major-27。但如果你看看在 /dev 中主數碼是 10 的字元設備，你會見到一堆毫無關連的設備，包括：</p>
+<ul>
+  <li>各種各樣的滑鼠（bus mice, PS/2 mice）</li>
+  <li>看門狗設備 (watchdog devices) </li>
+  <li>核心的 'random' 設備</li>
+  <li>APM 介面 (Advanced Power Management interface) </li>
+</ul>
+<p>很明顯，這些設備是由多個不同的模組控制的。所以，這些<b>雜項設備</b>的
+  kerneld 設定用到主號碼<b>及</b>副號碼 (the major number and
+  the minor number)：</p>
+<pre class="sample"><tt>        alias char-major-10-1 psaux     # For PS/2 mouse
+        alias char-major-10-130 wdt     # For WDT watchdog</tt>
+</pre>
+<p>要用到此特性，你需要一個 1.3.82 或之後的核心部分。較舊的核心不會把副號碼傳給 kerneld，因此，kerneld 不能找出所需要的雜項設備。<br />
+</p>
+<h3><a name="scsidevs" id="scsidevs"></a>載入
+  SCSI 驅動程式： scsi_hostadapter 項目</h3>
+<p>SCSI 設備包括一個 SCSI 配接卡 (SCSI host adapter, 例如 Adaptec 1542)及一個所需設備（如硬碟機
+  (hard disk)、光碟機 (CD-ROM) 或磁帶機 (tape-drive)）的驅動程式。這全都可以模組來載入。但是，當你想存取連接到 Adaptec
+  卡的光碟機時，核心和 kerneld 只知道它需要載入 sr_mod 模組來支援那 SCSI 光碟機─它不知道那光碟機連接到什麼 SCSI 控制器 (SCSI
+  controller)，所以不知道載入什麼模組來支援那光碟機。</p>
+<p>要解決這問題，你可加一個你的 SCSI 驅動程式的項目到你的 /etc/conf.modules 中，籍以告訴 kerneld 如何在眾多
+  SCSI 控制器模組中選擇：</p>
+<pre class="sample"><tt>        alias scd0 sr_mod               # sr_mod for SCSI CD-ROM's ...
+        alias scsi_hostadapter aha1542  # ... need the Adaptec driver</tt>
+</pre>
+<p>這只適用於 1.3.82 或之後的核心。</p>
+<p>這方法只當你只用一個 SCSI 控制器時適用。如果你有超過一個，難度就高一點。</p>
+<p>一般來說，如果已經載入了一個配接器，你不能再叫 kerneld 載入另一個。你可把兩個都編譯到核心中（不用模組），或自己把模組載入。</p>
+<p>事實上，<i>有</i>一個方法可使 kerneld 載入多個 SCSI 驅動程式。James Tsiao 有以下提議：</p>
+<pre class="sample"><i>
+  只要你親手建立 modules.dep 的倚賴 (dependency)，你可很輕易使
+  得 kerneld 載入第二個 SCSI 驅動程式。你只需一個類似的項目：
+  
+     /lib/modules/2.0.30/scsi/st.o: /lib/modules/2.0.30/scsi/aha1542.o
+     
+  來使 kerneld 在載入 st.o 前先載入 aha1542.o。我家中的電腦就使用
+  了幾乎相同的設定，對我所有二級 SCSI 設備 (secondary scsi devices)，
+  包括磁帶機、光碟機和其他一般的 SCSI 設備都沒問題。缺點是
+  'depmod -a' 不能自動查出這些倚賴，所以你要自己加入這些，而且不
+  可在開機時執行 'depmod -a'。但只要設定好了，kerneld 就能自動載入
+  aha1542.o。</i></pre>
+<p>你要知道這技考只當你有不同種類的 SCSI 設備接駁在兩個控制器時才有用，例如，把硬碟駁在其中一個，而把光碟機、磁帶或其他 SCSI 駁到另一個。</p>
+<br />
+<h3><a name="pre_post" id="pre_post"></a>要載入超過一個模組時：“post-install”項目</h3>
+<p>有時，只把模組載入不足以使設備運作。例如，如果你把音效卡編譯為模組，你也會希望調整至適當音量。問題題你的設定在下次載入時便會失去。這裡是由
+  Ben Galliart (bgallia@luc.edu) 提供的秘訣：</p>
+<pre class="sample"><i>  最終的解決方法需要安裝 setmix-0.1
+   ( ftp://sunsite.unc.edu/pub/Linux/apps/sound/mixers/setmix-0.1.tar.gz )
+
+  之後把以下一行加到我的 /etc/conf.modules：
+       post-install sound /usr/local/bin/setmix -f /etc/volume.conf</i>
+</pre>
+<p>這樣，當音效的模組載入後，kerneld 會執行 'post-install sound' 項目的指令。因此該模組會被 '/usr/local/bin/setmix
+  -f /etc/volume.conf 指令設定好。 </p>
+<p>這方法對其他模組也有用，例如 lp 模組可籍以下一句用 tunelp 程式設定好：</p>
+<pre class="sample"><tt>        post-install lp tunelp &lt;options&gt;</tt>
+</pre>
+<p>只有 1.3.69f 版或之後的 kerneld 才支援這些選項。</p>
+<p><b>注意</b>: ：此 mini-HOWTO 的較舊版本曾提及一個 &quot;pre-remove&quot; 選項，讓你可在
+  kerneld 卸下一個模組時執行一個指令。但這從未成功，因此並不鼓勵使用。這個選項多數會在未來版本的 kerneld 中消失。所有有關模組 &quot;設定&quot; 的事情都在改變中，在你看到這文件時，可能已有所不同了。</p>
+<h1>&nbsp;</h1>
+<hr />
+<table
+
+
+
+
+>
+  <tr
+>
+    <td class="BtdL"
+><a href="../Upgrade/Upgrade-10.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="BtdC"
+><a href="../Upgrade/index.html" accesskey="H">目錄(H)</a></td
+>
+    <td class="BtdR"
+><a
+href="../Upgrade/Upgrade-12.html"
+>下一頁(N)</a
+></td
+>
+  </tr
+>
+  <tr
+>
+    <td class="BtdL"
+>禁止簽入並備份/root及/home以下的檔案。</td
+>
+    <td class="BtdC"
+><a href="../Upgrade/Upgrade-11.html" accesskey="T">到頂層(T)</a></td
+>
+    <td class="BtdR"
+>用fdisk刪除linux分割區並重建它們。</td
+>
+  </tr
+>
+</table
+>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img class="ImgLogo" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" title="網路內容分級協會" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

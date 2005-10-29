@@ -1,0 +1,333 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Exploring TCP/IP with TCPdump and Tethereal</title>
+<link href="../../LGStyle.css" rel="stylesheet" type="text/css" />
+<link href="../../../style.css" rel="stylesheet" type="text/css" />
+</head>
+
+<body>
+<div id="GazetteLogo"><a href="http://www.linuxgazette.com/"><img src="../../gx/lglogo_200x41.png" alt="Linux Gazette 雜誌" width="200" height="41"  longdesc="../linuxgaette.rdf" /></a><br />
+  <a href="http://www.linuxgazette.com/copying.html">Copyright</a>&copy;1996-2003<br />
+  Specialized Systems Consultants, Inc.</div>
+<div class="CLDPAddr">CLDP</div>
+<div class="CLDPFull">Chinese Linux Documentation Project</div>
+<hr />
+<p class="BarTop"><a
+        href="../../../index.html" title="連到首頁" hreflang="zh-TW" accesskey="H">首頁(H)</a>｜<a
+        href="../../../howto" title="連到和 HOWTO  相關資訊" hreflang="zh-TW" accesskey="T">HOWTO(T)</a>｜<a
+        href="../../../guide" title="連到和指南相關的資訊" hreflang="zh-TW" accesskey="G">指南(G)</a>｜<a
+        href="../../../faq" title="連到和問答集相關的資訊" hreflang="zh-TW" accesskey="F">FAQ(F)</a>｜<a
+        href="../../../man" title="連到和手冊頁有關的資訊" hreflang="zh-TW" accesskey="M">手冊頁(M)</a>｜<a
+        href="../../index.html" title="Linux電子報為一個月發行一期的雜誌" hreflang="zh-TW" accesskey="L">Linux電子報(L)</a>｜<a
+        href="../../../lf" title="LinuxFocus 為兩個月發行一期的雜誌" hreflang="zh-TW" accesskey="S">LinuxFocus(S)</a></p>
+<hr />
+<div class="DivCover"> 
+  <div class="TitleHead">Exploring TCP/IP with TCPdump and Tethereal <br />
+	By <a href="../authors/vinayak.html">Vinayak Hegde</a> </div>
+  <div> 
+    <p class="BarTop"><a href="../../index.html">Linux電子報首頁</a>｜<a href="../../temp/sample/index.html">目錄</a>｜<a href="../../faq/index.html">FAQ</a><br />
+      讓 Linux 更加有趣呦！</p>
+  </div>
+  <div> 
+	<h2>目錄</h2>
+  </div>
+  <div> 
+	<ol>
+	  <li><a href="#ss1">The shortest introduction to TCP/IP </a></li>
+	  <li><a href="#ss2">TCPdump and Tethereal</a></li>
+	  <li><a href="#ss3">The TCP and IP packet format </a></li>
+	  <li><a href="#ss4">Examples of Packet capture using TCPdump and Tethereal 
+		</a><br />
+		4.1 <a href="#ss4.1">Example #1</a> <br />
+		4.2 <a href="#ss4.2">Example #2</a><br />
+		4.3 <a href="#ss4.3">Example #3</a><br />
+		4.4 <a href="#ss4.4">Example #4</a> </li>
+	  <li><a href="#ss5">Final Words </a></li>
+	  <li><a href="#ss6">資源</a></li>
+	  <li><a href="#ss7">作者介紹</a></li>
+	</ol>
+  </div>
+  <div> 
+	<h2><a name="ss1" id="ss1"></a>1. The shortest introduction to TCP/IP </h2>
+  </div>
+  <div> 
+	<p>TCP/IP has become the de facto standard protocol for communication between 
+	  computers. IP (Internet Protocol) provides functionality at the network 
+	  layer (addressing and routing) while TCP (Transmission Control Protocol) 
+	  provides (virtual) end-to-end connectivity. The TCP/IP family includes a 
+	  host of other useful protocols such as ICMP (Internet Control Message Protocol), 
+	  IGMP (Internet Group management protocol) and UDP (User Datagram Protocol). 
+	  An overwhelming majority of today's networks use TCP/IP. Almost every other 
+	  application today incorporates some kind of a network functionality hence 
+	  it has become necessary for every programmer to have at least a working 
+	  knowledge of TCP/IP. </p>
+	<p align="justify"> Communication between computers using TCP/IP takes place 
+	  through the exchange of packets. A packet is a PDU (Protocol Data Unit) 
+	  at the IP layer. The PDU at the TCP layer is called a segment while a PDU 
+	  at the data-link layer (such as Ethernet) is called a frame. However the 
+	  term packet is generically used to describe the data unit that is exchanged 
+	  between TCP/IP layers as well as between two computers. </p>
+	<p align="justify"> This is how an Ethernet frame looks: </p>
+	<table bgcolor="#AAFFFF">
+	  <tr>
+		<td> <pre>
+
+	+------------------------------------------------------------------+	
+	|	  |		|		|		|	   |	
+	| Ethernet|     IP  	|     TCP	| Encapsulated	| Ethernet |	
+	| Header  |    Header	|    Header	|    Data	| Trailer  |	
+	|         |		|		|		|  (FCS)   |	
+	+------------------------------------------------------------------+	
+		  <- 20 bytes -> <- 40 bytes ->					
+					
+	  	  <---------- max length = 1500 bytes ---------->
+	
+			FCS stands for Frame Check Sequence.
+	
+</pre> </td>
+	  </tr>
+	</table>
+  </div>
+  <div> 
+	<h2><a name="ss2" id="ss2"></a>2. TCPdump and Tethereal</h2>
+  </div>
+  <div> 
+	<p>TCPdump is a utility that allows a user to intercept and capture packets 
+	  passing through a network interface. This is an extremely nifty little utility 
+	  which can help a programmer to troubleshoot network applications. Because 
+	  this utility captures all the packets received by a network interface, it 
+	  can be used for used for unlawful purposes as well. </p>
+	<p align="justify"> Normally only the packets which are addressed to a network 
+	  interface are intercepted and passed onto the upper layers of the TCP/IP 
+	  protocol layer stack. Other packets which are not addressed to the interface 
+	  are ignored. In Promiscuous mode, the packets which are not intended to 
+	  be received by the interface are also intercepted and passed onto the higher 
+	  levels of the protocol stack. TCPdump works by putting the network interface 
+	  into promiscuous mode. </p>
+	<p align="justify"> TCPdump uses the libpcap (packet capture library) which 
+	  is freely available. The libpcap library is versatile and works with BSD 
+	  packet filter, the SVR4 Data-link Provider Interface (DLPI) and the Linux 
+	  SOCK_PACKET interface. Tethereal which is the command line version of the 
+	  popular network traffic analyser tool ethereal also uses pcap packet capture 
+	  library. Tethereal is a powerful tool for analysing network traffic and 
+	  also provides more facilities for decoding packets as compared to TCPdump. 
+	  Ethereal the GUI tool for analysing packets is extremely good and one can 
+	  see the different flags and options which have been used in a hierarchical 
+	  way. The best feature of ethereal is it can piece together the different 
+	  fragments of the the communication between two computers and show the whole 
+	  ASCII text that was exchanged during the conversation. </p>
+
+</div>
+  <div> 
+	<h2><a name="ss3" id="ss3"></a>3. The TCP and IP packet format </h2>
+  </div>
+  <div> 
+	<p>ASCII representation from <a href="http://www.faqs.org/rfcs/rfc791.html"> 
+	  RFC 791 </a> </p>
+	<table>
+	  <tr>
+		<td bgcolor="#AAFFFF"> <pre>
+
+    0                   1                   2                   3   
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 	    
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+	
+   |Version|  IHL  |Type of Service|          Total Length         |	
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+	
+   |         Identification        |Flags|      Fragment Offset    |	
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+	
+   |  Time to Live |    Protocol   |         Header Checksum       |	
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+	
+   |                       Source Address                          |	
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+	
+   |                    Destination Address                        |	
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+	
+   |                    Options                    |    Padding    |	
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+	
+									
+			IP Header Format				
+
+</pre> </td>
+	  </tr>
+	</table>
+	<p></p>
+	<p align="justify"> ASCII representation from <a href="http://www.faqs.org/rfcs/rfc793.html"> 
+	  RFC 793 </a> </p>
+	<table>
+	  <tr>
+		<td bgcolor="#AAFFFF"> <pre>
+
+    0                   1                   2                   3   	
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1	 
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+      
+   |          Source Port          |       Destination Port        |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                        Sequence Number                        |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                    Acknowledgment Number                      |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |  Data |           |U|A|P|R|S|F|                               |
+   | Offset| Reserved  |R|C|S|S|Y|I|            Window             |
+   |       |           |G|K|H|T|N|N|                               |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |           Checksum            |         Urgent Pointer        |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                    Options                    |    Padding    |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                             data                              |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+                            TCP Header Format 
+
+</pre> </td>
+	  </tr>
+	</table>
+  </div>
+  <div> 
+	<h2><a name="ss4" id="ss4"></a>4. Examples of Packet capture using TCPdump 
+	  and Tethereal </h2>
+  </div>
+  <div> 
+	<p>You can experiment with TCPdump on any interface through which we can conduct 
+	  network transactions. To list the different interfaces connected to your 
+	  computer, you can give the command </p>
+	<pre class="sample">
+#ifconfig -a				</pre>
+	<p>This will list out all the network interfaces connected to your system 
+	  including the loopback interface. If you are connected to the net using 
+	  a dialup line, you can also use the interface ppp0 for experimenting and 
+	  debugging your applications using TCPdump. </p>
+	<h3 align="justify"> <a name="ss4.1" id="ss4.1"></a>4.1 Example #1 </h3>
+	<p align="justify">This is a snippet (from the file tcpdumpppp) of the captured 
+	  packet using a dialup line (PPP). The -vvv flag tells tcpdump to be very 
+	  very verbose. The other switches for controlling verbosity are -v and -vv. 
+	</p>
+	<pre class="sample">
+#tcpdump -vvv &gt; tcpdumpppp		
+tcpdump: listening on ppp0		</pre>
+	<p>The capturing of packets is stopped by pressing CTRL-C. </p>
+	<pre class="sample">15:57:58.181078 207.219.33.101.http &gt; 203.94.236.47.33003: P 1:1399(1398) ack 736 win 31856  (DF) [tos 0x10]  (ttl 38, id 28827, len 1450)</pre>
+	<p>Some of the information can be interpreted from the about packet dump </p>
+	<ul>
+	  <li> The protocol used is http (port 80 has been decoded as http). </li>
+	  <li> The local IP address assigned to me by my ISP after dialing up is 203.94.236.47 
+		(this can be verified by grepping in /var/log/messages </li>
+	  <li> The http server's IP is 207.219.33.101 (IP have been changed for security 
+		reasons). </li>
+	  <li> The time-to-live is 38 hops. </li>
+	  <li> The Don't Fragment (bit) has been set informing the intermediate routers 
+		not to fragment the datagram. </li>
+	  <li> The ACK flag has been set (ack number 736 - piggybacking). </li>
+	  <li> The window size is 31856. </li>
+	  <li> The port on the receiver end is 33003 </li>
+	</ul>
+	<h3 align="justify"> <a name="ss4.2" id="ss4.2"></a>4.2 Example #2 </h3>
+	<p align="justify">This packet dump was captured from a NIC (interface denoted 
+	  by eth0) </p>
+	<pre class="sample" align="justify">#tcpdump -a -i eth0	</pre>
+	<pre class="sample">
+
+06:21:11.414863 &gt; pca03.nt.co.in.ssh &gt; pcc03.mum.nt.co.in.4944: P 252143283:252143331(48) ack 2638534821 win 62780 (DF) [tos 0x10] 
+
+			  E^P ^@ X ....  @^@  @^F .. N .... ....
+			 .... .... ^@^V ^S P ^O^G  f.. .. D ....
+			  P^X .. < .. t ^@^@  k +  Y^Q .... .. (
+			  ^..  )^G  c 3 ^\ v  t.. ..^G ^J.. .. t
+			  9.. .. -  F.. ....  6..  /.. ....  9..
+			  [.. ....  G.. .. d
+</pre>
+	<p>Here we are telling TCPdump to resolve IPs to domain names if possible 
+	  (-a) and explicitly asking it to capture packets on interface eth0. If we 
+	  don't give the (-i) option TCPdump itself searches for the interfaces and 
+	  then starts capturing packets arriving on them. Some of the information 
+	  that can be gleamed from the above packet dump is:- </p>
+	<ul>
+	  <li> The ssh port (22) has been used on the server side. This can be seen 
+		from the /etc/services file. </li>
+	  <li> One of the bits of Type of Service (TOS) has been set so the QoS enabled 
+		networks can give the requested TOS to the packet. </li>
+	  <li> The window has been advertised as 62780. </li>
+	  <li> The length of the packet is 48 bytes. </li>
+	</ul>
+	<h3> <a name="ss4.3" id="ss4.3"></a>4.3 Example #3 </h3>
+	<p>The following snippet shows a packet dump of SYN (connection requesting) 
+	  packet. The packet dump was taken on Ethernet. </p>
+	<pre class="sample">
+15:57:56.074928 203.94.236.47.33003 &gt; 216.239.33.101.http: S [tcp sum ok] 937694521:937694521(0) win 5840 <mss 1460,sackOK,timestamp 2801712 0,nop,wscale 0> (DF) (ttl 64, id 54537, len 60)</pre>
+	<p>The following information can be interpreted from the above dump:- </p>
+	<ul>
+	  <li> The Header checksum is correct ([tcp sum ok]) </li>
+	  <li> This is a SYN packet (denoted by S). </li>
+	  <li> The amount of data encapsulated by tcp segment is 0. </li>
+	  <li> The window scaling option has been set to null. </li>
+	  <li> The MSS (Maximum Segment size is 1460). On Ethernet MSS = 1500 - 40 
+		= 1460. </li>
+	  <li> The Length of the packet is 60 bytes (20 + 40) (see diagram above) 
+	  </li>
+	</ul>
+	<h3 align="justify"> <a name="ss4.4" id="ss4.4"></a>4.4 Example #4 </h3>
+	<p align="justify">The following packet dump was taken using tethereal </p>
+	<pre class="sample">
+#tethereal -i lo		</pre>
+	<pre class="sample">
+26  19.624878 localhost.localdomain -&gt; localhost.localdomain TCP 33283 &gt; http [FIN, ACK] Seq=877643253 Ack=882239950 Win=37296 Len=0</pre>
+	<p align="justify">As can be seen be seen from the above output the output 
+	  of tethereal is not much different from TCPdump. The above is a FIN,ACK 
+	  Packet (to close the connection). Tethereal when used with it's front-end 
+	  ethereal can be very useful to detect network anomalies as well. </p>
+	</div>
+  <div> 
+	<h2><a name="ss5" id="ss5"></a>5. Final Words </h2>
+  </div>
+  <div> 
+	<p>While TCPdump is an extremely good tool, it focuses mainly on TCP/IP protocol. 
+	  It does it's job well. Ethereal is much more versatile and can understand 
+	  a variety of protocols. Also, the user interface of ethereal is well designed 
+	  so that even a newbie can understand which packets are getting captured 
+	  and what information do they contain. The good interface makes the learning 
+	  process even more enjoyable. </p>
+  </div>
+  <div> 
+	<h2><a name="ss6" id="ss6"></a>6. 資源</h2>
+  </div>
+  <div> 
+	<ul>
+	  <li> <a href="http://www.faqs.org/rfcs/"> Protocol RFCs </a> </li>
+	  <li> W. Richard Stevens TCP/IP Illustrated Vol I </li>
+	  <li> <a href="http://www.tcpdump.org"> TCPdump home </a> </li>
+	  <li> <a href="http://www.ethereal.com"> Ethereal Homepage </a></li>
+	</ul>
+  </div>
+  <div> 
+	<h2><a name="ss7" id="ss7"></a>7. 作者介紹</h2>
+  </div>
+  <div> 
+	<p>My life changed since I discovered Linux. Suddenly Computers became interesting 
+	  as i could try out lots of stuff on my Linux box due to the easy availably 
+	  of source code. My interests are predominantly in the fields of networking, 
+	  embedded systems and programming languages. I currently work for Aparna 
+	  Web services where we make Linux accessible for academia/corporations by 
+	  configuring remote boot stations (Thin Clients). </p>
+  </div>
+  <div> 
+    <h2>版權宣告</h2>
+  </div>
+  <div> 
+	<p>Copyright &copy; 2003, Vinayak Hegde. <a href="http://www.linuxgazette.com/copying.html">Copying 
+	  license</a> Published in Issue 86 of Linux Gazette, January 2003 </p>
+  </div>
+</div>
+<hr />
+<p class="BarTop"><a
+        href="../../../index.html" title="連到首頁" hreflang="zh-TW" accesskey="H">首頁(H)</a>｜<a
+        href="../../../howto" title="連到和 HOWTO  相關資訊" hreflang="zh-TW" accesskey="T">HOWTO(T)</a>｜<a
+        href="../../../guide" title="連到和指南相關的資訊" hreflang="zh-TW" accesskey="G">指南(G)</a>｜<a
+        href="../../../faq" title="連到和問答集相關的資訊" hreflang="zh-TW" accesskey="F">FAQ(F)</a>｜<a
+        href="../../../man" title="連到和手冊頁有關的資訊" hreflang="zh-TW" accesskey="M">手冊頁(M)</a>｜<a
+        href="../../index.html" title="Linux電子報為一個月發行一期的雜誌" hreflang="zh-TW" accesskey="L">Linux電子報(L)</a>｜<a
+        href="../../../lf" title="LinuxFocus 為兩個月發行一期的雜誌" hreflang="zh-TW" accesskey="S">LinuxFocus(S)</a></p>
+<hr />
+</body>
+</html>

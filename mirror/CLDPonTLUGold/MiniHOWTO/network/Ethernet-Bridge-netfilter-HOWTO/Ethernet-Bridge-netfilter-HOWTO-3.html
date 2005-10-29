@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>Untitled Document</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+<link href="../../style.css" rel="stylesheet" type="text/css" />
+<link href="Ethernet-Bridge-netfilter-HOWTO-1.html" rel="chapter" title="1.介紹" />
+<link href="Ethernet-Bridge-netfilter-HOWTO-2.html" rel="chapter" title="2.必需的軟件" />
+<link href="Ethernet-Bridge-netfilter-HOWTO-3.html" rel="chapter" title="3.配置linux以提供必要的服務" />
+<link href="Ethernet-Bridge-netfilter-HOWTO-4.html" rel="chapter" title="4.測試你的新的橋接網絡" />
+<link href="Ethernet-Bridge-netfilter-HOWTO-5.html" rel="chapter" title="5.其它鏈接" />
+<link href="index.html" rel="contents" />
+<link href="index.html" rel="start" />
+<link href="Ethernet-Bridge-netfilter-HOWTO-2.html" rel="prev" />
+<link href="Ethernet-Bridge-netfilter-HOWTO-4.html" rel="next" />
+<link href="Ethernet-Bridge-netfilter-HOWTO-3.html#ss31" rel="section" title="3.1 配置網橋 " />
+<link href="Ethernet-Bridge-netfilter-HOWTO-3.html#ss32" rel="section" title="3.2 配置路由" />
+<link href="http://www.tldp.org/HOWTO/Ethernet-Bridge-netfilter-HOWTO.html" rel="alternate" title="原版" />
+<link href="Ethernet-Bridge-netfilter-HOWTO.rdf" rel="meta" title="各章節的說明資訊" />
+</head>
+
+<body>
+<table
+
+
+
+
+>
+  <tr
+>
+    <th
+colspan="3" class="HdTitle"
+>Mini
+    HOWTO：Ethernet Bridge + netfilter</th>
+  </tr
+>
+  <tr
+>
+    <td class="TtdL"
+><a href="Ethernet-Bridge-netfilter-HOWTO-2.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="TtdC"
+></td
+>
+    <td class="TtdR"
+><a href="Ethernet-Bridge-netfilter-HOWTO-4.html" accesskey="N">下一頁(N)</a></td
+>
+  </tr
+>
+</table
+>
+<hr />
+<h1>3 設置linux讓網橋運行 </h1>
+<h2><a name="ss31" id="ss31"></a>3.1 配置網橋 </h2>
+<p> 我們需要讓linux知道網橋，首先告訴它，我們想要一個虛擬的以太網橋接口：（這將在主機bridge上執行，不清楚的看看測試場景） </p>
+<pre class="sample">
+root@bridge:~> brctl addbr br0
+</pre>
+<p>其次，我們不需要STP(生成樹協議)等。因為我們只有一個路由器，是絕對不可能形成一個環的。我們可以關閉這個功能。（這樣也可以減少網絡環境的數據包污染）：</p>
+<pre class="sample">
+root@bridge:~> brctl stp br0 off
+</pre>
+<p>經過這些準備工作後，我們終于可以做一些立竿見影的事了。我們添加兩個（或更多）以太網物理接口，意思是：我們將他們附加到剛生成的邏輯（虛擬）網橋接口br0上。</p>
+<pre class="sample">
+root@bridge:~> brctl addif br0 eth0
+root@bridge:~> brctl addif br0 eth1
+</pre>
+<p>現在，原來我們的兩個以太網物理接口變成了網橋上的兩個邏輯端口。那兩個物理接口過去存在，未來也不會消失。要不信的話，去看看好了。 .現在他們成了邏輯網橋設備的一部分了，所以不再需要IP地址。下面我們將這些IP地址釋放掉</p>
+<pre class="sample">
+root@bridge:~> ifconfig eth0 down
+root@bridge:~> ifconfig eth1 down
+root@bridge:~> ifconfig eth0 0.0.0.0 up
+root@bridge:~> ifconfig eth1 0.0.0.0 up
+</pre>
+<p>好了！我們現在有了一個任何IP地址都沒有的box w/o了。 好了，這下如果你想通過TP配置你的防火牆或路由器的話，你就只能通過本地的控制端口了。你不會告訴我你的機器上連串行端口都沒有吧？</p>
+<p> 可選：
+  我們給這個新的橋接口分配一個IP地址 </p>
+<pre class="sample">
+ root@bridge:~> ifconfig br0 10.0.3.129 up
+</pre>
+<p>這下我們做完了 看重要指示</p>
+<h2><a name="ss32" id="ss32"></a>3.2 配置路由 </h2>
+<p> 萬一我們要配置一個網關，我們要在linux內核中開啟轉發 </p>
+<pre class="sample">
+  root@bridge:~> echo "1" > /proc/sys/net/ipv4/ip_forward
+</pre>
+<p>我們的Box已經有一個IP地址了，但還沒有默認路由，我們現在來解決這個問題：</p>
+<pre class="sample">
+root@bridge:~> route add default gw 10.0.3.129
+</pre>
+<p>這樣，我們就應該有一個可以正常工作的網關了。</p>
+<hr />
+<table
+
+
+
+
+>
+  <tr
+>
+    <td class="BtdL"
+><a href="Ethernet-Bridge-netfilter-HOWTO-2.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="BtdC"
+><a href="index.html" accesskey="H">目錄(H)</a></td
+>
+    <td class="BtdR"
+><a
+href="Ethernet-Bridge-netfilter-HOWTO-4.html"
+>下一頁(N)</a
+></td
+>
+  </tr
+>
+  <tr
+>
+    <td class="BtdL"
+>必要的軟件 </td
+>
+    <td class="BtdC"
+><a href="Ethernet-Bridge-netfilter-HOWTO-3.html" accesskey="T">到頂層(T)</a></td
+>
+    <td class="BtdR"
+>測試你帶網橋的網絡 </td
+>
+  </tr
+>
+</table
+>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" width="88" height="31" style="border:0;width:88px;height:31px"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img style="border:0;width:88px;height:31px" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img style="border:0;width:88px;height:32px" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" style="border:0" alt="表示該網頁支援資源描述架構"/></a></div>
+</body>
+</html>

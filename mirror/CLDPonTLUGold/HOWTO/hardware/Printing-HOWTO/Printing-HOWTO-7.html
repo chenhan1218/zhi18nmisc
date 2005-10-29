@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>7. 基本系統設定</title>
+<link href="Printing-HOWTO-8.html" rel="next" title="8. 取得列印軟體" />
+<link href="Printing-HOWTO-6.html" rel="previous" title="6. 基本運作方式" />
+<link href="../../style.css" rel="stylesheet" type="text/css" />
+<link href="http://tldp.org/HOWTO/Printing-HOWTO/index.html" rel="alternate" title="原版" />
+<link href="Printing-HOWTO-1.html" rel="chapter" title="1.簡介" />
+<link href="Printing-HOWTO-2.html" rel="chapter" title="2.如何列印" />
+<link href="Printing-HOWTO-3.html" rel="chapter" title="3.核心印表機裝置" />
+<link href="Printing-HOWTO-4.html" rel="chapter" title="4.支援的印表機" />
+<link href="Printing-HOWTO-5.html" rel="chapter" title="5.印表連線作業軟體(spooling software) 呢?" />
+<link href="Printing-HOWTO-6.html" rel="chapter" title="6.基本運作方式" />
+<link href="Printing-HOWTO-7.html" rel="chapter" title="7.基本系統設定" />
+<link href="Printing-HOWTO-8.html" rel="chapter" title="8.取得列印軟體" />
+<link href="Printing-HOWTO-9.html" rel="chapter" title="9.廠商的解決方案" />
+<link href="Printing-HOWTO-10.html" rel="chapter" title="10.Ghostscript" />
+<link href="Printing-HOWTO-11.html" rel="chapter" title="11.如何列印到網路印表機" />
+<link href="Printing-HOWTO-12.html" rel="chapter" title="12.Windows 專用印表機" />
+<link href="Printing-HOWTO-13.html" rel="chapter" title="13.如何列印到傳真機" />
+<link href="Printing-HOWTO-14.html" rel="chapter" title="14.如何產生值得列印的東西" />
+<link href="Printing-HOWTO-15.html" rel="chapter" title="15.在螢幕上預覽可列印的東西" />
+<link href="Printing-HOWTO-16.html" rel="chapter" title="16.在 lpd 下使用序列式印表機" />
+<link href="Printing-HOWTO-17.html" rel="chapter" title="17.感謝" />
+<link href="index.html" rel="start" title="HOWTO：The Linux Printing " />
+<link href="index.html#content" rel="contents" />
+<link href="Printing-HOWTO-7.html#ss7.1" rel="section" title="7.1 傳統的 lpd 設定 " />
+<link href="Printing-HOWTO-7.html#ss7.2" rel="section" title="7.2 檔案權限" />
+<meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+<link href="Printing-HOWTO.rdf" rel="meta" title="各章節的說明資訊" />
+</head> <body >
+<table >
+  <tr> 
+    <th colspan="3" class="HdTitle">HOWTO：The Linux Printing </th>
+  </tr>
+  <tr> 
+    <td class="TtdL"> <a href="Printing-HOWTO-6.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="TtdC">&nbsp;</td>
+    <td class="TtdR"> <a href="Printing-HOWTO-8.html" accesskey="N">下一頁(N)</a> </td>
+  </tr>
+</table>
+<hr />
+<h1>7. 基本系統設定</h1>
+
+<h2><a name="ss7.1" id="ss7.1"></a>7.1 傳統的 lpd 設定 </h2>
+
+<p>最基本的 lpd 設定只能讓系統佇列檔案然後列印, 而不管你的印表機能否認得這些檔案,
+可能也無法讓你產生吸引人的報表. 但無論如何, 這是跨向理解的第一步.
+所以讓我們看下去.</p>
+<p>基本上, 要增加一個列印佇列, 你必須在 /etc/printcap 中加一筆記錄, 以及在 /var/spool/lpd 之下建立一個列印暫存器的工作目錄(spool 
+  directory).</p>
+<p>/etc/printcap 中的記錄看起來像這個樣子: </p>
+<pre class="sample">
+# LOCAL djet500
+lp|dj|deskjet:\
+        :sd=/var/spool/lpd/dj:\
+        :mx#0:\
+        :lp=/dev/lp0:\
+        :sh:
+</pre>
+
+
+<p>這個例子定義了一個名為 lp, dj, 或是 deskjet 的列印暫存器, 暫存器的工作目錄在 /var/spool/lpd/dj, 沒有單一工作大小的上限, 
+  列印的裝置是 /dev/lp0, 而且不會在每一個工作之前加上標題頁 (有著列印人的姓名之類的資料).</p>
+<p>現在就去看看 <a href="http://www.picante.com/~gtaylor/pht/man/printcap.5.html">printcap</a>. 
+  的線上手卌.</p>
+<p>上面這個例子看起來非常簡單, 但是有一個問題 - 除非 DeskJet 500 能看懂我送出去的檔案, 否則便會印出亂碼. 舉例來說, 假如送一個傳統的 
+  Unix 文字檔案給 deskjet 會導致新行字元(newline) 被逐字列印, 而得下面的結果: </p>
+<pre class="sample">
+This is line one.
+                 This is line two.
+                                  This is line three.
+</pre>
+
+
+<p>同樣的, 列印一個 PostScript 檔到這個列印暫存器會得到同樣階梯狀的 PostScript 命令列表, 而不是我們需要的結果.</p>
+<p>很顯然我們還需要些什麼, 這就是 filtering 的目的. 看過 printcap 線上手卌的比較細心的讀者可能已經注意到 if 及 of 這兩個屬性. 
+  其中的 if, input filter 就是我們現在所需要的.</p>
+<p>假使我們寫個短短的 shell script 叫 filter 使之在新行字元之前加上回車字元(carriage return), 就可以消除階梯狀. 
+  所以我們必須在前面的 printcap 的記錄中加上 if 這一行: </p>
+<pre class="sample">
+lp|dj|deskjet:\
+        :sd=/var/spool/lpd/dj:\
+        :mx#0:\
+        :lp=/dev/lp0:\
+        :if=/var/spool/lpd/dj/filter:\
+        :sh:
+</pre>
+
+
+<p>這個短短的 filter script 可以是: </p>
+<pre class="sample">
+#!perl
+# The above line should really have the whole path to perl
+# This script must be executable: chmod 755 filter
+while(&lt;STDIN&gt;){chop $_; print &quot;$_\r\n&quot;;};
+# You might also want to end with a form feed: print &quot;\f&quot;;
+</pre>
+
+
+<p>假如我們照上面的方法, 我們就會得到一個能正常印出普通 Unix 文字檔的列印暫存器. (還有其他四百萬種更好的方法來寫這個命令稿, 但是這個很適合舉例, 
+  你可以自己寫一個更有效率的.)</p>
+<p>剩下的唯一問題是只能印出純文字檔實在是不夠好 - 如果能夠印出 PostScript
+或是其它格式化的或是圖形輸出就更棒了. 這可以做的到, 也很容易做到.
+方法就是延伸前面的 filter. 如果你寫出一個能接受任意檔案格式,
+然後針對每種情況都可以產生 DeskJet 所要的資料的 filter, 
+那你就有了一個智慧型的列印暫存器.</p>
+<p>這種 filter 稱之為 magic filter. 你無需自己寫一個, 除非你要印的東西很奇怪. 網路上已經有很多寫好的, APS Filter 
+  就是非常棒的一個. 也說不定你的 Linux 發行版本(distribution) 已經包括了一個印表機設定工具使得這一切都很容易.</p>
+
+<h2><a name="ss7.2" id="ss7.2"></a>7.2 檔案權限 </h2>
+
+<p>應大眾要求, 我把我系統上一些相關檔案的權限列出. 還有其它更好的設定方法, 最好是只將執行檔設為 SGID 而不要設為 SUID root, 但這是我系統預設的設定, 
+  而且運作正常.(老實說, 如果你的廠商連可以運作的 lpd 都無法提供, 你就有苦頭吃了.) </p>
+<pre class="sample">
+-r-sr-sr-x   1 root     lp    /usr/bin/lpr*
+-r-sr-sr-x   1 root     lp    /usr/bin/lprm*
+-rwxr--r--   1 root     root  /usr/sbin/lpd*
+-r-xr-sr-x   1 root     lp    /usr/sbin/lpc*
+drwxrwxr-x   4 root     lp    /var/spool/lpd/
+drwxr-xr-x   2 root     lp    /var/spool/lpd/lp/
+</pre>
+
+<p>Lpd 目前必須以 root 身份執行才能連接到低號(連接埠號低於 1024)的 lp 服務埠. 
+可能應該改成在連接後將使用者身份變成 lp 或其他身份, 但是我不認為現在有這樣做. 
+令人有些失望.</p>
+
+<hr />
+<table >
+  <tr> 
+    <td class="BtdL"> <a href="Printing-HOWTO-6.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="BtdC"> <a href="index.html" accesskey="H">目錄(H)</a> </td>
+    <td class="BtdR"> <a href="Printing-HOWTO-8.html">下一頁(N)</a> </td>
+  </tr>
+  <tr> 
+    <td class="BtdL">基本運作方式</td>
+    <td class="BtdC"><a href="Printing-HOWTO-7.html"  accesskey="T">到頂層(T)</a></td>
+    <td class="BtdR">取得列印軟體</td>
+  </tr>
+</table>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> 
+  <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a> 
+  <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img class="ImgLogo" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> 
+  <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> 
+  <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" title="網路內容分級協會" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

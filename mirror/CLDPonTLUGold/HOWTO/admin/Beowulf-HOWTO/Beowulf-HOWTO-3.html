@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Beowulf 中文HOWTO : 架構簡介</title>
+<link href="Beowulf-HOWTO-4.html" rel="next" title="4. 系統設計" />
+<link href="Beowulf-HOWTO-2.html" rel="previous" title="2. 簡介" />
+<link href="index.html" rel="start" />
+<link href="../../style.css" rel="stylesheet" type="text/css" />
+<link href="Beowulf-HOWTO-1.html" rel="chapter" title="1.前言" />
+<link href="Beowulf-HOWTO-2.html" rel="chapter" title="2.簡介" />
+<link href="Beowulf-HOWTO-3.html" rel="chapter" title="3.架構簡介" />
+<link href="Beowulf-HOWTO-4.html" rel="chapter" title="4.系統設計" />
+<link href="Beowulf-HOWTO-5.html" rel="chapter" title="5.Beowulf資源" />
+<link href="Beowulf-HOWTO-6.html" rel="chapter" title="6.原始碼" />
+<link href="index.html#content" rel="contents" />
+<meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+<link href="http://tldp.org/HOWTO/Beowulf-HOWTO.html" rel="alternate" title="原版" />
+<link href="Beowulf-HOWTO.rdf" rel="meta" title="各章節的說明資訊" />
+<link href="Beowulf-HOWTO-3.html#ss3.1" rel="section" title="3.1 它長什麼樣？" />
+<link href="http://tldp.org/HOWTO/NIS-HOWTO/index.html" rel="bookmark" title="The Linux NIS(YP)/NYS/NIS+ HOWTO" />
+<link href="http://tldp.org/HOWTO/NFS-HOWTO/index.html" rel="bookmark" title="Linux NFS-HOWTO" />
+<link href="Beowulf-HOWTO-3.html#ss3.2" rel="section" title="3.2 如何有效利用其他節點？" />
+<link href="Beowulf-HOWTO-6.html#sigmasqrt" rel="原始碼" title="sigmasqrt" />
+<link href="Beowulf-HOWTO-3.html#ss3.3" rel="section" title="3.3 Beowulf如何與COW不同？" />
+<link href="http://www.alternic.net/rfcs/1900/rfc1918.txt.html" rel="bookmark" title="RFC 1918" />
+</head>
+<body   >
+<table >
+  <tr> 
+    <th colspan="3" class="HdTitle">HOWTO：Beowulf</th>
+  </tr>
+  <tr> 
+    <td class="TtdL"> <a href="Beowulf-HOWTO-2.html" accesskey="P">上一頁(P)</a> 
+    </td>
+    <td class="TtdC">&nbsp;</td>
+    <td class="TtdR"> <a href="Beowulf-HOWTO-4.html" accesskey="N">下一頁(N)</a> 
+    </td>
+  </tr>
+</table>
+<hr />
+<h1>3. 架構簡介</h1>
+<h2><a name="ss3.1" id="ss3.1"></a>3.1 它長什麼樣？ </h2>
+<p>我認為描述Beowulf超級電腦架構最合適的方法是舉一個真實的範例，並且是大多數系統管理者所熟悉的。那就是一個UNIX主機實驗室，內有一台伺服端和一群用戶端，更精準地說，我會舉位在南昆士蘭大學理學院DEC 
+  Alpha大學部計算機實驗室為例，伺服器被稱為 <i>beldin</i> 用戶端機器分別稱為 <i>scilab01</i>, <i>scilab02</i>, 
+  <i>scilab03</i>, 一直到 <i>scilab20</i>. 每台用戶端內部都安裝Digital Unix 4.0作業系統，但是使用者檔案空間（<code>/home</code>）和 
+  <code>/usr/local</code> 都是透過NFS（網路檔案系統）從伺服端上獲得，每個用戶端都可以進入伺服端，並且所有其他的用戶端都會記載在 
+  <code>/etc/hosts.equiv</code> 檔案內，因此每個用戶端都可以用遠端操作殼（rsh）。伺服端也是整個實驗室的NIS伺服器，因此所有的機器都有相同的帳號資料，某人可以坐在<i>scilab02</i>的控制台前登入，就像他登入伺服端或<i>scilab15</i>. 
+  一樣有相同的環境，所有的用戶端有相同環境的原因在於所有的機器都安裝和規劃相同的作業系統，並且使用者的<code>/home</code> 和 <code>/usr/local</code> 
+  區域實體上都位在伺服端上，可以透過NFS進入。NIS和NFS更進一步的 訊息請參閱 <a href="http://sunsite.unc.edu/LDP/HOWTO/NIS-HOWTO.html">NIS</a> 
+  和 <a href="http://sunsite.unc.edu/LDP/HOWTO/NFS-HOWTO.html">NFS</a> HOWTOs.</p>
+<h2><a name="ss3.2" id="ss3.2"></a>3.2 如何有效利用其他節點？ </h2>
+<p>現在我們對系統架構有些概念，讓我們看看如何使用計算機實驗室內可供使用的CPU。任何人可以登入任何一台機器，並且在每個人自己的目錄下執行程式，他們也可以透過遠端操作殼在其他電腦上啟動（spawn）相同的程式。舉例來說，假設我們要計算1到10內整數平方根的總和，我們寫了個簡單的程式名為 
+  <code>sigmasqrt</code> （請參見 <a href="Beowulf-HOWTO-6.html#sigmasqrt">source 
+  code</a>) ，為了得到結果，我們執行以下的步驟</p>
+<pre class="sample">
+
+[jacek@beldin sigmasqrt]$ time ./sigmasqrt 1 10
+
+22.468278
+
+
+
+real    0m0.029s
+
+user    0m0.001s
+
+sys     0m0.024s
+
+</pre>
+<p><code>time</code> 指令可以告訴我們執行程式所花的時間（實際經過的時間），我們可以看到，這個例子只花了很短的時間（0.029秒），假如我想計算1到1,000,000,000內整數的平方根總和，讓我們試試看，重新計算所花的時間 
+</p>
+<pre class="sample">
+
+[jacek@beldin sigmasqrt]$ time ./sigmasqrt 1 1000000000
+
+21081851083600.559000
+
+
+
+real    16m45.937s
+
+user    16m43.527s
+
+sys     0m0.108s
+
+</pre>
+<p>這次執行程式所花的時間非常久，一個明顯的問題就是我們如何加快執行的時間？我們該如何改變執行程式的方式以減少執行所花的時間？最明顯的答案就是將整個工作分成許多小工作，並且同時在所有的電腦上執行，我們可以將加法的工作分成二十份，每個部份做一段開根號的工作，並加起來，當所有的節點完成計算，並傳回來，將二十個數加起來就得到最後的答案。在執行程式之前，我們需要做個標有記號的輸送管，可以讓所有的行程寫下它們的結果。</p>
+<pre class="sample">
+
+[jacek@beldin sigmasqrt]$ mkfifo output
+
+[jacek@beldin sigmasqrt]$ ./prun.sh &amp; time cat output | ./sum
+
+[1] 5085
+
+21081851083600.941000
+
+[1]+  Done                    ./prun.sh
+
+
+
+real    0m58.539s
+
+user    0m0.061s
+
+sys     0m0.206s
+
+</pre>
+<p>這回我們花了大約58.5秒，這時間是從開始到所有的節點都完成計算，並將結果寫到輸送管，這個時間並不包括最後將二十個數加起來，不過那個時間非常地短，可以忽略不計。我們可以看到平行計算可以有效地改進執行程式，事實上這個平行工作整整快了約17倍，相對於使用了二十倍CPU數目，效能是相當合理的。上述範例的目的是要展示同時平行程式最簡單的方法，實際操作上，如此簡單的範例是很少見的，其他技巧（PVM和MPI 
+  APIs）經常用來達成平行的工作。</p>
+<h2><a name="ss3.3" id="ss3.3"></a>3.3 Beowulf如何與COW不同？ </h2>
+<p>上述的計算機實驗室算是一個工作站群（Cluster of Workstations，COW），那麼Beowulf有何不同？它和COW有何差異？實際上二者沒多大差別，不過Beowulf倒是有些不同的特色。第一、大多數的Beowulf群的用戶端沒有鍵盤、滑鼠、顯示卡和螢幕，所有到用戶端的方式都是從伺服端、特定控制端或是序列控制端經過遠端連接登入，因為對用戶端而言，從電腦群外登入電腦或是從外頭的電腦直接登入用戶端是沒有必要的，用戶端通常是使用私有的IP位址，例如從10.0.0.0到10.0.0.8或是192.168.0.0到192.168.0.16（參見<a href="http://www.alternic.net/rfcs/1900/rfc1918.txt.html">RFC 
+  1918</a> ). 通常唯一要用到第二張網路卡對外連接的機器是伺服端，使用這套電腦群最常見的方法是直接進入伺服端，或是從個人工作站使用telnet或遠端登入伺服端。一但進入伺服端，使用者可以編輯和編譯他們的程式，也可以在電腦群內的用戶端上啟動行程。大多數情形的COW是在晚上用來執行平行計算，和在人們不使用工作站的週末時間，使用閒置的CPU。而通常Beowulf專用來平行計算，並且對這些平行計算做最佳化，當利用市售電腦零組件和免費軟體建構的Beowulf也提供較好的價格效能比，並且Beowulf給人一種單一系統的印象，很容易讓使用者將Beowulf群看作是一台計算用工作站。</p>
+<hr />
+<table >
+  <tr> 
+    <td class="BtdL"> <a href="Beowulf-HOWTO-2.html" accesskey="P">上一頁(P)</a> 
+    </td>
+    <td class="BtdC"> <a href="index.html" accesskey="H">目錄(H)</a> </td>
+    <td class="BtdR"> <a href="Beowulf-HOWTO-4.html">下一頁(N)</a> </td>
+  </tr>
+  <tr> 
+    <td class="BtdL">簡介</td>
+    <td class="BtdC"><a href="Beowulf-HOWTO-3.html"  accesskey="T">到頂層(T)</a></td>
+    <td class="BtdR">系統設計</td>
+  </tr>
+</table>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> 
+  <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a> 
+  <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img class="ImgLogo" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> 
+  <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> 
+  <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" title="網路內容分級協會" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

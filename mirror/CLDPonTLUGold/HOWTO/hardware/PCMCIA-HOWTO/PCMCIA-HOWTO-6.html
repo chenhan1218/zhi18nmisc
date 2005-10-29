@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>6. 使用未被支援的卡片</title>
+<link href="PCMCIA-HOWTO-7.html" rel="next" title="7. 除錯小技巧及程式設計資訊" />
+<link href="PCMCIA-HOWTO-5.html" rel="previous" title="5. 進階的主題" />
+<link href="http://tldp.org/HOWTO/PCMCIA-HOWTO.html" rel="alternate" title="原版" />
+<link href="../../style.css" rel="stylesheet" type="text/css" />
+<link href="PCMCIA-HOWTO-1.html" rel="chapter" title="1.一般資訊及硬體要求" />
+<link href="PCMCIA-HOWTO-2.html" rel="chapter" title="2.編譯與安裝" />
+<link href="PCMCIA-HOWTO-3.html" rel="chapter" title="3.解決安裝與建構的問題" />
+<link href="PCMCIA-HOWTO-4.html" rel="chapter" title="4.使用方法以及特色" />
+<link href="PCMCIA-HOWTO-5.html" rel="chapter" title="5.進階的主題" />
+<link href="PCMCIA-HOWTO-6.html" rel="chapter" title="6.使用未被支援的卡片" />
+<link href="PCMCIA-HOWTO-7.html" rel="chapter" title="7.除錯小技巧及程式設計資訊" />
+<meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+<link href="PCMCIA-HOWTO-6.html#ss6.1" rel="section" title="6.1 建構無法被辨視的卡片" />
+<link href="PCMCIA-HOWTO-6.html#ss6.2" rel="section" title="6.2 增列對 NE2000相容乙太網路卡的支援" />
+<link href="PCMCIA-HOWTO-6.html#ss6.3" rel="section" title="6.3 PCMCIA 軟碟機介面卡" />
+<link href="PCMCIA-HOWTO-6.html#ss6.4" rel="section" title="6.4 支援 Xircom 卡到底怎麼了？" />
+<link href="PCMCIA-HOWTO.rdf" rel="meta" title="各章節的說明資訊" />
+</head> <body >
+<table >
+  <tr>
+    <th colspan="3" class="HdTitle">HOWTO：Linux
+      PCMCIA</th>
+  </tr>
+  <tr>
+    <td class="TtdL"> <a href="PCMCIA-HOWTO-5.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="TtdC">&nbsp;</td>
+    <td class="TtdR"> <a href="PCMCIA-HOWTO-7.html" accesskey="N">下一頁(N)</a> </td>
+  </tr>
+</table>
+<hr />
+<h1>6. 使用未被支援的卡片</h1>
+
+
+
+<h2> <a name="ss6.1" id="ss6.1"></a>6.1 建構無法被辨視的卡片
+</h2>
+
+
+<p>現在我們假設你的卡片已被現有的驅動程式所支援，我們所需要做的是在
+<code>/etc/pcmcia/config</code> 中加入一個條目來告訴 <code>cardmgr</code> 如何
+來辨視這張卡，哪些驅動程式需要連結到這張卡片上。建構檔案的格式細節
+請查看  <code>pcmcia</code>  的  man  頁。  如果你插入一張不被認得的卡片，
+<code>cardmgr</code> 正常來說會記錄一些辨視資訊到系統日誌上， 我們可以利用
+這些資訊來建造它的建構條目。</p>
+<p>以下是個 cardmgr 如何將未支援卡的報告到 <code>/usr/adm/messages</code>
+內的例子。</p>
+<p>
+</p>
+<pre class="sample">
+cardmgr[460]: unsupported card in socket 1
+cardmgr[460]: version info: "MEGAHERTZ", "XJ2288", "V.34 PCMCIA MODEM"
+</pre>
+
+<p></p>
+<p>相對應到<code>/etc/pcmcia/config</code> 的條目可以是:</p>
+<p>
+</p>
+<pre class="sample">
+card "Megahertz XJ2288 V.34 Fax Modem"
+  version "MEGAHERTZ", "XJ2288", "V.34 PCMCIA MODEM"
+  bind "serial_cs"
+</pre>
+
+<p></p>
+<p>你可以使用 ``*'' 來代替不曉得的字串，像版本號碼啦。 當你寫新的建構
+條目時，請小心地把完整的字串拷貝過去，保持原有的大小寫體以及空白字
+元。還有，請確認建構條目與被報告到日誌檔案裏的資料有同樣數目的字串
+。</p>
+<p>請牢記您幾乎可以指定任何的驅動程式給一張卡使用，但如果你只是胡亂地
+亂弄，並不是個很有生產效率的作法。你也可能很幸運地發現現有的驅動程
+式已支援了你的卡片。然而，大部份的結果是那些驅動程式並無法工作，也
+有可能會產生邊際效應像鎖死你的系統了。不像一般的設備驅動程式只探測
+適當的卡片，探測 PCMCIA 設備的工作是由 <code>cardmgr</code> 所執行，驅動程
+式本身在試著與設備溝通前並不會做啥麼確認動作的。</p>
+<p>在編修 <code>/etc/pcmcia/config</code>  之後， 你可以暗示 <code>cardmgr</code>
+重新載入該檔案，使用:</p>
+<p>
+</p>
+<pre class="sample">
+kill -HUP `cat /var/run/cardmgr.pid`
+</pre>
+
+<p></p>
+<p>如果你設定好了一張新的卡片，請寄一份設定給我，這樣子我就可以把它包
+含進標準建構檔案裏。</p>
+
+<h2><a name="ss6.2" id="ss6.2"></a>6.2 增列對 NE2000相容乙太網路卡的支援
+</h2>
+
+<p>首先， 先查看看這張卡是否已被 <code>cardmgr</code> 所辨識。 有些沒有被列在
+<code>SUPPORTED.CARDS</code> 內的卡片事實上是有些被支援的卡的 OEM 版本。如
+果你發現了像這樣的卡片，請讓我知道，這樣才能把它加到列表內。</p>
+<p>如果你的卡片沒被辨別到， 請依照 
+<a href="#new-card">3.6</a> 內
+的步驟為你的卡片建立一個建構條目，並把這張卡片連繫上 <code>pcnet_cs</code>
+驅動程式。 重新執行 <code>cardmgr</code> 即可使用被更新的建構檔案了。</p>
+<p>如果 <code>pcnet_cs</code>  驅動程式說它無法決定你的卡片之硬體乙太網路位址
+，那麼請編修你的新建構條目將這張卡片連繫上記憶體卡片驅動程式
+<code>memory_cs</code> 上。 重新執行 <code>cardmgr</code> 即可使用被更新的建構檔案
+了。你需要知道你的卡片的硬體乙太網路位址的值。這個位址是個以二個十
+六位元字元號碼所排成的六個數字，通常它會被印在卡片上。如果它沒有印
+在卡片上，你可以使用 DOS 的驅動程式來顯示這個位址。 只要你一知道這
+個值，請執行:</p>
+<p>
+</p>
+<pre class="sample">
+dd if=/dev/mem0a count=20 | od -Ax -t x1
+</pre>
+
+<p></p>
+<p>然後尋找你的位址之輸出。只有偶數位元組被定義了，因此可以忽略傾印資
+料內的奇數位元組。記下位址的第一個位元組的十六位元位移。現在，編修
+<code>modules/pcnet_cs.c</code> 並尋找 <code>hw_info</code> 構造。你需要為你的
+卡片建立一個新的條目。第一個欄位就是記憶體位移。接著的三個欄位就第
+硬體位址的前三個位元組。最後一欄位含有卡片的特別功能的旗標; 開始時
+請試著將它設為 0。</p>
+<p>編修完   <code>pcnet_cs.c</code>    後，   編譯與安裝新的模組。   再次修改
+<code>/etc/pcmcia/config</code>， 然後改變卡片的連繫從  <code>memory_cs</code>
+換成 <code>pcnet_cs</code>。順著指示重新載入建構檔案後就完成了。請您寄給我
+一份你的新<code>hw_info</code> 檔案以及建構的條目內容。</p>
+<p>如果你沒有在十六進位傾印內找到你的卡片的硬體位址。最後的一個方法，
+當 <code>pcnet_cs</code> 模組初始化時想要 ``hard-wire( 硬體接合 )'' 是有可
+能的。請編修 <code>/etc/pcmcia/config.opts</code> 並加入 <code>hw_addr=</code>
+選項，像這樣:</p>
+<p>
+</p>
+<pre class="sample">
+module "pcnet_cs" opts "hw_addr=0x00,0x80,0xc8,0x01,0x02,0x03"
+</pre>
+
+<p></p>
+<p>在適宜的地方代換掉你自己的卡片之硬體位址。當然，請小心如果你已經做
+了那麼多了，那你的卡片就不太像是個 NE2000 相容卡了。事實上，我並不
+確定是否有  <em> 任何 </em> 卡片在經過了前面兩種方法之一後還不能用的了
+。</p>
+
+<h2><a name="ss6.3" id="ss6.3"></a>6.3 PCMCIA 軟碟機介面卡
+</h2>
+
+<p>在 Compaq Aero 及少數一些筆記型電腦所使用的  PCMCIA 軟碟機介面卡目
+前尚未被支援。 主要障礙在於 Aero 似乎使用自訂的  PCMCIA 控制器來使
+DMA 支援軟碟機。在不曉得這是如何辦到的情況下，我們就無法找出解決的
+方法。</p>
+<p>如果在 Aero 被開啟時軟碟機介面卡是插著的， Aero 的 BIOS 就會建構該
+卡，此時 Linux 會把它視為一般的軟碟機。當 Linux 的 PCMCIA 驅動程式
+被載入時， 它們會查察到這卡已被建構並已附著在 Linux 的驅動程式上，
+而這插槽也會被忽略不管了。所以，如果在開機時卡片即插著了那就可以使
+用，但它不具備熱機交換的功能。</p>
+
+<h2><a name="ss6.4" id="ss6.4"></a>6.4 支援 Xircom 卡到底怎麼了？
+</h2>
+
+<p>在目前的 PCMCIA 套件中有含了一個古援  Xircom 乙太網路及乙太網路  /
+數據機的驅動程式。 這要感謝 Werner Koch 先生。我有設立一個專門討論
+Xircom 驅動程式論譠的超媒體新聞，在 
+<a href="http://hyper.stanford.edu/hypernews/get/pcmcia/xircom.html">http://hyper.stanford.edu/hypernews/get/pcmcia/xircom.html</a>。</p>
+<p>以前 Xircom 卡並沒被支援是因為 Xircom 公司有不能洩露他們的卡片之技
+術資訊。後來，他們放鬆這些規定，現在主動提供驅動程式的資訊。</p>
+
+<hr />
+<table >
+  <tr>
+    <td class="BtdL"> <a href="PCMCIA-HOWTO-5.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="BtdC"> <a href="index.html" accesskey="H">目錄(H)</a> </td>
+    <td class="BtdR"> <a href="PCMCIA-HOWTO-7.html">下一頁(N)</a> </td>
+  </tr>
+  <tr>
+    <td class="BtdL">進階的主題</td>
+    <td class="BtdC"><a href="PCMCIA-HOWTO-6.html"  accesskey="T">到頂層(T)</a></td>
+    <td class="BtdR">除錯小技巧及程式設計資訊</td>
+  </tr>
+</table>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img class="ImgLogo" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" title="網路內容分級協會" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+ 
+ <title>如何設置“虛擬私有網路(VPN)”: 著手執行。</title>
+ <link href="VPN-7.html" rel="next" title="7. 調整" />
+ <link href="VPN-5.html" rel="previous" title="5. 讓我們檢視執行的結果：" />
+ <link href="../../style.css" rel="stylesheet" type="text/css" />
+  <link href="VPN-1.html" rel="chapter" title="1.更正" />
+ <link href="VPN-2.html" rel="chapter" title="2.推荐廣告" />
+ <link href="VPN-3.html" rel="chapter" title="3.介紹" />
+ <link href="VPN-4.html" rel="chapter" title="4.開始建置" />
+ <link href="VPN-5.html" rel="chapter" title="5.讓我們檢視執行的結果：" />
+ <link href="index.html" rel="start" />
+ <link href="index.html#content" rel="contents" />
+ <link href="VPN-6.html" rel="chapter" title="6.著手執行。" />
+ <link href="VPN-7.html" rel="chapter" title="7.調整" />
+ <link href="VPN-8.html" rel="chapter" title="8.分析易受攻擊的弱點 " />
+ <meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+ <link href="VPN.rdf" rel="meta" title="各章節的說明資訊" />
+ <link href="http://tldp.org/HOWTO/mini/VPN.html" rel="alternate" title="原版" />
+ <link href="VPN-6.html#ss6.1" rel="section" title="6.1 登入" />
+ <link href="VPN-6.html#ss6.2" rel="section" title="6.2 啟動 ppp " />
+ <link href="VPN-6.html#ss6.3" rel="section" title="6.3 一次完成兩個動作" />
+ <link href="VPN-6.html#ss6.4" rel="section" title="6.4 Pty 的重導功能" />
+ <link href="VPN-6.html#ss6.5" rel="section" title="6.5 這個裝置上面，會有些什麼東西？" />
+ <link href="VPN-6.html#ss6.6" rel="section" title="6.6 設定路由" />
+</head> <body> 
+<table
+
+
+
+
+>
+  <tr
+>
+    <th
+colspan="3" class="HdTitle"
+>Mini
+      HOWTO：VPN</th>
+  </tr
+>
+  <tr
+>
+    <td class="TtdL"
+><a href="VPN-5.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="TtdC"
+></td
+>
+    <td class="TtdR"
+><a href="VPN-7.html" accesskey="N">下一頁(N)</a></td
+>
+  </tr
+>
+</table
+>
+<hr />
+<h1>6. 著手執行。</h1>
+
+
+<h2><a name="ss6.1" id="ss6.1"></a>6.1 登入 </h2>
+
+
+<p>現在，你應該已經測試過 ssh 是否能夠正常地工作。如果，slave 拒絕你登入，請閱讀
+記錄檔。也許是檔案使用權限或 sshd ，在設定上的問題。</p>
+
+<h2><a name="ss6.2" id="ss6.2"></a>6.2 啟動 ppp </h2>
+
+
+<p>登入到 slave 帳戶，並執行：</p>
+<pre class="sample">
+sudo /usr/sbin/pppd passive  
+</pre>
+<p>
+此時，如果工作正常你應該會看到一些亂碼。假設，沒有出現亂碼，不是 sudo 就是 pppd
+有問題。請參考，記錄檔﹑<em>/etc/ppp/options</em> ﹑和 <em>.ppprc </em>，等檔案
+，以便找出是那個命令出了問題。問題排除後，將 'passive' 這個字寫到 .ppprc 裡，然
+後再試一次。以壓下 enter﹑'~'﹑和 '^Z'等按鍵的方式，清除螢幕上的亂碼，繼續
+工作。現在，你應該會看到 master 的“輸入提示符號(prompt)”，然後執行 kill %1
+。如果你想知道更多有關“逸出字元(escape character)”的說明，請參閱“調整(tuning)”
+那一節。</p>
+
+<h2><a name="ss6.3" id="ss6.3"></a>6.3 一次完成兩個動作 </h2>
+
+
+<p>當然，你也可以這麼做</p>
+<pre class="sample">
+ssh -l slave polanski sudo /usr/sbin/pppd 
+</pre>
+<p>如果工作正常，它就會當著你的面，傳送一些看似亂碼的資料。</p>
+
+<h2><a name="ss6.4" id="ss6.4"></a>6.4 Pty 的重導功能 </h2>
+
+
+<p>這次，我們試著重導上面的動作：</p>
+<pre class="sample">
+/usr/local/bin/pty-redir /usr/bin/ssh -l slave polanski sudo /usr/sbin/pppd  
+</pre>
+<p>好長的句子，不是嗎？你應該使用 ssh 執行檔的完全路徑名稱，為了安全的理由，pty-redir
+程式只允許你使用這種方式。現在，你會透過這個程式取得一個裝置名稱。假設，你取得的
+是 <em>/dev/ttyp0 </em> 。你可以使用 ps 命令來檢視目前的狀況。請找尋 'p0' 這個裝
+置的相關敘述。</p>
+
+<h2><a name="ss6.5" id="ss6.5"></a>6.5 這個裝置上面，會有些什麼東西？ </h2>
+
+
+<p>試著執行</p>
+<pre class="sample">
+/usr/sbin/pppd /dev/ttyp0 local 192.168.0.1:192.168.0.2  
+</pre>
+<p>來建立連線。然後，檢視 ifconfig 命令的輸出結果，看是否已經建立了這個裝置，然後
+，使用 ping 來檢查你的虛擬網路。</p>
+
+<h2><a name="ss6.6" id="ss6.6"></a>6.6 設定路由 </h2>
+
+
+<p>除了設定主防火牆主機的路由，次防火牆主機也要設定。現在，你應該能夠從公司的一個
+內部網路上的主機，ping 到其它內部網路上的主機。接著，設定額外的防火牆規則。現
+在，你已經擁有了 VPN 的環境，你可以設定公司兩個內部網路之間的連接規則。</p>
+
+
+<hr />
+<table
+
+
+
+
+>
+  <tr
+>
+    <td class="BtdL"
+><a href="VPN-5.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="BtdC"
+><a href="index.html" accesskey="H">目錄(H)</a></td
+>
+    <td class="BtdR"
+><a
+href="VPN-7.html"
+>下一頁(N)</a
+></td
+>
+  </tr
+>
+  <tr
+>
+    <td class="BtdL"
+>讓我們檢視執行的結果：</td
+>
+    <td class="BtdC"
+><a href="VPN-6.html" accesskey="T">到頂層(T)</a></td
+>
+    <td class="BtdR"
+>調整</td
+>
+  </tr
+>
+</table
+>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img class="ImgLogo" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" title="網路內容分級協會" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>3.Plug-and-Play (PnP) 解決方案</title>
+<link href="Plug-and-Play-HOWTO-4.html" rel="next" title="4. 如何對付 PnP 卡" />
+<link href="Plug-and-Play-HOWTO-2.html" rel="previous" title="2. PnP 怎麼做: 分配資源" />
+<link href="http://tldp.org/HOWTO/Plug-and-Play-HOWTO.html" rel="alternate" title="原版" />
+<link href="../../style.css" rel="stylesheet" type="text/css" />
+<link href="Plug-and-Play-HOWTO-1.html" rel="chapter" title="1.介紹" />
+<link href="Plug-and-Play-HOWTO-2.html" rel="chapter" title="2.PnP 怎麼做: 分配 &quot;資源&quot;" />
+<link href="Plug-and-Play-HOWTO-3.html" rel="chapter" title="3.Plug-and-Play (PnP) 解決方案" />
+<link href="Plug-and-Play-HOWTO-4.html" rel="chapter" title="4.如何對付 PnP 卡" />
+<link href="Plug-and-Play-HOWTO-5.html" rel="chapter" title="5.附錄" />
+<meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+<link href="Plug-and-Play-HOWTO.rdf" rel="meta" title="各章節的說明資訊" />
+<link href="Plug-and-Play-HOWTO-3.html#ss3.1" rel="section" title="3.1 介紹" />
+<link href="Plug-and-Play-HOWTO-3.html#ss3.2" rel="section" title="3.2 Linux 需要 PnP" />
+<link href="Plug-and-Play-HOWTO-3.html#ss3.3" rel="section" title="3.3 總線問題" />
+<link href="Plug-and-Play-HOWTO-3.html#ss3.4" rel="section" title="3.4 設置 PnP BIOS " />
+</head> <body >
+<table >
+  <tr>
+    <th colspan="3" class="HdTitle">HOWTO：Plug-and-Play</th>
+  </tr>
+  <tr>
+    <td class="TtdL"> <a href="Plug-and-Play-HOWTO-2.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="TtdC">&nbsp;</td>
+    <td class="TtdR"> <a href="Plug-and-Play-HOWTO-4.html" accesskey="N">下一頁(N)</a> </td>
+  </tr>
+</table>
+<hr />
+<h1>3. Plug-and-Play (PnP) 解決方案</h1>
+
+<h2><a name="ss3.1" id="ss3.1"></a>3.1 介紹
+</h2>
+
+<p>PnP 把 PnP 資源自動分配給硬件和對應的軟件. 就是,
+把設備和它們的驅動程序配對并建立通信通道. 在使用 PnP 之前, 硬件靠跳線,
+軟件靠配置文件(或類似的方法)或猜測硬件使用的資源來分配資源.
+這樣並不能總是正常工作. </p>
+<p>完全的 PnP (也不能總是正常工作), 需要 PnP BIOS 和操作系統的配合.
+當計算機開機時 BIOS 會運行來啟動. 假如操作系統存儲在硬盤上(通常是這樣), 那麼
+BIOS 必須了解這個硬盤. 如果硬盤是 PnP 的那麼 BIOS 會使用 PnP 方式找到它. 同樣,
+當計算機啟動時為了配置 BIOS, 顯示卡和鍵盤時必須的, 所以如果需要的話 BIOS
+必須配置這些設備.</p>
+<p>一旦 BIOS 識別了硬盤, 顯示卡, 和鍵盤, 它就準備 'boot'(從硬盤調入操作系統).
+假如你已經告訴 BIOS 你有一個 PnP 的操作系統,
+它將做這麼多並讓操作系統完成其餘的 PnP 配置. 否則, PnP-BIOS 將完成剩餘的 PnP
+配置.</p>
+
+<h2><a name="ss3.2" id="ss3.2"></a>3.2 Linux 需要 PnP 
+</h2>
+
+<p>Wintel(Microsoft 和 Intel) 創造了 PnP. 由于種種原因, Linux 社區有人不喜歡 PnP.
+但不管喜歡與否, 今天的硬件大部分是 PnP 的, 除了有效的處理 PnP 外, Linux 別無選擇.</p>
+
+<h2><a name="ss3.3" id="ss3.3"></a>3.3 總線問題
+</h2>
+
+<p>PnP 打算在任何總線上運行如 ISA,PCI. ISA 是 IBM PC 上的舊總線結構, PCI 是 Intel
+創造的新的快速的總線結構. 最終, ISA 總線將消亡. PCI
+總線結構在總線上保留了許多地址用于 PnP 配置. Linux 使用這些地址來找出你有什麼
+PnP PCI 設備並把它們的信息放在 /proc/pci '文件'中. (關于PCI總線上的非 PnP 設備,
+我不明白).</p>
+<p>對于 ISA 總線, 由于它不是為 PnP 設計的, 設計 ISA 時沒有任何 PnP 概念,
+所以它上面沒有用于 PnP 的 I/O 地址. 結果, 在 ISA 上實現 PnP 相當復雜,它需要 PnP
+設備被指定一個臨時的'handle'(句柄)用于 PnP 配置. 分配這些 'handles' 也叫做 'isolation'.
+請看附錄中關於 
+<a href="Plug-and-Play-HOWTO-5.html#isolation_">Isolation</a> 的複雜描述.</p>
+
+<h2> <a name="ss3.4" id="ss3.4"></a>3.4 設置 PnP BIOS 
+</h2>
+
+<p>當開機時, BIOS 比操作系統先行調入運行. 新的 BIOS 支持 PnP, 它將設置部分或所有的 PnP 設備. 對于大多數 PnP BIOS 沒有辦法抑制 
+  PnP 功能, 你不得不使用它. 這兒的一些選項,在你的 BIOS 菜單中也許也有:</p>
+<ul>
+  <li> <a href="#bios_pnp_os">你有一個 PnP 操作系統嗎?</a></li>
+  <li> <a href="#bios_resources">如何分配資源? </a></li>
+  <li> <a href="#bios_reset">重置配置? </a></li>
+</ul>
+<h3> 你有一個 PnP 操作系統嗎? </h3>
+
+<p>假如你說'是', PnP BIOS 將用 PnP 設置硬盤, 等. 但讓操作系統完成最終配置任務. BIOS
+也許在 ISA 總線上做 
+<a href="Plug-and-Play-HOWTO-5.html#isolation_">Isolation</a>,
+然後讓操作系統來完成這些設備的配置.
+假如你的操作系統不做這些配置工作(一些 Linux 的補丁版本), 由于 BIOS 也許會把這些
+ISA 設備置為禁止狀態(??), 你大概不會說'是'.</p>
+<p>假如你說沒有, BIOS 會自己做配置工作. 除你增加新的 PnP 設備外,
+它將使用它先前存儲在非揮發存儲器中的配置. 假如使用的是 Linux,
+配置不會有什麼變化. 假如使用的是 Windows 95/98 (他們是 PnP 的),
+它們可能會設置配置不同于你在 Linux 下的配置. 通常, 你可以在 Linux 啟動時運行
+isapnp 工具把 ISA 設備設置為你想要的配置. 但這對 PCI 卡沒有幫助, 不過你能用看
+/proc/pci 文件的方法來檢查它們是被如何配置的. 然後你應確保 Linux
+中驅動程序使用的配置文件(&quot;setserial&quot;, lilo.conf , 等)與此相符.
+看 
+<a href="Plug-and-Play-HOWTO-4.html#bios_conf">BIOS 配置 PnP</a> 得到更多的信息.</p>
+
+<h3><a name="bios_resources" id="bios_resources"></a> 如何分配資源? </h3>
+
+<p>這取決于你決定如何分配 IRQ 和 DMA. 設為 &quot;auto&quot;(自動), BIOS 將分配資源.
+如果設為 &quot;manual&quot;(手工), 你可以進入另一個菜單並能為 &quot;legacy&quot; (non-pnp)卡預留資源.
+現在 BIOS 也許或不會知道你的 legacy 卡. 假如知道卡的話, 會試圖使用 &quot;auto&quot;.
+如果不知道的話, 需要手工為 legacy 卡預留需要的 IRQ, 讓 BIOS PnP
+配置時不使用這些資源. 假如你在 Windows 下運行 ICU 告訴 BIOS 關于你的 legacy
+卡的情況, BIOS 才會知道你的 legacy 卡的情況. BIOS
+會把這些信息存在它的非揮發存儲器中.</p>
+
+<h3><a name="bios_reset" id="bios_reset"></a> 重置配置? </h3>
+
+<p>這會擦除掉 BIOS 存儲在非揮發存貯器中的 PnP 設備和上面講的 legacy 卡的配置信息.
+除非你確信這些數據有誤需要重寫, 否則沒有必要這樣做.
+只有你的機器不能啟動時才需要這樣做. 假如你的 BIOS 丟失了 legacy 設備的信息,
+你需要在 Windows 下運行 ICA 來重建這些信息.</p>
+
+<hr />
+<table >
+  <tr>
+    <td class="BtdL"> <a href="Plug-and-Play-HOWTO-1.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="BtdC"> <a href="index.html" accesskey="H">目錄(H)</a> </td>
+    <td class="BtdR"> <a href="Plug-and-Play-HOWTO-2.html">下一頁(N)</a> </td>
+  </tr>
+  <tr>
+    <td class="BtdL">PnP 怎麼做: 分配資源</td>
+    <td class="BtdC"><a href="Plug-and-Play-HOWTO-3.html"  accesskey="T">到頂層(T)</a></td>
+    <td class="BtdR">如何對付 PnP 卡</td>
+  </tr>
+</table>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img class="ImgLogo" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" title="網路內容分級協會" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>3. 建立客戶端的根目錄</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+<link href="../../style.css" rel="stylesheet" type="text/css" />
+<link href="index.html#content" rel="contents" />
+<link href="index.html" rel="start" />
+<link href="NFS-Root-Client-mini-HOWTO-2.html" rel="prev" />
+<link href="NFS-Root-Client-mini-HOWTO.rdf" rel="meta" title="各章節的說明資訊" />
+<link href="http://www.tldp.org/HOWTO/mini/NFS-Root-Client-mini-HOWTO/index.html" rel="alternate" title="原版" />
+<link href="NFS-Root-Client-mini-HOWTO-4.html" rel="next" />
+<link href="NFS-Root-Client-mini-HOWTO-1.html" rel="chapter" title="1.Copyright" />
+<link href="NFS-Root-Client-mini-HOWTO-2.html" rel="chapter" title="2.前言" />
+<link href="NFS-Root-Client-mini-HOWTO-3.html" rel="chapter" title="3.建立客戶端的根目錄" />
+<link href="NFS-Root-Client-mini-HOWTO-4.html" rel="chapter" title="4. 建立更多的客戶端" />
+<link href="NFS-Root-Client-mini-HOWTO-3.html#ss31" rel="section" title="3.1. 建立目錄樹" />
+<link href="NFS-Root-Client-mini-HOWTO-3.html#ss32" rel="section" title="3.2. 建立開機所需, 最小的檔案系統" />
+<link href="NFS-Root-Client-mini-HOWTO-3.html#ss33" rel="section" title="3.3. 建立 etc 目錄, 並設定客戶端的組態" />
+<link href="NFS-Root-Client-mini-HOWTO-3.html#ss34" rel="section" title="3.4. 開機" />
+</head>
+
+<body>
+<table
+
+
+
+
+>
+  <tr
+>
+    <th
+colspan="3" class="HdTitle"
+>Mini
+      HOWTO：NFS-Root-Client</th>
+  </tr
+>
+  <tr
+>
+    <td class="TtdL"
+><a href="NFS-Root-Client-mini-HOWTO-3.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="TtdC"
+></td
+>
+    <td class="TtdR"
+><a href="NFS-Root-Client-mini-HOWTO-4.html" accesskey="N">下一頁(N)</a></td
+>
+  </tr
+>
+</table
+>
+<hr />
+<h1> 3. 建立客戶端的根目錄</h1>
+<h2> <a name="ss31" id="ss31"></a>3.1. 建立目錄樹</h2>
+<p> 最初, 你需要建立目錄本身的架構. 我把所有的客戶端, 建在 /clients/hostname 之下, 我拿它用於下面的例子. 不過, 這目錄也可改為其他路徑.
+  接著第一階段, 是在這根目錄下, 建立相關的目錄. 你應該建立下列目錄: bin, dev, etc, home, lib, mnt, proc, sbin,
+  server, tmp, usr, var</p>
+<p> 以及其他, 你可能想置於系統上的目錄.</p>
+<p> local, proc, dev 這些目錄, 每台機器要各自一份, 而其餘目錄, 則是部分的, 或完整的, 和其他客戶端共享.</p>
+<h2> <a name="ss32" id="ss32"></a>3.2. 建立開機所需, 最小的檔案系統</h2>
+<h3> 3.2.1. 建立 dev 目錄.</h3>
+<p> 儘管目錄 dev 可以共享, 但最好還是為每個客戶端, 各自建一個. 你可以用合適的 MAKEDEV scripts, 來建客端的 dev目錄, 不過大多數情況,
+  直接從伺服器複製, 比較簡單: </p>
+<pre class="sample">cp -a /dev /clients/hostname</pre>
+<p> 你應記住, /dev/mouse, /dev/cdrom, /dev/modem 是 symbolic links, 將連結至實際的設備, 因此, 你應確保,
+  它們連結正確, 而符合客戶端的硬體.</p>
+<h3> 3.2.2. 複製所需的執行檔.</h3>
+<p> 儘管我們從伺服器, 掛載每件東西, 但最低限度, 我們還是需要把些東西, 拷到客戶端. 首先, 我們需要 &quot;初始&quot;,
+  在初始化之前, 系統不可能跑任何東西 (雖然作者費了許多工夫, 才發現到這件事 ;-). 所以第一, 你應該把 /sbin/init 複製到客戶端的目錄
+  sbin 下, 這麼一來, 便會執行 rc.S, 接著, 你應複製 /bin/sh 到客戶端的目錄 bin 下. 還有, 為了掛載所有東西, 你需要把
+  /sbin/mount 拷到客戶端的目錄 sbin 下. 假設你 rc.S 的第一行是 mount -av, 那這就是最低限度了. 然而, 我建議再多拷些檔:
+  update, ls, rm, cp, umount, 如此一來, 客戶端掛載時若出問題, 就有基本工具可用了. 假如你選擇在掛載前啟動 <code>swap</code>,
+  那你還應複製執行檔 swapon.</p>
+<p> 因為這些執行檔, 多數預設為動態連結, 所以你也需複製等份的 <code>/lib</code>:</p>
+<pre class="sample">cp -a /lib/ld* /lib/libc.* /lib/libcursses.*     /client/hostname/lib</pre>
+<p> 應考慮, 若不用複製, 而是 hardlink 至執行檔本身的情形. 請讀我對這所作的評語, 在這份 Howto 的 2.1 節.</p>
+<p> 請注意, 上述所有資料, 是假設開機時, 網路組態的參數已傳給核心. 如果你打算用 rarp 或 bootp 的話, 與這些相關的執行檔, 你也可能需要.</p>
+<p> 一般而言, 你需要的檔案, 最少要使你能設定網路以及跑 rc.S, 直到開始掛上檔案系統的其他部分. 確定你檢查過, 你的 /etc/init 以及 rc.S
+  檔, 確定它們沒有任何的 &quot;驚喜&quot;, 這是指,
+  在第一次掛載前, 發生存取其他檔案的狀況. 然而, 倘若你真的發現有這樣的檔, 你可以也拷過來, 或是從你的 init 檔和 rc.S 檔, 移除相關的部分.</p>
+<h3> 3.2.3. 目錄 var</h3>
+<p> 大多數情況下, 目錄 var 應該, 每個客戶端各別一份. 可是, 目錄 var 的資料大多都能共享. 請在伺服器的目錄下, 建一目錄, 稱作 var.
+  我們將在那, 掛上伺服器的 var 目錄. 要建立本地端的 var 目錄, 直接鍵入:</p>
+<pre class="sample">cp -a /var /clients/hostname/</pre>
+<p> 現在, 你可選擇, 何者要區隔開, 何者要共享. 要共享的目錄或檔案, 只要先從客戶端的 var 目錄中, 把它移除, 再把它 symbolic link
+  至目錄 /server/var. 不過請注意, 你應該 symbolic link 至 /server/var 或../server/var, 而非
+  /clients/hostname/server/var, 因為這麼做, 當根目錄(指 /clients/hostname/) 更動後, 將會失效.</p>
+<p> 一般而言, 我建議隔開 /var/run, /var/lock, /var/spool, /var/log.</p>
+<h3> 3.2.4. 其餘的目錄</h3>
+<ul>
+  <li>  etc 在下節有完整說明.</li>
+  <li> mnt 與 proc 用於本地端. </li>
+  <li>usr 和 home 僅為掛載點 (mount points).</li>
+  <li>tmp 隨你決定. 你可以為每個客戶端, 各別建立不同的 tmp 目錄, 也可以建些 /clients/tmp 目錄, 然後把它掛到每個客戶端的 /tmp
+    之下. 我建議你為每個客戶端, 各別提供一 tmp 目錄.</li>
+</ul>
+<h2> <a name="ss33" id="ss33"></a>3.3. 建立 etc 目錄, 並設定客戶端的組態</h2>
+<p> 請注意 - 本節是談, 建立目錄 etc, 此目錄大多共享於客戶端之間. 假如你那些無磁碟的客戶端, 各有不同的系統管理員, 那最好為每個客戶端, 各自設立一
+  etc 目錄.</p>
+<h3> 3.3.1. 建立多個客戶端共用的 etc 目錄</h3>
+<p> 雖然我們隔開客戶端之間的 etc 目錄, 不過我們仍想在那, 分享大部分的檔案. 一般而言, 我認為, 和伺服器的 /etc 目錄, 共享 etc 檔,
+  這樣不好, 因此我建議, 開個目錄 /clients/etc, 容納客戶端所需的資訊. 這樣一開始, 只要把伺服器的 etc 目錄內容, 複製到 /clients/etc
+  目錄下即可.</p>
+<p> 你應該把所有非硬體規格的組態檔, 如 motd, issue 等, 全都加進這個目錄, 而不應加入會隨客戶端硬體而異的檔案. (例如, initab 或是
+  fstab)</p>
+<p> 最重大的改變, 是在你的 rc.d 目錄裡. 首先, 你應該調整 rc.inet1, 以適宜於你本地端的設定. 我透過 LILO/Loadlin, 把我網路組態的所有參數,
+  都傳給核心, 因此我幾乎移除了 rc.inet1 檔的每一行. 唯一留下的, 是 localhost 的 ifconfig 和 route. 假如你是用
+  rarp 或是 bootp, 那你就必須視情況而改.</p>
+<p> 其次, 你應該編輯你的 rc.S 檔. 首先, 移除所有會導致 fsck 檢查的部分, 這是因為伺服器開機時, 會啟動 fsck. 接著, 你應該把掛載你
+  fstab 的那一行找出來. 這應該看起來像:</p>
+<pre class="sample">mount -avt nonfs</pre>
+<p> -t nonfs 在這, 是因為正常的客戶端, 先跑 rc.S, 緊接著以 rc.inet1 來組設 Ethernet. 由於這會導致, 不掛載任何的
+  NFS partitions, 所以這行應該刪掉. 因此, 把它改成 mount -av. 倘若你需要跑 rarp/bootp 來設定你網路的組態,
+  那就在掛載前, 在 rc.S 作這件事(或者從 rc.S 呼叫適當的 script), 並且確定你磁碟的 bin 和 sbin 目錄, 提供所需的檔案.</p>
+<p> 執行完 mount -av, 你就有個運作中的檔案系統了. 建個一般的 fstab, 這樣稍後你便可, 把它複製到每個客戶端. 你的 fstab 應該看起來像:</p>
+<pre class="sample">server:/clients/hostname     / nfs default 1 1
+
+  server:/bin /bin nfs default 1 1
+
+  server:/usr /usr nfs default 1 1
+
+  server:/sbin /sbin nfs default 1 1
+
+  server:/home /home nfs default 1 1
+
+  server:/lib /lib nfs default 1 1
+
+  server:/clients/etc /server/etc nfs default 1 1
+
+  server:/clients/var /server/var nfs default 1 1
+
+  none /proc proc default 1 1</pre>
+<p> 請注意, 關鍵字 default 或許不會有效於所有不同版本的掛載. 你可以把它更改為 rw 或 ro, 或者移除全部的 default 1 1.</p>
+<p> 再者, 確定你伺服器的 /etc/exports, 看起來像:</p>
+<pre class="sample">/clients/hostname hostname.domainname(rw,no_root_squash)
+
+  /clients/etc hostname.domainname(ro,no_root_squash)
+
+  /clients/var hostname.domainname(ro,no_root_squash)
+
+  /usr hostname.domainname(ro,no_root_squash)
+
+  /sbin hostname.domainname(ro,no_root_squash)
+
+  /bin hostname.domainname(ro,no_root_squash)
+
+  /lib hostname.domainname(ro,no_root_squash)
+
+  /home hostname.domainname(rw,no_root_squash)</pre>
+<p> 對每台主機而言, 第一行應該各自獨立, 除此之外, 其他行可替換為主機遮罩 (hostmask), 使你所有的主機都能相契 (如 pc*.domain
+  - 然而要記住, * 只能代換沒有句點的字串). 我建議你, 讓大部分的目錄唯讀, 不過這由你決定. no_root_squash 將確保使用者 root,
+  在客戶端上, 對於 nfsd 實際也有 root 權限. 請查證 man exports(5). 假如你要讓使用者, 也能從客戶端執行 passwd,
+  那請確定 /etc 可讀可寫 (rw) 而非唯讀 (ro). 不過, 這並不明智.</p>
+<p> 請注意另一件, 有關檔案 rc.S 的事. 在 Slackware 執行 rc.S, 預設會每次都建立新的 /etc/issue 和 /etc/motd.
+  假如這些檔從伺服器掛載為唯讀 (ro), 那這個功能一定要停用, 而且我建議, 在任何情況都應停用.</p>
+<p> 最後, 如果你伺服器, 要和客戶端一樣, 擁有相同的使用者資料庫 (userbase), 你應在下列兩種方式作選擇, 1) 使用 NIS (Yellow
+  Pages - 請參考 yp-howto), 這樣, 接收自 NIS 伺服器之故, 每個客戶端都會各自有 /etc/passwd 以及 /etc/group.
+  2) 大多數情況, 簡單的 symbolic link 就夠了. 因此, 你需要 hardlink /clients/etc/passwd 到 /etc/passwd,
+  或者你喜歡用 symbolic link 的話, 那就把 /etc/passwd 連結到 /clients/etc/passwd (反過來說, 這是因為客戶端並不掛載伺服器的
+  etc 目錄). 至於 /etc/group, 方法也一樣.</p>
+<h3> 3.3.2. 建立單一客戶端專用的 etc 目錄</h3>
+<p> 一般而言, 在客戶端的 etc 中, 檔案大部分應該 symbolic link 到 目錄 /server/etc. 然而, 有些檔案應隨每台硬體的差異,
+  而彼此不同, 而有些只在載入核心時才用到. 目錄 etc 中, 你最少需要的檔, 如下:</p>
+<pre class="sample">resolv.conf
+
+  hosts
+
+  inittab
+
+  rc.d/rc.S
+
+  fstab</pre>
+<p> 既然這五個檔, 在所有客戶端都可以相同, 你可以直接把它們 hardlink, 或者再複製一次. 不過, rc.S 與 fstab 兩檔, 最好是每個客戶端各複製一份.
+  你還需要每個客戶端, 各自一份 etc/HOSTNAME. 我個人是建議, 所有的 rc.d 檔, 每個客戶端都要各自有一份, 因為組態和硬體可能彼此相異.</p>
+<p> 為每個客戶端, 把適當的 swap 行, 加入其 fstab 檔:</p>
+<pre class="sample">/dev/swap_partition swap swap default 1 1</pre>
+<p> 客戶端其餘的 /etc 檔, 你可以 hardlink 到檔案 /clients/etc/*, 或把它們 symbolic link 到 /server/etc
+  (這是 /clients/etc/ 的掛載點).</p>
+<p> 確定你的主機能正確的 resolve, 無論是透過 named 還是 etc/hosts. 在 etc/hosts 中記錄伺服器的 IP, 而不倚賴 resolve,
+  這方式不錯. 假如你只倚賴 named 的 resolve, named 出了個問題, 將使你客戶端無法開機.</p>
+<h2> <a name="ss34" id="ss34"></a>3.4. 開機</h2>
+<p> 現在, 你該作的就是, 開機, 十指交叉, 期望每件事都正常運作 :-).</p>
+<hr />
+<table
+
+
+
+
+>
+  <tr
+>
+    <td class="BtdL"
+><a href="NFS-Root-Client-mini-HOWTO-2.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="BtdC"
+><a href="index.html" accesskey="H">目錄(H)</a></td
+>
+    <td class="BtdR"
+><a
+href="NFS-Root-Client-mini-HOWTO-4.html"
+>下一頁(N)</a
+></td
+>
+  </tr
+>
+  <tr
+>
+    <td class="BtdL"
+>前言</td
+>
+    <td class="BtdC"
+><a href="NFS-Root-Client-mini-HOWTO-3.html" accesskey="T">到頂層(T)</a></td
+>
+    <td class="BtdR"
+>建立更多的客戶端</td
+>
+  </tr
+>
+</table
+>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" width="88" height="31" style="border:0;width:88px;height:31px"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img style="border:0;width:88px;height:31px" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img style="border:0;width:88px;height:32px" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" style="border:0" alt="表示該網頁支援資源描述架構"/></a></div>
+</body>
+</html>

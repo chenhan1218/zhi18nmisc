@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>3.性能小技巧</title>
+<link href="Ethernet-HOWTO-4.html" rel="next"  title="4.有關銷售商/制造廠家/型號的信息" />
+<link href="Ethernet-HOWTO-2.html" rel="previous" title="2.常見問題" />
+<link href="../../style.css" rel="stylesheet" type="text/css" />
+<link href="http://tldp.org/HOWTO/Ethernet-HOWTO.html" rel="alternate" title="原版" />
+<link href="index.html" rel="start" title="HOWTO：Linux Ethernet" />
+<link href="index.html#content" rel="contents" />
+<link href="Ethernet-HOWTO-1.html" rel="chapter" title="1.導言" />
+<link href="Ethernet-HOWTO-2.html" rel="chapter" title="2.常見問題" />
+<link href="Ethernet-HOWTO-3.html" rel="chapter" title="3.性能小技巧" />
+<link href="Ethernet-HOWTO-4.html" rel="chapter" title="4.有關銷售商/制造廠家/型號的信息" />
+<link href="Ethernet-HOWTO-5.html" rel="chapter" title="5.電纜、同軸電纜、雙絞線" />
+<link href="Ethernet-HOWTO-6.html" rel="chapter" title="6.軟件設置與網卡診斷" />
+<link href="Ethernet-HOWTO-7.html" rel="chapter" title="7.技術信息" />
+<link href="Ethernet-HOWTO-8.html" rel="chapter" title="8.便攜式/筆記本電腦聯網" />
+<link href="Ethernet-HOWTO-9.html" rel="chapter" title="9.雜項" />
+<link href="Ethernet-HOWTO-3.html#ss3.1" rel="section" title="3.1 一般概念" />
+<link href="Ethernet-HOWTO-3.html#ss3.2" rel="section" title="3.2 ISA網卡和ISA總線速度 " />
+<link href="Ethernet-HOWTO-3.html#ss3.3" rel="section" title="3.3 設置TCP的Rx窗口" />
+<link href="Ethernet-HOWTO-3.html#ss3.4" rel="section" title="3.4 增強NFS性能 " />
+<meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+<link href="Ethernet-HOWTO.rdf" rel="meta" title="各章節的說明資訊" />
+</head> <body>
+<table >
+  <tr> 
+    <th colspan="3" class="HdTitle">HOWTO：Linux Ethernet</th>
+  </tr>
+  <tr> 
+    <td class="TtdL"> <a href="Ethernet-HOWTO-2.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="TtdC">&nbsp;</td>
+    <td class="TtdR"> <a href="Ethernet-HOWTO-4.html" accesskey="N">下一頁(N)</a> </td>
+  </tr>
+</table>
+<hr />
+<h1> 3. 性能小技巧</h1>
+
+<p>如果你的以太網吞吐量太小，或者想提高ftp傳輸的速度，可以使用這里的一些小技巧。</p>
+<p>程序<code>ttcp.c</code>是測試原始吞吐量大小的好實驗。另一個普通的技巧是把一個大于1MB的<code>large_file</code>駐留在發送機器的緩沖內存里，然后執行<code>ftp&gt; get large_file /dev/null</code>。（至少要“get”兩次，因為第一次是把文件駐留在發送機器的緩沖內存中。）把文件駐留在緩沖內存的原因是你對測量里混進從磁盤存取文件的速度不感興趣。這也是把輸入數據發送到<code>/dev/null</code>而不是磁盤上的原因。</p>
+
+<h2><a name="ss3.1" id="ss3.1"></a>3.1 一般概念 </h2>
+
+<p>即使一個8比特的網卡在接收背靠背的數據包時也沒有問題。但在計算機無法迅速地從網卡接收數據包為更多進來的數據包騰出空間時，困難就出現了。如果計算機不能迅速地清除已經接收到的數據包占據的網卡內存，網卡就沒有空間存放新的數據包了。</p>
+<p>在這種情況下，網卡或者丟棄新的數據包，或者把它放在以前接收的數據包位置上。任何一個都會引起重新傳送而嚴重地中斷平滑的數據傳輸流，并使性能被嚴重降低，其降級因子甚至可以達到5！</p>
+<p>擁有更多板上內存的網卡可以“緩沖”更多的數據包，因此可以無需丟棄就處理更大量的突發背靠背數據包。這也就意味著網卡不需要主機響應從緩存讀取數據包的延遲更小以避免丟棄數據包。</p>
+<p>大多數8比特網卡有8kB緩存，而大多數16比特網卡有16kB緩存。大多數的Linux驅動程序要保留3kB的緩存（作為兩個Tx緩存），這樣就只給8比特網卡剩下5kB作為接收的空間。它只夠存放三個完全大小（1500字節）的以太網數據包。</p>
+
+<h2><a name="ss3.2" id="ss3.2"></a>3.2 ISA網卡和ISA總線速度 </h2>
+
+<p>在上面提到，如果從網卡移走數據包的速度足夠快，即使Rx數據包緩沖內存的數量小，丟棄/覆蓋的情況也不會出現。設置數據包從網卡移到計算機內存的速率的因子是連接這二者的數據通道的速度──即ISA總線的速度。（如果CPU是很慢的386sx-16，它也會起一定的作用。）</p>
+<p>推荐的ISA總線時鐘為8MHz，但很多主板和周邊設備可以運行在更高的頻率上。一般通過在CMOS設置里選擇主板/CPU時鐘頻率因子，可以設置ISA總線的時鐘頻率。有些ISA和PCI/ISA主板可能沒有這一選項，那么就只能使用制造商的缺省值了。</p>
+<p>例如，下面是在一台40MHz的486上，不同ISA總線速度下，8比特WD8003EP網卡用TTCP程序測量得到的一些接收速度。</p>
+<pre class="sample">
+        ISA總線速度(MHz)    Rx TTCP (kB/s)
+        -------------------                  --------------
+        6.7                     740
+        13.4                    970
+        20.0                    1030
+        26.7                    1075
+</pre>
+<p>使用TCP/IP，對<em>任何</em>10Mb/s以太網卡都難以得到高于1075kB/s的結果。但是，不要期望每一個系統都可以工作在快的ISA總線速度下。大多數系統在高于13MHz的速度上無法正常工作。（同樣，某些PCI系統的ISA總線速度固定在8MHz，所以用戶沒有機會提高它。）</p>
+<p>另外，對于快的傳輸速度，可以從較短的內存和I/O周期減少CPU占用量中獲益。（注意，設置在ISA總線上的硬盤和視頻卡也會從提高的ISA總線速度中感受到性能的提高。）</p>
+<p>在實驗超過8MHz的ISA總線速度之前，一定要備份你的數據，并在提高速度后徹底測試所有的ISA周邊設備是否工作正常。</p>
+
+<h2><a name="ss3.3" id="ss3.3"></a>3.3 設置TCP的Rx窗口 </h2>
+
+
+<p>再說一遍，網卡的板上RAM小以及網卡與計算機內存間的數據通道相對較慢會引起麻煩。TCP缺省的Rx窗口設置為32kB，也就是說與你在同一子網的一台較快的計算機會一下子發給你32kB的數據，而不會停下來看看你是否正常地接收到了它們。</p>
+<p>近期版本的<code>route</code>命令能夠在運行過程中設置這個窗口的大小。一般它只用在需要減小該窗口的局域網，因為在若干路由器或網關后面的計算機會得到足夠的“緩沖”而不造成問題。下例為一個可能的用法：</p>
+<pre class="sample">
+        route add &lt;whatever&gt; ... window &lt;win_size&gt;
+</pre>
+<p>其中的<code>win_size</code>是你希望使用的窗口大小（以字節計算）。一個運行在8MHz或更低速度下的ISA總線上的8比特3c503網卡，可以在4kB大小的窗口下很好地工作。太大的窗口會導致覆蓋和丟棄數據包，并嚴重降低以太網的吞吐量。你可以用<code>cat /proc/net/dev</code>檢查操作狀態，它會顯示出現的丟棄或覆蓋狀況。</p>
+
+<h2><a name="ss3.4" id="ss3.4"></a>3.4 增強NFS性能 </h2>
+
+<p>有些人發現在使用8kB（Sun的原始值）的NFS數據包大小時，在NFS客戶端使用8比特網卡得到的性能比預期的要差。</p>
+<p>可能的原因在于8比特網卡與16比特網卡的板上緩存大小不同。最大的以太網數據包大小為1500字節。這樣8kB的NFS數據包就成為大約6個背靠背的最大大小的以太網數據包。8比特網卡和16比特網卡在接收背靠背數據包時都沒有問題。在機器無法及時從網卡緩存移走數據包時就有問題了，緩存會溢出。8比特網卡每次傳送時要多占用一個ISA總線周期的事實也幫不上忙。如果用的是8比特網卡，你<em>能</em>做的是把NFS傳送大小設置為2kB（甚至1kB），或者試著提高ISA總線速度以加快清空網卡上的緩存。我發現8MHz下（沒有其它系統負載），一個舊的WD8003E網卡可以跟得上2kB大小的NFS接收，但在4kB時，性能降低的因子為3。</p>
+<p>另一方面，如果缺省的安裝選項為1kB大小，而你的網卡至少為16比特的
+ISA網卡，把其大小提高到4kB（甚至8kB）會使性能顯著提高。</p>
+
+<hr />
+<table >
+  <tr> 
+    <td class="BtdL"> <a href="Ethernet-HOWTO-2.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="BtdC"> <a href="index.html" accesskey="H">目錄(H)</a> </td>
+    <td class="BtdR"> <a href="Ethernet-HOWTO-4.html">下一頁(N)</a> </td>
+  </tr>
+  <tr> 
+    <td class="BtdL">常見問題</td>
+    <td class="BtdC"><a href="Ethernet-HOWTO-3.html"  accesskey="T">到頂層(T)</a></td>
+    <td class="BtdR">有關銷售商/制造廠家/型號的信息</td>
+  </tr>
+</table>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> 
+  <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a> 
+  <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img class="ImgLogo" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> 
+  <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> 
+  <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" title="網路內容分級協會" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

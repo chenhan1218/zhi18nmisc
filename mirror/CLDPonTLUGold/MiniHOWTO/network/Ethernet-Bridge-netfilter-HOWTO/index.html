@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Ethernet+Netfilter mini-HOWTO</title>
+<link href="Ethernet-Bridge-netfilter-HOWTO-1.html" rel="chapter" title="1.介紹" />
+<link href="Ethernet-Bridge-netfilter-HOWTO-2.html" rel="chapter" title="2.必需的軟件" />
+<link href="Ethernet-Bridge-netfilter-HOWTO-3.html" rel="chapter" title="3.配置linux以提供必要的服務" />
+<link href="Ethernet-Bridge-netfilter-HOWTO-4.html" rel="chapter" title="4.測試你的新的橋接網絡" />
+<link href="Ethernet-Bridge-netfilter-HOWTO-5.html" rel="chapter" title="5.其它鏈接" />
+<link href="../../style.css" rel="stylesheet" type="text/css" />
+<meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+<link href="Ethernet-Bridge-netfilter-HOWTO-1.html" rel="next" />
+<link href="http://www.tldp.org/HOWTO/Ethernet-Bridge-netfilter-HOWTO.html" rel="alternate" title="原版" />
+<link href="Ethernet-Bridge-netfilter-HOWTO.rdf" rel="meta" title="各章節的說明資訊" />
+</head> <body> 
+<h1>Mini HOWTO：Ethernet Bridge + netfilter以太網橋+netfilter Howto</h1>
+<h2>
+<a href="mailto:Nils.Radtke_@_Think-Future.de">Nils Radtke</a>  v0.2, September 2002<br />
+譯者: 
+<a href="mailto:yintianbao@yahoo.com.cn">尹天寶</a>  <code>yintianbao@yahoo.com.cn</code></h2><div>翻譯日期: 2002年11月11日 reversion 0.2</div>
+<hr />
+<p>
+ 配置一個以太網橋讓我們有機會在一個現有網絡中透明地集成進一個調控設備。這種配置無須改變現有的網絡邏輯結構。它是通過在現有物理網絡和路由設備（連接到internet的一種硬件）之間加入以太網橋來實現的。</p>
+<p>
+ 這份Howto也有其它<a href="http://www.think-future.de/DOCUMENTATION/Ethernet-Bridge-netfilter-HOWTO/other_formats/">其它格式</a>可用。推薦下載：<a href="http://www.think-future.de/DOCUMENTATION/Ethernet-Bridge-netfilter-HOWTO/Ethernet-Bridge-netfilter-HOWTO.tar.gz">documentation tarball</a>. 。你也可以在
+<a href="http://www.tldp.org/docs.html#howto">Linux Documentation Project</a>中找到它。想找其它語言版本嗎？看看這個<a href="http://www.think-future.de/DOCUMENTATION/Ethernet-Bridge-netfilter-HOWTO_de/">德語版</a>
+</p>
+<p>
+ 歷史<br />
+ 2002-09-19：在"相關主題"部分，關于ebtables的鏈接已經更新。添加了關于<a href="#4d">false positive&quot; br-nf debugging output</a>的備注。<br />
+ 2002-10-08：添加了"配置實例"，在 "Setting up the routing, Ping it, Jim!" 提供了有關路由的一些線索。<br />
+</p>
+<ol>
+  <li><a href="Ethernet-Bridge-netfilter-HOWTO-1.html">介紹</a></li>
+  <li><a href="Ethernet-Bridge-netfilter-HOWTO-2.html">必需的軟件</a><br />
+    2.1 <a href="Ethernet-Bridge-netfilter-HOWTO-2.html#ss21">linux內核的特性</a><br />
+  2.2 <a href="Ethernet-Bridge-netfilter-HOWTO-2.html#ss22">用戶空間工具：brctl</a>  </li>
+  <li><a href="Ethernet-Bridge-netfilter-HOWTO-3.html">配置linux以提供必要的服務</a><br />
+    3.1 <a href="Ethernet-Bridge-netfilter-HOWTO-3.html#ss31">配置網橋</a><br />
+  3.2 <a href="Ethernet-Bridge-netfilter-HOWTO-3.html#ss32">配置路由</a></li>
+  <li><a href="Ethernet-Bridge-netfilter-HOWTO-4.html">測試你的新的橋接網絡</a><br />
+    4.1 <a href="Ethernet-Bridge-netfilter-HOWTO-4.html#ss41">測試場景</a><br />
+  4.2 <a href="Ethernet-Bridge-netfilter-HOWTO-4.html#ss42">ping it ,Jim!</a><br />
+  4.3 <a href="Ethernet-Bridge-netfilter-HOWTO-4.html#ss43">實際的配置</a><br />
+  4.4 <a href="Ethernet-Bridge-netfilter-HOWTO-4.html#ss44">附記</a>  </li>
+  <li><a href="Ethernet-Bridge-netfilter-HOWTO-5.html">其它鏈接</a><br />
+    5.1 <a href="Ethernet-Bridge-netfilter-HOWTO-5.html#ss51">以太網橋</a><br />
+  5.2 <a href="Ethernet-Bridge-netfilter-HOWTO-5.html#ss52">相關主題</a></li>
+</ol>
+<hr />
+<table
+
+
+
+
+>
+  <tr
+>
+    <td class="BtdL"
+>&nbsp;</td
+>
+    <td class="BtdC"
+><a href="index.html" accesskey="H">目錄(H)</a></td
+>
+    <td class="BtdR"
+><a
+href="Ethernet-Bridge-netfilter-HOWTO-1.html"
+>下一頁(N)</a
+></td
+>
+  </tr
+>
+  <tr
+>
+    <td class="BtdL"
+>&nbsp;</td
+>
+    <td class="BtdC"
+><a href="index.html" accesskey="T">到頂層(T)</a></td
+>
+    <td class="BtdR"
+>介紹</td
+>
+  </tr
+>
+</table
+>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" width="88" height="31" style="border:0;width:88px;height:31px"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img style="border:0;width:88px;height:31px" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img style="border:0;width:88px;height:32px" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" style="border:0" alt="表示該網頁支援資源描述架構"/></a></div>
+</body></html>

@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+ 
+ <title>Token-Ring mini-HOWTO: 問題與回答</title>
+ <link href="Token-Ring-8.html" rel="next" title="8. 套件特有安裝" />
+ <link href="Token-Ring-6.html" rel="previous" title="6. 已知問題" />
+ <link href="../../style.css" rel="stylesheet" type="text/css" />
+ <meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+ <link href="Token-Ring.rdf" rel="meta" title="各章節的說明資訊" />
+  <link href="index.html" rel="start" />
+ <link href="index.html#content" rel="contents" />
+ <link href="Token-Ring-1.html" rel="chapter" title="1.版權和贅言" />
+ <link href="Token-Ring-2.html" rel="chapter" title="2.硬體需求" />
+ <link href="Token-Ring-3.html" rel="chapter" title="3.軟體需求" />
+ <link href="Token-Ring-4.html" rel="chapter" title="4.安裝和設定" />
+ <link href="Token-Ring-5.html" rel="chapter" title="5.NetTools 安裝" />
+ <link href="Token-Ring-6.html" rel="chapter" title="6.已知問題" />
+ <link href="Token-Ring-7.html" rel="chapter" title="7.問題與回答" />
+ <link href="Token-Ring-8.html" rel="chapter" title="8.套件特有安裝" />
+ <link href="http://tldp.org/HOWTO/mini/Token-Ring/index.html" rel="alternate" title="原版" />
+</head> <body> 
+<table
+
+
+
+
+>
+  <tr
+>
+    <th
+colspan="3" class="HdTitle"
+>Mini
+      HOWTO：Token-Ring</th>
+  </tr
+>
+  <tr
+>
+    <td class="TtdL"
+><a href="Token-Ring-6.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="TtdC"
+></td
+>
+    <td class="TtdR"
+><a href="Token-Ring-8.html" accesskey="N">下一頁(N)</a></td
+>
+  </tr
+>
+</table
+>
+<hr />
+<h1>7. 問題與回答</h1>
+<ul>
+  <li>問題：Token Ring 驅動程式能編譯成 module(模組) 嗎?<br />
+    <br />
+  答案：可以, 它工作地相當好.在編譯成 module 時有個額外的參數可用.
+如果你有 "spoof(欺騙)" 軟體安裝程式的需要,例如
+redhat boot disks 把
+token ring 網路卡看成 ethernet(乙太網路) 裝置 (用 NFS/FTP 安裝等等),你可以用 "<code>device</code>" 這個參數強行指定設備不用 <code>tr0</code> 這個名稱.
+但當你有多張網路卡時這個方法可能會出錯.
+大多時候就是這裡有些不相容性要克服.例:
+<pre class="sample">
+/sbin/insmod ibmtr device=eth0
+</pre>
+ </li>
+ <li>問題：我一直遇到錯誤訊息 "0011". 這是甚麼意思?<br />
+   <br />
+   答案：
+確定你的網路連接沒有問題或是你的 token ring 網路卡有 loopback
+connector.這個錯誤訊息是指它無法開啟 token ring.
+這種情形;有 99.99% 是因為它沒有被插入.<br />
+<br />
+注：
+<p>如果你有裝音效卡且它的 IO 0x220,那很有可能 token ring 網路卡會和 0xa20 的 IO 有衝突.</p>
+<p>如果你發現有被支援的網路卡無法工作而你又有音效卡,請試著把你的網路卡設定成 0xa24 或是 更改/移除 音效卡.</p>
+<p>除此之外...</p>
+<p>這裡有一些我收到關於 Token Ring 和 Linux 的 email. 為了不佔空間,我把其中一些 email 不重要的內容刪去.</p>
+ </li>
+ <li>
+ <pre class="sample">
+From: "Mr. Chuck Rickard" &lt;chuck@gl.umbc.edu>
+Subject: Re: Token Ring Kernel patch.
+
+我已加入核心並重新編譯.當開機時它說,"tr0: Can't assign device to adapter"
+and again for tr1".您有何看法呢?
+(以下為原文...)
+
+I d/l'd the patch, applied it, and re-compiled. When booting it said,
+"tr0: Can't assign device to adapter" and again for tr1.  Any ideas?
+
+Thanks!
+
+Chuck Rickard
+(chuck@umbc8.umbc.edu)</pre>
+ 答案：
+ <p> </p>
+ From: David Morris &lt;dwm@shell.portal.com>
+ <p> 如果只有這個訊息,它表示有關網路卡資訊的 PIO request (參考 <code>segment
+     = inb(PIOaddr)</code> in <code>ibmtr.c</code>) 已超出 Token Ring 網路卡所在的 IO address 的範圍了. (以下為原文...)</p>
+ <p>When this is the only message issued, it means that the PIO request
+   for adapter information (see <code>segment = inb(PIOaddr)</code> in <code>ibmtr.c</code>) was so out of range that there is no TR card at that IO address.</p>
+ </li>
+ <li>問題：
+   <pre class="sample">
+From: Mike Glover &lt;glover@credit.erin.utoronto.ca>
+Subject: Token ring problems.
+感謝您的回答.我想我之前問的不對題,現在重新說明一遍.不論如何,以下剪輯是開機後從
+/var/adm/messages 抄出來的.
+(以下原文未刪...)
+
+Thanks for responding. I was starting to thing that I posted incorrectly, 
+and I was about to post again. Anyway, the following  clip is part of my
+/var/adm/messages file from when I boot up.
+
+May  2 10:03:14 linux kernel: tr0: Unable to assign adapter to device.
+May  2 10:03:14 linux kernel: tr1: Unable to assign adapter to device.
+
+這段中, tr0: Unable to assign adapter device.著實困擾著我.這訊息簡短至極使的我
+不知如何處理.我只知道我沒有指定任何 token ring 的資訊,但我不知如何下手.
+The section, tr0: Unable to assign adapter device. is what kinda confuses 
+me. The documentation is slim at best so I didn't know what to do with 
+the message. I know I didn't assign any token ring information,
+and I didn't know where to do it.
+
+The hardware(硬體):
+            Its a PC clone (Dell OMNIPLEX 560 to be exact)
+            The token ring card is a Olicom 16/4 Adapter.
+
+我有 DOS 環境的 token ring 驅動程式而且它馬上連上網路,所以不是這張網路卡的問題.
+我想可能是我在 Linux 下設定時忽略了甚麼小東西.
+I have DOS token ring drivers and it snaps into the network, so there is 
+nothing wrong with the card. I think, I am just missing something really 
+small in the config on the Linux side.
+</pre>
+ 答案：
+ <p>Olicom 16/4 網路卡並不使用 Tropic 晶片.試著去用上面 HOWTO 所列的網路卡. (以下為原文...) </p>
+ <p>The Olicom 16/4 Adapter does not use the Tropic Chipset. Try using one
+   of the cards that are listed at the top of the HOWTO.</p>
+ </li>
+ <li>問題：
+  <pre class="sample">
+From: Mike Glover &lt;glover@credit.erin.utoronto.ca>
+Subject: Found an IBM card...
+
+我發現一張 IBM token ring 網路卡並且更進一步,但似乎不怎麼好運.(在
+/etc/rc.d/rc.inet1 中 ifconfig 項目我有把 eth0 改成 tr0)
+(原文...)
+I found myself an IBM token ring card and I got a little further,
+but still not luck. (I did change /etc/rc.d/rc.inet1 ifconfig entry
+from eth0 to tr0)
+
+不管怎樣,以下是 /var/adm/messages 的內容:
+Anyway, here is part of the /var/adm/messages file:
+May  2 16:23:07 linux kernel: IPX Portions Copyright (c) 1995 Caldera, Inc.
+May  2 16:23:07 linux kernel: tr0: PIOaddr:  a20 seg/intr: b8 mmio base:
+   000dc000 intr: 0
+May  2 16:23:07 linux kernel: tr0: Channel ID string not found for PIOaddr: a20
+May  2 16:23:07 linux kernel: tr0: Expected for ISA: 5049434f3631313039393020
+May  2 16:23:07 linux kernel: tr0:            found: 000902003021111000182000
+May  2 16:23:07 linux kernel: tr0: Expected for MCA: 4d4152533633583435313820
+May  2 16:23:07 linux kernel: tr0: Unable to assign adapter to device.
+May  2 16:23:07 linux kernel: tr1: Unable to assign adapter to device.
+May  2 16:23:07 linux kernel: PPP: version 0.2.7 (4 channels) NEW_TTY_DRIVERS
+   OPTIMIZE_FLAGS
+
+
+這有說甚麼嗎?我看不出來.
+Does this tell you anything. It tells me little.
+</pre>
+ 答案：
+ <p> </p>
+ From: David Morris &lt;dwm@shell.portal.com>
+ <p> 這訊息代表 MMTO area 或是 TR 網路卡有記憶體衝突造成和網路卡的不相容 (至少這訊號未知).</p>
+ <p>This message means either a memory conflict with the MMIO area or a
+   TR card which is not compatible with the driver (at least the signature isn't
+   known).</p>
+ </li>
+ <li>問題：
+   <pre class="sample">
+From: Mike Glover &lt;glover@credit.erin.utoronto.ca>
+Subject: Almost there...
+
+The following sample is what I'm getting on my messages file:
+
+May  3 14:50:24 linux kernel: tr0: now opening the board...
+May  3 14:50:24 linux kernel: tr0: board opened...
+May  3 15:11:47 linux kernel: tr0: Arrg. Transmitter busy for more than 50 msec.
+   Donald resets adapter, but resetting
+May  3 15:11:47 linux kernel:  the IBM tokenring adapter takes a long time.
+   It might not even help when the
+May  3 15:11:47 linux kernel:  ring is very busy, so we just wait a little longer
+   and hope for the best.
+May  3 15:11:47 linux kernel: tr0: Arrg. Transmitter busy for more than 50 msec.
+   Donald resets adapter, but resetting
+May  3 15:11:47 linux kernel:  the IBM tokenring adapter takes a long time.
+   It might not even help when the
+May  3 15:11:47 linux kernel:  ring is very busy, so we just wait a little longer
+   and hope for the best.
+May  3 15:11:47 linux kernel: tr0: Arrg. Transmitter busy for more than 50 msec.
+   Donald resets adapter, but resetting
+
+Arrg 項目只有當我 telnet ,rlogin 或 ftp 到遠端機器時才會產生.當有上述情形時,網路會當掉一陣子.
+我移除其他硬體裝置(我的 SCSI 卡)讓網路卡單獨工作.一樣有問題,這排除了硬體間 IRQ 衝突的情形.
+以下是此卡的 DIP switches:
+The Arrg entry only comes when I telnet, rlogin or ftp to a remote 
+machine. Once that happens, the connection hangs big time. I took out all 
+the other hardware (which was 1 SCSI card) and tried running the card all 
+by itself. Same thing, so it eliminates hardware IRQ's from getting into 
+a yelling match. The following are the DIP switches on the card:
+
+1       Up      |
+2       Down    |
+3       Down    |       According to the manual this sets the 
+4       Up      |       base address to CC000 Which is fine for
+5       Up      |       my machine.
+6       Down    |
+7       Down    +       This sets the IRQ to 2. Which is also fine      
+8       Down    +
+9       Up      X       Primary Lan adapter. Which it is.
+10      Up      =       16 KB shared RAM size. This OK? 
+11      Down    =
+12      Up      #       16 Mbps Data rate.
+
+我懷疑這是否真的是 dip switches,或是我設定網路時的 route table 有問題.
+I was wondering if it is in fact the dip switches, or the way I have 
+configured my route table and other network info.
+
+ttfn,
+Mike
+</pre>
+ 答案：
+   <p>在 2.0 版核心中 Arrg 的問題值得留意.所有的修補程式都沒有回朔到 1.2 版,現在我在想這必要性了.如果你有過多 Arrg 訊息的問題,你願意升級到 2.0 版的核心嗎? The Arrg problem is pretty much taken care of in the 2.0 kernels. All of the patches have not been ported back to 1.2, and I doubt that they will be. If you get excessive Arrg messages, do yourself a favour and move to Linux 2.0.</p>
+ 
+ </li>
+</ul>
+<p></p>
+<hr />
+<table
+
+
+
+
+>
+  <tr
+>
+    <td class="BtdL"
+><a href="Token-Ring-6.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="BtdC"
+><a href="index.html" accesskey="H">目錄(H)</a></td
+>
+    <td class="BtdR"
+><a
+href="Token-Ring-8.html"
+>下一頁(N)</a
+></td
+>
+  </tr
+>
+  <tr
+>
+    <td class="BtdL"
+>已知問題</td
+>
+    <td class="BtdC"
+><a href="Token-Ring-7.html" accesskey="T">到頂層(T)</a></td
+>
+    <td class="BtdR"
+>套件特有安裝</td
+>
+  </tr
+>
+</table
+>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img class="ImgLogo" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" title="網路內容分級協會" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

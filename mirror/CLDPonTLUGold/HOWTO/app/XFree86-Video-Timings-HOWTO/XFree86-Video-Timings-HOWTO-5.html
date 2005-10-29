@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>5. 了解關於顯示器和顯示卡的基本情況</title>
+<link href="XFree86-Video-Timings-HOWTO-6.html" rel="next" title="6. 對基本技術規格的解釋" />
+<link href="XFree86-Video-Timings-HOWTO-4.html" rel="previous" title="4. 顯示器怎樣工作" />
+<link href="http://tldp.org/HOWTO/XFree86-Video-Timings-HOWTO/index.html" rel="alternate" title="原版" />
+<link href="index.html" rel="start" title="HOWTO：XFree86 Video Timings" />
+<link href="index.html#content" rel="contents" />
+<meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+<link href="../../style.css" rel="stylesheet" type="text/css" />
+<link href="XFree86-Video-Timings-HOWTO-5.html#ss5.1" rel="section" title="5.1 顯示器同步頻率" />
+<link href="XFree86-Video-Timings-HOWTO-5.html#ss5.2" rel="section" title="5.2 顯示器的頻寬" />
+<link href="XFree86-Video-Timings-HOWTO-5.html#ss5.3" rel="section" title="5.3 顯示卡的點時鐘" />
+<link href="XFree86-Video-Timings-HOWTO-5.html#ss5.4" rel="section" title="5.4 這些基本的統計數據控制什麼" />
+<link href="XFree86-Video-Timings-HOWTO.rdf" rel="meta" title="各章節的說明資訊" />
+</head> <body   > 
+<table >
+  <tr>
+    <th colspan="3" class="HdTitle">HOWTO：XFree86
+      Video Timings</th>
+  </tr>
+  <tr>
+    <td class="TtdL"> <a href="XFree86-Video-Timings-HOWTO-4.html" accesskey="P">上一頁(P)</a> 
+    </td>
+    <td class="TtdC">&nbsp;</td>
+    <td class="TtdR"> <a href="XFree86-Video-Timings-HOWTO-6.html" accesskey="N">下一頁(N)</a> 
+    </td>
+  </tr>
+</table>
+<hr />
+<h1> 5. 了解關於顯示器和顯示卡的基本情況</h1>
+
+
+<p>在修改一項Xconfig條目前,有一些基本情況你需要了解.它們是:</p>
+<ul>
+  <li>顯示器的行頻和場頻選項</li>
+  <li>顯示器的頻寬</li>
+  <li>顯示卡的驅動時鐘頻率,或"點時鐘"</li>
+</ul>
+<h2><a name="ss5.1" id="ss5.1"></a>5.1 顯示器同步頻率 </h2>
+
+<p>行頻就是每秒顯示器能水平掃描的行數;它是關於顯示器的一個最重要的統計數值.場頻是每秒顯示器電子束能在垂直方向來回移動的次數.</p>
+<p>同步頻率通常列在顯示器手冊的技術規格頁中.場頻值典型地以Hz(每秒周期數)標定,行頻以KHz(每秒千周數)標定. 通常場頻的范圍在50到150Hz之間,行頻在31到135KHz之間.</p>
+<p>如果你有一台多頻同步顯示器,其頻率會給出一個范圍.某些顯示器,尤其是低檔型號,有多個固定的頻率.它們也能進行配置,但你的可選項會嚴格受限於顯示器本身的技術特性.為最佳分辨率配對選擇最高的頻率.並且要小心 --- 試圖對一台固定頻率顯示器設置高於其設計規格的頻率會很容易地損壞它.</p>
+<p>本指南的早期版本在過度驅動多頻同步顯示器方面相當積極,驅使它們超過其名義上的最高場頻以獲得更好的性能.那以後其他人向我們指出了更多理由告誡這種做法;我們將在下面章節
+<a href="XFree86-Video-Timings-HOWTO-12.html#overd">過度驅動你的顯示器</a>中論及.</p>
+
+<h2><a name="ss5.2" id="ss5.2"></a>5.2 顯示器的頻寬 </h2>
+
+<p>顯示器的頻寬應該包括在手冊的技術規格頁中.如果沒有,看看顯示器的最高額定分辨率.作為一個經驗法則,這裡指出怎樣把它們轉化為頻寬的估計值(從而轉化為你可以使用的點時鐘的大致上限):</p>
+<pre class="sample">
+        640x480                 25
+        800x600                 36
+        1024x768                65
+        1024x768隔行          45
+        1280x1024               110
+        1600x1200               185
+</pre>
+
+<p>順便說一句,這張表格沒什麼神秘的;這些值隻是在標準XFree86模式數據庫中每種分辨率的最低點時鐘而已(最後的一個例外,是我用插值法補上的).實際上你的顯示器頻寬很可能高於它在最高分辨率下要求的最小值,所以不要擔心去嘗試一個高若幹MHz的點時鐘.</p>
+<p>也請注意對約65MHz以下的點時鐘來說,頻寬很少是一項有影響的因素.對於一張SVGA顯示卡和大多數高分辨率顯示器而言,你怎麼也不會達到顯示器頻寬的限值.下列各項是例子:</p>
+<pre class="sample">
+        型號                          頻寬
+        ----------                      ------
+        NEC 4D                          75MHz
+        Nano 907a                       50MHz
+        Nano 9080i                      60MHz
+        Mitsubishi HL6615               110MHz
+        Mitsubishi Diamond Scan         100MHz
+        IDEK MF-5117                    65MHz
+        IOCOMM Thinksync-17 CM-7126     136MHz
+        HP D1188A                       100MHz
+        Philips SC-17AS                 110MHz
+        Swan SW617                      85MHz
+        Viewsonic 21PS                  185MHz
+        PanaSync/Pro P21                220MHz
+</pre>
+
+<p>甚至低檔顯示器在其額定分辨率通常也不會太受限於頻寬.NEC Multisync II是一個很好的例子 --- 按照其技術規格甚至不能顯示800x600.它隻能顯示800x560.對這樣的低分辨率你不需要高的點時鐘或大的頻寬;或許你可以做到最好的是32MHz或36MHz,兩者離該顯示器的額定頻寬30MHz仍不太遠.</p>
+<p>在這兩個驅動頻率下,你的屏幕圖象也許沒有理應達到的那麼清晰,但圖象質量顯然可以接受.如果NEC Multisync II頻寬能高於36MHz當然更好.但對普通任務象文本編輯而言這不是很關鍵的,隻要差別不要顯著到造成嚴重圖象變形即可(如果這樣你的眼睛會立刻告訴你的).</p>
+
+<h2><a name="ss5.3" id="ss5.3"></a>5.3 顯示卡的點時鐘 </h2>
+
+<p>顯示卡手冊的技術規格頁通常會告訴你該卡的最大點時鐘(那是指每秒鐘顯示卡能寫到屏幕上的像素總個數).</p>
+<p>如果手冊沒有這項信息,X服務器可以為你查出.最近版本的X服務器全都支持 --probeonly 選項,可以顯示出這項信息然後退出,用不著真正啟動X或改變顯示模式.</p>
+<p>如果你的X沒有 --probeonly 選項也不要擔心.即使X鎖住了你的顯示器,它仍會把一行關於時鐘和其它錯誤的信息顯示在標準輸出上.如果你把這條信息重定向到一個文件,它會被保存下來,即使你不得不重啟動以回到控制台.</p>
+<p>探查的結果或啟動信息看上去應該類似以下示例之一:</p>
+<p>如果你使用XFree86: (譯注:以下為屏幕輸出,----下為屏幕輸出的翻譯和說明)</p>
+<pre class="sample">
+Xconfig: /usr/X11R6/lib/X11/Xconfig
+         --------------------------
+            X配置文件所在路徑
+
+(**) stands for supplied, (--) stands for probed/default values
+                --------                  ---------------------
+            (**)代表提供值                (--)代表檢測值/缺省值
+
+(**) Mouse: type: MouseMan, device: /dev/ttyS1, baudrate: 9600
+                  --------          ----------            ----
+                  鼠標類型        鼠標設備文件名      與串口通訊速率
+
+Warning: The directory "/usr/andrew/X11fonts" does not exist.
+         Entry deleted from font path.
+(**) FontPath set to "/usr/lib/X11/fonts/misc/,/usr/lib/X11/fonts/75dpi/"
+                      --------------------------------------------------
+                                     字體路徑
+
+(--) S3: card type: 386/486 localbus
+                    ----------------
+                     顯示卡總線類型
+
+(--) S3: chipset:   924
+                    ---
+    芯片集 --- 這是確切的芯片型號;一種86C911之前的型號
+
+(--) S3: chipset driver: s3_generic
+                         ----------
+                       芯片集驅動程序
+
+(--) S3: videoram:  1024k
+                    -----
+         顯示卡上幀緩沖內存(俗稱顯存)的大小
+
+(**) S3: clocks:  25.00  28.00  40.00   3.00  50.00  77.00  36.00  45.00
+(**) S3: clocks:   0.00   0.00  79.00  31.00  94.00  65.00  75.00  71.00
+                  ------------------------------------------------------
+                              以MHz計算的可用的驅動頻率
+
+(--) S3: Maximum allowed dot-clock: 110MHz
+                                    ------
+                                     頻寬
+
+(**) S3: Mode "1024x768": mode clock =  79.000, clock used =  79.000
+                                        ------                ------
+                                            1024x768下模式時鐘
+
+(--) S3: Virtual resolution set to 1024x768
+                                   --------
+                                虛擬屏幕分辨率
+
+(--) S3: Using a banksize of 64k, line width of 1024
+(--) S3: Pixmap cache:
+(--) S3: Using 2 128-pixel 4 64-pixel and 8 32-pixel slots
+(--) S3: Using 8 pages of 768x255 for font caching
+</pre>
+<p>如果你使用SGCS或X/Inside X:</p>
+<pre class="sample">
+WGA: 86C911 (mem: 1024k clocks: 25 28 40 3 50 77 36 45 0 0 79 31 94 65 75 71)
+---  ------       -----         --------------------------------------------
+ |     |            |                 以MHz計算的可用驅動頻率
+ |     |            +--顯示卡上幀緩沖內存的大小
+ |     +--芯片型號
+ +--X服務器類型
+</pre>
+<p>注意:(如果可能的話)在機器卸下負荷後才進行檢測.因為X是一個應用程序,它的時序循環會與磁盤活動沖突,造成上述的數值不準確.檢測幾次觀察數值是否穩定;如果不穩定,關閉一些進程直到數值穩定.鼠標守護進程,如果有的話,特別可能讓你失敗(鼠標守護進程對Linux用戶而言是gpm,對SVr4用戶而言是mousemgr).</p>
+<p>為了避免時鐘檢測的不準確性,你應該寫下時序值並把它們作為時鐘屬性值放到你的Xconfig中 --- 這樣抑制了時序循環並給予X一份可以嘗試的時鐘值的準確清單.使用上面例子的數據:</p>
+<pre class="sample">
+wga
+        Clocks  25 28 40 3 50 77 36 45 0 0 79 31 94 65 75 71
+</pre>
+<p>在負荷高度變化的系統上,這也許可以幫你避免神秘的X啟動失敗.有可能X啟動時,因系統的負荷而獲得錯誤的時序值,於是不能在其配置數據庫中找到一項匹配的點時鐘 --- 或找到錯誤的一項!</p>
+
+<h2><a name="ss5.4" id="ss5.4"></a>5.4 這些基本的統計數據控制什麼 </h2>
+
+
+<p>顯示器的同步頻率范圍,與顯示卡的點時鐘一起,決定了可用的極限分辨率.但由驅動程序決定對硬件的潛力利用到什麼程度.一套出眾的硬件組合卻沒有同樣能令人滿意的設備驅動程序是對金錢的一種浪費.另一方面,有一個萬能的驅動程序但硬件能力相對較弱的話,你就能盡可能地挖掘硬件的潛力.這是XFree86的設計主導思想.</p>
+<p>你應該把你用的點時鐘與顯示器的頻寬相匹配.然而,這是有很大彈性的 --- 一些顯示器能超出頻寬標稱值30%運行.這裡的風險在於超出顯示器的額定場頻;我們會在下面詳細討論它們.</p>
+<p>了解頻寬使你能在各種可能的配置中作出更明智的選擇.它會影響顯示器的圖象質量(尤其是微小細節的清晰度).</p>
+
+<hr />
+<table >
+  <tr> 
+    <td class="BtdL"> <a href="XFree86-Video-Timings-HOWTO-4.html" accesskey="P">上一頁(P)</a> 
+    </td>
+    <td class="BtdC"> <a href="index.html" accesskey="H">目錄(H)</a> </td>
+    <td class="BtdR"> <a href="XFree86-Video-Timings-HOWTO-6.html">下一頁(N)</a> 
+    </td>
+  </tr>
+  <tr> 
+    <td class="BtdL">顯示器怎樣工作</td>
+    <td class="BtdC"><a href="XFree86-Video-Timings-HOWTO-5.html"  accesskey="T">到頂層(T)</a></td>
+    <td class="BtdR">對基本技術規格的解釋</td>
+  </tr>
+</table>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> 
+  <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a> 
+  <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img class="ImgLogo" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> 
+  <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> 
+  <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" title="網路內容分級協會" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

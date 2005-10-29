@@ -1,0 +1,448 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html lang="zh-TW">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <title>Fun with Simputer and Embedded Linux</title>
+  <link href="../../LGStyle.css" rel="stylesheet" type="text/css">
+  <link href="../../../style.css" rel="stylesheet" type="text/css">
+  <meta name="author" content="Pramode C.E">
+</head>
+<body>
+<div id="GazetteLogo"><a href="http://www.linuxgazette.com/"><img
+ src="../../gx/lglogo_200x41.png" alt="Linux Gazette 雜誌" width="200"
+ height="41" longdesc="../linuxgaette.rdf"> </a><br>
+<a href="http://www.linuxgazette.com/copying.html">Copyright</a>©1996-2003<br>
+Specialized Systems Consultants, Inc.</div>
+<div class="CLDPAddr">CLDP</div>
+<div class="CLDPFull">Chinese Linux Documentation Project</div>
+<hr>
+<p class="BarTop"><a href="../../../index.html" title="連到首頁"
+ hreflang="zh-TW" accesskey="H">首頁(H)</a>｜<a href="../../../howto/"
+ title="連到和 HOWTO  相關資訊" hreflang="zh-TW" accesskey="T">HOWTO(T)</a>｜<a
+ href="../../../guide/" title="連到和指南相關的資訊" hreflang="zh-TW"
+ accesskey="G">指南(G)</a>｜<a href="../../../FAQ/" title="連到和問答集相關的資訊"
+ hreflang="zh-TW" accesskey="F">FAQ(F)</a>｜<a href="../../../man/"
+ title="連到和手冊頁有關的資訊" hreflang="zh-TW" accesskey="M">手冊頁(M)</a>｜<a
+ href="../../index.html" title="Linux電子報為一個月發行一期的雜誌" hreflang="zh-TW"
+ accesskey="L">Linux電子報(L)</a>｜<a href="../../../LF/"
+ title="LinuxFocus 為兩個月發行一期的雜誌" hreflang="zh-TW" accesskey="S">LinuxFocus(S)</a></p>
+<hr>
+<div class="DivCover">
+<div class="TitleHead"> Fun with Simputer and Embedded Linux <br>
+By <a href="file:///Data/CLDP/LG/2003/02/authors/pramode.html">Pramode
+C.E</a> </div>
+<div>
+<p class="BarTop"><a href="../../index.html">Linux電子報首頁</a>｜<a
+ href="index.html">目錄</a>｜<a href="../../faq/index.html">FAQ</a><br>
+讓 Linux 更加有趣呦！</p>
+</div>
+<div>
+<h2>目錄</h2>
+</div>
+<div>
+<ol>
+  <li> 前言</li>
+  <li>Hardware/Software</li>
+  <li>Powering up</li>
+  <li>Waiting for bash</li>
+  <li>Setting up USB Networking</li>
+  <li>Hello, Simputer</li>
+  <li>A note on the Arm Linux kernel</li>
+  <li>Getting and building the kernel source</li>
+  <li>Running the new kernel</li>
+  <li>A bit of kernel hacking</li>
+  <li>Handling Interrupts</li>
+  <li>Future work</li>
+  <li>References<br>
+  </li>
+</ol>
+</div>
+<div>
+<h2>1. 前言</h2>
+</div>
+<div>
+<p> The Simputer is a StrongArm CPU based handheld device running Linux.
+Originally developed by professors at the Indian Institute of Science,
+Bangalore, the device has a social objective of bringing computing and
+connectivity within the reach of rural communities. This articles
+provides a tutorial introduction to programming the Simputer (and
+similar ARM based handheld devices - there are lots of them in the
+market). The reader is expected to have some experience programming on
+Linux. Disclaimer: I try to describe things which I had done on my
+Simputer without any problem - if following my instructions leads to
+your handheld going up in smoke - I should not be held responsible! </p>
+</div>
+<div>
+<h2>2. Hardware/Software</h2>
+</div>
+<div>
+<p> The device is powered by an Intel StrongArm (SA-1110) CPU. The flash
+memory size is either 32Mb or 16Mb and RAM is 64Mb or 32Mb. The
+peripheral features include: </p>
+<p> </p>
+<ol>
+  <li> USB master as well as slave ports. </li>
+  <li> Standard serial port. </li>
+  <li> Infra Red communication port. </li>
+  <li> Smart card reader </li>
+</ol>
+<p> Some of these features are enabled by using a `docking cradle'
+provided with the base unit. Power can be provided either by
+rechargeable batteries or external AC mains. </p>
+<p> Simputer is powered by GNU/Linux - kernel version 2.4.18 (with a few
+patches) works fine. The unit comes bundled with binaries for the
+X-Window system and a few simple utility programs. More details can be
+obtained from the project home page at <a href="http://www.simputer.org">www.simputer.org</a>.</p>
+</div>
+<div>
+<h2>3. Powering up</h2>
+</div>
+<div>
+<p> There is nothing much to it, other than pressing the `power button'.
+You will see a small tux picture coming up and within a few seconds, you
+will have X up and running . The LCD screen is touch sensitive and you
+can use a small `stylus' (geeks use finger nails!) to select
+applications and move through the graphical interface. If you want to
+have keyboard input, be prepared for some agonizing manipulations using
+the stylus and a `soft keyboard' which is nothing but a GUI program from
+which you can select single alphabets and other symbols.</p>
+</div>
+<div>
+<h2>4. Waiting for bash</h2>
+</div>
+<div>
+<p> GUI's are for kids. You are not satisfied till you see the trusted
+old bash prompt. Well, you don't have to try a lot. The Simputer has a
+serial port - attach the provided serial cable to it - the other end
+goes to a free port on your host Linux PC (in my case, /dev/ttyS1). Now
+fire up a communication program (I use `minicom') - you have to first
+configure the program so that it uses /dev/ttyS1 with communication
+speed set to 115200 (that's what the Simputer manual says - if you are
+using a similar handheld, this need not be the same) and 8N1 format,
+hardware and software flow controls disabled. Doing this with minicom is
+very simple - invoke it as: </p>
+<p> minicom -m -s </p>
+<p> Once configuration is over - just type: </p>
+<p> minicom -m </p>
+<p> and be ready for the surprise. You will immediately see a login
+prompt. You should be able to type in a user name/password and log on.
+You should be able to run simple commands like `ls', `ps' etc - you may
+even be able to use `vi' . </p>
+<p> If you are not familiar with running communication programs on
+Linux, you may be wondering what really happened. Nothing much - it's
+standard Unix magic. A program sits on the Simputer watching the serial
+port (the Simputer serial port, called ttySA0) - when you run minicom on
+the Linux PC, you establish a connection with that program, which sends
+you a login prompt over the line, reads in your response, authenticates
+you and spawns a shell with which you can interact over the line. </p>
+<p> Once minicom initializes the serial port on the PC end, you can
+`script' your interactions with the Simputer. You are exploiting the
+idea that the program running on the Simputer is watching for data over
+the serial line - the program does not care whether the data comes from
+minicom itself or a script. You can try out the following experiment: </p>
+<p> </p>
+<ol>
+  <li> Open two consoles (on the Linux PC) </li>
+  <li> Run minicom on one console, log on to the simputer </li>
+  <li> On the other console, type `echo ls &gt; /dev/ttyS1' </li>
+  <li> Come to the first console - you will see that the command   `ls'
+has executed on the Simputer. </li>
+</ol>
+</div>
+<div>
+<h2>5. Setting up USB Networking</h2>
+</div>
+<div>
+<p> The Simputer comes with a USB slave port. You can establish a TCP/IP
+link between your Linux PC and the Simputer via this USB interface. Here
+are the steps you should take: </p>
+<p> </p>
+<ol>
+  <li> Make sure you have a recent Linux distribution - Red Hat   7.3 is
+good enough. </li>
+  <li> Plug one end of the USB cable onto the USB slave slot in   the
+Simputer, then boot the Simputer. </li>
+  <li> Boot your Linux PC. DO NOT connect the other end of the   USB
+cable to your PC now. Log in as root on the PC. </li>
+  <li> Run the command `insmod usbnet' to load a kernel module   which
+enables USB networking on the Linux PC. Verify that   the module has
+been loaded by running `lsmod'. </li>
+  <li> Now plug the other end of the USB cable onto a free USB   slot of
+the Linux PC. The USB subsystem in the Linux kernel   should be able to
+register a device attach. On my Linux   PC, immediately after plugging
+in the USB cable, I get   the following kernel messages (which can be
+seen by running   the command `dmesg'): </li>
+</ol>
+<pre>usb.c: registered new driver usbnet<br>hub.c: USB new device connect on bus1/1, assigned device<br>number 3<br>usb.c: ignoring set_interface for dev 3, iface 0, alt 0<br>usb0: register usbnet 001/003, Linux Device<br></pre>
+<p> After you have reached this far, you have to run a few more
+commands: </p>
+<p> </p>
+<ol>
+  <li> Run `ifconfig usb0 192.9.200.1' - this will assign an IP
+address to the USB interface on the Linux PC. </li>
+  <li> Using `minicom' and the supplied serial cable, log on to   the
+Simputer as root. Then run the command `ifconfig usbf   192.9.200.2' on
+the Simputer. </li>
+  <li> Try `ping 192.9.200.2' on the Linux PC. If you see ping   packets
+running to and fro, congrats. You have successfully   set up a TCP/IP
+link! </li>
+</ol>
+<p> You can now telnet/ftp to the Simputer through this TCP/IP link.</p>
+</div>
+<div>
+<h2>6. Hello, Simputer</h2>
+</div>
+<div>
+<p> It's now time to start real work. Your C compiler (gcc) normally
+generates `native' code, ie, code which runs on the microprocessor on
+which gcc itself runs - most often, an Intel (or clone) CPU. If you wish
+your program to run on the Simputer (which is based on the StrongArm
+microprocessor), the machine code generated by gcc should be
+understandable to the StrongArm CPU - your `gcc' should be a cross
+compiler. If you download the gcc source code (preferably 2.95.2)
+together with `binutils', you should be able to configure and compile it
+in such a way that you get a cross compiler (which could be invoked
+like, say, arm-linux-gcc). This might be a bit tricky if you are doing
+it for the first time - your handheld vendor should supply you with a CD
+which contains the required tools in a precompiled form - it is
+recommended that you use it (but if you are seriously into embedded
+development, you should try downloading the tools and building them
+yourselves). </p>
+<p> Assuming that you have arm-linux-gcc up and running, you can write a
+simple `Hello, Simputer' program, compile it into an `a.out', ftp it
+onto the Simputer and execute it (it would be good to have one console
+on your Linux PC running ftp and another one running telnet - as soon as
+you compile the code, you can upload it and run it from the telnet
+console - note that you may have to give execute permission to the ftp'd
+code by doing `chmod u+x a.out' on the Simputer). </p>
+</div>
+<div>
+<h2>7. A note on the Arm Linux kernel</h2>
+</div>
+<div>
+<p> The Linux kernel is highly portable - all machine dependencies are
+isolated in directories under the `arch' subdirectory (which is directly
+under the root of the kernel source tree, say, /usr/src/linux). You
+will find a directory called `arm' under `arch'. It is this directory
+which contains ARM CPU specific code for the Linux kernel. </p>
+<p> The Linux ARM port was initiated by Russell King. The ARM
+architecture is very popular in the embedded world and there are a LOT
+of different machines with fantastic names like Itsy, Assabet, Lart,
+Shannon etc all of which use the StrongArm CPU (there also seem to be
+other kinds of ARM CPU's - now that makes up a really heady mix). There
+are minor differences in the architecture of these machines which makes
+it necessary to perform `machine specific tweaks' to get the kernel
+working on each one of them. The tweaks for most machines are available
+in the standard kernel itself, and you only have to choose the actual
+machine type during the kernel configuration phase to get everything in
+order. But to make things a bit confusing with the Simputer, it seems
+that the tweaks for the initial Simputer specification have got into the
+ARM kernel code - but the vendors who are actually manufacturing and
+marketing the device seem to be building according to a modified
+specification - and the patches required for making the ARM kernel run
+on these modified configurations is not yet integrated into the main
+kernel tree. But that is not really a problem, because your vendor will
+supply you with the patches - and they might soon get into the official
+kernel. </p>
+</div>
+<div>
+<h2>8. Getting and building the kernel source</h2>
+</div>
+<div>
+<p> You can download the 2.4.18 kernel source from the nearest Linux
+kernel ftp mirror. You will need the file `patch-2.4.18-rmk4' (which can
+be obtained from the ARM Linux FTP site ftp.arm.linux.org.uk). You
+might also need a vendor supplied patch, say,
+`patch-2.4.18-rmk4-vendorstring'. Assume that all these files are copied
+to the /usr/local/src directory. </p>
+<p> </p>
+<ol>
+  <li> First, untar the main kernel distribution by running `tar   xvfz
+kernel-2.4.18.tar.gz' </li>
+  <li> You will get a directory called `linux'. Change over to   that
+directory and run `patch -p1 &lt; ../patch-2.4.18-rmk4'. </li>
+  <li> Now apply the vendor supplied patch. Run `patch -p1  &lt;
+../patch-2.4.18-rmk4-vendorstring'. </li>
+</ol>
+<p> Now, your kernel is ready to be configured and built. Before that,
+you have to examine the top level Makefile (under /usr/local/src/linux)
+and make two changes - there will be a line of the form: </p>
+<p> ARCH := &lt;lots-of-stuff&gt; </p>
+<p> near the top. Change it to </p>
+<p> ARCH := arm </p>
+<p> You need to make one more change. You observe that the Makefile
+defines: </p>
+<p> </p>
+<pre>AS = ($CROSS_COMPILE)as<br>LD = ($CROSS_COMPILE)ld<br>CC = ($CROSS_COMPILE)gcc<br></pre>
+<p> You note that the symbol CROSS_COMPILE is equated with the empty
+string. During normal compilation, this will result in AS getting
+defined to `as', CC getting defined to `gcc' and so on which is what we
+want. But when we are cross compiling, we use arm-linux-gcc,
+arm-linux-ld, arm-linux-as etc. So you have to equate CROSS_COMPILE with
+the string arm-linux-, ie, in the Makefile, you have to enter: </p>
+<p> CROSS_COMPILE = arm-linux- </p>
+<p> </p>
+<p> Once these changes are incorporated into the Makefile, you can start
+configuring the kernel by running `make menuconfig' (note that it is
+possible to do without modifying the Makefile. You run `make menuconfig
+ARCH=arm'). It may take a bit of tweaking here and there before you can
+actually build the kernel without error. You will not need to modify
+most things - the defaults should be acceptable. </p>
+<p> </p>
+<ol>
+  <li> You have to set the system type to SA1100 based ARM system   and
+then choose the SA11x0 implementation to be `Simputer(Clr)'   (or
+something else, depending on your machine). I had   also enabled SA1100
+USB function support, SA11x0 USB net   link support and SA11x0 USB char
+device emulation. </li>
+  <li> Under Character devices-&gt;Serial drivers, I enabled SA1100
+serial port support, console on serial port support and   set the
+default baud rate to 115200 (you may need to set   differently for your
+machine). </li>
+  <li> Under Character devices, SA1100 real time clock and Simputer
+real time clock are enabled. </li>
+  <li> Under Console drivers, VGA Text console is disabled. </li>
+  <li> Under General Setup, the default kernel command string   is set
+to `root=/dev/mtdblock2 quite'. This may be different   for your
+machine. </li>
+</ol>
+<p> Once the configuration process is over, you can run </p>
+<p> make zImage </p>
+<p> and in a few minutes, you should get a file called `zImage' under
+arch/arm/boot. This is your new kernel. </p>
+</div>
+<div>
+<h2>9. Running the new kernel</h2>
+</div>
+<div>
+<p> I describe the easiest way to get the new kernel up and running. </p>
+<p> Just like you have LILO or Grub acting as the boot loader for your
+Linux PC, the handheld too will be having a bootloader stored in its
+non volatile memory. In the case of the Simputer, this bootloader is
+called `blob' (which I assume is the boot loader developed for the
+Linux Advanced Radio Terminal Project, `Lart'). As soon as you power on
+the machine, the boot loader starts running - If you start minicom on
+your Linux PC, keep the `enter' key pressed and then power on the
+device, the bootloader, instead of continuing with booting the kernel
+stored in the device's flash memory, will start interacting with you
+through a prompt which looks like this: </p>
+<p> blob&gt; </p>
+<p> At the bootloader prompt, you can type: </p>
+<p> blob&gt; download kernel </p>
+<p> which results in blob waiting for you to send a uuencoded kernel
+image through the serial port. Now, on the Linux PC, you should run the
+command: </p>
+<p> uuencode zImage /dev/stdout &gt; /dev/ttyS1 </p>
+<p> This will send out a uuencoded kernel image through the COM port -
+which will be read and stored by the bootloader in the device's RAM.
+Once this process is over, you get back the boot loader prompt. You
+just have to type: </p>
+<p> blob&gt; boot </p>
+<p> and the boot loader will run the kernel which you have right now
+compiled and downloaded. </p>
+</div>
+<div>
+<h2>10. A bit of kernel hacking</h2>
+</div>
+<div>
+<p> What good is a cool new device if you can't do a bit of kernel
+hacking? My next step after compiling and running a new kernel was to
+check out how to compile and run kernel modules. Here is a simple
+program called `a.c': </p>
+<p> </p>
+<pre>#include &lt;linux/module.h&gt;<br>#include &lt;linux/init.h&gt;<br><br>/* Just a simple module */<br><br>int <br>init_module(void) <br>{ <br>   printk("loading module...\n");<br>   return 0;<br>}<br><br>void <br>cleanup_module(void) <br>{ <br>   printk("cleaning up ...\n");<br>}<br></pre>
+<p> You have to compile it using the command line: </p>
+<p> arm-linux-gcc -c -O -DMODULE -D__KERNEL__ a.c 
+-I/usr/local/src/linux-2.4.18/include </p>
+<p> You can ftp the resulting `a.o' onto the Simputer and load it into
+the kernel by running: </p>
+<p> insmod ./a.o </p>
+<p> You can remove the module by running: </p>
+<p> rmmod a </p>
+</div>
+<div>
+<h2>11. Handling Interrupts</h2>
+</div>
+<div>
+<p> After running the above program, I started scanning the kernel
+source to identify the simplest code segment which would demonstrate
+some kind of physical hardware access - and I found it in the hard key
+driver. The Simputer has small buttons which when pressed act as the
+arrow keys - these buttons seem to be wired onto the general purpose
+I/O pins of the ARM CPU (which can also be configured to act as
+interrupt sources - if my memory of reading the StrongArm manual is
+correct). Writing a kernel module which responds when these keys are
+pressed is a very simple thing - here is a small program which is just
+a modified and trimmed down version of the hardkey driver - you press
+the button corresponding to the right arrow key - an interrupt gets
+generated which results in the handler getting executed. Our handler
+simply prints a message and does nothing else. Before inserting the
+module, we must make sure that the kernel running on the device does
+not incorporate the default button driver code - checking
+/proc/interrupts would be sufficient. </p>
+<p> Compile the program shown below into an object file (just as we did
+in the previous program), load it using `insmod', check
+/proc/interrupts to verify that the interrupt line has been acquired.
+Pressing the button should result in the handler getting called - the
+interrupt count displayed in /proc/interrupts should also change. </p>
+<pre>#include &lt;linux/module.h&gt;<br>#include &lt;linux/ioport.h&gt;<br>#include &lt;linux/sched.h&gt;<br>#include &lt;asm-arm/irq.h&gt;<br>#include &lt;asm/io.h&gt;<br><br>static void <br>key_handler(int irq, void *dev_id, struct pt_regs *regs)<br>{<br>  printk("IRQ %d called\n", irq);<br>}<br><br>static int  <br>init_module(void)<br>{<br>  unsigned int res = 0;<br>  printk("Hai, Key getting ready\n");<br>  set_GPIO_IRQ_edge(GPIO_GPIO12, GPIO_FALLING_EDGE);<br>  res = request_irq(IRQ_GPIO12, key_handler, SA_INTERRUPT,<br>  "Right Arrow Key", NULL);<br>  if(res) {<br>     printk("Could Not Register irq %d\n", IRQ_GPIO12);<br>     return res;<br>   }<br>  return res ;<br>}<br><br>static void <br>cleanup_module(void)<br>{<br>  printk("cleanup called\n");<br>  free_irq(IRQ_GPIO12, NULL);<br>}<br></pre>
+</div>
+<div>
+<h2>12. Future work</h2>
+</div>
+<div>
+<p> A Linux based handheld offers a lot of opportunities for serious fun
+- as I learn more about the device, I shall try to share my findings
+with the readers.</p>
+</div>
+<div>
+<h2>13. References</h2>
+</div>
+<div>
+<ol>
+  <li> <a href="http://www.simputer.org">Simputer Project</a> Home Page.
+ </li>
+  <li> <a href="http://www.simputerland.com">Simputerland</a> and <a
+ href="http://www.picopeta.com">PicoPeta</a> - information   about
+Simputer development activities from companies which   are
+manufacturing and marketing the product. </li>
+  <li> <a href="http://www.arm.linux.org.uk">Arm Linux</a> Project Home
+Page </li>
+  <li> <a href="http://www.lart.tudelft.nl">Lart Project</a> Home Page.
+Lots   of cool stuff here. You might like to check out the `Clock  
+Scaling' link on this site. Clock scaling allows you to   change the
+clock speed of the running processor on the   fly - useful for saving
+battery power.</li>
+</ol>
+</div>
+<div>
+<h2>作者介紹</h2>
+</div>
+<div>
+<p> I am an instructor working for IC Software in Kerala, India. I would
+have loved becoming an organic chemist, but I do the second best thing
+possible, which is play with Linux and teach programming! </p>
+</div>
+<div>
+<h2>版權宣告</h2>
+</div>
+<div>
+<p> Copyright © 2003, Pramode C.E. Copying license <a
+ href="file:///Data/CLDP/LG/2003/02/copying.html">http://www.linuxgazette.com/copying.html</a><br>
+Published in Issue 87 of <i>Linux Gazette</i>, February 2003</p>
+</div>
+</div>
+<hr>
+<p class="BarTop"><a href="../../../index.html" title="連到首頁"
+ hreflang="zh-TW" accesskey="H">首頁(H)</a>｜<a href="../../../howto/"
+ title="連到和 HOWTO  相關資訊" hreflang="zh-TW" accesskey="T">HOWTO(T)</a>｜<a
+ href="../../../guide/" title="連到和指南相關的資訊" hreflang="zh-TW"
+ accesskey="G">指南(G)</a>｜<a href="../../../FAQ/" title="連到和問答集相關的資訊"
+ hreflang="zh-TW" accesskey="F">FAQ(F)</a>｜<a href="../../../man/"
+ title="連到和手冊頁有關的資訊" hreflang="zh-TW" accesskey="M">手冊頁(M)</a>｜<a
+ href="../../index.html" title="Linux電子報為一個月發行一期的雜誌" hreflang="zh-TW"
+ accesskey="L">Linux電子報(L)</a>｜<a href="../../../LF/"
+ title="LinuxFocus 為兩個月發行一期的雜誌" hreflang="zh-TW" accesskey="S">LinuxFocus(S)</a></p>
+<hr>
+</body>
+</html>

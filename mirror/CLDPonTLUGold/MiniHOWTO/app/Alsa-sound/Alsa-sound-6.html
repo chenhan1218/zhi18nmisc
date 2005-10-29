@@ -1,0 +1,317 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+ 
+ <title>Alsa-sound-mini-HOWTO: 小技巧及問題排除</title>
+ <link href="Alsa-sound-5.html" rel="previous" />
+ <link href="../../style.css" rel="stylesheet" type="text/css" />
+   <link href="Alsa-sound-1.html" rel="chapter" title="1.介紹" />
+  <link href="Alsa-sound-2.html" rel="chapter" title="2.在開動之前" />
+  <link href="Alsa-sound-3.html" rel="chapter" title="3.如何安裝 ALSA 音效驅動程式" />
+  <link href="Alsa-sound-4.html" rel="chapter" title="4.載入驅動程式" />
+  <link href="Alsa-sound-5.html" rel="chapter" title="5.測試及使用" />
+  <link href="Alsa-sound-6.html" rel="chapter" title="6.小技巧及問題排除" />
+  <link href="http://www.tldp.org/HOWTO/mini/Alsa-sound.html" rel="alternate" title="原版" />
+  <link href="index.html" rel="start" />
+  <link href="index.html#content" rel="contents" />
+  <link href="Alsa-sound-6.html#ss6.1" rel="section" title="6.1 編譯驅動程式 " />
+  <link href="Alsa-sound-6.html#ss6.2" rel="section" title="6.2 載入驅動程式 " />
+  <link href="Alsa-sound-6.html#ss6.3" rel="section" title="6.3 驅動程式載入了... 可是沒聲音" />
+  <link href="Alsa-sound-6.html#ss6.4" rel="section" title="6.4 一般性建言 " />
+  <link href="Alsa-sound-6.html#ss6.5" rel="section" title="6.5 回報臭虫" />
+  <link href="Alsa-sound-6.html#ss6.6" rel="section" title="6.6 小技巧: 聽 CD 時..." />
+  <link href="Alsa-sound-6.html#ss6.7" rel="section" title="6.7 小技巧: 安裝 MIDI 序列驅動動程式" />
+  <link href="Alsa-sound-6.html#ss6.8" rel="section" title="6.8 小技巧: 換新核心? 換新模組!" />
+  <link href="Alsa-sound-6.html#ss6.9" rel="section" title="6.9 小技巧: KDE 及 ALSA 驅動程式" />
+  <link href="Alsa-sound-6.html#ss6.10" rel="section" title="6.10 小技巧: 使用 ALSA 設備" />
+  <link href="Alsa-sound-6.html#ss6.11" rel="section" title="6.11 小技巧: 移除所有模組" />
+  <meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+  <link href="Alsa-sound.rdf" rel="meta" title="各章節的說明資訊" />
+</head> <body> 
+
+<table
+
+
+
+
+>
+  <tr
+>
+    <th
+colspan="3" class="HdTitle"
+>Mini
+    HOWTO：Alsa-sound</th>
+  </tr
+>
+  <tr
+>
+    <td class="TtdL"
+><a href="Alsa-sound-5.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="TtdC"
+></td
+>
+    <td class="TtdR"
+>&nbsp;</td
+>
+  </tr
+>
+</table
+>
+<hr />
+<h1><a name="s6" id="s6">6.</a> 小技巧及問題排除</h1>
+
+<p>請先看看音效卡驅動程式目錄的 FAQ 檔. 這一節仍然在增修中.</p>
+<h2><a name="ss6.1" id="ss6.1">6.1</a> 編譯驅動程式
+</h2>
+
+
+<h3>Linux 核心原始碼目錄樹</h3>
+
+<p>如果 ALSA 驅動程式無法成功編譯, 出現像找不到 ``version.h''
+或其它引入檔(header files)之類的錯誤, 這是指您沒有安裝核心的引入檔.
+先花點時間看看 Kernel-HOWTO, 將最新近的核心解開到 /usr/src 並且下 <code>make
+config</code>命令.</p>
+
+<h2><a name="ss6.2" id="ss6.2">6.2</a> 載入驅動程式
+</h2>
+
+<p>請檢查以下各條:</p>
+
+<h3>音效卡相容性</h3>
+
+<p>您是否百分之百的確定您的音效卡有支援呢? 千萬要記得檢查. 有時一片叫 X123
+的音效卡並不全等於叫 X123b 的, 這樣可能會浪費您的時間.</p>
+<p>在另一方面, 即使是有支援的卡也可能會找您麻煩 - 為了安裝一片 CS4237B 的卡,
+耗了我兩個小時來搞清楚, 結果發現說明文件裡有.
+(原文是
+On the other hand, even a supported card can give you troubles - it took me two hours to
+figure out the installation of a CS4237B which was, after all, just a fine example
+of RTFM.
+)</p>
+
+<h3>``Device busy'' 或 ``unresolved symbols''</h3>
+
+<p>您可能在 2.0.x 版核心中將音效卡支援編進核心內, 或是已載入
+OSS/Lite(核心的)驅動程式(可用<code>cat /proc/modules</code>來檢查).
+移除該驅動程式或重新編譯核心(請看 Kernel-HOWTO 後動手).</p>
+<p>在 2.0 版核心中的音效模組叫做 "sound.o", <b>不應該</b>被啟用. (雖然 ALSA
+的驅動程式 "snd.o" 可以.)</p>
+<p>如果您的核心是 2.2.x 版, 而沒有將音效支援編譯進去, ALSA
+驅動程式也會無法作用.</p>
+<p>我也知道這兩種不同的狀況令人困擾, 所以我在此再作一次解釋. 如果您用的是
+<b>2.0.x版</b>核心 ("uname -a"命令傳回像 "Linux penguin 2.0.35 #6 Wed Sep
+23 10:19:16 CEST 1998 i686 unknown") 那麼您必須將音效驅動程式<b>剔除</b>掉.</p>
+<p>如果您的核心是 <b>2.2.x版核心</b>, 那麼您<b>需要音效驅動程式</b>. 2.2.x
+版核心應該<b>將音效驅動程式編譯進核心, 但不加入任何音效卡的支援</b>.
+因此您要選音效支援, 但也確定不要加入任何音效卡驅動程式.</p>
+
+<h3>又見 Unresolved symbols</h3>
+
+<p>另一個造成 "unresolved symbols" 訊息的原因可能是新版核心配合舊版驅動程式.
+請在重新編譯核心之後別忘了也重新編譯 ALSA 驅動程式.
+如此才可以確定驅動程式能配上您的新核心.</p>
+
+<h3>檢查 PnP 設定</h3>
+
+<p>確定音效卡起動(active)了嗎? 請另外花點時間讀讀 PnP-HOWTO,
+確認您已正確地致動(activate)了您的音效卡.</p>
+
+<h3>參數有設對嗎?</h3>
+
+<p>檢查, 再三檢查您的音效卡設定參數. 請小心: 534 不等於 543, 0x534 也不等於
+534.</p>
+<p>同時, 有些音效卡要載入的模組不是您預期的那個. 休息一下, 喝杯啤酒或什麼的,
+然後再看看您 modprobe 的結果. 例如 Crystal 4232 應該插入的驅動程式是
+snd-card-cs4232, 不是 "snd-cs4231". 而 SoundBlaster PCI64 應該載入的是
+"snd-audiopci", 非 snd-es1370. (這些在文件中都有寫, 而筆者在寫這篇 HOWTO 時,
+還曾花了一個晚上試著用 snd-cs4231 讓它發出聲音.) </p>
+
+<h2><a name="ss6.3" id="ss6.3">6.3</a> 驅動程式載入了... 可是沒聲音
+</h2>
+
+
+
+<h3>解除靜音</h3>
+
+<p>ALSA 驅動程式可以運用多數音效卡都有的 "靜音" 能力. 如果您載入了音效驅動程式,
+一切看起來都還正確, 就是沒有聲音的話, 那麼您可能忘計把靜音取消掉了.
+要這麼做您要用 "amixer" 或 "alsamixer", 兩者都附在驅動程式中. 只要鍵入:</p>
+
+<pre class="sample">
+amixer -c 1 master 70:70 unmute
+amixer -c 1 pcm 70:70 unmute
+amixer -c 1 cd 70:70 unmute
+</pre>
+
+
+<p>對多數的應用程式應該都有效的.
+</p>
+<h3>OSS/Linux 的相容性</h3>
+
+<p>如果這是您首次使用 ALSA 驅動程式, 而您以前使用過核心內建的那個的話,
+您可能想要能和過去相容的能力.(即使用 /dev/pcmX 設備之能力). 這時您需要載入
+"OSS 相容驅動程式". 執行 <code>modprobe snd-pcm1-oss</code>
+(詳見關於載入本驅動程式那一節. ). 請疝N: snd-pcm1-oss 不能於 snd-pcm1.
+對舊驅動程式的支援所需要的是 snd-pcm1-oss.</p>
+
+<h2><a name="ss6.4" id="ss6.4">6.4</a> 一般性建言
+</h2>
+
+
+
+<h3>試著用 "insmod"</h3>
+
+<p>用 "insmod" 取代 kerneld 總是有用的. 也許因此您就可以在螢幕上看到錯誤訊息了.</p>
+
+<h3>讀 INSTALL 檔.</h3>
+
+<p>在驅動程式目錄中的 INSTALL 檔可以發現很多資訊. 如果您的驅動程式不起作用,
+別忘了看看這個檔, 也許會有額外的資訊.</p>
+
+<h3>除錯訊息</h3>
+
+<p>如果以上的方法還是沒有用, 您可以重新編譯驅動程式, 要求它將除錯訊息送進
+/var/log/messages 檔中, 做為最後手段. 下<code>cd
+/usr/src/alsa-driver-...</code>命令進入驅動程式目錄, 然後輸入:</p>
+<pre class="sample">
+./configure --with-debug=detect; make clean; make
+</pre>
+
+<p>移除驅動程式(如果它已經啟動的話, 請看後面有提到的移除模組小技巧)
+然後用您剛剛用的 "modprobe" 指令安插新編譯的驅動程式. 看看 /var/log/messages
+裡有沒有任何相關訊息.</p>
+
+<h3>如果都沒有用呢...</h3>
+
+<p>如果您無法由訊息中取得線索, 寫封 Email 到 ALSA 使用者通信論壇,
+<a href="mailto:alsa-user@alsa-project.org">alsa-user@alsa-project.org</a>.</p>
+<p>別忘了加上以下資訊:</p>
+<ul>
+<li>您的音效卡的名稱以及其使用的晶片.</li>
+<li>如果您的音效卡是 ISA PnP 的, 放入 isapnp.conf 中有關的部份.</li>
+<li>您的 conf.modules 檔或是啟動 ALSA 驅動程式的命令行.</li>
+<li>所有在 /var/log/messages 中應該和 ALSA 驅動程式有關的訊息.</li>
+</ul>
+<h2><a name="ss6.5" id="ss6.5">6.5</a> 回報臭虫
+</h2>
+
+<p>如果您發現了一隻臭虫, ALSA 驅動程式開發組希望能夠得知(至少)以下資訊:</p>
+<ol>
+<li> 驅動程式及核心的版本: 'cat /proc/asound/version'</li>
+<li> 音效卡資訊
+<ul>
+<li> 廠商所標示的音效卡名稱</li>
+<li> 該卡上面的各個晶片標示</li>
+<li> 'cat /proc/asound/cards' 的執行結果</li>
+</ul>
+</li>
+<li> 所有在 /var/log/messages 中的相關訊息</li>
+<li> 問題的描述</li>
+</ol>
+<h2><a name="ss6.6" id="ss6.6">6.6</a> 小技巧: 聽 CD 時...
+</h2>
+
+<p>如果您使用kmod/kerneld 以及 ALSA 驅動程式來聽 CD, 那麼 kmod/kerneld
+可能不會像預期一般載入驅動程式. 這是由於命令列的 CD 放音程式只會叫 CDROM
+開始播放, 而不會使用到任何設備, 讓 kmod/kerneld 來載入驅動程式.
+這個問題的解可能就只有使用 modprobe 了.</p>
+
+<h2><a name="ss6.7" id="ss6.7">6.7</a> 小技巧: 安裝 MIDI 序列驅動動程式
+</h2>
+
+<p>通常, 序列設備的 IO 埠會由標準的序列設備驅動程式占有. 所以在您可以進行
+"modprobe snd-serial" 以前, 必須讓驅動程式釋放掉該序列設備.</p>
+<p>以下是所需程序.</p>
+<pre class="sample">
+setserial /dev/ttyS0 uart none
+modprobe snd-serial
+</pre>
+
+<p>(如果您的 MIDI 設備使用不一樣的設備,將 /dev/ttyS0 換成相對應的 /dev/ttySx)</p>
+
+<h2><a name="ss6.8" id="ss6.8">6.8</a> 小技巧: 換新核心? 換新模組!
+</h2>
+
+<p>當您更新核心後, 您可能需要重新編譯 ALSA 驅動程式. 如果它們還在原來的
+/usr/src 目錄下, 請別忘了在您進行 ./configure, make, make install 之前先下
+<code>make clean</code> 命令.</p>
+<p>喔! 還有個不太一樣的核心版本編號 "2.2.0ac1", 會被 configure
+命令檔抱怨不是數字. 我想這個在新版的命令檔中會解決,
+不然您可能得改變原始碼中的核心版本編號.</p>
+
+<h2><a name="ss6.9" id="ss6.9">6.9</a> 小技巧: KDE 及 ALSA 驅動程式
+</h2>
+
+<p>如果您使用了 KDE, 但卻無法聽到諸如開啟視窗或改變使用的桌面等系統音效,
+不過其它音效動作正常. 也就是您的 CD 播放, MP3 播放以及混音器都很正常,
+那麼可能只是因為欠缺 "kwmsound" 而已.</p>
+<p>所以: 確定在您的啟動命令檔($KDEDIR/bin/startkde)中有 "kwmsound".</p>
+
+<h2><a name="ss6.10" id="ss6.10">6.10</a> 小技巧: 使用 ALSA 設備
+</h2>
+
+<p>如果您以前有利用過 Linux 的音效支援, 那麼您的應用程式可能需要用到 /dev/pcm0,
+/dev/audio 及 /dev/mixer. 使用 OSS 相容模組 snd-pcm1-oss 是不錯的解決方法,
+但如果使用真正的 ALSA 設備(在 /dev/snd/下)的話那更好.</p>
+
+<h2><a name="ss6.11" id="ss6.11">6.11</a> 小技巧: 移除所有模組
+</h2>
+
+<p>要一個一個的移除十幾個模組實在不是個好辦法. 很幸運的, 所有的模組名都是由 snd-
+開始, 所以用一點小小的命令列規劃, 您可以輕易的下以下的命令移除 ALSA
+音效驅動程式:</p>
+<pre class="sample">
+cat /proc/modules|gawk '/^snd-/{print $1}|xargs -i rmmod {}
+</pre>
+
+<p>Juergen Kahrs 寫道: "我有一個命令檔可以連 soundcore, soundlow 以及 sound
+都一併消去, 如果它們已載入且沒在使用中的話. 這個命令檔處理 /proc/modules
+三次, 這樣在完成後應該不會有太多模組留下來." 他的解法是:</p>
+<pre class="sample">
+awk '/^snd/||/^sound/&amp;&amp;($3==0){system("rmmod " $1)}' /proc/modules /proc/modules /proc/modules
+</pre>
+
+<p>請注意: 如果有一個模組依賴另一個模組的話, 您不可以只移除較上層的那個.
+這意味著您可能有必要下第二道命令. (我從來沒碰到過這種情況;
+看起來您可以以依照在 /proc/modules 中的順序移除 ALSA 模組.)</p>
+
+<hr />
+<table
+
+
+
+
+>
+  <tr
+>
+    <td class="BtdL"
+><a href="Alsa-sound-5.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="BtdC"
+><a href="index.html" accesskey="H">目錄(H)</a></td
+>
+    <td class="BtdR"
+>&nbsp;</td
+>
+  </tr
+>
+  <tr
+>
+    <td class="BtdL"
+>測試及使用</td
+>
+    <td class="BtdC"
+><a href="Alsa-sound-6.html" accesskey="T">到頂層(T)</a></td
+>
+    <td class="BtdR"
+>&nbsp;</td
+>
+  </tr
+>
+</table
+>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img class="ImgLogo" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

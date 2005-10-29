@@ -1,0 +1,371 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+ 
+ <title>2. 當機回復</title>
+
+ <link href="../../style.css" rel="stylesheet" type="text/css" />
+  <link href="index.html" rel="start" title="HOWTO：LILO, Linux Crash Rescue" />
+ <link href="index.html#content" rel="contents" />
+ <link href="LILO-crash-rescue-HOWTO-1.html" rel="chapter" title="1.簡介" />
+ <link href="LILO-crash-rescue-HOWTO-2.html" rel="chapter" title="2.當機回復" />
+ <link href="LILO-crash-rescue-HOWTO-3.html" rel="chapter" title="3.相關網站" />
+ <link href="LILO-crash-rescue-HOWTO-1.html" rel="prev" title="1. 簡介" />
+ <link href="LILO-crash-rescue-HOWTO-4.html" rel="chapter" title="4.此份文件的其他格式" />
+ <link href="LILO-crash-rescue-HOWTO-5.html" rel="chapter" title="5.版權 Copyright " />
+ <link href="http://tldp.org/HOWTO/LILO-crash-rescue-HOWTO.html" rel="alternate" title="原版" />
+ <meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+ <link href="LILO-crash-rescue-HOWTO.rdf" rel="meta" title="各章節的說明資訊" />
+ <link href="LILO-crash-rescue-HOWTO-3.html" rel="next" title="3. 相關網站" />
+ <link href="LILO-crash-rescue-HOWTO-2.html#ss2.1" rel="section" title="2.1 準備工作建議 " />
+ <link href="LILO-crash-rescue-HOWTO-2.html#ss2.2" rel="section" title="2.2 回復系統的快速步驟" />
+ <link href="http://www.toms.net/rb" rel="bookmark" title="tomsrtbt 開機磁片" />
+ <link href="LILO-crash-rescue-HOWTO-2.html#ss2.3" rel="section" title="2.3 預防性措施" />
+ <link href="http://www.linuxlots.com/~fawcett/yard " rel="bookmark" title="Yard 救援和開機磁片。" />
+ <link href="LILO-crash-rescue-HOWTO-2.html#ss2.4" rel="section" title="2.4 移除 LILO " />
+ <link href="LILO-crash-rescue-HOWTO-2.html#ss2.5" rel="section" title="2.5 常犯錯誤 " />
+</head> <body   > 
+<table >
+  <tr>
+    <th colspan="3" class="HdTitle">HOWTO：LILO,
+      Linux Crash Rescue</th>
+  </tr>
+  <tr>
+    <td class="TtdL"> <a href="LILO-crash-rescue-HOWTO-1.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="TtdC">&nbsp;</td>
+    <td class="TtdR"> <a href="LILO-crash-rescue-HOWTO-3.html" accesskey="N">下一頁(N)</a> </td>
+  </tr>
+</table>
+<hr />
+<h1> 2. 當機回復</h1>
+
+
+
+
+
+<h2> <a name="ss2.1" id="ss2.1"></a>2.1 準備工作建議 </h2>
+
+<p>在您使用下個章節的 Tomsrtbt 軟碟登入之後，
+您最好先備分重要的系統檔案，像 /etc/fstab、/etc/lilo.conf。
+如此在當機時或系統檔案發生問題時是相當有用的。</p>
+<pre class="sample">
+bash# cp /etc/fstab /etc/fstab.orig
+bash# cp /etc/lilo.conf /etc/lilo.conf.orig
+bash# cp /etc/hosts /etc/hosts.orig
+bash# cp /etc/hosts.allow /etc/hosts.allow.orig
+bash# cp /etc/hosts.deny /etc/hosts.deny.orig
+bash# cp /etc/inetd.conf /etc/inetd.conf.orig
+bash# cp /etc/inittab /etc/inittab.orig
+bash# cp /etc/networks /etc/networks.orig
+</pre>
+
+
+
+
+<h2><a name="ss2.2" id="ss2.2"></a>2.2 回復系統的快速步驟 </h2>
+
+<p>循著這些步驟執行，以便從 LILO 或系統當機中回復。</p>
+<p></p>
+<ol>
+<li> <b>狀況 1：</b> 假如系統無法開機 -
+<p>取得並建立 <a href="http://www.toms.net/rb">tomsrtbt</a> 開機磁片 
+，
+或 MuLinux 開機磁片 (請參考 
+<a href="LILO-crash-rescue-HOWTO-1.html#tiny">Tiny Linux</a>)。
+並使用 tomsrtbt 開機磁片開機。
+使用 fdisk 指令找出分割區(partitions)。
+試著找出 root 和 boot 分割區。注意！
+root 分割區自己需擁有 /boot 檔案。</p>
+<p>Linux 的 root 分割區包含下列資料夾
+<b>bin</b>,
+<b>boot</b>,
+<b>etc</b>,
+<b>usr</b>.</p>
+<p>Linux 的 boot 分割區則包含以下的資料夾：
+<b>vmlinuz</b>,
+<b>boot.b</b>,
+<b>chain.b</b>,
+<b>map</b>.</p>
+<p>使用以下步驟找出 root 分割區：</p>
+<pre class="sample">
+bash# fdisk /dev/hda
+Command (m for help): m         (顯示指令的輔助選單)
+Command (m for help): p         (列出硬碟分割區)
+Command (m for help): q
+bash# mkdir /test
+bash# mount /dev/hda1 /test
+bash# ls /test
+您應該會看到 root 分割區顯示如下 -
+bin   fd    lib   mnt  proc  sbin  usr
+boot  dev   etc   home  lost+found  opt  root  tmp   var
+</pre>
+如果此分割區並非 root 分割區，試試下個分割區 /dev/hda2 。
+持續嚐試 hda3, hda4, hda5 等，直到找出 root 分割區為止。
+如果您在 <b>hda</b> 上沒有找到 root 分割區，
+則重覆以上步驟尋找其他硬碟，像是 <b>hdb</b>、<b>hdc</b>、<b>hdd</b>等。
+<p>接下來您應找出 /boot、/usr、和 /var 分割區。
+在建立新的 lilo 配置時，這些分割區的位置是必需的。</p>
+<p>以我的系統為例，root 分割區是在 /dev/hda4：</p>
+<pre class="sample">
+bash# mkdir /rootpart
+bash# mount /dev/hda4 /rootpart
+bash# cat /rootpart/etc/fstab
+        閱讀 fstab 的內容，並且按照 fstab 檔案掛上 (mount) 分割區。像下面這樣 -
+bash# mount /dev/hda5 /rootpart/boot
+bash# mount /dev/hda6 /rootpart/usr
+bash# mount /dev/hda7 /rootpart/var
+bash# mount /dev/hda8 /rootpart/opt
+bash# mount /dev/hda9 /rootpart/root
+bash# mount /dev/hda10 /rootpart/home
+</pre>
+以我的系統為例，按照 fstab 所顯示，hda5 是 <b>boot</b>、hda6 是 <b>usr</b>，
+hda7 是 <b>var</b>、hda8 是 <b>opt</b>、
+hda9 是 <b>root</b>、hda10 是 <b>home</b>、而 hda11 是 windows95 (FAT16 分割區)。
+<p>編輯 /etc/fstab (不是 /rootpart/etc/fstab) 並且加入(以下程式碼範例)</p>
+<pre class="sample">
+        /dev/hda4  /rootpart           ext2 defaults 1 1
+        /dev/hda5  /rootpart/boot      ext2 defaults 1 1
+        /dev/hda6  /rootpart/usr       ext2 defaults 1 1
+        /dev/hda7  /rootpart/var       ext2 defaults 1 1
+        /dev/hda8  /rootpart/opt       ext2 defaults 1 1
+        /dev/hda9  /rootpart/root      ext2 defaults 1 1
+        /dev/hda10 /rootpart/home      ext2 defaults 1 1
+        /dev/hda11 /rootpart/win95part vfat defaults 1 1
+
+在我的電腦中，hda4 為 linux 的 root 分割區、hda5 為 boot 分割區、
+hda11 則為 windows 95 的 vfat 系統。
+
+bash# mkdir /rootpart/win95part
+bash# mount /rootpart/win95part
+        使用 fsck 或 e2fsck 指令修復有問題的分割區。
+bash# man fsck
+bash# man e2fsck
+</pre>
+
+
+</li>
+<li> <b>狀況 2：</b> 如果 LILO 是無效的..
+<p>依照狀況 1 的步驟來排除問題。如果無法解決，則參照以下步驟。
+在執行狀況 1 的步驟之後，您應該已經掛載上 /rootpart
+並且已經建立好 /etc/fstab 檔案。</p>
+<p>注意：在進行以下步驟時，觀察 chroot 如何運作是很重要的。
+chroot 所使用的 <b>/sbin/lilo</b> 檔案的正確位置是在 <b>/rootpart/sbin/lilo</b>，
+而<b>不是</b>在 /sbin！！因此請不要混淆。</p>
+<pre class="sample">
+bash# mount -a 
+bash# chroot /rootpart /sbin/lilo -q
+bash# man chroot
+bash# chroot /rootpart /sbin/lilo 
+</pre>
+
+<p>注意：使用 chroot 的新手可能會被混淆。如果 chroot 抱怨它找不到 /boot/map 檔案，
+這種情形實際上代表著它無法找到 /rootpart/boot/map。因為您使用 /rootpart
+當作 chroot 的第一引數 (first argument)，所有的化身 (references) 都指向 /rootpart。</p>
+<p>您也可以選擇直接使用 /sbin/lilo 以代替 chroot。
+lilo 加選項 -r 實際上就和 chroot 指令是一樣的。
+<b>強烈建議</b>您使用 chroot，而不要使用 lilo -r，
+因為使用 chroot 比較方便，且較容易找出錯誤。</p>
+<pre class="sample">
+bash# man lilo
+bash# /sbin/lilo -r /rootpart
+</pre>
+
+
+</li>
+<li> <b>狀況 3：</b> 如果 LILO 是無效的..
+<p>如果使用狀況 1 和狀況 2 的步驟均無法解決，
+假如您有使用 'mkbootdisk' 製作過開機片(於安裝時或參考
+'man mkbootdisk'自行建立)，則使用您的開機磁片來開機並修復分割區。
+mkbootdisk 存在於 mkbootdisk*.rpm 的套件，您必須安裝它。
+(譯注：隨不同發行套件而有所差異；請洽詢您的發行套件廠商或組織)
+或者從 
+<a href="http://www.bootdisk.com/http://www.bootdisk.com/'">http://www.bootdisk.com/</a> 取得 Linux/NT/Windows/DOS/Mac 的開機磁片。
+其他選擇 - 找 Linux 安裝光碟來使用。
+每個 Linux 套件會在光碟裡提供救援磁片的 image file，在 Linux 環境下，鍵入
+"dd if=/cdrom/disks/rescue of=/dev/fd0" 來建立救援磁片。在 DOS 環境下，
+使用 rawrite.exe (包含在 Linux 光碟裡)，鍵入 "rawrite image-name a:"
+來建立救援磁片。</p>
+
+
+</li>
+<li> <b>狀況 4：</b> 如果以上狀況 1、2、3 的步驟皆無法解決問題，且您也沒有開機磁片
+<p>假如您有其他 linux 系統的電腦，以 root 身份登入並且執行 -</p>
+<p>注意：如果您編譯您自己的核心(kernel)為 bzImage (例如 bzImage-2.4.4)，
+您應當使用以下方法對 vmlinuz-2.4.4 建立硬連結(hard link)。(注意
+vmlinuz 的 z，而非 vmlinux) 如果您並未做此步驟，
+則 mkbootdisk 指令可能會失敗。</p>
+<pre class="sample">
+bash# cd /boot
+bash# ls -l vmlinuz*
+bash# ln /boot/bzImage-2.4.4  /boot/vmlinuz-2.4.4
+</pre>
+現在您已有 bzImage 和 vmlinuz，執行下列指令 -
+
+<pre class="sample">
+bash$ man mkbootdisk
+bash# cp /etc/lilo.conf /etc/lilo-original.conf
+</pre>
+編輯 /etc/lilo.conf 並將您在 '狀況 1' 所獲得的 root
+分割區格式填入；之後插入空白磁碟片並執行 -
+
+<pre class="sample">
+bash# mkbootdisk --device /dev/fd0 2.2.12-20
+(譯注：2.2.12-20 為核心版本編號，請自行依照您的 linux 核心版本作改變。)
+</pre>
+mkbootdisk 存在於 mkbootdisk*.rpm 的套件，您必須安裝它。
+(譯注：隨不同發行套件而有所差異；請洽詢您的發行套件廠商或組織)
+您必須確保將 /etc/lilo-original.conf 更改回原來的檔名 /etc/lilo.conf!! 
+再以此開機磁片進行狀況 3 的步驟。
+
+
+</li>
+<li> <b>狀況 5: </b> 這是最壞的情況，希望您不會走到這個地步。
+狀況 1 到 4 已包含了絕大多數的案例，但是如果連狀況
+1、2、3、和 4 的步驟都無法解決 -
+<p><i><b>第一步： </b></i>
+使用 tomsrtbt 開機磁片開機，
+(請參考 
+<a href="LILO-crash-rescue-HOWTO-1.html#tiny">Tiny Linux</a>)
+掛上分割區，
+並且使用以下指令備份 root 分割區至其他還有磁碟空間的分割區 -</p>
+<pre class="sample">
+        編輯 /etc/fstab 並且寫入(以下的程式碼範例，
+        您可能必須按照您的磁碟機實際狀況作改變) -
+                /dev/hda4  /rootpart    ext2 defaults 1 1
+                /dev/hda11 /b1          vfat defaults 1 1
+bash$ mkdir /rootpart; mount /rootpart
+bash$ mkdir /b1; mount /b1
+bash$ cd /
+bash$ df 
+        查看 /b1 是否有足夠的磁碟空間，以便使用 tar 來備份 root 分割區。
+bash$ tar cvf /b1/root-hda4.tar   /rootpart
+</pre>
+
+<p><i><b>第二步： </b></i>
+放入 Linux 光碟片，重開機並安裝 redhat linux 
+(譯注：或安裝其他 linux 發行套件)
+在 /dev/hda4 (但<b>千萬不要</b>安裝任何多餘的套件，
+您只需要安裝 root、boot 系統，和 LILO 管理者。
+也就是說，選擇最小安裝即可)。 
+安裝程式也將會安裝 LILO 在您的硬碟裡。
+現在重新啟動 linux，以 root 身份登入，並且執行 -</p>
+<pre class="sample">
+bash$ man mkbootdisk
+bash# cp /etc/lilo.conf /etc/lilo-original.conf
+</pre>
+注意：您<b>必須</b>記得將 lilo-original.conf 複製回 lilo.conf!!
+編輯 /etc/lilo.conf 並將您在 '狀況 1' 所獲得的 root
+分割區格式填入；之後插入空白磁碟片並執行 -
+
+<pre class="sample">
+bash# mkbootdisk --device /dev/fd0 2.2.12-20
+(譯注：2.2.12-20 為核心版本編號，請自行依照您的 linux 核心版本作改變。)
+bash# cp /etc/lilo-original.conf /etc/lilo.conf
+</pre>
+測試此開機磁片，檢視其是否能運作，
+並將第一步中利用 tar 作備分的檔案 /b1/root-hda4.tar 回復。
+(譯注：您可使用 tar xvf 來回復。詳見 tar manpage)
+
+</li>
+</ol>
+
+
+
+
+
+<h2><a name="ss2.3" id="ss2.3"></a>2.3 預防性措施 </h2>
+
+<p>您應當採取下列的預防性措施來處理未來可能發生的問題。</p>
+<p></p>
+<ul>
+<li> 您<b>一定要</b>偶爾製作救援開機磁片，且在您改變分割區時一定要製作。
+插入空白磁碟片並執行 -
+
+<pre class="sample">
+bash$ man mkbootdisk
+mkbootdisk 存在於 mkbootdisk*.rpm 的套件，您必須安裝它。
+(譯注：隨不同發行套件而有所差異；請洽詢您的發行套件廠商或組織)
+bash$ mkbootdisk --help
+bash$ mkbootdisk --device /dev/fd0 2.2.12-20
+(譯注：2.2.12-20 為核心版本編號，請自行依照您的 linux 核心版本作改變。)
+</pre>
+</li>
+<li> 您<b>必須</b>將分割表設定 (partition tables setup) 備份至磁片和硬碟裡。
+您也應將此設定列印並貼至電腦機殼上。
+
+<pre class="sample">
+bash$ su - root
+bash# man fdisk
+bash# fdisk -l /dev/sda > partition_table_backup.txt
+</pre>
+如果您需要重新分割硬碟，這樣做是非常有幫助的。
+從列印出來的分割表資料，您將會了解分割區磁柱的起始。
+回復系統時，在重新分割與格式化硬碟後，您可以利用備份資料回復原先的分割設定。
+
+</li>
+<li>您手邊必須擁有 <a href="http://www.toms.net/rb">tomsrtbt</a> 開機磁片。</li>
+<li>您手邊必須擁有 <a href="http://www.linuxlots.com/%7Efawcett/yard%20">Yard </a>救援和開機磁片。</li>
+<li> 備分 /root 與 /boot 目錄。使用 <a href="http://www.toms.net/rb">tomsrtbt</a> 開機磁片。並且執行 
+
+<pre class="sample">
+bash# vi /etc/fstab
+加入以下數行 -
+                /dev/hda1 /a1 vfat defaults 1 1
+                /dev/hdb1 /b1 vfat defaults 1 1
+以我的系統為例， hda1 為 linux 之 root 分割區 '/'
+bash# cd / 
+bash# tar cvf /b1/linux-root-partition-hda1.tar  a1
+bash# tar cvf /b1/linux-boot-partition-hda1.tar  a1/boot
+</pre>
+</li>
+</ul>
+
+
+
+
+
+<h2><a name="ss2.4" id="ss2.4"></a>2.4 移除 LILO </h2>
+
+<p>您可以使用 DOS 啟動載入程式(boot loader)載入啟動磁區，並以之取代 LILO。
+在 MS DOS 提示符號下輸入以下指令：
+</p>
+<pre class="sample">
+        FDISK  /MBR
+</pre>
+<p>此處的 MBR 代表 "硬碟主開機記錄(Master Boot Record)"。</p>
+<p>請參考 LILO 文件，取得其他移除 LILO 的方法；這些文件通常放在 linux 系統上的
+/usr/doc/lilo* (譯注：或者是 /usr/share/doc/lilo*)。也請參考 'man lilo'。</p>
+
+
+
+
+<h2><a name="ss2.5" id="ss2.5"></a>2.5 常犯錯誤 </h2>
+
+<p>在您更改 /etc/lilo.conf 之後，您<b>必須執行 lilo </b>，使您的改變生效。
+忘了執行是 linux 初學者很常犯的錯誤。執行 -
+</p>
+<pre class="sample">
+bash# lilo -v -v -v
+</pre>
+
+
+
+
+
+<hr/>
+<table >
+  <tr>
+    <td class="BtdL"> <a href="LILO-crash-rescue-HOWTO-1.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="BtdC"> <a href="index.html" accesskey="H">目錄(H)</a> </td>
+    <td class="BtdR"> <a href="LILO-crash-rescue-HOWTO-3.html">下一頁(N)</a> </td>
+  </tr>
+  <tr>
+    <td class="BtdL">簡介</td>
+    <td class="BtdC"><a href="LILO-crash-rescue-HOWTO-2.html"  accesskey="T">到頂層(T)</a></td>
+    <td class="BtdR">相關網站</td>
+  </tr>
+</table>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img class="ImgLogo" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" title="網路內容分級協會" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

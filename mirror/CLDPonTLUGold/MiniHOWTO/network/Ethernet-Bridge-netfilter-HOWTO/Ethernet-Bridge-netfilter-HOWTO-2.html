@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>Untitled Document</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+<link href="../../style.css" rel="stylesheet" type="text/css" />
+<link href="Ethernet-Bridge-netfilter-HOWTO-1.html" rel="chapter" title="1.介紹" />
+<link href="Ethernet-Bridge-netfilter-HOWTO-2.html" rel="chapter" title="2.必需的軟件" />
+<link href="Ethernet-Bridge-netfilter-HOWTO-3.html" rel="chapter" title="3.配置linux以提供必要的服務" />
+<link href="Ethernet-Bridge-netfilter-HOWTO-4.html" rel="chapter" title="4.測試你的新的橋接網絡" />
+<link href="Ethernet-Bridge-netfilter-HOWTO-5.html" rel="chapter" title="5.其它鏈接" />
+<link href="index.html" rel="contents" />
+<link href="index.html" rel="start" />
+<link href="Ethernet-Bridge-netfilter-HOWTO-1.html" rel="prev" />
+<link href="Ethernet-Bridge-netfilter-HOWTO-4.html" rel="next" />
+<link href="Ethernet-Bridge-netfilter-HOWTO-2.html#ss21" rel="section" title="2.1 linux內核特性 " />
+<link href="Ethernet-Bridge-netfilter-HOWTO-2.html#ss22" rel="section" title="2.2 用戶空間工具：brctl " />
+<link href="http://www.tldp.org/HOWTO/Ethernet-Bridge-netfilter-HOWTO.html" rel="alternate" title="原版" />
+<link href="Ethernet-Bridge-netfilter-HOWTO.rdf" rel="meta" title="各章節的說明資訊" />
+</head>
+
+<body>
+<table
+
+
+
+
+>
+  <tr
+>
+    <th
+colspan="3" class="HdTitle"
+>Mini
+    HOWTO：Ethernet Bridge + netfilter</th>
+  </tr
+>
+  <tr
+>
+    <td class="TtdL"
+><a href="Ethernet-Bridge-netfilter-HOWTO-1.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="TtdC"
+></td
+>
+    <td class="TtdR"
+><a href="Ethernet-Bridge-netfilter-HOWTO-3.html" accesskey="N">下一頁(N)</a></td
+>
+  </tr
+>
+</table
+>
+<hr />
+<h1>2.必要的軟件 </h1>
+<p> 按照我們測試場景的要求，在以太網橋計算機上這些軟件是必要的。 </p>
+<h2> <a name="ss21" id="ss21"></a>2.1 linux內核特性 </h2>
+<p> 如果你使用的內核版本是2.4.18的話，那麼以太網橋的功能已經內置進去了。無須加補丁文件了。 </p>
+<p> 但是如何你打算使用netfilter功能的話，因為我們想在這台新的linux路由器/（防火牆 ）上跑iptables，那麼我們仍然需要加一個補丁，任何需要的補丁都可以在這個網站找到和下載sourceforge
+  Ethernet Bridge homepage </p>
+<pre class="sample">
+root@bridge:~> cd /usr/src/
+root@bridge:~> wget -c http://bridge.sourceforge.net/devel/bridge-nf/bridge-nf-0.0.7-against-2.4.18.diff
+root@bridge:~> cd /usr/src/linux/
+root@bridge:~> patch -p1 -i ../bridge-nf/bridge-nf-0.0.7-against-2.4.18.diff
+</pre>
+<p> 按計劃我們希望網橋支持netfilter，而且我們已經給vanillal內核打上了補丁，那麼我們就要激活一些必要的內核配置項。如何構建一個自己的內核請看the
+  CD-Net-Install-HOWTO, Toolbox，唉，可惜的是它還是只有德文版，嗯，以後有時間我再把它翻譯一下。 </p>
+<p> 廢話少說，我們還是開始吧： 在Code maturity level options中
+我們選中 </p>
+<pre class="sample">
+        [*] Prompt for development and/or incomplete code/drivers
+</pre>
+<p> 在Loadable module support中，我們選中 </p>
+<pre class="sample">
+        [*] Enable loadable module support  
+        [*]   Set version information on all module symbols
+        [*]   Kernel module loader
+</pre>
+<p>好了，到現在為止進展不錯喲，現在我們進到 Networking options 中
+  選中</p>
+<pre class="sample">
+        [*] Network packet filtering (replaces ipchains)
+        [*]   Network packet filtering debugging
+</pre>
+<p>此外，在IP: Netfilter Configuration 我們把所有的需要項都標記為模塊，現在輪到期待已久的主角出場了:
+  選中</p>
+<pre class="sample">
+         802.1d Ethernet Bridging
+</pre>
+<p>也選中</p>
+<pre class="sample">
+        [*]   netfilter (firewalling) support
+</pre>
+<p> 注意： 上面的項只在我們成功的給內核打上補丁後才會有。 最後，我們就可以靜待成功了。 </p>
+<pre class="sample">
+root@bridge:~> make dep clean bzImage modules modules_install
+</pre>
+<p>等內核編譯完後，別忘了編輯/etc/lilo.conf 文件，然後做</p>
+<pre class="sample">
+root@bridge:~> lilo -t
+root@bridge:~> lilo
+root@bridge:~> reboot
+</pre>
+<p> 提示： 我們也可以將新內核標記為bridge內核，我們用vi編輯在內核源目錄中的Makefile文件，我們找到EXTRAVERSION
+  =這一行，可以在後面加上bridge，在內核編譯後，內核的名字就是2.4.18bridge。 在modules_install安裝後，我們就會在/lib/modules/2.4.18bridge目錄中找到新的模塊。 </p>
+<h2><a name="ss22" id="ss22"></a>2.2 用戶空間工具：brctl </h2>
+<p> 當我們的內核有執行以太網橋和netfilter這兩種功能的能力後，我們就需要準備用戶空間工具brctl。brctl是用來配置網橋的工具。
+  我們到這下載它download the source tarball，解包它並進入解包後的目錄 </p>
+<pre class="sample">
+root@bridge:~> wget -c http://bridge.sourceforge.net/bridge-utils/bridge-utils-0.9.5.tar.gz
+root@bridge:~> tar xvzf bridge-utils-0.9.5.tar.gz
+root@bridge:~> cd bridge-utils-0.9.5
+</pre>
+<p>這時，請閱讀README和doc/子目錄下的文件，然後簡單地make和copy brctl/brctl 可執行檔到/sbin/下面。</p>
+<pre class="sample">
+root@bridge:~> make
+root@bridge:~> cp -vi brctl/brctl /sbin/
+</pre>
+<p>這樣就好了，現在該去配置它了。</p>
+<hr />
+<table
+
+
+
+
+>
+  <tr
+>
+    <td class="BtdL"
+><a href="Ethernet-Bridge-netfilter-HOWTO-1.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="BtdC"
+><a href="index.html" accesskey="H">目錄(H)</a></td
+>
+    <td class="BtdR"
+><a
+href="Ethernet-Bridge-netfilter-HOWTO-3.html"
+>下一頁(N)</a
+></td
+>
+  </tr
+>
+  <tr
+>
+    <td class="BtdL"
+>介紹</td
+>
+    <td class="BtdC"
+><a href="Ethernet-Bridge-netfilter-HOWTO-2.html" accesskey="T">到頂層(T)</a></td
+>
+    <td class="BtdR"
+>設置linux讓網橋運行 </td
+>
+  </tr
+>
+</table
+>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" width="88" height="31" style="border:0;width:88px;height:31px"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img style="border:0;width:88px;height:31px" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img style="border:0;width:88px;height:32px" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" style="border:0" alt="表示該網頁支援資源描述架構"/></a></div>
+</body>
+</html>

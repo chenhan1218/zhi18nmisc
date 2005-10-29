@@ -1,0 +1,323 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>5. 進階的主題</title>
+<link href="PCMCIA-HOWTO-6.html" rel="next" title="6. 使用未被支援的卡片" />
+<link href="PCMCIA-HOWTO-4.html" rel="previous" title="4. 使用方法以及特色" />
+<link href="http://tldp.org/HOWTO/PCMCIA-HOWTO.html" rel="alternate" title="原版" />
+<link href="../../style.css" rel="stylesheet" type="text/css" />
+<link href="PCMCIA-HOWTO-1.html" rel="chapter" title="1.一般資訊及硬體要求" />
+<link href="PCMCIA-HOWTO-2.html" rel="chapter" title="2.編譯與安裝" />
+<link href="PCMCIA-HOWTO-3.html" rel="chapter" title="3.解決安裝與建構的問題" />
+<link href="PCMCIA-HOWTO-4.html" rel="chapter" title="4.使用方法以及特色" />
+<link href="PCMCIA-HOWTO-5.html" rel="chapter" title="5.進階的主題" />
+<link href="PCMCIA-HOWTO-6.html" rel="chapter" title="6.使用未被支援的卡片" />
+<link href="PCMCIA-HOWTO-7.html" rel="chapter" title="7.除錯小技巧及程式設計資訊" />
+<meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+<link href="PCMCIA-HOWTO-5.html#ss5.1" rel="section" title="5.1 PCMCIA 設備的資源分配" />
+<link href="PCMCIA-HOWTO-5.html#ss5.2" rel="section" title="5.2 我怎樣才能為家庭及工作的使用做各別的設備設定呢? " />
+<link href="PCMCIA-HOWTO-5.html#ss5.3" rel="section" title="5.3 從 PCMCIA 設備開機" />
+<link href="PCMCIA-HOWTO.rdf" rel="meta" title="各章節的說明資訊" />
+</head> <body >
+<table >
+  <tr>
+    <th colspan="3" class="HdTitle">HOWTO：Linux
+      PCMCIA</th>
+  </tr>
+  <tr>
+    <td class="TtdL"> <a href="PCMCIA-HOWTO-4.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="TtdC">&nbsp;</td>
+    <td class="TtdR"> <a href="PCMCIA-HOWTO-6.html" accesskey="N">下一頁(N)</a> </td>
+  </tr>
+</table>
+<hr />
+<h1>5. 進階的主題</h1>
+
+
+
+<h2><a name="ss5.1" id="ss5.1"></a>5.1 PCMCIA 設備的資源分配 </h2>
+
+<p>理論上， 哪一個插斷被使用到哪個設備上都沒關係。 只要兩個 (或以上 )
+設備不被建構成使用相同的插斷即可。在 <code>/etc/pcmcia/config.opts</code>
+裏你可以發現有個地方用來排除那些被非 PCMCIA 設備所使用著的插斷。</p>
+<p>同樣地，也沒有辦法可以直接指定 I/O 位址給一個 PCMCIA 卡來使用。
+<code>/etc/pcmcia/config.opts</code>  檔案允許你指定可被所有的  PCMCIA
+設備所使用的埠範圍， 或是排除那些會和其他設備相衝突的埠範圍。</p>
+<p>在修改了  <code>/etc/pcmcia/config.opts</code>後，你可以使用 ``<code>kill -HUP</code>''
+來重新啟動 <code>cardmgr</code>。</p>
+<p>被用來監視卡片狀態的插斷是在 <code>cardmgr</code> 處理 <code>/etc/pcmcia/config</code>
+檔案之前由低階的插槽驅動程式模組 (<code>i82365</code> 或 <code>tcic</code>) 所選擇
+的。因此改變這個檔案並不會有什麼影響。要設定這個插斷，在插槽驅動程
+式被載入時，設定在 <code>/etc/rc.d/rc.pcmcia</code> 內的 <code>PCIC_OPTS</code>
+變數使用 <code>cs_irq=</code> 選項。</p>
+<p>所有的客戶端卡片驅動程式都有個叫做 <code>irq_list</code> 的參數。 被用來指
+定哪些插斷可用試著用來配置給他們的。這些驅動程式選項應該被設定在你
+的 <code>/etc/pcmcia/config</code> 檔案裏。例如:</p>
+<p>
+</p>
+<pre class="sample">
+device "serial_cs"
+  module "serial_cs" opts "irq_list=8,12"
+  ...
+</pre>
+
+<p></p>
+<p>會指定串列埠驅動程式只使用  irq  8 或 irq  12。 不管 <code>irq_list</code>
+的設定如何， 卡片服務程式 Card Services 絕不會分配已被其他設備所使
+用了的插斷，或是在建構檔裏被排除的插斷。</p>
+
+<h2><a name="ss5.2" id="ss5.2"></a>5.2 我怎樣才能為家庭及工作的使用做各別的設備設定呢? </h2>
+
+<p>我們可以很簡單地使用 PCMCIA ``scheme'' 支援來達成。 使用兩種不同的
+建構 schemes，分別叫 ``home'' 及 ``work''。 以下是個有 scheme 指定
+的設定的 <code>network.opts</code> 手稿範例:</p>
+<p>
+</p>
+<pre class="sample">
+case "$ADDRESS" in
+work,*,*,*)
+    # definitions for network card in work scheme
+    ...
+    ;;
+home,*,*,*|default,*,*,*)
+    # definitions for network card in home scheme
+    ...
+    ;;
+esac
+</pre>
+
+<p></p>
+<p>PCMCIA  設備位址的首要部份都是建構  scheme。 在這個例子中， 第二個
+``case'' 句子會從 ``homee'' 和 ``default'' schemes 中挑選一個。 因
+此，不管任何理由 scheme 並沒被設定了，內定值是 ``home'' 設定。</p>
+<p>現在，要在二個設定集裏頭挑選一個，可執行:</p>
+<p>
+</p>
+<pre class="sample">
+cardctl scheme home
+</pre>
+
+<p></p>
+<p>或者是</p>
+<p>
+</p>
+<pre class="sample">
+cardctl scheme work
+</pre>
+
+<p></p>
+<p><code>cardctl</code>  命令相當於關掉所有的卡片後再重啟動它們。 不管 PCMCIA
+系統是否被載入，這個命令都可安全地被執行。但是如果你在當時正在使用
+其他的 PCMCIA 設備時這個命令可能會失敗。 (雖然他們的建構並不完全依
+靠 scheme 的設定。 )。</p>
+<p>要知道目前 PCMCIA scheme 的設定，執行:</p>
+<p>
+</p>
+<pre class="sample">
+cardctl scheme
+</pre>
+
+<p></p>
+
+<h2><a name="ss5.3" id="ss5.3"></a>5.3 從 PCMCIA 設備開機 </h2>
+
+
+<p>要在一個 PCMCIA  設備上做個檔案系統需要耍個小把戲可行， 因為 Linux
+的 PCMCIA 系統並沒有設計成連接到核心程式上。它的主要元件，可載入式
+核心模組以及使用者模式的  cardmgr 精靈是仰賴在一個已經在執行的系統
+上。核心的 ``initrd'' 以允許 Linux 使用一個有最小化的根
+映像檔、載入驅動程式的暫時性的動態記憶體磁碟來開機，然後再重新掛上
+一個不同的根檔案系統。這個暫時的根系統可以建構 PCMCIA 設備，然後再
+把它重新掛成一個根系統。</p>
+<p>initrd  映像檔絕對必須存放在一個可開機的設備上: 一般來說這就無法放
+到 PCMCIA 設備上了。這是因為 BIOS 的限制，可不是核心的限制。在這裏
+， 能夠分辨出 `` 可開機的 (boot-able)'' 設備 (例如，任何可以做開機
+使用的設備 ) 與 `` 可做根系統的 (root-able)'' 設備 (例如，可以被掛
+入成為根系統的設備    )    的不同處也是很重要的。   ``    可開機的
+(Boot-able) '' 設備是由 BIOS 所決定的， 通常是內部軟碟機和硬式磁碟
+機。`` 可做根系統的 (root-able)'' 設備是任何可以在被載入即即被核心
+所支援的區塊設備。 initrd 的功能可使更多的設備變成 `` 可做根系統的
+(root-able)''，而非 ``可開機的 (boot-able)''。</p>
+<p>有些 Linux 供應版本允許安裝到 PCMCIA SCSI 卡接著的設備上。使得它們
+無意地多出了可支援從  PCMCIA  SCSI  CD-ROM  設備來安裝的邊際效應。
+然而，  到目前為止， 並沒有任何  Linux  安裝工具支援建構一個可以從
+PCMCIA  根檔案系統上開機到  Linux  的合適  ``initrd''。 設立一個以
+PCMCIA  根檔案的 Linux 系統需要您使用其他的  Linux  系統來產生一個
+``initrd'' 映像檔案。如果沒有可用的其他 Linux 系統，另一個替代方法
+是做最小安裝到非 PCMCIA 磁碟上，建立一個 initrd 映像檔，然後再重新
+安裝到 PCMCIA 目地設備上。</p>
+<p>在 Linux Bootdisk-HOWTO 裏有一些關於設定開機磁碟片的一般資訊，但卻
+沒有任何有關於 initrd 的資訊。 initrd 的主要文件被放在最新的核心程
+式碼供應版本裏頭，  在   <code>linux/Documentation/initrd.txt</code>。
+在開始前，你應該要先讀一下這份文件。 對於 <code>lilo</code> 的熟悉也是有助
+益的。 要使用 initrd 也需要你已有個將  <code>CONFIG_BLK_DEV_RAM</code>  和
+<code>CONFIG_BLK_DEV_INITRD</code> 功能打開後所編譯出來的核心。</p>
+<p>這是個高等建構技術， 需要您對 Linux 以及 PCMCIA 系統有一定程度的熟
+悉度。請確認在您閱讀完所有相關的文件後再開始。下面的 `` 食譜 '' 應
+該是可行的， 但是一旦不依照範例來做的話， 就會很快地將你推向未知及
+`` 不被支援的 '' 地方，那你就得自己來的。</p>
+<p>這方法需要你一定要使用 PCMCIA 驅動程式 2.9.5 或最新的版本才可以。
+舊的 PCMCIA 套件或是個別的元件並不能在 initrd 裏使用。請不要將不同
+的版本的元件混合了。</p>
+
+<h3>pcinitrd 輔助員手稿</h3>
+
+<p><code>pcinitrd</code>  手稿用來建立一個使用  PCMCIA 根磁區分割來啟動 Linux
+的基本   initrd    映像檔。   該映像檔裏包含一個最小的目錄層級結構
+、 以及有用的設備檔案、一些二進位檔案、共用程式庫檔以及一套 PCMCIA
+驅動程式模組。 當你執行 <code>pcinitrd</code> 時，要指定要要包含進去映像檔
+裏面的驅動程式模組名稱。 而主要 PCMCIA  核心元件  <code>pcmcia_core</code>
+及 <code>ds</code>會被自動地包含進去。</p>
+<p>例如，假設你的筆記電腦使用一個 i82365 同容的 PCMCIA 主控制器，而你
+想從一個接著 Adaptec SlimSCSI 卡而裝有根檔案系統的硬碟上啟動 Linux
+。你可以建立一個合適的 initrd 映像檔，方法如下:</p>
+<p>
+</p>
+<pre class="sample">
+pcinitrd -v initrd pcmcia/i82365.o pcmcia/aha152x_cs.o
+</pre>
+
+<p></p>
+<p>來自訂 initrd 啟使排程，你可以用下面的命令來使用 ``loopback'' 設備
+來掛上該映像檔案:</p>
+<p>
+</p>
+<pre class="sample">
+mount -o loop -t ext2 initrd /mnt
+</pre>
+
+<p></p>
+<p>然後編修 <code>linuxrc</code> 手稿。 PCMCIA 建構的檔案會被安裝到映像檔案裏
+頭的    <code>/etc</code>    內，   當然你也可以自已設定。    細節請看
+<code>pcinitrd</code> 的 man 頁。</p>
+
+<h3>建立一個 initrd 開機軟碟片</h3>
+
+
+<p>在建立了 <code>pcinitrd</code> 映像檔後， 你可以利用拷貝核心的方式來做一片
+可開機的磁碟片， 並把被壓縮的 initrd 映像檔、支援給 <code>lilo</code> 使用
+的檔案到一張空白磁碟片上。 下面的列子， 我們假設我們需要的  PCMCIA
+根設備是 <code>/dev/sda1</code>:</p>
+<p>
+</p>
+<pre class="sample">
+mke2fs /dev/fd0
+mount /dev/fd0 /mnt
+mkdir /mnt/etc /mnt/boot /mnt/dev
+cp -a /dev/fd0 /dev/sda1 /mnt/dev
+cp [kernel-image] /mnt/vmlinuz
+gzip &lt; [initrd-image] > /mnt/initrd
+</pre>
+
+<p></p>
+<p>建立一個包含下面內容的 <code>/mnt/etc/lilo.conf</code> 檔案:</p>
+<p>
+</p>
+<pre class="sample">
+boot=/dev/fd0
+compact
+image=/vmlinuz
+    label=linux
+    initrd=/initrd
+    read-only
+    root=/dev/sda1
+</pre>
+
+<p></p>
+<p>最後，執行 lilo 如下:</p>
+<p>
+</p>
+<pre class="sample">
+lilo -r /mnt
+</pre>
+
+<p></p>
+<p>當 <code>lilo</code> 被執行時配合使用 <code>-r</code> 選項，它會做所有與被指定的根
+目錄的相關動作。  在  <code>/mnt/dev</code>   裏建立設備檔案的理由是，
+當它是在替代的根目錄模式下 <code>lilo</code> 並無法使用在 <code>/dev</code> 內
+的檔案。</p>
+
+<h3>安裝 initrd 映象檔到非Linux 磁碟內</h3>
+
+<p>initrd  功能一般都使用在當內部的硬碟機被分派給其他的作業系統使用時
+。 Linux 核心以及 initrd  映像檔可以被放在非  Linux 的磁區分割內，
+而且  <code>lilo</code>  或是  <code>LOADLIN</code>   可以被設定由這些映像檔來開啟
+Linux 系統。</p>
+<p>假設你有個已被建構好合適的根設備，且 initrd 映像檔被建立在另外的系
+統上了，啟動 Linux 系統的最容易方法是使用 <code>LOADLIN</code>，如下:</p>
+<p>
+</p>
+<pre class="sample">
+LOADLIN &lt;kernel> initrd=&lt;initrd-image>
+</pre>
+
+<p></p>
+<p>一旦你可以在你的目標機器上啟動 Linux， 你就可以安裝 <code>lilo</code> 來允
+許直接地啟動 Linux 了。 例如，假設 <code>/dev/hda1</code> 是個非 Linux
+的目標磁區分割，且 <code>/mnt</code> 可以被用做為掛入點。 首先，在目標
+磁區分割上建立一個放 Linux 檔案的子目錄:</p>
+<p>
+</p>
+<pre class="sample">
+mount /dev/hda1 /mnt
+mkdir /mnt/linux
+cp [kernel-image] /mnt/linux/vmlinuz
+cp [initrd-image] /mnt/linux/initrd
+</pre>
+
+<p></p>
+<p>在這個例子中， 假設 <code>/dev/sda1</code> 是我們要做為 Linux 根分割的
+磁碟， 它是個經由  PCMCIA  SCSI  卡所掛上的  SCSI  硬碟機。 要安裝
+<code>lilo</code>，請建立一個有以下內容的 <code>lilo.conf</code> 檔:</p>
+<p>
+</p>
+<pre class="sample">
+boot=/dev/hda
+map=/mnt/linux/map
+compact
+image=/mnt/linux/vmlinuz
+        label=linux
+        root=/dev/sda1
+        initrd=/mnt/linux/initrd
+        read-only
+other=/dev/hda1
+        table=/dev/hda
+        label=windows
+</pre>
+
+<p></p>
+<p>在 <code>boot=</code> 這行裏說要在指定的設備之主開機記錄  MBR( master boot
+record) 裏安裝開機載入程式。 <code>root=</code> 這行指出在載入 initrd 映像
+檔後需要使用的根檔案系統，如果核心映像檔裏已這麼建構了那就不需這麼
+做了。  在  <code>other=</code>   那行是用來描述說有其他的作業系統被安裝在
+<code>/dev/hda1</code> 裏。</p>
+<p>要安裝這個例子裏的 <code>lilo</code> ，使用:</p>
+<p>
+</p>
+<pre class="sample">
+lilo -C lilo.conf
+</pre>
+
+<p></p>
+<p>記得在這個案子裏，<code>lilo.conf</code> 檔案使用了包括 <code>/mnt</code> 在內
+的絕對位址。我用這個例子的原因是目標檔案系統並不一定支援使用 <code>boot=</code>
+和 <code>root=</code> 選項來建立 Linux 設備檔案的建立。</p>
+
+<hr />
+<table >
+  <tr>
+    <td class="BtdL"> <a href="PCMCIA-HOWTO-4.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="BtdC"> <a href="index.html" accesskey="H">目錄(H)</a> </td>
+    <td class="BtdR"> <a href="PCMCIA-HOWTO-6.html">下一頁(N)</a> </td>
+  </tr>
+  <tr>
+    <td class="BtdL">使用方法以及特色</td>
+    <td class="BtdC"><a href="PCMCIA-HOWTO-5.html"  accesskey="T">到頂層(T)</a></td>
+    <td class="BtdR">使用未被支援的卡片</td>
+  </tr>
+</table>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img class="ImgLogo" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" title="網路內容分級協會" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

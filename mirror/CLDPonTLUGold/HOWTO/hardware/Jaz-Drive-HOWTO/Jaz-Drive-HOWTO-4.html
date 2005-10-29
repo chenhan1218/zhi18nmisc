@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>4. Jaz 磁片的用法</title>
+<link href="Jaz-Drive-HOWTO-5.html" rel="next" title="5. Linux 上的 Jaz 工具軟件" />
+<link href="Jaz-Drive-HOWTO-3.html" rel="previous" title="3. 電腦確認已安裝 Jaz 磁碟機" />
+<link href="http://tldp.org/HOWTO/Jaz-Drive-HOWTO.html" rel="alternate" title="原版" />
+<link href="../../style.css" rel="stylesheet" type="text/css" />
+<link href="Jaz-Drive-HOWTO-1.html" rel="chapter" title="1.導言" />
+<link href="Jaz-Drive-HOWTO-2.html" rel="chapter" title="2.Jaz 磁碟機的硬件" />
+<link href="Jaz-Drive-HOWTO-3.html" rel="chapter" title="3.電腦確認已安裝 Jaz 磁碟機" />
+<link href="Jaz-Drive-HOWTO-4.html" rel="chapter" title="4.Jaz 磁片的用法" />
+<link href="Jaz-Drive-HOWTO-5.html" rel="chapter" title="5.Linux 上的 Jaz 工具軟件" />
+<link href="Jaz-Drive-HOWTO-6.html" rel="chapter" title="6.從 Jaz 磁片啟動系統" />
+<link href="Jaz-Drive-HOWTO-4.html#ss4.1" rel="section" title="4.1 DOS 格式化的磁片" />
+<link href="Jaz-Drive-HOWTO-4.html#ss4.2" rel="section" title="4.2 DOS Jaz 磁片重新格式化" />
+<link href="Jaz-Drive-HOWTO-4.html#ss4.3" rel="section" title="4.3 Linux 系統 Jaz 磁片 " />
+<link href="Jaz-Drive-HOWTO-4.html#ss4.4" rel="section" title="4.4 檢查 Linux Jaz 磁片 " />
+<link href="Jaz-Drive-HOWTO-4.html#ss4.5" rel="section" title="4.5 利用 fstab 簡化用法 " />
+<link href="Jaz-Drive-HOWTO-4.html#ss4.6" rel="section" title="4.6 Jaz 的“工具”磁片（Jaz &quot;tools&quot;）" />
+<meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+<link href="Jaz-Drive-HOWTO.rdf" rel="meta" title="各章節的說明資訊" />
+</head> <body >
+<table >
+  <tr>
+    <th colspan="3" class="HdTitle">HOWTO：Jaz-drive</th>
+  </tr>
+  <tr>
+    <td class="TtdL"> <a href="Jaz-Drive-HOWTO-3.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="TtdC">&nbsp;</td>
+    <td class="TtdR"> <a href="Jaz-Drive-HOWTO-5.html" accesskey="N">下一頁(N)</a> </td>
+  </tr>
+</table>
+<hr />
+<h1>4. Jaz 磁片的用法</h1>
+
+<h2><a name="ss4.1" id="ss4.1"></a>4.1 DOS 格式化的磁片 </h2>
+
+<p>Jaz 磁片從 Iomega 公司出廠時就已經格式化，其格式化形式為單一分割，採用 DOS FAT16
+的文檔系統格式。單一分割通常是磁盤的第 4 分割區（以便與麥金塔電腦相容 -
+麥金塔電腦規定數據存放在第 4 分割區，但個人電腦通常不加限制，
+數據可存放在任何一個分割區）。</p>
+<p>Linux 對于讀取根據 FAT16 格式化的磁盤上的數據和將數據存放在這種磁盤上都毫無困難，因此，
+這種磁盤可直接插入 Jaz 磁碟機使用，無需作出任何修改。在使用這種磁盤時，
+只需將磁碟機加載在 Linux 系統上即可，因此，首先必需在系統上設定加載點。
+在這份文件中，DOS Jaz 磁碟機都加載在稱為 <code>/dos_jaz</code> 的加載點上，因此，首先在
+Linux 系統上利用下列指令設定加載點：</p>
+<pre class="sample">mkdir /dos_jaz</pre>
+<p>上節提到必需知道加載的 Jaz 磁碟機的名稱。如果 Jaz 磁碟機的名稱為 <code>/dev/sda</code>，
+則以下的例子無需做任何修改，否則將各個例子中 Jaz 
+磁碟機的名稱改為與系統設定的名稱相符的情況。由于必需以 root
+身份加載 Jaz 磁碟機，所以必需事先確知磁碟機的名稱。</p>
+<p>如果系統使用 2.0 內核或可運行 VFAT 文檔系統，則可用下列指令加載 Jaz 
+磁碟機并使用 FAT16 系統的長文檔名：</p>
+
+
+<pre class="sample">mount -t vfat /dev/sda4 /dos_jaz</pre>
+<p>此處必需指出：雖然 VFAT 允許使用長文檔名，但這些文檔名仍然不分大小寫，
+並且雖然‘ls’列出各個文檔的使用權限，但實際上並不能改變這些文檔的使用權限。</p>
+<p>如果系統的加載指令不能用于“VFAT”格式，則使用下列指令加載 Jaz 磁碟機：</p>
+<pre class="sample">mount -t msdos /dev/sda4 /dos_jaz</pre>
+<p>利用上述兩個指令中的任何一個指令加載Jaz磁碟機後，
+磁片上的內容就顯示在 <code>/dos_jaz</code> 目錄中。磁碟機加載系統後，
+彈出按鈕失效，磁片無法從磁碟機彈出。</p>
+<p>完成存儲後，可用下列指令卸載 Jaz 磁碟機：</p>
+<pre class="sample">umount /dos_jaz</pre>
+<p>利用上述指令卸載磁碟機後，彈出按鈕恢復效用，可按磁碟機面前的按鈕彈出磁片。</p>
+<h2><a name="ss4.2" id="ss4.2"></a>4.2 DOS Jaz 磁片重新格式化 </h2>
+
+<p>Jaz 磁片只是一張磁片，它像硬盤磁片一樣可以重新分割和重新格式化。如把 Jaz
+磁片重新分割和格式化，就必需知道重新分割時分割區的號碼，以便磁片能加載到 Linux 系統。</p>
+<p>例如，如果把整個分割區清除，進行重新分割，同時將唯一的分割區設定位第1分割區，
+則上文兩個加載指令就分別改為：</p>
+<pre class="sample">mount -t vfat /dev/sda1 /dos_jaz</pre>
+<p>和</p>
+<pre class="sample">mount -t msdos /dev/sda1 /dos_jaz</pre>
+<h2><a name="ss4.3" id="ss4.3"></a>4.3 Linux 系統 Jaz 磁片 </h2>
+
+<p>Linux 系統 Jaz 磁片可根據 Unix 規定的標準權限存儲文檔，並區分文檔名的大小寫，
+但這種磁片的唯一問題是不能用于 DOS/Windows 的電腦。</p>
+<p>Jaz磁片的特性與硬盤一樣，因此對熟悉 Linux 磁盤管理工具的使用者而言，
+不會對以下的用法感到驚異。</p>
+<p>如要清除整個 Jaz 磁片上的內容並將其製作成 Linux 文檔系統的磁片，只要使用 fdisk 
+指令即可。但在使用 fdisk 時務必十分小心，尤其是硬盤也屬于 SCSI 形式的設備時，
+更要處處謹慎 - 不要造成無可挽救的錯誤。務必確定要分割或格式化的 SCSI 設備是 Jaz 磁片，
+而不是系統硬盤。在多數情況下，可用下列指令重新分割 Jaz 磁片：</p>
+<pre class="sample">fdisk /dev/sda</pre>
+<p>刪除磁片上的現有分割區（使用 d 指令）。然後用 n 指令建立新分割區，
+並將其定為主分割區 1（使用所有磁軌），用 w 指令將分割表寫到磁片，然後用 q 指令退出。</p>
+<p>分割區一旦建立後，用下列指令將磁片格式化：</p>
+<pre class="sample">mke2fs /dev/sda1</pre>
+<p>（sda1 中的編號 1 是在 fdisk 時給這個分割區的編號）。對 Linux Jaz
+磁片最好建立專用的加載點，稍後在討論 <code>fstab</code> 時就可知道原因為何。因此，首先建立加載點，並且加載磁片：</p>
+<pre class="sample">mkdir /jaz
+ mount -t ext2 /dev/sda1 /jaz</pre>
+<p>我們已經知道，Jaz 磁片一旦加載後就無法用彈出按鈕使其彈出。因此，磁片使用後，
+用下列指令卸載磁片：</p>
+<pre class="sample">umount /jaz</pre>
+<p>卸載後即可按磁碟機面前的按鈕彈出磁片。</p>
+<h2><a name="ss4.4" id="ss4.4"></a>4.4 檢查 Linux Jaz 磁片 </h2>
+
+<p>像其他磁碟機一樣，一旦 Linux Jaz 磁片加載和卸載多次後，
+系統會認為磁片已“髒”。發生這種問題時，屏幕會提示下列信息：</p>
+<pre class="sample">Mounting unchecked filesystem, /dev/sda1. Recommend running e2fsck.</pre>
+<p>一旦看到這種信息，就應該考慮檢查磁片。在檢查磁片之前應首先<em>卸載</em>磁片。
+磁片加載在系統上時，系統只顯示磁片已“髒”的信息，因此，只有在用完磁片後，
+檢查磁片，或卸載磁片後進行檢查，然後再加載磁片。以下列指令檢查磁片
+（假定有待檢查的分割區為第1分割區）：</p>
+<pre class="sample">e2fsck /dev/sda1</pre>
+<h2><a name="ss4.5" id="ss4.5"></a>4.5 利用 fstab 簡化用法 </h2>
+
+<p>加載和卸載 Jaz 磁碟機都得以 root 身份進行，並且需要鍵入相當多的指令。
+但是在 <code>/etc/fstab</code> 中加入几行內容就可以<em>大大簡化</em> Jaz 磁碟機的使用。</p>
+<h3>DOS 格式化的磁片</h3>
+
+<p>如果 DOS 磁片已經格式化並且 <code>/dos_jaz</code> 加載點也已建立，在 <code>/etc/fstab</code>
+檔中可加入下列內容：</p>
+<pre class="sample">/dev/sda4 /dos_jaz vfat defaults,user,nosuid,noauto 0 0</pre>
+<p>fstab 增加這行內容後，<em>任何使用者</em>均可通過下列指令加載和卸載
+DOS 格式化的 Jaz 磁片：</p>
+<pre class="sample">mount /dos_jaz</pre>
+<pre class="sample">umount /dos_jaz</pre>
+<p>任何使用者均可加載和卸載磁片的原因是在 <code>fstab</code> 中已經載列 Jaz 
+磁碟機的編號和存儲媒介的類別以及在 <code>user</code> 
+選項中也已允許任何使用者加載和卸載磁片的緣故。如果 Jaz 磁碟機的名稱不是 <code>sda</code>，就需改變名稱，
+不過這不適用于 DOS 重新分割而在 fstab 中沒有使用<em>另一個</em>加載點（/dos_jaz2）的 Jaz 磁片。</p>
+<h3>Linux 格式化磁片</h3>
+
+<p>如果使用 Linux 格式化的磁片並且加載點 <code>/jaz</code> 也已建立，就可在 <code>fstab</code>
+中加入下列內容：</p>
+<pre class="sample">/dev/sda1 /jaz ext2 defaults,user,exec,nosuid,noauto 0 0</pre>
+<p>fstab內增加這行內容後，<em>任何使用者</em>均可通過下列指令加載和卸載
+Linux 格式化的 Jaz 磁片：</p>
+<pre class="sample">mount /jaz
+umount /jaz</pre>
+<p>同 DOS 的情況相同，任何使用者均可加載和卸載磁片的原因是在 <code>fstab</code> 中已經載列
+Jaz 磁碟機的編號和存儲媒介的類別以及在 <code>user</code> 
+選項中也已允許任何使用者加載和卸載磁片的緣故。有些系統管理員可能不願意在
+fstab 中提供 <code>exec</code> 選項，
+認為讓任何使用者可通過磁片運行來源不明的可執行文檔是件相當危險的事，
+不過在這行中還有
+<code>nosuid</code> 選項，因此可能產生危險的程度並不高。</p>
+<h3>在啟動時自動加載 Jaz 磁碟機</h3>
+
+<p>上述兩個<code>fstab</code>的例子中都有<code>noauto</code>的選項，
+防止電腦啟動時自動加載磁片。一般而言，這是不錯的作法，因為電腦啟動時如果磁碟機中沒有磁片，
+或磁碟機根本沒有開機，啟動時就會產生各種錯誤，其程度取決于所用的 SCSI
+驅動程序而異。</p>
+<p>如果在啟動時<em>一定</em>要加載 Jaz 磁碟機，那就只要刪除 fstab 中的 <code>noauto</code>
+選項，同時肯定磁碟機已經開機和啟動前磁碟機中已有 Jaz 磁片即可。注意：在 fstab
+中只可以有一個 Jaz 磁碟機允許自動加載，否則就會顯示如同磁碟機中根本沒有磁片相同的錯誤。</p>
+<h2><a name="ss4.6" id="ss4.6"></a>4.6 Jaz 的“工具”磁片（Jaz &quot;tools&quot;） </h2>
+
+<p>有些運行 Jaz 磁碟機的軟件放在 Jaz 磁片而不是光碟上。
+這種磁片的“問題”是磁片上已加附軟件控制的寫保護，因此在使用者至少安裝一次工具軟件之前，
+無法刪除磁片上的內容。</p>
+<p>以下提供几種重新使用 Jaz 磁碟機附贈的“Jaz tools”磁片的方法：</p>
+<ul>
+  <li>在 DOS/Windows 電腦上安裝 Jaz 工具。</li>
+  <li>利用已經安裝了 Jaz 工具軟件的電腦刪除磁片上的密碼保護。</li>
+  <li>利用後文提到的 Linux 工具軟件刪除密碼保護。</li>
+</ul>
+<p>在使用刪除密碼的軟件時，只要知道 Iomega 使用的密碼即可。Iomega 使用的密碼是：</p>
+<pre class="sample">APlaceForYourStuff</pre>
+<p>注意這串密碼中的大小寫。</p>
+<hr />
+<table >
+  <tr>
+    <td class="BtdL"> <a href="Jaz-Drive-HOWTO-3.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="BtdC"> <a href="index.html" accesskey="H">目錄(H)</a> </td>
+    <td class="BtdR"> <a href="Jaz-Drive-HOWTO-5.html">下一頁(N)</a> </td>
+  </tr>
+  <tr>
+    <td class="BtdL">電腦確認已安裝 Jaz 磁碟機</td>
+    <td class="BtdC"><a href="Jaz-Drive-HOWTO-4.html"  accesskey="T">到頂層(T)</a></td>
+    <td class="BtdR">Linux 上的 Jaz 工具軟件</td>
+  </tr>
+</table>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img class="ImgLogo" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" title="網路內容分級協會" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

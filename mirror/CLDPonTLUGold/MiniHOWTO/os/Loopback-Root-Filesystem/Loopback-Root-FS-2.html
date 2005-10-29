@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+ 
+ <title>The Loopback Root Filesystem HOWTO: 繞回設備與記憶體磁碟的原理</title>
+ <link href="Loopback-Root-FS-3.html" rel="next" />
+ <link href="Loopback-Root-FS-1.html" rel="previous" />
+ <link href="Loopback-Root-FS.html#toc2" rel="contents" />
+ <link href="../../style.css" rel="stylesheet" type="text/css" />
+</head> <body> 
+<table
+
+
+
+
+>
+  <tr
+>
+    <th
+colspan="3" class="HdTitle"
+>MiniHOWTO：The
+      Loopback Root Filesystem</th>
+  </tr
+>
+  <tr
+>
+    <td class="TtdL"
+><a href="index.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="TtdC"
+></td
+>
+    <td class="TtdR"
+><a href="3-Button-Mouse-2.html" accesskey="N">下一頁(N)</a></td
+>
+  </tr
+>
+</table
+>
+<hr />
+<h1><a name="s2" id="s2">2.</a> 繞回設備與記憶體磁碟的原理</h1>
+
+<p>首先我將介紹用在將繞回檔案系統設成根目錄系統所需要的基本知識.</p>
+
+
+<h2><a name="ss2.1" id="ss2.1">2.1</a> 繞回設備
+</h2>
+
+<p><b>繞回設備</b> 是 Linux 中的一種虛擬設備, 用法類似於其他儲存媒體設備.</p>
+
+<p>例如 <code>/dev/hda1</code>, <code>/dev/hda2</code>, <code>/dev/sda1</code> 或其他磁碟, 例如軟碟機 <code>/dev/fd0</code> 等等, 都屬於儲存設備.
+這些設備都可以用來儲存檔案或是目錄結構.
+也都可以依據使用需求而被格式化成各種不同的檔案系統(例如 ext2fs, msdos, ntfs 等), 並且被掛載於目錄樹中.</p>
+
+<p>繞回檔案系統依存於一個儲存在別的檔案系統中的檔案, 並將這個檔案當作是一個周邊設備來操作.
+這個虛擬的設備如同前面所列的真實設備一樣, 可以被格式化或掛載於目錄樹中.
+繞回檔案系統的設備檔通常是 <code>/dev/loop0</code> 或是 <code>/dev/loop1</code> 等等, 這些設備再被指向所依存的檔案, 如此這個檔案便能被視為虛擬設備而被掛載.</p>
+
+
+<h2><a name="ss2.2" id="ss2.2">2.2</a> 記憶體磁碟設備
+</h2>
+
+<p>在 Linux 中還有一種可以被當成檔案系統操作的虛擬設備, 也就是<b>記憶體磁碟設備</b>.</p>
+
+<p>在這個狀況中, 這個設備僅指向部分的實體記憶體, 並不參考其他硬體設備.
+這些記憶體絕不會被置換到硬碟中, 但會留存於磁碟快取中.</p>
+
+<p>記憶體磁碟可以在任意時間經由寫入記憶體磁碟設備檔 <code>/dev/ram0</code> 或 <code>/dev/ram1</code> 等等, 而被產生.
+記憶體磁碟同樣可以被格式化或掛載於目錄樹中, 就像繞回設備一樣.</p>
+
+<p>記憶體磁碟通常被用於由軟碟啟動系統的時機, 例如 Linux 的安裝磁碟或是救援磁碟.
+開機所需要的程式通常被存在一個磁碟映像檔中, 而這個映像檔通常被壓縮後存在軟碟中.
+系統核心將可以認知這個檔案, 並且在開機程序中被解開後放置於記憶體磁碟中, 再被掛載成開機所需的檔案系統.</p>
+
+
+<h2><a name="ss2.3" id="ss2.3">2.3</a> 起始記憶體磁碟
+</h2>
+
+<p>在我們能將繞回設備當成根目錄系統之前, <b>起始記憶體磁碟</b>是一個非常重要的機制.</p>
+
+<p>因為記憶體磁碟需要複製一個檔案系統的映像檔到記憶體中, 所以這個映像檔必須是可以被存取的.
+當記憶體磁碟的工作完成要正式將真實的根目錄系統掛載之前, 在這個記憶體磁碟中的 <code>/linuxrc</code> 會被執行.
+而如果 <code>/dev/initrd</code> 存在且可用的話, 記憶體磁碟則會被掛載在 <code>/initrd</code>之下.</p>
+
+<p>對於一個正常的開機程序而言, 這是一個相當特殊的特性, 因為起始記憶體磁碟仍繼續執行.
+而且在主要開機程序開始之前, 可以經由起始記憶體磁碟的參數來變更根目錄磁碟.</p>
+
+
+<h2><a name="ss2.4" id="ss2.4">2.4</a> 根目錄檔案系統
+</h2>
+
+<p>根目錄磁碟是第一個被掛載的裝置, 所以在開機後會成為根目錄 "<code>/</code>".</p>
+
+<p>由於根目錄包含了所有的檔案, 所以會有一些複雜.
+在開機過程中 <code>rc</code> 命令稿會被執行, 這些命令稿可能是 <code>/etc/rc.d</code> 或 <code>/etc/rc?.d</code>, 端視 <code>/etc/init</code> 程序的設計.</p>
+
+<p>在系統啟動後, 根目錄檔案系統是不可能被卸載的, 因為所有的程式必須使用相同的資訊.
+這也就是為什麼起始記憶體磁碟是如此的重要, 因為只有這時的根目錄系統是不同的.</p>
+
+
+<h2><a name="ss2.5" id="ss2.5">2.5</a> Linux 開機程序
+</h2>
+
+<p>為了了解在開機過程中起始記憶體磁碟的動作, 下列是開機的過程.</p>
+
+<p></p>
+<ol>
+<li>核心被載入記憶體, 通常是由 <code>LILO</code> 或 <code>LOADLIN</code> 完成的.
+你可以看到 <code>Loading...</code> 訊息, 表示正在載入核心.</li>
+<li>起始記憶體磁碟被載入, 通常也是由 <code>LILO</code> 或 <code>LOADLIN</code> 完成的.
+你會再次的看到 <code>Loading...</code> 訊息, 表示正在載入初始記憶體磁碟.</li>
+<li>核心被初始化, 所有給核心的參數都會被設定; 同時初始記憶體磁碟被掛載為根目錄.</li>
+<li>執行在初始記憶體磁碟上的 <code>/linuxrc</code> 程式.</li>
+<li>核心參數所指定的檔案系統被掛載為根目錄.</li>
+<li>執行 <code>/etc/init</code> 以完成使用者所設定的開機程序.</li>
+</ol>
+</P>
+<p>這只是一個簡化的說明, 但足夠解釋核心的啟動與初始記憶體磁碟的用途.</p>
+
+
+<hr>
+<table
+
+
+
+
+>
+  <tr
+>
+    <td class="BtdL"
+><a href="index.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="BtdC"
+><a href="index.html" accesskey="H">目錄(H)</a></td
+>
+    <td class="BtdR"
+><a
+href="3-Button-Mouse-2.html"
+>下一頁(N)</a
+></td
+>
+  </tr
+>
+  <tr
+>
+    <td class="BtdL"
+>目錄</td
+>
+    <td class="BtdC"
+><a href="index.html" accesskey="T">到頂層(T)</a></td
+>
+    <td class="BtdR"
+>介紹</td
+>
+  </tr
+>
+</table
+>
+</body>
+</html>

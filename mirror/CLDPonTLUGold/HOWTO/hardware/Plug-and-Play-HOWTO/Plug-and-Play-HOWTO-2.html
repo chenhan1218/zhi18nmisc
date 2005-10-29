@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>2.PnP 怎麼做: 分配 資源</title>
+<link href="Plug-and-Play-HOWTO-3.html" rel="next" title="3. Plug-and-Play (PnP) 解決方案" />
+<link href="Plug-and-Play-HOWTO-1.html" rel="previous" title="1. 介紹" />
+<link href="http://tldp.org/HOWTO/Plug-and-Play-HOWTO.html" rel="alternate" title="原版" />
+<link href="../../style.css" rel="stylesheet" type="text/css" />
+<link href="Plug-and-Play-HOWTO-1.html" rel="chapter" title="1.介紹" />
+<link href="Plug-and-Play-HOWTO-2.html" rel="chapter" title="2.PnP 怎麼做: 分配 &quot;資源&quot;" />
+<link href="Plug-and-Play-HOWTO-3.html" rel="chapter" title="3.Plug-and-Play (PnP) 解決方案" />
+<link href="Plug-and-Play-HOWTO-4.html" rel="chapter" title="4.如何對付 PnP 卡" />
+<link href="Plug-and-Play-HOWTO-5.html" rel="chapter" title="5.附錄" />
+<meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+<link href="Plug-and-Play-HOWTO.rdf" rel="meta" title="各章節的說明資訊" />
+<link href="Plug-and-Play-HOWTO-2.html#ss2.1" rel="section" title="2.1 什麼是 Plug-and-Play (PnP)? " />
+<link href="Plug-and-Play-HOWTO-2.html#ss2.2" rel="section" title="2.2 計算機如何找設備(和 反過來) " />
+<link href="Plug-and-Play-HOWTO-2.html#ss2.3" rel="section" title="2.3 IRQ's -- 概述" />
+<link href="Plug-and-Play-HOWTO-2.html#ss2.4" rel="section" title="2.4 DMA 通道" />
+<link href="Plug-and-Play-HOWTO-2.html#ss2.5" rel="section" title="2.5 Memory 段 " />
+<link href="Plug-and-Play-HOWTO-2.html#ss2.6" rel="section" title="2.6 兩種資源" />
+<link href="Plug-and-Play-HOWTO-2.html#ss2.7" rel="section" title="2.7 問題 " />
+</head> <body >
+<table >
+  <tr>
+    <th colspan="3" class="HdTitle">HOWTO：Plug-and-Play</th>
+  </tr>
+  <tr>
+    <td class="TtdL"> <a href="Plug-and-Play-HOWTO-1.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="TtdC">&nbsp;</td>
+    <td class="TtdR"> <a href="Plug-and-Play-HOWTO-3.html" accesskey="N">下一頁(N)</a> </td>
+  </tr>
+</table>
+<hr />
+<h1>2. PnP 怎麼做: 分配資源</h1>
+
+<h2><a name="ss2.1" id="ss2.1"></a>2.1 什麼是 Plug-and-Play (PnP)? </h2>
+
+<p>Plug-and-Play 就是自動配置(低層)計算機中的插卡和其他設備,
+然後告訴對應的設備都做了什麼. Plug-and-Play
+的任務是把物理設備和軟件(設備驅動程序)相配合, 並操作設備,
+在每個設備和它的驅動程序之間建立通信通道. 換種說法, PnP
+分配下列資源給設備和硬件: I/O 地址, IRQ, DMA 通道, 內存段. 假如你不理解這 4 項,
+看下面的. 一旦這些資源被分配, 設備(名字在 /dev
+目錄中)就准備好被使用(倘若這些物理設備在你的 PC 中).</p>
+<p>PnP 配置資源, 但僅是一定程度上的配置資源. 盡管使用了 PnP, 許多設備仍不是被 PnP
+來配置. 如調制解調器的配置, 'init string' 被通過 I/O 地址通道送給調制解調器, 盡管 I/O
+地址通道是由 PnP 分配的, 但 'init string' 與 PnP 無關.
+設置串口的速度是由用戶執行程序來做的而不由 PnP. 所以當說起 PnP 的時候,
+'資源'意味著資源中的一部分, '配置'意味著某些類型的配置.</p>
+
+<h2><a name="ss2.2" id="ss2.2"></a>2.2 計算機如何找設備(和 反過來)
+</h2>
+
+<p>計算機包括 CPU 來運算, 內存來存儲程序和數據. 還有一些設備, 如磁盤驅動器, 顯示卡,
+鍵盤, 網卡, modem 卡, 聲卡, 串口和并口, 等等. 還有電源提供電能,
+主板上的各種總線把設備和 CPU 連在一起, 機箱把它們裝起來.</p>
+<p>過去, 許多設備都是插卡(印刷線路板). 今天, 除了插卡之外,
+許多設備已經小到一塊芯片被做在主版上. 主版上的插卡也許包含不止一個設備.
+內存有時也被認為是設備但不是此 HOWTO 中的 plug-and-play.</p>
+<p>計算機要正常工作, 每個設備必須在它的驅動程序(它也是操作系統的一部分,
+在CPU上運行)控制下運行. 驅動程序與 /dev 目錄下的特殊文件聯系在一起,
+盡管他們不是真正的文件. 它們有象 hda1, ttyS0, eth1 等這樣的名字.
+麻煩的是選擇特殊設備的驅動程序, 就說 eth1 吧, 依賴于你使用的網卡的類型. 這樣 eht1
+就不能分配給除了可以使你安裝的網卡正常工作的驅動程序外的其它驅動程序.
+為了控制設備, CPU (在驅動程序的控制下)向設備發送命令和從設備讀取信息.
+要這樣做, 每個設備驅動程序必須知道設備的接口地址, 比如用于通信的地址.
+知道這樣的地址就如同建立了一條通信通道, 即使這個通道是 PC
+里的許多設備共享的數據總線.</p>
+<p>PC 有 3 類地址空間: 內存, I/O, 和配置(僅限于 PCI 總線). 只有前兩個(內存, I/O)被 PnP
+配置. 在 PC 里這3種類型的地址共享同樣的總線. (另外: 對于 PCI 總線,
+它用于傳輸數據). 但是由特定電路來告訴設備地址是在 I/O 空間或在內存空間.(譯者注:
+其實就是總線控制電路中的內存使能線, 當它為 0 電平時, 表示當前地址是內存地址, 為
+1 電平時, 表示當前地址是 I/O 地址.) 設備通常使用 I/O 地址空間. 分配 I/O
+地址主要有兩步.</p>
+<p></p>
+<ol>
+<li> 設置插卡的 I/O 地址,等.(插卡寄存器地址中的一個)</li>
+<li> 讓設備驅動程序知道這些 I/O 地址.</li>
+</ol>
+ <p></p>
+<p>第三步是在 /dev 目錄中給設備和它的驅動程序取一個名字, 如 hda, ttyS0, 或 eth1.
+前兩步就象解決在一條街道上找某人的住宅號碼的問題.
+你必須知道住宅號碼並且某人必須把號碼放在住宅前面, 你才可以找到它. 在計算機中,
+驅動程序必須知道接口地址, 並且硬件必須設置為相同的地址,
+當然這些地址應是插卡寄存器地址中的一個. 這兩樣都要做,
+錯誤的是有些人僅做了其中一樣, 然後卻對計算機找不到設備感到奇怪.
+下面解釋上面的: 
+<a href="#interrupt_over">IRQ's</a>, 
+<a href="#dma_">DMA 通道</a>
+IRQ, DMA 通道, 和 
+<a href="#mem_">內存地址</a>, 所有這些都叫&quot;<em>資源</em>&quot;.</p>
+
+<h2> <a name="ss2.3" id="ss2.3"></a>2.3 IRQ's -- 概述 
+</h2>
+
+<p>看過下面的簡略介紹, 你也許還想看更詳細的
+<a href="Plug-and-Play-HOWTO-5.html#interrupt_detail">中斷 -- 詳解</a>.
+簡述: 除了地址外, 還有中斷需要處理(如 IRQ5). 把它叫中斷號.
+我們在上面已經說過設備驅動程序為了能通信必須知道插卡的地址.
+那麼反過來怎麼辦呢? 設備如何與驅動程序通信呢? 所以設備需要知道驅動程序的地址,
+這樣設備就可以呼叫驅動程序了. 例如: 設備接收到一些需要傳送到主存的數據,
+它需要告訴驅動程序馬上來拿這些數據, 並把數據從設備的緩衝區送到主存.</p>
+<p>設備呼叫驅動程序用把一個中斷電路連線(總線的一部分)的電平抬高的方法.
+有16個這樣的連線, 每個連線與一個特定的設備驅動程序關聯. 每根連線有一個特定的
+IRQ(Interrupt ReQuest) 號. 設備需要把中斷放到恰當的連線上,
+并且驅動程序必須偵聽同一連線. 究竟使用哪根連線取決于存貯在設備中的中斷號,
+此中斷號必須被驅動程序知道, 這樣它才知道需要偵聽那根中斷線.</p>
+
+<h2> <a name="ss2.4" id="ss2.4"></a>2.4 DMA 通道 
+</h2>
+
+<p>DMA 代表 'Direct Memory Access'(直接內存訪問). 就是允許設備從 CPU
+手中接管系統總線, 并直接把數據傳送到主內存. 通常 CPU 分兩步來傳送數據: 1.
+從設備的 I/O 存儲空間讀數據, 把數據放在 CPU 內部. 2. CPU
+把數據從其內部送到主內存. DMA 方式通常用一步就可把數據從設備直接送到主內存.
+設備硬件必須內置有這種能力并不是所有的設備都可以使用 DMA 的. 從 DMA
+傳輸占用系統總線開始的傳輸過程中 CPU 就不做什麼了.</p>
+<p>當一個設備試圖進行 DMA 時, 它會發出一個請求(用改變總線的 DMA
+請求連線的電平的方式). DMA 請求也可以用中斷的方式來實現, 但會有一定的延時,
+所以為了快速, 就用一種特殊類型的中斷 'DMA-請求' 來實現. 象中斷一樣, 把
+'DMA-請求線' 編號來識別是哪個設備發出的請求. 這些編號就叫 DMA-通道. 因為 DMA
+傳輸使用系統總線(同一時間只能有一個使用), 所以它們實際上用同一個通道,
+編號主要用來識別誰在使用通道. 主板上的硬件寄存器紀錄各通道的當前狀態.
+要發出一個 DMA 請求, 設備必須知道自己的 DMA 通道號,
+通道號由物理設備存儲在自己內部.</p>
+
+<h2> <a name="ss2.5" id="ss2.5"></a>2.5 Memory 段 
+</h2>
+
+<p>像 I/O 地址一樣, 一些設備在主內存中分配有地址. 當你插這樣的卡時,
+你實際上也插了一塊內存模塊(主內存, 不是 I/O 內存). 這段內存被設備和 CPU
+共享(運行設備驅動程序後). 這塊內存意味著設備和主內存之間'直接'傳輸數據.
+其實不是真正的傳輸, 設備把數據放到它自己的內存中同時也就放到了主內存中.
+插卡和設備驅動程序必須知道內存塊的地址.</p>
+
+<h2><a name="ss2.6" id="ss2.6"></a>2.6 兩種資源</h2>
+
+<p>必須把設備驅動程序和他們控制的硬件聯系起來. 這由向他們提供相同的資源來解決.
+例如: 串行口使用兩個資源: 一個 IRQ 和 一個 I/O 地址.
+這些資源必須提供給設備驅動程序和物理設備兩者. 驅動程序(和它的設備)被命名(如
+ttlyS1). 地址和 IRQ 號被插卡存儲在自己的記憶體中(或主板的一個芯片中). </p>
+
+<h2><a name="ss2.7" id="ss2.7"></a>2.7 問題
+</h2>
+
+<p>PC 體系只提供有限的 IRQ, DMA 通道, I/O 地址,等.
+假如只有幾種設備並且設備都使用標準的資源,
+把驅動程序和設備聯系在一起沒什麼問題.
+每個設備有一個固定的資源並且不與機器中的其他設備衝突. 沒有兩個設備使用相同的
+I/O 地址, IRQ, 等. 編寫驅動程序時把這些資源寫進去即可. 這樣事情就簡單了.</p>
+<p>但實際情況不是這樣. 今天不僅有許多不同的設備且它們極有可能發生衝突,
+而且同時又要使用不只一個同種類型的設備.
+例如一個人可能想使用幾個不同的磁盤驅動器, 幾個串口, 等等.
+所以設備必須有一定的靈活性這樣可以把它們設置為任意的地址, IRQ, 等等.
+因為要避開資源衝突. 但是一些 IRQ 和 地址是相當標準的如時鐘和鍵盤.
+它們不需要這樣的靈活性. </p>
+<p>除了資源衝突之外, 還有一個問題是告訴驅動程序錯誤的資源信息. 例如:
+你根據猜想在配置文件中輸入 IRQ4, 可設備實際使用的是 IRQ5.
+這是資源分配的另一種錯誤.</p>
+<p>資源分配, 如果做的正確, 可以在硬件和它們的驅動程序之間建立通信通道. 例如,
+一個特定的 I/O 地址範圍分配給一個設備驅動程序和一塊硬件,
+那麼就可在它們之間建立通信通道. 驅動程序可以向設備送命令和信息.
+實際上不只一條通道, 因為驅動程序可用讀設備寄存器的方式得到信息.
+但是設備不能用這種方式通信. 分配一個 IRQ,
+把它作為驅動程序和設備可以交互的另一條通信通道. </p>
+
+<hr />
+<table >
+  <tr>
+    <td class="BtdL"> <a href="Plug-and-Play-HOWTO-1.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="BtdC"> <a href="index.html" accesskey="H">目錄(H)</a> </td>
+    <td class="BtdR"> <a href="Plug-and-Play-HOWTO-3.html">下一頁(N)</a> </td>
+  </tr>
+  <tr>
+    <td class="BtdL">介紹</td>
+    <td class="BtdC"><a href="Plug-and-Play-HOWTO-2.html"  accesskey="T">到頂層(T)</a></td>
+    <td class="BtdR">Plug-and-Play (PnP) 解決方案</td>
+  </tr>
+</table>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img class="ImgLogo" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" title="網路內容分級協會" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

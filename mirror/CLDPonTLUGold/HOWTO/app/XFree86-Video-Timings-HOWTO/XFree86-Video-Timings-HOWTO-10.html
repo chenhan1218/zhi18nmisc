@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>10. 巫術和同步脈沖</title>
+<link href="XFree86-Video-Timings-HOWTO-11.html" rel="next" title="11. 匯總以上討論" />
+<link href="XFree86-Video-Timings-HOWTO-9.html" rel="previous" title="9. 計算幀的大小" />
+<link href="http://tldp.org/HOWTO/XFree86-Video-Timings-HOWTO/index.html" rel="alternate" title="原版" />
+<link href="index.html" rel="start" title="HOWTO：XFree86 Video Timings" />
+<link href="index.html#content" rel="contents" />
+<meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+<link href="../../style.css" rel="stylesheet" type="text/css" />
+<link href="XFree86-Video-Timings-HOWTO-10.html#ss10.1" rel="section" title="10.1 行同步: " />
+<link href="XFree86-Video-Timings-HOWTO-10.html#ss10.2" rel="section" title="10.2 場同步: " />
+<link href="XFree86-Video-Timings-HOWTO.rdf" rel="meta" title="各章節的說明資訊" />
+</head> <body   >
+<table >
+  <tr>
+    <th colspan="3" class="HdTitle">HOWTO：XFree86
+      Video Timings</th>
+  </tr>
+  <tr>
+    <td class="TtdL"> <a href="XFree86-Video-Timings-HOWTO-9.html" accesskey="P">上一頁(P)</a> 
+    </td>
+    <td class="TtdC">&nbsp;</td>
+    <td class="TtdR"> <a href="XFree86-Video-Timings-HOWTO-11.html" accesskey="N">下一頁(N)</a> 
+    </td>
+  </tr>
+</table>
+<hr />
+<h1> 10. 巫術和同步脈沖</h1>
+
+
+<p>好,現在你已為你選的點時鐘算出了 HFL / VFL ,找出了可接受的刷新率,檢查了你有足夠的顯示內存.現在是真正的巫術 --- 你要知道什麼時候在哪裡放置同步脈沖.</p>
+<p>同步脈沖實際上控制了顯示器的行頻和場頻.你從技術規格表裡查出的行頻(HSF)和場頻(VSF)是名義上的,近似的同步頻率最大值.來自顯示卡的同步脈沖信號告訴顯示器實際以多快頻率運行.</p>
+<p>回憶起上面的兩幅圖嗎?光柵掃描一幀需要的時間隻有部分用於顯示可視圖象(即屏幕分辨率).</p>
+
+<h2><a name="ss10.1" id="ss10.1"></a>10.1 行同步: </h2>
+
+<p>根據之前的定義,水平掃描一行有HFL個點.讓我們把可視點數目(屏幕水平分辨率)稱為HR.因此根據定義顯然 HR &lt; HFL .具體地,讓我們假設兩者同時開始,如下所示:</p>
+<p></p>
+<pre class="sample">
+  |___ __ __ __ __ __ __ __ __ __ __ __ __
+  |_ _ _ _ _ _ _ _ _ _ _ _                |
+  |_______________________|_______________|_____
+  0                       ^               ^     單位:點數
+                          |   ^       ^   |
+                          HR  |       |  HFL
+                          |   |&lt;-----&gt;|   |
+                          |&lt;-&gt;|  HSP  |&lt;-&gt;|
+                          HGT1         HGT2
+</pre>
+<p>現在,我們想要在圖示長度為HSP的位置,也就是在可視區域末點和整個幀末點之間的位置放置一個同步脈沖.為什麼要這樣?因為如果我們能這樣放置的話,那麼屏幕圖象就不會偏移向左或右.它會在屏幕上期望的位置,方形地覆蓋顯示器的可視區域.</p>
+<p>此外,在同步脈沖的每一邊我們都要約30個點作為"防護時間".這由HGT1和HGT2表示.在一個典型的配置中HGT1不等於HGT2,但如果你正在從零建立一個配置,就要從兩者相等開始你的試驗(換言之,從同步脈沖居中開始試驗).</p>
+<p>同步脈沖放置錯誤的癥狀是圖象在屏幕上偏移,一條邊過分地寬,另一邊圖象在屏幕邊緣回繞過來,產生一條白色邊線和一條"疊影"帶.一個位置不適當的場同步脈沖會使圖象象一台錯誤調整了場同步控制的電視機一樣滾動(實際上,這是相同的現象).</p>
+<p>幸運的話,你的顯示器同步脈沖寬度會在技術規格文檔中.如果沒有,真正的巫術開始了...</p>
+<p>在這一部分,你將不得不反復試驗.但大多數時候,我們可以安全地假定一個同步脈沖長度大約是3.5到4.0微秒.</p>
+<p>具體起見,我們認為行同步脈沖(HSP)是3.8微秒(順便說一句,這是一個不錯的試驗起始值).</p>
+<p>現在,用上述的65MHz時序值,我們知道行同步脈沖(HSP)等於247個點(= 65 * 10**6 * 3.8 * 10^-6) [記得 M=10^6, micro=10^-6]</p>
+<p>一些人喜歡引用他們的水平幀參數而不是點數寬度作為時序.你也許會看見下列術語:</p>
+<dl>
+  <dt>活躍時間(HAT)</dt>
+<dd><p>相當於HR,但按時間單位(通常用微秒)計算. HAT * DCF = HR.</p>
+
+</dd>  <dt>消隱時間(HBT)</dt>
+<dd><p>相當於(HFL - HR),但按時間單位(通常用微秒)計算. HBT * DCF = (HFL - HR).</p>
+
+</dd>  <dt>上升沿(HFP)</dt>
+<dd><p>這就是HGT1.</p>
+
+</dd>  <dt>同步時間</dt>
+<dd><p>這就是HSP.</p>
+
+</dd>  <dt>下降沿(HBP)</dt>
+<dd><p>這就是HGT2.</p>
+
+</dd>
+</dl>
+<p></p>
+
+<h2><a name="ss10.2" id="ss10.2"></a>10.2 場同步: </h2>
+
+<p>回到上圖,我們怎樣能按圖示放置這247個點呢?</p>
+<p>用我們的例子,水平分辨率(HR)是944而水平幀長(HFL)是1176.兩者之差是 1176 - 944 = 232 &lt; 247 !顯然這裡我們不得不做些調整.我們怎麼做呢?</p>
+<p>首先把1176提高到1184,把944降低到936.現在差是 1184 - 936 = 248 .嗯,接近些了.</p>
+<p>下一步,我們不用3.8而用3.5計算行同步脈沖(HSP);那麼,我們得出 65 * 3.5 = 227 .看起來更好了.但248不比227高多少.通常在水平分辨率(HR)和同步脈沖(SP)的開始點之間要有約30個點,同步脈沖(SP)的結束點和水平幀長(HFL)之間也一樣.而且它們必須是8的倍數!我們被卡住了嗎?</p>
+<p>不.讓我們這麼做, 936 % 8 = 0 ,而 (936 + 32) % 8 = 0 .但 936 + 32 = 968 , 968 + 227 = 1195 , 1195 + 32 = 1227 .嗯..這看起來還不算太壞.但它不是8的倍數,所以讓我們把它向上舍入為1232.</p>
+<p>但現在我們有潛在的麻煩了,同步脈沖不再位於h和H的正中.幸虧用計算器我們發現 1232 - 32 = 1200 也是8的倍數,而且 (1232 - 32) - 968 = 232 ,相應於使用3.57微秒長的同步脈沖,仍然合理.</p>
+<p>另外, 936 / 1232 &nbsp; 0.76或76%,仍然離80%不遠,因此應該沒問題.</p>
+<p>此外,使用當前的水平幀長,我們要求顯示器同步於52.7KHz(= 65MHz / 1232),在其承受范圍之內.沒問題.</p>
+<p>用前面提過的經驗法則, 936 * 75% = 702 ,這是我們新的垂直分辨率. 702 * 1.05 = 737 ,我們新的垂直幀長.</p>
+<p>屏幕刷新率= 65MHz / (737 * 1232) = 71.6Hz .依然很好.</p>
+<p>畫出的場同步脈沖布局圖是類似的:</p>
+<p></p>
+<pre class="sample">
+   |___ __ __ __ __ __ __ __ __ __ __ __ __
+   |_ _ _ _ _ _ _ _ _ _ _ _                |
+   |_______________________|_______________|_____
+   0                      VR              VFL     單位:點數
+                           ^   ^       ^
+                           |   |       |
+                           |&lt;-&gt;|&lt;-----&gt;|
+                            VGT    VSP
+</pre>
+<p></p>
+<p>我們在垂直可視區剛結束時開始同步脈沖.VGT是同步脈沖的垂直防護時間.大部分顯示器VGT為0(沒有防護時間)時都沒問題.我們在這個例子裡就那樣設定.少數需要兩或三個點的防護時間,加上這個通常沒有害處.</p>
+<p>回到本例:根據幀長的定義,一個垂直點時鐘是跟蹤完整的一個水平幀的時間,因此在我們的例子裡,它是 1232 / 65MHz = 18.95us .</p>
+<p>經驗告訴我們一個場同步脈沖應該在50us和300us范圍之間.讓我們用150us做一個例子,並換算成8個垂直點時鐘(150us / 18.95us &nbsp; 8).</p>
+<p>一些人喜歡引用他們的垂直幀參數而不是點數寬度作為時序.你也許會看見下列術語:</p>
+<p>
+</p><dl>
+  <dt>活躍時間(VAT)</dt>
+  <dd><p>相當於VR,但以毫秒為單位. VAT * VSF = VR .</p>
+</dd>
+  <dt>消隱時間(VBT)</dt>
+  <dd><p>相當於 (VFL - VR) ,但以毫秒為單位. VBT * VSF = (VFL - VR) .</p>
+</dd>
+  <dt>上升沿(VFP)</dt>
+  <dd><p>這就是VGT.</p>
+</dd>
+  <dt>同步時間</dt>
+  <dd><p>這就是VSP.</p>
+</dd>
+  <dt>下降沿(VBP)</dt>
+  <dd><p>這是在場同步脈沖後的又一個防護時間.它通常是零.</p>
+</dd></dl>
+<p></p>
+
+<hr />
+<table >
+  <tr>
+    <td class="BtdL"> <a href="XFree86-Video-Timings-HOWTO-9.html" accesskey="P">上一頁(P)</a> 
+    </td>
+    <td class="BtdC"> <a href="index.html" accesskey="H">目錄(H)</a> </td>
+    <td class="BtdR"> <a href="XFree86-Video-Timings-HOWTO-11.html">下一頁(N)</a> 
+    </td>
+  </tr>
+  <tr>
+    <td class="BtdL">計算幀的大小</td>
+    <td class="BtdC"><a href="XFree86-Video-Timings-HOWTO-10.html"  accesskey="T">到頂層(T)</a></td>
+    <td class="BtdR">匯總以上討論</td>
+  </tr>
+</table>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a>  <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" title="網路內容分級協會" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

@@ -1,0 +1,196 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <title>Encryption using OpenSSL's crypto libraries</title>
+  <link href="../../LGStyle.css" rel="stylesheet" type="text/css">
+  <link href="../../../style.css" rel="stylesheet" type="text/css">
+  <meta name="author" content="Vinayak Hegde">
+</head>
+<body>
+<div id="GazetteLogo"><a href="http://www.linuxgazette.com/"><img
+ src="../../gx/lglogo_200x41.png" alt="Linux Gazette 雜誌" width="200"
+ height="41" longdesc="../linuxgaette.rdf"></a><br>
+<a href="http://www.linuxgazette.com/copying.html">Copyright</a>©1996-2003<br>
+Specialized Systems Consultants, Inc.</div>
+<div class="CLDPAddr">CLDP</div>
+<div class="CLDPFull">Chinese Linux Documentation Project</div>
+<hr>
+<p class="BarTop"><a href="../../../index.html" title="連到首頁"
+ hreflang="zh-TW" accesskey="H">首頁(H)</a>｜<a href="../../../howto/"
+ title="連到和 HOWTO  相關資訊" hreflang="zh-TW" accesskey="T">HOWTO(T)</a>｜<a
+ href="../../../guide/" title="連到和指南相關的資訊" hreflang="zh-TW"
+ accesskey="G">指南(G)</a>｜<a href="../../../FAQ/" title="連到和問答集相關的資訊"
+ hreflang="zh-TW" accesskey="F">FAQ(F)</a>｜<a href="../../../man/"
+ title="連到和手冊頁有關的資訊" hreflang="zh-TW" accesskey="M">手冊頁(M)</a>｜<a
+ href="../../index.html" title="Linux電子報為一個月發行一期的雜誌" hreflang="zh-TW"
+ accesskey="L">Linux電子報(L)</a>｜<a href="../../../LF/"
+ title="LinuxFocus 為兩個月發行一期的雜誌" hreflang="zh-TW" accesskey="S">LinuxFocus(S)</a></p>
+<hr>
+<div class="DivCover">
+<div class="TitleHead">Encryption using OpenSSL's crypto libraries<br>
+By <a href="file:///Data/CLDP/LG/2003/02/authors/vinayak.html">Vinayak
+Hegde</a><br>
+</div>
+<div>
+<p class="BarTop"><a href="../../index.html">Linux電子報首頁</a>｜<a
+ href="index.html">目錄</a>｜<a href="../../faq/index.html">FAQ</a><br>
+讓 Linux 更加有趣呦！</p>
+</div>
+<div>
+<h2>目錄</h2>
+</div>
+<div>
+<ol>
+  <li>Motivation for the article </li>
+  <li>Some Background Information</li>
+  <li>Generating the key</li>
+  <li>The Encryption routine<br>
+  </li>
+</ol>
+</div>
+<div>
+<h2>1. Motivation for the article</h2>
+</div>
+<div>
+<p align="justify"> Linux has already made quite a few inroads into the
+corporate world. One of the persistent demands of the corporate world
+has been a need for better data security. This is where encryption comes
+in, to hide sensitive data from a third party intruder. Open-source
+software has a reputation for secure programming. This article is
+another step in that direction. </p>
+<p align="justify"> OpenSSL's libcrypto is a really good library if you
+want to use encryption without bothering with the details of underlying
+implementation of the algorithm. The problem is that the documentation
+is really minimal. You can obviously read the source and figure out what
+going on. Also the fact that function names are intuitive helps to some
+extent. Another way of getting help is joining the various mailing
+lists from the <a
+ href="file:///Data/CLDP/LG/2003/02/temp/www.openssl.org"> OpenSSL </a>
+website. However the command line tools of OpenSSL are pretty well
+documented and easy to use. I shall explain in this article how to use
+the blowfish algorithm for encryption using OpenSSL's crypto libraries. </p>
+</div>
+<div>
+<h2>2. Some Background Information</h2>
+</div>
+<div>
+<p align="justify"> During the early days of cryptography, algorithms as
+well as keys were secret. However now that trend has changed. Now
+algorithms are publicly known and keys are kept secret. The best example
+of this is the RSA algorithm which is widely known and implemented. The
+public key are known to the world but the private keys are kept secret.
+RSA is an asymmetric algorithm as it does not use the same key for
+encryption and decryption. Also it is generally not advisable to use
+RSA for encrypting large amounts of data as the it is computationally
+intensive. </p>
+<p align="justify"> For encrypting large amounts of data, generally less
+computationally intensive algorithms are prefered. In this article we
+use the blowfish algorithm for encrypting and decrypting data. Blowfish
+is a symmetric algorithm which means it uses the same key for encryption
+and decryption. Blowfish was designed by the famous cryptographer Bruce
+Schneier. Blowfish is a fast algorithm for encryption/decryption. </p>
+</div>
+<div>
+<h2>3. Generating the key</h2>
+</div>
+<div>
+<p align="justify"> For the purposes of demonstration we shall use a
+128-bit key. This is stored as an character array in the program. We
+also generate an 64 bit initialization vector(IV). For our program we
+will use <b> Cipher Block Chaining (CBC) </b> mode. Also we will not use
+the blowfish functions directly but use then through a the higher level
+interface. </p>
+<p align="justify"> An <b>initialization vector</b> is a bit of random
+information that is used as an input in chained encryption algorithms,
+that is, when each stage of encrypting a block of input data provides
+some input to the encryption of the next block. (blowfish uses 64-bit
+blocks for encryption). The IV provides the first bit of input for
+encrypting the 1st block of data, which then provides input for the 2nd
+block and so on. The bit left over at the end is discarded. </p>
+<p align="justify"> The random bits are generated from the character
+special file <b> /dev/random </b> which provides a good source for
+random numbers. See the manpage for more information. </p>
+<pre class="sample">int<br>generate_key ()<br>{<br>	int i, j, fd;<br>	if ((fd = open ("/dev/random", O_RDONLY)) == -1)<br>		perror ("open error");<br><br>	if ((read (fd, key, 16)) == -1)<br>		perror ("read key error");<br><br>	if ((read (fd, iv, 8)) == -1)<br>		perror ("read iv error");<br>	<br>	printf("128 bit key:\n");<br>	for (i = 0; i &lt; 16; i++)<br>		printf ("%d \t", key[i]);<br>	printf ("\n ------ \n");<br><br>	printf("Initialization vector\n");<br>	for (i = 0; i &lt; 8; i++)<br>		printf ("%d \t", iv[i]);<br><br>	printf ("\n ------ \n");<br>	close (fd);<br>	return 0;<br>}<br><br></pre>
+</div>
+<div>
+<h2>4. The Encryption routine</h2>
+</div>
+<div>
+<p align="justify"> The encryption routine takes two parameters - the
+file descriptors of input file and the output file to which the
+encrypted data is to be saved. It is always a good idea to zero-fill
+your buffers using the memset or bzero commands before using the
+buffers with data. This is especially important if you plan to reuse
+the buffers. In the program below, the input data is being encrypted in
+blocks of 1K each. </p>
+<p align="justify"> The steps for encryption are as follows :- </p>
+<ol>
+  <li> Create a cipher context </li>
+  <li> Initialize the cipher context with the values of Key and IV </li>
+  <li> Call EVP_EncryptUpdate to encrypt successive blocks of 1k eack </li>
+  <li> Call EVP_EncryptFinal to encrypt "leftover" data </li>
+  <li> Finally call EVP_CIPHER_CTX_cleanup to discard all the sensitive
+information from memory </li>
+</ol>
+<p align="justify"> You may be wondering what "leftover" data is? As
+mentioned earlier, Blowfish encrypts information in blocks of 64-bit
+each. Sometimes we may not have 64 bits to make up a block. This may
+happen if the buffer size in the program below or the file/input data
+size is not a integral multiple of 8 bytes(64-bits).So accordingly the
+data is padded and then the partial block is encrypted using
+EVP_EncryptFinal. The length of the encoded data block is stored in the
+variable tlen and added to the final length. </p>
+<pre class="sample">int<br>encrypt (int infd, int outfd)<br>{<br>	unsigned char outbuf[OP_SIZE];<br>	int olen, tlen, n;<br>	char inbuff[IP_SIZE];<br>	EVP_CIPHER_CTX ctx;<br>	EVP_CIPHER_CTX_init (&amp; ctx);<br>	EVP_EncryptInit (&amp; ctx, EVP_bf_cbc (), key, iv);<br><br>	for (;;)<br>	  {<br>		  bzero (&amp; inbuff, IP_SIZE);<br><br>		  if ((n = read (infd, inbuff, IP_SIZE)) == -1)<br>		    {<br>			    perror ("read error");<br>			    break;<br>		    }<br>		  else if (n == 0)<br>			  break;<br><br>		  if (EVP_EncryptUpdate (&amp; ctx, outbuf, &amp; olen, inbuff, n) != 1)<br>		    {<br>			    printf ("error in encrypt update\n");<br>			    return 0;<br>		    }<br><br>		  if (EVP_EncryptFinal (&amp; ctx, outbuf + olen, &amp; tlen) != 1)<br>		    {<br>			    printf ("error in encrypt final\n");<br>			    return 0;<br>		    }<br>		  olen += tlen;<br>		  if ((n = write (outfd, outbuf, olen)) == -1)<br>			  perror ("write error");<br>	  }<br>	EVP_CIPHER_CTX_cleanup (&amp; ctx);<br>	return 1;<br>}<br></pre>
+<h3>4.1 The Decryption routine </h3>
+The decryption routine basically follows the same steps as the
+encryption routine. The following code show how the decryption is done.
+<pre> <br><br>int<br>decrypt (int infd, int outfd)<br>{<br>	unsigned char outbuf[IP_SIZE];<br>	int olen, tlen, n;<br>	char inbuff[OP_SIZE];<br>	EVP_CIPHER_CTX ctx;<br>	EVP_CIPHER_CTX_init (&amp; ctx);<br>	EVP_DecryptInit (&amp; ctx, EVP_bf_cbc (), key, iv);<br><br>	for (;;)<br>	  {<br>		  bzero (&amp; inbuff, OP_SIZE);<br>		  if ((n = read (infd, inbuff, OP_SIZE)) == -1)<br>		    {<br>			    perror ("read error");<br>			    break;<br>		    }<br>		  else if (n == 0)<br>			  break;<br><br>		  bzero (&amp; outbuf, IP_SIZE);<br><br>		  if (EVP_DecryptUpdate (&amp; ctx, outbuf, &amp; olen, inbuff, n) != 1)<br>		    {<br>			    printf ("error in decrypt update\n");<br>			    return 0;<br>		    }<br><br>		  if (EVP_DecryptFinal (&amp; ctx, outbuf + olen, &amp; tlen) != 1)<br>		    {<br>			    printf ("error in decrypt final\n");<br>			    return 0;<br>		    }<br>		  olen += tlen;<br>		  if ((n = write (outfd, outbuf, olen)) == -1)<br>			  perror ("write error");<br>	  }<br><br>	EVP_CIPHER_CTX_cleanup (&amp; ctx);<br>	return 1;<br>}<br></pre>
+</div>
+<div>
+<h2>內容</h2>
+</div>
+<div>
+<p> d</p>
+</div>
+<div>
+<h2>內容</h2>
+</div>
+<div>
+<p> d</p>
+</div>
+<div>
+<h2>內容</h2>
+</div>
+<div>
+<p> d</p>
+</div>
+<div>
+<h2>內容</h2>
+</div>
+<div>
+<p> d</p>
+</div>
+<div>
+<h2>版權宣告</h2>
+</div>
+<div>
+<p>Copyright Ac 2002, Shane Collinge. Copying license <a
+ href="http://www.tldp.org/LDP/LG/copying.html">http://www.linuxgazette.com/copying.html</a><br>
+Published in Issue 85 of Linux Gazette, December 2002 </p>
+</div>
+</div>
+<hr>
+<p class="BarTop"><a href="../../../index.html" title="連到首頁"
+ hreflang="zh-TW" accesskey="H">首頁(H)</a>｜<a href="../../../howto/"
+ title="連到和 HOWTO  相關資訊" hreflang="zh-TW" accesskey="T">HOWTO(T)</a>｜<a
+ href="../../../guide/" title="連到和指南相關的資訊" hreflang="zh-TW"
+ accesskey="G">指南(G)</a>｜<a href="../../../FAQ/" title="連到和問答集相關的資訊"
+ hreflang="zh-TW" accesskey="F">FAQ(F)</a>｜<a href="../../../man/"
+ title="連到和手冊頁有關的資訊" hreflang="zh-TW" accesskey="M">手冊頁(M)</a>｜<a
+ href="../../index.html" title="Linux電子報為一個月發行一期的雜誌" hreflang="zh-TW"
+ accesskey="L">Linux電子報(L)</a>｜<a href="../../../LF/"
+ title="LinuxFocus 為兩個月發行一期的雜誌" hreflang="zh-TW" accesskey="S">LinuxFocus(S)</a></p>
+<hr>
+</body>
+</html>

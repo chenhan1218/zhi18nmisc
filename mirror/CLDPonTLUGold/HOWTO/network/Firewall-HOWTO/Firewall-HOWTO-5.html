@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>5. 設定Linux系統</title>
+<link href="Firewall-HOWTO-6.html" rel="next" title="6.IP filtering 的設置(IPFWADM)" />
+<link href="Firewall-HOWTO-4.html" rel="previous" title="4.設置防火牆的軟件" />
+<link href="../../style.css" rel="stylesheet" type="text/css" />
+<link href="http://tldp.org/HOWTO/Firewall-HOWTO.html" rel="alternate" title="原版" />
+<link href="index.html" rel="start" title="HOWTO：Firewall and Proxy Server" />
+<link href="index.html#content" rel="contents" />
+<link href="Firewall-HOWTO-1.html" rel="chapter" title="1.導言" />
+<link href="Firewall-HOWTO-2.html" rel="chapter" title="2.什么是防火牆" />
+<link href="Firewall-HOWTO-3.html" rel="chapter" title="3.設置防火牆" />
+<link href="Firewall-HOWTO-4.html" rel="chapter" title="4.設置防火牆的軟件" />
+<link href="Firewall-HOWTO-5.html" rel="chapter" title="5.設定Linux系統" />
+<link href="Firewall-HOWTO-6.html" rel="chapter" title="6.IP filtering 的設置(IPFWADM)" />
+<link href="Firewall-HOWTO-7.html" rel="chapter" title="7.安裝TIS代理伺服器" />
+<link href="Firewall-HOWTO-8.html" rel="chapter" title="8.SOCKS代理伺服器" />
+<link href="Firewall-HOWTO-9.html" rel="chapter" title="9.高級設置" />
+<link href="Firewall-HOWTO-5.html#ss5.1" rel="section" title="5.1 編輯內核 " />
+<link href="Firewall-HOWTO-5.html#ss5.2" rel="section" title="5.2 設定兩張網路卡" />
+<link href="Firewall-HOWTO-5.html#ss5.3" rel="section" title="5.3 設定Network Addresses " />
+<link href="Firewall-HOWTO-5.html#ss5.4" rel="section" title="5.4 測試網路" />
+<link href="Firewall-HOWTO-5.html#ss5.5" rel="section" title="5.5 加固防火牆 " />
+<meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+<link href="Firewall-HOWTO.rdf" rel="meta" title="各章節的說明資訊" />
+</head> <body>
+<table >
+  <tr> 
+    <th colspan="3" class="HdTitle">HOWTO：Firewall and Proxy Server</th>
+  </tr>
+  <tr> 
+    <td class="TtdL"> <a href="Firewall-HOWTO-4.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="TtdC">&nbsp;</td>
+    <td class="TtdR"> <a href="Firewall-HOWTO-6.html" accesskey="N">下一頁(N)</a> </td>
+  </tr>
+</table>
+<hr />
+<h1>5. 設定Linux系統</h1>
+
+<h2><a name="ss5.1" id="ss5.1"></a>5.1 編輯內核 </h2>
+
+<p>首先利用Linux版本重新安裝Linux系統（我用RedHat 3.0.3，此後實例均以這一版本為準）。系統中安裝的軟件越少，毛病和漏洞也越少，因為這些毛病和漏洞對系統的安全都會產生問題，所以只要安裝夠用的最少量軟件即可。 
+  選用一個穩定的內核。我的系統用了Linux 2.0.14的內核。 因此，這份文件以這種內核設置為基礎。 根據適當的選項（options）重新編輯內核。 
+  如果以前沒有讀過Kernel HOWTO、 Ethernet HOWTO和NET-2 HOWTO，此時不妨利用這個機會讀一讀這些HOWTO。 以下是在‘make 
+  config’內與網路有關的設定。 </p>
+<ol>
+<li>在General setup中
+<ol>
+<li>設Networking Support 為ON</li>
+</ol>
+</li>
+<li>在Networking Options中
+<ol>
+<li>設Network firewalls為 ON</li>
+<li>設TCP/IP Networking為 ON</li>
+<li>設IP forwarding/gatewaying為 OFF （除非要用IP過濾）</li>
+<li>設IP Firewalling為ON</li>
+<li>設IP firewall packet loggin為 ON（不是必需，設了更好）</li>
+<li>設IP: masquerading 為OFF（不屬本文范圍）</li>
+<li>設IP: accounting 為ON</li>
+<li>設IP: tunneling 為OFF</li>
+<li>設IP: aliasing 為OFF</li>
+<li>設IP: PC/TCP compatibility mode 為OFF</li>
+<li>設 IP: Reverse ARP 為OFF</li>
+<li>設Drop source routed frames 為ON</li>
+</ol>
+</li>
+<li>在Network device support項下
+<ol>
+<li>設Network device support 為ON</li>
+<li>設Dummy net driver support 為ON</li>
+<li>設Ethernet (10 or 100Mbit) 為ON</li>
+<li>選擇網路卡</li>
+</ol>
+</li>
+</ol>
+
+現在重新編輯，重新安裝內核，重新啟動。網路卡應在啟動的提示中顯示。如果沒有抓到網路卡，查閱其他HOWTO，直到設對為止。 <p></p> 
+<h2><a name="ss5.2" id="ss5.2"></a>5.2 設定兩張網路卡 </h2>
+
+<p>電腦中如有兩張網路卡，極可能需要在/etc/lilo.conf檔中增加一行，說明兩張網路卡的IRQ和地址。在我的機器中，lilo.conf檔增加的一行如下︰ 
+</p>
+<pre class="sample">
+    append=&quot;ether=12,0x300,eth0 ether=15,0x340,eth1&quot;
+</pre>
+<h2><a name="ss5.3" id="ss5.3"></a>5.3 設定Network Addresses </h2>
+
+
+<p>這部分比較有趣，而且得要做些決定。由于不打算讓網際網路進入自設網路的任何部分，因此網路中不需要用實際的網址。在網際網路中留了一些地址可讓網路隨意使用，因為自設網路總得需要地址，而且這些地址也無法進入網際網路，攪渾全局。因此不妨選用這些地址。
+在這些地址中，192.168.2.xxx是被留用的地址，因此就用這些地址來作說明。</p>
+<p>由于代理伺服器同時身處兩個網路，因此它能居中傳送兩邊的數據。</p>
+<pre class="sample">
+            199.1.2.10   __________    192.168.2.1
+     _  __  _        \ |         | /         _______________
+   | \/  \/ |             \|        |/          |            |          
+     網際網路 \-------------| 防火牆 |-------------------| 工作站     |
+     \_/\_/\_/\_/          |_________|           |______________|
+</pre>
+
+<p>如要設置過濾防火牆，依舊可用這些網址，不過得使用IP masquerading。經過這種設定，防火牆就會轉送數據包，並加附實際的IP地址送往網際網路。 
+  在網路卡的網際網路端（外端）得設定真正的IP地址，在以太網卡的內端設為192.168.2.1。這是這台電腦代理/網關的IP地址。受保護的網路內的所有其他電腦均可選用192.168.2.xxx中的任何一個作為地址（從192.168.2.2 
+  到192.168.2.254）。 在RedHat Linux 中，得在 /etc/sysconfig/network-scripts目錄下增加一個ifcfg-eth1檔，以便在啟動時，通過這個檔設定網路和routing表。 
+  ifcfg-eth1的參數可設定如下︰ </p>
+<pre class="sample">
+    #!/bin/sh
+    #&gt;&gt;&gt;Device type: ethernet
+    #&gt;&gt;&gt;Variable declarations:
+    DEVICE=eth1
+    IPADDR=192.168.2.1
+    NETMASK=255.255.255.0
+    NETWORK=192.168.2.0
+    BROADCAST=192.168.2.255
+    GATEWAY=199.1.2.10
+    ONBOOT=yes
+    #&gt;&gt;&gt;End variable declarations
+</pre>
+<p>可試用這些參數使數據機與ISP自動連接。不妨看看 ipup-ppp檔。 如用數據機與網際網路連接，ISP會在連接時指定外端的IP地址。</p> <p></p>
+<h2><a name="ss5.4" id="ss5.4"></a>5.4 測試網路 </h2>
+
+<p>從測試ifconfig和route開始。如機器上有兩張網路卡，各項設置應有如下情況︰ </p>
+<pre class="sample">
+  #ifconfig
+  lo        Link encap:Local Loopback
+            inet addr:127.0.0.0  Bcast:127.255.255.255  Mask:255.0.0.0
+            UP BROADCAST LOOPBACK RUNNING  MTU:3584  Metric:1
+            RX packets:1620 errors:0 dropped:0 overruns:0
+            TX packets:1620 errors:0 dropped:0 overruns:0
+
+  eth0      Link encap:10Mbps Ethernet  HWaddr 00:00:09:85:AC:55
+            inet addr:199.1.2.10 Bcast:199.1.2.255  Mask:255.255.255.0
+            UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+            RX packets:0 errors:0 dropped:0 overruns:0
+            TX packets:0 errors:0 dropped:0 overruns:0
+            Interrupt:12 Base address:0x310
+
+  eth1      Link encap:10Mbps Ethernet  HWaddr 00:00:09:80:1E:D7
+            inet addr:192.168.2.1  Bcast:192.168.2.255  Mask:255.255.255.0
+            UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+            RX packets:0 errors:0 dropped:0 overruns:0
+            TX packets:0 errors:0 dropped:0 overruns:0
+            Interrupt:15 Base address:0x350
+</pre>
+
+<p>route 表應看起來如下︰ </p>
+<pre class="sample">
+#route -n
+Kernel routing table
+Destination   Gateway   Genmask    Flags  MSS  Window  Use  Iface
+199.1.2.0     *       255.255.255.0   U   1500   0      15 eth0
+192.168.2.0   *       255.255.255.0   U   1500   0       0 eth1
+127.0.0.0     *       255.0.0.0      U   3584   0       2 lo
+default      199.1.2.10   *          UG  1500   0       72 eth0
+</pre>
+<p>注︰ 199.1.2.0在防火牆的網際網路端，192.168.2.0在自設網路一端。 首先試試從防火牆ping 網際網路。不妨把nic.ddn.mil作試驗點。這個試驗點還不錯，只是不如我預期的可靠。如果沒聯上，試試ping幾個不是你網路上的地址。如果仍聯不上，則PPP的設定一定不對。再讀一次Net-2 
+  HOWTO，然後再試。 然後，試驗從防火牆ping保護網路內的電腦。所有網路內的電腦應能ping網路內的任何其他一台電腦。如果不行，再讀讀Net-2 HOWTO，再試一次。 
+  接著試驗從保護網路內ping防火牆以外的地址。（注意︰不屬于192.168.2.xxx的任何地址）如果可以，表示IP Forwarding的功能沒有取消。想一想這是否符合原先的構想。如果保留IP 
+  Forwarding的功能，就別放過下面設定IP filtering的部分。 現在試試從防火牆後ping 網際網路。利用以前試通的同一地址（例如，nic.ddn.mil）。如果 
+  IP Forwarding功能已經取消，就不應接通。不過如果這項功能沒有取消，就應該接通。 假設保留了IP Forwarding功能，而在自設的網路中使用實際的IP地址（不是192.168.2.*），在這種設定下，如果無法ping 
+  網際網路，但能夠ping網際網路邊的防火牆，就得檢查上一層的router有否把數據包傳送到自設網路的地址上。（可能得由ISP作這項檢查） 如果保護網路的地址定為192.168.2.*，則任何數據包都不能傳送。如果沒有作這些設定，而使用了IP 
+  masquerading，這項試驗應該成功。 至此，各項設定基本完成。</p>
+
+<h2><a name="ss5.5" id="ss5.5"></a>5.5 加固防火牆 </h2>
+
+<p>如果通過防火牆上沒有使用的功能能夠隨意進出防火牆，則這種防火牆也就沒有什么用處。 &quot;駭客&quot; 能到防火牆內作出必要的修改，供其所用。 
+  首先關閉所有不用的功能。先檢查 /etc/inetd.conf檔。這個檔控制所謂的&quot;超級伺服器&quot;。它控制了許多伺服器的daemon，然後在需要時啟動這些daemon。 
+  完全取消netstat、 systat、 tftp、 bootp和finger功能。取消功能的方法是把#作為功能行的行首字母。設定完畢後，鍵入&quot;kill 
+  -HUP &lt;pid&gt;&quot;，執行SIG-HUP ，其中&lt;pid&gt;是inetd的程序編號。inetd會再次讀取配置檔（inetd.conf），並從新啟動系統。 
+  利用telnet 測試防火牆的埠號（port）15，這是netstat的埠號。如netstat回應網路情況，系統並沒有按要求正確地從新啟動。</p>
+
+<hr />
+<table >
+  <tr> 
+    <td class="BtdL"> <a href="Beowulf-HOWTO-4.html" accesskey="P">上一頁(P)</a> 
+    </td>
+    <td class="BtdC"> <a href="index.html" accesskey="H">目錄(H)</a> </td>
+    <td class="BtdR"> <a href="Beowulf-HOWTO-6.html">下一頁(N)</a> </td>
+  </tr>
+  <tr> 
+    <td class="BtdL">設置防火牆的軟件</td>
+    <td class="BtdC"><a href="Beowulf-HOWTO-5.html"  accesskey="T">到頂層(T)</a></td>
+    <td class="BtdR">IP filtering 的設置(IPFWADM)</td>
+  </tr>
+</table>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> 
+  <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a> 
+  <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> 
+  <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" title="網路內容分級協會" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

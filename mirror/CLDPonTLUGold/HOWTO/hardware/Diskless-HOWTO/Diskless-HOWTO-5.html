@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>5. 基本概念</title>
+<link href="Diskless-HOWTO-6.html" rel="next" title="6.記憶體以及磁碟空間要求; 速度 "/>
+<link href="Diskless-HOWTO-4.html" rel="previous" title="4.硬體"/>
+<link href="http://tldp.org/HOWTO/Diskless-HOWTO.html" rel="alternate" title="原版" />
+<link href="../../style.css" rel="stylesheet" type="text/css" />
+<link href="Diskless-HOWTO-1.html" rel="chapter" title="1.修改" />
+<link href="Diskless-HOWTO-2.html" rel="chapter" title="2.如何設立一個無磁碟的 Linux 機" />
+<link href="Diskless-HOWTO-3.html" rel="chapter" title="3.相關文章" />
+<link href="Diskless-HOWTO-4.html" rel="chapter" title="4.硬體" />
+<link href="Diskless-HOWTO-5.html" rel="chapter" title="5.基本概念" />
+<link href="Diskless-HOWTO-6.html" rel="chapter" title="6.記憶體以及磁碟空間要求; 速度 " />
+<link href="Diskless-HOWTO-7.html" rel="chapter" title="7.可能的錯誤" />
+<link href="Diskless-HOWTO-8.html" rel="chapter" title="8.本文件中的錯誤以及更詳細的解說" />
+<link href="Diskless-HOWTO-5.html#ss5.1" rel="section" title="5.1 設定個人電腦" />
+<link href="Diskless-HOWTO-5.html#ss5.2" rel="section" title="5.2 在伺服器上設定 bootpd " />
+<link href="Diskless-HOWTO-5.html#ss5.3" rel="section" title="5.3 在伺服器上建構 bootpd" />
+<link href="Diskless-HOWTO-5.html#ss5.4" rel="section" title="5.4 瞭解 tftp" />
+<link href="Diskless-HOWTO-5.html#ss5.5" rel="section" title="5.5 在遠端伺服器上設定一個小型的 Linux 建構" />
+<link href="Diskless-HOWTO-5.html#ss5.6" rel="section" title="5.6 建構 tftp 伺服器 " />
+<link href="Diskless-HOWTO-5.html#ss5.7" title="5.7 最後工作" />
+<meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+<link href="Diskless-HOWTO.rdf" rel="meta" title="各章節的說明資訊" />
+</head> <body > 
+<table >
+  <tr>
+    <th colspan="3" class="HdTitle">Diskless
+      Nodes HOW-TO document for Linux</th>
+  </tr>
+  <tr>
+    <td class="TtdL"> <a href="Diskless-HOWTO-4.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="TtdC">&nbsp;</td>
+    <td class="TtdR"> <a href="Diskless-HOWTO-6.html" accesskey="N">下一頁(N)</a> </td>
+  </tr>
+</table>
+<hr />
+<h1>5. 基本概念</h1>
+
+<p>基本概念如下：個人電腦會經由 bootp 協定從啟動伺服器中來取得它的 IP 位址。
+用 0.0.0.0 為初始 IP 位址，而它的核心程式會經由 tftp 協定。</p>
+<p>跳過區段的啟動 (經由路由器router) 並不是個簡單問題，所以，不是將伺服器以及無磁碟機的機器放置在同一個網路 區段，就只有建構一個 UDP 輔助位址在你的 
+  router 到伺服器的位址上。細節請參考你的 router 產器手冊。 </p>
+<p>以下是我們的步驟</p>
+
+<h2><a name="ss5.1" id="ss5.1"></a>5.1 設定個人電腦 </h2>
+
+<p>取得 nfsboot 套件 (可從你較喜歡的 linux mirror 鏡射站的 <code>/pub/Linux/system/Linux-boot</code>
+目錄取得)。它包含了一個給 wd8013卡可直接燒錄用的 booteprom 映像檔。</p>
+<p>還有其他方法可以準備個人電腦部份:</p>
+<ul>
+<li>如果你的機器並不是沒有磁碟的，那麼你可以使用小小的 DOS 程式或</li>
+<li>含有同樣套件的二進位軟體映像檔。</li>
+</ul>
+<p>如果你選擇的是第二者，你必須使用 dd 命令來將這個映像檔寫入一張軟碟片裏。</p>
+<p>這個映像檔包含了 bootp 以及 tftp 客戶端程式。
+你也需要準備一個 linux 核心程式碼，它含有 nfs-root 選項。</p>
+<ul>
+<li>如果你使用最新的穩定核心程式，如 linux-1.2.13，那麼你需要使用包含在 nfsbootk套件內的　patch 修補核心程式。
+<blockquote>參考 patch(1)</blockquote>
+</li>
+<li>如果你想要用最新的，但卻不是很穩的 linux-1.3.x 系列核心，那麼你就需要建構 nfs-root 這選項。</li>
+</ul>
+
+<p>隨便你要不要建構區塊設備 (軟碟機或硬碟機) 的支援，但你必須建構 tcp/ip 支援、 wd 乙太網路卡支援、 nfs 檔案系統支援。然後重新編譯核心程式。</p>
+<h2><a name="ss5.2" id="ss5.2"></a>5.2 在伺服器上設定 bootpd </h2>
+
+<p>它可以在 <code>bootpd-2.4.tar.gz</code>套件中找到
+(可從你較喜歡的 linux mirror 鏡射站的 <code>/pub/Linux/system/Network/boot.net</code> 目錄內)。取得這個套件，
+編譯並安裝它。如果你其他的 Unix 機器也是用 Slackware Linux 的，那麼標準的供應版本就
+有 bootpd 了，所以你可以跳過這部份。 daemon 可以直接發出命令來執行
+</p>
+<pre class="sample">
+        bootpd -s
+</pre>
+<p>或是使用 inetd，但你需修改： </p>
+<ul>
+  <li> /etc/inetd.conf 在這些條列中移除 # 號 
+    <pre class="sample">
+# tftp   dgram   udp     wait    root    /usr/sbin/in.tftpd     tftpd /export
+# bootps dgram   udp     wait    root    /usr/sbin/in.bootpd    bootpd
+</pre>  </li>  <li>在 /etc/services 中插入或是移除備註符號： 
+    <pre class="sample">
+bootps          67/tcp          # BOOTP server
+tftp            69/udp          # TFTP server
+</pre>  </li>  <li>重新啟動 inetd ，使用 
+    <pre class="sample">        kill -HUP &lt;process id of inetd&gt;.
+</pre>
+  </li>
+</ul>
+
+
+<h2><a name="ss5.3" id="ss5.3"></a>5.3 在伺服器上建構 bootpd </h2>
+
+<p>由先， bootpd 有個叫 bootptab 的建構檔，它通常被放在 /etc 內。你必須修改
+它，加上你的無磁碟機器的閘道 IP 位址、 dns 伺服器，以及乙太網路位址(es)。
+範例如下 /etc/bootptab:
+</p>
+<pre class="sample">
+
+global.prof:\
+        :sm=255.255.255.0:\
+        :ds=192.168.1.5:\
+        :gw=192.168.1.19:\
+        :ht=ethernet:\
+        :bf=linux:
+machine1:hd=/export/root/machine1:tc=global.prof:ha=0000c0863d7a:ip=192.168.1.140:
+machine2:hd=/export/root/machine2:tc=global.prof:ha=0800110244e1:ip=192.168.1.141:
+machine3:hd=/export/root/machine3:tc=global.prof:ha=0800110244de:ip=192.168.1.142:
+</pre>
+<p>global.prof 是 host 項目的一般樣本，其中</p>
+<ul>
+  <li>sm 欄包含子網路遮罩</li>
+  <li>ds 欄包含網域名稱伺服器的位址</li>
+  <li>gw 欄包含內定閘道位址 gateway</li>
+  <li>ht 欄包含網路媒介硬體種類</li>
+  <li>bf 欄包含啟動檔檔名</li>
+</ul>
+<p>之後，每一台機器應該有下面這行</p>
+<ul>
+  <li>首欄包含主機名稱</li>
+  <li>hd 欄包含啟動檔案的目錄</li>
+  <li>全區樣本應該被包含到 tc 欄，</li>
+  <li>ha 欄包含乙太網路卡的硬體位址</li>
+  <li>ip 欄包含被分配的的 IP 位址</li>
+</ul>
+<h2><a name="ss5.4" id="ss5.4"></a>5.4 瞭解 tftp </h2>
+
+<p>TFTP (<code>Trivial File Transfer Protocol</code>) 是一個檔案傳輸協定，就像 ftp 一樣，但
+它比比較簡化，因此可以容易地在 EPROM 裏來編碼。 TFTP 的使用方法有二種：</p>
+<ul>
+<li> 簡單的 tftp: 表示客戶端可以存取你的整個檔案系統。雖然較簡單但卻開了一個安全大洞
+(任何人都可以經由 tftp 來拿到你的密碼)。</li>
+<li> 安全的 tftp: tftp 伺服器會使用chroot.2 系統呼叫來改變它自己的根目錄。任何在新目錄以
+外的事件都完全無法存取。因為 chroot 目錄變成新的根目錄， 硬碟在 bootptab 整檔時必須反應
+這個新的處境。例如：當我們使用不安全的 tftp 時， hd 欄包含了啟動目錄的完整路徑，
+： <code>/export/root/machine1</code>。
+當使用安全的 tftp 時， /export 被當成根目錄，而 /export 變成 / ，且 hd 欄就變成 <code>/root/machine1</code>了。</li>
+</ul>
+
+<p>幾乎每一個 Unix 實作都包含 tfpt 伺服器，也許你並不需要自己安裝一個。</p>
+<h2><a name="ss5.5" id="ss5.5"></a>5.5 在遠端伺服器上設定一個小型的 Linux 建構 </h2>
+
+<p>這包含 Slackware供應版內的 a, ap, n, 及 x 部份。要安裝更多的套件也可以；但
+是上面的套件已足夠一個無磁碟 X 終端機的需求了。首先你需要一個已在運轉的
+Linux 系統。在遠端機器裏找一個磁碟空間並 export 它成為可讀寫並掛上它到
+Linux 機器的檔案系統上的某一處 (例如 /mnt)。開始 Linux 設定並改變root 選項從 /
+變為 /mnt。然後設立如上面所說的套件，如果你只是要執行一個無磁碟的 Linux 那
+麼就不需要做其他改變。另一方面，如果你計畫使用超過一個以上的無磁碟機器，
+那麼上面的設定就需要些許的修改，因為有些檔案以及目錄必須只有機器本身使用。
+我們可以以移開 /usr 目錄(它包含非私人的資料)的方式跳過這個問題，
+然後建立一個分開的子目錄給每一個無磁碟機器。例如，如果 /export/linux/machine1 被掛在
+/mnt 上，那麼在初始設定後目錄結構會像這樣
+</p>
+<pre class="sample">
+/export/linux/machine1/bin
+/export/linux/machine1/sbin
+/export/linux/machine1/lib
+/export/linux/machine1/etc
+/export/linux/machine1/var
+/export/linux/machine1/usr
+</pre>
+<p>改變後你會有
+</p>
+<pre class="sample">
+/export/linux/machine1/bin
+/export/linux/machine1/sbin
+/export/linux/machine1/lib
+/export/linux/machine1/etc
+/export/linux/machine1/var
+/export/linux/usr
+</pre>
+<p>現在為其他的機器建立目錄。從現在開始我們假設你的無磁碟機器分別叫做 machine1、machine2、 machine3等等；
+使用以下的 bash 命令手稿來設立其他的目錄
+</p>
+<pre class="sample">
+ 
+        cd /export/linux
+        for x in machine2 machine3 ; do
+                mkdir $x; cd $x
+                (cd ../machine1; tar cf - *) | tar xvf -
+        done
+</pre>
+<p>然後做下列的 export:</p>
+<ul>
+<li>/export/linux/usr                 唯讀（對每個使用者）</li>
+<li>/export/liunx/machine1            只有對 machine1 有 rw,root 權利。</li>
+<li>/export/liunx/machine2            只有對 machine2 有 rw,root 權利。</li>
+<li>/export/liunx/machine3            只有對 machine3 有 rw,root 權利。</li>
+</ul>
+
+<p>如下 </p>
+<p>下面範列是依照 SunOs 4.1.3 的 exports 檔案的語法來做: </p>
+<pre class="sample">
+ 
+# This file is /etc/export
+# for remote linux X terminals by Buci
+# this line is only once
+/export/root/usr             -access=linuxnet
+# these lines once for every host
+/export/root/machine1       rw=machine1,root=machine1
+/export/root/machine2       rw=machine2,root=machine2
+/export/root/machine3       rw=machine3,root=machine3
+</pre>
+<p>請不要忘了執行 exportfs -a </p>
+<h2><a name="ss5.6" id="ss5.6"></a>5.6 建構 tftp 伺服器 </h2>
+
+
+<p>現在該是建構 tftp 伺服器的時候了。如果你不需要一個安全的 tftp 那很簡單，
+因為你的客戶端已經可以從 /export 目錄來啟動。</p>
+<p>如果一個安全的 tftp 被採用，那麼你可以在 /tftpboot 目錄下做個完整的
+/export/linux 目錄結構。 (用一個實體核心程式及連結給其他機器的符號連結)，
+或是讓 /export 目錄成為安全的 tftpd 的根目錄。或者如果你有一另外的
+tftpboot 目錄，那麼，同樣地，你只需要原來的目錄結構，然後用一個實體核心程式來
+符號連結其他機器) 。 你可以執行下列命令來完成這個設定：
+</p>
+<pre class="sample">
+      mkdir -p /tftpboot/export/linux/machine1
+      cd /tftpboot/export/linux/machine1
+      cp /export/linux/machine1/&lt;name of the kernel&gt; . 
+</pre>
+<p>然後執行下面：</p>
+<pre class="sample">
+      mkdir -p /tftpboot/export/linux/machine2
+      cd ../machine2 
+      ln -s ../machine2/&lt;name of the kernel&gt;</pre>
+<h2><a name="ss5.7" id="ss5.7"></a>5.7 最後工作 </h2>
+
+
+<p>最後，你必須插入
+</p>
+<pre class="sample">
+   /sbin/mount nfs_server:/export/linux/usr /usr
+</pre>
+<p>到</p>
+<pre class="sample">   /export/linux/&lt;machinex&gt;/etc/rc.d/rc.S
+</pre>
+<p>的第一行。在這裏 &lt;machinex&gt; 指的是 machine1, machine2等等。</p>
+
+<hr />
+<table >
+  <tr>
+    <td class="BtdL"> <a href="Diskless-HOWTO-4.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="BtdC"> <a href="index.html" accesskey="H">目錄(H)</a> </td>
+    <td class="BtdR"> <a href="Diskless-HOWTO-6.html">下一頁(N)</a> </td>
+  </tr>
+  <tr>
+    <td class="BtdL">硬體</td>
+    <td class="BtdC"><a href="Diskless-HOWTO-5.html"  accesskey="T">到頂層(T)</a></td>
+    <td class="BtdR">記憶體以及磁碟空間要求; 速度</td>
+  </tr>
+</table>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img class="ImgLogo" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" title="網路內容分級協會" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

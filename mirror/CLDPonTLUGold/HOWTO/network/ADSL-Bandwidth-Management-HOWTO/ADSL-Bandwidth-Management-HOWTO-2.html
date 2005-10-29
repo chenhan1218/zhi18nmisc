@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>2. 背景</title>
+<link href="ADSL-Bandwidth-Management-HOWTO-3.html" rel="next" title="3.工作原理"/>
+<link href="ADSL-Bandwidth-Management-HOWTO-1.html" rel="previous" title="1.介紹"/>
+<link href="http://tldp.org/HOWTO/ADSL-Bandwidth-Management-HOWTO/index.html" rel="alternate" title="原版" />
+<link href="../../style.css" rel="stylesheet" type="text/css" />
+<link href="index.html" rel="start" title="HOWTO：ADSL Bandwidth Management" />
+<link href="index.html#content" rel="contents" />
+<meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+<link href="ADSL-Bandwidth-Management-HOWTO-1.html" rel="chapter" title="1.介紹" />
+<link href="ADSL-Bandwidth-Management-HOWTO-2.html" rel="chapter" title="2.背景" />
+<link href="ADSL-Bandwidth-Management-HOWTO-3.html" rel="chapter" title="3.工作原理" />
+<link href="ADSL-Bandwidth-Management-HOWTO-4.html" rel="chapter" title="4.執行" />
+<link href="ADSL-Bandwidth-Management-HOWTO-5.html" rel="chapter" title="5.測試" />
+<link href="ADSL-Bandwidth-Management-HOWTO-6.html" rel="chapter" title="6.OK It Works!! Now What?" />
+<link href="ADSL-Bandwidth-Management-HOWTO-2.html#ss2.1" rel="section" title="2.1 必要條件 " />
+<link href="ADSL-Bandwidth-Management-HOWTO-2.html#ss2.2" rel="section" title="2.2 佈局 " />
+<link href="ADSL-Bandwidth-Management-HOWTO-2.html#ss2.3" rel="section" title="2.3 Packet Queues(數據包隊列) " />
+<link href="ADSL-Bandwidth-Management-HOWTO.rdf" rel="meta" title="各章節的說明資訊" />
+</head> <body>
+<table >
+  <tr>
+    <th colspan="3" class="HdTitle">HOWTO：The
+      Linux Distribution</th>
+  </tr>
+  <tr>
+    <td class="TtdL"> <a href="ADSL-Bandwidth-Management-HOWTO-1.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="TtdC">&nbsp;</td>
+    <td class="TtdR"> <a href="ADSL-Bandwidth-Management-HOWTO-3.html" accesskey="N">下一頁(N)</a> </td>
+  </tr>
+</table>
+<hr />
+<h1>2. 背景</h1>
+
+<h2><a name="ss2.1" id="ss2.1"></a>2.1 必要條件 </h2>
+
+<p>要點: 這些方法儘管沒有在其它的發行版中試驗過,我想它正常工作大概沒什麼問題.下面是運行的環境:</p>
+<ul>
+  <li>Red Hat Linux 7.3</li>
+  <li>2.4.18-5 完全支持 QoS 的核心版本 (模組也可以) 包含以下的patches (補丁)(可能會最終加入到最新的核心當中): </li>
+  <li>HTB queue - <a href="http://luxik.cdi.cz/~devik/qos/htb/">http://luxik.cdi.cz/~devik/qos/htb/</a> 
+    注意: Mandrake(曼德萊克8.1, 8.2)的核心自 2.4.18-3 起就有了HTB 的 patches. </li>
+  <li>IMQ device - <a href="http://luxik.cdi.cz/~patrick/imq/">IMQ device - http://luxik.cdi.cz/~patrick/imq/</a> 
+  </li>
+  <li>iptables 版本v1.2.6a 或更新的(version of iptables distributed with Red Hat 7.3 
+    is missing the length module)</li>
+</ul>
+<p>Note: Previous versions of this document specified a method of bandwidth control 
+that involved patching the existing sch_prio queue. 
+It was found later that this patch was entirely unnecessary. 
+Regardless, the newer methods outlined in this document will give you 
+better results (although at the writing of this document 2 kernel patches are now necessary. 
+:) Happy patching.)</p>
+<h2><a name="ss2.2" id="ss2.2"></a>2.2 佈局 </h2>
+
+<p>化繁為簡,所有的設定依照下面這個佈局進行:
+</p>
+<pre class="sample">
+  &lt;-- 128kbit/s      --------------     &lt;-- 10Mbit --&gt;
+  Internet &lt;--------------------&gt; | ADSL Modem | &lt;--------------------
+                1.5Mbit/s --&gt;     --------------                     |
+                                                                     | eth0
+                                                                     V
+                                                         -----------------
+                                                         |               |
+                                                         | Linux Router  |
+                                                         |               |
+                                                         -----------------
+                                                          | .. | eth1..ethN
+                                                          |    |
+                                                          V    V
+                   
+                                                       Local Network
+      
+</pre>
+<h2><a name="ss2.3" id="ss2.3"></a>2.3 Packet Queues(數據包隊列) </h2>
+
+<p>Packet Queues是一個容器, 當數據不能被網絡設備立既送走的時候, Packet Queues 負責暫時收留它們.
+除非被設定成另外一種方式,否則數據包是按 FIFO (first in, first out 最早進入Queues的數據將被最快發送走)
+進行排隊.</p>
+<h3>The Upstream(向上傳輸)</h3>
+
+<p>ADSL的帶寬由不對稱的 1.5Mbit/s downstream(向下傳輸)和128kbit/sec upstream(向上傳輸)組成.
+Linux 路由器(主機)同ADSL modem的連結速率在10Mbits/s左右.如果 Linux 路由器同 Local Network(本地網絡)
+的連結速率也在10Mbits/s左右,路由器和Local Network(本地網絡)的Queues(隊列)就不會存在.但以10Mbits/s到達ADSL modem的數據包卻要以128kbit/sec 
+傳輸到Internet.因此數據包將在ADSL modem形成Queues,ADSL modem將不能應付而產生數據包丟失現象.
+TCP就是用來控制類似這樣的情況,它調整傳輸窗口的大小以達到利用帶寬的最佳效果.</p>
+
+<p>TCP控制Queues(隊列)以利用帶寬. 較大的FIFO Queues將延長數據包的傳送時間.</p>
+
+<p>另一種同FIFO有點相似的Queues(隊列)是 n-band priority queue, 它取代FIFO只有一個隊列的做法,
+數據包分級別排出多個FIFO Queues(隊列), 每一個Queues都有優先級別的設定, 
+總是從級別高的Queues將數據dequeued(出列). 使用這種方法,FTP和telnet同時上載數據包的時候,
+telnet的數據包將得到更高的優先級別.單獨的telnet數據包將被立既發送.</p>
+
+<p>Linux 使用一種新的Queues:  Hierarchical Token Bucket (HTB 譯為分級型式的隊列容器).
+它有點像n-band priority queue, 但n-band priority queue在每個級別中只有限制數據通訊的能力.
+HTB有一項更加先進的功能:在已有的級別之上能夠建立一個新的級別通訊.更多的資訊請參照:
+<a href="http://www.lartc.org/">http://www.lartc.org/</a></p>
+
+<h3>The Downstream(向下傳輸)</h3>
+
+<p>從Internet發送至ADSL modem的數據包入站和數據包出站的Queues大至相同.
+不管怎樣, queue 會集在您的ISP那裡. 因為這樣您大概不能直接控制數據包如何排隊或以哪種形式分配優先權.
+只有一種方法來縮短這裡的反應時間:期望向您發送數據包的時候不要太快.
+不幸的是,您無法直接控制數據包的到達速度.
+這裡有一些方法將發送者的速度減慢:</p>
+<ul>
+<li>故意將入站數據包丟棄. TCP is designed to take full advantage of the available bandwidth
+while also avoiding congestion of the link. This means that during a 
+bulk data transfer TCP will send more and more data until eventually a packet is dropped.
+TCP detects this and reduces it's transmission window. 
+This cycle continues throughout the transfer and assures data is moved as quickly as possible.
+</li>
+<li>操縱advertised receive window(廣告接收窗)- During a TCP transfer, the receiver sends back
+a continuous stream of acknowledgment (ACK) packets. 
+Included in the ACK packets is a window size advertisement 
+which states the maximum amount of unacknowledged data the receiver should send. 
+By manipulating the window size of outbound ACK packets we can intentionally slow down the sender. 
+At the moment there is no (free) implementation for this type of flow-control on 
+Linux (however I may be working on one!). </li>
+</ul>
+<p></p>
+
+<hr />
+<table >
+  <tr>
+    <td class="BtdL"> <a href="ADSL-Bandwidth-Management-HOWTO-1.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="BtdC"> <a href="index.html" accesskey="H">目錄(H)</a> </td>
+    <td class="BtdR"> <a href="ADSL-Bandwidth-Management-HOWTO-3.html">下一頁(N)</a> </td>
+  </tr>
+  <tr>
+    <td class="BtdL">介紹</td>
+    <td class="BtdC"><a href="ADSL-Bandwidth-Management-HOWTO-2.html"  accesskey="T">到頂層(T)</a></td>
+    <td class="BtdR">工作原理</td>
+  </tr>
+</table>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> 
+  <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a> 
+  <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> 
+  <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" title="網路內容分級協會" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

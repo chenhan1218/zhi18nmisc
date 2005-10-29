@@ -1,0 +1,1340 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+ 
+ <title>Linux Remote-Boot mini-HOWTO:: 遠端啟動工具程式參考手冊</title>
+ <link href="Remote-Boot-6.html" rel="next" />
+ <link href="Remote-Boot-4.html" rel="previous" />
+ <link href="../../style.css" rel="stylesheet" type="text/css" />
+ <meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+ <link href="index.html#content" rel="contents" />
+ <link href="index.html" rel="start" />
+  <link href="Remote-Boot-1.html" rel="chapter" title="1.免責聲明及版權" />
+ <link href="Remote-Boot-2.html" rel="chapter" title="2.有那些變更..." />
+ <link href="Remote-Boot-3.html" rel="chapter" title="3.簡介" />
+ <link href="Remote-Boot-4.html" rel="chapter" title="4.如何設定" />
+ <link href="Remote-Boot-5.html" rel="chapter" title="5.遠端啟動工具程式參考手冊" />
+ <link href="Remote-Boot-6.html" rel="chapter" title="6.特殊型的 TFTP 伺服器" />
+ <link href="Remote-Boot-5.html#ss5.1" rel="section" title="5.1 BpBatch, MrBatch 及 MrZip " />
+ <link href="Remote-Boot-5.html#ss5.2" rel="section" title="5.2 NoBreak.sys" />
+ <link href="http://www.tldp.org/HOWTO/mini/Remote-Boot.html" rel="alternate" title="原版" />
+ <link href="Remote-Boot.rdf" rel="meta" title="各章節的說明資訊" />
+ <link href="http://www.tldp.org/HOWTO/mini/soft/nobreak.zip" rel="bookmark" title="Assembler 語法的原始程式碼" />
+</head> <body> 
+<table
+
+
+
+
+>
+  <tr
+>
+    <th
+colspan="3" class="HdTitle"
+>Mini
+      HOWTO：Linux Remote-Boot</th>
+  </tr
+>
+  <tr
+>
+    <td class="TtdL"
+><a href="Remote-Boot-4.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="TtdC"
+></td
+>
+    <td class="TtdR"
+><a href="Remote-Boot-6.html" accesskey="N">下一頁(N)</a></td
+>
+  </tr
+>
+</table
+>
+<hr />
+<h1><a name="s5" id="s5">5.</a> 遠端啟動工具程式參考手冊</h1>
+
+<p>本節將提供我們於 日內瓦大學, CUI 為遠端啟動架構, 所發展的工具程式的詳細說明資訊.</p>
+
+<h2><a name="ss5.1" id="ss5.1">5.1</a> BpBatch, MrBatch 及 MrZip
+</h2>
+
+<p>這三個名稱是為了給同一個程式賦予三種變化, 分別有下列的特性:</p>
+<ul>
+<li><code>BpBatch</code> 是一個特別的程式, 可以在作業系統載入之前自 BootPROM 啟動.
+它是由兩個部份來完成: <code>bpbatch.P</code>, 動態的載入器, 及 <code>bpbatch.ovl</code>,
+程式本體. <code>BpBatch</code> 已可以透過我們自行實作的 FAT16, FAT32 及 Ext2fs
+檔案系統達成完整的磁碟存取功能, 更可透過 BootPROM TFTP API
+達到遠端網路 I/O 存取能力.
+<code>BpBatch</code> 是在 DOS 下以 Borland C 5.0 及 Turbo Assembler 3.2 編譯.</li>
+<li><code>MrBatch</code> 是 <code>BpBatch</code> 在 DOS/Linux 下的版本.
+所有 <code>BpBatch</code> 可以辨識的指令都可以在 <code>MrBatch</code> 下使用.
+如果你要在 DOS/Linux 下測試你的批次檔腳本程序, 這會相當有用.
+在 DOS 下, <code>MrBatch</code> 可以作業系統為基礎, 模擬遠端 I/O 功能,
+如果 BootPROM 不存在的話. 在 Linux 下, BootPROM 亦無法被偵測到,
+但 <code>MrBatch</code> 可以用 Linux 的 IP 支援功能以模擬它,
+或採用作業系統為基礎的檔案存取來模擬.
+<code>MrBatch</code> 在 Linux 下, 用 GCC 2.7.2.1 編譯;
+而 DOS 下,則用 Borland C 5.0 及 Turbo Assembler 3.2.</li>
+<li><code>MrZip</code> 是一個解譯器用來辨識 <code>MrBatch</code> 語言的擴增功能,
+並能建立磁碟映像檔.
+在 <code>MrZip</code>, 原本有限制的遠端檔案 I/O
+已由完整的作業系統為基礎的檔案存取功能取代.
+<code>MrZip</code> 並不支援 VESA.
+<code>MrZip</code> 在 Linux 下, 採用 GCC 2.7.2.1 編譯;
+而 DOS 下, 採用 Borland C 5.0 及 Turbo Assembler 3.2.</li>
+</ul>
+
+
+<h3>命令列參數</h3>
+
+<p>所有的程式都可以接受相同的參數用法. <code>MrBatch</code> 及 <code>MrZip</code>
+可在命令列下取得參數, 而 <code>BpBatch</code> 則藉由參考 BOOTP 通訊協定的
+option 155 (十進制) 取得. 這是參數用法 :</p>
+<pre class="sample">[-x] [-l] [-b] [-v] [-w] [-i] [script-basename]
+</pre>
+
+<p>說明:</p>
+<ul>
+<li><code>-x</code> 不使用延伸記憶體.</li>
+<li><code>-l</code> 不使用 ISO-latin-8859-1 為預設字元集.</li>
+<li><code>-b</code> 取消對 BootPROM 的偵測 (在 DOS 環境下, 會變成搜尋軟碟機).</li>
+<li><code>-v</code> 取消對 VESA 的偵測 (在 Windows 95/98 環境下, 會切換成全螢幕).</li>
+<li><code>-w</code> 啟用直接磁碟寫入 (在 DOS 及 Linux 下, 預設是不使用).</li>
+<li><code>-i</code> 啟用交談模式, 即使有設定腳本程序檔名也一樣.</li>
+</ul>
+
+<p><code>script-basename</code> 是附加的選項. 如果有設定, <code>MrBatch</code>
+及 <code>BpBatch</code> 會載入以 <code>.bpb</code> 為副檔名的檔案, 而 <code>MrZip</code> 會載入以
+<code>.mrz</code> 為副檔名的檔案. 如果沒設定, <code>MrBatch</code> 及 <code>MrZip</code>
+會執行於交談模式, 而 <code>BpBatch</code> 會載入與 BOOTP 可開機檔名同主檔名,
+但以 <code>.bpb</code> 為副檔名的檔案.</p>
+
+<h3>語法</h3>
+
+<p>以下的規則用於 <code>BpBatch</code> 分析輸入行.</p>
+<ul>
+<li>所有指令都是一行一行解釋. 各行間以 CR 及/或 LF 為分隔.</li>
+<li>每行最長為 255 個字元.</li>
+<li>關鍵字及變數都要區分大小寫.</li>
+<li>" 用以當作字串識別字元</li>
+<li>當使用了 ${變數} 或 $變數, 則會以變數的值來取代,
+若未定義則會是一個空字串. 這個方法也可以在字串中使用.
+另外, 如果是用在字串值時, 必須在字串前後加上雙引號
+(即 這裡稱作 巨集式運算 會比稱作 變數 來得貼切).</li>
+<li>
+<ul>
+<li><code>\a</code> 是代表會發出 嗶聲 (bell) 字元 (ASCII 7).</li>
+<li><code>\b</code> 是代表 倒退鍵 (backspace) 字元 (ASCII 8).</li>
+<li><code>\n</code> 是代表 換行 (newline) 字元 (ASCII 10).</li>
+<li><code>\r</code> 是代表 歸位 (return) 字元 (ASCII 13).</li>
+<li><code>\t</code> 是代表 跳位 (tabulation) 字元 (ASCII 9).</li>
+<li><code>\v</code> 是代表 橫向跳位 (vertical-tab) 字元 (ASCII ...).</li>
+<li><code>\nnn</code> n 是三位數的十進位數值在 000 到 377 代表 ascii
+碼的設定值.</li>
+<li><code>\X</code> X 是任何上面沒列出的字元就由 X 代表. 特別是:
+<ul>
+<li><code>\"</code> 是代表常見的 雙引號 (double-quote) (不是字串識別字元).</li>
+<li><code>\$</code> 是代表常見的 錢字號 (dollar sign) (不是變數標示).</li>
+<li><code>\\</code> 是代表常見的 反斜線符 (backslash) (不是特殊字元).</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>字元 "end of string" (ASCII 碼 0) 不能在任何地方使用.
+因它是程式內部用來當作字串結束的識別字元.</li>
+<li>字元 "floating diaeresis" (ASCII 碼 十進制 249, 十六進制 F9, 八進制 371)
+不能被用在任何字串中. 因為它是程式內部用來辨識輸入機制的識別字元.</li>
+<li>字元 "block space" (ASCII 碼 十進制 255, 十六進制 FF, 八進制 377)
+不能被用在任何變數中. 因為它是程式內部變數的識別字元.</li>
+</ul>
+
+<p>空行會被忽略. 該行由 (<code>#</code>) 啟始則會被當成註解, 不做任何解釋.
+該行由 (<code>:</code>) 啟始則會被當成標籤, 不做任何解釋.</p>
+<p></p>
+<dl>
+<dt><b>字串表示</b></dt>
+<dd><p>字串由雙引號括起來的可被識別到:
+</p>
+  <pre class="sample">"Hello world"
+</pre>
+
+如要在字串中放入雙引號, 則必須用, 反斜線符 (backslash) 括起來:
+<pre class="sample">"I said: \"Hello world\""
+</pre>
+
+字串可以用一些運算子來做預先修正.
+<ul>
+<li>字元取代運算子:
+<pre class="sample">"Hello world"/o=u/      ==      "Hellu wurld"
+"198.76.54.32"/.= /     ==      "198 76 54 32"
+</pre>
+</li>
+<li>文字選擇運算子 (以零為起始):
+<pre class="sample">"Hello world"{0}        ==      "Hello"
+"198 76 54 32"{1-3}     ==      "76 54 32"
+</pre>
+</li>
+<li>子字串選擇運算子 (以零為起始):
+<pre class="sample">"Hello world"[4]        ==      "o"
+"Hello world"[4-7]      ==      "o wo"
+</pre>
+</li>
+</ul>
+
+</dd>
+<dt>&nbsp;</dt>
+<dd>運算子可以一再使用以修正出所需的字串樣式. 如果想知道關於字串長度及文字個數的運算子, 可以參考下面 &quot;數值表示法&quot; 一節. </dd>
+<dt><b>數值表示法</b></dt>
+<dd><p>數值表示是以 32 位元整數來運算 (由 -2,147,483,646
+    到 2,147,483,647).
+十六進制, 八進制, 及二進制 數值則無法辨別.
+如果一遇到數值表示, 則必要經過下面的辨識程序:
+</p>
+  <ul>
+<li>是 正整數 或是 負整數</li>
+<li> (<em>expr1 op expr2</em>) 這種形式的 <em>op</em> 可以是 +, -, * (乘), / (除)
+或 <code>%</code> (餘數) 而 <code>expr</code> 是數值表示.
+要注意的是每個運算都要用括號包起來 :
+<pre class="sample">((3 * 5)+2)             == 17
+</pre>
+</li>
+<li>字串長度運算子 (@), 後面接著一個字串 :
+<pre class="sample">@"Hello world"          == 11
+</pre>
+</li>
+<li>文字計算運算子 (#), 後面接著一個字串 :
+<pre class="sample">#"Hello world"          == 2
+</pre>
+</li>
+</ul>
+
+
+</dd>
+<dt><b>延遲</b></dt>
+<dd><p>部份指令須要延遲來當作參數. 延遲時間是以秒為單位, 精度到十分之一秒:
+</p>
+  <pre class="sample">Delay 3                 等待 3 秒
+Delay 0.3               等待 3/10 秒
+</pre>
+
+
+</dd>
+<dt><b>顏色</b></dt>
+<dd><p>需要設定顏色時, 你可以用數值或顏色名 (區分大小寫) 來代表顏色.
+可以使用下列顏色:
+</p>
+  <pre class="sample">Black           0
+Blue            1
+Green           2
+Cyan            3
+Red             4
+Magenta         5
+Brown           6
+LightGray       7
+DarkGray        8
+LightBlue       9
+LightGreen     10
+LightCyan      11
+LightRed       12
+LightMagenta   13
+Yellow         14
+White          15
+</pre>
+
+
+</dd>
+<dt><b>參考檔案</b></dt>
+<dd><p>檔名是一種字串. 他們必需以雙引號括起來. 檔案名稱在大小寫有別的檔案系統時,
+就有大小寫的分別; 反之, 於無大小寫之別的檔案系統時, 就有無大小寫的分別.
+斜線符 與 反斜線符 可以自由的擇一使用. 但別忘記 要用到溢位字元
+反斜線符 必需用 雙反斜線 來表示.</p>
+<p>有兩種類型的檔案參考:</p>
+<ul>
+<li>直接參考到本機磁碟機上的檔案.</li>
+<li>外部的檔案.</li>
+</ul>
+
+<p>直接參考到本機磁碟機上的檔案用法:</p>
+<pre class="sample">
+        "{磁碟機號碼:分割區}/絕對路徑/檔案名稱"
+</pre>
+<p>
+可以省略磁碟機號碼預設值是零.
+比如, <code>"{:1}/usr/bin"</code> 是指在第一個分割區有 <code>/usr/bin</code> 這目錄.
+直接參考到本機磁碟上檔案的 I/O 功能完全是我們自行實作出來的
+(我們不使用作業系統所提供的功能).</p>
+<p>有兩種 <em>特別的</em> 分割區. 分割區零 是指磁碟機上的主開機記錄 (MBR)
+並提供一個虛擬檔案系統裝置以讓你存取開機識別碼.
+分割區負一 (-1) 是指快取檔案系統 (參考下面敘述).</p>
+<p>在 BpBatch/MrBatch 環境下, 如果有 BootPROM 存在,
+則外部的檔案是指到遠端 TFTP 伺服器上:</p>
+<pre class="sample">"help.bpb"           是指在 /tftpboot 下的 help.bpb 檔案
+"images/MyImage.pcx" 是一個在 /tftpboot/images 下的檔案
+</pre>
+
+如要參考到其他的 TFTP 伺服器可以用:
+<pre class="sample">"198.76.54.32:help.bpb"
+</pre>
+
+如果伺服器要繞過閘道器可以用 :
+<pre class="sample">"198.70.0.1/198.76.54.31:help.bpb"
+</pre>
+
+亦可以自行決定特殊埠號作 TFTP 連結 :
+<pre class="sample">"198.76.54.32@89:getpasswd/smith"
+</pre>
+
+<p>在同一時間只能有一台機器開啟遠端檔案.
+如果 BootPROM 不存在, 遠端的檔案會透過作業系統的檔案 I/O 功能來模擬,
+但同樣的限制依然存在.</p>
+<p>在 MrZip 環境下, 遠端的檔案是透過作業系統存取到該檔.
+這裡就沒有任何限制, 遠端的檔案可被當成直接參考到本機磁碟檔案一樣來使用.
+而遠端的檔案通常會比直接參考到本機磁碟檔案還快,
+因為作業系統本身有較多的暫存區. 如果作業系統有支援,
+則遠端檔案可被當成網路上的檔案.</p>
+<pre class="sample">"C:\\autoexec.bat"
+"C:/config.sys"
+"/mnt/net/usr"
+</pre>
+
+</dd>
+</dl>
+<h3>快取檔案系統</h3>
+
+<p>為了降低網路負載並加快 開機速度, 磁碟檔案存取速度, Linux Kernel
+及其他檔案可以由硬碟裏快取得到. 磁碟快取的區域是在硬碟機的末端,
+介於分割表中最後一個對應到的磁柱與磁碟最後一個理論磁柱之間
+(於任何對應要使用的分割區之外). 要使快取檔案系統作動,
+就必需在最後一個分割區到磁碟機末端之間保留空間.
+而如果你要回存一個磁碟映像檔, 則更要讓快取檔案系統作動才行.</p>
+<p>這個磁碟快取是由一個具 CRC 確認檢查的變易性檔案系統所組成:
+每個目錄 及 每 32 KB 的資料區塊 都以一個 32 位元的 CRC 來檢查確認.
+每當一個目錄或資料區塊無預警的改變後, 則該檔案會自動由快取區移除;
+並在下次存取要求時, 再次下載新的資料以吻合現況.</p>
+<p>你可以透過 BpBatch, MrBatch 及 MrZip 自由存取快取檔案系統,
+用直接存取本機磁碟檔案功能存取特別分割區 <code>"{:-1}"</code> .
+要檢視快取區內容, 只需輸入 :</p>
+<pre class="sample">logdir "{:-1}"
+</pre>
+
+<p>如果快取區資料毀損且不會自動清理時 (這狀況應該不會發生),
+你只要輸入 (在交談模式下) :</p>
+<pre class="sample">clean -1
+</pre>
+
+<p>或在 BpBatch 第一次存取快取時, 同時按下兩個 shift 鍵
+</p>
+<h3>特殊變數</h3>
+
+<p>有些變數在初值設定時具有特別的意義. 一部份是存在於所有的程式,
+另一部份只可以在  MrZip 執行時才存在,
+但仍有一部份只能在 BOOTP/DHCP 回應收到的時候才存在.</p>
+<dl>
+<dt><b>通用變數</b></dt>
+<dd><p>
+</p>
+  <ul>
+<li><code>$Program</code> 在 BpBatch, 是設成 "BpBatch",
+在 MrBatch, 是設成 "MrBatch", 在 MrZip, 是設成 "MrZip".</li>
+<li><code>$Basename</code> 用來設定給批次檔解譯器使用的腳本程序檔的主檔名.</li>
+<li><code>$HelpFile</code> 當呼叫到 <code>Help</code> 時, 所要載入的檔案名稱.
+預設: <code>"${Basename}.hlp"</code>.</li>
+<li><code>$BOOTP-...</code> 是經由 BOOTP/DHCP 回應所取得的設定.
+(參考 BOOTP/DHCP 變數那一段, 已取得更細部的資料).</li>
+<li><code>$DHCP-...</code> 是經由 DHCP 回應而取得的設定.
+(參考 BOOTP/DHCP 變數那一段, 以取得更細部的資料).</li>
+<li><code>$Disks</code> 是用來設定各磁碟機所劃分的大小空間分布.
+意謂著, 以 <code>#"$Disks"</code> 象徵硬碟機個數;
+而 <code>"$Disks"{0}</code> 則是指第一台硬碟機的大小.</li>
+<li><code>$Keypressed</code> 是指鍵盤暫存區中,
+下一個準備讀取的輸入鍵值 (如果有輸入的話).</li>
+<li><code>$LBA</code> 控制是否使用 LBA 來存取 > 2Gb 的硬碟機.
+預設: "ON".</li>
+<li><code>$FDA</code> 控制是否使用 快速磁碟存取 (透過磁柱寫入).
+預設: "ON".</li>
+<li><code>$VESA</code> 控制是否使用 VESA 圖形化模式.
+預設: "ON" 如果系統有此功能.</li>
+<li><code>$VESA-Modes</code> 列出所有可供使用的 VESA 模式.
+第一行即為預設模式, 用於不具任何參數的 InitGraph 指令時, 選用.
+記住: 如果 VESA="OFF", 此變數會是空的.</li>
+<li><code>$APM</code> 如果你的電腦支援 Avanced Power Management
+會設成 "ON". 如果 $APM 設成 "ON",
+你就可以使用 PowerOff 指令來關掉電腦電源.
+預設: 與你的硬體設備有關.</li>
+<li><code>$Trace</code> 控制是否在執行前, 顯示每個指令.
+它也可以控制是否要顯示所建立的新檔檔名.
+預設: "OFF".</li>
+<li><code>$AutoShowLog</code> 控制是否在 ESC 鍵按下後,
+自動切換到文字記錄.
+預設: "ON".</li>
+<li><code>$PauseLog</code> 控制是否在顯示記錄時有跳頁暫停功能.
+預設: "ON".</li>
+<li><code>$CacheDisk</code> 用來設定磁碟是否有快取遠端檔案的功能.
+預設: empty == 0, 第一台硬碟機.</li>
+<li><code>$CacheAlways</code> 控制是否自動快取遠端複製過的檔案,
+或已修正過的 或 製出來的映像檔.
+預設: "OFF".</li>
+<li><code>$CacheNever</code> 防止任何檔案被快取.
+在無磁碟機的 Linux 開機時請把這個變數啟動.
+預設: "OFF".</li>
+<li><code>$CacheReserve</code> 防止在快取分割區中,
+使檔案超過所需空間的百分之 25. 如果你的硬碟空間短少, 關掉這個變數.
+預設: "ON".</li>
+<li><code>$ExtMemory</code> 控制是否使用延伸記憶體 (或稱為 XMS).
+一經選用, 延伸記憶體就不能被再利用.
+預設: "ON" 如果有延伸記憶體的話.</li>
+<li><code>$IsoLatin</code> 控制在含入檔與修正檔中,
+高層 ASCII 碼的解釋方式.IsoLatin 的設定是在檔案載入後才處理的,
+不是在檔案處理之後.
+預設: "ON".</li>
+<li><code>$ProgressX</code> 及 <code>$ProgressY</code>
+控制檔案下載與解壓縮正在處理中的視窗, 於 VESA 圖形模式下的顯示位置.
+預設: 200 200.</li>
+<li><code>$EXT2-Backup</code> 控制 Linux Ext2 檔案系統的
+superblock 備份的更新. Superblock 備份需花掉幾秒鐘在現行的 Kernel
+中不曾被使用 (只靠 e2fsck).</li>
+<li><code>$WatchdogPort</code> 設定 I/O 埠 (十進制值) 用以存取
+watchdog 介面卡. 預設此變數是 0, 也就是關掉 watchdog 的支援.
+設定這個變數為非零值時, 會啟用 watchdog 支援.</li>
+<li><code>$Security-Gateway</code> 控制是否使用 安全認證閘道伺服器
+作使用者身份認證. 我們的特殊身份認證閘道器必須在目標電腦上執行才行.
+預設: <code>"${BOOTP-伺服器-IP}@89"</code>.
+(即. TFTP 伺服器, 在 89 埠).</li>
+<li><code>$Security-Check</code> 內含來自 安全認證伺服器
+最後一次檢查的結果, 不是 PASSED 就是 FAILED.
+預設: "FAILED".</li>
+<li><code>$Security-Passwd, $HelpTopic, $OnExit, $OnKey-...</code>.
+只在內部使用.</li>
+</ul>
+
+<p>參考 BOOTP 變數 與 MrZip-規範的變數.</p>
+
+</dd>
+<dt><b>MrZip-規範的變數</b></dt>
+<dd><p>以下是只能在 MrZip 使用的變數.
+</p>
+  <ul>
+<li><code>$TempPath</code> 控制暫存檔所存放的目錄位置
+預設: &lt;empty&gt; == 現行目錄.</li>
+<li><code>$DumpFormat</code> 當有這種必要時, 控制檔案頃印到記錄檔的方式.
+它是一個含下列內容的字串
+<ul>
+<li>"h"/"H" 顯示檔頭.</li>
+<li>"b"/"B" 用以 總結(summarize)/頃印(dump) 開機磁區.</li>
+<li>"s"/"S" 用以顯示一個 短/長 的對應摘要.</li>
+<li>"d"/"D" 用以顯示一個 短/長 的目錄列表.</li>
+<li>"f"/"F" 用以 總結(summarize)/頃印(dump) 檔案.</li>
+</ul>
+
+預設: "hbD".</li>
+<li><code>$FragmentSize</code> 控制分割檔案的大小.
+如果你不是使用 Bootix 的 增強型 TFTP 伺服器, 你應該設定這個為 "30 MB".
+預設: "87 MB".</li>
+<li><code>$SourceArchive, $DestArchive, $Filter...</code>
+只在內部使用.</li>
+</ul>
+
+
+</dd>
+<dt><b>BOOTP 變數</b></dt>
+<dd><p>以下的 BOOTP-... 及 DHCP-... 變數在 BOOTP/DHCP 回應時才具有實際的意義
+(前提是 TCP/IP BootPROM 必需已被偵測到):
+</p>
+  <pre class="sample">$BOOTP-Client-ID
+$BOOTP-Your-IP
+$BOOTP-Server-IP
+$BOOTP-Gateway-IP
+$BOOTP-Bootfile
+$BOOTP-Server-Name
+$BOOTP-Subnet-Mask
+$BOOTP-Time-Offset
+$BOOTP-Routers
+$BOOTP-Time-Servers
+$BOOTP-Name-Servers
+$BOOTP-Domain-name-Servers
+$BOOTP-BOOTP-Log-Servers
+$BOOTP-Cookie-Servers
+$BOOTP-Lpr-Servers
+$BOOTP-Impress-Servers
+$BOOTP-Resource-Location-Servers
+$BOOTP-Host-Name
+$BOOTP-Boot-Size
+$BOOTP-Merit-Dump
+$BOOTP-Domain-Name
+$BOOTP-Swap-Servers
+$BOOTP-Root-Path
+$BOOTP-Extensions-Path
+$BOOTP-IP-Forwarding
+$BOOTP-Interface-MTU
+$BOOTP-All-Subnets-Are-Local
+$BOOTP-Broadcast-Address
+$BOOTP-NIS-Domain
+$BOOTP-NIS-Servers
+$BOOTP-NTP-Servers
+$BOOTP-Font-Servers
+$BOOTP-X-Display-Manager
+$DHCP-IP-Address-Lease-Time
+$DHCP-Message-Type
+$DHCP-Server-Identifier
+$DHCP-Message
+$DHCP-Renewal-Time
+$DHCP-Rebinding-Time
+$BOOTP-NIS+-Domain
+$BOOTP-NIS+-Servers
+$BOOTP-Server-Name
+$BOOTP-Bootfile
+$BOOTP-Mobile-IP-Agent
+$BOOTP-SMTP-Servers
+$BOOTP-POP3-Servers
+$BOOTP-NNTP-Servers
+$BOOTP-WWW-Servers
+$BOOTP-Finger-Servers
+$BOOTP-IRC-Servers
+$BOOTP-StreetTalk-Servers
+$BOOTP-STDA-Servers
+</pre>
+<p>其他的 BOOTP/DHCP 變數可以用以下的名稱儲存</p>
+<pre class="sample">$BOOTP-Option-n
+</pre>
+
+</dd>
+<dt>n 是十進制數值代表 BOOTP 選項號碼. </dt>
+<dd>
+    <p>別把 <code>BOOTP-Gateway-IP</code> 搞混了, 它是 TFTP 通訊協定的閘道器,
+    如果用戶端與 TFTP 伺服器在同一個子網域, 則應設為 0.0.0.0 ,
+    而 <code>BOOTP-Routers</code>, 內含 預設 IP 閘道器. TCP/IP BootPROM 有時會透過
+    <code>BOOTP-Routers</code> 設定 <code>BOOTP-Gateway-IP</code> 的值,
+    乃因為每個 TFTP ack 封包都會先送往 路由器. 為了避免這種行為,
+    如果你的 TFTP 伺服器與用戶端在同一個子網域,
+    則強迫把 <code>BOOTP-Gateway-IP</code> 設成 <code>0.0.0.0</code>
+    (感謝 Maciek Uhlig 指出這個問題).</p>
+</dd>
+</dl>
+
+
+<h3>監控指令</h3>
+
+<p>本節列出用來監視系統狀態的指令. 額外的參數也將列入
+(我比較喜歡使用 方括 來註明, 但 LaTex 不喜歡在這看到他們...)</p>
+<dl>
+<dt><b>Interact</b></dt>
+<dd><p>顯示記錄資料並進入交談模式直到 QUIT 或 EXIT 輸入.
+在離開交談模式之前先輸入HideLog, 以防止記錄的訊息干擾批次檔的執行.</p>
+
+</dd>
+<dt><b>Help (主題)</b></dt>
+<dd><p>載入線上說明檔 (<code>bpbatch.hlp</code>) 並顯示所給定主題的內容.
+如果沒設定主題, 或給定的主題找不到, 顯示說明索引.</p>
+
+</dd>
+<dt><b>Log "字串"</b></dt>
+<dd><p>顯示字串到記錄檔. 不加入 游標 返回/換行 字元.</p>
+
+</dd>
+<dt><b>Echo "字串"</b></dt>
+<dd><p>顯示字串到記錄檔並跳至下一行.
+相同於
+</p>
+  <pre class="sample">Log "text\r\n".
+</pre>
+
+
+</dd>
+<dt><b>LogVars ("pattern")</b></dt>
+<dd><p>記錄 (即. 顯示到記錄檔中) 所有合於所給定樣式的變數.
+樣式可以使用萬用字元 (? 及 *).
+</p>
+  <pre class="sample">
+範例: LogVars "BOOTP-*"              列出所有 BootP 變數
+</pre>
+
+</dd>
+<dt><b>LogDir "path/pattern"</b></dt>
+<dd><p>記錄 (即. 顯示到記錄檔中) 所有合於所給定樣式的檔案.
+樣式可以使用萬用字元 (? 及 *).
+</p>
+  <pre class="sample">
+範例: LogDir "/usr/g*p"              列出所有檔名為 g...p 的檔案
+</pre>
+
+</dd>
+<dt><b>LogTree "路徑"</b></dt>
+<dd><p>記錄以給定路徑為根目錄的樹狀目錄結構.</p>
+
+</dd>
+<dt><b>LogFile "檔案名"</b></dt>
+<dd><p>記錄檔案的內容. 檔案大小必需小於 64 KB.</p>
+
+</dd>
+<dt><b>ShowLog</b></dt>
+<dd><p>使隱藏的記錄檔顯示. 在 "$AutoShowLog" == "ON" 並按住 ESC 狀況,
+或交談模式下, 會自動啟動.</p>
+
+</dd>
+<dt><b>HideLog</b></dt>
+<dd><p>防止記錄的訊息出現在螢幕上. 當 BpBatch, MrBatch 及 MrZip
+以執行腳本程序檔時為預設狀態.</p>
+
+</dd>
+<dt><b>CaptureLog</b></dt>
+<dd><p>錄下所有的記錄訊息到 64 KB 的暫存區直到 EndCapture 出現.
+記錄輸出超過 64KB 會清除暫存區資料. 這個指令用來產生制式內容的文字檔.
+EndCapture 指令必須在同一個腳本檔案中出現.</p>
+
+</dd>
+<dt><b>EndCapture ("檔名")</b></dt>
+<dd><p>結束截取記錄訊息. 如果有給定檔名, 會把截取到的文字存到該檔.
+否則, 會忽略掉它.</p>
+
+</dd>
+<dt><b>Beep</b></dt>
+<dd><p>發出一個聲音. 這個指令是同於 Echo "\007".</p>
+</dd>
+</dl>
+
+
+<h3>控制指令</h3>
+
+<p>本節列出批次執行的控制指令. 額外的參數也將列入.</p>
+<dl>
+<dt><b>Include "filename"</b></dt>
+<dd><p>載入所給定的檔案並對它做語法分析. 在此引入的檔案執行結束後返回此載入點.
+在此引入檔中, ASCII 127 以上的字元的意義,
+由載入此檔時 $IsoLatin 的值來決定.</p>
+
+</dd>
+<dt><b>OnExit <em>command</em></b></dt>
+<dd><p>設定一個外部處理器. 它會在現行批次檔終了時自動執行.</p>
+
+</dd>
+<dt><b>Goto <em>label</em></b></dt>
+<dd><p>移到所指的標籤 (label) 執行 (即. 以 :<em>label</em> 為起始的行)</p>
+
+</dd>
+<dt><b>Eval "指令"</b></dt>
+<dd><p>執行 "指令" 所指的替代命令並對其做語法分析.</p>
+</dd>
+<dt><b>If ...</b></dt>
+<dd><p>
+</p>
+  <pre class="sample">
+  If (not) &lt;expr1> (==|!=|&lt;|>|>=|&lt;=|=>|=&lt;|&lt;>) &lt;expr2> &lt;command>
+  If (not) (ci) "str1" (==|!=|&lt;|>|>=|&lt;=|=>|=&lt;|&lt;>) "str2" &lt;command>
+  If (not) (ci) "str1" Match-Expr "樣式" &lt;command>
+  If (not) (ci) "str1" Match-Passwd "unix 密碼" &lt;command>
+  If (not) (ci) "str1" in "wordlist" &lt;command>
+  If (not) (ci) "str1" in-file "檔名" &lt;command>
+  If (not) exist "檔名" &lt;command>
+  If (not) valid &lt;硬碟機>:&lt;分割區> &lt;command>
+</pre>
+
+<p>如果條件測試成立; 這些指令用來執行指令 <em>command;</em> .
+第一種格式用來比較兩個以數字來表示的運算式.
+第二種格式用來比較兩個字串, 可選擇不區分大小寫.
+第三種格式用來測試 "str1" 是否合於樣式 (允許使用萬用字元).
+第四種格式用來測試明碼 "str1" 是否經 Unix 的編碼系統後結果,能吻合.
+第五種格式用來測試 "str1" 是否被引入在文字列表中.
+第六種格式用來測試 "str1" 是否被引入在文字檔案中.
+第七種格式用來測試所給定的檔案是否存在.
+第八種格式用來測試所給定的分割區是否有效 (即. 是否已格式化過).
+這個格式只在 BpBatch 1999年 二月後的版本才有.</p>
+
+</dd>
+<dt><b>Set ...</b></dt>
+<dd><p>
+</p>
+  <pre class="sample">Set variable = "string-value"
+Set variable = &lt;expr>
+</pre>
+
+<p>設定變數值. 如果給定的是數值運算式, 它將間接轉化為字串形式.
+所定義的變數可以在任何地方以 $variable 或 ${variable}
+的形式來參考使用.
+如果參考的結果要當成字串, 則必須用雙引號把變數括起來: "$variable"
+或 "${variable}".</p>
+
+</dd>
+<dt><b>Delay <em>週期時間</em></b></dt>
+<dd><p>等待直到所指定的時間耗盡 (以秒為單位).
+參考時間表示格式那一章節.</p>
+
+</dd>
+<dt><b>GetTime <em>變數</em>, GetDate <em>變數</em></b></dt>
+<dd><p>取得 CMOS 的時間資訊並把它存到 <em>變數</em> 中, 格式為 HH:MM:SS.
+取得 CMOS 的日期資訊並把它存到 <em>變數</em> 中, 格式為 YY/MM/DD.
+這樣就可以依時間或日期來調整你的開機程序內容.</p>
+
+</dd>
+<dt><b>SetTime "HH:MM:SS", SetDate "YY/MM/DD"</b></dt>
+<dd><p>設定用戶端電腦的 CMOS 時間或日期為所給定的值.
+如果你有一台安全認證閘道器 (security gateway) (或我們的特殊型 TFTP 伺服器),
+你可以透過下列指令在每次開機時, 自動調整 CMOS 時間與日期資訊:
+</p>
+  <pre class="sample">include "$Security-Gateway:gettime"
+</pre>
+
+如果你想知道這個指令會做哪些事, 只需輸入:
+<pre class="sample">logfile "$Security-Gateway:gettime"
+</pre>
+
+
+</dd>
+<dt><b>Poweroff</b></dt>
+<dd><p>關掉電腦電源. 這個指令只能在具 Advanced Power Management (APM) 相容的電腦上使用.</p>
+</dd>
+</dl>
+
+
+<h3>與鍵盤相關的指令</h3>
+
+<p>本節列出一些指令讓你可以監控鍵盤的輸入. 額外的參數也將列入.
+亦可參考後面提到的 <em>國際化語系支援</em> 一節.</p>
+<dl>
+<dt><b>GetKey (<em>變數</em>)</b></dt>
+<dd><p>一直等到鍵盤按下某鍵並把它存到 <em>變數</em> 中.</p>
+
+</dd>
+<dt><b>WaitForKey <em>週期時間</em> (<em>指令</em>)</b></dt>
+<dd><p>於所指定的 <em>週期時間</em> 內等待鍵盤按下某鍵單位為秒.
+如果時間內沒按下任何鍵, 則執行 <em>指令</em>. 否則, 保留鍵值在鍵盤暫存區中.
+亦可參考時間格式那一段.</p>
+
+</dd>
+<dt><b>Input (<em>變數</em> (<em>最大字串長度</em>))</b></dt>
+<dd><p>自鍵盤讀取一個以 return 為結尾的字串, 並把它存在 <em>變數</em>
+(不會把 return 存進字串). 如果有給定 <em>最大字串長度</em> ,
+則不允許使用者輸入字元超過這個長度.</p>
+<p>亦可參考 <em>與安全性有關的指令</em> 一節中, 的 <code>GetPasswd</code> 指令.</p>
+
+</dd>
+<dt><b>OnKey "c" <em>指令</em></b></dt>
+<dd><p>設定 當 "c" 某個單一字元被按下時, 會自動去執行所給定的 <em>指令</em>
+(例外情況為 正使用到 GetChar 或 某個 Input 指令, 而系統處於等待輸入的狀態).
+如果用 <code>"default"</code> 字串來取代單一字元 "c", 則指令會在按下任意鍵後就執行.</p>
+</dd>
+</dl>
+
+
+<h3>文字輸出指令</h3>
+
+<p>本節列出用來輸出格式化文字的指令. 所有提到的指令都可以在圖形模式下使用,
+可以得到相同的功能 (在文字環境下可以提供 80x25 字元模式,
+而圖形化環境則可題供 100x37 字元模式, 因為圖形化環境每個字元大小是 8x16).
+額外的參數也將列入. 亦可參考下文的 <em>國際化語系支援</em>.</p>
+<dl>
+<dt><b>Print <em>"字串"/運算式</em></b></dt>
+<dd><p>在目前游標所指的位置印出字串/運算式,
+    並採用目前的文字屬性並移動游標.
+加入到字串中 "\r\n" 以換行.</p>
+
+</dd>
+<dt><b>TextAttr <em>前景顏色</em> <em>背景顏色</em></b></dt>
+<dd><p>設定文字屬性. 也可以用一個數值來設定顏色方法是
+16*<em>背景顏色</em>+<em>前景顏色</em>.</p>
+<p>如果你還想更炫, 可以用 <code>LoadFont</code> 指令. 參考下文的 <em>國際化語系支援</em>.</p>
+
+</dd>
+<dt><b>At <em>line</em>,<em>col</em> (<em>command</em>)</b></dt>
+<dd><p>移動游標位置到所指定的位置並執行命令. 如果有設定的話.
+</p>
+  <pre class="sample">
+範例範例: At 10,20 Print "Gnats and rats !"
+</pre>
+
+</dd>
+<dt><b>Clear (<em>顏色</em> (<em>文字樣式</em> (<em>頂部</em>,<em>左限</em>,<em>底部</em>,<em>右限</em>)))</b></dt>
+<dd><p>以所給定的 <em>文字樣本</em> 填滿所定義的文字區域
+(可以是字串或十進制的 ascii 碼). 預設的文字區域為全螢幕,
+而文字樣式為 全黑 (ASCII 十進值 219) 且顏色是黑色 (清除螢幕).
+移到游標到所清除區域的左上角.</p>
+</dd>
+<dt><b>與舊版的 BpMenu 相容的指令</b></dt>
+<dd><p>
+</p>
+  <pre class="sample">
+  .ATT (&lt;屬性>)
+  .CLS (&lt;屬性>)
+  .DEF &lt;鍵值> (&lt;等待時間>)
+  .KEY &lt;鍵值> &lt;檔名>
+  .POS ((&lt; x 軸位置 >) &lt; y 軸位置 >)
+  .PWD &lt;鍵值> &lt;編碼過的密碼>
+  .WLN (&lt;字串>)
+  .WRT &lt;字串>
+</pre>
+
+<p>參考 Bootix 的使用手冊可以獲得更多訊息.
+我們先前寫了一個程式 <code>
+<a href="soft/menuedit.zip">program</a></code>
+用來編輯選單檔案. 就是用這個語法, 但使用新的語法來建立選單是比較好.
+需注意 .PWD 指令並沒被實作出來. 因為我們根本不知道 Bootix 的編碼法則.</p>
+</dd>
+</dl>
+<h3>圖形輸出顯示指令</h3>
+
+<p>本節將列出在圖形模式下, 如何輸出圖形到螢幕上.
+這章節中所列出的功能與所給定的像素相關. 當然你也可以在圖形模式下,
+使用所有文字輸出的指令 (參考前文). 額外的參數也將列入.</p>
+<p>需注意圖形模式會在使用到與圖形相關的指令時自動啟用,
+除非設定 <code>VESA</code> 變數為 <code>"OFF"</code>.</p>
+<dl>
+<dt><b>InitGraph ("模式")</b></dt>
+<dd><p>啟用 VESA 圖形模式. 原點在螢幕左上角 (0 0).
+在 Windows 95/98 下使用 VESA 模式可能會當機. 在使用 MrBatch 時,
+加上 -v 選項以避免發生這個問題.</p>
+<p>你可以要求使用某個特定的顯示模式, 如果有給定 "模式" 這項參數.
+這個參數是附加的: 如果你沒做任何定義,
+則會從選用 VESA-Modes 變數中第一行的顯示模式.</p>
+<p>可用的模式有 :</p>
+<ul>
+<li>640x480    =>  640 乘 480 相素, 256 色.</li>
+<li>800x600    =>  800 乘 600 相素, 256 色 (預設模式).</li>
+<li>1024x768   =>  1024 乘 768 相素, 256 色.</li>
+<li>1280x1024  =>  1280 乘 1024 相素, 256 色.</li>
+</ul>
+
+<p>VESA-Modes 變數列出你的硬體設備能支援的模式.</p>
+</dd>
+<dd>
+  <pre class="sample">範例: InitGraph "640x480"</pre>
+</dd>
+<dt><b>CloseGraph</b></dt>
+<dd><p>關掉 VESA 圖形模式返回文字模式.</p>
+
+</dd>
+<dt><b>DrawBar <em> x-軸位置 </em> <em> y-軸位置 </em> <em>寬度</em> <em>高度</em> <em>顏色</em></b></dt>
+<dd><p>VESA 繪圖功能. 以給定的大小與顏色畫出一個實心長條圖.</p>
+
+</dd>
+<dt><b>DrawWindow <em> x-軸位置 </em> <em> y-軸位置 </em> <em>寬度</em> <em>高度</em> (<em>背景顏色</em> (<em>長條圖顏色</em>)) ("主題文字" (<em>主題文字顏色</em>))</b></dt>
+<dd><p>VESA 繪圖功能. 以給定的大小與顏色畫出一個視窗.
+預設的背景顏色是 淡灰色 (LightGray) 而 主題部分是藍色 (Blue).
+如果你引入一個主題字串及顏色, 則文字會顯示在 主題那部份.</p>
+
+</dd>
+<dt><b>Drawtext <em> x-軸位置 </em> <em> y-軸位置 </em> "字串文字" (<em>前景顏色</em>)</b></dt>
+<dd><p>VESA 繪圖功能. 在給定位置顯示字串文字並採用透被明背景. 預設為前景文字的顏色.</p>
+
+</dd>
+<dt><b>DrawPcx "pcx-圖檔名" (<em> x-軸位置 </em> <em> y-軸位置 </em> (<em>顏色用法</em>))</b></dt>
+<dd><p>VESA 繪圖功能. 載入所給定的 256-色 PCX 圖檔並顯示到螢幕上.
+預設的顯示位置在螢幕左上角的 (0 0).</p>
+<p><em>顏色用法</em> 定義當使用超過 256 種顏色時, 所對應的調色盤
+(比如要同時顯視兩個 256 色的圖檔):</p>
+<ul>
+<li><code>Best-Colors</code> 對最後載入的圖檔顯示最佳顏色</li>
+<li><code>Spare-Colors</code> 試著避免顏色對應, 只改變現在使用的顏色</li>
+<li><code>Share-Colors</code> 試著避免顏色對應, 延用現在使用的顏色</li>
+<li><code>Reuse-Colors</code> 不對應新的顏色, 只使用現在可用的顏色</li>
+</ul>
+
+<p>預設是使用 <code>Best-Colors</code>.</p>
+
+</dd>
+<dt><b>DrawGif "gif-圖檔名" (<em> x-軸位置 </em> <em> y-軸位置 </em> (<em>顏色用法</em>))</b></dt>
+<dd><p>VESA 繪圖功能. 載入所給定的 256-色 GIF-87a 圖檔並顯示到螢幕上.
+這個檔案可以是交錯的, 但必需是 GIF-87a 格式 (非 GIF-89a).
+圖檔的大小會修正到合於目前所使用的顯示模式.
+但你不能載入一個 1024x768 GIF 圖檔到 640x480 圖形模式下.
+預設的顯示位置在螢幕左上角的 (0 0).</p>
+<p>因為 LZW 專利問題, 這項功能在商業版的 BpBatch/MrBatch 不提供.
+請改用 DRawPcx 指令.</p>
+<p><em>顏色用法</em> 定義當使用超過 256 種顏色時,
+所對應的調色盤 (比如要同時顯視兩個 256 色的圖檔):</p>
+<ul>
+<li><code>Best-Colors</code> 對最後載入的圖檔顯示最佳顏色</li>
+<li><code>Spare-Colors</code> 試著避免顏色對應, 只改變現在使用的顏色</li>
+<li><code>Share-Colors</code> 試著避免顏色對應, 延用現在使用的顏色</li>
+<li><code>Reuse-Colors</code> 不對應新的顏色, 只使用現在可用的顏色</li>
+</ul>
+
+<p>預設是使用 <code>Best-Colors</code>.</p>
+</dd>
+</dl>
+
+
+<h3>與安全性有關的指令</h3>
+
+<p>本節將列出用來認證使用者身份的指令. 額外的參數將列在段落間.</p>
+<p>部份的功能可與 <em>安全性閘道器 (security gateway)</em> 一併使用,
+所以你必須先安裝它. 參考 <em>特殊 TFTP 伺服器</em> 一節以獲得更多資訊.</p>
+<dl>
+<dt><b>GetPasswd (<em>變數</em> (<em>密碼最大長度</em>))</b></dt>
+<dd><p>就跟 Input 指令一 樣, 但會在輸入字元時改顯示星號.</p>
+
+</dd>
+<dt><b>Crypt "字串" "salt" <em>變數</em></b></dt>
+<dd><p>以 Unix 編碼功能對所給定的 8 個字元加密, 並把加密後結果以字串形式存到
+<em>變數</em>. 而 "salt" 通常是兩個可以在加密後字串中找到的前兩個字.</p>
+<p>要注意 Unix 編碼系統是單向的. 無法對已編碼過的字串解碼還原. 只能試著用相同的 salt 比較其編碼過的字串是否一致.</p>
+<p>這個功能是用 BSD 實作的 DES 編碼系統. 這是 BSD 版本的標頭:
+<code>Copyright (c) 1989 The Regents of the University of California.
+This product includes software developed by the University of
+California, Berkeley and its contributors.</code></p>
+
+</dd>
+<dt><b>DESCrypt "字串" "鍵值" <em>變數</em></b></dt>
+<dd><p>對給定的字串加密用給定的 8 個字元 鍵植來編碼並以十六進制格式的字串存入
+<em>變數</em>.</p>
+<p>這個功能是用 BSD 實作的 DES 編碼系統. 這是 BSD 版本的標頭:
+<code>Copyright (c) 1989 The Regents of the University of California.
+This product includes software developed by the University of
+California, Berkeley and its contributors.</code></p>
+
+</dd>
+<dt><b>DESDecrypt "hexcode" "key" <em>變數</em></b></dt>
+<dd><p>用給定的 8 個字元來對十六進制字串解密並把結果存到 <em>變數</em>.</p>
+<p>這個功能是用 BSD 實作的 DES 編碼系統. 這是 BSD 版本的標頭:
+<code>Copyright (c) 1989 The Regents of the University of California.
+This product includes software developed by the University of
+California, Berkeley and its contributors.</code></p>
+
+</dd>
+<dt><b>MD5 "字串" <em>變數</em></b></dt>
+<dd><p>用 MD5 對給定字串編碼後的檢查值以十六進制的字串格式存到 <em>變數</em>.
+對於密碼大於 8 個字元的, 可採用的 Unix 編碼功能.</p>
+<p>這個功能是 MD5 標準的實作. 這是它的版權頁標頭:
+<code>RSA Data Security, Inc. MD5 Message-Digest Algorithm</code></p>
+
+</dd>
+<dt><b>CheckUser "使用者名稱" "密碼" "領域"</b></dt>
+<dd><p>連接到 $Security-Gateway 並檢查所給定的使用者是否存在所給定的
+radius 領域並檢查密碼是否吻合. 如果領域是 <code>"Unix"</code>,
+則使用於 安全認證閘道器上, Unix 的 使用者/密碼. 若在其他領域,
+使用安全認證閘道器領域定義檔, 以偵測正確的 Radius 或 NT 領域.</p>
+<p>設定 $Security-Check 的值為 "PASSED" 或 "FAILED".
+密碼不會以明碼在網路傳輸.</p>
+</dd>
+</dl>
+
+<h3>與磁碟相關指令</h3>
+
+<p>本節將列出用來調製硬碟資料的指令. 額外的參數也將列入.</p>
+<dl>
+<dt><b>GetPartitions <em>變數</em> (<em>磁碟機名</em>)</b></dt>
+<dd><p>讀取所給定的磁碟機的分割表並以字串格式存到所給定的 <em>變數</em>.
+所存的字串是硬碟內空間分佈的列表 <em>檔案形式:空間大小</em>, 其中
+</p>
+  <ul>
+<li>  <em>檔案形式</em> 有 FAT16, EXT, BIGDOS, NTFS, FAT32, FAT32-LBA,
+BIGDOS-LBA, EXT-LBA, LINUX-SWAP, LINUX-EXT2
+或其它未知的十進值檔案系統識別碼.</li>
+<li>  <em>空間大小</em> 分割區空間大小以 megabytes 為單位.</li>
+</ul>
+
+<p>參考 SetPartitions 以獲得更多與分割區有關的資訊.</p>
+
+</dd>
+<dt><b>SetPartitions "分割區" (<em>硬碟機名</em>)</b></dt>
+<dd><p>依字串內容設定分割表.
+    個式同於 GetPartitions 指令.
+這個指令也同時會重置所有的開機旗標 (提示: 使用 SetBootPart).</p>
+<p>在主開機紀錄 (MBR) 中的主要分割區只能有四個. 而且, DOS 及 Windows 在主分割表中,
+只能允許一個 FAT 分割區 (稱為 主要分割區, C:).
+其他的 FAT 分割區只能分佈在一個延伸分割區裡 (而他們稱為邏輯分割區).
+如果我們把 MBR 分割表中的分割區編號為 1-4 ,
+則 5-8 為存於第一個延伸分割區的邏輯分割區, 定義兩個 FAT 分割區可以如此做:
+分割區 1 為 FAT, 分割區 2 為 EXT, 分割區 5 為 FAT.
+分割區 3,4,6,7 及 8 則為 UNUSED.
+同樣的劃分方法可以採遞迴的方式設定出兩個以上的 FAT 分割區:
+在分割區中設定一個延伸分割區 6 並加入一個 FAT 邏輯分割區 9 .</p>
+<p>在大部份較嚴緊的 DOS 規範中, 分割表第 3 和 第 4 個分割區將不被使用.
+事實上, 部份 DOS 版本及其他作業系統都能允許分割表中超過兩個分割區,
+但並沒有相當明確的規定.
+就這方面的問題而言, BpBatch 對分割表的意義有較彈性的解釋,
+它可以了解作業系統無法知道的部份.</p>
+<p>一個通用的規則就是不要在分割表中設置超過兩個延伸分割區,
+否則分割區編號的劃分方式將被破壞.</p>
+<p>如果你想測試一些有趣的設定, 以增加經驗. 那就不要抱怨作業系統無法分辨你的分割區.
+保證可以正常工作的劃分方式是以主要分割區存放作業系統的開機分割區,
+把其他分割區一併擺到延伸分割區.</p>
+<p>延伸分割區設定的範例如下:</p>
+<pre class="sample">SetPartitions "BIGDOS:100 EXT:400 EMPTY EMPTY BIGDOS:400"
+</pre>
+
+
+</dd>
+<dt><b>GetBootPart <em>變數</em> (<em>硬碟機名</em>)</b></dt>
+<dd><p>取得具可開機旗標的分割區號碼
+    (DOS 的說法是: 已作用的主分割區)
+並把它存到 <em>變數</em> 中.
+第一個分割區編號是 1.
+如果沒有具可開機旗標的分割區, 則回應 0.</p>
+
+</dd>
+<dt><b>SetBootPart <em>分割區</em> (<em>硬碟機名</em>)</b></dt>
+<dd><p>設定可開機旗標到所給定的分割區.
+可開機旗標可以使主開機記錄 (MBR) 決定哪一個分割區可以開機.
+第一個分割區編號是 1 .</p>
+
+</dd>
+<dt><b>Blank <em>分割區</em> (<em>硬碟機名</em>)</b></dt>
+<dd><p>在分割區內資料以零填滿. 這對大的分割區會花掉不少時間.
+別把這個分割區格式化為任一種作業系統使用. 亦可參考 <code>Clean</code>.</p>
+
+</dd>
+<dt><b>Clean <em>分割區</em> (<em>硬碟機名</em>) ("標籤")</b></dt>
+<dd><p>以分割表內所指定的格式快速格式化所給定的分割區.
+如果有給定標籤且檔案系統有支援, 則會去設定分割區的標籤.
+如要更徹底的格式化, 那就叫用 <code>Blank</code> 指令來處理分割區.</p>
+<p>Clean 現在支援 (FAT16) BIGDOS, FAT32, EXT, LINUX-EXT2 及
+LINUX-SWAP 格式的分割區. 如果要清理主開機記錄 (MBR),
+使用 <code>Clean 0</code>.</p>
+<p>Clean 可以用在資料分割區及 MBR/EXT 分割區. 而如果你在使用
+<code>FullUnzip</code> 指令之前想要先用 clean 指令來清理資料則是無意義的.</p>
+
+</dd>
+<dt><b>FullUnzip "完整的磁碟映像檔" <em>分割區</em> (<em>硬碟機名</em>)</b></dt>
+<dd><p>解壓縮一個完整的磁碟映像檔到所給定的分割區, 覆寫任何已存在的檔案 (快速清除).</p>
+<p>FullUnzip 支援 (FAT16) BIGDOS, FAT32 及 LINUX-EXT2.</p>
+<p>這個指令會啟用 VESA 繪圖功能來顯示程式正進行中的旗幟,
+除非 <code>VESA</code> 被設為 <code>OFF</code>.</p>
+
+</dd>
+<dt><b>IncrUnzip "增量型的磁碟映像檔" "目的路徑"</b></dt>
+<dd><p>解壓縮一個增量型的磁碟映像檔到所給定的目的路徑.
+這會取代掉目的路徑中與映像檔中所含檔名相同的檔案, 而其他的檔案則會不會被刪除.</p>
+<p>IncrUnzip 支援 (FAT16) BIGDOS, FAT32 及 LINUX-EXT2 檔案格式.
+這個指令的效率遠低於 FullUnzip 指令, 因為它必須能保護原來的檔案系統不受損,
+且它可藉由儲存多個映像檔的差異處, 以免去保存多個磁碟映像檔.</p>
+
+</dd>
+<dt><b>FileUnzip "來源檔名" "目的檔名"</b></dt>
+<dd><p>解壓縮先前由 <code>MrZip</code> 的 FileZip 指令所壓縮的檔案.
+這個檔案會經 32-位元 CRC 檢查.</p>
+
+</dd>
+<dt><b>Copy "來源檔名" "目的檔名"</b></dt>
+<dd><p>以位元組對位元組的方式, 複製來源檔案到目的檔案.
+可以在 FullUnzip 之後使用以更新在伺服器上的設定檔而不需重新建立映像檔.
+<code>FileUnzip</code> 指令, 最好使用在大而易於壓縮的檔案下.</p>
+
+</dd>
+<dt><b>Append "來源檔名-1" "來源檔名-2" "目的檔名"</b></dt>
+<dd><p>以位元組對位元組的方式, 複製第一個來源檔案, 接著是第二個 到 目的檔案.
+可用於任意大小的檔案. 目的檔名不可含有任一個來源檔名.</p>
+
+</dd>
+<dt><b>Patch "來源檔名" "目的檔名" ("先期修正" ("後期修正"))</b></dt>
+<dd><p>讀取來源檔並以在寫入目的檔前, 針對變數作取代.
+對於 ASCII 碼大於 127 的解釋由 <code>$IsoLatin</code> 變數來決定.</p>
+<p>預設, 可以辯識到以 "${" 及 "}" 所括起來的變數. 且可以把他變換成非空的字串.
+記住, 如果你要在修正內容中擺入錢字符則必須用溢位字元或者讓它可以在巨集中被辨識到.
+例如, 如果你要明確的使用預設的先期與後期修正, 使用:</p>
+<pre class="sample">Patch "來源檔名" "目的檔名" "\${" "}"
+</pre>
+
+
+</dd>
+<dt><b>MkDir "路徑"</b></dt>
+<dd><p>遞迴地產生由根目錄啟始到所指路徑的目錄.
+如果路徑已存在, 則指令無效.</p>
+
+</dd>
+<dt><b>Delete "檔名", Del "檔名"</b></dt>
+<dd><p>移除所給定的檔名. 檔案必須存在.</p>
+
+</dd>
+<dt><b>DelTree "路徑"</b></dt>
+<dd><p>遞迴地移除由根目錄到所指路徑的所有檔案與目錄, 並把所給定目錄移除.</p>
+</dd>
+</dl>
+<h3>開機指令</h3>
+
+<p>本節將列出用來延伸開機流程的指令.
+額外的參數將也列入.</p>
+<dl>
+<dt><b>HideBootProm</b></dt>
+<dd><p>回存 BootPROM 所對應的記憶體與中斷向量.
+在叫用這個指令之後所有想要使用 TFTP 傳輸的功能會失效.
+在 HdBoot 指令叫用之前使用這個功能是個好主意,
+否則你在 DOS/Windows 下會導致記憶體不夠用.
+FloppyBoot 指令會直接叫用這個功能.</p>
+<p>記住雖然這個功能會回存所有 BootPROM 會使用到的中斷向量 (正式公布的),
+但目前看來似乎並沒把所有的都回存.
+不過這對 DOS 及 Windows 已經足夠了.</p>
+
+</dd>
+<dt><b>LoadRamDisk "ramdisk的檔名"</b></dt>
+<dd><p>載入一個軟碟的磁碟映像檔到延伸記憶體並重導 BIOS 的磁碟服務,
+使得與軟碟有關的呼叫都用這個映像檔取代.
+這個指令會直接叫用 <code>HideBootProm</code> 指令.
+叫用 <code>FloppyBoot</code> 指令以用你剛剛所載入的 ramdisk 開機.</p>
+<p>這種形式的 ramdisk 可能不若你用 TFTPBoot 指令來的穩定.
+唯一的優點是可以由 TCP/IP BootPROM 所預留的 &gt; 64KB 中,
+多偷出幾百位元組的傳統記憶體.
+但也要警告你, 在 ramdisk 所存放的延伸記憶體區並不具任何安全性.
+也沒有任何方法可以移除這種 ramdisk.</p>
+
+</dd>
+<dt><b>LoadZRamDisk "ramdisk 的檔名"</b></dt>
+<dd><p>跟 <code>LoadRamDisk</code> 作相同的事, 但是是針對已用
+<code>MrZip</code> 檔案壓縮過的映像檔.
+被壓縮過的 ramdisk 採用 32 位元的 CRC 檢查以防止資料錯誤 (及 不完整下載).</p>
+
+</dd>
+<dt><b>TFTPBoot "遠端開機檔名"</b></dt>
+<dd><p>連結到另一個可開機檔 (比如 一個由 Bootix 的 BpShell 程式所產生的軟碟映像檔).
+參考對存取 TFTP 伺服器上檔案的參考轉換的方式.</p>
+
+</dd>
+<dt><b>FloppyBoot</b></dt>
+<dd><p>隱藏 Boot ROM, 載入軟碟機的開機磁區並用它來開機.</p>
+
+</dd>
+<dt><b>HdBoot (<em>磁碟機名</em>)(:<em>分割區</em>)</b></dt>
+<dd><p>載入所給定的可開機磁區並用它開機. 預設磁碟機為 零, 第一顆硬碟機,
+而分割區預設為 零, 也就是主開機記錄.
+你可以從任一個分割區來開機, 但必須注意 Windows 95/98
+不能讓你在沒設定為可開機分割區的分割區開機 (題示: 使用 SetBootPart).</p>
+<p>這個指令不會直接叫用 HideBootProm, 所以你要先叫用它.</p>
+
+</dd>
+<dt><b>LinuxBoot "Kernel檔名" ("命令列" ("ramdisk 的檔名"))</b></dt>
+<dd><p>載入所給定的 Kernel 及 ramdisk 到高層的記憶體,
+設定命令列並用這個 Kernel 開機.
+至少放個根檔案系統的位置在命令列中會是個好主意 (如 <code>"root=</code>dev/hda1"/).
+如果你使用的系統相當依賴 <code>lilo</code> (如 RedHat Linux 5.1),
+則在命令列中加入像 <code>BOOT_IMAGE=linux</code> 這樣的東西會比較好.
+記住 Kernel 可以透過 TFTP 協定來載入 (自動從硬碟中快取)
+或者直接由目的根分割區取用.</p>
+<p>這個指令可以與小型的或大型的 Kernel (<code>zImage</code> 與 <code>bzImage</code>).</p>
+</dd>
+</dl>
+<h3>國際化語系支援</h3>
+
+<p>本節將列出與國際化語系有關的指令.
+額外的參數將也列入.</p>
+<dl>
+<dt><b>RemapKeys "原始鍵" "重新對應的鍵"</b></dt>
+<dd><p>國際化鍵盤支援.
+    重新對應所給定的鍵為另一個字元.
+比如, 把 Y 跟 Z 兩鍵交換, 使用:
+</p>
+  <pre class="sample">Remapkeys "yzYZ" "zyZY"
+</pre>
+<p>在使用的字元不含在最小 ASCII 字元集中時, 使用八進制的表示法,
+以避免必須依賴著 iso-latin 形式的設定.</p>
+
+<p>對國際化的鍵盤而言, 在非對應過的模式 (US) 下, 有兩種鍵來產生反斜線符.
+而它們都可以各自地重新對應, 這要感謝 <code>BpBatch</code> 會把他們分別回應成
+ASCII 碼 252 (八進制) 或 ASCII 碼 335 (八進制) 當 shift 鍵按下時.</p>
+<p>如果你要傳給我針對你們國家的鍵盤對應腳本檔, 我會把它擺在 <code>
+<a href="soft/sample-scripts">http://cuiwww.unige.ch/info/pc/remote-boot/soft/sample-scripts</a></code>
+為了幫助你設定你的鍵盤對應, 我建議你按下所有未對應到的 <em>特殊功能</em>
+鍵並記下他們所產生的字元.</p>
+<p>把它們擺在 <code>原始鍵</code> 這一欄. 而 <code>重新對應的鍵</code> 就是你想要它讓你看到的樣子.
+如果部份按鍵 (不管是原始的或重新對應的) 產生超過 ASCII 十進位的 127, 則使用
+八進制表示法. 你可以由 HelpPC (HelpPC 是一個由 David Jurgens 所寫的,
+超文字線上說明共享程式) 的 ASCII 表中, 取得所給定任意字元的八進位碼.</p>
+
+</dd>
+<dt><b>RemapAltkeys "原始鍵" "重新對應的鍵"</b></dt>
+<dd><p>國際化鍵盤支援. 重新對應所給定的鍵在 ALT 鍵按下時, 為另一個字元.
+例如, 對應 Alt-2 為小老鼠符, 使用:
+</p>
+  <pre class="sample">RemapAltKeys "2" "@"
+</pre>
+
+<p>記住重新開機的鍵並不支援.</p>
+
+</dd>
+<dt><b>LoadCodePage "cpxxx.bin"</b></dt>
+<dd><p>載入並啟用所給定的二進制
+    Codepage 檔.
+Codepage 是用來轉換 Unicode 字元 (在 VFAT 的磁碟標籤中所實作的) 為 8 位元的字元.
+如果你沒有載入正確的 Codepage, 當用到特殊字元來存取檔案系統時, 會出現 FAT 警告.</p>
+<p>所有的二進制 codepage 檔可以在這找到 <code>
+<a href="soft/codepage.zip">http://cuiwww.unige.ch/info/pc/remote-boot/soft/codepage.zip</a></code></p>
+<p>預設的 codepage 是 850, 是有記載的字集 ISO-Latin-1.
+如果你要載入一個外國的 codepage, 你就要把變數
+<code>$IsoLatin</code> 設為 <code>"off"</code> 否則你會發生無意義的轉換.
+此外, 如果你要顯示外國的字元, 你必需載入適當的螢幕字型 (使用 <code>"LoadFont"</code>).</p>
+
+</dd>
+<dt><b>LoadFont "字型檔名"</b></dt>
+<dd><p>載入並啟用一種 VGA/VESA 字型, 可以在文字及圖形模式下使用.
+字型檔必須是二進位檔 16 位元組/字元 (8x16 點陣).
+這個指令可以在國際化語系中使用以得到更夢幻的支援.</p>
+<p>具有多個夢幻字型的檔案的壓縮檔在這 <code>
+<a href="soft/fonts.zip">http://cuiwww.unige.ch/info/pc/remote-boot/soft/fonts.zip</a></code>.
+這個檔案還包含用來匯出你所用的 codepage 下的 DOS <code>.CPI</code> 檔中的字型的程式.</p>
+</dd>
+</dl>
+<h3>MrZip 指令的規格</h3>
+
+
+<dl>
+<dt><b>Source...</b></dt>
+<dd><p>
+</p>
+  <pre class="sample">
+  Source (i)archive "檔名"
+  Source path "路徑"
+</pre>
+
+<p>設定要處理的來源檔案 (或增量形式的) 檔名與路徑.</p>
+
+</dd>
+<dt><b>Dest...</b></dt>
+<dd><p>
+</p>
+  <pre class="sample">Dest (i)archive "檔名"
+Dest (i)dump
+Dest path "路徑"
+</pre>
+
+<p>設定要處理的目的檔案 (或增量形式的) 檔名, 路徑, 或 頃印.
+如要控制頃印時所要顯示的資料量, 可以用 $DumpFormat 特殊變數來控制.</p>
+
+</dd>
+<dt><b>FileZip "來源檔名" "目的檔名"</b></dt>
+<dd><p>壓縮一個先前用 FileUnzip 或 ZRamDisk 所解壓縮的檔案.
+這個檔案會以 32 位元的 CRC 方式做檢查.</p>
+
+</dd>
+<dt><b>Filter...</b></dt>
+<dd><p>
+</p>
+  <pre class="sample">Filter -"樣式"
+Filter +"樣式"
+</pre>
+
+<p>避免/允許 合於所給定樣式 (允許萬用字元) 的檔案及目錄被包含進映像檔中.
+樣式吻合於完整的路境名. 預設, 所有的檔案都會包含進映像檔中.
+你只須要明確表示出哪些檔案必須由過濾器過濾.
+每個負的過濾器都有相對應的正過濾器 (被允許的).</p>
+<p>在 DOS/Windows 的映像檔, 你只要用</p>
+<pre class="sample">Filter -"*.swp"
+Filter -"temp/*"
+</pre>
+
+而對 Unix 的映像檔, 你則需要
+<pre class="sample">Filter -"var/log/*"
+Filter -"tmp/*"
+</pre>
+
+
+</dd>
+<dt><b>CopyArchive</b></dt>
+<dd><p>根據所提供的來源, 目的檔案,
+    及過濾器等設定開始處理映像檔. 只有在極少數的情況, 不然你通常都可以直接使用以下所列出的快捷用法以取代叫用 <code>CopyArchive</code> 指令.
+其中一種情況你會用到 <code>CopyArchive</code> 就是當你要變更分割的映像檔大小時, 如下:
+</p>
+  <pre class="sample">set FragmentSize="30 MB"
+Source archive "original.imz"
+Dest archive "refragmented.imz"
+CopyArchive
+</pre>
+
+
+</dd>
+<dt><b>FullZip "路徑" "完整的映像檔名"</b></dt>
+<dd><p>是下述的快捷用法
+</p>
+  <pre class="sample">Source path "路徑"
+Dest archive "完整的映像檔名"
+CopyArchive
+</pre>
+
+<p>你通常都要先設定過濾器.</p>
+
+</dd>
+<dt><b>IncrZip "路徑" "增量型映像檔名"</b></dt>
+<dd><p>是下述的快捷用法
+</p>
+  <pre class="sample">Source path "路徑"
+Dest iarchive "增量型映像檔名"
+CopyArchive
+</pre>
+
+
+</dd>
+<dt><b>FullDump "完整的映像檔名"</b></dt>
+<dd><p>是下述的快捷用法
+</p>
+  <pre class="sample">Source archive "完整的映像檔名"
+Dest dump
+CopyArchive
+</pre>
+
+
+</dd>
+<dt><b>IncrDump "增量型映像檔名"</b></dt>
+<dd><p>是下述的快捷用法
+</p>
+  <pre class="sample">Source iarchive "增量型映像檔名"
+Dest dump
+CopyArchive
+</pre>
+
+
+</dd>
+<dt><b>Xcopy "來源路徑" "目的路徑"</b></dt>
+<dd><p>是下述的快捷用法
+</p>
+  <pre class="sample">Source path "來源路徑"
+Dest path "目的路徑"
+CopyArchive
+</pre>
+
+</dd>
+</dl>
+<h2><a name="ss5.2" id="ss5.2">5.2</a> NoBreak.sys
+</h2>
+
+<p><code>Nobreak.sys</code> 相當小 (大概只有 350 位元組) 的驅動程式,
+它將加在您 <code>config.sys</code> 中的開始處. 它的目的是保護開機程序不被中斷,
+直到使用者登入. DOS 為這提供一種設定 (名為 <code>BREAK=OFF</code>), 但它不夠暴力,
+並且在執行到 <code>autoexec.bat</code> 時一點用處也沒有.
+我們的驅動程式工作原理是當中斷要求產生時修改鍵盤的掃描碼,
+直接在 BIOS 層工作. 以這方法, 所有的程式在中斷未致能前都收不到中斷訊息.</p>
+<p>這個驅動程式必須放在 <code>config.sys</code> 檔中(或者使用 <em>Undocumented DOS</em>
+的 <code>devlod</code> 程式). 接著, 可以透過傳送 <code>Yes</code> 到 <code>NOBRK</code> 這個虛擬裝置,
+並且傳送 <code>No</code> 而禁能 (事實上, 只需要第一個字元, <code>Y</code> 或 <code>N</code> 才是關鍵).</p>
+<p>因為這個驅動程式依靠 BIOS,
+所以它只能在 DOS 跟 Windows 3.1 下工作, 而 Windows 95/98
+則有它自己的低階鍵盤處理機制.</p>
+<p><a href="http://www.tldp.org/HOWTO/mini/soft/nobreak.zip">Assembler 語法的原始程式碼</a>。</p>
+
+<hr />
+<table
+
+
+
+
+>
+  <tr
+>
+    <td class="BtdL"
+><a href="Remote-Boot-4.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="BtdC"
+><a href="index.html" accesskey="H">目錄(H)</a></td
+>
+    <td class="BtdR"
+><a
+href="Remote-Boot-6.html"
+>下一頁(N)</a
+></td
+>
+  </tr
+>
+  <tr
+>
+    <td class="BtdL"
+>如何設定</td
+>
+    <td class="BtdC"
+><a href="Remote-Boot-5.html" accesskey="T">到頂層(T)</a></td
+>
+    <td class="BtdR"
+>特殊型的 TFTP 伺服器</td
+>
+  </tr
+>
+</table
+>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" width="88" height="31" style="border:0;width:88px;height:31px"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img style="border:0;width:88px;height:31px" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img style="border:0;width:88px;height:32px" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" style="border:0" alt="表示該網頁支援資源描述架構"/></a></div>
+</body>
+</html>

@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+ 
+ <title>使用 LILO 做為 Win95 + WinNT + Linux 多重開機 mini-HOWTO: 安裝作業系統</title>
+ <link href="../Multiboot-with-LILO/Multiboot-with-LILO-3.html" rel="next" />
+ <link href="../Multiboot-with-LILO/Multiboot-with-LILO-1.html" rel="previous" />
+ <link href="../../style.css" rel="stylesheet" type="text/css" />
+ <link href="http://tldp.org/HOWTO/mini/Modules/index.html" rel="alternate" title="原版" />
+</head> <body> 
+<table    >
+  <tr>
+    <th colspan="3" class="HdTitle"><a>Mini
+    HOWTO：Linux Kernel Modules Installation</a></th>
+  </tr>
+  <tr>
+    <td class="TtdL"> <a href="../Multiboot-with-LILO/index.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="TtdC"></td>
+    <td class="TtdR"> <a href="../Multiboot-with-LILO/Partition-Rescue-2.html" accesskey="N">下一頁(N)</a> </td>
+  </tr>
+</table>
+<hr />
+<h1>4. 針對 模組 重新編譯 核心 </h1>
+
+<p>  除了設置[mounted]成 root 的檔案系統(其大部分情況都是 ext2 的檔案系統)
+不能設成模組外, 其他每個東西都能重新設定核心編成模組來使用.   </p>
+<p>然而,有某些項目在完全地架設成模組時會出現困難, 所以我建議以下東西編入
+  核心會好些:</p>
+<ul>
+  <li> Ethernet 硬體驅動程式. </li>
+  <li> SCSI CD-ROM 驅動程式</li>
+</ul>
+<p>相反地, 有某些驅動程式組合只適合編成模組, 特別是下面中有兩個以上的組合: </p>
+<ul>
+  <li>平行埠印表機A Parallel Printer</li>
+  <li>平行埠的設備, 像是 IOMEGA ZipDrive 或 JazzDrive 或 背接式[BackPack] CD-ROM drive</li>
+  <li>PLIP Daemon</li>
+</ul>
+<p>  你會需要決定哪些是你要編譯到核心, 又哪些要模組, 但應將上面幾點列入考慮.
+  以下面次序的指令來進行, 在編譯過程, 真正的選擇就決定了:</p>
+<pre class="sample"> cd /usr/src/linux
+  make menuconfig
+  make dep clean modules modules_install zImage</pre>
+<p>  已經做完成了, 而模組的相關性[dependencies]需要繪出[mapped out], 這要
+  下個這樣的命令:</p>
+<pre class="sample"> depmod -a</pre>
+<p>  最新的核心現在需要被插到開機鏈[boot chain]中, 我假設讀者為了(下面)這個
+目的使用 LILO, 因為這是我碰過唯一的開機載入器[loader].  </p>
+<p> 我建議 不要 從自動地就插入最新編譯好的核心成為內定的 Linux 核心, 因為
+  如果它失敗, 那麼要恢復架設好的 Linux, 又不做完全重新的安裝是非常困難,
+  而重新安裝並不建議. 基於這理由, 我在我的 /etc/lilo.conf 檔案會加下列項目:</p>
+<pre class="sample"> image=/usr/src/linux/arch/i386/boot/zImage
+  label=new
+  alias=n
+  read-only
+  vga=ask
+  optional</pre>
+<p>  這項目說有個 可選擇性 的開機啟動選項 (如果我們所討論中的 image 不存在,
+那麼將會忽略) , 若可選擇的, 其開機開啟 /boot/newlinux ,而且允許吾人在它開機進入的顯示模式下來選擇.</p>
+<p>  假設上面在 /etc/lilo.conf 存在的項目, 新版的核心已經正確的擺在編譯終了
+  所在處, 那麼可以用下列命令來安裝:</p>
+<pre class="sample"> lilo</pre>
+<p>  已經做完了那些, 讀者需要接著進一步步驟,這與它們所被選擇的發行套件有關,
+如下:</p>
+<h2>  <a name="ss4.1" id="ss4.1"></a>4.1 針對 模組 設定 Debian 或 RedHat </h2>
+<p>  在這裏所列步驟完成之前, &quot;針對 模組 重新編譯 核心&quot; 所列步驟都假設
+你已經完成了.</p>
+<p>  Debian 和 RedHat 發行套件有一樣的開機啟動程序, 所以也有一樣的步驟來
+設定他們的 模組.</p>
+<ol>
+  <li>  已經以 root 身分登入, 使用你最喜愛的文字編輯器來開個新的檔案叫做
+  _/etc/rc.d/init.d/modules.init_ , 並以下列內容加入到那裏.
+  <pre class="sample"># Modules initialisation.
+
+# Start up the module auto-loading daemon.
+
+    /sbin/kerneld
+
+# Mount all currently unmounted auto-mounted partitions.
+   /sbin/mount -a</pre>
+  </li>
+  <li>  已經建立上述檔案, 當有以 root 身分登入, 按照下列步驟: 
+  <pre class="sample">cd /etc/rc.d
+chmod 755 init.d/*
+cd rc3.d
+ln -s ../init.d/modules.init 05modules.init</pre>
+</li>
+</ol>
+<p>這時系統可重新啟動, 而在這過程中, 會被發現模組有徹底完成了.</p>
+<h2><a name="ss4.2" id="ss4.2"></a>4.2 針對 模組 設定 Slackware </h2>
+<p> </p>
+<p> 在這裏所列步驟完成之前, &quot;<a href="Modules-3.html">針對模組重新編譯核心</a>&quot; 所列步驟都假設
+你已經完成了.</p>
+<p>  檔案 _/etc/rc.d/rc.M_ 需要編輯如下:</p>
+<ol>
+  <li>   大約在 18 行,那有個段落內容如下:
+  <pre class="sample"># Screen blanks after 15 minutes idle time.
+/bin/setterm -blank 15</pre>
+  緊接在這之後, 插入下面這段,即兩邊正常的空白行隔開的內容:
+  <pre class="sample"># Load the kernel module auto-loader.
+/sbin/kerneld</pre>
+  </li>
+  <li>再往下約 12 行如下列:
+  <pre class="sample"># if there is no /etc/HOSTNAME, fall back on this default:</pre>
+  緊接在這之後, 插入下面這段,即兩邊正常的空白行隔開的內容:
+  <pre class="sample"># Mount remaining unmounted auto-mount drives.
+/sbin/mount -a</pre>
+  </li>
+</ol>
+<p>  當這些變更都已做好了, 就儲存這個檔案.  </p>
+<p> 對於 Slackware 沒有需要再進一步的修改.  </p>
+<h2><a name="ss4.3" id="ss4.3"></a>4.3 針對 模組 設定其它發行套件 </h2>
+<p> </p>
+<p> 在這裏所列步驟完成之前, &quot;<a href="Modules-4.html">針對模組重新編譯核心</a>&quot; 所列步驟都假設
+你已經完成了.  </p>
+<p> 對於其他發行套件明確的步驟還沒很清楚, 但大概是前面所提之一. 為了決定是
+  哪一種, 秀出 _/etc/rc.d_ 目錄的內容, 如下:</p>
+<pre class="sample"> cd /etc/rc.d
+ ls -l *.d rc.*</pre>
+<p>  由這個秀出結果, 你可以選擇以下三個選項之一:  </p>
+<ol>
+  <li> 如果這所列出來的包含一個目錄名稱叫 _init.d_ 而且某些目錄名稱有跟
+    _rc?.d_ 吻合, 其中的問號是要用一個數字的替代, 而且 _沒有_ 包含檔
+    案叫 _rc.M_, 那麼發行套件可以用上述所列用在 Debian 和 RedHat 發
+    行套件的步驟來設定模組.    </li>
+  <li> 如果這所列出來的沒有包含一個目錄名稱叫 _init.d_ 但包含一個檔名叫
+    _rc.M_ 那麼該發行套件可以用上述所列用在 Slackware 發行套件的步驟
+    來設定模組.    </li>
+  <li>  如果上面兩個選項都沒吻合, 那麼該發行套件的開機 script 並沒有被本
+    HOWTO 文件所涵蓋到. 在這情況, 歡迎你連絡本文件作者提供建言.</li>
+</ol>
+<hr />
+<table
+
+
+
+
+>
+  <tr
+>
+    <td class="BtdL"
+><a href="../Multiboot-with-LILO/index.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="BtdC"
+><a href="../Multiboot-with-LILO/index.html" accesskey="H">目錄(H)</a></td
+>
+    <td class="BtdR"
+><a
+href="../Multiboot-with-LILO/Partition-Rescue-2.html"
+>下一頁(N)</a
+></td
+>
+  </tr
+>
+  <tr
+>
+    <td class="BtdL"
+><a>Mini HOWTO：Partition-Rescue</a></td
+>
+    <td class="BtdC"
+><a href="../Multiboot-with-LILO/Partition-Rescue-1.html" accesskey="T">到頂層(T)</a></td
+>
+    <td class="BtdR"
+>事前所需要準備的工作 </td
+>
+  </tr
+>
+</table
+>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img class="ImgLogo" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" title="網路內容分級協會" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

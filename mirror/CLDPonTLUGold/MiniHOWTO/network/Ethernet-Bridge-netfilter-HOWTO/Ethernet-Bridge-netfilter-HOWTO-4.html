@@ -1,0 +1,267 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>Untitled Document</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+<link href="../../style.css" rel="stylesheet" type="text/css" />
+<link href="Ethernet-Bridge-netfilter-HOWTO-1.html" rel="chapter" title="1.介紹" />
+<link href="Ethernet-Bridge-netfilter-HOWTO-2.html" rel="chapter" title="2.必需的軟件" />
+<link href="Ethernet-Bridge-netfilter-HOWTO-3.html" rel="chapter" title="3.配置linux以提供必要的服務" />
+<link href="Ethernet-Bridge-netfilter-HOWTO-4.html" rel="chapter" title="4.測試你的新的橋接網絡" />
+<link href="Ethernet-Bridge-netfilter-HOWTO-5.html" rel="chapter" title="5.其它鏈接" />
+<link href="index.html" rel="contents" />
+<link href="index.html" rel="start" />
+<link href="Ethernet-Bridge-netfilter-HOWTO-3.html" rel="prev" />
+<link href="Ethernet-Bridge-netfilter-HOWTO-5.html" rel="next" />
+<link href="Ethernet-Bridge-netfilter-HOWTO-4.html#ss41" rel="section" title="4.1測試場景" />
+<link href="Ethernet-Bridge-netfilter-HOWTO-4.html#ss42" rel="section" title="4.2 ping it ,jim! " />
+<link href="Ethernet-Bridge-netfilter-HOWTO-4.html" rel="section" title="4.3 實際配置" />
+<link href="Ethernet-Bridge-netfilter-HOWTO-4.html" rel="section" title="4.4 注意事項： " />
+<link href="http://www.tldp.org/HOWTO/Ethernet-Bridge-netfilter-HOWTO.html" rel="alternate" title="原版" />
+<link href="Ethernet-Bridge-netfilter-HOWTO.rdf" rel="meta" title="各章節的說明資訊" />
+</head>
+
+<body>
+<table
+
+
+
+
+>
+  <tr
+>
+    <th
+colspan="3" class="HdTitle"
+>Mini
+    HOWTO：Ethernet Bridge + netfilter</th>
+  </tr
+>
+  <tr
+>
+    <td class="TtdL"
+><a href="Ethernet-Bridge-netfilter-HOWTO-3.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="TtdC"
+></td
+>
+    <td class="TtdR"
+><a href="Ethernet-Bridge-netfilter-HOWTO-5.html" accesskey="N">下一頁(N)</a></td
+>
+  </tr
+>
+</table
+>
+<hr />
+<h1>4.測試你帶網橋的網絡 </h1>
+<h2> <a name="ss41" id="ss41"></a>4.1測試場景 </h2>
+<p> 我們假設網絡如下： </p>
+<pre class="sample">
+                                                          /\
+          Ethernet           Ethernet           ATM    /-/  \
+---------          ---------          ---------     /-/      |
+|  Box  |----------|Bridge |----------|Router |-----| Inter-  \
+---------          ---------          ---------     \  net  ---|
+         ^        ^         ^        ^               \     /
+         |        |         |        |                \---/
+        eth0     eth0      eth1     if0                 ^
+         |        |         |        |                  |
+      10.0.3.2   none/10.0.3.1      195.137.15.7    anything else
+                  \         /
+                   \       /
+   ^                \-br0-/
+   |                                      ^             ^
+   |                   ^                  |             |
+   |                   |                  |             |
+  own                 own              foreign        hostile
+</pre>
+<p> 我們的管理權限只包括標記為OWN的機器，路由器完全不歸我們管，當然它也是在internet上的。 那意味著，如果我們想控制在以太網上傳輸的數據，我們可以把防火牆的功能集成到網橋上。照標準做法的缺點是，你必須在你的網絡上的每台機器上都要去更改默認網關。這真的是一個讓人無法忍受的缺點，沒人想在5台以上的機器中逐個去修改默認路由。不要忘了，時間就是金錢，想著浪費掉大把的鈔票我就心痛。
+  另一個方法是清楚、省時，更安全的。更安全在于我們根本無須分配IP地址，沒有IP，沒有危險。至于這一理論，我們希望自己的stacks是安全的（雖然這樣的願望不一定值得信賴）。最大的優點是網橋的配置是完全透明、根本無須改變IP、MAC等等。你應選擇最適合你的方法。 </p>
+<h2> <a name="ss42" id="ss42"></a>4.2 ping it ,jim! </h2>
+<p> 我們將照常配置BOX的eth0,橋的接口配置描述在SETUP中 如果我們想要打開包轉發，可以這樣做 </p>
+<pre class="sample">
+root@bridge:~> echo "1" > /proc/sys/net/ipv4/ip_forward
+</pre>
+<p>可選的，我們配置一條默認路由</p>
+<pre class="sample">
+root@bridge:~> route add default gw 10.0.3.129
+</pre>
+<p>然後，我們在主機bridge上配置一些iptables的規則。</p>
+<pre class="sample">
+root@bridge:~> iptables -P FORWARD DROP
+root@bridge:~> iptables -F FORWARD
+root@bridge:~> iptables -I FORWARD -j ACCEPT
+root@bridge:~> iptables -I FORWARD -j LOG
+root@bridge:~> iptables -I FORWARD -j DROP
+root@bridge:~> iptables -A FORWARD -j DROP
+root@bridge:~> iptables -x -v --line-numbers -L FORWARD
+</pre>
+<p>最後一行執行後，我們可以看到以下輸出：</p>
+<pre class="sample">
+Chain FORWARD (policy DROP 0 packets, 0 bytes)
+num      pkts      bytes target   prot opt in     out     source   destination
+1           0        0 DROP       all  --  any    any     anywhere anywhere
+2           0        0 LOG        all  --  any    any     anywhere anywhere      LOG level warning
+3           0        0 ACCEPT     all  --  any    any     anywhere anywhere
+4           0        0 DROP       all  --  any    any     anywhere anywhere
+</pre>
+<p>LOG target通過syslogd記錄每一個包，要注意，這只是以測試為目的時，才這樣做，在正式運行環境裡要把它刪除。要不然，你會發現自己的logs被寫滿、硬盤很多空間被佔據。被別人或自己對自己的機器進行拒絕服務攻擊。
+  你已經知道它的可怕後果了，現在來測試這些規則集，在主機box上ping 路由器接口的IP（195.137.15.7）。</p>
+<pre class="sample">
+root@box:~> ping -c 3 195.137.15.7
+PING router.provider.net (195.137.15.7) from 10.0.3.2 : 56(84) bytes of data.
+--- router.provider.net ping statistics ---
+3 packets transmitted, 0 received, 100% loss, time 2020ms
+^C
+root@box:~> 
+</pre>
+<p>默認地，我們將扔掉所有的包。沒有回應，也不記錄包，因為netfilter被配置為扔掉所有的包，除非我們刪除在LOG target之前的扔掉所有包的規則（規則號為1）</p>
+<pre class="sample">
+root@bridge:~> iptables -D FORWARD 1
+root@bridge:~> iptables -x -v --line-numbers -L FORWARD
+</pre>
+<p>現在規則是：</p>
+<pre class="sample">
+Chain FORWARD (policy DROP 0 packets, 0 bytes)
+num      pkts      bytes target   prot opt in     out     source   destination
+2           0        0 LOG        all  --  any    any     anywhere anywhere      LOG level warning
+3           0        0 ACCEPT     all  --  any    any     anywhere anywhere
+4           0        0 DROP       all  --  any    any     anywhere anywhere
+</pre>
+<p>這樣任何包都可以通過。在主機BOX上ping一下試試：</p>
+<pre class="sample">
+root@box:~> ping -c 3 195.137.15.7
+PING router.provider.net (195.137.15.7) from 10.0.3.2 : 56(84) bytes of data.
+64 bytes from router.provider.net (195.137.15.7): icmp_seq=1 ttl=255 time=0.103 ms
+64 bytes from router.provider.net (195.137.15.7): icmp_seq=2 ttl=255 time=0.082 ms
+64 bytes from router.provider.net (195.137.15.7): icmp_seq=3 ttl=255 time=0.083 ms
+ 
+--- router.provider.net ping statistics ---
+發送了3個包，受到了3個包，沒有任何丟失，time 2002ms。
+
+（3 packets transmitted, 3 received, 0% loss, time 2002ms）
+rtt min/avg/max/mdev = 0.082/0.089/0.103/0.012 ms
+root@box:~> 
+</pre>
+<p>好了，這下，路由器被激活了，連通了，可以運行了。（大概花了一整天的時間了）</p>
+<p> 重要指示： </p>
+<p> 當我們啟動橋接口時，它大概需要30秒才可工作，這是正常的，在這段時間網橋端口會學習到哪個端口有哪些MAC地址。網橋的作者，lennert在他的TODO文章中告訴我們：這30秒的學習時間將來有可能被縮短。 </p>
+<p> 記住，在測試時，沒有包被轉發，也沒有ping的回應 </p>
+<h2><a name="ss43" id="ss43"></a>4.3 實際配置
+</h2>
+<p> 這部分是想給你---親愛的讀者，一些提示，即按照這份HOWTO成功的做完後，你的系統看上去應該是像什麼樣子的。 </p>
+<p> 接口配置 </p>
+<p> 你用IFCONFIG命令的輸出看上去應是像這樣的： </p>
+<pre class="sample">
+root@bridge:~> ifconfig
+br0       Link encap:Ethernet  HWaddr 00:04:75:81:D2:1D
+          inet addr:10.0.3.129  Bcast:195.30.198.255  Mask:255.255.255.128
+          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+          RX packets:826 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:737 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:0
+          RX bytes:161180 (157.4 Kb)  TX bytes:66708 (65.1 Kb)
+ 
+eth0      Link encap:Ethernet  HWaddr 00:04:75:81:ED:B7
+          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+          RX packets:5729 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:3115 errors:0 dropped:0 overruns:0 carrier:656
+          collisions:0 txqueuelen:100
+          RX bytes:1922290 (1.8 Mb)  TX bytes:298837 (291.8 Kb)
+          Interrupt:11 Base address:0xe400
+ 
+eth1      Link encap:Ethernet  HWaddr 00:04:75:81:D2:1D
+          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+          RX packets:0 errors:0 dropped:0 overruns:1 frame:0
+          TX packets:243 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:100
+          RX bytes:342 (342.0 b)  TX bytes:48379 (47.2 Kb)
+          Interrupt:7 Base address:0xe800
+ 
+lo        Link encap:Local Loopback
+          inet addr:127.0.0.1  Mask:255.0.0.0
+          UP LOOPBACK RUNNING  MTU:16436  Metric:1
+          RX packets:1034 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:1034 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:0
+          RX bytes:82068 (80.1 Kb)  TX bytes:82068 (80.1 Kb)
+</pre>
+<p>路由配置</p>
+<p> 你用route命令的輸出看上去應是像這樣的： </p>
+<pre class="sample">
+root@bridge:~> route -n
+Kernel IP routing table
+Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+10.0.3.129      0.0.0.0         255.255.255.128 U     0      0        0 br0
+0.0.0.0         10.0.3.129      0.0.0.0         UG    0      0        0 br0
+root@bridge:~>
+</pre>
+<p> Iptables 配置 請看ping it ,jim!部分 </p>
+<h2><a name="ss44" id="ss44"></a>4.4 注意事項： </h2>
+<p> 明顯地，在br-nf代碼裡一定有bug: </p>
+<pre class="sample">
+From: Bart De Schuymer 
+Date: Sun, 1 Sep 2002 21:52:46 +0200
+To: Nils Radtke 
+Subject: Re: Ethernet-Brigde-netfilter-HOWTO
+Nils，你好：
+</pre>
+<p> [...] </p>
+<p> 同樣需要注意的是，把網絡包過濾調試加進br-nf補丁，通常情況下不是個好主意。它會在logs中添加大量的錯誤警告。 </p>
+<p> [...] </p>
+<p> 對于我個人而言，在我的log中從未有過此類錯誤。（Personally, I never had false positives in my
+  log.）或許，這個BUG已經被修正了。Bart在郵件中這樣寫到： </p>
+<p> </p>
+<pre class="sample">
+From: Bart De Schuymer
+Date: Mon, 2 Sep 2002 18:30:25 +0200
+To: Nils Radtke 
+Subject: Re: Ethernet-Brigde-netfilter-HOWTO
+</pre>
+<p> 在2002年9月2日，星期一，Nils在給Bart的郵件中寫到：br-nf中nf-debug代碼修訂版還會加以改進嗎？ </p>
+<p> 我必須承認的是，最近的操作中我沒有採用任何帶netfilter debugging的內核。幾個月前肯定是有過這類的錯誤（以太網橋郵件列表中有關于這個問題貼子）。我一直沒時間去了解具體原因，也不知道現在的情形是否有所改變。我把這事列在了我的日程上了。
+  [...] </p>
+<p> 正如我在2002年9月19日的帖子上寫的那樣，我尚未看到任何正式的公告說明某個bug已經被修復。如果你對如何防止此類問題感興趣的話，可以經常到ethernet
+  bridge mailinglist去看看。 </p>
+<hr />
+<table
+
+
+
+
+>
+  <tr
+>
+    <td class="BtdL"
+><a href="Ethernet-Bridge-netfilter-HOWTO-3.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="BtdC"
+><a href="index.html" accesskey="H">目錄(H)</a></td
+>
+    <td class="BtdR"
+><a
+href="Ethernet-Bridge-netfilter-HOWTO-5.html"
+>下一頁(N)</a
+></td
+>
+  </tr
+>
+  <tr
+>
+    <td class="BtdL"
+>設置linux讓網橋運行 </td
+>
+    <td class="BtdC"
+><a href="Ethernet-Bridge-netfilter-HOWTO-4.html" accesskey="T">到頂層(T)</a></td
+>
+    <td class="BtdR"
+>相關鏈接 </td
+>
+  </tr
+>
+</table
+>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" width="88" height="31" style="border:0;width:88px;height:31px"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img style="border:0;width:88px;height:31px" src="../../../vcss.png"  alt="符合 CSS"/></a>  <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" style="border:0" alt="表示該網頁支援資源描述架構"/></a></div>
+</body>
+</html>

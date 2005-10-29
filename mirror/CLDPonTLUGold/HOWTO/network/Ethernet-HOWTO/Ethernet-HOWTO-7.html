@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>7.技術信息</title>
+<link href="Ethernet-HOWTO-8.html" rel="next" title="8.便攜式/筆記本電腦聯網" />
+<link href="Ethernet-HOWTO-6.html" rel="previous"  title="6.軟件設置與網卡診斷"/>
+<link href="../../style.css" rel="stylesheet" type="text/css" />
+<link href="http://tldp.org/HOWTO/Ethernet-HOWTO.html" rel="alternate" title="原版" />
+<link href="index.html" rel="start" title="HOWTO：Linux Ethernet" />
+<link href="index.html#content" rel="contents" />
+<link href="Ethernet-HOWTO-1.html" rel="chapter" title="1.導言" />
+<link href="Ethernet-HOWTO-2.html" rel="chapter" title="2.常見問題" />
+<link href="Ethernet-HOWTO-3.html" rel="chapter" title="3.性能小技巧" />
+<link href="Ethernet-HOWTO-4.html" rel="chapter" title="4.有關銷售商/制造廠家/型號的信息" />
+<link href="Ethernet-HOWTO-5.html" rel="chapter" title="5.電纜、同軸電纜、雙絞線" />
+<link href="Ethernet-HOWTO-6.html" rel="chapter" title="6.軟件設置與網卡診斷" />
+<link href="Ethernet-HOWTO-7.html" rel="chapter" title="7.技術信息" />
+<link href="Ethernet-HOWTO-8.html" rel="chapter" title="8.便攜式/筆記本電腦聯網" />
+<link href="Ethernet-HOWTO-9.html" rel="chapter" title="9.雜項" />
+<link href="Ethernet-HOWTO-7.html#ss7.1" rel="section" title="7.1 可編程I/O、共享內存與DMA " />
+<link href="Ethernet-HOWTO-7.html#ss7.2" rel="section" title="7.2 涉及總線帶寬的性能 " />
+<link href="Ethernet-HOWTO-7.html#ss7.3" rel="section" title="7.3 32比特(VLB/EISA/PCI)以太網卡 " />
+<link href="Ethernet-HOWTO-7.html#ss7.4" rel="section" title="7.4 編寫驅動程序 " />
+<link href="Ethernet-HOWTO-7.html#ss7.5" rel="section" title="7.5 內核的驅動程序接口 " />
+<link href="Ethernet-HOWTO-7.html#ss7.6" rel="section" title="7.6 3Com的技術信息 " />
+<link href="Ethernet-HOWTO-7.html#ss7.7" rel="section" title="7.7 基于AMD PCnet/LANCE的網卡的注意事項 " />
+<link href="Ethernet-HOWTO-7.html#ss7.8" rel="section" title="7.8 廣播與混雜模式 " />
+<link href="Ethernet-HOWTO-7.html#ss7.9" rel="section" title="7.9 Berkeley包過濾器（BPF） " />
+<meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+<link href="Ethernet-HOWTO.rdf" rel="meta" title="各章節的說明資訊" />
+</head> <body>
+<table >
+  <tr> 
+    <th colspan="3" class="HdTitle">HOWTO：Linux Ethernet</th>
+  </tr>
+  <tr> 
+    <td class="TtdL"> <a href="Ethernet-HOWTO-6.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="TtdC">&nbsp;</td>
+    <td class="TtdR"> <a href="Ethernet-HOWTO-8.html" accesskey="N">下一頁(N)</a> </td>
+  </tr>
+</table>
+<hr />
+<h1> 7. 技術信息</h1>
+
+
+<p>對于那些想了解更多有關網卡如何工作、或如何使用現有驅動程序，以及試圖為目前不支持的網卡編寫自己的驅動程序的人來說，這些信息應該會有用。如果你沒有這種想法，那么最好跳過這一節。</p>
+
+<h2> <a name="ss7.1" id="ss7.1"></a>7.1 可編程I/O、共享內存與DMA </h2>
+
+
+<p>如果已經可以發送接收背靠背數據包，就無法把更多的數據放到網絡上。每一個現代以太網卡都可以接收背靠背數據包。Linux的DP8390驅動程序（wd80x3、SMC-Ultra、3c503、ne2000，等等）非常接近于發送背靠背數據包（依賴于當前的中斷延遲），3c509和AT1500的硬件在自動發送背靠背數據包上沒有一點問題。</p>
+
+
+<h3>可編程I/O（如NE2000、3c509）</h3>
+
+
+<p>優點：沒有使用任何受限制的系統資源，只用了若干I/O寄存器，而且沒有16M的限制。</p>
+<p>缺點：一般傳輸速率較慢，CPU需要等待，几乎不可能訪問交叉的數據包。</p>
+
+<h3>共享內存（如WD80x3、SMC-Ultra、3c503）</h3>
+
+
+<p>優點：簡單，比可編程I/O速度快，允許隨機訪問數據包。在可能的情況下，Linux驅動程序在從網卡復制出接收的IP數據包時計算其校驗和，從而比相應的PIO網卡進一步減少了對CPU的占用。</p>
+<p>缺點：占用內存空間（對DOS用戶來說是個大問題，在Linux下沒有問題），依然要占用CPU。</p>
+
+<h3>從屬（普通）的直接內存存取（Linux下沒有這種情況！）</h3>
+
+
+<p>優點：在實際數據傳遞過程中不占用CPU。</p>
+<p>缺點：檢查邊界條件、分配相鄰的緩存和DMA寄存器編程使該方法成為最慢的技術。它還占用了一個珍貴的DMA通道，并要求對齊的低端內存緩存。</p>
+
+<h3><a name="master" id="master"></a> 總線控制的直接內存存取（如LANCE、DEC 21040）</h3>
+
+
+<p>優點：在數據傳輸過程中不占用CPU，可以把緩存串起來，CPU時間很少或沒有花費在ISA總線上。大多數總線控制的Linux驅動程序現在使用一種“copybreak”方案，較大的數據包直接從網卡放進內核的網絡緩存，小的數據包被CPU復制到cache里進行下一步的處理。</p>
+<p>缺點：（只適用于ISA總線的網卡）網卡要求低端內存緩存和一個DMA通道。任何總線控制器在與其它強占總線的總線控制器，如某些古老的SCSI適配器，一起工作時都會出問題。有几個設計低劣的主板芯片組在與總線控制器一起使用時也有麻煩。不使用<em>任何</em>類型的DMA設備的一個原因是使用了為代替386設計的486處理器插件：這些處理器在每個DMA周期都必須刷新cache。（這其中包括Cx486DLC、Ti486DLC、Cx486SLC、Ti486SLC，等等。）</p>
+
+
+<h2><a name="ss7.2" id="ss7.2"></a>7.2 涉及總線帶寬的性能 </h2>
+
+
+<p>ISA總線能達到5.3MB/sec (42Mb/sec)，聽起來對10Mbps以太網是足夠了。對于100Mbps網卡，顯然需要更快的總線以利用網絡帶寬。</p>
+
+<h3><a name="8-vs-16" ></a> 8比特ISA網卡與16比特ISA網卡</h3>
+
+
+<p>你可能不會再買一個新的8比特ISA以太網卡了，但在隨后几年間你會在計算機物物交換市場一類的地方發現很多很便宜的這種卡。這使得它們在“家用以太網”系統中很常見。對于16比特的ISA網卡來說也是一樣的，因為現在PCI卡已經很普遍了。</p>
+<p>對于較低或平均的應用，一些可以提供足夠性能的8比特網卡是wd8003、3c503和ne1000。3c501的性能較差，而且要避免使用那些12年前XT時代的低性能紀念品。（可以把它們送給Alan，他在收集這種網卡......）</p>
+<p>8比特的數據通道不會對性能造成太大損害，你依然可以從一個較快主機上的8比特wd8003網卡（使用快的ISA總線）上獲得大約500到800kB/s的ftp下載速度。如果你的所有網絡流量几乎都是來自遠端站點，那么數據通道上的瓶頸將發生在其它地方，只有在進行本地子網操作時你才會注意到不同網卡間的速度差別。</p>
+
+<h2><a name="ss7.3" id="ss7.3"></a>7.3 32比特(VLB/EISA/PCI)以太網卡 </h2>
+
+
+<p>注意，10Mbs網絡通常并不一定要求32比特的接口。參見
+<a href="#data-xfer">可編程I/O、共享內存與DMA</a>以了解為什么8MHz的ISA總線上的10Mbps以太網卡并非真正的瓶頸。盡管使用快的總線的以太網卡并不一定帶來更快的數據傳輸，但會減少CPU負載，這對多用戶系統來說是件好事。當然，對于現在普通的100Mbps網絡，32比特接口是充分使用全部帶寬的必要條件。</p>
+
+<h2><a name="ss7.4" id="ss7.4"></a> 7.4 編寫驅動程序 </h2>
+
+
+<p>在Linux下使用以太網卡所必需的只不過是相應的驅動程序。因此，關鍵是制造商要向公眾公開編程的技術資料，而無需你（或其他什么人）簽署什么協議。關于獲取資料的可能性（也許你不編寫代碼，那么就是其他人編寫你確實需要的驅動程序的可能性），一個較好的指南是Crynwr (昵稱Clarkson)的包驅動程序的可用性。Russ Nelson在干這些事，對開發Linux驅動程序很有幫助。<em>網上沖浪者</em>可以試著用下面的URL看一下Russ的軟件。</p>
+<p>
+<a href="http://www.crynwr.com">Russ Nelson's Packet Drivers</a></p>
+<p>有了資料，就可以為網卡編寫驅動程序并在Linux下使用（至少從理論上來說是這樣）。記住，有些為XT一類機器設計的老式硬件在Linux這樣的多任務環境下工作得不是很好。如果網絡流量較大，使用這些網卡會帶來大麻煩。</p>
+<p>大多數網卡都帶有如NDIS和ODI一類的MS-DOS接口的驅動程序，但對Linux沒有用。許多人建議直接鏈接它們或自動翻譯一下，但這几乎是不可能的。MS-DOS驅動程序需要工作在16比特模式，并依賴于“軟件中斷”，這二者與Linux內核不兼容。這種不兼容實際上是Linux的一個特性，有些Linux驅動程序比其相應的MS-DOS驅動程序要好得多。比如“8390”系列驅動程序使用乒乓傳送緩存，該方法剛剛被引進MS-DOS。</p>
+<p>（乒乓傳送緩存意味著為傳送數據包使用至少兩個最大大小的包緩存。在網卡發送其中的一個時，載入另一個。在第一個包被發出去后，立刻發送第二個包，依次類推。這樣，大多數網卡就可以連續向線路上發送背靠背數據包。）</p>
+<p>好啦。你可以決定為Foobar Ethernet網卡編寫驅動程序了，因為你有編程資料，而且還沒人寫這個驅動程序。（......這是兩個主要的需求 ;-) 你可以從Linux內核源碼樹中提供的網絡驅動程序框架開始。在所有近期的內核里都能找到這個文件/usr/src/linux/drivers/net/skeleton.c。在2.4.x（或更新的）內核里已經把它重新命名為<code>isa-skeleton.c</code>。也可以看看如下URL的Kernel Hackers Guide：
+<a href="http://www.redhat.com:8080/HyperNews/get/khg.html">KHG</a></p>
+
+
+<h2><a name="ss7.5" id="ss7.5"></a>7.5 內核的驅動程序接口 </h2>
+
+
+<p>下面對編寫一個新驅動程序所必需的函數進行了若干說明。和上面提到的驅動程序框架一起閱讀可以更清楚一些。</p>
+
+
+<h3>Probe</h3>
+
+
+<p>在啟動時調用以檢查網卡存在與否。如果可以通過讀取內存等非強制手段進行檢查最好。也可以從I/O端口讀取。在探測開始向I/O端口寫<em>不好</em>，因為這樣可能會損害另一個設備。通常在這里還進行一些設備初始化（分配I/O空間、IRQ、填充dev-&gt;???域等等）。必須了解網卡可以配置到哪些I/O端口/內存、如何啟用共享內存（如果用了的話）以及如何選擇/啟用中斷產生，等等。</p>
+
+<h3>Interrupt handler</h3>
+
+
+<p>在網卡發出一個中斷時內核調用的程序。它需要確定網卡發出中斷的原因并進行相應的操作。一般的中斷條件是接收到數據、發送完成、報告出錯狀況。需要了解相關的中斷狀態位以進行相應的操作。</p>
+
+<h3>Transmit function</h3>
+
+
+<p>與dev-&gt;hard_start_xmit()鏈接，在內核想通過設備傳送數據時調用它。該函數把數據放入網卡并觸發傳送。需要了解如何把數據打包并傳給網卡（共享內存拷貝、PIO傳送、DMA？），以及放入網卡正確的位置。然后需要了解如何通知網卡把數據發送到線路上，（可能）在發送完成后發出一個中斷。在硬件無法接收更多數據包時需要設置dev-&gt;tbusy標志。在網卡有空間可用時，一般這發生在傳送完成中斷過程中，清除dev-&gt;tbusy標志并用<code>mark_bh(INET_BH)</code>通知上一層。</p>
+
+<h3>Receive function</h3>
+
+
+<p>在網卡報告有數據時由內核中斷處理程序調用。它把數據從網卡上移出，放入一個sk_buff并通過執行netif_rx(sk_buff)告訴內核數據所在位置。需要了解如何在接收數據時啟用中斷生成，如何檢查相關的接收狀態位，以及如何從網卡獲取數據（通過共享內存拷貝、PIO、DMA，等等）。</p>
+
+<h3>Open function</h3>
+
+
+<p>與dev-&gt;open鏈接，在有人使用<code>ifconfig eth0 up</code>時網絡層調用它──把設備連到線路上并啟用來接收/發送數據。任何在探測過程中（啟用IRQ生成函數等）沒有完成的特別的初始化操作都在這里進行。</p>
+
+<h3>Close function （可選）</h3>
+
+
+<p>在有人使用<code>ifconfig eth0 down</code>時使網卡進入一個清醒的狀態。如果硬件許可的話它會釋放中斷和DMA通道，并完全關閉以節約能源（象收發器一樣）。</p>
+
+<h3>Miscellaneous functions</h3>
+
+
+<p>如同一個重新設置函數，如果事情變得很糟，驅動程序可以試圖重新設置網卡作為最后防線。一般在發送超時或類似情況下如此進行。也是一個讀取網卡統計寄存器的函數，如果是這樣配備的話。</p>
+
+<h2><a name="ss7.6" id="ss7.6"></a> 7.6 3Com的技術信息 </h2>
+
+
+<p>如果對3Com網卡驅動程序的工作感興趣，可以從3Com公司獲取技術資料。Cameron在下面友好地告訴了我們該如何去做：</p>
+<p>在我們的“技術參考文獻”（TRs）里給出了3Com的以太網適配器驅動程序程序員需要了解的資料。這些手冊描述了板上的程序員接口，但沒有提及診斷、安裝程序等終端用戶所看到的東西。</p>
+<p>網絡適配器分部的市場部有技術參考資料分發。為了使這個計划更有效，我們把它集中到一個稱作“CardFacts”的自動電話系統里。你可以打電話來，然后它把資料傳真給你。要索取技術參考資料，打電話到408-727-7021。索取開發人員的訂單，資料號是9070。在打電話前准備好你的傳真號碼。填完訂單后把它傳真到408-764-5004。手冊會由聯邦速遞的次日服務送到。</p>
+<p>有人認為我們的手冊不該免費，他們也在尋找此系統過于昂貴或占用的時間和努力太多的証據。到目前為止，3Com的顧客確實不錯，向我們提出的要求也很合理。我們需要你們的繼續合作并把這樣的服務維持下去。</p>
+
+<h2><a name="ss7.7" id="ss7.7"></a> 7.7 基于AMD PCnet/LANCE的網卡的注意事項 </h2>
+
+
+<p>AMD的LANCE（以太網的局域網控制器）是最早提供的，已經被“PCnet-ISA”芯片所取代，否則又名79C960。注意，“LANCE”名稱有毛病，有些人會用老名稱稱呼新芯片。AMD的網絡產品分部的Dave Roberts友好地提供了下面有關該芯片的信息：</p>
+<p>“從功能上來看，它等同與NE1500。它的寄存器組與使用附加1500/2100結構的老式LANCE一樣。PCnet-ISA可以使用較早的1500/2100驅動程序。NE1500和NE2100的結構基本上是相同的。開始Novell把它稱為2100，但后來想區分同軸電纜與10BASE-T網卡。屬于10BASE-T的就只采用1500范圍的編號。這是僅有的區別。</p>
+<p>許多公司提供基于PCnet-ISA的產品，包括HP、Racal-Datacom、Allied Telesis、Boca Research、Kingston Technology等等。除了有些制造商增加了“無跳線”特性允許軟件配置網卡外，這些網卡基本上都是一樣的。大多數制造商沒有增加這一特性。AMD提供了一個使用PCnet-ISA的網卡的標准設計軟件包，許多制造商不加改變地直接使用我們的設計。這也就是說，如果想編寫大多數基于PCnet-ISA的網卡的驅動程序，只需要從AMD獲取數據資料。打電話給我們的資料分發中心(800)222-9323，索取PCnet-ISA的數據資料Am79C960。這是免費的。</p>
+<p>要迅速了解一塊網卡是否“標准”網卡只需要看一下。如果是標准的，網卡上只有一塊大的芯片、一塊晶振、一塊小的IEEE地址PROM、可能還有一個啟動ROM的插座和一個連接器（依照提供的媒介選項可能是1、2或3）。注意，如果是同軸電纜網卡，卡上就應該有一些收發器緩存，它們靠近連接器，遠離PCnet-ISA。”</p>
+<p>一個可能的網卡黑客需要注意，不同的LANCE產品采用不同的“重起”方法。有些恢復到上次離開網絡環路的地方，另一些則從環路的開頭開始，就象剛被初始化一樣。</p>
+
+<h2><a name="ss7.8" id="ss7.8"></a> 7.8 廣播與混雜模式 </h2>
+
+
+<p>Donald所做的另一個工作是實現廣播與混雜模式的鉤子函數。所有<em>發布的</em>（即<b>不是</b>ALPHA版本的）ISA驅動程序現在都支持混雜模式。</p>
+<p>Donald寫道：“我准備從討論混雜模式開始，它從概念上來說很容易實現。對大多數硬件，你只需要設置一個寄存器位，然后就可以接收到線路上的每一個數據包。對，差不多就這么簡單﹔對有些硬件，你必須先關閉板卡（可能會丟失若干數據包），重新配置它，然后重新啟用以太網卡。對吧，就這么簡單，下面要討論的就不是這么明顯了：廣播模式。它可以用兩種方式實現：</p>
+<ol>
+<li>    使用混雜模式和一個如Berkeley包過濾器（BPF）的數據包過濾器。BPF是一個模式匹配指令語言，可以編寫一個程序挑出感興趣的地址。它的優點在于它很普遍和可編程。其缺點是沒有一個一般性的方法可以讓內核避免打開混雜模式和通過每一個注冊的包過濾器運行每一個線路上的數據包。參見
+<a href="#bpf">Berkeley包過濾器</a>以了解更多信息。
+        </li>
+<li>    使用絕大多數以太網芯片內建的廣播包過濾器。
+</li>
+</ol>
+
+
+<p>我想應該列出几個以太網卡/芯片提供的廣播包過濾器： </p>
+<pre class="sample">
+        
+        芯片/網卡           混雜模式    廣播包過濾器
+        -------------   ------------    ---------------
+        Seeq8001/3c501  Yes                     Binary filter (1)
+        3Com/3c509                Yes                   Binary filter (1)
+        8390                      Yes                   Autodin II six bit hash (2) (3)
+        LANCE                     Yes                   Autodin II six bit hash (2) (3)
+        i82586                    Yes                   Hidden Autodin II six bit hash (2) (4)
+        
+</pre>
+<p> </p>
+<ol>
+  <li> 這些網卡聲稱有一個過濾器，但只是簡單地對“accept all multicast packets”或“accept no multicast 
+    packets”回答yes/no。 </li>
+  <li> AUTODIN II是標准的以太網CRC校驗多項式。在這種方式下，廣播地址被哈希運算后在哈希表里進行查找。如果啟用了相應的比特位，則數據包被接收。以太網數據包的設計使得硬件在如此處理時的開銷很小──（通常）只要在前6個八進制數（目標地址）之后鎖定CRC電路（用來進行錯誤檢查）的6個比特位，把它們作為哈希表的索引（6比特──一個64比特的表）。 
+  </li>
+  <li> 這些芯片使用6比特哈希，必須由主機計算并載入哈希表。這也就是說內核必須包含CRC代碼。 </li>
+  <li> 82586內部使用6比特哈希，但是由自己從接受的廣播地址列表計算出哈希表。 </li>
+</ol>
+<p>注意，這些芯片的過濾效果都不好，還需要一個中間層次的模塊完成最后的過濾。同時還要注意，在每種情況下都必須保持一個完整的接受廣播地址列表，在出現變化時以重新計算哈希表。</p>
+
+<h2><a name="ss7.9" id="ss7.9"></a> 7.9 Berkeley包過濾器（BPF） </h2>
+
+
+<p>開發者普遍認為BPF的功能不該由內核提供，而是放在一個（希望很少用到的）兼容庫里。</p>
+<p>對不了解的人來說：BPF（Berkeley包過濾器）是一種向內核網絡層說明對哪些數據包感興趣的機制。它是用一種建立在底層網絡代碼中的特殊指令語言解釋器實現的。應用程序把一個用這種語言編寫的程序傳遞給內核，然后內核對每一個接收到的數據包執行該程序。如果內核有多個BPF應用程序，對每個數據包都要運行這個程序。</p>
+<p>問題在于很難從數據包過濾器程序推斷出應用程序實際上對哪一種數據包感興趣，所以一般的解決方法就是始終運行過濾器。假設一個應用程序注冊的BPF程序是獲取發往某個廣播地址的低速數據流。絕大多數以太網卡有一個64個入口的哈希表的硬件實現的廣播地址過濾器，用來忽略大多數不想要的廣播數據包，所以有可能以極低的開銷完成這一操作。但是由于有了BPF，內核必須把接口設置為混雜模式，接收所有數據包，并對它們運行過濾器。不管怎樣，這樣確實可以工作，但考慮到對所要求的數據包進行的處理，就已經變得過于麻煩了。</p>
+
+<hr />
+<table >
+  <tr> 
+    <td class="BtdL"> <a href="Ethernet-HOWTO-6.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="BtdC"> <a href="index.html" accesskey="H">目錄(H)</a> </td>
+    <td class="BtdR"> <a href="Ethernet-HOWTO-8.html">下一頁(N)</a> </td>
+  </tr>
+  <tr> 
+    <td class="BtdL">軟件設置與網卡診斷</td>
+    <td class="BtdC"><a href="Ethernet-HOWTO-7.html"  accesskey="T">到頂層(T)</a></td>
+    <td class="BtdR">便攜式/筆記本電腦聯網</td>
+  </tr>
+</table>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> 
+  <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a> 
+  <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> 
+  <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" title="網路內容分級協會" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

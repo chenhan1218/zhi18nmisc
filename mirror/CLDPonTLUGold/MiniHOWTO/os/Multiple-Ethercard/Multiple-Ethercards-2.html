@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+ 
+ <title>Mini HOWTO：Linux kerneld</title>
+ <meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+ <link href="../../style.css" rel="stylesheet" type="text/css" />
+ <link href="http://tldp.org/HOWTO/mini/Kerneld/index.html" rel="alternate" title="原版" />
+</head> <body> 
+<table    >
+  <tr>
+    <th colspan="3" class="HdTitle">Mini
+      HOWTO：Linux kerneld</th>
+  </tr>
+  <tr>
+    <td class="TtdL"> <a href="../Upgrade/Upgrade-10.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="TtdC"></td>
+    <td class="TtdR"> <a href="../Upgrade/Upgrade-12.html" accesskey="N">下一頁(N)</a> </td>
+  </tr>
+</table>
+<hr />
+<h2>2.1驅動程式模組</h2>
+<p>對於如RedHat等使用可載入驅動程式模組的Linux套件，情況反而較複雜些，而且會因套件而有所不同．我們可以從/proc/modules中看是否有'network'這個模組存在，來辨別我們所使用的系統是否為採取驅動程式模組的方式．/proc/modules中會列出所有已載入系統的模組． </p>
+<p>驅動程式模組可透過兩種方式載入：一為由'kerneld'處理作業系統核心對網路裝置的請求；另一為用'modprobe'嘗試載入每一驅動程式，以找到一正確的裝置．</p>
+<p>'kerneld'行程會讀取<tt>/etc/conf.modules</tt>來決定要載入的驅動程式． </p>
+<h2>2.2
+    內建驅動程式：我們做了什麼，還有是怎麼達成目的的．</h2>
+<p> 在Linux系統核心的預設狀態下，多數都會偵測系統中是否有存在一乙太網路卡，如果偵測到了，就停止了偵測動作．有三種已定義好的辦法，可以讓系統繼續再偵測電腦裡頭的其他網路卡，依難度與效率之順序為： </p>
+<ul>
+  <li>在系統啟動時將參數傳遞給系統核心．</li>
+  <li>設定啟動載入程式(boot loader)，使在每次開機時都把參數傳遞出去．</li>
+  <li>更改系統核心的網路卡偵測表，<b>drivers/net/Space.c</b>．</li>
+</ul>
+<p>第二種方法最適合大部分的使用者，這也是以上我們所描述的方式． </p>
+<h2>2.3 藉由啟動載入程式來傳遞參數</h2>
+<p>在下面的步驟當中，將假設我們用的是標準的Linux啟動載入程式，LILO． </p>
+<p> Linux的核心可辨別出一在啟動時傳遞過來的參數，這些參數大多數是用來指定無法在啟動過程中(boot-time)已先確定的設定．以下是針對網路卡而來，可以被辨識出之參數： </p>
+<p> <listing>ether=,,,, </listing> </p>
+<p> 有效的數字型態引數，可用的表示方式有十進位，八進位(引數以'0'為開端)，或是十六進位(開端是'0x')。非數字型態的第一個引數，是用來對裝置名稱做命名．空白的引數將被當成
+  是零，而任何在裝置名稱前漏掉的引數值則不會做改變． </p>
+<p>IRQ </p>
+<blockquote>
+  <p>這個項目是用來指定我們要設定成的IRQ值(網路卡上，可透過軟體更改設定的IRQs)，或是必須得使用的IRQ值(透過jumper設定的IRQs)。如果為'0'則表示系統將從網路卡上讀取應設定的IRQ值(如果可成功讀取
+    到的話)．或者在網路卡無法提供給系統IRQ時，用自動分配方式得到IRQ值． </p>
+</blockquote>
+<p>IO-ADDR </p>
+<blockquote>
+  <p> 這個項目項是用來指定單一I/O位址，提示給系統做偵測，如果為'0'，則提示系統偵測所有合法範圍內的I/O位址．一般而言，系統會依照一I/O位址的保留範圍列表，來決定是否該位址能被成功偵測
+    ．除非有另作指定，包括利用&quot;reserve=,&quot;參數把其他裝置的I/O位址排除在偵測範圍之中． </p>
+</blockquote>
+<p>PARAM1,PARAM2 </p>
+<blockquote>
+  <p>這幾個項目原本是用來指定像 WD8013 等網路卡所須要的共用記憶體(shared memory)之記憶體位址，但現在則是用來提供給其他特殊驅動程式所需要的資訊． </p>
+</blockquote>
+<p>NAME </p>
+<blockquote>
+  <p> 預先定義的裝置名稱．系統核心至少定義了&quot;eth0&quot;，&quot;eth1&quot;，&quot;eth2&quot;，和&quot;eth3&quot;．其他的裝置名稱(例如：PPP，SLIP，或是攜帶式的乙太網路裝置)也可能存在，不過名稱可能會不太一樣． </p>
+</blockquote>
+<p>LILO 提供兩種方法，來在啟動系統時傳遞參數給系統核心．最常見的方式是是在指定啟動影像(boot image)的後頭接著輸入，下面是個可偵測四個網路卡的例子
+  ： </p>
+<p> <listing>linux ether=0,0,eth1 ether=0,0,eth2 ether=0,0,eth3 </listing> </p>
+<p>如果每次開機都得這樣做，當然會很麻煩，而且未考慮到日後系統無預警重新啟動的情況．我們可以藉由在LILO的設定檔/etc/lilo.conf中增加一行&quot;append&quot;的指令，然後執行lilo來更新設定． </p>
+<p> <listing>append = &quot;ether=0,0,eth1 ether=0,0,eth2
+    ether=0,0,eth3&quot; </listing></p>
+<h1>&nbsp;</h1>
+<p>&nbsp;</p>
+<hr />
+<table
+
+
+
+
+>
+  <tr
+>
+    <td class="BtdL"
+><a href="../Upgrade/Upgrade-10.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="BtdC"
+><a href="../Upgrade/index.html" accesskey="H">目錄(H)</a></td
+>
+    <td class="BtdR"
+><a
+href="../Upgrade/Upgrade-12.html"
+>下一頁(N)</a
+></td
+>
+  </tr
+>
+  <tr
+>
+    <td class="BtdL"
+>禁止簽入並備份/root及/home以下的檔案。</td
+>
+    <td class="BtdC"
+><a href="../Upgrade/Upgrade-11.html" accesskey="T">到頂層(T)</a></td
+>
+    <td class="BtdR"
+>用fdisk刪除linux分割區並重建它們。</td
+>
+  </tr
+>
+</table
+>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img class="ImgLogo" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" title="網路內容分級協會" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

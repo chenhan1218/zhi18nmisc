@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>4.如何對付 PnP 卡</title>
+<link href="Plug-and-Play-HOWTO-5.html" rel="next" title="5. 附錄" />
+<link href="Plug-and-Play-HOWTO-3.html" rel="previous" title="3. Plug-and-Play (PnP) 解決方案" />
+<link href="http://tldp.org/HOWTO/Plug-and-Play-HOWTO.html" rel="alternate" title="原版" />
+<link href="../../style.css" rel="stylesheet" type="text/css" />
+<link href="Plug-and-Play-HOWTO-1.html" rel="chapter" title="1.介紹" />
+<link href="Plug-and-Play-HOWTO-2.html" rel="chapter" title="2.PnP 怎麼做: 分配 &quot;資源&quot;" />
+<link href="Plug-and-Play-HOWTO-3.html" rel="chapter" title="3.Plug-and-Play (PnP) 解決方案" />
+<link href="Plug-and-Play-HOWTO-4.html" rel="chapter" title="4.如何對付 PnP 卡" />
+<link href="Plug-and-Play-HOWTO-5.html" rel="chapter" title="5.附錄" />
+<meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+<link href="Plug-and-Play-HOWTO.rdf" rel="meta" title="各章節的說明資訊" />
+<link href="Plug-and-Play-HOWTO-4.html#ss4.1" rel="section" title="4.1 介紹" />
+<link href="Plug-and-Play-HOWTO-4.html#ss4.2" rel="section" title="4.2 禁用 PnP ? " />
+<link href="Plug-and-Play-HOWTO-4.html#ss4.3" rel="section" title="4.3 BIOS 配置 PnP" />
+<link href="Plug-and-Play-HOWTO-4.html#ss4.4" rel="section" title="4.4 Isapnp " />
+<link href="Plug-and-Play-HOWTO-4.html#ss4.5" rel="section" title="4.5 修補核心讓 Linux 支持 PnP " />
+<link href="Plug-and-Play-HOWTO-4.html#ss4.6" rel="section" title="4.6 PnP 軟件和文檔" />
+</head> <body >
+<table >
+  <tr>
+    <th colspan="3" class="HdTitle">HOWTO：Plug-and-Play</th>
+  </tr>
+  <tr>
+    <td class="TtdL"> <a href="Plug-and-Play-HOWTO-3.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="TtdC">&nbsp;</td>
+    <td class="TtdR"> <a href="Plug-and-Play-HOWTO-5.html" accesskey="N">下一頁(N)</a> </td>
+  </tr>
+</table>
+<hr />
+<h1>4. 如何對付 PnP 卡</h1>
+
+<h2><a name="ss4.1" id="ss4.1"></a>4.1 介紹 </h2>
+
+<p>今天, 大部分新的內置插卡是 PnP 的. 其中的一些卡有跳線(或類似的)可以把卡設置為非
+PnP. 因為許多 Linux (和 Dos/Windows)程序可以處理 PnP, 最好保留卡的 PnP 功能.
+假如你把內核升級為支持 PnP,
+它不僅會配置硬件而且會把硬件配置信息提供給驅動程序, 這樣你就不需要配置它們了.
+例如, 對于串口你就不必使用 &quot;setserial&quot; 了.</p>
+<p>假如你有一塊 PnP 卡, 你會有下面一個或多個選項來配置它:</p>
+<ul>
+  <li> <a href="#disable_pnp">禁用 PnP</a> 用跳線的方法(但許多卡不能)或特殊的軟件. </li>
+  <li> <a href="#bios_conf">BIOS 配置 PnP</a> (僅用于你有一個 PnP BIOS)</li>
+  <li> <a href="#isapnp_">Isapnp</a> 一個用于配置 ISA 總線上 PnP 設備的軟件(但不能用于 PCI 總線設備)</li>
+  <li> <a href="#patch_kernel">修補 Kernel</a> 把 Linux 轉變為一個 PnP 的操作系統 </li>
+</ul>
+<h2><a name="ss4.2" id="ss4.2"></a> 4.2 禁用 PnP ? </h2>
+
+<p>許多卡的 PnP 功能無法抑制掉. 即使你有機會這樣做, 由于下面的原因你也許不會這樣做.</p>
+<ol>
+<li> 假如在同台機器上有 MS Windows, 你也許希望在 MS Windows 下可以用 PnP 來做不同的配置.</li>
+<li> IRQ 等資源有限, 除非使用 PnP, 否則很難配置. </li>
+<li> 假如需要使用 Dos/Windows 下的軟件設置為非 PnP 方式,
+可有一天你不能使用 Dos/Windows 了, 因此很難再改變配置. </li>
+<li> 你有(或將有)其它 PnP 設配需要配置, 所以你要無論如何都需要 PnP 功能. </li>
+</ol>
+
+<p>設備一旦被設置為非 PnP 配置方式, 它們將不能被 PnP 軟件或 BIOS 配置. (除非移去跳線或使用配置軟件打開 PnP 功能) </p>
+<h2><a name="ss4.3" id="ss4.3"></a> 4.3 BIOS 配置 PnP </h2>
+
+<p>想這樣做, 你的 BIOS 必須支持 PnP. 得到關于你的 BIOS 更多的信息, 看有關的 Web
+站點. 一些 BIOS 只有最少的 PnP 功能, 它會試圖把困難的配置工作交給 Windows
+工具(在 Linux 下不可能). 在這種情況下如果 BIOS 維護一個配置數據庫的話,
+你也需要用 DOS/Windows 下的 ICU 來設置這數據庫.</p>
+<p>首先設置你的 BIOS 為 &quot;Not a PnP Operating System&quot;(沒有 PnP 的操作系統). 看 <a href="Plug-and-Play-HOWTO-3.html#conf_pnp_bios">配置 
+  PnP BIOS</a>. 這會使 BIOS 完成全部配置工作, 而不是把剩餘的交給操作系統.</p>
+<p>BIOS 的非揮發數據庫叫 ESCD (Extended System Configuration Data).
+它不僅存儲 PnP 設備的配置並且存儲非 PnP 設備的信息用于避開衝突.
+當你安裝新的非 PnP 設備應在安裝前用ICU(Intel Configuration
+Utility)告訴 ESCD 關于設備的信息.
+你也需要運行 ICU 告訴 ESCD 關于已經存在機器中的非 PnP 設備的信息(除非有人已經做過了).</p>
+<p>ESCD 通常保存在芯片中, 但有時會保存在硬盤上?? (譯者想: COMPAQ 的配置信息有些是否保存在硬盤上) 使用 Linux 操作系統的機器的 
+  BIOS 每次啟動時是這樣配置. 你也許想紀錄 ICU (和 BIOS)是如何配置的(或打印出來). 然而, 假如你增加一個新的非 PnP 設備就需要再次運行 
+  ICU. 假如它是 PnP 的, BIOS 會自動配置它, 並盡量不改變機器中已經存在的設備的配置. 但為了給新設備分配它需求的資源, 有時不得不改變已有設備的配置. 
+  假如這發生了, 你需要找到什麼改變了(看 /proc/pci 和使用 &quot;pnpdump&quot;命令)並且做出相應改變.</p>
+<p>注意:
+在 Dos/Windows 下配置信息還會放在硬盤上的Windows文件中,
+這樣操作系統知道每個設備的情況. 對于自動檢測設備的 Linux 不會發生這種事情.</p>
+
+<h2><a name="ss4.4" id="ss4.4"></a> 4.4 Isapnp </h2>
+
+<p>僅用于 ISA 總線上的 PnP 設備. 在啟動時運行此程序將按照你在 /etc/isapnp.conf 的設定來配置這些設備.你需要 isapnptools 
+  包, 包含在許多發行版本中. 輸入 &quot;locate pnp&quot; 來查找你是否擁有 isapnp. 假如你的 Linux 自動安裝了 isatools, 
+  isapnp 也許在啟動時已經運行. 對于這種情況, 你需要做的就是編輯 /etc/isapnp.conf (用 <code>man isapnp.conf</code> 
+  得到有關信息). 因為你通過編輯配置文件來決定如何設置設備, 這樣做有點象手工配置 PnP. 假如這樣使用 &quote;isapnp&quote; 並且有一個 
+  PnP BIOS, 你將告訴 BIOS 你有一個 PnP 的操作系統嗎?? (翻譯者認為: 如果你的 Linux 內核不支持 PnP, 回答沒有 PnP 
+  操作系統, 讓 BIOS 完成所有的 PnP 設置工作, 但你不要試圖去修改設備的資源, 修改自己的配置文件即可.)</p>
+<p>假如你曾經運行 isapnp 配置 ISA-PnP
+設備,但每次啟動時運行isapnp失敗, 那麼假如你在同台機器上有 Windows 95/98
+的話可能會發生: 當使用 Windows 95/98 時, Windows 也許會以不同的方式配置你的
+PnP卡, 當你返回使用 Linux 時, 卡就不會正常工作. </p>
+
+<h2><a name="ss4.5" id="ss4.5"></a> 4.5 修補核心讓 Linux 支持 PnP </h2>
+
+<p>有一個巨大的補丁來做這些. 新的核心是穩定的並且包含文檔: serial.txt 說明如何處理串行口. 它在 /proc 目錄中提供&quot;文件&quot;, 
+  所以你可以知道這些是如何進行的並能用 echo 命令來設置配置. 一個問題是許多驅動程序不知道這些, 你還需要使用傳統的配置文件, 等. 如何配置, 請看 
+  <a href="http://lucifer.hemmet.s-hem.chalmers.se/~dwh">http://lucifer.hemmet.s-hem.chalmers.se/~dwh</a></p>
+
+<h2><a name="ss4.6" id="ss4.6"></a>4.6 PnP 軟件和文檔 </h2>
+
+<ul>
+<li> 看 
+<a href="http://www.redhat.com/linux-info/pnp/">http://www.redhat.com/linux-info/pnp/</a> 關于 PnP 的軟件和文檔.</li>
+<li> 看 
+<a href="http://www.microsoft.com/hwdev/respec/pnpspecs.htm">http://www.microsoft.com/hwdev/respec/pnpspecs.htm</a> 關于 PnP 的特性.</li>
+</ul>
+<p></p>
+
+<hr />
+<table >
+  <tr>
+    <td class="BtdL"> <a href="Plug-and-Play-HOWTO-3.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="BtdC"> <a href="index.html" accesskey="H">目錄(H)</a> </td>
+    <td class="BtdR"> <a href="Plug-and-Play-HOWTO-5.html">下一頁(N)</a> </td>
+  </tr>
+  <tr>
+    <td class="BtdL">Plug-and-Play (PnP) 解決方案</td>
+    <td class="BtdC"><a href="Plug-and-Play-HOWTO-4.html"  accesskey="T">到頂層(T)</a></td>
+    <td class="BtdR">附錄</td>
+  </tr>
+</table>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img class="ImgLogo" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" title="網路內容分級協會" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

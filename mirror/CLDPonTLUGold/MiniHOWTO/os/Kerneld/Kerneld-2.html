@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+ 
+ <title>Mini HOWTO：Linux kerneld</title>
+ <meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+ <link href="../../style.css" rel="stylesheet" type="text/css" />
+ <link href="http://tldp.org/HOWTO/mini/Kerneld/index.html" rel="alternate" title="原版" />
+</head> <body> 
+<table    >
+  <tr>
+    <th colspan="3" class="HdTitle">Mini
+      HOWTO：Linux kerneld</th>
+  </tr>
+  <tr>
+    <td class="TtdL"> <a href="../Upgrade/Upgrade-10.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="TtdC"></td>
+    <td class="TtdR"> <a href="../Upgrade/Upgrade-12.html" accesskey="N">下一頁(N)</a> </td>
+  </tr>
+</table>
+<hr />
+<h1><a name="Introduction" id="Introduction"></a>2.kerneld
+  是什麼？</h1>
+<p>kerneld 是由 <a href="mailto:bj0rn@blox.se">Bjorn
+    Ekwall</a> 引入 1.3 版的發展核心 (development kernel) 的功能。它可在所有 2.0 及 2.1 版本的核心找到。它令模組 (modules)─即驅動程式
+    (device drivers)、網絡驅動器 (network drivers)、檔案系統 (filesystems)─自動在有需要時載入，而不需自行使用
+    modprobe 或 insmod。</p>
+<p>還有更有趣的東西，雖然它們尚未整合到標準的核心中︰</p>
+<ul>
+  <li>它可設定成不使用內定的空白畫面，而讓你選擇其他程式，使你可自選螢幕保護器 (screen saver)。</li>
+  <li>和螢幕保護器相似，你可把主控台 (console) 的‘嗶’聲改為完全不同的東西…</li>
+</ul>
+<p>kerneld 包括兩個獨立部分：</p>
+<ul>
+  <li>核心向監控程式 (daemon) 就所需模組提出要求的支援。</li>
+  <li>懂找出所需模組來滿足核心要求的使用者層面 (user-level) 監控程式。</li>
+</ul>
+<p>要使用 kerneld，兩個部分都要正常運作。只設定好其中一個是沒用的</p>
+<h2><a name="Why" id="Why"></a>2.1 為什麼要用它？</h2>
+<p>有不少好理由去使用 kerneld。這裡提出的是我個人的──其他人可能有其他的理由。</p>
+<ul>
+  <li>如果你要為多個只有少許不同的系統（如使用不同的網絡控制卡）建立核心，你只需建立一個核心和數個模組，而不需為每個系統建立不同的核心。</li>
+  <li>對開發人員而言，模組比較容易測試─你不需重新啟動電腦以載入及卸下驅動程式（這點適用於所有模組，並不限於 kerneld 載入的）。</li>
+  <li>它減少核心佔用的記憶體，即你有更多記憶體供其他程式使用。核心所佔用的記憶體是 *永不* 被換出 (swap-out) 的，所以如果你的核心中有
+    100kB 沒用的驅動程式的話，那只是在浪費你的記憶體。</li>
+  <li>有一些我要用的東西，如 ftape floppy-tape driver 或 iBCS，只以模組形式出現。但我懶得自己載入和卸下它們。</li>
+  <li>Linux 發行者不再需要建立 284 個不同的開機影象 (boot images) ─使用者只載入配合其硬件的驅動程式。例如
+    RedHat 4.0 就使用了這方法。</li>
+</ul>
+<p>當然，你也有不使用它的理由─你可能喜歡在一個核心映象 (kernel image) 中包括所有你要的驅動程式。如果是這樣，你看錯文章了</p>
+<h2><a name="Where" id="Where"></a>2.2 如何取得所需東西？</h2>
+<p>對 kerneld 的支援始於 1.3.57 版。如果你正使用較舊的版本，你需要更新它才可用 kerneld 了。所有主要的 Linux ftp
+  台都有核心的原程式碼。我建議你更新至最新版本的穩定核心，2.0，目前是嵌補等級 (patch level) 2.0.29 （譯按：現時已是 2.0.35）：</p>
+<pre class="sample">  <a href="ftp://sunsite.unc.edu/pub/Linux/kernel/v2.0">ftp://sunsite.unc.edu/pub/Linux/kernel/v2.0</a>/linux-2.0.29.tar.gz
+  <a href="ftp://tsx-11.mit.edu/pub/linux/sources/system/v2.0">ftp://tsx-11.mit.edu/pub/linux/sources/system/v2.0</a>/linux-2.0.29.tar.gz
+  <a href="ftp://ftp.funet.fi/pub/OS/Linux/PEOPLE/Linus/v2.0">ftp://ftp.funet.fi/pub/Linux/PEOPLE/Linus/v2.0</a>/linux-2.0.29.tar.gz</pre>
+<p>使用者層面的監控程式包含在 modules-1.2.8 及更新的 modules-2.0 中。它們一般會和核心源程式碼在同一地點找到，而官方位置包括：</p>
+<pre class="sample">  <a href="ftp://sunsite.unc.edu/pub/Linux/kernel/modules-2.0.0.tar.gz">ftp://sunsite.unc.edu/pub/Linux/kernel/v2.0/modules-2.0.0.tar.gz
+</a>  <a href="ftp://tsx-11.mit.edu/pub/linux/sources/sbin/">ftp://tsx-11.mit.edu/pub/linux/sources/sbin/modules-2.0.0.tar.gz
+</a>  <a href="ftp://ftp.funet.fi/pub/OS/Linux/tools/">ftp://ftp.funet.fi/pub/Linux/tools/modules-2.0.0.tar.gz</a></pre>
+<p>注意：如果你想在 2.1 版的<b>開發</b>核心嘗試載入模組，你必須用最新的 modutils-（不是
+  modules-）。但請看 <a href="#2-1-problems">以下</a>有關模組和 2.1 版核心部分的問題</p>
+<p>&nbsp;</p>
+<hr />
+<table
+
+
+
+
+>
+  <tr
+>
+    <td class="BtdL"
+><a href="../Upgrade/Upgrade-10.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="BtdC"
+><a href="../Upgrade/index.html" accesskey="H">目錄(H)</a></td
+>
+    <td class="BtdR"
+><a
+href="../Upgrade/Upgrade-12.html"
+>下一頁(N)</a
+></td
+>
+  </tr
+>
+  <tr
+>
+    <td class="BtdL"
+>禁止簽入並備份/root及/home以下的檔案。</td
+>
+    <td class="BtdC"
+><a href="../Upgrade/Upgrade-11.html" accesskey="T">到頂層(T)</a></td
+>
+    <td class="BtdR"
+>用fdisk刪除linux分割區並重建它們。</td
+>
+  </tr
+>
+</table
+>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img class="ImgLogo" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" title="網路內容分級協會" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

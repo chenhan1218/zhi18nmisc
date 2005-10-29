@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+ 
+ <title>The Linux Bootdisk HOWTO: How the pros do it</title>
+ <link href="Bootdisk-HOWTO-10.html"  rel="next" title="10. 常見問答集 (FAQ) 列表" />
+ <link href="Bootdisk-HOWTO-8.html"  rel="previous" title="8. 其它各種主題" />
+<link href="../../style.css" rel="stylesheet" type="text/css" />
+<link href="Bootdisk-HOWTO-1.html" rel="chapter" title="1.前言" />
+<link href="Bootdisk-HOWTO-2.html" rel="chapter" title="2.簡介" />
+<link href="Bootdisk-HOWTO-3.html" rel="chapter" title="3.Bootdisks與開機流程" />
+<link href="Bootdisk-HOWTO-4.html" rel="chapter" title="4.建立一個root filesystem" />
+<link href="Bootdisk-HOWTO-5.html" rel="chapter" title="5.選擇一個 kernel" />
+<link href="Bootdisk-HOWTO-6.html" rel="chapter" title="6.把它們放在一起：製作磁片(組)" />
+<link href="Bootdisk-HOWTO-7.html" rel="chapter" title="7.問題解決 " />
+<link href="Bootdisk-HOWTO-8.html" rel="chapter" title="8.其它各種主題" />
+<link href="Bootdisk-HOWTO-9.html" rel="chapter" title="9.How the pros do it" />
+<link href="Bootdisk-HOWTO-10.html" title="10.常見問題 (FAQ) 列表" />
+<link href="Bootdisk-HOWTO-11.html" title="11.資源與指示" />
+<link href="Bootdisk-HOWTO-12.html" title="12.LILO boot error codes" />
+<link href="Bootdisk-HOWTO-13.html" title="13.Root filesystem 列表樣本" />
+<link href="Bootdisk-HOWTO-14.html" title="14.工具程式磁片 (utility disk) 目錄列表樣本" />
+<meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+<link href="http://tldp.org/HOWTO/Bootdisk-HOWTO/index.html" rel="alternate" title="原版" />
+<link href="Bootdisk-HOWTO.rdf" rel="meta" title="各章節的說明資訊" />
+<link href="ftp://elserv.ffm.fgan.de/pub/linux/loadlin-1.6/initrd-example.tgz" rel="bookmark" title="更多有關於 initrd 的資訊" />
+<link href="index.html" rel="start" />
+<link href="index.html#content" rel="contents" />
+</head> <body   > 
+<table >
+  <tr>
+    <th colspan="3" class="HdTitle">HOWTO：The
+    Linux Bootdisk</th>
+  </tr>
+  <tr>
+    <td class="TtdL"> <a href="Bootdisk-HOWTO-8.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="TtdC">&nbsp;</td>
+    <td class="TtdR"> <a href="Bootdisk-HOWTO-10.html" accesskey="N">下一頁(N)</a> </td>
+  </tr>
+</table>
+<hr />
+<h1>9. How the pros do it</h1>
+
+<p>您可能已經注意到，那些被諸如 Slackware、RedHat、Debian 等主要 distribution 所使用的 bootdisks ，似乎比本文中所描述的還要來得複雜許多。專業的 distribution bootdisks 以在此所提出的相同原則為基礎，但是採用各式各樣的技巧，因為它們的 bootdisks 有一些額外的需求。第一，它們必須能夠在各種不同的硬體上運作，所以它們必須能夠與使用者互動，並且能載入各式各樣的設備驅動程式。第二，它們必須準備以許多不同的安裝選項、不同的自動化程度來運作。最後， distribution bootdisks 通常結合了安裝磁片與救援磁片的能力。</p>
+<p>某些 bootdisks 使用名為 <em>initrd</em>(<em>initial ramdisk</em>)的特性。這個特性大約在 2.0.x 版時引入，它允許 kernel 以兩階段開機。當 kernel 開機時，它從 boot disk 載入一個initial ramdisk映像檔。這個 initial ramdisk 是一個 root filesystem ，包含一個在真正的 root fs 被載入之前所執行的程式。這個程式通常會檢查作業環境， 以及/或 要求使用者選擇不同的開機選項，例如選擇從哪一個設備載入真正的 rootdisk 。一般來說，它會載入未被內建在 kernel 內的額外模組。當這個初始化 (initial) 程式結束 (exit) 時， kernel 就載入真正的 root 映像檔，開機動作將依一般情況繼續執行下去。若要進一步得知 <code><a href="ftp://elserv.ffm.fgan.de/pub/linux/loadlin-1.6/initrd-example.tgz">initrd</a></code> 的資訊，請詳閱你機器上的 
+<a href="file:/usr/src/linux/Documentation/initrd.txt">/usr/src/linux/Documentation/initrd.txt</a> 。</p>
+<p>以下是每一家 distribution的安裝磁片如何運作的摘要，這份摘要以檢閱 (inspect) 它們的filesystems 以及/或 它們的原始碼為基礎。我們不保證這份資訊完全正確無誤，或是自從版本noted以來，這些運作方式未被改變。</p>
+<p>Slackware(v.3.1) 使用一種與 
+<a href="Bootdisk-HOWTO-6.html#TransferringWithLILO" >Transferring the kernel with LILO</a> 這節所描述類似的前向式 (straightforward) LILO 開機法。 Slackware 的 bookdisk 利用 LILO 的 <code> 訊息 </code> 參數印出一個 bootup 訊息 (&ldquo;<code>Welcome to the Slackware Linux boot kernel disk!</code>&rdquo;) 。假如必要的話，這裡會指示使用者輸入一個開機參數行(boot parameter line)。在開機之後，一個root檔案系統會從第二張磁片載入。此時使用者喚起(invoke)一個 <code>setup</code> script，這個script將啟動安裝程序。Slackware並非使用一個模組化 kernel ，相反地，它提供許多不同的 kernel ，並且靠使用者自己選擇一個符合 他/她 硬體需求的 kernel 。</p>
+<p>RedHat(v.4.0) 也使用 LILO 開機法。它從第一張磁片載入一個壓縮的 ramdisk ，這動作執行一個 custom <code>init</code> 程式。這個程式查詢驅動程式，然後，假如必要的話，從 supplemental 磁片載入額外的檔案。</p>
+<p>Debian(v1.3) 可能是最複雜的安裝磁片集。它使用 SYSLINUX loader 去安排各式各樣的載入選項，然後使用一個 <code>initrd</code> 映像檔指示使用者完成安裝程序。它顯然使用了一個客製化的 <code>init</code> 與一個客製化的 shell 兩者。</p>
+
+<hr />
+<table >
+  <tr>
+    <td class="BtdL"> <a href="Bootdisk-HOWTO-8.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="BtdC"> <a href="index.html" accesskey="H">目錄(H)</a> </td>
+    <td class="BtdR"> <a href="Bootdisk-HOWTO-10.html">下一頁(N)</a> </td>
+  </tr>
+  <tr>
+    <td class="BtdL">其它各種主題</td>
+    <td class="BtdC"><a href="Bootdisk-HOWTO-9.html"  accesskey="T">到頂層(T)</a></td>
+    <td class="BtdR">常見問答集 (FAQ) 列表</td>
+  </tr>
+</table>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img class="ImgLogo" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" title="網路內容分級協會" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

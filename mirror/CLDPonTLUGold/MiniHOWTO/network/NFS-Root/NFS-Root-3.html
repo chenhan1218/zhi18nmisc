@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+ 
+ <title>NFS-Root Mini-Howto: 伺服器的設定</title>
+ <link href="NFS-Root-4.html" rel="next" />
+ <link href="NFS-Root-2.html" rel="previous" />
+ <link href="index.html#content" rel="contents" />
+   <link href="NFS-Root-1.html" rel="chapter" title="1. 版權聲明" />
+ <link href="NFS-Root-2.html" rel="chapter" title="2. 一般概論" />
+ <link href="NFS-Root-3.html" rel="chapter" title="3. 伺服器的設定" />
+ <link href="NFS-Root-4.html" rel="chapter" title="4. 啟動工作站" />
+ <link href="NFS-Root-5.html" rel="chapter" title="5. 已知的問題" />
+ <link href="NFS-Root-6.html" rel="chapter" title="6. 其他主題 " />
+ <link href="../../style.css" rel="stylesheet" type="text/css" />
+ <link href="index.html" rel="start" />
+ <link href="NFS-Root.rdf" rel="meta" title="各章節的說明資訊" />
+ <link href="NFS-Root-3.html#ss3.1" rel="section" title="3.1 編譯核心 " />
+ <link href="NFS-Root-3.html#ss3.2" rel="section" title="3.2 建立根目錄檔案系統" />
+ <link href="http://www.tldp.org/HOWTO/mini/NFS-Root.html" rel="alternate" title="原版" />
+ <meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+</head> <body> 
+<table
+
+
+
+
+>
+  <tr
+>
+    <th
+colspan="3" class="HdTitle"
+>Mini
+      HOWTO：NFS-Root</th>
+  </tr
+>
+  <tr
+>
+    <td class="TtdL"
+><a href="NFS-Root-2.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="TtdC"
+></td
+>
+    <td class="TtdR"
+><a href="NFS-Root-4.html" accesskey="N">下一頁(N)</a></td
+>
+  </tr
+>
+</table
+>
+<hr />
+<h1><a name="s3" id="s3">3.</a> 伺服器的設定</h1>
+
+<h2><a name="ss3.1" id="ss3.1">3.1</a> 編譯核心
+</h2>
+
+<p>把 <em>RARP</em> 支援編譯到核心中是個好方法.
+如果在你不想在啟動時傳遞額外的參數給核心, 你必須將他編譯到核心中.
+但如果客戶端不在同一個子網路區段中, 這個方式便沒有作用.</p>
+<p>工作站的核心則必須至少有下列的支援:</p>
+<ul>
+<li><em>NFS</em> 檔案系統支援. (不需要把 <em>ext2</em> 檔案系統的支援編譯到核心中, 以模組方式編譯就夠了.)</li>
+<li>啟動 "Root on NFS" 的功能.</li>
+<li>網路卡的 Ethernet 驅動程式必須被編譯在核心中.</li>
+<li>依據你的需求而將 NFS 根目錄系統下面的 <em>RARP</em> 或 <em>BOOTP</em> 編譯到核心中.
+(也就是當 make config 執行時, 在 NFS 選項之後的設定.)</li>
+</ul>
+
+<p>如果在你不想在工作站開機時傳遞參數給核心, 你必須把根目錄設備設定成 0:255.
+做法是用 <code>mknod /dev/nfsroot b 0 255</code> 建立一個裝置控制檔.
+有了這個檔案後, 你便可以把核心內的根目錄路徑以 <code>rdev &lt;<em>kernel-image</em>&gt; /dev/nfsroot</code> 指定.</p>
+<h2><a name="ss3.2" id="ss3.2">3.2</a> 建立根目錄檔案系統
+</h2>
+
+<h3>複製檔案系統</h3>
+
+<p><em>警告: 這些指令可能可以正常作用, 但並不表示可以在其他環境下作用.
+對於建立根目錄檔案系統的較佳方式請參考 Ofer Maor <code>&lt;ofer@hadar.co.il&gt;</code> 所寫的 NFS-Root-Client mini howto.</em> </p>
+<p>決定了根目錄的放置路徑後, 可以用下面的指令建立
+<code>mkdir -p &lt;<em>路徑</em>&gt;</code>, 接著執行 </p>
+<pre class="sample">tar cClf / - | tar xpCf &lt;<em>路徑</em>&gt; -.</pre>
+<p>如果你不用 LILO 啟動核心, 根目錄路徑必須置於
+<code>/tftpboot/&lt;<em>IP 位置</em>&gt;</code>. 
+如果你不喜歡這個位置, 你可以修改核心原始碼中最頂層的 Makefile, 找到類似下面這行並加以修改<br />
+<code>NFS_ROOT = -DNFS_ROOT="\"/tftpboot/%s\""</code><br />
+如果你改了這個, 你必須重新編譯核心.</p>
+
+<h3>根目錄系統所需的改變</h3>
+
+<p>首先清除不需要的檔案, 並且檢查 /etc/rc.d 的指令稿.
+下面是一些重點:</p>
+<ul>
+<li>首先是 eth0 的設定.
+工作站啟動時最少要啟動 eth0, 讓工作站使用伺服器的 IP 位置可不是一個好主意.
+(作者早期便犯過這個錯誤)</li>
+<li>另一個重點是 /etc/fstab 的設定.
+他應該設成 nfs 檔案系統.
+</li>
+<li> <b>警告</b>: 不要把伺服器的根目錄系統與客戶端工作站的根目錄系統弄混了.
+(我曾經改了伺服器上的 rc.inet1, 並懷疑為何工作站仍然不能運作)</li>
+</ul>
+
+
+<h3>將檔案系統分享出去</h3>
+
+<p>要將根目錄系統分享給工作站的指令請參照 <code>exports(5)</code>.
+在改變設定檔後, 你必須重新起動 nfsd 與 mountd.
+在 RedHat 下, 你只要執行
+<code>/etc/rc.d/init.d/nfs stop ; /etc/rc.d/init.d/nfs start</code>
+就可以了.</p>
+
+<h3>設定 RARP</h3>
+
+<p>在網路上必須有一個 <em>RARP</em> 伺服器.
+如果啟動時同時沒有設定 nfsroot 參數, 則 <em>RARP</em> 伺服器必須設在 <em>NFS</em> 伺服器上.
+通常都將 <em>RARP</em> 伺服器設在 <em>NFS</em> 伺服器上.
+要完成這個設定, 你的核心必須要有 <em>RARP</em> 支援.</p>
+<p>並且必須執行下面的指令 (通常放在 <code>/etc/rc.d</code> 裡面):</p>
+<pre class="sample">/sbin/rarp -s &lt;<em>ip 位置</em>&gt; &lt;<em>硬體位置</em>&gt;</pre>
+<p> 其中</p>
+<dl>
+<dt><b>ip 位置</b></dt>
+<dd><p>是工作站的 IP 位置, 而</p>
+</dd>
+<dt><b>硬體位置</b></dt>
+<dd><p>則是工作站網路卡的乙太網路位置.</p>
+</dd>
+</dl>
+
+<p>例如: </p>
+<pre class="sample">/sbin/rarp -s 131.131.90.200 00:00:c0:47:10:12</pre>
+<p>你也可以使用符號名稱來取代 IP 位置, 但伺服器必須能找到該名稱所對應的 IP 位置.
+(設定在 /etc/hosts 中, 或是經由 <em>DNS</em> 查詢)</p>
+
+<h3>數定 BOOTP</h3>
+
+<p>要設定 <em>BOOTP</em>, 你必須編輯 <code>/etc/bootptab</code>.
+請參閱 <em>bootpd(8)</em> 以及 <em>bootptab(5)</em> 說明頁.</p>
+
+<h3>找尋硬體位置</h3>
+
+<p>如果我不知道網路卡的硬體位置, 我該如何查詢?</p>
+<ul>
+<li>利用你所製作的核心磁片開機, 並且找尋網路卡被確認的部分.
+通常都會有 6 組 16 進位的位元組, 這應該就是網路卡的硬體位置.</li>
+<li>用其他支援 TCP/IP 的作業系統啟動工作站.
+然後從伺服器 ping 這個工作站, 接著利用下面的指令查詢伺服器上的 ARP 快取.<br />
+<pre class="sample">/sbin/arp -a</pre>
+</li>
+</ul>
+
+
+<hr />
+<table
+
+
+
+
+>
+  <tr
+>
+    <td class="BtdL"
+><a href="NFS-Root-2.html" accesskey="P">上一頁(P)</a></td
+>
+    <td class="BtdC"
+><a href="index.html" accesskey="H">目錄(H)</a></td
+>
+    <td class="BtdR"
+><a
+href="NFS-Root-4.html"
+>下一頁(N)</a
+></td
+>
+  </tr
+>
+  <tr
+>
+    <td class="BtdL"
+>一般概論</td
+>
+    <td class="BtdC"
+><a href="NFS-Root-3.html" accesskey="T">到頂層(T)</a></td
+>
+    <td class="BtdR"
+>啟動工作站</td
+>
+  </tr
+>
+</table
+>
+<div><a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" width="88" height="31" style="border:0;width:88px;height:31px"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img style="border:0;width:88px;height:31px" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img style="border:0;width:88px;height:32px" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" style="border:0" alt="表示該網頁支援資源描述架構"/></a></div>
+</body>
+</html>

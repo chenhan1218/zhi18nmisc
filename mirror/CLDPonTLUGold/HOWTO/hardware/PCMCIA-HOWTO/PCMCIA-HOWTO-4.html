@@ -1,0 +1,908 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>4. 使用方法以及特色</title>
+<link href="PCMCIA-HOWTO-5.html" rel="next" title="5. 進階的主題" />
+<link href="PCMCIA-HOWTO-3.html" rel="previous" title="3. 解決安裝與建構的問題" />
+<link href="http://tldp.org/HOWTO/PCMCIA-HOWTO.html" rel="alternate" title="原版" />
+<link href="../../style.css" rel="stylesheet" type="text/css" />
+<link href="PCMCIA-HOWTO-1.html" rel="chapter" title="1.一般資訊及硬體要求" />
+<link href="PCMCIA-HOWTO-2.html" rel="chapter" title="2.編譯與安裝" />
+<link href="PCMCIA-HOWTO-3.html" rel="chapter" title="3.解決安裝與建構的問題" />
+<link href="PCMCIA-HOWTO-4.html" rel="chapter" title="4.使用方法以及特色" />
+<link href="PCMCIA-HOWTO-5.html" rel="chapter" title="5.進階的主題" />
+<link href="PCMCIA-HOWTO-6.html" rel="chapter" title="6.使用未被支援的卡片" />
+<link href="PCMCIA-HOWTO-7.html" rel="chapter" title="7.除錯小技巧及程式設計資訊" />
+<meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+<link href="PCMCIA-HOWTO-4.html#ss4.1" rel="section" title="4.1 用來建構以及監控 PCMCIA 設備的工具" />
+<link href="PCMCIA-HOWTO-4.html#ss4.2" rel="section" title="4.2 PCMCIA建構手稿的概要" />
+<link href="PCMCIA-HOWTO-4.html#ss4.3" rel="section" title="4.3 PCMCIA 網路卡" />
+<link href="PCMCIA-HOWTO-4.html#ss4.4" rel="section" title="4.4 PCMCIA 串列與數據機設備" />
+<link href="PCMCIA-HOWTO-4.html#ss4.5" rel="section" title="4.5 PCMCIA SCSI卡" />
+<link href="PCMCIA-HOWTO-4.html#ss4.6" rel="section" title="4.6 PCMCIA 記憶卡 " />
+<link href="PCMCIA-HOWTO-4.html#ss4.7" rel="section" title="4.7 PCMCIA ATA/IDE 卡式硬碟機" />
+<link href="PCMCIA-HOWTO-4.html#ss4.8" rel="section" title="4.8 多功能卡" />
+<link href="PCMCIA-HOWTO.rdf" rel="meta" title="各章節的說明資訊" />
+</head> <body >
+<table >
+  <tr>
+    <th colspan="3" class="HdTitle">HOWTO：Linux
+      PCMCIA</th>
+  </tr>
+  <tr>
+    <td class="TtdL"> <a href="PCMCIA-HOWTO-3.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="TtdC">&nbsp;</td>
+    <td class="TtdR"> <a href="PCMCIA-HOWTO-5.html" accesskey="N">下一頁(N)</a> </td>
+  </tr>
+</table>
+<hr />
+<h1>4. 使用方法以及特色</h1>
+
+<h2><a name="ss4.1" id="ss4.1"></a>4.1 用來建構以及監控  PCMCIA 設備的工具
+</h2>
+
+<p>如果所有的模組都被正確地載入了，在沒有卡片被插入的狀態下， <code>lsmod</code> 命令的輸出會看起來像以列的樣子。</p>
+<pre class="sample">
+Module                  Size  Used by
+ds                      5640   2 
+i82365                 15452   2 
+pcmcia_core            30012   3  [ds i82365]
+</pre>
+
+<p></p>
+<p>系統日誌也應該包含插槽驅動程式對於哪些主控制器被發現了、有幾個插槽
+被偵測到了的輸出。</p>
+
+<h3>cardmgr建構精靈</h3>
+
+<p><code>cardmgr</code> 精靈負責監控 PCMCIA 插槽，有需要時載入
+其他的驅動程式，並且執行使用者階層的手稿來反應卡片的插入與移出。它
+會把它的動作記錄在系統日誌內並用嗶聲來回應卡片狀態的改變。嗶聲的音
+調表示建構步驟是成功還是失敗。兩個高音聲響表示步片已被成功地辨視與
+建構了。一高音一低音聲響表示卡片被辨視，但因某些原因無法被建構。一
+低音嗶聲表示卡片無法被辨視。</p>
+<p><code>Cardmgr</code> 會把每一個插槽的設備資訊記錄在 <code>/var/run/stab</code>
+裏。以下是 <code>/var/run/stab</code> 的列表例子：</p>
+<p>
+</p>
+<pre class="sample">
+Socket 0: Adaptec APA-1460 SlimSCSI
+0       scsi    aha152x_cs      0       sda     8       0
+0       scsi    aha152x_cs      1       scd0    11      0
+Socket 1: Serial or Modem Card
+1       serial  serial_cs       0       ttyS1   5       65
+</pre>
+
+<p></p>
+<p>在這幾行所描述的設備中，第一個欄位表示插槽、第二為設備類別、第三為
+驅動程式名稱、第四被用來指定在同一驅動程式下使用的每個設備取號碼、
+第五個是設備名稱、最後兩個欄位是這個設備的主要及次要號碼。（如果可
+找到的話）</p>
+<p><code>cardmgr</code> 精靈依據被存在 <code>/etc/pcmcia/config</code> 內的已知之
+卡片資料庫來建構這些卡片。這個檔案描述了許多個別的驅動程式，以及如
+何辨視許多的卡片，還有哪個驅動程式屬於哪個卡片的。這個檔案的格式在
+<code>pcmcia(5)</code> 的 man 頁裏有詳細的資料。</p>
+
+<h3>cardctl 及 cardinfo 公用程式 </h3>
+
+
+<p><code>cardctl</code> 命令可以用來檢查插槽的狀態， 或看它們是如何被建構的。
+它也可以被用來警示一個卡片的建構狀態。   這兒有個    ``<code>cardctl
+config</code>'' 命令的輸出例子：</p>
+<p>
+</p>
+<pre class="sample">
+Socket 0:
+Socket 1:
+  Vcc = 5.0, Vpp1 = 0.0, Vpp2 = 0.0
+  Card type is memory and I/O
+  IRQ 3 is dynamic shared, level mode, enabled
+  Speaker output is enabled
+  Function 0:
+    Config register base = 0x0800
+      Option = 0x63, status = 0x08
+    I/O window 1: 0x0280 to 0x02bf, auto sized
+    I/O window 2: 0x02f8 to 0x02ff, 8 bit
+</pre>
+
+<p></p>
+<p>``<code>cardctl suspend</code>'' 和 ``<code>cardctl resume</code>'' 兩個命令可以用
+來在不需卸下它的相關驅動程式的狀況下關閉卡片。``<code>cardctl
+reset</code>''  命令會重新設定及建構卡片。  ``<code>cardctl  insert</code>''  和
+``<code>cardctl  eject</code>'' 摸擬當一個實體的卡片插入或抽出時所做的動作
+，這包含載入或卸下驅動程式以及建構或關閉設備。</p>
+<p>如果您正執行 X， <code>cardinfo</code> 公用程式會產生一個圖
+示來顯示所有的   PCMCIA   插槽的現況，  內容和執行   ``<code>cardctl
+config</code>'' 類似。它還提供其他 <code>cardctl</code> 功能的圖形化功能。</p>
+
+<h3>插入與抽出卡片</h3>
+
+<p>在理論上，你可以在任何時間插入或移出 PCMCIA 卡片。然而，把正在被其
+他程式使用中的卡片移出來並不是個好主意。在核心 1.1.77 版以前的系統
+常會在串列／數據機卡片被移出時造成當機，但現在已有修正方法了。</p>
+
+<h3>卡片服務程式與進階能源管理</h3>
+
+<p>卡片服務程式可以編譯成支援   APM   (  進階能源管理)  ，  如果你已安裝了這個套件到你的系統內的話。  APM  在核心
+1.3.46     （含）以後就被整合了。    現在這套件被    Rick    Faith
+(faith@cs.unc.edu)      所維護，     APM      工具可以由      
+<a href="ftp://ftp.cs.unc.edu/pub/users/faith/linux">ftp://ftp.cs.unc.edu/pub/users/faith/linux</a> 拿到。如果你的系
+統被偵測出有個相容的版本在的話，  PCMCIA  模組會被自動地建構成支援
+APMM 功能。</p>
+<p>如果沒有藉著  APM，  你可以在懸置你的筆記電腦前執行  ``<code>cardctl
+suspend</code>''，以及在回覆後執行 ``<code>cardctl resume</code>''，才能適當地關
+上或重啟你的  PCMCIA  卡。 這對正在使用中的數據機並不適用， 田因序
+列驅動程式並無法儲存與回應數據機的運作參數。</p>
+<p>APM 在有些系統上似乎有點不太穩定。 如果你遇到 APM 和 PCMCIA 共用時
+有任何問題，請您在提出程式小虫報告前先試著把問題簡化。</p>
+<p>有些驅動程式， 比如說 PCMCIA SCSI 驅動程式，無法從懸置／重新動作週
+期下回覆過來。 在使用  PCMCIA  SCSI  卡時， 在懸置系統前先執行
+``<code>cardctl eject</code>''。</p>
+
+<h3>關閉 PCMCIA 系統</h3>
+
+<p>要卸下整個的 PCMCIA 套件， invoke <code>rc.pcmcia</code> with:</p>
+<pre class="sample">
+/etc/rc.d/rc.pcmcia stop
+</pre>
+
+<p>這個手稿會花幾秒鐘來執行，給全部的客戶自訂驅動程式來完美地關閉
+。如果有個 PCMCIA 設備正被使用中，這樣關可能不會很完整地關閉，有些
+核心模組可能不會被卸下。       要防止發生這種狀況，       請在執行
+<code>rc.pcmcia</code>  之前使用 ``<code>cardctl eject</code>'' 來關閉所有的插槽。
+<code>cardctl</code> 命令的離開狀態會顯示如果有任何的插槽不能被關閉的。</p>
+
+<h2><a name="ss4.2" id="ss4.2"></a>4.2 PCMCIA建構手稿的概要
+</h2>
+
+<p>每一個 PCMCIA 設備都會有個相對應的 `` 類別 '' 來描述它應該如何被建
+構與管理的。這些類別與設備驅動程式都被組織在
+<code>/etc/pcmcia/config</code> 內。目前共有五種輸出輸入設備的類別 (網
+路、 SCSI、 cdrom、硬碟以及串列 ) 以及二種記憶體設備類別 (記憶體與
+FTL)。在每一個類別中，都有二個手稿放在 <code>/etc/pcmcia/config</code>
+內：一個主要建構手稿 (例如，  <code>/etc/pcmcia/scsi</code> 是 SCSI 設
+備的 )，以及一個選項手稿 (例如， <code>/etc/pcmcia/scsi.opts</code>)。
+主手稿在卡片被插入時會被啟用來建構該設備，當卡片被抽出時關掉該設備
+。對於支援多種設備的卡片，針對各別不同的設備的手稿都會被啟用。</p>
+<p>這 config 手稿會從 <code>/var/run/stab</code> 裏解出一些有關於設備上的
+資料開始。 每一個手稿會構築一個 `` 設備位址 ''，它是獨一無二的位址
+用來描述該設備在 <code>ADDRESS</code> shell 變數內被要求被建構的方式。它會
+被傳遞到 <code>*.opts</code> 手稿上， 該手稿再回應有關於在這位址上的設備應
+該要怎樣地建構才可以的資訊。 有些設備， 它的設備位址就是插槽號碼。
+還有其他的設備，它會包含另外的有用資訊可以用來決定如何來建構該設備
+。例如，網路設備會傳遞他們的硬碟乙太網路位址做為設備位址的一部份，
+來讓 <code>network.opts</code>  手稿能夠使用這項資訊來從許多不同的建構中做
+正確的選擇。</p>
+<p>所有的設備位址的首要部份是目前的 PCMCIA ``scheme''。這個參數是被用
+在只有一個外部使用者指定變數時用來對設備建構之多種設定的。對於它的
+應用， 例如我們可以有個 ``home'' scheme 以及一個 ``work'' scheme，
+它們包括了不同的網路建構參數的組合。   目前的   scheme    可以使用
+``<code>cardctl scheme</code>'' 命令來做選擇。如果沒有 scheme 被指定的話就
+以內定值來設定。</p>
+<p>一般原則上，當要建構 Linux 在筆記型電腦上時，PCMCIA 的設備只能被經
+由  PCMCIA  設備手稿來建構。  請不以試著以建構固定設備的方式來建構
+PCMCIA 設備。然而，有些 Linux 供應版商提供已接在他們自已的設備建構
+工具上的 PCMCIA 套件。在這種情況下，以下的幾個主題可能無法使用，而
+供應版商應該會有他們自己的這類文件。</p>
+
+<h2><a name="ss4.3" id="ss4.3"></a>4.3 PCMCIA 網路卡
+</h2>
+
+<p>Linux 的乙太型網路卡介面通常被稱做 <code>eth0</code>、<code>eth1</code> 等等。環形
+卡亦同樣地被看待。  然而它們被稱做   <code>tr0</code>、  <code>tr1</code>   等等。
+<code>ifconfig</code> 命令是被用來觀看及修改網路介面狀態的。Linux 的另一特
+點是網路介面並不會像其他設備一樣地被看成是一個在  <code>/dev</code> 裏
+頭的檔案。所以如果您在 /dev 內找不到它們時請不要覺得驚訝。</p>
+<p>當一個 PCMCIA 乙太網路卡被偵測到時，它會被指定為第一個可用的介面卡
+名字，     通常為     <code>eth0</code>。     <code>Cardmgr</code>      命令會執行
+<code>/etc/pcmcia/network</code> 手稿來建構它的介面。</p>
+<p>請勿將您的 PCMCIA 乙太網路卡建構在 <code>/etc/rc.d/rc.inet1</code>  內
+，因為當這個手稿被執行時也許卡片並不在插槽裏。 在 <code>rc.inet1</code> 內
+除了回歸的項目之外，    其它的命令列請將他們註解掉。    而另外修改
+<code>/etc/pcmcia/network.opts</code>         來配合您的本地網路設定。
+<code>network</code> 和 <code>network.opts</code> 手稿只有在您的乙太網路卡存在時才
+會被執行。    如果您的系統有自動網路建構程式，    它也許是也許不是
+PCMCIA-aware。 請從您的 Linux 供應版本的文件中查看看是否 PCMCIA 網
+路設備是否需要使用自動化工具來建構或只需編輯  <code>network.opts</code> 即
+可。</p>
+<p>傳到 <code>network.opts</code> 的設備位址中包含了四個以逗號來分開的欄位： scheme、插槽號碼、設備提議及卡片硬體的乙太網路位址。設備提議是用來 
+  給有許多網路介面的卡片取號碼之用，通常為 0。如果您有許多不同使用目 地的卡片時，另一按照插槽位置而建構的選項應該被設定，如同在：</p>
+<pre class="sample">case &quot;$ADDRESS&quot; in
+*,0,*,*)
+    # definitions for network card in socket 0
+    ;;
+*,1,*,*)
+    # definitions for network card in socket 1
+    ;;
+esac
+</pre>
+
+<p>或是，它們可能被以自己的硬體位址被建構，如下：</p>
+<pre class="sample">case &quot;$ADDRESS&quot; in
+*,*,*,00:80:C8:76:00:B1)
+    # definitions for a D-Link card
+    ;;
+*,*,*,08:00:5A:44:80:01)
+    # definitions for an IBM card
+esac
+</pre>
+
+<h3>網路設備參數</h3>
+
+<p> 以下的參數可在 <code>network.opts</code>內被使用：</p>
+<table width="90%" border="1" cellspacing="0" cellpadding="0" summary="列出網路設定的各項參數">
+  <caption>
+  表：網路設備的參數 
+  </caption>
+  <tr> 
+    <th style="width:20%">參數</th>
+    <th>說明</th>
+  </tr>
+  <tr> 
+    <td><code>IF_PORT</code></td>
+    <td>指定乙太網路收發器類型， 這是針對那些無法自動偵測的卡使用。 請看 ``<code>man ifport</code>'' 內有收發器名稱。</td>
+  </tr>
+  <tr> 
+    <td><code>BOOTP</code></td>
+    <td>布林 (y/n) 設定： 表示是否主機的 IP 位址和分路資訊是否可以經由 BOOTP 協定來獲取。</td>
+  </tr>
+  <tr> 
+    <td><code>IPADDR</code></td>
+    <td>指定IP位址。</td>
+  </tr>
+  <tr> 
+    <td><code>NETMASK</code>,<br /> <code>BROADCAST</code>,<br /> <code>NETWORK</code></td>
+    <td>基本網路參數： 請參閱 networking HOWTO</td>
+  </tr>
+  <tr> 
+    <td><code>GATEWAY</code></td>
+    <td>給主機的子網路使用的通訊閘 IP 位址。只要是在這個子網路以外的封包都 會被轉到這個閘道。</td>
+  </tr>
+  <tr> 
+    <td><code>DOMAIN</code></td>
+    <td>給主機的網路 domain name，被用來建立 <code>/etc/resolv.conf</code>。</td>
+  </tr>
+  <tr> 
+    <td><code>DNS_1</code>,<br /> <code>DNS_2</code>,<br /> <code>DNS_3</code></td>
+    <td>主機名稱或是 IP 位址給這個介面的 nameservers， 被加到 <code>/etc/resolv.conf</code>內。</td>
+  </tr>
+  <tr> 
+    <td><code>MOUNTS</code></td>
+    <td>A 給這個介面使用來做 NFS 掛入點的列表。</td>
+  </tr>
+  <tr> 
+    <td><code>IPX_FRAME</code>, <br /> <code>IPX_NETNUM</code></td>
+    <td>對 IPX 網路: frame type 及網路號碼將被傳輸到 <code>ipx_interface</code> 命令上。</td>
+  </tr>
+</table>
+<p>例如：</p>
+<pre class="sample">case &quot;$ADDRESS&quot; in
+*,*,*,*)
+    IF_PORT=&quot;10base2&quot;
+    BOOTP=&quot;n&quot;
+    IPADDR=&quot;10.0.0.1&quot;
+    NETMASK=&quot;255.255.255.0&quot;
+    NETWORK=&quot;10.0.0.0&quot;
+    BROADCAST=&quot;10.0.0.255&quot;
+    GATEWAY=&quot;10.0.0.1&quot;
+    DOMAIN=&quot;domain.org&quot;
+    DNS_1=&quot;dns1.domain.org&quot;
+    ;;
+esac
+</pre>
+
+<p>若想自動掛上或卸下網路檔案系統，首先將檔案系統加到 <code>/etc/fstab</code>
+內，在掛上選項上加上 <code>noauto</code>。 在 <code>network.opts</code> 內
+使用  <code>MOUNTS</code>   變數列明檔案系統的掛入點。  這特別是在使用
+<code>cardctl</code> 或 <code>cardinfo</code> 命令來關閉當網路檔案系統是用這個方法
+建構而掛上的網路卡時。如果在沒預警下網路卡被移出時，是無法完全地卸
+下網路檔案系統的。</p>
+<p>除了一般的網路建構參數之外，<code>network.opts</code> 手稿可用來在介面已經
+被建構起後或被關閉後做另外的動作時使用。 如果 <code>network.opts</code> 定
+義了一個叫 <code>start_fn</code> 的命令層功能呼叫， 當介面被建構後它會被網
+路手稿所啟用，而介面名稱將會被傳送到這個功能函數做為第一個參數（也
+只有這個）。相同地，如果 <code>stop_fn</code> 被定義了，那麼它會在關閉一個
+介面前被啟用。</p>
+<p>收發器類型可以用 <code>IF_PORT</code> 來設定。它可以是 PCMCIA 之前版本的數 值表示或是識別收發器的關鍵字。所有的網路驅動程式儘可能將它設定為自 
+  動偵測（如果可能的話）介面或是 10baseT 的。 <code>ifport</code> 命令可用來 檢查或設定目前的收發器類型，例如：</p>
+<pre class="sample">
+# ifport eth0 10base2
+# 
+# ifport eth0
+eth0    2 (10base2)
+</pre>
+
+<p>目前的 3c589 驅動程式版本會自動偵測網路的連結， 但還無法完全發揮它 的功能。若想以自動偵測來工作，在網路卡被建構前網路線應該是已連接著 網路卡上的。要不然，等網路接好後，您可以下列命令迫使驅動程式檢查連 
+  結：</p>
+<pre class="sample">
+ifconfig eth0 down up
+</pre>
+
+<h3>特定卡片的評語</h3>
+
+
+<ul>
+  <li>使用 IBM CCAE 和 Socket EA 卡在網路設備被建構時， 您需挑個接收器類 型 (10base2、10baseT、AUI)，並確認在您的系統日誌上所記錄的接收器與 
+    您所連結的相同。</li>
+  <li>給 SMC、Megahertz、 Ositech 及 3Com 卡片的驅動程式應該會自動偵測連 接著的網路類型 (10base2 或 10baseT) 
+    。 當驅動程式被載入時會設 定收發器類型來訂定義卡片的 ``第一次猜想''。</li>
+  <li>Farallon EtherWave 事實上是和 3Com 3c589 相同的， 但有個特殊的收發 器。 雖然 EtherWave 使用 10baseT 
+    類的連接方式， 但它的收發器需要把 3c589 建構成 10base2 模式。</li>
+  <li>如果您使用 IBM CCAE、NE4100、 Thomas Conrad 或 Kingston 介面卡時遇 到問題， 請試著在 <code>pcnet_cs</code> 
+    模組內的 <code>mem_speed=#</code> 選項 增加記憶體存取時間。在標準的 <code>config.opts</code> 檔案內有個教你如何做 
+    的範例。請試看看速度在 1000 ns(奈秒)以上。</li>
+  <li>New Media 乙太網路卡在接到某些系統上時，可能需要在 <code>pcmcia_core</code> 模組被載入時， 以 <code>io_speed=#</code> 
+    選項來增加 IO 埠的存取時間。 在啟動手稿的 <code>CORE_OPTS</code> 選項可以設定它。</li>
+  <li>New Media 乙太網路卡驅動程式的多工傳播支援並不完整。最新的驅動程式 版本可與多工傳播核心一起使用，但會略過多工傳播封包。不規則模式應該 
+    可以工作正常了。</li>
+  <li>給 IBM 及 3Com token ring 卡的驅動程式在卡片尚未接上一個 ring 上時 就做初始化是會有點問題。所以請一定記得在開機前一定要把這些卡片和 
+    網路連接在一起。 這個驅動程式也需要空置的 IO 埠在 0xa20-0xa27 範圍 內。在有些系統上，自動 IO 埠衝突檢查器會錯誤地判定說這個埠範圍並不 
+    是空置的。 遇到這種情況， 我們可以把埠檢查器給關閉掉。 只要在 載入 <code>pcmcia_core</code> 模組時設定 <code>probe_io=0</code>即可。</li>
+  <li>Newer Linksys 及 D-Link 的卡片有個特殊的選擇收發器方式，目前還不被 Linux 的驅動程式所能控制。 只有一個變通的方法是以 
+    DOS 開機並使用廠 商所付的公用程式來選擇收發器後，再暖開機進到 Linux 裏。 我現在也正 在尋找首次的測試者使用 Linux 的公用程式來做到這些功能。</li>
+  <li>對 WaveLAN 無線網路卡來說，Jean Tourrilhes (<code>jt@hplb.hpl.hp.com</code>) 寫了一篇無線的 
+    (設備 ) wireless HOWTO 放在 <a href="http: //www-uk.hpl.hp.com/people/jt/Linux/Wavelan.html">http: 
+    //www-uk.hpl.hp.com/people/jt/Linux/Wavelan.html</a> 內。</li>
+</ul>
+<h3>診斷網路卡的問題</h3>
+
+
+<ul>
+  <li>您的卡片有被辨視成乙太網路卡嗎? 請查看系統日誌並確認 <code>cardmgr</code> 已正確地辨視了這張卡，而且已啟動了一種網路驅動程式了。如果沒有，您 
+    的卡片也可能還是可以使用，只要它與任一種被支援的卡片相容的話。只要 是這卡片是與 NE2000 相容的卡片都可以做到。</li>
+  <li>卡片有妥當地被建構了嗎? 如果你使用的是被支援的卡片， 而且它已被 <code>cardmgr</code>所辨視了，但它還是無法工作，這可能是因為它與其他的設備 
+    發生插斷或埠的衝突了。請查明這張卡片使用了嗎些資源 (從系統日誌裏找 )， 然後試著在 <code>/etc/pcmcia/config.opts</code> 
+    內把這些給排除掉來 迫使卡片使用其他的資源。</li>
+  <li>如果你的卡片似乎已妥當地建構了，但有時候還是會鎖死不能動，尤其是在 高負載時，你可能需要試著改變你的插槽驅動程式的分時參數。詳細資料請 看 <a href="PCMCIA-HOWTO-2.html#timing">2.3</a> 
+    這章。</li>
+  <li>當你在存取網路使遇到像 ``network unreachable'' 這類的訊息， 可能是 你在 <code>/etc/pcmcia/network.opts</code> 
+    有設定錯誤的地方。 另外，錯 誤地建構的卡片通常會安靜地發生問題。</li>
+  <li>要診查在 <code>/etc/pcmcia/network.opts</code> 內的錯誤， 開始請先試著 以它們的 IP 位址來 ping 
+    同一次網路的其他系統。然後試著 ping 你的閘 道，然後其他次網路內機器。在試完這些較簡單的測試後，再以機器的名字 來 Ping。</li>
+  <li>請要確認你的問題真的個 PCMCIA 的問題。 你可以在 DOS 下以廠商供應 的驅動程式來驅動看看是否可以工作，這樣將有助於判斷。並再次複檢你對 
+    <code>/etc/pcmcia/network.opts</code> 手稿內的任何修改。並確認你的纜線 、``T'' 接頭、終端電阻器等等的元件都可正常工作。</li>
+</ul>
+<h2><a name="ss4.4" id="ss4.4"></a>4.4 PCMCIA 串列與數據機設備
+</h2>
+
+<p>Linux 的串列設備都是被經由 <code>/dev/cua*</code> 和 <code>/dev/ttyS*</code>
+特殊設備檔案來做取用。 <code>ttyS*</code> 的設備被使用在進來的連接，例如直
+接地連接終端機。<code>cua*</code> 的設備被使用在往外的連接，比如說數據機。
+而每一個實體串列埠都各有 <code>ttyS</code> 和 <code>cua</code> 兩個設備檔： 要使用
+哪個適當的設備到你的應用上都由您來決定。</p>
+<p>對於串列設備的建構，您可使用 <code>setserial</code> 命令來檢查與修改。</p>
+<p>當一個 PCMCIA 串列卡或數據卡被偵測到時，它會被指定成為第一個可用的
+串列設備。通常是 <code>/dev/ttyS1</code> (<code>cua1</code>) 或 <code>/dev/ttyS2</code>
+(<code>cua2</code>) ，這完成看原已內建的串列埠數目。  <code>ttyS*</code> 設備會被
+報告在   <code>/var/run/stab</code>    內。   原內定的串列設備選項手稿
+<code>/etc/pcmcia/serial.opts</code> 會將之連結到相對應的 <code>cua*</code> 設
+備檔案成為 <code>/dev/modem</code>。這樣就很便利了。</p>
+<p>請勿使用 <code>/etc/rc.d/rc.serial</code> 來建構 PCMCIA 數據機。這個手
+稿應該只能被用來建構那些非可移動的設備。如果你想要設定你的數據機來
+做任何特別的動作時，請修改 <code>/etc/pcmcia/serial.opts</code> 這個手
+稿。 另外， 也請勿使用 <code>setserial</code> 來改變 PCMCIA 串列設備的設備
+IO 埠和插斷設定。 這樣做只會告訴串列驅動程式到不對的地方尋找串列設
+備，但不會改變卡片硬體方面真正被建構的事實。串列建構手稿允許您指定
+其他的 <code>setserial</code>  選項， 以及是否您該在 <code>/etc/inittab</code>
+內為這個埠加一行設定。</p>
+<p>快傳送到 <code>serial.opts</code> 的設備位址共有三個由逗點所分開的欄位：第 一是 scheme、 第二是插槽號碼以及第是 device 
+  instance。 The device instance 會為支援多串列埠的卡選用多個數據，但對於單一埠卡來說， 它 永遠都是零。 如果你常使用不只一個的 
+  PCMCIAl 數據機，你可能需要針對 各別插槽內的數據機做不同的設定。如下：</p>
+<pre class="sample">case &quot;$ADDRESS&quot; in
+*,0,*)
+    # Options for modem in socket 0
+    LINK=/dev/modem0
+    ;;
+*,1,*)
+    # Options for modem in socket 1
+    LINK=/dev/modem1
+    ;;
+esac
+</pre>
+
+<p></p>
+<p>如果 PCMCIA 數據卡在 Linux 啟動時即被建構好了， 那它可能已被錯誤地
+被辨識成為一般的內建串列埠了。這雖然無害處，但是，當 PCMCIA 驅動程
+式接手來控制數據機時， 它會被指派成不一樣的設備插孔。 最好是 parse
+<code>/var/run/stab</code>   或使用  <code>/dev/modem</code>，  而不是期望
+PCMCIA 數據機總是被指派成相同的設備。</p>
+<p>如果你建構你的核心來載入基本的  Linux 串列埠驅動程式成為一個模組，
+你必須編修 <code>/etc/pcmcia/config</code> 來指出該模組必須被載入。 編
+修串列設備那列如下：</p>
+<p>
+
+</p>
+<pre class="sample">device &quot;serial_cs&quot;
+  class &quot;serial&quot; module &quot;misc/serial&quot;, &quot;serial_cs&quot;
+</pre>
+
+<p></p>
+
+<h3>串列裝置參數</h3>
+
+<p>以下的參數可以茬 <code>serial.opts</code>內被定義：
+</p><dl>
+  <dt><code>LINK</code></dt>
+  <dd><p>為符號連結 (symbolic  link)指定個要被建立的路徑  ``dialout''  或是
+<code>/dev/cua*</code> 設備。</p>
+</dd>
+  <dt><code>SERIAL_OPTS</code></dt>
+  <dd><p>指定有哪些選項將被傳送到 <code>setserial</code> 命令。</p>
+</dd>
+  <dt><code>INITTAB</code></dt>
+  <dd><p>如果有指定的話，它將被用來在 <code>inittab</code> 中為該設備建立一個條目。</p>
+</dd></dl>
+<p></p>
+<p>例如：</p>
+<p>
+
+</p><pre class="sample">
+case "$ADDRESS" in
+*,*,*,*)
+    LINK="/dev/modem"
+    SERIAL_OPTS=""
+    INITTAB="/sbin/getty"
+</pre>
+
+<p></p>
+
+<h3>診斷串列設備的問題</h3>
+
+
+<p>
+</p><ul>
+<li>您的卡被認為是個數據機嗎? 請檢查系統日誌並確認 <code>cardmgr</code> 有正確
+地辨識了這張卡，並且啟動了 <code>serial_cs</code> 驅動程式。如果沒有，你可
+能需要在你的 <code>/etc/pcmcia/config</code>  檔案中加入一條應該被適當
+地辨識的條目。細節請看章節 
+<a href="PCMCIA-HOWTO-6.html#new-card">3.6</a>。</li>
+<li>數據卡成功地被 serial_cs 所建構了嗎? 再來一次， 請檢查系統日誌，再
+看看從      serial_cs       驅動程式所出來的訊息。      如果你看到
+``register_serial() failed''， 你可能遇到了 I/O 埠與其他設備相衝突
+了。 另外一個情報是， 如果這個設備被報告說是個 8250;  大部份現在的
+PCMCIA 數據卡應該是被辨視成 16550A UART 類型的。如果您覺得遇上了一
+個埠衝突了，請編修 <code>/etc/pcmcia/config.opts</code> 把被配置給數據
+卡的埠範圍給排除。</li>
+<li>遇上了插斷衝突嗎? 如果系統日誌看似很好，但數據卡就是好像不能工作，
+請試試用 <code>setserial</code> 來把 irq 改成 0， 再看看數據機是否可以工作
+了。這樣會讓串列驅動程式使用一個慢一些的票選模式而不使用插斷來工作
+。如果這樣可以修正這個問題，那就是在你的系統中有某個其他的設備使用
+了被 serial_cs 所選用的插斷在工作著。你應該在 <code>/etc/pcmcia/config.opts</code>
+中加一行命令將這個插斷給排除掉。</li>
+<li>如果數據機好像只能慢慢地工作，這就很明顯地是個插斷衝突的問題了。</li>
+<li>請確認你所遇到的問題真的是個 PCMCIA 的問題。使用原廠商的驅動程式在
+DOS 下看看是否可以正常工作即可知道。另外，在你已確定你可以做簡單的
+連接前，請不要使用更複雜的方式來測試，比如說 SLIP 或 PPP。如果簡單
+的連接正常但使用 SLIP 時卻不是，你的問題應該就是出在 SLIP 上，而不
+是 PCMCIA。</li>
+<li>如果你得到發自核心的訊息指出 serial_cs 模組無法被載入。 那就表示你
+的核心並不支援串列設備。如果你已將串列驅動程式編譯成一個模組了，你
+必須修改 <code>/etc/pcmcia/config</code> 來讓 <code>serial</code> 模組應該
+在載入 <code>serial_cs</code> 前就被載入了。</li>
+</ul>
+<p></p>
+
+<h2><a name="ss4.5" id="ss4.5"></a>4.5 PCMCIA SCSI卡
+</h2>
+
+<p>目前所有被支援的 PCMCIA SCSI 卡都工作的像下列的 ISA 匯流排卡的樣子
+： Qlogic、Adaptec AHA-152X 或是 Future Domain TMC-16x0。PCMCIA 驅
+動程式被建立成與  PCMCIA  特別程式碼相連結  (如 <code>qlogic_cs.c</code>、
+<code>toaster_cs.c</code> 或 <code>fdomain_cs.c</code>) 以及正常的 Linux SCSI 驅動
+程式。</p>
+<p>當一個新的 SCSI 主卡被偵測到時， SCSI 驅動程式會尋找連接著的設備。
+請檢查系統日誌你的設備被正確地偵測到了。新的 SCSI 設備會被指定為第
+一個可用的 SCSI 設備檔。第一個 SCSI 硬碟是 <code>/dev/sda</code>，第一
+個 SCSI  磁帶機是  <code>/dev/st0</code>， 還有， 第一個  CD-ROM  會是
+<code>/dev/scd0</code>。</p>
+<p>在 1.3.X (含 ) 以後的核心裏，PCMCIA 核心驅動程式可以從系統核心中找
+出有哪些 SCSI 設備有連接在介面卡上。它們會被列表在 <code>/var/run/stab</code>
+， 而 SCSI 構建手稿 <code>/etc/pcmcia/scsi</code> 也會被每一個連接著的
+設備所呼叫來建構或關閉該設備。內定的手稿並不會做任何建構 SCSI 設備
+的動作，但它會妥當地在介面卡被移走時卸下在 SCSI 設備上檔案系統。</p>
+<p>在 1.2.X 核心裏，PCMCIA 驅動程式無法自動地推測哪個設備被安裝在哪個
+特定的 SCSI 介面卡上。然而，如果你有一個正常的 SCSI 設備之建構，你
+可以將這些設備列明在 <code>/etc/pcmcia/scsi.opts</code> 中。例如，如果
+你正常都有個 SCSI 磁碟以及一個 CD-ROM，你可以使用以下：</p>
+<p>
+
+</p><pre class="sample">
+# For 1.2 kernels: list of attached devices
+SCSI_DEVICES="sda scd0"
+</pre>
+
+<p></p>
+<p>被傳到 &lt;<code>scsi.opts</code> 的設備位址有點複雜， 那是因為有許多種類的東
+西可以被連接到 SCSI 介面卡上。這些位址包含了不是 6 個就是 7 個以逗
+號來分開的欄位資料： 現在的架構、設備種類、插槽號碼、SCSI 頻道、識
+別號、邏輯單位號碼，以及選擇性的分割號碼。設備種備為 ``sd'' 指磁碟
+、``st'' 指磁帶、``sr'' 指 CD-ROM 設備， 還有 ``sg'' 指一般的 SCSI
+設備。 大部份的設定中，SCSI 頻道還有邏輯單位號碼都設為 0。對於有許
+多磁碟分割區的磁碟設備，<code>scsi.opts</code> 會先被以 5 個欄位的位址所呼
+叫。  這手稿應該要設一個  <code>PARTS</code>  變數來列明這些分割。  然後，
+<code>scsi.opts</code> 會被每一個磁區以較長的 7 欄位位址所呼叫使用。</p>
+<p>如果你的核心沒有針對特定的 SCSI 設備給上層驅動程式 (磁碟、磁帶等 )
+，那麼這些設備就不會被　 PCMCIA 驅動程式所建構。但有個邊際效應是，
+該設備的名字在  <code>/var/run/stab</code>  內會變為像 ``sd#nnnn''
+的名字。這 ``nnnn'' 是個 4 個數字的十六進位號碼。只要 <code>cardmgr</code>
+無法轉譯一個 SCSI 設備的識別號碼到相對應的  Linux 設備名字時都會發
+生這種事。</p>
+<p>要將上層的 SCSI 驅動程式模組化成只有當  PCMCIA SCSI 卡被偵測到時它
+們才會被載入是有可能的。要這麼做，你需要編修 <code>/etc/pcmcia/config</code>
+來告訴 <code>cardmgr</code> 有哪個另外的模組在介面卡被建構時也要將它載入。
+例如：</p>
+<p>
+
+</p><pre class="sample">
+device "aha152x_cs"
+  class "scsi" module "scsi/scsi_mod", "scsi/sd_mod", "aha152x_cs"
+</pre>
+
+<p></p>
+<p>會在載入一般的 PCMCIA 驅動程式模組前將主要的 SCSI 模組和上層的磁碟
+驅動程式模組給載入。PCMCIA 建構手稿不會自動地偵測被模組化了的 SCSI
+模組，所以你必需手動建構選項來將 SCSI 支援的功能打開。</p>
+<p>每次在開機您的筆記型電腦前先將 SCSI 設備開機，或是在插入控制卡前，
+這樣子 SCSI 匯流排會在控制卡被建構後正確地被終止。另外還要注意抽出
+SCSI 控制卡。 記得要確認在抽出控制卡前被連接著的 SCSI 設備都被正確
+地卸下與關閉了。 最好的確認方法是在實體抽出卡片前使用 <code>cardctl</code>
+或 <code>cardinfo</code> 來要求卡片的移出動作。 就這樣，所有的 SCSI 設備必
+須在插上 SCSI 控制卡前已開啟了電源，而在你抽出控制卡和／或關機筆記
+電腦前都須要保持著它們是連接著的。</p>
+<p>使用一般的 ISA 匯流排介面卡時可能會有潛在的複雜性， 尤其是無法啟動
+。  SCSI 匯流排搭載一個為了適當地使用被動式 SCSI 終端器所必須的 ``
+終端電源 '' 信號。PCMCIA SCSI 卡並不供應終端電源，所以如果需要該電
+源的話，就必須由外接的設備來供應它。有些外接的 SCSI 設備可以被建構
+成供應這個終端電源。其他的，如 Zip 磁碟以及 Syquest EZ-Drive，它們
+使用主動式終端電阻就不需要如此了。有時候，可能需要使用一個特別的終
+端電阻器如 APS SCSI Sentry 2，它有個外接的電源供應。 當您建構 SCSI
+設備串接時，請注意是否其中有任何的設備需要或可以提供終端電阻電源的
+。</p>
+<p>Adaptec APA-460 SlimSCSI 卡並不被支援。這張卡原本是以 Trantor 的名
+稱被販賣的， 當 Adaptec 併購了 Trantor 後，他們仍繼續以 Adaptec 的
+商標來賣 Trantor 的卡，反正，APA-460 不被現有的任何一 Linux 驅動程
+式所相容。</p>
+<p>我不確定要寫個驅動程式會有多難， 我不認為有任何人可以從 Adaptec 那
+兒拿到技術資訊。</p>
+<p>(未被支援的 ) Trantor SlimSCSI 可用以下方法被識別：</p>
+<p>
+
+</p><pre class="sample">
+Trantor / Adaptec APA-460 SlimSCSI
+FCC ID: IE8T460
+Shipped with SCSIworks! driver software
+</pre>
+
+<p></p>
+<p>(未被支援的) Adaptec SlimSCSI 可用以下方法被識別：</p>
+<p>
+
+</p><pre class="sample">
+Adaptec APA-1460 SlimSCSI
+FCC ID: FGT1460
+P/N: 900100
+Shipped with EZ-SCSI driver software
+</pre>
+
+<p></p>
+
+<h3>SCSI  設備的參數</h3>
+
+<p>以下的參數可以被定義在 <code>scsi.opts</code>內： </p>
+<table width="90%" border="1" cellspacing="0" cellpadding="0" summary="列出 SCSI 設備的參數">
+  <caption>
+  表：SCSI 設備的參數 
+  </caption>
+  <tr> 
+    <th style="width:20%">參數</th>
+    <th>說明</th>
+  </tr>
+  <tr> 
+    <td><code>DO_FSTAB</code></td>
+    <td>布林 (y/n) 設定：指定是否這個設備應該在 <code>/etc/fstab</code> 內加個 條目。</td>
+  </tr>
+  <tr> 
+    <td><code>DO_FSCK</code></td>
+    <td>布林 (y/n) 設定：指定是否檔案系統應該在被掛上前以 ``<code>fsck -Ta</code>'' 來檢查一下。</td>
+  </tr>
+  <tr> 
+    <td><code>DO_MOUNT</code></td>
+    <td>布林 (y/n) 設定： 指定是否這個設備應該在卡片被插入的同時被自動地被 掛上。</td>
+  </tr>
+  <tr> 
+    <td><code>FSTYPE</code>,<br /> <code>OPTS</code>, <code><br />
+      MOUNTPT</code></td>
+    <td>檔案系統型態、 掛上選項、以及被用來做為 fstab 的項目及／或掛上該設 備的掛上點。</td>
+  </tr>
+</table>
+<p>例如，以下是一個建構一個 SCSI ID 為 3、有 2 個分割區的磁碟設備還有 一個 SCSI ID 為 6 的 CD-ROM 之手稿：</p>
+<pre class="sample">
+case "$ADDRESS" in
+*,sd,*,0,3,0)
+    # This device has two partitions...
+    PARTS="1 2"
+    ;;
+*,sd,*,0,3,0,1)
+    # Options for partition 1:
+    #  update /etc/fstab, and mount an ext2 fs on /usr1
+    DO_FSTAB="y" ; DO_FSCK="y" ; DO_MOUNT="y"
+    FSTYPE="ext2"
+    OPTS=""
+    MOUNTPT="/usr1"
+    ;;
+*,sd,*,0,3,0,2)
+    # Options for partition 2:
+    #  update /etc/fstab, and mount an MS-DOS fs on /usr2
+    DO_FSTAB="y" ; DO_FSCK="y" ; DO_MOUNT="y"
+    FSTYPE="msdos"
+    OPTS=""
+    MOUNTPT="/usr2"
+    ;;
+*,sr,*,0,6,0)
+    # Options for CD-ROM at SCSI ID 6
+    PARTS=""
+    DO_FSTAB="y" ; DO_FSCK="n" ; DO_MOUNT="y"
+    FSTYPE="iso9660"
+    OPTS="ro"
+    MOUNTPT="/cdrom"
+    ;;
+esac
+</pre>
+
+<p></p>
+
+<h3>診斷SCSI卡的問題</h3>
+
+<p>
+</p><ul>
+<li>使用 <code>aha152x_cs</code> 驅動程式 (被 Adaptec、 New Media 以及有些牌子
+所使用 )，似乎在 SCSI 脫離連接／再連接支援時使用磁帶機時常會有問題
+。要將這個問題解除，請在 <code>/etc/pcmcia/config.opts</code> 中加入下
+列這行：
+
+<pre class="sample">
+module "aha152x_cs" opts "reconnect=0"
+</pre>
+
+</li>
+<li>如果你將 SCSI 支援編譯成模組了 (<code>CONFIG_SCSI</code> is ``m'')，在
+建構  PCMCIA  時， 你必須指定要把建立  SCSI  驅動程式。 你也要修改
+<code>/etc/pcmcia/config</code>  在適合的 <code>*_cs</code> 驅動程式被載入
+前載入 SCSI 模組。</li>
+<li>如果在  SCSI  匯流排被探測到時看到   ``aborting   command  due  to
+timeout'' 訊息時，大部份是你有個插斷衝突了。</li>
+</ul>
+<p></p>
+
+<h2><a name="ss4.6" id="ss4.6"></a>4.6 PCMCIA 記憶卡
+</h2>
+
+<p>1tt/memory_cs/ 驅動程式負責所有型態的設憶卡， 並且還提供對於那些有
+其他功能的卡的 PCMCIA 記憶體位址空間直接存取功能。當被載入時，它建
+立了一個字元與區塊設備的組合體。 請看這模組的 man 頁中有個完整的設
+備取名規則的描述。區塊設備被用來做磁碟類型的存取 (建立和掛上檔案系
+統等等 )。而字元設備被用來做 " 未加工 " 的未被緩衝之隨意位置上讀與
+寫。</p>
+<p>被傳送到 <code>memory.opts</code> 的設備位址包含了 2 個欄位： 架構和插槽號
+碼。這個選項被放在相對應的記憶卡內的第一個共同記憶分割區中。</p>
+<p>有些舊型的記憶卡， 還有大部份的簡單靜態 RAM 卡，都缺少 `` 卡片資訊
+架構 '' (CIS)，e PCMCIA 卡用來辨視它們自已的一種 scheme。 一般來說
+， <code>cardmgr</code> 會將任何缺少 CIS 的卡片視為一個簡單記憶卡， 並載入
+<code>memory_cs</code> 驅動程式。 因此，有個邊際效應是，一般的識別問題是其
+他型式的卡片可能會錯誤地被偵測為記憶卡了。</p>
+<p><code>memory_cs</code>   驅動程式使用了  heuristic  來猜測這些卡片的容量。
+heuristic   在寫入保護的卡片上並無法工作，  有時還有可能會出錯誤。
+如果卡片被誤判了，當你在使用像 <code>dd</code> 或 <code>mkfs</code> 這樣的命令時，
+它的容量應要明確地被指定。</p>
+
+<h3>記憶設備參數</h3>
+
+
+<p>下列參數可以放在 <code>memory.opts</code>內：</p>
+<table width="90%" border="1" cellspacing="0" cellpadding="0" summary="列出記憶體設備的參數">
+  <caption>
+  表：記憶體設備的參數 
+  </caption>
+  <tr> 
+    <th style="width:20%">參數</th>
+    <th>說明</th>
+  </tr>
+  <tr> 
+    <td><code>DO_FSTAB</code></td>
+    <td>布林 (y/n) 設定：指定是否這個設備應該在 <code>/etc/fstab</code> 內加個 條目。</td>
+  </tr>
+  <tr> 
+    <td><code>DO_FSCK</code></td>
+    <td>布林 (y/n) 設定： 指定是否檔案系統應該在被掛上前以 ``<code>fsck -Ta</code>'' 來檢查一下。</td>
+  </tr>
+  <tr> 
+    <td><code>DO_MOUNT</code></td>
+    <td>布林 (y/n) 設定： 指定是否這個設備應該在卡片被插入的同時被自動地被 掛上。</td>
+  </tr>
+  <tr> 
+    <td><code>FSTYPE</code>,<br /> <code>OPTS</code>, <code><br />
+      MOUNTPT</code></td>
+    <td>檔案系統型態、 掛上選項、以及被用來做為 fstab 的項目及／或掛上該設 備的掛上點。</td>
+  </tr>
+</table>
+<p>以下範例會針對插上任一插槽的記憶卡做自動掛上動作的手稿：</p>
+<pre class="sample">
+case "$ADDRESS" in
+*,0,0)
+    # Mount filesystem, but don't update /etc/fstab
+    DO_FSTAB="n" ; DO_FSCK="y" ; DO_MOUNT="y"
+    FSTYPE="ext2" ; OPTS=""
+    MOUNTPT="/mem0"
+    ;;
+*,1,0)
+    # Mount filesystem, but don't update /etc/fstab
+    DO_FSTAB="n" ; DO_FSCK="y" ; DO_MOUNT="y"
+    FSTYPE="ext2" ; OPTS=""
+    MOUNTPT="/mem1"
+    ;;
+esac
+</pre>
+
+<h3>使用快閃記憶卡</h3>
+
+<p>傳到 <code>ftl.opts</code> 內的設備位址有 3 或 4 個欄位： the scheme、插槽
+號碼、區號碼以及另外的選項，分割號碼。大部份的快閃卡只有一個快閃記
+憶體區，所以大部份的區號碼都是 0 的。</p>
+<p>要將快閃記憶卡當成一般的磁碟來使用， 首先要建立 FTL，或
+`` 快閃轉譯層級 (flash translation layer)''，它是一個使
+用 <code>ftl_format</code> 命令在設備上做成的一個分割。 這層資料隱藏了快閃
+記憶體程式的設備指定細節，並讓卡片看起來就像是個簡單的區塊設備。例
+如：</p>
+<p>
+
+</p>
+<pre class="sample">
+ftl_format -i /dev/mem0c0c
+</pre>
+
+<p>記得這個命令是經由 `` 未加工的 '' 記憶體卡片介面來存取卡片的。一經 格式化後， 這個卡就可以經由 <code>ftl_cs</code> 驅動程式將它當成一般的區塊 
+  設備那樣地做存取了。例如：</p>
+<pre class="sample">
+mke2fs /dev/ftl0c0
+mount -t ext2 /dev/ftl0c0 /mnt
+</pre>
+
+<p>被命名成 FTL 類的設備都有點怪怪的。Minor device numbers 有三個部份
+: 卡片號碼、卡片內的區域號碼以及選項－在區域號碼內的分割。這兒的區
+域可以被看成為沒有分割表格的單一區塊設備  (就像軟體片一樣 ) 或者它
+也可以被分割，就像是個硬碟設備一樣。 ``ftl0c0'' 設備是卡片 0，共同
+記憶體區域為   0，  整個區域。   如果這個區域已被分割了，   那麼從
+``ftl0c0p1'' 到 ``ftl0c0p4'' 的設備是主分額區 1 到 4 了。</p>
+<p>快閃記憶體卡片有兩種主要的格式:   FTL    型式，   以及   Microsoft
+的快閃檔案系統  Flash File System。FTL 格式是最有彈性的
+，因為它允許一般的任何高階檔案系統 (ext2、ms-dos 等等 ) 都可視為一
+般磁碟設備般地來使用。FFS 則完全是個不同的檔案系統類型了。Linux 目
+前無法處理用 FFS 格式化的卡片。</p>
+
+<h2><a name="ss4.7" id="ss4.7"></a>4.7 PCMCIA ATA/IDE 卡式硬碟機
+</h2>
+
+<p>對 ATA/IDE  磁碟機的支援需要  1.3.72 或更新的核心版本。 驅動程式內
+指定 PCMCIA 的部份是 <code>fixed_cs</code>。 請記得在抽出 ATA/IDE 卡前請使
+用 <code>cardctl</code> 或 <code>cardinfo</code> 程式把它先關閉， 因為這個驅動程式
+並沒有被設計成可 ``防止熱置換的''。</p>
+<p>傳送到   <code>fixed.opts</code>    內的設備位置包含三或四個欄位:   目前的
+scheme、插槽號碼、磁碟的序號以及選項的分割號碼。<code>ide_info</code> 可以
+被用來獲得 IDE 磁碟的序號。 使用 SCSI 設備時，<code>fixed.opts</code> 會在
+第一次被呼叫給整個設備做設定。 如果  <code>fixed.opts</code>  回應了一個在
+<code>PARTS</code> 變數內的一串分割資訊， 命令手稿接著就會為每一個分割做設
+定。</p>
+
+<h3>ATA/IDE 固定磁碟設備參數</h3>
+
+
+<p>以下的參數可以被定義在 <code>fixed.opts</code>內：</p>
+<table width="90%" border="1" cellspacing="0" cellpadding="0" summary="列出ATA/IDE 固定磁碟設備參數">
+  <caption>
+  表：ATA/IDE 固定磁碟設備參數 
+  </caption>
+  <tr> 
+    <th style="width:20%">參數</th>
+    <th>說明</th>
+  </tr>
+  <tr> 
+    <td><code>DO_FSTAB</code></td>
+    <td>布林 (y/n) 設定：指定是否這個設備應該在 <code>/etc/fstab</code> 內加個 條目。</td>
+  </tr>
+  <tr> 
+    <td><code>DO_FSCK</code></td>
+    <td>布林 (y/n) 設定：指定是否檔案系統應該在被掛上前以 ``<code>fsck -Ta</code>'' 來檢查一下。</td>
+  </tr>
+  <tr> 
+    <td><code>DO_MOUNT</code></td>
+    <td>布林 (y/n) 設定： 指定是否這個設備應該在卡片被插入的同時被自動地被 掛上。</td>
+  </tr>
+  <tr> 
+    <td><code>FSTYPE</code>, <code><br />
+      OPTS</code>,<br /> <code>MOUNTPT</code></td>
+    <td>檔案系統型態、 掛上選項、以及被用來做為 fstab 的項目及／或掛上該設 備的掛上點。</td>
+  </tr>
+</table>
+<p>以下是個 <code>fixed.opts</code> 檔案的例子用來掛上任一個 ATA/IDE 卡的第一 個分割到 <code>/mnt</code> 
+  目錄上。</p>
+<pre class="sample">
+case "$ADDRESS" in
+*,*,*)
+    PARTS="1"
+    ;;
+*,*,*,1)
+    DO_FSTAB="y" ; DO_FSCK="y" ; DO_MOUNT="y"
+    FSTYPE="msdos"
+    OPTS=""
+    MOUNTPT="/mnt"
+    ;;
+esac
+</pre>
+
+<p></p>
+
+<h3>診斷 ATA/IDE 卡的問題</h3>
+
+<p>
+</p><ul>
+<li>有些 IDE 磁碟允許 PCMCIA  的規格使用比最大可允許卡片設定起來的時間
+更長的時間來起動。要使用這些卡片，請載入 <code>pcmcia_core</code> 模組配合
+下面的設定:
+
+<pre class="sample">
+CORE_OPTS="unreset_delay=400"
+</pre>
+
+</li>
+<li>要使月 ATA/IDE CD-ROM 設備，你的核心必須將 <code>CONFIG_BLK_DEV_IDECD</code>
+功能打開且編譯進去。通常標準的核心都已支援了，然而如果你想編譯個自
+定的核心請記得要謹慎些。</li>
+</ul>
+<p></p>
+
+<h2><a name="ss4.8" id="ss4.8"></a>4.8 多功能卡
+</h2>
+
+<p>從 1.3.73 Linux 核心開始，幾個驅動程式可以共用單一個插斷，像串列埠
+驅動程式與一個乙太網路驅動程式。在新的核心下使用多功能卡片時，所有
+的卡片可以不用在載入或御下驅動程式的狀況下使用卡片的所有功能。</p>
+<p>很多的硬體廠商自已做了不太能互相相容的  (有些可說是獨立的 ) 插斷共
+享方法來模擬使用二個卡的功能。有些卡片 (Diamonds 的 Ositech Jack、
+、3Com 的 3c562、Linksys) 的驅動程式可以正確地支援這樣的模擬存取，
+但是有些卡 (特別是 Megahertz) 則不能。</p>
+<p>早期的核心並不支援插斷分享給不同的設備驅動程式。所要 PCMCIA 驅動程
+式不可能建構此卡片讓它可模擬乙太網路卡與數據卡的存取。乙太網路卡與
+串列埠驅動程式會被自動地載入。然而，內定上是乙太網路驅動程式 `` 擁
+有 '' 這張卡片的插斷。要使用數據機，你可以卸下乙太網路驅動程式，然
+後使用以列方法重新建構串列埠:</p>
+<p>
+
+</p><pre class="sample">
+ifconfig eth0 down
+rmmod 3c589_cs
+setserial /dev/modem autoconfig auto_irq
+setserial /dev/modem
+</pre>
+
+<p></p>
+<p>第二個 <code>setserial</code> 會查証出該埠在先前是由乙太網路驅動程式所使用
+的插斷。</p>
+
+<hr />
+<table >
+  <tr>
+    <td class="BtdL"> <a href="PCMCIA-HOWTO-3.html" accesskey="P">上一頁(P)</a> </td>
+    <td class="BtdC"> <a href="index.html" accesskey="H">目錄(H)</a> </td>
+    <td class="BtdR"> <a href="PCMCIA-HOWTO-5.html">下一頁(N)</a> </td>
+  </tr>
+  <tr>
+    <td class="BtdL">解決安裝與建構的問題</td>
+    <td class="BtdC"><a href="PCMCIA-HOWTO-4.html"  accesskey="T">到頂層(T)</a></td>
+    <td class="BtdR">進階的主題</td>
+  </tr>
+</table>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" class="ImgLogo"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img class="ImgLogo" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img class="ImgLogo" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" class="ImgLogo" alt="表示該網頁支援資源描述架構"/></a> <a href="http://www.icra.org/_en/"><img src="../../../icra_sw.gif" title="網路內容分級協會" alt="網路內容分級協會" class="ImgLogo"/></a></div>
+</body>
+</html>

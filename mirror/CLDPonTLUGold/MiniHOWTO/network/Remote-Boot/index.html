@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="zh-TW" xml:lang="zh-TW" xmlns="http://www.w3.org/1999/xhtml">
+<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+ 
+ <title>Linux Remote-Boot mini-HOWTO:</title>
+ <link href="Remote-Boot-1.html" rel="next" />
+
+
+ <link href="../../style.css" rel="stylesheet" type="text/css" />
+ <meta http-equiv="PICS-Label" content='(PICS-1.1 "http://www.icra.org/ratingsv02.html"  labels ratings (ca 1 lz 1 nz 1 oz 1 vz 1) "http://www.rsac.org/ratingsv01.html"  labels ratings (n 0 s 0 v 0 l 0))'/>
+ <link href="index.html#content" rel="contents" />
+ <link href="Remote-Boot-1.html" rel="chapter" title="1.免責聲明及版權" />
+ <link href="Remote-Boot-2.html" rel="chapter" title="2.有那些變更..." />
+ <link href="Remote-Boot-3.html" rel="chapter" title="3.簡介" />
+ <link href="Remote-Boot-4.html" rel="chapter" title="4.如何設定" />
+ <link href="Remote-Boot-5.html" rel="chapter" title="5.遠端啟動工具程式參考手冊" />
+ <link href="Remote-Boot-6.html" rel="chapter" title="6.特殊型的 TFTP 伺服器" />
+ <link href="http://www.tldp.org/HOWTO/mini/Remote-Boot.html" rel="alternate" title="原版" />
+ <link href="Remote-Boot.rdf" rel="meta" title="各章節的說明資訊" />
+</head> <body> 
+<h1>Mini HOWTO：Linux Remote-Boot</h1>
+
+  <div>      使用 Red-Hat Linux, DOS, Windows 3.1 及 Windows 95/98 及 Windows NT 遠端開機工作站設定</div>
+<h2>作者: Marc Vuilleumier St&uuml;ckelberg, David Clerc <code>
+<a href="mailto:mvuilleu@rembo.com">mvuilleu@rembo.com</a></code><br />
+譯者: 曾元佑 <code>
+<a href="mailto:yytseng@ms16.hinet.net">yytseng@ms16.hinet.net</a></code></h2>
+<div>v3.26, 二月 2000
+翻譯日期: 六月 2000</div>
+
+<h2>摘要</h2>
+<div>
+  <p>這份文件將說明如何設定出一種, 使一群 PC 具有以伺服器為基礎的穩定且安全的架構,
+    此法可使每台用戶端 PC 在開機時選擇使用何種作業系統.
+    而此種架構的精要是使用以 BootPROM 為基礎的程式,
+    讓使用者在開機時, 選擇不同的開機區塊.
+    我們是用 Bootix 的 TCP/IP BootPROM (可附加於大部份的網路卡),
+    或者其他與 PXE 相容的 Boot ROM (已在近期出現的內建網路卡的 PC 上使用).
+    此份文件的最新版本, 包含超文件連結到可供下載的軟體及其他相關的資訊,
+  都可以在這個網址找到</p>
+</div>
+<p><a href="http://cuiwww.unige.ch/info/pc/remote-boot/howto.html">http://cuiwww.unige.ch/info/pc/remote-boot/howto.html</a>
+  <a href="howto.sgml">Linuxdoc-SGML</a>,
+  <a href="howto.dvi">DVI</a>,
+  <a href="howto.ps">PostScript</a> 及
+  <a href="howto.pdf">PDF</a>
+等版本都在這個目錄下.
+如果您想獲得最新的發展資訊, 可以送一封信給<code>
+<a href="mailto:info@bpbatch.org">info@bpbatch.org</a></code>.</p>
+<h1>目錄</h1>
+<ol>
+  <li><a href="Remote-Boot-1.html">免責聲明及版權</a></li>
+  <li><a href="Remote-Boot-2.html">有那些變更...</a><br />
+    <a>2.1</a> <a href="Remote-Boot-2.html#ss2.1">...從
+    2.x 版後 ?</a> <br />
+    <a>2.2</a> <a href="Remote-Boot-2.html#ss2.2">...從
+  3.0 版以後 ?</a> </li>
+  <li><a href="Remote-Boot-3.html">簡介</a><br />
+    <a>3.1</a> <a href="Remote-Boot-3.html#ss3.1">BootPROM
+    及 硬碟機</a> <br />
+    <a>3.2</a> <a href="Remote-Boot-3.html#ss3.2">網路</a> <br />
+    <a>3.3</a> <a href="Remote-Boot-3.html#ss3.3">它是如何工作</a> <br />
+  <a>3.4</a> <a href="Remote-Boot-3.html#ss3.4">相關的非商業文件</a></li>
+  <li>  <a href="Remote-Boot-4.html">如何設定</a><br />
+    <a>4.1</a> <a href="Remote-Boot-4.html#ss4.1">伺服器端的設定</a> <br />
+    <a>4.2</a> <a href="Remote-Boot-4.html#ss4.2">用戶端的設定</a> <br />
+    <a>4.3</a> <a href="Remote-Boot-4.html#ss4.3">設定開機流程</a><br />
+    <a>4.4</a> <a href="Remote-Boot-4.html#ss4.4">設定
+    Linux</a><br />
+    <a>4.5</a> <a href="Remote-Boot-4.html#ss4.5">設定
+    DOS 6 及 Windows 3.1</a><br />
+    <a>4.6</a> <a href="Remote-Boot-4.html#ss4.6">設定
+    Windows 95/98</a> <br />
+    <a>4.7</a> <a href="Remote-Boot-4.html#ss4.7">設定
+    Windows NT</a> <br />
+    <a>4.8</a> <a href="Remote-Boot-4.html#ss4.8">問題集
+  (FAQ)</a> </li>
+  <li><a href="Remote-Boot-5.html">遠端啟動工具程式參考手冊</a><br />
+    <a>5.1</a> <a href="Remote-Boot-5.html#ss5.1">BpBatch,
+    MrBatch 及 MrZip</a> <br />
+  <a>5.2</a> <a href="Remote-Boot-5.html#ss5.2">NoBreak.sys</a> </li>
+  <li><a href="Remote-Boot-6.html">特殊型的 TFTP 伺服器</a><br />
+    <a>6.1</a> <a href="Remote-Boot-6.html#ss6.1">Bootix
+    的增強型 TFTP 伺服器</a> <br />
+    <a>6.2</a> <a href="Remote-Boot-6.html#ss6.2">Linux
+    的增強型 TFTP 伺服器</a> <br />
+    <a>6.3</a> <a href="Remote-Boot-6.html#ss6.3">Solaris
+    的 TFTP 伺服器</a> <br />
+    <a>6.4</a> <a href="Remote-Boot-6.html#ss6.4">安全閘道器</a> <br />
+    <a>6.5</a> <a href="Remote-Boot-6.html#ss6.5">廣播型
+    TFTP 伺服器</a> <br /> 
+  </li>
+</ol>
+<hr/>
+<table
+
+
+
+
+>
+  <tr
+>
+    <td class="BtdL"
+>&nbsp;</td
+>
+    <td class="BtdC"
+><a href="index.html" accesskey="H">目錄(H)</a></td
+>
+    <td class="BtdR"
+><a
+href="Remote-Boot-1.html"
+>下一頁(N)</a
+></td
+>
+  </tr
+>
+  <tr
+>
+    <td class="BtdL"
+>&nbsp;</td
+>
+    <td class="BtdC"
+><a href="index.html" accesskey="T">到頂層(T)</a></td
+>
+    <td class="BtdR"
+>免責聲明及版權</td
+>
+  </tr
+>
+</table
+>
+<div> <a href="http://validator.w3.org/check/referer"><img src="../../../valid-xhtml10.png"  alt="符合 XHTML 1.0" width="88" height="31" style="border:0;width:88px;height:31px"/></a> <a href="http://jigsaw.w3.org/css-validator/"><img style="border:0;width:88px;height:31px" src="../../../vcss.png"  alt="符合 CSS"/></a> <a href="http://www.w3.org/WAI/WCAG1AA-Conformance" title="Explanation of Level Double-A Conformance"><img style="border:0;width:88px;height:32px" src="../../../wcag1AA.gif" alt="Level Double-A conformance icon,  W3C-WAI Web Content Accessibility Guidelines 1.0"/></a> <a href="http://www.w3.org/RDF/" title="RDF 資源描述架構"><img  src="../../../rdf.gif" style="border:0" alt="表示該網頁支援資源描述架構"/></a></div>
+</body>
+</html>
