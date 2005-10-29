@@ -1,0 +1,524 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="LinuxDoc-Tools 0.9.16">
+ <TITLE>Linux IPv6 HOWTO: 准备IPv6的运行系统</TITLE>
+ <LINK HREF="Linux-IPv6-HOWTO-5.html" REL=next>
+ <LINK HREF="Linux-IPv6-HOWTO-3.html" REL=previous>
+ <LINK HREF="Linux-IPv6-HOWTO.html#toc4" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Linux-IPv6-HOWTO-5.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="Linux-IPv6-HOWTO-3.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="Linux-IPv6-HOWTO.html#toc4"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s4">4.</A> <A HREF="Linux-IPv6-HOWTO.html#toc4">准备IPv6的运行系统</A></H2>
+
+<H2><A NAME="ss4.1">4.1</A> <A HREF="Linux-IPv6-HOWTO.html#toc4.1">IPv6-ready kernel</A>
+</H2>
+
+<P>现在的Linux发行版的核心都具备了运行IPv6的条件. 
+IPv6功能被编译成一个可载入模组. 在一般情况下模组不会在开机的时候自动载入.</P>
+<P>参照更新的资讯: 
+<A HREF="http://www.bieringer.de/linux/IPv6/status/IPv6+Linux-status-distributions.html"> IPv6+Linux-Status-Distribution</A></P>
+<H3>检察现在的系统是否支持IPv6</H3>
+
+<P>注意您的/proc-file-system.必需有如下的结构:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+/proc/net/if_inet6
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+ </P>
+
+<P> 一个简单的测试:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# test -f /proc/net/if_inet6 &amp;&amp; echo "Running kernel is IPv6 ready"
+ 
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+ </P>
+<P>如果失败, 表明模组没有载入.</P>
+
+<H3>试著载入模组</H3>
+
+<P>执行载入模组的命令:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# modprobe ipv6
+  
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+ </P>
+
+<P>如果成功, 模组会在列表中显示,执行如下命令:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# lsmod |grep -w 'ipv6' &amp;&amp; echo "IPv6 module successfully loaded"
+ 
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+ </P>
+
+<H3>让模组自动载入</H3>
+
+<P>模组是可以自动载入的,只要在核心模组设定文件( /etc/modules.conf 或 /etc/conf.modules)中加入:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+alias net-pf-10 ipv6  # automatically load IPv6 module on demand
+ 
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+ </P>
+
+<P>也可以关掉IPv6模组的自动载入:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+alias net-pf-10 off   # disable automatically load of IPv6 module on demand
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+ </P>
+
+<H3>编译有 IPv6 功能的核心</H3>
+
+<P>如果以上两个结果都证实了核心不具有IPv6功能, 您可以有如下选择:
+<UL>
+<LI>升级成外包装有IPv6支持说明的Linux发行版(推荐新手使用)再看一下这里:
+<A HREF="http://www.bieringer.de/linux/IPv6/status/IPv6+Linux-status-distributions.html"> IPv6+Linux-Status-Distribution</A></LI>
+<LI>编译一个新的vanilla核心(如果您知道该怎么选择,会比较简单).</LI>
+<LI>重新编译您现在拥有的发行版核心(不太容易).</LI>
+<LI>将核心同 USAGI 的扩展一起编译.</LI>
+</UL>
+</P>
+<P>如果您决定编译一个核心,您必需读过
+<A HREF="http://www.linuxdoc.org/HOWTO/Kernel-HOWTO.html">Linux Kernel HOWTO</A>.
+以及这方面的经验.</P>
+<P>注意:您必需使用核心2.4.x系列或更高. 因为IPv6对2.2.x系列缺少相应的支持.
+并且需要ICMPv6 和 6to4 支持的补丁.(补丁可以在
+<A HREF="ftp://ftp.bieringer.de/pub/linux/IPv6/kernel"> kernel series 2.2.x IPv6 patches</A>找到).</P>
+<H3>将核心同 USAGI 的扩展一起编译.</H3>
+
+<P>只推荐熟悉核心编译和IPv6的用户使用. 参照:
+<A HREF="http://www.linux-ipv6.org/faq.html">USAGI project / FAQ</A>.</P>
+
+<H3>IPv6-ready network devices</H3>
+
+<P>不是所有的设备都有能力传输IPv6数据包, 这里有一个现状表:
+<A HREF="http://www.bieringer.de/linux/IPv6/status/IPv6+Linux-status-kernel.html#transport">IPv6+Linux-status-kernel.html#transport</A>.</P>
+
+<H3>现阶段不会支持IPv6的连结</H3>
+
+<P>
+<UL>
+<LI>Serial Line IP (SLIP,
+<A HREF="http://rfc.net/rfc1055.html">RFC 1055</A>), should be better called now to SLIPv4, device named: slX</LI>
+<LI>Parallel Line IP (PLIP), same like SLIP, device names: plipX</LI>
+<LI>ISDN with encapsulation rawip, device names: isdnX
+</LI>
+</UL>
+</P>
+
+<H3>在将来都不会支持IPv6的设备</H3>
+
+<P>
+<UL>
+<LI>ISDN with encapsulation syncppp, device names: ipppX (design issue of the ipppd, will be merged into more general PPP layer in kernel series 2.5.x)
+</LI>
+</UL>
+</P>
+
+<H2><A NAME="ss4.2">4.2</A> <A HREF="Linux-IPv6-HOWTO.html#toc4.2">IPv6-ready 网路设定工具</A>
+</H2>
+
+<P>别扯太远了, 如果您有一个正在运行IPv6的核心,怎么会没有设定的工具呢?
+安装包里早就有几个这样的工具了.</P>
+
+<H3>net-tools package</H3>
+
+<P>net-tools package 包含一些工具如: ifconfig ,route. 这些可以令您在界面上设定IPv6.
+在命令行(shell) 用ifocnig -? 或 route -? 查看诸如IPv6 或 inet6.如果有,则说明具备IPv6设定能力.</P>
+
+<P>输入以下命令进行检查:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# /sbin/ifconfig -? 2>&amp; 1|grep -qw 'inet6' &amp;&amp; echo "utility 'ifconfig' is
+?IPv6-ready"
+ 
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<P>也可以使用route:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# /sbin/route -? 2>&amp; 1|grep -qw 'inet6' &amp;&amp; echo "utility 'route' is IPv6-ready"
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<H3>iproute package</H3>
+
+<P>Alexey N. Kuznetsov (Linux 网路代码现阶段的维护者)
+写了一个tool-set可以通过netlink 设备来设定网路.它可以比net-tool提供更多的功能,
+但没有多少文档并且它不是为胆小的人设计的. </P>
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# /sbin/ip 2>&amp;1 |grep -qw 'inet6' &amp;&amp; echo "utility 'ip' is IPv6-ready"
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<P>如果没有找到 /sbin/ip 那么我极力推荐您安装iproute package. 
+<UL>
+<LI>可以在您的发行版中找到(如果有的话)</LI>
+<LI>在
+<A HREF="ftp://ftp.inr.ac.ru/ip-routing/">Original FTP source</A>下载并编译它.</LI>
+<LI>直接可以安装的RPM包: 
+<A HREF="http://rpmfind.net/linux/rpm2html/search.php?query=iproute"> RPMfind/iproute</A>
+(推荐编译 SRPMS )</LI>
+</UL>
+</P>
+<H2><A NAME="ss4.3">4.3</A> <A HREF="Linux-IPv6-HOWTO.html#toc4.3">IPv6-ready 测试/调式 程式</A>
+</H2>
+
+<P>在为IPv6准备好了系统后,您可以用IPv6进行网路通讯. 
+首先您必需学习如何用嗅探程式来检查IPv6数据包.
+强烈推荐这样做,因为在debugging/troubleshooting 中有利于快速诊断.</P>
+
+<H3>IPv6 ping</H3>
+
+<P>这个程式一般在iputils包里, 用来测试简单传输发送
+ICMPv6 回应请求并等待ICMPv6 回应包.</P>
+
+<P>用法:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# ping6 &lt; hostwithipv6address &gt;
+# ping6 &lt; ipv6address &gt;
+# ping6 [-I &lt; device &gt;] &lt; link-local-ipv6address &gt; 
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<P>例子:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# ping6 -c 1 ::1 
+PING ::1(::1) from ::1 : 56 data bytes 
+64 bytes from ::1: icmp_seq=0 hops=64 time=292 usec
+--- ::1 ping statistics --- 
+1 packets transmitted, 1 packets received, 0% packet loss 
+round-trip min/avg/max/mdev = 0.292/0.292/0.292/0.000 ms
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+<P>提示 ping6必需有适当的root权限才能使用,
+如果不是root组用户,使用时可能产生问题:</P>
+<P>1.ping6 不在用户的路径当中
+(probably, because ping6 is generally stored in /usr/sbin -> add path (not really recommended)</P>
+
+<P>2.ping6 不能被正确执行, 通常没有适当的权限  chmod u+s /usr/sbin/ping6</P>
+
+<H3>为ping6指定界面</H3>
+
+<P>用local-addresses 作为ping6 目标必需指定一个界面. 否则核心将不知道数据包发往哪个设备.
+在没有指定的情况下会有这样的输出:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# ping6 fe80::212:34ff:fe12:3456 
+connect: Invalid argument
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<P>为ping6指定界面的结果:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# ping6 -I eth0 -c 1 fe80::2e0:18ff:fe90:9205 
+PING fe80::212:23ff:fe12:3456(fe80::212:23ff:fe12:3456) from
+?fe80::212:34ff:fe12:3478 eth0: 56 data bytes 
+64 bytes from fe80::212:23ff:fe12:3456: icmp_seq=0 hops=64 time=445 usec
+--- fe80::2e0:18ff:fe90:9205 ping statistics --- 
+1 packets transmitted, 1 packets received, 0% packet loss round-trip
+?min/avg/max/mdev = 0.445/0.445/0.445/0.000 ms
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<H3>Ping6 to multicast addresses(多播地址)</H3>
+
+<P>一个发现IPv6-active hosts 的比较有趣的机制:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# ping6 -I eth0 ff02::1 PING ff02::1(ff02::1) from fe80:::2ab:cdff:feef:0123 eth0: 56 data bytes
+64 bytes from ::1: icmp_seq=1 ttl=64 time=0.104 ms
+64 bytes from fe80::212:34ff:fe12:3450: icmp_seq=1 ttl=64 time=0.549 ms (DUP!) 
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+<P>与IPv4不同的是, ping 的回应在广播地址中是可以屏蔽的,目前只有IPv6防火墙可以做到.</P>
+
+<H3>IPv6 traceroute6</H3>
+
+<P>这个程式一般在iputils包里, 和IPv4的traceroute程式相似,
+但与当前版本不同的是IPv6不能正确地使用ICMP echo-request. 看下面这个例子:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# traceroute6 www.6bone.net 
+traceroute to 6bone.net (3ffe:b00:c18:1::10) from 3ffe:ffff:0000:f101::2, 30
+?hops max, 16 byte packets 
+ 1 localipv6gateway (3ffe:ffff:0000:f101::1) 1.354 ms 1.566 ms 0.407 ms 
+ 2 swi6T1-T0.ipv6.switch.ch (3ffe:2000:0:400::1) 90.431 ms 91.956 ms 92.377 ms 
+ 3 3ffe:2000:0:1::132 (3ffe:2000:0:1::132) 118.945 ms 107.982 ms 114.557 ms 
+ 4 3ffe:c00:8023:2b::2 (3ffe:c00:8023:2b::2) 968.468 ms 993.392 ms 973.441 ms 
+ 5 3ffe:2e00:e:c::3 (3ffe:2e00:e:c::3) 507.784 ms 505.549 ms 508.928 ms 
+ 6 www.6bone.net (3ffe:b00:c18:1::10) 1265.85 ms * 1304.74 ms
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<H3>IPv6 tracepath6</H3>
+
+<P>这个程式一般在iputils包里, 它用来追踪MTU的路径.看下面的例子:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# tracepath6 www.6bone.net 
+ 1?: [LOCALHOST] pmtu 1480 
+ 1: 3ffe:401::2c0:33ff:fe02:14 150.705ms 
+ 2: 3ffe:b00:c18::5 267.864ms 
+ 3: 3ffe:b00:c18::5 asymm 2 266.145ms pmtu 1280 
+ 3: 3ffe:3900:5::2 asymm 4 346.632ms 
+ 4: 3ffe:28ff:ffff:4::3 asymm 5 365.965ms 
+ 5: 3ffe:1cff:0:ee::2 asymm 4 534.704ms 
+ 6: 3ffe:3800::1:1 asymm 4 578.126ms !N 
+Resume: pmtu 1280
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+
+<H3>IPv6 tcpdump</H3>
+
+<P>在Linux作业系统中 tcpdump 是主要的数据包捕获工具.IPv6支持 3.6 的版本.</P>
+<P>tcpdump用于降低数据包杂讯的参数:
+<UL>
+<LI>icmp6: 过滤本地ICMPv6通讯.</LI>
+<LI>ip6: 过滤本地IPv6通讯.(包括 ICMPv6)</LI>
+<LI>proto ipv6: filters tunneled IPv6-in-IPv4 traffic</LI>
+<LI>not port ssh: 在远程SSH会话中禁止SSH数据包的显示.
+to suppress displaying SSH packets for running tcpdump in a remote SSH session</LI>
+</UL>
+</P>
+
+<P>使用命令行参数也可以从一个数据包中捕获/列印资讯.
+<UL>
+<LI>"-s 512": 增加捕获限定为512 bytes.</LI>
+<LI>"-vv": 详细列印.</LI>
+<LI>"-n": 不将地址转换成名称,在名称服务有问题时可以用到.</LI>
+</UL>
+</P>
+
+<H3>IPv6 ping to 3ffe:ffff:100:f101::1 native over a local link</H3>
+
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+ # tcpdump -t -n -i eth0 -s 512 -vv ip6 or proto ipv6 
+tcpdump: listening on eth0 
+3ffe:ffff:100:f101:2e0:18ff:fe90:9205 > 3ffe:ffff:100:f101::1: icmp6: echo
+?request (len 64, hlim 64) 
+3ffe:ffff:100:f101::1 > 3ffe:ffff:100:f101:2e0:18ff:fe90:9205: icmp6: echo
+?reply (len 64, hlim 64)
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<H3>IPv6 ping to 3ffe:ffff:100::1 routed through an IPv6-in-IPv4-tunnel</H3>
+
+<P>1.2.3.4和5.6.7.8是遂道的终点(这些都是例子).
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# tcpdump -t -n -i ppp0 -s 512 -vv ip6 or proto ipv6 
+tcpdump: listening on ppp0 
+1.2.3.4 > 5.6.7.8: 2002:ffff:f5f8::1 > 3ffe:ffff:100::1: icmp6: echo request
+?(len 64, hlim 64) (DF) (ttl 64, id 0, len 124) 
+5.6.7.8 > 1.2.3.4: 3ffe:ffff:100::1 > 2002:ffff:f5f8::1: icmp6: echo reply (len
+?64, hlim 61) (ttl 23, id 29887, len 124) 
+1.2.3.4 > 5.6.7.8: 2002:ffff:f5f8::1 > 3ffe:ffff:100::1: icmp6: echo request
+?(len 64, hlim 64) (DF) (ttl 64, id 0, len 124) 
+5.6.7.8 > 1.2.3.4: 3ffe:ffff:100::1 > 2002:ffff:f5f8::1: icmp6: echo reply (len
+?64, hlim 61) (ttl 23, id 29919, len 124)
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<H2><A NAME="ss4.4">4.4</A> <A HREF="Linux-IPv6-HOWTO.html#toc4.4">IPv6-ready programs(能和IPv6协同工作的程式)</A>
+</H2>
+
+<P>在当前的发行版中已经包含了能和IPv6协同工作的程式(服务端/客户端)<BR>
+参照:
+<A HREF="http://www.bieringer.de/linux/IPv6/status/IPv6+Linux-status-distributions.html"> IPv6+Linux-Status-Distribution</A>.<BR>
+或者检查
+<A HREF="IPv6 &amp; Linux - Current Status - Applications">http://www.bieringer.de/linux/IPv6/status/IPv6+Linux-status-apps.html</A><BR>
+一些可用程式的线索:
+<A HREF="http://www.bieringer.de/linux/IPv6/IPv6-HOWTO/IPv6-HOWTO-3.html">IPv6 &amp; Linux - HowTo - Part 3</A>或
+<A HREF="http://www.bieringer.de/linux/IPv6/IPv6-HOWTO/IPv6-HOWTO-4.html">IPv6 &amp; Linux - HowTo - Part 4</A>.</P>
+
+<H2><A NAME="ss4.5">4.5</A> <A HREF="Linux-IPv6-HOWTO.html#toc4.5">IPv6-ready 客户端程式 (selection)</A>
+</H2>
+
+<P>想要进行下面的测试, 您的作业系统必需拥有IPv6能力. 有些例子是真实地连结了6bone的情况下做的.</P>
+
+<H3>检查DNS对IPv6地址的解析能力</H3>
+
+<P>因为这几年Domain Name System (DNS)安全的不断升级, 它们中的大部份都具备了对IPv6 地址类型AAAA的解析能力.
+(新的类型A6 只有BIND9和更高的版本支持)检查DNS对IPv6地址的解析能力:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# host -t AAAA www.join.uni-muenster.de
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+<P>将得到下面的结果:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+www.join.uni-muenster.de. is an alias for ns.join.uni-muenster.de. 
+ns.join.uni-muenster.de. has AAAA address 3ffe:400:10:100:201:2ff:feb5:3806
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<H3>IPv6-ready telnet clients</H3>
+
+<P>IPv6-ready telnet 客户端. 对它进行一个简单的测试:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+$ telnet 3ffe:400:100::1 80
+Trying 3ffe:400:100::1... 
+Connected to 3ffe:400:100::1. 
+Escape character is '^]'. 
+HEAD / HTTP/1.0
+HTTP/1.1 200 OK 
+Date: Sun, 16 Dec 2001 16:07:21 
+GMT Server: Apache/2.0.28 (Unix) 
+Last-Modified: Wed, 01 Aug 2001 21:34:42 GMT 
+ETag: "3f02-a4d-b1b3e080" 
+Accept-Ranges: bytes 
+Content-Length: 2637 
+Connection: close 
+Content-Type: text/html; charset=ISO-8859-1
+Connection closed by foreign host.
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<P>如果telnet只出现"cannot resolve hostname", 
+说明作业系统的IPv6还未激活.</P>
+
+<H3>openssh</H3>
+
+<P>openssh已经支持IPv6, 但必需对它用以下的参数进行编译后才能使用:
+<UL>
+<LI>--without-ipv4-default: the client tries an IPv6 connect first automatically and fall back to IPv4 if not working</LI>
+<LI>--with-ipv4-default: default connection is IPv4, IPv6 connection must be force like following example shows:</LI>
+</UL>
+</P>
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+$ ssh -6 ::1 
+user@::1's password: ****** 
+[user@ipv6host user]$
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<P>如果您的ssh不能对 -6 进行反应, 可能作业系统的IPv6还未激活,或ssh的版本太低.</P>
+
+
+<H3>ssh.com</H3>
+
+<P>他们的客户/服务端程式是免费的.</P>
+
+<H3>IPv6-ready web 流览器</H3>
+
+<P>目前支持IPv6的web 流览器列表: 
+<A HREF="http://www.bieringer.de/linux/IPv6/status/IPv6+Linux-status-apps.html#HTTP">IPv6+Linux-status-apps.html#HTTP.</A></P>
+
+<P>这些流览器大部份都存在问题:
+<UL>
+<LI>如果 proxy(代理)只支持IPv4, IPv6的请求将会失败. 方法: 升级proxy</LI>
+<LI>Automatic proxy settings (*.pac) 不能对IPv6的不同请求进行适当的处理 
+(written in Java-script and well hard coded in source like to be seen in Maxilla source code). </LI>
+</UL>
+</P>
+<P> 一些早期的版本不能对IPv6地址进行正确的操作, 如:
+<A HREF="http://[3ffe:400:100::1]/">http://[3ffe:400:100::1]/ </A></P>
+<P>一个小测试,显示在没有代理的情况下的 URL 和 流览器.</P>
+
+<H3>URLs for testing</H3>
+
+<P>测试IPv6最方便的方法是访问:       
+<A HREF="http://www.kame.net/">http://www.kame.net/</A>.
+如果海龟是活动的, 说明连接是通过IPv6进行的, 它不动的话, 说明连接是通过IPv4进行的.</P>
+
+<H2><A NAME="ss4.6">4.6</A> <A HREF="Linux-IPv6-HOWTO.html#toc4.6">IPv6-ready server 程式</A>
+</H2>
+
+<P>包括:sshd, httpd, telnetd,</P>
+
+
+<HR>
+<A HREF="Linux-IPv6-HOWTO-5.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="Linux-IPv6-HOWTO-3.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="Linux-IPv6-HOWTO.html#toc4"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

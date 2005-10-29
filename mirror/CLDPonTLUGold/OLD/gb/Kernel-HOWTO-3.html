@@ -1,0 +1,241 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Kernel HOWTO 中译版: 如何真正进行核心的配置?</TITLE>
+ <LINK HREF="Kernel-HOWTO-4.html" REL=next>
+ <LINK HREF="Kernel-HOWTO-2.html" REL=previous>
+ <LINK HREF="Kernel-HOWTO.html#toc3" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Kernel-HOWTO-4.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Kernel-HOWTO-2.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Kernel-HOWTO.html#toc3"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s3">3. 如何真正进行核心的配置?</A></H2>
+
+<P>
+<H2><A NAME="ss3.1">3.1 取得原始程式码</A>
+</H2>
+
+<P>你可以经由匿名 ftp 站从 <CODE>ftp.funet.fi</CODE> 的 <CODE>
+<A HREF="ftp://ftp.funet.fi/pub/Linux/PEOPLE/Linus">/pub/Linux/PEOPLE/Linus</A></CODE>，
+或是其它 MIRROR 站取得．([<CODE>译注</CODE>] 台湾可从 <CODE>
+<A HREF="ftp://ftp.edu.tw/OS/Linux/kernel">ftp.edu.tw</A></CODE> 取得．)
+档案名称一般是以标记成 <CODE>linux-x.y.z.tar.gz</CODE> 为代表，其中的 <CODE>x.y.z</CODE> 是版本编号．
+较新的(更好的?)版本以及修补档一般是放在类似 `<CODE>v1.1</CODE>' 以及 `<CODE>v1.2</CODE>' 这样的子目录下．
+数字最大的是最新的版本，而且通常是``测试版''，也就是说如果你对 beta 或 alpha 版感到不安的话，你应该停留在主要的发行版本上．
+<P><I>强烈</I>建议你去找 mirror 的 ftp 节点，而不要直接到 <CODE>ftp.funet.fi</CODE> 去! 
+底下是一些 mirrors 以及其他节点的简要列表:
+<P>
+<PRE>
+USA:         sunsite.unc.edu:/pub/Linux/kernel
+USA:         tsx-11.mit.edu:/pub/linux/sources/system
+UK:          sunsite.doc.ic.ac.uk:/pub/unix/Linux/sunsite.unc-mirror/kernel
+Austria:     ftp.univie.ac.at:/systems/linux/sunsite/kernel
+Germany:     ftp.Germany.EU.net:/pub/os/Linux/Local.EUnet/Kernel/Linus
+Germany:     sunsite.informatik.rwth-aachen.de:/pub/Linux/PEOPLE/Linus
+France:      ftp.ibp.fr:/pub/linux/sources/system/patches
+Australia:   sunsite.anu.edu.au:/pub/linux/kernel
+</PRE>
+<P>一般来说，<CODE>sunsite.unc.edu</CODE> 的 mirror 站是很好找的．
+档案 <CODE>/pub/Linux/MIRRORS</CODE> 包含了已知的 mirror 节点．
+如果你没有办法上 ftp ，有个存放 linux 的 BBS 系统列表会定期刊登在 comp.os.linux.announce 上，试著到那边去找一下．
+<P>如果你想寻找一般的 Linux 资讯与套件，去 <CODE>
+<A HREF="http://www.linux.org/">http://www.linux.org/</A></CODE>．
+<P>
+<H2><A NAME="ss3.2">3.2 解开原始程式码的包装</A>
+</H2>
+
+<P>确定你是以`<CODE>root</CODE>'的身份签入，然後 <CODE>cd</CODE> 到 <CODE>/usr/src</CODE>． 
+如果你安装 Linux 时已经安装了核心原始程式码，在这个目录底下应该已经存在一个叫做 `<CODE>linux</CODE>' 的子目录．
+这是旧版的 linux 原始程式码．如果你还有磁碟空间而且想要玩得安全一点，那麽你会想要保留这个子目录的．
+有个好主意是根据你目前使用的核心版本来修改这个子目录的名称．
+`<CODE>uname -r</CODE>' 这个指令将会告诉你目前的核心版本．
+所以，如果 `<CODE>uname -r</CODE>' 显示 `<CODE>1.0.9</CODE>'，你就可以把 `<CODE>linux</CODE>' 改名(用 `<CODE>mv</CODE>')为 `<CODE>linux-1.0.9</CODE>'．
+如果你是个鲁莽型的人，那就直接把这个子目录清除掉．
+无论是哪一种情况，反正只要确定在解开全部的原始程式码之前，<CODE>/usr/src</CODE> 目录下没有 `<CODE>linux</CODE>' 这个子目录就对了．
+<P>
+<P>在 <CODE>/usr/src</CODE> 目录下，用 `<CODE>tar zxpvf linux-x.y.z.tar.gz</CODE>' 来解开原始程式码的包装
+(如果你拿到的是 <CODE>.tar</CODE> 的档案，後面没有加上 <CODE>.gz</CODE>，那就用 `<CODE>tar xpvf linux-x.y.z.tar</CODE>')．
+你将会看到原始程式的内容飞逝而过．当它完成以後，在 <CODE>/usr/src</CODE> 将会出现一个新的 `<CODE>linux</CODE>' 子目录．
+<CODE>cd</CODE> 到 <CODE>linux</CODE> 目录下然後查看 <CODE>README</CODE> 档，
+里面应该会有一段标题为 `<CODE>INSTALLING the kernel</CODE>' 或类似的文字．
+如果适当的话，先依照说明里的指示 — 建立该有的符号链结，移除过时的 .o 档案等等等诸如此类的工作．
+<P>
+<H2><A NAME="ss3.3">3.3 配置核心</A>
+</H2>
+
+<P>注意：这部份内容有些是重覆 Linus 的 <CODE>README</CODE> 档案中的相应章节或加以修订．
+<P>
+<P>在 <CODE>/usr/src/linux</CODE> 下执行 `<CODE>make config</CODE>' 这个命令将会启始一个指令稿，
+而这个指令稿会问你各种问题．它需要 bash ，所以要确定 bash 是 <CODE>/bin/bash</CODE>，<CODE>/bin/sh</CODE> 或 <CODE>$BASH</CODE>．
+<P>
+<P>还有其它种 `<CODE>make config</CODE>' 的方式你可能会觉得更容易使用．
+对那些执行 X Window 的人你如果有装 Tk 的话可以试著用 `<CODE>make xconfig</CODE>'．
+`<CODE>make menuconfig</CODE>' 是给那些有装 (n)curses 而且喜欢文字模式选单的人用的．
+这些界面有个明显的好处: 如果在配置过程中你不小心犯了错，可以简单地回去修正．
+<P>
+<P>你现在该准备好回答这些问题，通常用 `<CODE>y</CODE>' 或 `<CODE>n</CODE>' 就可以了．
+设备驱动程式通常会有一个 `<CODE>m</CODE>' 选项．
+这表示``模组(module)''，表示说系统将会编译它，但不会直接放进核心里，而是做为一可载入模组．
+一个有趣的说法是表示``maybe''．有一些很明显或是不重要的选项将不会在此加以说明．
+请见``
+<A HREF="Kernel-HOWTO-10.html#other-options">其它配置选项</A>''一节对其中的简短说明．
+<P>
+<P>在 2.0.x 或以後的版本中有一个 `?' 选项，提供了这个配置参数的简短描述．
+这些资讯应该都是最新的．
+<P>
+<H3>Kernel math emulation (核心的数学运算模拟)</H3>
+
+<P>如果你没有数学辅助运算处理机(你只有一台单纯的 386 或 486SX)，那麽你在
+这里要回答 `<CODE>y</CODE>'．如果你已经有数学辅助运算处理机却还回答 `<CODE>y</CODE>'，
+那也不必太担心 — linux 还是会去使用它而忽略掉核心的模拟程式．
+唯一的影响是编译出来的核心变大了(用掉更多的记忆体)．
+我听说数学运简模拟很慢; 虽然和本节无太大关系，还是应该注意这对 X Window 系统的效率会有很大影响．
+<P>
+<H3>Normal (MFM/RLL) disk and IDE disk/cdrom support (标准硬碟支援)</H3>
+
+<P>你在这里差不多都得回答 `<CODE>y</CODE>'．它代表的意思是核心将会支援标准的 PC 硬碟，
+例如大多数人使用的 IDE 界面硬碟．这不包括 SCSI 设备的支援; 这将在後面设定．
+<P>
+<P>然後你会被问到关於 ``old disk-only'' 与 ``new IDE'' 驱动程式的事．
+你应该两者选一; 主要的差别是旧的驱动程式只支援单一界面两部磁碟机，
+而新的驱动程式支援第二界面及 IDE/ATAPI 光碟机．新的驱动程式比旧的大约多 4K，
+而且应该是``改良的''，也就是说除了可能包含些许错误之外，它应该会改善你的磁碟效率，特别是如果你有较新的 EIDE 硬体的话．
+<P>
+<H3>Networking support (网路支援)</H3>
+
+<P>原则上，如果你有连接网路，譬如说，你有 Internet 连线，或是你将使用 SLIP，PPP，term 或其它方式拨接到 Internet 上的话，回答 `<CODE>y</CODE>'．
+然而，某些软体套件(例如 X Window 系统)需要网路支援，即使你的机器并不真正连接到网路上．这情形你也应该回答 `<CODE>y</CODE>'．
+然後，你会被问到是否需要支援 TCP/IP 网路，如果你不十分确定，就回答 `<CODE>y</CODE>'．
+<P>
+<H3>Limit memory to low 16MB (制记忆体在 16 MB)</H3>
+
+<P>可能会有一些不良的 386 DMA 控制器无法正确地定址到 16 MB 以上的记忆体位址；
+如果你的机器刚好有这种(罕见)情况时，那麽你也就只好回答″ y ″了．
+<P>
+<H3>System V IPC </H3>
+
+<P>一个 IPC (行程内通讯，Interprocess Communication) 的定义就在 Perl 书中的注解．
+这并不大奇怪，一些 Perl 程式设计者用它来让行程之间互相沟通，就像许多其它套件(最著名如 DOOM)一样．
+因此除非你完全了解你在做什麽，不然最好别回答 <CODE>n</CODE>．
+<P>
+<H3>Processor type (386, 486, Pentium, PPro)        (微处理机种类)</H3>
+
+<P>(在较旧版本的核心中为: Use -m486 flag for 486-specific optimizations，使用 -m486 旗标针对 486 做最佳化)
+<P>按照惯例地，这是对一特别的微处理机做某种最佳化; 核心仍可在其它晶片上跑得很好，但可能会比较大些．
+不过，在较新版本的核心上，已经不是这个样子了．因此你应该正确地回答你要编译的微处理机种类．
+``386'' 的核心可以在所有的机器上工作．
+<P>
+<H3>SCSI support (SCSI 的支援)</H3>
+
+<P>如果你有 SCSI 设备，那麽就回答 `<CODE>y</CODE>'．
+接著会有提示要求更进一步的资讯，像是你是否要支援光碟机，磁碟机，还有你使用的是那一种 SCSI 介面卡．
+这部份请参阅 
+<A HREF="HOWTO/SCSI-HOWTO.html">SCSI-HOWTO</A>，有更详细的说明．
+<P>
+<H3>Network device support (网路设备支援)</H3>
+
+<P>如果你有网路卡，或者你想要使用 SLIP，PPP，或是并列埠界面卡，那就回答 `<CODE>y</CODE>'．
+接著会有提示问你使用的是那一种网路卡，或要使用那一种通讯协定．
+<P>
+<H3>Filesystems (档案系统)</H3>
+
+<P>这将会有提示要你回答所要支援的档案系统种类，计有：
+<P>Standard (minix) — 新的套件不再建立 minix 档案系统，而且很多人不使用它，但是把它配置在核心里仍然是个好主意．
+某些``急救磁片''程式会用到它，而且仍然有许多软碟磁片可能用 minix 档案系统，因为 minix 档案系统对於处理软碟片方面较无问题．
+<P>Extended fs — 这是扩充档案系统的第一版，现在已经不再使用．使用的时机是，如果你有需要，你就会知道的．如果你觉得怀疑，你就不需要它．
+<P>Second extended — 这是现在新发行的套件所广泛采用的档案系统，你可能会有其中一种，所以必须回答 `<CODE>y</CODE>'．
+<P>xiafs filesystem — 这个档案系统曾经一度很普遍，但是在写这份文件时，我已经不知道有任何人在使用它了．
+<P>msdos — 如果你想要在 linux 下使用你硬碟中的 MS-DOS 分割区，或是想将用 MS-DOS 格式化的软碟片挂进来的话，回答 `<CODE>y</CODE>'．
+<P>ums-dos — 这种档案系统能使 MS-DOS 档案系统拥有更多像 Unix 的特性，像是长档名等等．这对那些不使用 MS-DOS 的人(像我)并不是很有用．
+<P>/proc — 另一种神奇的东西(我猜这个概念是无耻地从贝尔实验室里偷过来的)．
+它不是你硬碟分割区里的任何东西，而是核心与程序之间的档案系统介面．许多程序工具(像 `<CODE>ps</CODE>')都会用到它．
+有时可以试著用 `<CODE>cat /proc/meminfo</CODE>' 或 `<CODE>cat /proc/devices</CODE>'．
+某些 shell (特别像是 rc) 使用了 <CODE>/proc/self/fd</CODE> (在其它系统里叫做 <CODE>/dev/fd</CODE>) 来做输出输入动作．
+你几乎应该回答 `<CODE>y</CODE>'; 许多重要的 Linux 工具都依赖它来运作的．
+<P>NFS — 如果你在网路环境下而且想要由 NFS 来使用其它机器的档案系统，回答 `<CODE>y</CODE>'．
+<P>ISO9660 — 绝大部分的光碟片都使用这个档案系统．如果你有光碟机而且想在 Linux 下使用，回答 `<CODE>y</CODE>'．
+<P>OS/2 HPFS — 在编写这份文件的时候，这个档案系统还只支援到 OS/2 HPFS 的读取．
+<P>System V and Coherent — 这是为 System V 以及 Coherent 系统的分割区而设的(它们是另一种在 PC 上的 Unix 系统)．
+<P>
+<H3>但是我不知道我需要那些档案系统!</H3>
+
+<P>好吧，键入 `<CODE>mount</CODE>'．它看起来会像这样：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+    blah# mount
+    /dev/hda1 on / type ext2 (defaults)
+    /dev/hda3 on /usr type ext2 (defaults)
+    none on /proc type proc (defaults)
+    /dev/fd0 on /mnt type msdos (defaults)
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>仔细看看每一行；在 `<CODE>type</CODE>' 後面的那个字就是档案系统的格式．
+在这个例子中，我的 <CODE>/</CODE> 和 <CODE>/usr</CODE> 分割区是 second extended 格式，
+我使用了 /proc ，而且挂有一张以 msdos (bleah) 为档案系统格式的磁片．
+<P>如果你有使用 <CODE>/proc</CODE>，可以试试 `<CODE>cat /proc/filesystems</CODE>'．
+它会给你一份目前使用的核心所支援的档案系统列表．
+<P>这配置并不常使用．不重要的档案系统会使核心显得臃肿; 
+参见可载入模组一节的说明以避免此情况，以及``
+<A HREF="Kernel-HOWTO-7.html#pitfalls">陷阱</A>''一节说明为何臃肿的核心不好．
+<P>
+<H3>Character devices (字元设备)</H3>
+
+<P>在这里，你将会发现许多设备名称，用来设定你的印表机，汇流排滑鼠，PS/2 滑鼠(大部分笔记型电脑使用内建的 PS/2 滑鼠)，
+以及一些磁带机驱动程式，以及其它的``字元''设备．当有合适的选项时，回答 `<CODE>y</CODE>'．
+<P>注意：Selection 这个程式使你可以在 X window 之外使用滑鼠在各个虚拟控制台间做剪贴的动作．
+如果你有串列滑鼠的话，这真的很棒，因为它与 X window 之间的沟通良好，
+不过如果你用其它种类的滑鼠就需要点技巧了．Selection 曾经一度是选择的配置配项，不过现在已经是标准了．
+<P>注意二: Selection 现在已经过时了．现在新的程式名叫 ``gpm''．
+它能做更神奇的事，像是转换滑鼠协定，处理多重滑鼠等……
+<P>
+<H3>Sound card (音效卡)</H3>
+
+<P>如果你想听到 <CODE>biff</CODE> 程式大叫的话，回答 `<CODE>y</CODE>'．
+然後等一下会编译另一个配置程式并详细询问你所有关於音效卡的问题．
+(注意: 当它问你是否安装完整版本的驱动程式时，你可以回答 `<CODE>n</CODE>' 以减少你核心记忆体并只选用你真正需要的．)
+如果你有音效卡我强烈建议看一下 
+<A HREF="Sound-HOWTO.html">Sound-HOWTO</A> 以知道更多的细节．
+<P>
+<H3>其它配置选项</H3>
+
+<P>没有将所有的选项都列出来，因为有些经常改变，或是相当自明的(例如   3Com 3C509 support 就是编译这种特别乙太网路卡的驱动程式)，
+有一个十分容易理解的所有选项列表(包括将它们放到 <CODE>Configure</CODE> 指令稿的方法)可在这个 URL 找到(由 Axel Boldt <CODE>
+<A HREF="mailto:axel@uni-paderborn.de">axel@uni-paderborn.de</A></CODE> 所收集):
+<BLOCKQUOTE><CODE>
+<CODE>
+<A HREF="http://math-www.uni-paderborn.de/~axel/config_help.html">http://math-www.uni-paderborn.de/~axel/config_help.html</A></CODE>
+</CODE></BLOCKQUOTE>
+
+或经由匿名 FTP 站:
+<BLOCKQUOTE><CODE>
+<CODE>
+<A HREF="ftp://sunsite.unc.edu/pub/Linux/kernel/config/krnl_cnfg_hlp.x.yz.tgz">ftp://sunsite.unc.edu/pub/Linux/kernel/config/krnl_cnfg_hlp.x.yz.tgz</A></CODE>
+</CODE></BLOCKQUOTE>
+
+其中 <CODE>x.yz</CODE> 是版本号码．
+<P>其後来的核心中(2.0.x 及其後的)，这已被整合到原始程式码中．
+<P>
+<H3>Kernel hacking </H3>
+
+<P>>这是从 Linus 的 README 里摘录的：
+<P>``kernel hacking'' 配置的细节通常会产生一个更大或是更慢的核心(或者是又大又慢)，
+而且可能因为将一些常式配置成很活跃地去尝试中断一些不良的程式码以便找出核心里的问题（ kmalloc() ），
+而使得核心变得比较不稳定．所以要产生一个核心``产品''的话，你在这里应该回答 `n'．
+<P>
+<H2><A NAME="ss3.4">3.4 现在呢? (The Makefile) </A>
+</H2>
+
+<P>在你完成 <CODE>make config</CODE> 之後，应该会有一个讯息告诉你核心已经配置好了，
+以及要你去``check the top-level Makefile for additional configuration'' 等等讯息．
+<P>所以查看一下 <CODE>Makefile</CODE>．你应该不必改变它，但是看看无妨．
+一旦新核心完成，你也可以用 `<CODE>rdev</CODE>' 指令来改变其中的选项．
+<P>
+<HR>
+<A HREF="Kernel-HOWTO-4.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Kernel-HOWTO-2.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Kernel-HOWTO.html#toc3"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

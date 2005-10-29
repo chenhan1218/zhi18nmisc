@@ -1,0 +1,109 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux 2.4 Advanced Routing HOWTO: Rules - routing policy database</TITLE>
+ <LINK HREF="Adv-Routing-HOWTO-5.html" REL=next>
+ <LINK HREF="Adv-Routing-HOWTO-3.html" REL=previous>
+ <LINK HREF="Adv-Routing-HOWTO.html#toc4" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Adv-Routing-HOWTO-5.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Adv-Routing-HOWTO-3.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Adv-Routing-HOWTO.html#toc4"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s4">4. Rules - routing policy database</A></H2>
+
+<P>If you have a large router, you may well cater for the needs of different
+people, who should be served differently. The routing policy database allows
+you to do this by having multiple sets of routing tables. 
+<P>If you want to use this feature, make sure that your kernel is compiled with
+the "IP: advanced router" and "IP: policy routing" features.
+<P>When the kernel needs to make a routing decision, it finds out which table
+needs to be consulted. By default, there are three tables. The old 'route'
+tool modifies the main and local tables, as does the ip tool (by default).
+<P>The default rules:
+<BLOCKQUOTE><CODE>
+<PRE>
+[ahu@home ahu]$ ip rule list
+0:      from all lookup local 
+32766:  from all lookup main 
+32767:  from all lookup default
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>This lists the priority of all rules. We see that all rules apply to all
+packets ('from all'). We've seen the 'main' table before, it's output by
+<CODE>ip route ls</CODE>, but the 'local' and 'default' table are new.
+<P>If we want to do fancy things, we generate rules which point to different
+tables which allow us to override system wide routing rules.
+<P>For the exact semantics on what the kernel does when there are more matching
+rules, see Alexey's ip-cref documentation. 
+<P>
+<H2><A NAME="ss4.1">4.1 Simple source routing</A>
+</H2>
+
+<P>Let's take a real example once again, I have 2 (actually 3, about time I
+returned them) cable modems, connected to a Linux NAT ('masquerading')
+router. People living here pay me to use the internet. Suppose one of my
+house mates only visits hotmail and wants to pay less. This is fine with me,
+but you'll end up using the low-end cable modem.
+<P>The 'fast' cable modem is known as 212.64.94.251 and is an PPP link to
+212.64.94.1. The 'slow' cable modem is known by various ip addresses,
+212.64.78.148 in this example and is a link to 195.96.98.253.
+<P>The local table:
+<BLOCKQUOTE><CODE>
+<PRE>
+[ahu@home ahu]$ ip route list table local
+broadcast 127.255.255.255 dev lo  proto kernel  scope link  src 127.0.0.1 
+local 10.0.0.1 dev eth0  proto kernel  scope host  src 10.0.0.1 
+broadcast 10.0.0.0 dev eth0  proto kernel  scope link  src 10.0.0.1 
+local 212.64.94.251 dev ppp0  proto kernel  scope host  src 212.64.94.251 
+broadcast 10.255.255.255 dev eth0  proto kernel  scope link  src 10.0.0.1 
+broadcast 127.0.0.0 dev lo  proto kernel  scope link  src 127.0.0.1 
+local 212.64.78.148 dev ppp2  proto kernel  scope host  src 212.64.78.148 
+local 127.0.0.1 dev lo  proto kernel  scope host  src 127.0.0.1 
+local 127.0.0.0/8 dev lo  proto kernel  scope host  src 127.0.0.1 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Lots of obvious things, but things that need to specified somewhere.
+Well, here they are. The default table is empty.
+<P>Let's view the 'main' table:
+<BLOCKQUOTE><CODE>
+<PRE>
+[ahu@home ahu]$ ip route list table main 
+195.96.98.253 dev ppp2  proto kernel  scope link  src 212.64.78.148 
+212.64.94.1 dev ppp0  proto kernel  scope link  src 212.64.94.251 
+10.0.0.0/8 dev eth0  proto kernel  scope link  src 10.0.0.1 
+127.0.0.0/8 dev lo  scope link 
+default via 212.64.94.1 dev ppp0 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>We now generate a new rule which we call 'John', for our hypothetical
+house mate. Although we can work with pure numbers, it's far easier if we add
+our tables to /etc/iproute2/rt_tables. 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# echo 200 John >> /etc/iproute2/rt_tables
+# ip rule add from 10.0.0.10 table John
+# ip rule ls
+0:      from all lookup local 
+32765:  from 10.0.0.10 lookup John
+32766:  from all lookup main 
+32767:  from all lookup default
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Now all that is left is to generate Johns table, and flush the route cache:
+<BLOCKQUOTE><CODE>
+<PRE>
+# ip route add default via 195.96.98.253 dev ppp2 table John
+# ip route flush cache
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>And we are done. It is left as an exercise for the reader to implement this
+in ip-up.
+<HR>
+<A HREF="Adv-Routing-HOWTO-5.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Adv-Routing-HOWTO-3.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Adv-Routing-HOWTO.html#toc4"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

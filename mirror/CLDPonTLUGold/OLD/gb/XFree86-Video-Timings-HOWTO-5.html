@@ -1,0 +1,172 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>XFree86 Video Timings HOWTO 中文版: 了解关於显示器和显示卡的基本情况</TITLE>
+ <LINK HREF="XFree86-Video-Timings-HOWTO-6.html" REL=next>
+ <LINK HREF="XFree86-Video-Timings-HOWTO-4.html" REL=previous>
+ <LINK HREF="XFree86-Video-Timings-HOWTO.html#toc5" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="XFree86-Video-Timings-HOWTO-6.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="XFree86-Video-Timings-HOWTO-4.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="XFree86-Video-Timings-HOWTO.html#toc5"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="basic"></A> <A NAME="s5">5. 了解关於显示器和显示卡的基本情况</A></H2>
+
+<P>
+<P>在修改一项Xconfig条目前,有一些基本情况你需要了解.它们是:
+<P>
+<UL>
+<LI>显示器的行频和场频选项</LI>
+<LI>显示器的频宽</LI>
+<LI>显示卡的驱动时钟频率,或"点时钟"</LI>
+</UL>
+<P>
+<H2><A NAME="ss5.1">5.1 显示器同步频率</A>
+</H2>
+
+<P>行频就是每秒显示器能水平扫描的行数;它是关於显示器的一个最重要的统计数值.场频是每秒显示器电子束能在垂直方向来回移动的次数.
+<P>同步频率通常列在显示器手册的技术规格页中.场频值典型地以Hz(每秒周期数)标定,行频以KHz(每秒千周数)标定. 通常场频的范围在50到150Hz之间,行频在31到135KHz之间.
+<P>如果你有一台多频同步显示器,其频率会给出一个范围.某些显示器,尤其是低档型号,有多个固定的频率.它们也能进行配置,但你的可选项会严格受限於显示器本身的技术特性.为最佳分辨率配对选择最高的频率.并且要小心 --- 试图对一台固定频率显示器设置高於其设计规格的频率会很容易地损坏它.
+<P>本指南的早期版本在过度驱动多频同步显示器方面相当积极,驱使它们超过其名义上的最高场频以获得更好的性能.那以後其他人向我们指出了更多理由告诫这种做法;我们将在下面章节
+<A HREF="XFree86-Video-Timings-HOWTO-12.html#overd">过度驱动你的显示器</A>中论及.
+<P>
+<H2><A NAME="ss5.2">5.2 显示器的频宽</A>
+</H2>
+
+<P>显示器的频宽应该包括在手册的技术规格页中.如果没有,看看显示器的最高额定分辨率.作为一个经验法则,这里指出怎样把它们转化为频宽的估计值(从而转化为你可以使用的点时钟的大致上限):
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+        640x480                 25
+        800x600                 36
+        1024x768                65
+        1024x768隔行          45
+        1280x1024               110
+        1600x1200               185
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>顺便说一句,这张表格没什麽神秘的;这些值只是在标准XFree86模式数据库中每种分辨率的最低点时钟而已(最後的一个例外,是我用插值法补上的).实际上你的显示器频宽很可能高於它在最高分辨率下要求的最小值,所以不要担心去尝试一个高若干MHz的点时钟.
+<P>也请注意对约65MHz以下的点时钟来说,频宽很少是一项有影响的因素.对於一张SVGA显示卡和大多数高分辨率显示器而言,你怎麽也不会达到显示器频宽的限值.下列各项是例子:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+        型号                          频宽
+        ----------                      ------
+        NEC 4D                          75MHz
+        Nano 907a                       50MHz
+        Nano 9080i                      60MHz
+        Mitsubishi HL6615               110MHz
+        Mitsubishi Diamond Scan         100MHz
+        IDEK MF-5117                    65MHz
+        IOCOMM Thinksync-17 CM-7126     136MHz
+        HP D1188A                       100MHz
+        Philips SC-17AS                 110MHz
+        Swan SW617                      85MHz
+        Viewsonic 21PS                  185MHz
+        PanaSync/Pro P21                220MHz
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>甚至低档显示器在其额定分辨率通常也不会太受限於频宽.NEC Multisync II是一个很好的例子 --- 按照其技术规格甚至不能显示800x600.它只能显示800x560.对这样的低分辨率你不需要高的点时钟或大的频宽;或许你可以做到最好的是32MHz或36MHz,两者离该显示器的额定频宽30MHz仍不太远.
+<P>在这两个驱动频率下,你的屏幕图象也许没有理应达到的那麽清晰,但图象质量显然可以接受.如果NEC Multisync II频宽能高於36MHz当然更好.但对普通任务象文本编辑而言这不是很关键的,只要差别不要显著到造成严重图象变形即可(如果这样你的眼睛会立刻告诉你的).
+<P>
+<H2><A NAME="ss5.3">5.3 显示卡的点时钟</A>
+</H2>
+
+<P>显示卡手册的技术规格页通常会告诉你该卡的最大点时钟(那是指每秒钟显示卡能写到屏幕上的像素总个数).
+<P>如果手册没有这项信息,X服务器可以为你查出.最近版本的X服务器全都支持 --probeonly 选项,可以显示出这项信息然後退出,用不著真正启动X或改变显示模式.
+<P>如果你的X没有 --probeonly 选项也不要担心.即使X锁住了你的显示器,它仍会把一行关於时钟和其它错误的信息显示在标准输出上.如果你把这条信息重定向到一个文件,它会被保存下来,即使你不得不重启动以回到控制台.
+<P>探查的结果或启动信息看上去应该类似以下示例之一:
+<P>如果你使用XFree86:
+(译注:以下为屏幕输出,----下为屏幕输出的翻译和说明)
+<P>
+<PRE>
+Xconfig: /usr/X11R6/lib/X11/Xconfig
+         --------------------------
+            X配置文件所在路径
+
+(**) stands for supplied, (--) stands for probed/default values
+                --------                  ---------------------
+            (**)代表提供值                (--)代表检测值/缺省值
+
+(**) Mouse: type: MouseMan, device: /dev/ttyS1, baudrate: 9600
+                  --------          ----------            ----
+                  鼠标类型        鼠标设备文件名      与串口通讯速率
+
+Warning: The directory "/usr/andrew/X11fonts" does not exist.
+         Entry deleted from font path.
+(**) FontPath set to "/usr/lib/X11/fonts/misc/,/usr/lib/X11/fonts/75dpi/"
+                      --------------------------------------------------
+                                     字体路径
+
+(--) S3: card type: 386/486 localbus
+                    ----------------
+                     显示卡总线类型
+
+(--) S3: chipset:   924
+                    ---
+    芯片集 --- 这是确切的芯片型号;一种86C911之前的型号
+
+(--) S3: chipset driver: s3_generic
+                         ----------
+                       芯片集驱动程序
+
+(--) S3: videoram:  1024k
+                    -----
+         显示卡上帧缓冲内存(俗称显存)的大小
+
+(**) S3: clocks:  25.00  28.00  40.00   3.00  50.00  77.00  36.00  45.00
+(**) S3: clocks:   0.00   0.00  79.00  31.00  94.00  65.00  75.00  71.00
+                  ------------------------------------------------------
+                              以MHz计算的可用的驱动频率
+
+(--) S3: Maximum allowed dot-clock: 110MHz
+                                    ------
+                                     频宽
+
+(**) S3: Mode "1024x768": mode clock =  79.000, clock used =  79.000
+                                        ------                ------
+                                            1024x768下模式时钟
+
+(--) S3: Virtual resolution set to 1024x768
+                                   --------
+                                虚拟屏幕分辨率
+
+(--) S3: Using a banksize of 64k, line width of 1024
+(--) S3: Pixmap cache:
+(--) S3: Using 2 128-pixel 4 64-pixel and 8 32-pixel slots
+(--) S3: Using 8 pages of 768x255 for font caching
+</PRE>
+<P>如果你使用SGCS或X/Inside X:
+<P>
+<PRE>
+WGA: 86C911 (mem: 1024k clocks: 25 28 40 3 50 77 36 45 0 0 79 31 94 65 75 71)
+---  ------       -----         --------------------------------------------
+ |     |            |                 以MHz计算的可用驱动频率
+ |     |            +--显示卡上帧缓冲内存的大小
+ |     +--芯片型号
+ +--X服务器类型
+</PRE>
+<P>注意:(如果可能的话)在机器卸下负荷後才进行检测.因为X是一个应用程序,它的时序循环会与磁盘活动冲突,造成上述的数值不准确.检测几次观察数值是否稳定;如果不稳定,关闭一些进程直到数值稳定.鼠标守护进程,如果有的话,特别可能让你失败(鼠标守护进程对Linux用户而言是gpm,对SVr4用户而言是mousemgr).
+<P>为了避免时钟检测的不准确性,你应该写下时序值并把它们作为时钟属性值放到你的Xconfig中 --- 这样抑制了时序循环并给予X一份可以尝试的时钟值的准确清单.使用上面例子的数据:
+<P>
+<PRE>
+wga
+        Clocks  25 28 40 3 50 77 36 45 0 0 79 31 94 65 75 71
+</PRE>
+<P>在负荷高度变化的系统上,这也许可以帮你避免神秘的X启动失败.有可能X启动时,因系统的负荷而获得错误的时序值,於是不能在其配置数据库中找到一项匹配的点时钟 --- 或找到错误的一项!
+<P>
+<H2><A NAME="ss5.4">5.4 这些基本的统计数据控制什麽</A>
+</H2>
+
+<P>
+<P>显示器的同步频率范围,与显示卡的点时钟一起,决定了可用的极限分辨率.但由驱动程序决定对硬件的潜力利用到什麽程度.一套出众的硬件组合却没有同样能令人满意的设备驱动程序是对金钱的一种浪费.另一方面,有一个万能的驱动程序但硬件能力相对较弱的话,你就能尽可能地挖掘硬件的潜力.这是XFree86的设计主导思想.
+<P>你应该把你用的点时钟与显示器的频宽相匹配.然而,这是有很大弹性的 --- 一些显示器能超出频宽标称值30%运行.这里的风险在於超出显示器的额定场频;我们会在下面详细讨论它们.
+<P>了解频宽使你能在各种可能的配置中作出更明智的选择.它会影响显示器的图象质量(尤其是微小细节的清晰度).
+<P>
+<HR>
+<A HREF="XFree86-Video-Timings-HOWTO-6.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="XFree86-Video-Timings-HOWTO-4.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="XFree86-Video-Timings-HOWTO.html#toc5"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

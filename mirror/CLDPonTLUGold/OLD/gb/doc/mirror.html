@@ -1,0 +1,1915 @@
+<HTML>
+<HEAD>
+   <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=x-x-big5">
+   <META NAME="GENERATOR" CONTENT="Mozilla/4.03 [en] (X11; I; Linux 2.0.32 i686) [Netscape]">
+   <META NAME="Author" CONTENT="Lee McLoughlin and Zoe Leech">
+   <META NAME="Chinese Translator" CONTENT="Trix, Po-Chun Huang">
+   <TITLE>Mirror 2.9 参考手册</TITLE>
+<!--
+  Copyright (C) 1990 - 1997   Lee McLoughlin
+ 
+  Permission to use, copy, and distribute this software and its
+  documentation for any purpose with or without fee is hereby granted,
+  provided that the above copyright notice appear in all copies and
+  that both that copyright notice and this permission notice appear
+  in supporting documentation.
+ 
+  Permission to modify the software is granted, but not the right to
+  distribute the modified code.  Modifications are to be distributed
+  as patches to released version.
+ 
+  This software is provided "as is" without express or implied warranty.
+ 
+  $Id: mirror.html,v 2.9 1998/05/29 19:03:01 lmjm Exp lmjm $
+  $Log: mirror.html,v $
+  Revision 2.9  1998/05/29 19:03:01  lmjm
+  *** empty log message ***
+
+-->
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 4, 1);</SCRIPT>
+
+<CENTER>
+<H1>
+Mirror 2.9 参考手册</H1></CENTER>
+
+<CENTER>
+<H1>
+<I>Lee McLoughlin</I></H1></CENTER>
+
+<CENTER><I><FONT SIZE=+0>and</FONT></I></CENTER>
+
+<CENTER>
+<H1>
+<I><FONT SIZE=+3>Zo&euml; Leech</FONT></I></H1></CENTER>
+
+<CENTER>1 June 1998</CENTER>
+
+<CENTER><TT><A HREF="mailto:lmjm@icparc.ic.ac.uk">lmjm@icparc.ic.ac.uk</A></TT></CENTER>
+
+<CENTER><TT><A HREF="zl@icparc.ic.ac.uk">zl@icparc.ic.ac.uk</A></TT></CENTER>
+<CENTER>
+<H3>
+<I>译者∶黄博淳</I></H3></CENTER>
+<CENTER><TT><A HREF="trix@email.sun.net.tw">trix@email.sun.net.tw</A></TT></CENTER>
+
+<UL>
+<LI>
+<A HREF="#Introduction">简介</A></LI>
+
+<LI>
+<A HREF="#Description">说明</A></LI>
+
+<LI>
+<A HREF="#Flags">旗标</A></LI>
+
+<LI>
+<A HREF="#Package Files">包裹档</A></LI>
+
+<UL>
+<LI>
+<A HREF="#Keywords">关键字</A></LI>
+</UL>
+
+<LI>
+<A HREF="#Filestores">档案储存</A></LI>
+
+<LI>
+<A HREF="#Examples">□例</A></LI>
+
+<LI>
+<A HREF="#Temporary Filenames">暂存档名</A></LI>
+
+<LI>
+<A HREF="#Regular Expressions">规则表示式</A></LI>
+
+<LI>
+<A HREF="#Hints">提示</A></LI>
+
+<LI>
+<A HREF="#Netiquette">网路礼仪</A></LI>
+
+<LI>
+<A HREF="#Bugs">臭□</A></LI>
+
+<LI>
+<A HREF="#Remember!">切记!</A></LI>
+
+<LI>
+<A HREF="#Author">作者群</A></LI>
+</UL>
+
+<H2>
+<A NAME="Introduction"></A>简介</H2>
+<B>Mirror</B> 是以 <B><A HREF="http://www.perl.com/">Perl</A></B>所写的，
+它使用 FTP<A HREF="http://sunsite.org.uk/rfc/rfc959.txt"> 协定
+</A>，在它所执行的主机与一部远端主机之间复制一个目录的阶层组织。
+藉著在传输档案之前比较档案时间与档案大小，它可以避免拷贝不必要的档案。
+在其他的方面，它可以选择重新命名、压缩、gzip压缩与分割档案。
+
+<P><B>Mirror</B> 是由 <A HREF="http://sunsite.org.uk/~lmjm/">Lee
+McLoughlin</A> &lt;<A HREF="mailto:lmjm@icparc.ic.ac.uk">lmjm@icparc.ic.ac.uk</A>>
+所写，给档案室管理员使用的，但也可以给任何想透过FTP传一大堆档案的人使用。
+虽然原本只可以在 Un*x上跑，但 2.9 版也可以在 Wind*ws 95 与 Wind*ws NT 跑。
+<BR>&nbsp;
+
+<P>最新版的<B>mirror</B> 可以在下列网址中的其中一个找到:
+<UL><TT><FONT SIZE=+1><A HREF="ftp://sunsite.org.uk/packages/mirror/mirror.tar.gz">ftp://sunsite.org.uk/packages/mirror/mirror.tar.gz</A></FONT></TT>
+<BR><TT><FONT SIZE=+1><A HREF="ftp://sunsite.org.uk/packages/mirror/mirror.zip">ftp://sunsite.org.uk/packages/mirror/mirror.zip</A></FONT></TT></UL>
+最新版总是可以在下列网址找到:
+<UL><TT><FONT SIZE=+1><A HREF="http://sunsite.org.uk/packages/mirror/mirror-guide.html">http://sunsite.org.uk/packages/mirror/</A></FONT></TT></UL>
+
+<H2>
+<A NAME="Description"></A>说明</H2>
+<B>Mirror</B> 以下列两种之一的方式被呼叫(请参阅 mirror master):
+<UL>
+<PRE><TT><FONT SIZE=+1>mirror [flags] <A HREF="#-g">-g</A> site:pathname</FONT></TT></PRE>
+
+<PRE><TT><FONT SIZE=+1>mirror [flags] [<A HREF="#Package Files">package-files</A>]</FONT></TT></PRE>
+</UL>
+第一种方法用来抓取一个远端的档案或目录到目前的工作目录。若你正在『咪』
+一个目录，最好在路径名称後加一个斜线('/')，它会使远端的递回列表比较小
+，或是使用<B><A HREF="#-r">-r</A></B> 旗标以禁止递回(参考下面的
+<B><A HREF="#-g">-g</A></B> ). <B><A HREF="#Setting Defaults">mirror.defaults</A></B>
+档没有用到。
+
+<P>在前述的第二种方法中，所需的参数最少，而
+<B>mirror</B> 会由『包裹档』中读到的 <B><I><A HREF="#Keywords">keyword=value</A></I></B>
+行所控制。<A NAME="Finding Defaults"></A>若一个名为
+<B><A HREF="#Setting Defaults">mirror.defaults</A></B> 的档案出现在
+含有 <B>mirror</B> 执行档的目录，或出现在
+<B>PERLLIB</B> 路径，那麽它会在任何<TT><FONT SIZE=+1>包裹档</FONT></TT>之前被载入。
+<B><A HREF="#Setting Defaults">mirror.defaults</A></B> 档一般只含有关键字，
+称为&nbsp;<B><I><A HREF="#Setting Defaults">defaults</A></I></B>
+。它被用来提供共同预设值给所有的<TT><FONT SIZE=+1>包裹档</FONT></TT>&nbsp;&nbsp;
+。如果找不到<B><A HREF="#Setting Defaults">mirror.defaults</A></B>&nbsp;档，
+内建的<A HREF="#Keywords">预设值</A>会被<B>mirror&nbsp;</B>
+使用。
+
+<P>各个 <TT><FONT SIZE=+1><A HREF="#Package Files">包裹档</A></FONT></TT>
+会被一个个读入，寻找被命名的<A HREF="#Package Files">包裹</A>。
+若包裹没有被命名为<B><I><A HREF="#Setting Defaults">defaults</A></I>,</B>
+那麽 <B>mirror</B> 会执行以下动作。
+
+<P>若 <B>mirror</B> 已经连上某个站，除了目的站以外，
+它会自该站断线。接著它会更换到近端目录，若有必要的话会建立该目录，
+然後扫描它，以取得近端已存在档案的相关细节。
+<B>Mirror</B> 接著尝试与远端站台的 FTP 伺服程式连结。
+它会使用指定的 <B><I><A HREF="#remote_user">remote_user</A></I></B> 与 <B><I><A HREF="#remote_password">remote_password</A></I></B>。
+然後扫描远端目录。
+<B>Mirror</B> 更换到远端目录
+(<B><I><A HREF="#remote_dir">remote_dir</A></I></B>)而扫描此目录，
+且执行 FTP LIST 命令，传递「递回旗标」
+<B><I><A HREF="#flags_recursive">flags_recursive</A></I></B>&nbsp;
+或「非递回旗标」<B><I><A HREF="#flags_nonrecursive">flags_nonrecursive</A></I></B> 的选项，
+根据「递回」值<B><I><A HREF="#recursive">recursive</A></I></B>而定。
+此外，一个含有目录列表的档案可以供抓取。
+(参阅 <B><I><A HREF="#ls_lR_file">ls_lR_file</A></I></B> 与 <B><I><A HREF="#local_ls_lR_file">local_ls_lR_file</A></I></B>)
+各远端路径名需要建立一个近端路径名以对映之。
+接著检查<I><B><A HREF="#exclude_patt">exclude_patt</A></B>，</I>
+<B><I><A HREF="#max_days">max_days</A></I></B>，<B><I><A HREF="#get_newer">get_newer</A></I></B>
+与 <B><I><A HREF="#get_size_change">get_size_change</A> </I></B>关键字所指定
+的值，将其应用在档名或符号连结名称上。
+<B><I><A HREF="#max_days">max_days</A></I></B>，
+<B><I><A HREF="#get_newer">get_newer</A></I></B> 与 <B><I><A HREF="#get_size_change">get_size_change</A>&nbsp;
+</I></B>不会被用在目录上。这会建立一个所有所需的远端档案的列表，与一个储存远端档案的近端路径名称。
+
+<P>近端版本的所有所需目录接著会被建立。然後所有需要的档案会从远端站台抓取到他们的近端路径名。藉著抓档到一个
+<A HREF="#Temporary Filenames">暂存档</A> 到目标目录。传输模式通常是二元模式
+(参阅 <B><I><A HREF="#vms_xfer_text">vms_xfer_text</A></I></B>)
+若有需要的话，暂存档可以是<A HREF="#File Compression">gzip 压缩过的
+</A> 或 <A HREF="#File Splitting">分割过</A>。档案的时间印记会被重设以
+符合远端档案的时间。最後，暂存档被重新命名为正确的名称。
+
+<P>一但所有的档案都传完了，再建立任何必须的符号连结
+(由你的作业系统支援之) 且此镜像中任何不必要的路径名都会被
+<A HREF="#File Deletion">删除</A>.
+
+<P>除非侦测到内部失效，任何错误会导致目前的包裹被跳略掉且试试下一个。
+
+<P><B>Mirror</B> 可以处理符号连结但不能处理硬式连结。
+它不会复制所有者或群组资讯，而通常在跨越网路时，这是没有意义的。
+(且参阅 <B><I><A HREF="#user">user</A></I></B> 与 <B><I><A HREF="#group">group</A></I></B>)
+若你需要这些选项，且你使用 Un*x，请用 <B>rdist(1)</B>代替。
+
+<P><B>Mirror</B> 是写来『咪』远端 Un*x 档案结构，但是已经成长了（像是
+混乱了）。
+<H2>
+<A NAME="Flags"></A>旗标</H2>
+虽然 <B>mirror</B> 有一大串的命令列旗标，真的要用它们
+应该只用在一个非常简单的单一事件。
+若你想维护一个镜像区，把所有的细节放到一个
+<B>mirror</B> <A HREF="#Package Files">包裹</A>档里头，然後执行
+<B>mirror</B> ，会好得多。
+
+<P>你仅仅需要的旗标有<B><A HREF="#-n">-n</A></B>
+以及，若你想看看&nbsp;mirror&nbsp;怎麽了，用<B><A HREF="#-d">-d</A></B>.
+<BR>&nbsp;
+<TABLE>
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP width="15%"><A NAME="-d"></A><B>-d</B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>开启除错功能。若给一次此参数（例如 -d -d），
+除错层级会增加。目前最大的层级是四层。</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="-n"></A><B>-n</B>&nbsp;</TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>除了比较近端与远端目录，不要做任何事，
+没有档案会被传输。将除错层级设到两层，如此你就可以看到发生了什麽。</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="-g"></A><B>-g&nbsp;site:path</B>&nbsp;</TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>在指定的站上抓取所有符合路径的档案，这是一个
+<A HREF="#Regular Expressions">规则表示式</A>
+若路径符合 .*/.+ (例如 /fred 或 /fred/bloggs)那麽这就是此目录的名称，而所有在最後一个斜线後的档名样式就是要抓取的目标。若路径以斜线结束，那麽该目录的名称与所有在它下面的内容都会被抓取。一个要注意的地方，如果你使用 host:/fred，远端主机上会在根目录执行一的完整的目录列表。如果你想抓的是目录 /fred 下面的内容，那麽你就指定 host:/fred/</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="-p"></A><B>-p package</B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>当使用数个<A HREF="#Package Files">包裹档</A>时，
+只有咪指定的包裹。这个选项可以指定好几次，这个情况下所有指定的包裹都会被咪过来。没有这个选项，所有的包裹都会被咪。跟在 -p 後面的是一个要抓取的包裹名称的<A HREF="#Regular Expressions">规则表示式</A>。</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><B>-R package</B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>类似 <B><A HREF="#-p">-p</A></B> 但是忽略掉所有的
+包裹，直到指定的包裹才开始抓。在<b>mirror</b>失败的地方重新启动时很有用。</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><B>-F</B>&nbsp;</TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>使用 <B>dbm</B> 档，以储存档案的资讯。这在你咪一个很大的目录时颇有用处。参阅变数<B><I><A HREF="#use_files">use_files</A>.</I></B></TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="-r"></A><B>-r</B>&nbsp;</TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>等於 <B>-k <I><A HREF="#recursive">recursive</A></I>=false</B></TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><B>-v</B>&nbsp;</TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>印出<B>mirror</B>的版本细节然後离开。<A NAME="-T"></A></TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><B>-T</B>&nbsp;</TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>不要传输任何档案，只要强制任何近端档案将时间印记设定成跟远端档案的一样。一般只有用在以其他方式开始咪的时候(例如从 CDROM 抓时)。</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><B>-Ufilename</B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>将所有传输的档名纪录在指定的档案中。记住
+<B>mirror</B> 会更换目录到 <I><A HREF="#local_dir">local_dir</A></I>
+以执行任务，所以它应该是一个完整的路径名。如果没有指定档名，
+其预设值为<TT><FONT SIZE=+1>upload_log.日.月.年</FONT></TT>。</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="-k"></A><B>-k <I>key</I>=value</B>&nbsp;</TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>覆写任何预设的关键字/值，参阅下面的说明。</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><B>-m</B>&nbsp;</TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>等於 <B><A HREF="#-k">-k</A> <I><A HREF="#mode_copy">mode_copy</A></I>=true</B>&nbsp;</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><B>-t</B>&nbsp;</TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>等於 <B><A HREF="#-k">-k</A> <I><A HREF="#text_mode">text_mode</A></I>=true</B></TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><B>-f</B>&nbsp;</TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>等於 <B><A HREF="#-k">-k</A> <I><A HREF="#force">force</A></I>=true</B></TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><B>-s site</B>&nbsp;</TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>等於 <B><A HREF="#-k">-k</A> <I><A HREF="#site">site</A></I>=site</B></TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><B>-u user</B>&nbsp;</TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>等於 <B><A HREF="#-k">-k</A> <I><A HREF="#remote_user">remote_user</A></I>=user</B>接著你会被提示输入没有回音的通行密码。密码用
+<B><I><A HREF="#remote_password">remote_password</A></I></B>.</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><B>-L</B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>只产生一个将输入印成漂漂的报表，然後离开。</TD>
+</TR>
+</TABLE>
+
+<H2>
+<A NAME="Package Files"></A>包裹档</H2>
+各个群组的关键字定义了如何去咪一个特定的包裹，且应该以一个独一的
+<B><I><A HREF="#package">package</A></I></B>&nbsp;行。
+包裹名称用在产生报告与<B><A HREF="#-p">-p</A></B>
+参数，所以选一个好记的名字。各包裹基本所需的关键字是
+<B><I><A HREF="#package">package</A></I></B>, <B><I><A HREF="#site">site</A></I></B>,
+<B><I><A HREF="#remote_dir">remote_dir</A></I></B> and <B><I><A HREF="#local_dir">local_dir</A></I></B>
+。当找到一个<B><I><A HREF="#package">package</A></I></B> 行，所有的预设值
+会被设为<B><I><A HREF="#Setting Defaults">defaults</A></I></B>
+包裹中的值 (或内建预设值，如果没有设定 defaults 包裹的话)。&nbsp; 一个包裹
+在碰到另一个<B><I><A HREF="#package">package</A></I></B> 叙述，或是档尾时结束。
+
+<P>包裹档以一连串的叙述方式分析。空白行与井字号开头的行会被忽略。
+各叙述都是这种形式∶
+<UL><B><I>keyword</I>=value</B></UL>
+或是
+<UL><B><I>keyword</I>+value</B></UL>
+&nbsp;你可以在关键字与等号/加号前加上空白。紧接在等号/加号後面的是其值。
+包括任何在前或在後的空白。等号将关键字设定为该值，而加号则将值连结在已经有的值後面(通常是在
+<B><I><A HREF="#Setting Defaults">defaults</A></I></B>包裹中所设定的值)。
+
+<P>一个叙述可以写成好几行，以一个「&amp;」符号做为一行的结尾。
+跟在「&amp;」符号下面的行会被删除其前面的空白字元删除，加到目前这行的後面。
+
+<P>虽然有很多关键字可以设定，内建的预设值就可以处理大多数的状况。
+一般只要&nbsp;<B><I><A HREF="#package">package</A></I></B>,&nbsp;
+<B><I><A HREF="#site">site</A></I></B>,&nbsp; <B><I><A HREF="#remote_dir">remote_dir</A></I></B>
+与<B><I><A HREF="#local_dir">local_dir</A></I></B>需要设定。
+<H3>
+<A NAME="Setting Defaults"></A>设定预设值</H3>
+如果包裹名称是<B>defaults</B>，那麽就不接触任何站台。
+但指定给任何关键字的预设值会被改变。
+一般来说，所有的预设值会被放在档案
+<B>mirror.defaults</B> 中，它会在任何其他<A HREF="#Package Files">包裹档</A> 之前自动载入(参阅 <A HREF="#Finding Defaults">说明</A>).
+<PRE><TT># mirror.defaults □例
+package=defaults
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; # 近端主机名称 - 若与`hostname`所传回的不同的话。
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; # (我广告一下 sunsite.org.uk 但是真正的名称是
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; #&nbsp; swallow.doc.ic.ac.uk.)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; hostname=sunsite.org.uk
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; # 将近端的目录名称放在这里
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; local_dir=/public/
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; remote_password=wizards@sunsite.org.uk</TT></PRE>
+
+<H3>
+<A NAME="Keywords"></A>关键字</H3>
+下面所列的是所有可以用的关键字与其内建的预设值。要改变这些预设值最好是改变你的
+<B><A HREF="#Setting Defaults">mirror.defaults </A></B>档。
+<BR>&nbsp;
+<BR>关键字分类在下面章节中∶
+<UL>
+<LI>
+<A HREF="#Required Keywords">必要的关键字</A></LI>
+
+<LI>
+<A HREF="#FTP Related">与 FTP 相关的</A></LI>
+
+<LI>
+<A HREF="#File Copying">档案复制</A></LI>
+
+<LI>
+<A HREF="#Local File Attributes">近端档案属性</A></LI>
+
+<LI>
+<A HREF="#File Deletion">档案删除</A></LI>
+
+<LI>
+<A HREF="#File Compression">档案压缩</A></LI>
+
+<LI>
+<A HREF="#File Splitting">档案分割</A></LI>
+
+<LI>
+<A HREF="#Directory Listings">目录列表</A></LI>
+
+<LI>
+<A HREF="#Logging">记录</A></LI>
+
+<LI>
+<A HREF="#Special">特殊项目</A></LI>
+</UL>
+&nbsp;
+<TABLE NOSAVE >
+<TR VALIGN=TOP>
+<TD COLSPAN="3"><A NAME="Required Keywords"></A><B><U><FONT SIZE=+1>必要的
+关键字&nbsp;</FONT></U></B></TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><B><I><U>关键字</U></I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I><U>预设值</U></I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><U>说明</U></TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="package"></A><B><I>package</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>无</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>要咪的包裹的名称。应该与其他所有的包裹名称都不相同。</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="site"></A><B><I>site</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>无</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>要咪的远端主机名或是 IP 位址。</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="remote_dir"></A><B><I>remote_dir</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>无</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>要咪的远端目录，参阅<B><I><A HREF="#recurse_hard">recurse_hard</A></I></B></TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="local_dir"></A><B><I>local_dir</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>无</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>近端目录</TD>
+</TR>
+
+<TR>
+<TD>&nbsp;</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD COLSPAN="3"><A NAME="FTP Related"></A><B><U><FONT SIZE=+1>与 FTP 相关的&nbsp;</FONT></U></B></TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><B><I><U>关键字</U></I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I><U>预设值</U></I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><U>说明</U></TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="remote_user"></A><B><I>remote_user</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>anonymous</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>用在远端主机的使用者名称。</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="remote_password"></A><B><I>remote_password</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>localuser@localhostname</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>用在远端主机的通行密码&nbsp; 注意∶<I>localuser</I>
+是你在近端主机的使用者名称，<I>localhostname</I> 是近端机器的名称
+(如果找得到的话，参阅<B><I><A HREF="#hostname">hostname</A></I></B>)</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="remote_account"></A><B><I>remote_account</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>无</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>使用匿名登入後用在远端主机的帐号名称/密码(给有此必要的系统)。</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="remote_group"></A><B><I>remote_group</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>无</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>如果有设的话，设定远端的「群组」。</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="remote_gpass"></A><B><I>remote_gpass</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>无</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>如果有的话，设定远端的「群组密码」。</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="timeout"></A><B><I>timeout</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>40</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>在这麽多秒之後，使 FTP 需求逾时。</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="failed_gets_excl"></A><B><I>failed_gets_excl</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>无</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>当 FTP GET 命令失败时，不要回报之错误讯息<A HREF="#Regular Expressions">规则表示式</A>(例如 permission denied.)</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="ftp_port"></A><B><I>ftp_port</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>21</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>远端 FTP 守护神程式的埠号。</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="proxy"></A><B><I>proxy</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>false</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>使用代理伺服器的 FTP 服务时，将其设定为true </TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="proxy_ftp_port"></A><B><I>proxy_ftp_port</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>4514</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>代理伺服器的 FTP 守护神程式的埠号。这个值应该根据你所使用的代理函式库而有所异动。</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="proxy_gateway"></A><B><I>proxy_gateway</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>internet-gateway</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>代理服务的名称，也可以用环境变数&nbsp;<b>INTERNET_HOST</b>&nbsp;提供之。
+</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="using_socks"></A><B><I>using_socks</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>false</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>若你使用 SOCKS 版本的
+<B>Perl</B>.&nbsp;</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="passive_ftp"></A><B><I>passive_ftp</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>false</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>若你想使用 PASV 扩充的 FTP 协定，将它设为 true。
+特别是在跟防火墙、代理 FTP 伺服器、与变数<B><I><A HREF="#using_socks">using_socks</A></I></B>一起用时，颇有用处。
+</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><B><I>retry_call</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=BASELINE><I>true</I></TD>
+
+<TD ALIGN=LEFT VALIGN=BASELINE>若初始连结失败，一分钟後重试一次。
+这用来处理某些会反查网址的站台在第一次查询进入主机名时发生逾时的情形。
+</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><B><I>disconnect</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>false</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>在一个包裹结束後自远端站台断线。一般只有在下一个
+<B><I><A HREF="#package">包裹</A></I></B>指定了一个不同的站台时才需要。
+(有些站台不让你更换到特定的目录，除非你是第一次连进去。)</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><B><I>remote_idle</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>无</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>若设定了try，那麽将远端空转定时器设定为此。</TD>
+</TR>
+
+<TR>
+<TD>&nbsp;</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD COLSPAN="3"><A NAME="File Copying"></A><B><U><FONT SIZE=+1>档案复制&nbsp;</FONT></U></B></TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><B><I><U>关键字</U></I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I><U>预设值</U></I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><U>说明</U></TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="get_patt"></A><B><I>get_patt</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>.</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>欲抓取的远端路径名称的<A HREF="#Regular Expressions">规则表示式</A></TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="exclude_patt"></A><B><I>exclude_patt</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>无</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>要忽略的远端路径名称的<A HREF="#Regular Expressions">规则表示式</A></TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><B><I>local_ignore</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>无</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>要忽略的近端路径名称的<A HREF="#Regular Expressions">规则表示式</A>忽略限定的近端目录时颇有用处。</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="get_newer"></A><B><I>get_newer</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>true</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>若远端档案比近端档案新的话，抓回来。
+</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="get_size_change"></A><B><I>get_size_change</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>true</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>如果档案大小与近端的档案不同的话，抓回来。
+若档案要在取回来後
+<A HREF="#File Compression">压缩</A>。
+ <B><I>get_size_change</I></B> 会被自动设为 false。</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="make_bad_symlinks"></A><B><I>make_bad_symlinks</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>false</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>若设为 true，符号连结会被视为不合法(不存在)的路径名。
+(在早些版本的<B>mirror</B>，这会预设为 true)</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><B><I>follow_local_symlinks</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>无</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>近端符号连结的路径名之<A HREF="#Regular Expressions">规则表示式</A>
+不把它们当作符号连结处理，而使用该符号连结所参考的档案与路径。这会使
+<B>mirror</B>看不到符号连结。</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><B><I>get_missing</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>true</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>真的抓档。当设为 false 时，只有删除与符号连结会被抓取。
+用来删除比
+<B><I><A HREF="#max_days">max_days</A></I></B>旧的过期档案，而不抓取旧的档案。
+</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><B><I>get_file</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>true</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>抓档。若设为 false，<B>mirror</B>
+会尝试放档。
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="text_mode"></A><B><I>text_mode</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>false</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>若为 true，所有的档案都以文字模式传输。
+Un*x 偏好二元模式，所以它是预设值</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><B><I>strip_cr</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>false</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>抓到任何档案後，除去其中的 carriage return。
+</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="vms_keep_versions"></A><B><I>vms_keep_versions</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>true</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>在咪 VMS 的档案时，保持版本号码。
+若是 false，版本会被除掉，只留下基本档名。
+</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="vms_xfer_text"></A><B><I>vms_xfer_text</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>(readme|info|listing|\.c)$</TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>以文字模式传输的 VMS 档名的样式(不分大小写)
+</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="name_mappings"></A><B><I>name_mappings</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>无</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>远端对近端的路径名对应(一个<B>Perl</B>
+的代换命令，例如 s:old:new:).</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><B><I>external_mapping</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>无</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>指定一个含有名为
+<TT><FONT SIZE=+1>extmap</FONT></TT> 的 Perl 模组，其模组中至少含有一个名为
+<TT><FONT SIZE=+1>map</FONT></TT>的函式。此函式用来提供
+<B><I><A HREF="#name_mappings">name_mappings</A></I></B>功能。</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><B><I>update_local</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>false</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>设定 <B><I><A HREF="#get_patt">get_patt</A></I></B>
+为所有已经在<B><I><A HREF="#local_dir">local_dir</A></I></B>下的档案与目录。</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="max_days"></A><B><I>max_days</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>0</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>若大於零，忽略掉这个多天前的旧档案。任何被忽略的档案都不会被传输或是删除。
+</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD><B><I>max_size</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>0</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>若大於零，不要传输任何大小比这个数字大的档。
+</TD>
+</TR>
+
+<TR VALIGN=TOP NOSAVE>
+<TD ALIGN=LEFT VALIGN=TOP NOSAVE><B><I>chmod</I></B></TD>
+
+<TD>true</TD>
+
+<TD>预设尝试且设定此复制档案的属性(例如时间印记)。若设为 false，则不设定属性。
+</TD>
+</TR>
+
+<TR>
+<TD>&nbsp;</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD COLSPAN="3"><A NAME="Local File Attributes"></A><B><U><FONT SIZE=+1>近端档案属性&nbsp;</FONT></U></B></TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><B><I><U>关键字</U></I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I><U>预设值</U></I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><U>说明</U></TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="user"></A><B><I>user</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>无</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>赋予近端路径名称的使用者名称或使用者识别码。</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="group"></A><B><I>group</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>无</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>赋予近端路径名称的群组名称或群组识别码。</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="mode_copy"></A><B><I>mode_copy</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>false</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>指示是否复制档案/目录的模式的旗标。
+若此值为 false，那麽
+<B><I><A HREF="#file_mode">file_mode</A></I></B>
+与 <B><I><A HREF="#dir_mode">dir_mode</A></I></B> 会被使用以代替之。</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="file_mode"></A><B><I>file_mode</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>0444</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>若<B><I><A HREF="#mode_copy">mode_copy</A></I></B>
+为 false，将近端所建立的档案模式指定为此值。</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="dir_mode"></A><B><I>dir_mode</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>0755</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>若<B><I><A HREF="#mode_copy">mode_copy</A></I></B>
+为 false，将近端所建立的目录模式设为此值。</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="force"></A><B><I>force</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>false</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>若为 true，不论比较大小或时间印记的结果为何，所有的档案都会被传输。</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><B><I>umask</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>07000</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>预设值为不要建立 setuid 档。(参阅
+Un*x 上的<B>chmod(1)</B>)</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><B><I>use_timelocal</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>true</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>将档案的时间印记设为当地时区。若为 false，
+时区会被设为 GMT(早期版本的<B>mirror</B>在将所有档案设为
+GMT 时，有一个臭□。)</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><B><I>force_times</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>true</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>强制近端时间符合远端时间。</TD>
+</TR>
+
+<TR>
+<TD>&nbsp;</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD COLSPAN="3"><A NAME="File Deletion"></A><B><U><FONT SIZE=+1>档案删除&nbsp;</FONT></U></B></TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><B><I><U>关键字</U></I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I><U>预设值</U></I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><U>说明</U></TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><B><I>do_deletes</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>false</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>若在来源目录树中没有的档案，将它自目的目录树中删除。</TD>
+</TR>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="delete_patt"></A><B><I>delete_patt</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>.</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>要删除的近端路径名称的<A HREF="#Regular Expressions">规则表示式</A>
+不符合的名称不会被检查。符合的名称中与
+<B><I><A HREF="#delete_excl">delete_excl</A></I></B>
+符合的样式会被选出来，排除在外。</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><B><I>delete_get_patt</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>false</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>将 <A HREF="#delete_patt"><B><I>delete_patt</I></B>
+</A>设为<B><I><A HREF="#get_patt">get_patt</A></I></B>.</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="delete_excl"></A><B><I>delete_excl</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>无</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><B>mirror</B> 不会删除的近端档名的<A HREF="#Regular Expressions">规则表示式</A></TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="max_delete_files"></A><B><I>max_delete_files</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>10%</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>若此值设定为一个数字，那麽若有超过此数目的档案会
+被删除，就不删除，只提出警告。
+若此值被设为
+<I>百分比%</I>，那麽若要被删除的档案数目的百分比超过此数目，不要删除，只提出警告。 
+</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="max_delete_dirs"></A><B><I>max_delete_dirs</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>10%</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>如同 <B><I><A HREF="#max_delete_files">max_delete_files</A></I></B>
+不过是应用在目录上。</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="save_deletes"></A><B><I>save_deletes</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>false</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>不删除近端档案，而将它移动到
+<B><I><A HREF="#save_dir">save_dir</A></I></B> .&nbsp;</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="save_dir"></A><B><I>save_dir</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>Old</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>远端站台上已不再有，但近端仍有的档案，移到此处。
+由根目录开头或是相对於
+<B><I>local_dir</I></B>。只适用於当
+<B><I><A HREF="#save_deletes">save_deletes</A></I></B> 为
+true 时。</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><B><I>store_remote_listing</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>无</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>放置远端目录列表的近端路径名称。
+若你的网路很慢时，或是想对同一个包裹执行几项不同的作业时颇有用处，
+因为这样不必每次都去抓索引。
+</TD>
+</TR>
+
+<TR>
+<TD>&nbsp;</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD COLSPAN="3"><A NAME="File Compression"></A><B><U><FONT SIZE=+1>档案压缩&nbsp;</FONT></U></B></TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><B><I><U>关键字</U></I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I><U>预设值</U></I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><U>说明</U></TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="compress_patt"></A><B><I>compress_patt</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>无</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>在近端存档前，要压缩的档名的<A HREF="#Regular Expressions">规则表示式</A>
+参阅 <B><I><A HREF="#get_size_change">get_size_change</A></I></B>.</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><B><I>compress_excl</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>\.(z|gz)$</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>不压缩的档名的<A HREF="#Regular Expressions">规则表示式</A>
+(不分大小写).</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="compress_prog"></A><B><I>compress_prog</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>compress</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>压缩程式。若设定为
+<B>compress</B> 或 <B>gzip</B>，此程式的完整路径名与正确的
+<B><I>compress_suffix</I></B> 会自动被设定。当使用 <B>gzip</B>,
+-9 会被使用。注意到<B><I><A HREF="#compress_suffix">compress_suffix</A>
+</I></B>可以被重设为非标准值，就是将它设定在<B><I>compress_prog</I></B>之後。</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="compress_suffix"></A><B><I>compress_suffix</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>无</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>压缩程式加到档名後面的一或多个字元。
+若压缩程式<B><I><A HREF="#compress_prog">compress_prog</A></I></B> 
+是 <B>compress</B>，其预设值为 .Z。若 <B><I><A HREF="#compress_prog">compress_prog</A></I></B>
+是 <B>gzip</B>，其预设值为.gz。</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><B><I>compress_conv_patt</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>(\.Z|\.taz)$</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>若 <B><I><A HREF="#compress_prog">compress_prog
+</A></I></B>是 gzip，符合这个样式的档案会被解压缩且在近端储存前被 gzip 压缩。
+压缩转换只是意味著将压缩转换为压缩为 gzip 形式。</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><B><I>compress_conv_expr</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>s/\.Z$/\.gz/;</I>&nbsp;
+<BR><I>s/\.taz$/\.tgz/</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>将副档名转换为 gzip 形式的<B>Perl</B> 表示式。
+将 .Z 转为 .gz 而 .taz 转为 .tgz。</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><B><I>compress_size_floor</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>0</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>不要压缩小於此大小的档案，以位元组计。
+</TD>
+</TR>
+
+<TR>
+<TD>&nbsp;</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD COLSPAN="3"><A NAME="File Splitting"></A><B><U><FONT SIZE=+1>档案分割&nbsp;</FONT></U></B></TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><B><I><U>关键字</U></I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I><U>预设值</U></I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><U>说明</U></TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><B><I>split_max</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>0</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>如果大於零，且档案大小大於这麽多位元组，
+该档案会被分割以储存在近端
+(档名必须也要符合<B><I>split_patt</I></B>)。被分割的档名被用来做为目录名，
+而档案的各个部分会被存成该目录中的档案，各名为 part1，part2……
+</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><B><I>split_patt</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>无</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>在近端储存前，要分割的远端路径名的<A HREF="#Regular Expressions">规则表示式</A>
+</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><B><I>split_chunk</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>102400</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>档案要分割成为何种大小，以位元组计。</TD>
+</TR>
+
+<TR>
+<TD>&nbsp;</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD COLSPAN="3"><A NAME="Directory Listings"></A><B><U><FONT SIZE=+1>目录列表
+</FONT></U></B>&nbsp;</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><B><I><U>关键字</U></I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I><U>预设值</U></I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><U>说明</U></TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="remote_fs"></A><B><I>remote_fs</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>unix</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>档案储存型态。目前可以是<B><A HREF="#remote_fs=unix">unix</A></B>，
+<B><A HREF="#remote_fs=dls">dls</A></B>， <B><A HREF="#remote_fs=netware">netware</A></B>，
+<B><A HREF="#remote_fs=vms">vms</A></B>， <B><A HREF="#remote_fs=dosftp">dosftp</A></B>，
+<B><A HREF="#remote_fs=macos">macos</A></B>， <B><A HREF="#remote_fs=lsparse">lsparse</A></B>
+与 <B><A HREF="#remote_fs=infomac">infomac</A></B>。
+参阅<A HREF="#Filestores">档案库</A>一节以取得更多细节。
+</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="ls_lR_file"></A><B><I>ls_lR_file</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>无</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>含有 ls -lR (在该机器上执行 ls -lR 的结果)
+的远端档案，否则执行远端的<B>ls</B>命令。</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="local_ls_lR_file"></A><B><I>local_ls_lR_file</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>无</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>含有 ls -lR 的近端档案，否则使用远端的
+<I><A HREF="#ls_lR_file">ls_lR_file</A></I> 档。这在第一次咪一的大型的包裹时
+很有用处。</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="recursive"></A><B><I>recursive</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>true</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>近端目录<B><I><A HREF="#local_dir">local_dir</A></I></B>
+与其子目录的内容通通咪。
+</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="recurse_hard"></A><B><I>recurse_hard</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>false</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>使用 CWD 与以产生远端的 ls，并且列出每个子目录。
+假如<B><I><A HREF="#remote_dir">remote_dir </A></I></B>必须是绝对路径
+(以一个斜线'/'为首)而非相对路径时。在 FTP 中使用 CWD 命令以找出远端档案储存区的
+起始路径。(若<B><I><A HREF="#remote_fs">remote_fs</A></I></B> 是 VMS 时，
+无法使用)</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="flags_recursive"></A><B><I>flags_recursive</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>-lRat</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>远端的 ls 命令的旗标以执行一个递回目录列表。
+</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="flags_nonrecursive"></A><B><I>flags_nonrecursive</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>-lat</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>远端的 ls 命令的旗标以执行一个非递回目录列表。
+</TD>
+</TR>
+
+<TR>
+<TD><B><I>ls_fix_mappings</I></B></TD>
+
+<TD><I>无</I></TD>
+
+<TD>在远端目录列表中编辑路径名称。(一个 <B>Perl</B> 代换命令，例如
+s:/usr/spool/pub:/:)</TD>
+</TR>
+
+<TR>
+<TD>&nbsp;</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD COLSPAN="3"><A NAME="Logging"></A><B><U><FONT SIZE=+1>记录&nbsp;</FONT></U></B></TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><B><I><U>关键字</U></I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I><U>预设值</U></I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><U>说明</U></TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><B><I>update_log</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>无</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>档案名称，相对於<B><I><A HREF="#local_dir">local_dir</A></I></B>
+，<B>mirror</B> 会将它维护一个包裹时所有所做的事报告在这里。</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="mail_to"></A><B><I>mail_to</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>无</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>将一个完成工作的记录档送给一列以逗点隔开的
+电子信箱位址(目前只有 Un*x 支援)</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="mail_prog"></A><B><I>mail_prog</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>无</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>发送<B><I><A HREF="#mail_to">mail_to</A>
+</I></B>列表时所呼叫的寄信程式。可以传参数给<B><I><A HREF="#mail_subject">mail_subject</A></I></B>。
+预设为 <B>mailx</B>，<B>Mail</B>，或<B>mail</B>. (Wind*ws 不支援)</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="mail_subject"></A><B><I>mail_subject</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>-s "mirror update"</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>这个可以包含<B><I>$keyword</I></B>。
+这些关键字会被其值所替代。
+(例如∶ -s "mirror update: $package")</TD>
+</TR>
+
+<TR>
+<TD>&nbsp;</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD COLSPAN="3"><A NAME="Special"></A><B><U><FONT SIZE=+1>特殊项目</FONT></U></B>&nbsp;</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><B><I><U>关键字</U></I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I><U>预设值</U></I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><U>说明</U></TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="hostname"></A><B><I>hostname</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>无</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><B>Mirror</B> 会自动跳过包裹的
+<B><I><A HREF="#site">site</A></I></B> 变数符合此主机者。
+预设值是近端主机名称。这通常在设定在
+<B><I><A HREF="#Setting Defaults">defaults</A></I></B>
+包裹中。如果你与其他人共享<B>mirror</B> <A HREF="#Package Files">包裹档</A>
+时，颇有用处。</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><B><I>comment</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>无</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>注解，用在报告中。</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><B><I>use_files</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>false</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>将<B>mirror</B>
+所用的关联性阵列储存在暂存档中(目前只有 Un*x 支援)。
+档案建立在 /var/tmp 中，档名为∶
+local_map 与 remote_map。副档名是你的机器上所安装 <b>Perl</b> 
+用的 DBM 函式库的预设值而定。
+</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><B><I>interactive</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>false</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>一个非批次作业的传输。由<B><A HREF="#-g">-g</A></B>
+旗标所隐含。</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><B><I>skip</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>无</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>若设定，会导致此包裹被忽略掉。
+其值会报告为忽略的理由
+</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><B><I>verbose</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>false</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>详细的讯息。</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD ALIGN=LEFT VALIGN=TOP><A NAME="algorithm"></A><B><I>algorithm</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP><I>0</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP>设定 <B>mirror</B> 所使用的基本演算法。
+
+<P><B><I>Algorithm=0</I></B> 一次咪一整个站。这对远端站台而言非常友善，
+因为它使用该站很少的资源。但它可能在近端机器上吃掉大量的记忆体。
+
+<P><B><I>Algorithm=1</I></B> 一个目录接著一个目录地咪一个站。
+应该<b>只</b>用在真正的镜像时
+(亦即∶咪过来的副本与原始档之间没有差异)。
+这用比较少的近端资源。但它对远端站台非常不友善，因为它需要远端站台
+在咪每一个目录时都要执行一次 <b>ls</b> 命令。
+<B>Mirror</B> 只会「看见」它正在咪的那一个目录，所以它不知道此目录以外的档案，
+而符号连结到此目录以外者会被视为是无效的。
+参阅<A HREF="#make_bad_symlinks"><B><I>make_bad_symlinks</I></B></A>。
+删除动作是以目录为基础，所以对 <A HREF="#max_delete_files">max_delete_files</A>
+与 <A HREF="#max_delete_dirs">max_delete_dirs</A>要特别小心。
+<B><I><A HREF="#get_patt">get_patt</A></I></B>
+只会用到此目录的档名，而非完整的路径，其他名称检查的项目也是一样。
+你几乎一定要设定<B><I><A HREF="#remote_dir">remote_dir</A></I></B>
+为一个绝对路径(以 '/' 开头)</TD>
+</TR>
+
+<TR VALIGN=TOP NOSAVE>
+<TD ALIGN=LEFT VALIGN=TOP NOSAVE><B><I>local_dir_check</I></B></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP NOSAVE><I>false</I></TD>
+
+<TD ALIGN=LEFT VALIGN=TOP NOSAVE>若为 true，且<B><I><A HREF="#local_dir">local_dir
+</A></I></B>并不存在，就跳过此包裹。预设是如果<B><I><A HREF="#local_dir">local_dir</A></I></B>
+不存在，那麽它就会被建立。 </TD>
+</TR>
+
+<TR>
+<TD></TD>
+
+<TD></TD>
+
+<TD></TD>
+</TR>
+</TABLE>
+
+<H2>
+<A NAME="Filestores"></A>档案库</H2>
+<B>Mirror</B> 使用远端目录列表以得知有哪些档案可以抓。
+<B>Mirror</B> 原本是用来连接 Un*x FTP 守护神程式，且使用标准的
+<B>ls</B> 命令。Un*x 主机若使用非标准的
+<B>ls</B> 或是一个非 Un*x 主机，就必须设定<B><I><A HREF="#remote_fs">remote_fs</A></I></B>
+变数，以符合该主机所传回目录列表的种类。
+<B><I>remote_fs</I></B> 与其他的变数有交互作用，
+特别是<B><I><A HREF="#flags_nonrecursive">flags_nonrecursive</A></I></B>，
+<B><I><A HREF="#recurse_hard">recurse_hard</A></I></B> 与 <B><I><A HREF="#get_size_change">get_size_change</A></I></B>。
+以下的章节显示一些在不同种档案库上执行 FTP DIR 命令的结果，
+与如何设定相关变数的建议。
+对一些设定得不寻常的档案库，你可能需要改变所建议的设定。
+<H3>
+<A NAME="remote_fs=unix"></A>remote_fs=unix</H3>
+
+<PRE>total 65
+-rw-r--r-- 1 nobody nobody&nbsp;&nbsp; 2245 Jan 28 20:06 README
+-rw-r--r-- 1 nobody nobody&nbsp; 45881 Jan 29 19:13 mirror.html</PRE>
+这是预设值，通常你应该不需要重设任何其他相关变数。
+<H3>
+<A NAME="remote_fs=dls"></A>remote_fs=dls</H3>
+
+<PRE>00index.txt&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 189916&nbsp;&nbsp;
+0readme&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 5793&nbsp;&nbsp;
+1_x/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; =&nbsp; OS/2 1.x-specific files</PRE>
+这跟大多数 Un*x 上的 <B>ls</B> 都不同。它在列表中提供了已知项目的说明。
+将<B><I><A HREF="#flags_recursive">flags_recursive</A></I></B>
+设为 -dtR 。
+<H3>
+<A NAME="remote_fs=netware"></A>remote_fs=netware</H3>
+
+<PRE>- [R----F--] jrd&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1646&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; May 07 21:43&nbsp;&nbsp;&nbsp; index
+d [R----F--] jrd&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 512&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Sep 09 10:52&nbsp;&nbsp;&nbsp; netwire
+d [R----F--] jrd&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 512&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Sep 02 01:31&nbsp;&nbsp;&nbsp; pktdrvr
+d [RWCE-F--] jrd&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 512&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Sep 04 10:55&nbsp;&nbsp;&nbsp; incoming</PRE>
+or
+<PRE>-[R----F--] 1 jrd&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1646&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; May 07 21:43&nbsp;&nbsp;&nbsp; index
+d[R----F--] 1 jrd&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 512&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Sep 09 10:52&nbsp;&nbsp;&nbsp; netwire
+d[R----F--] 1 jrd&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 512&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Sep 02 01:31&nbsp;&nbsp;&nbsp; pktdrvr</PRE>
+Novell 档案库用这种方式。将<B><I><A HREF="#recurse_hard">recurse_hard</A></I></B>
+设为 true，将<B><I><A HREF="#flags_nonrecursive">flags_nonrecursive</A></I></B>
+设为什麽都没有。参阅<B><I><A HREF="#remote_dir">remote_dir</A></I></B>.
+<H3>
+<A NAME="remote_fs=dosftp"></A>remote_fs=dosftp</H3>
+
+<PRE>00-index.txt&nbsp; 6,471 13:54&nbsp; 7/20/93&nbsp;&nbsp; alabama.txt&nbsp;&nbsp; 1,246 23:29&nbsp; 5/08/97
+alaska.txt&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 873 23:29&nbsp; 5/08/92&nbsp;&nbsp; alberta.txt&nbsp;&nbsp; 2,162 23:29&nbsp; 5/08/97</PRE>
+dosftp 是一个在 D*S 上跑的 FTP 守护神程式。将 <B><I><A HREF="#recurse_hard">recurse_hard</A></I></B>
+设为 true，而<B><I><A HREF="#flags_nonrecursive">flags_nonrecursive</A></I></B>
+设为什麽都没有。参阅<B><I><A HREF="#remote_dir">remote_dir</A></I></B>.
+<H3>
+<A NAME="remote_fs=macos"></A>remote_fs=macos</H3>
+
+<PRE>-------r--&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 127&nbsp;&nbsp; 127 Aug 27 13:53 !Gopher Links
+drwxrwxr-x&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; folder&nbsp;&nbsp;&nbsp; 32 Sep&nbsp; 9 16:30 FAQ
+drwxrwx-wx&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; folder&nbsp;&nbsp;&nbsp;&nbsp; 0 Sep&nbsp; 9 09:59 incoming</PRE>
+macos 是为一种麦金塔的 FTP 守护神程式的变数。虽然输出
+类似 Un*x。
+Un*x <B><I>remote_fs</I></B> 的型态无法处理，因为有各个档案有三种档案大小。
+将 <B><I><A HREF="#recurse_hard">recurse_hard</A></I></B>
+设为 true，<B><I><A HREF="#flags_nonrecursive">flags_nonrecursive</A></I></B>
+设为什麽都没有，<B><I><A HREF="#get_size_change">get_size_change</A></I></B>
+设为 false 还有 <B><I><A HREF="#compress_patt">compress_patt</A></I></B> 设为
+什麽都没有(最後一个设定是因为不寻常的档名会使 shell 在执行压缩时会有问题)。
+参阅<B><I><A HREF="#remote_dir">remote_dir</A></I></B>.
+<H3>
+<A NAME="remote_fs=vms"></A>remote_fs=vms</H3>
+
+<PRE>USERS:[ANONYMOUS.PUBLIC]
+
+1-README.FIRST;13&nbsp;&nbsp;&nbsp;&nbsp; 9&nbsp; 14-JUN-1993 13:09 [ANONYMOUS] (RWE,RWE,RE,RE)
+PALTER.DIR;1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1&nbsp; 18-JAN-1993 11:56 [ANONYMOUS] (RWE,RWE,RE,RE)
+PRESS-RELEASES.DIR;1
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1&nbsp; 11-AUG-1992 20:05 [ANONYMOUS] (RWE,RWE,,)</PRE>
+alternatively:
+<PRE>[VMSSERV.FILES]ALARM.DIR;1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1/3&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 5-MAR-1993 18:09
+[VMSSERV.FILES]ALARM.TXT;1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1/3&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 4-FEB-1993 12:20</PRE>
+将 <B><I><A HREF="#flags_recursive">flags_recursive</A></I></B> 设为 '[...]'
+与 <B><I><A HREF="#get_size_change">get_size_change</A></I></B> 设为 false.
+<B><I><A HREF="#recurse_hard">recurse_hard</A></I></B> <B>无法</B> 用在 VMS。
+参阅 <B><I><A HREF="#vms_keep_versions">vms_keep_versions</A></I></B>
+与 <B><I><A HREF="#vms_xfer_text">vms_xfer_text</A></I></B> 变数。
+<BR>&nbsp;
+<H3>
+<A NAME="remote_fs=infomac"></A>remote_fs=infomac</H3>
+
+<PRE>-r&nbsp;&nbsp;&nbsp;&nbsp; 1974 Jul 21 00:06 00readme.txt
+lr&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 3 Sep&nbsp; 8 08:34 AntiVirus -> vir</PRE>
+这是一个特殊情形，本来只能处理 sumex-aim.stanford.edu
+的 info-mac 上的 help/all-files 档所储存的目录列表。<B><I><A HREF="#recurse_hard">recurse_hard</A></I></B>
+应该要设为 true。
+<H3>
+<A NAME="remote_fs=dosish"></A>remote_fs=dosish</H3>
+This is for a D*S/Wind*ws FTP server with a faintly DOS like output
+<PRE>03-04-94&nbsp; 08:45PM&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;DIR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; .
+03-04-94&nbsp; 08:45PM&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;DIR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ..
+03-04-94&nbsp; 09:58AM&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 9718 Conduit
+03-04-94&nbsp; 09:59AM&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 8745 Eve</PRE>
+<B><I><A HREF="#recurse_hard">recurse_hard</A></I></B> 应该设为
+true 且 <B><I><A HREF="#flags_nonrecursive">flags_nonrecursive</A></I></B>
+设为什麽都没有。
+<H3>
+<A NAME="remote_fs=lsparse"></A>remote_fs=lsparse</H3>
+允许重分析 <B>mirror</B> 产生的目录列表，且将除错层次开到很高。
+只适用於 <A HREF="mailto:lmjm@icparc.ic.ac.uk?SUBJECT=You Are A Wizard"><B>mirror</B>
+巫师</A>.
+<H2>
+<A NAME="Examples"></A>□例</H2>
+这是 sunsite.org.uk 的<A HREF="#Setting Defaults">mirror.defaults</A>档。
+<br>
+<PRE># This is the default mirror settings used by my site:
+# sunsite.org.uk (193.63.255.4)
+
+package=defaults
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; # The LOCAL hostname - if not the same as `hostname`
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; # (I advertise the name sunsite.org.uk but the machine is
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; #&nbsp; really swallow.sunsite.org.uk)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; hostname=sunsite.org.uk
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; # Keep all local_dirs relative to here
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; local_dir=/public/Mirrors
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; remote_password=wizards@sunsite.org.uk
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; mail_to=
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; # Don't mirror file modes.&nbsp; Set all dirs/files to these
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; dir_mode=0755
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; file_mode=0444
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; # By default, files are owned by root.zero
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; user=0
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; group=0
+#&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; # Keep a log file in each updated directory
+#&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; update_log=.mirror
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; update_log=
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; # Don't overwrite my mirror log with the remote one.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; # Don't retrieve any of their mirror temporary files.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; # Don't touch anything whose name begins with a space!
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; # nor any FSP or gopher files...
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; exclude_patt=(^|/)(\.mirror$|\.in\..*\.$|MIRROR.LOG|#.*#|\.FSP|\.cache|\.zipped|lost+found/|)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; # Try to compress everything
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; compress_patt=.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; compress_prog=compress
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; # Don't compress information files, files that don't benefit from
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; # being compressed, files that tell ftpd, gopher, wais... to do things,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; # the sources for compression programs...
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; # (Note this is the only Regexp that is case insensitive.)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; compress_excl+|^\.notar$|-z|\.gz$|\.taz$|\.tar.Z|\.arc$|\.zip$|\.lzh$|\.zoo$|\.exe$|\.lha$|\.zom$|\.gif$|\.jpeg$|\.jpg$|\.mpeg$|\.au$|read.*me|index|\.message|info|faq|gzip|compress
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; # Don't delete own mirror log or any .notar files (incl in subdirs)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; delete_excl=(^|/)\.(mirror|notar)$
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; # Ignore any local readme files
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; local_ignore=README.doc.ic
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; # Automatically delete local copies of files that the
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; # remote site has zapped
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; do_deletes=true</PRE>
+Here are some sample package descriptions:
+<PRE>package=gnu
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; comment=Powerful and free Un*x utilities
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; site=prep.ai.mit.edu
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; remote_dir=/pub/gnu
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; # Local_dir+ causes gnu to be appended to the default local_dir
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; # so making /public/gnu
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; local_dir+gnu
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; exclude_patt+|^ListArchives/|^lost+found/|^scheme-7.0/|^\.history
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; # I tend to only keep the latest couple of versions of things
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; # this stops mirror from retrieving the older versions I've removed
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; max_days=30
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; do_deletes=false
+
+package=X11R6
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; comment=X Windows (windowing graphics system for Un*x)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; site=ftp.x.org
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; remote_dir=/pub/R6
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; local_dir+ftp.x.org/pub/R6
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; # This is a local symlink to the free-for-all contrib area
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; # and is mirrored elsewhere
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; local_ignore=^contrib$
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; # Don't compress a thing.&nbsp; It is already compressed&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; # but doesn't look it.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; compress_patt=
+
+
+# THIS IS JUST A TEST
+package=test vms site
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; site=vmsbox.somewhere.ac.uk
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; local_dir=/tmp/copy4
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; remote_dir=vmsserv/files
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; remote_fs=vms
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; # Must do these settings for VMS
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; flags_recursive=[...]
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; get_size_change=false
+
+# and on, and on ...</PRE>
+
+<H2>
+<A NAME="Temporary Filenames"></A>暂存档名</H2>
+当 mirror 建立一个暂存档名时，它在真实档名前加上
+'<B><TT><FONT SIZE=+1>.in.</FONT></TT></B>'。
+<BR>若你的系统对档名长度的限制较多(一些较老的 Un*x
+将长度限为 14 个字元)那麽找找看
+<PRE>&nbsp; <TT>LIMITED NAMELEN</TT></PRE>
+它大约位在 mirror.pl 的 75% 处，有说明如何减少暂存档名
+的长度。我知道只有一个站使用这种方法。
+<H2>
+<A NAME="Regular Expressions"></A>规则表示式</H2>
+这是对规则表示式的一份简短的解释。更广泛的指引请参阅
+<B>Perl</B> 使用手册，或参阅 O'Reilly 出版的 "Mastering
+Regular Expressions".
+
+<P>一个规则表示式，或简称为 regexp ，是一种在文字字串中使用匹配样式的方法。
+例如这个规则表示式∶
+<UL>
+<PRE>&nbsp;^s</PRE>
+</UL>
+会匹配任何有一个<B><TT><FONT SIZE=+1>s</FONT></TT></B>开头的字串。
+<B><TT><FONT SIZE=+1>^</FONT></TT></B> 是一个特殊字元，表示
+<I>字串开头</I>。.&nbsp; 
+一个规则表示式中可能有好几个特殊字元，不是特殊字元的就被当作文字字元，
+例如前例中的 <B><TT><FONT SIZE=+1>s</FONT></TT></B>。
+要关闭一个特殊字元，在它前面放一个反斜线，
+<B><TT><FONT SIZE=+1>\</FONT></TT></B>。它只对紧接在其後的那一个字元有效。
+
+<P>警告一句话∶虽然
+万用字元跟 Un*x shell(与 D*S 命令)很像，但它们在此是不同的。
+例如任何 Un*x 与 D*S 会将 *.ZIP 当作任何以 .ZIP 结尾的档名，
+但是 *.ZIP 做为一个规则表示式则是错误的!
+「*」是一个特殊字元，它必须跟在某个字元後面(参阅後面)。
+<H3>
+规则表示式特殊字元</H3>
+
+<TABLE>
+<TR>
+<TD>^</TD>
+
+<TD>字串开头</TD>
+</TR>
+
+<TR>
+<TD>$</TD>
+
+<TD>字串结尾</TD>
+</TR>
+
+<TR>
+<TD>.</TD>
+
+<TD>任何字元</TD>
+</TR>
+
+<TR>
+<TD>[r]</TD>
+
+<TD>一个□围内的字元，可以是一列 <I>abcef</I> 或是以短线隔开的□围
+<I>a-f</I></TD>
+</TR>
+
+<TR>
+<TD>[^r]</TD>
+
+<TD>不在此列或□围内的任何字元</TD>
+</TR>
+
+<TR>
+<TD>(p1|p2|p3...)</TD>
+
+<TD>样式 p1 或 p2 或 p3 ...(样式可以是特殊字元)</TD>
+</TR>
+
+<TR>
+<TD>*</TD>
+
+<TD>零或多个前导项目(可以是特殊字元)</TD>
+</TR>
+
+<TR>
+<TD>+</TD>
+
+<TD>一或多个前导项目(可以是特殊字元)</TD>
+</TR>
+
+<TR>
+<TD>\d</TD>
+
+<TD>任何数字(与 [0-9] 相同)</TD>
+</TR>
+
+<TR>
+<TD>\D</TD>
+
+<TD>任何非数字 (与 [^0-9] 相同)</TD>
+</TR>
+
+<TR>
+<TD>\s</TD>
+
+<TD>任何空白字元</TD>
+</TR>
+
+<TR>
+<TD>\S</TD>
+
+<TD>任何非空白字元</TD>
+</TR>
+</TABLE>
+
+<H3>
+规则表示式□例</H3>
+
+<TABLE>
+<TR>
+<TD>abc</TD>
+
+<TD>符合 <I>abc</I>, 以及 <I>xxxabcyyy</I> ，但不符合<I>xabbcy</I>&nbsp;</TD>
+</TR>
+
+<TR>
+<TD>^abc$</TD>
+
+<TD>只符合<I>abc</I></TD>
+</TR>
+
+<TR>
+<TD>a.*z</TD>
+
+<TD>符合 <I>a</I><I>任何字串z</I>。例如 <I>asdkjfhaksdjfhz</I></TD>
+</TR>
+
+<TR>
+<TD>index.html</TD>
+
+<TD>符合 <I>index.html </I>以及 <I>indexXhtml index/html</I> (「.」 符合
+任何字元)</TD>
+</TR>
+
+<TR>
+<TD>index\.html</TD>
+
+<TD>符合 <I>index.html </I>(反斜线使 . 停止符合任何字元)</TD>
+</TR>
+
+<TR>
+<TD>[rR][eE][aA][dD][mM][eE]</TD>
+
+<TD>符合 <I>readme</I>, <I>Readme</I>, <I>README</I> ...</TD>
+</TR>
+
+<TR>
+<TD>\.(gz|Z)$</TD>
+
+<TD>符合以 <I>.gz </I>或 <I>.Z</I>结尾的字串</TD>
+</TR>
+</TABLE>
+
+<H2>
+<A NAME="Hints"></A>提示</H2>
+加入一个新的包裹时，先用 <B><A HREF="#-n">-n</A></B> 选项测试一下。
+
+<P>如果你要加入到一个已存在的档案库，而该档案库不是<B>mirror</B>
+所建立的 (也许你从 CDROM 拷贝进来)，那麽通常最好强制对
+已有的近端档案使用时间印记，已使其藉著与远端档案的时间比对可以显示
+出两个档案是不同的。
+(参阅 <B><A HREF="#-T">-T</A></B>).
+
+<P>尽量将所有从同一个站台抓取的包裹放在同一个
+<A HREF="#Package Files">包裹档</A>中，这样 <B>mirror</B> 只需要登入一次。
+
+<P>记住所有的规则表示式都是 <B>Perl</B> 的规则表示式。
+
+<P>若远端站台含有符号连结，而你想将它「变平」，成为一致的档案，
+那麽将传递给远端 <b>ls</b> 的旗标，
+<B><I><A HREF="#flags_recursive">flags_recursive</A></I></B>
+或 <B><I><A HREF="#flags_nonrecursive">flags_nonrecursive</A></I></B>
+加入 <B><I>L</I></B>。先试试看在远端站台的 FTP 命令，用<B>ls -lRatL</B>
+看看会不会造成远端档案库的符号连结回圈。这会导致 ls 进入一个无穷回圈
+- 如果发生了，你必须告诉远端的管理者将它们移除。
+
+<P>如果你在咪一个很大而且不常更新的站，在咪第一次 <B>之後</B>将
+<B><I><A HREF="#max_days">max_days</A>=7</I></B> 加到设定中，
+。
+如此 <B>mirror</B> 在更新档案时会考虑抓较新的档。
+然後一周一次，或有需要的时候，
+用 <B><A HREF="#-k">-k </A><I><A HREF="#max_days">max_days</A>=0
+</I></B> 参数执行 <b>mirror</b> ，强制做完整的更新。
+
+<P>若你不想压缩任何来自远端站台的东西，最简单的方法是将
+<B><I><A HREF="#compress_patt">compress_patt</A></I></B>
+设定为什麽也没有。
+
+<P>若你想在咪一个包裹後跑一个程式，一个有用的技巧是将
+<B><I><A HREF="#mail_prog">mail_prog</A></I></B>
+变数设成你要跑的程式，而<B><I><A HREF="#mail_to">mail_to</A></I></B>
+设成其参数。
+
+<P>对 netware, dosftp, macos 与 VMS，你应该将<B><I><A HREF="#remote_dir">remote_dir</A></I></B>
+设为远端 FTP 守护神程式的根目录。用手动方式连上去，在更换到
+任何目录前，用 pwd 命令以找出根目录是什麽。
+如果你只要咪整个树的一部份，那一开始就指定完整包含此根目录的绝对路径名称。
+
+<P>macos 的名称有时候会含有一些使其难以被
+Un*x shell 传递的字元，由於压缩档会经由 shell 执行，
+所以最好将压缩关闭，用
+<B><I><A HREF="#compress_patt">compress_patt</A>=</I></B>。
+
+<P>macos 似乎在传输後会改变其大小，不论是文字或二元模式。
+所以最好设定 get_size_change=false。
+<H2>
+<A NAME="Netiquette"></A>网路礼仪</H2>
+若你要咪一个远端站台，请遵守任何该站管理员所定的规定。
+你通常可以发现连接到档案库时使用标准 FTP 命令的限制。
+任何限制通常都会以一个登入画面横幅或是(希望是)一个明确的档案。
+
+<P>这里是我所希望的一些良好的通则∶
+
+<P>在你设定要咪一个站台<b>之前</b>，应该尽可能取得远端站台的许可。
+有些站需要详细的记录。未授权去咪它可能会占用产生记录站台的流量，
+以致於毁掉它们的统计数字。也许有<b>严重的法律因素</b>使 mirror
+不受到欢迎。
+
+<P>只在近端与远端站台的上班时间之外去咪它。
+
+<P>一天去咪一个远端的站台好几次，可能是很不友善的。
+
+<P>在咪一个远端站台之前，试著找出当地档案库中是否有你要的程式包，
+因为如果你不是有必要吃掉一堆网路频宽，没有人会高兴的。
+
+<P>如果你有一个当地档案库，那麽告诉相关人员，使它们不必浪费频宽跟
+CPU 在远端主机上。
+
+<P>切记时常检查你的包裹档，以免远端档案库改变其存取限制。
+<BR>&nbsp;
+<H2>
+<A NAME="Bugs"></A>臭□</H2>
+某些网路礼仪指引应该要被强制执行。
+
+<P>应该要可以处理硬式与符号连结。
+
+<P>受龟速特徵主义之苦。(事实上更像跳跃特徵主义!)
+
+<P>若你使用 Perl 4 (Perl 5 的使用者请跳过):
+<UL>若 h2ph 已经在你的系统上跑了，那麽你可能应该移除跟 mirror 一起
+出货的 socket.ph 而使用为你的机器制作的 socket.ph。
+若 h2ph 还没有在跑，你应该说服你的系统管理员要这麽做。
+socket.ph 的内容是为作业系统特制的，而它有可能对我有用，但对你却没用。
+
+<P>给 Solaris 2.x 使用者的特别通知。
+由 h2ph 所建立的 socket.h 不能运作。由此套件安装 socket.ph-solaris 以代之。
+</UL>
+
+
+<P>似乎在旧版的 Perl 上会导致 mirror 失败的问题，
+其讯息为「fstype unix unknown」。如果你遇过这个问题，请将你的 Perl
+升级到 5.004 以上的版本。
+<BR>&nbsp;
+<H2>
+<A NAME="Remember!"></A>切记!</H2>
+镜子里的物体比你所想的近!
+<H2>
+<A NAME="Author"></A>作者群</H2>
+Mirror 是由 <A HREF="http://sunsite.org.uk/~lmjm/">Lee McLoughlin</A>
+&lt;<A HREF="mailto:lmjm@icparc.ic.ac.uk">lmjm@icparc.ic.ac.uk</A>> 所写的。
+使用的大量重写与扩充版本的 ftp.pl 程式包，原本是由∶
+ Alan R. Martello &lt;al@ee.pitt.edu> 所写，它使用了 lchat.pl，而 lchat.pl
+ 是衍生自 chat2.pl 程式包，它是∶ Randal L. Schwartz &lt;merlyn@ora.com> 所撰写的。
+
+<P>特别感谢下列人士制作修补程式、注解与其他建议，
+以助改进 <B>mirror</B>。如果我漏掉谁，请告诉我。
+
+<P>Zo&euml; Leech &lt;zl@icparc.ic.ac.uk>
+<BR>James Revell &lt;revell@uunet.uu.net>
+<BR>Chris Myers &lt;chris@wugate.wustl.edu>
+<BR>Amos Shapira &lt;amoss@cs.huji.ac.il>
+<BR>Paul A Vixie &lt;vixie@pa.dec.com>
+<BR>Jonathan Kamens &lt;jik@pit-manager.mit.edu>
+<BR>Christian Andretzky &lt;casys@otto.mb3.tu-chemnitz.de>
+<BR>Kean Stump &lt;kean@ucs.orst.edu>
+<BR>Anita Eijs &lt;anita@hermes.bouw.tno.nl>
+<BR>Simon E Sperro &lt;S.E.Sperro@gdr.bath.ac.uk>
+<BR>Aaron Wohl &lt;aw0g+@andrew.cmu.edu>
+<BR>Michael Meissner &lt;meissner@osf.org>
+<BR>Michael Graff &lt;explorer@iastate.edu>
+<BR>Bradley Rhoades &lt;us267388@mail.mmmg.com>
+<BR>Edwards Reed &lt;eer@cinops.xerox.com>
+<BR>Joachim Schrod &lt;schrod@iti.informatik.th-darmstadt.de>
+<BR>David Woodgate &lt;David.Woodgate@mel.dit.csiro.au>
+<BR>Pieter Immelman &lt;pi@itu1.sun.ac.za>
+<BR>Jost Krieger &lt;x920031@bus072.rz.ruhr-uni-bochum.de>
+<BR>Erez Zadok &lt;ezk@cs.columbia.edu>
+<BR>&nbsp;
+<H2>
+著作权</H2>
+Mirror 不论是软体或是附随的文件，包括此文件，
+都在下列的著作权保护。<br>
+Mirror, both the software and all the accompanying documentation including this document, is under the following copyright. 
+
+<P><FONT SIZE=-1>版权所有 &copy; 1990 - 1998 Lee McLoughlin</FONT>
+<br><FONT SIZE=-1>Copyright &copy; 1990 - 1998 Lee McLoughlin</FONT>
+
+<P><FONT SIZE=-1>允许为任何意图使用、复制、与散布此软体与其文件，
+有或没有付费都许可，但所有复本中必须提供上述的版权声明，
+而版权声明与此许可声明都必须出现在支援文件中。<br>
+Permission to use, copy, and distribute this software
+and its documentation for any purpose with or without fee is hereby granted,
+provided that the above copyright notice appear in all copies and that
+both that copyright notice and this permission notice appear in supporting
+documentation.</FONT>
+
+<P><FONT SIZE=-1>
+修改此软体是被许可的，但无权散布修改过的程式码。
+修改的内容必须用已释出版本的修补程式的方式散布。
+<br>Permission to modify the software is granted, but not
+the right to distribute the modified code. Modifications are to be distributed
+as patches to released version.</FONT>
+
+<P><FONT SIZE=-1>此软体以其所呈现的方式提供，不表示或暗示有保证。<br>
+This software is provided "as is" without express or implied
+warranty.</FONT>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

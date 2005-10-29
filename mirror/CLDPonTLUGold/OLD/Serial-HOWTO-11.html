@@ -1,0 +1,104 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Linux Serial HOWTO 中譯版: 串列使用秘訣</TITLE>
+ <LINK HREF="Serial-HOWTO-12.html" REL=next>
+ <LINK HREF="Serial-HOWTO-10.html" REL=previous>
+ <LINK HREF="Serial-HOWTO.html#toc11" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Serial-HOWTO-12.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Serial-HOWTO-10.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Serial-HOWTO.html#toc11"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s11">11. 串列使用秘訣</A></H2>
+
+<P> 
+這裡有一些你可能發現很有用的串列祕訣...
+<P>
+<H2><A NAME="ss11.1">11.1 <CODE>kermit</CODE> 以及 zmodem</A>
+</H2>
+
+<P>要在 <CODE>kermit</CODE> 下使用 zmodem 的話，將下列內容加到你的 <CODE>.kermrc</CODE> 裡去:
+<BLOCKQUOTE><CODE>
+<PRE>
+define rz !rz &lt; /dev/ttyS3 > /dev/ttyS3
+define sz !sz \%0 > /dev/ttyS3 &lt; /dev/ttyS3
+</PRE>
+</CODE></BLOCKQUOTE>
+
+要確定正確地放入你數據所在的串列埠．然後，要使用的話，只要在 kermit 的提示符號下鍵入 <CODE>rz</CODE> 或 <CODE>sz &lt;檔名&gt;</CODE> 即可．
+<P>
+<H2><A NAME="ss11.2">11.2 自動設定終端機型式</A>
+</H2>
+
+<P>要在當你簽入的時候自動設定你的終端機形式的話，把終端機的形式加到 <CODE>/etc/inittab</CODE> 的項目裡去．
+如果我有一台 vt100 終端機在 <CODE>ttyS1</CODE> 上 ，我要對 <CODE>getty</CODE> 指令加上 ``vt100'':
+<BLOCKQUOTE><CODE>
+<PRE>
+S1:456:respawn:/sbin/getty ttyS1 DT9600 vt100
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>你也可以使用 <CODE>tset</CODE>，可以在你簽入的時候建立終端機的特性，而且不需要依賴任何的預設值．
+<P>
+<H2><A NAME="ss11.3">11.3 在串列連線下的彩色 <CODE>ls</CODE></A>
+</H2>
+
+<P>     
+如果 <CODE>ls</CODE> 因為彩色特性而擾亂了你的終端機模擬，把它關掉．
+<CODE>ls --color</CODE> 以及 <CODE>ls --colour</CODE> 都使用彩色特性．有些安裝方式使得 <CODE>ls</CODE> 預設為使用彩色．
+檢查 <CODE>/etc/profile</CODE> 以及 <CODE>/etc/csh.cshrc</CODE> 裡的 <CODE>ls</CODE> 別名．
+如果你不想修改系統預設值的話，你也可以設給 <CODE>ls</CODE> 別名 <CODE>ls --no-color</CODE>．
+<P>
+<H2><A NAME="ss11.4">11.4 從終端機所連接的印表機進行列印</A>
+</H2>
+
+<P>     
+有一個叫做 <CODE>vtprint</CODE> 的程式可以做得到，在 <CODE>
+<A HREF="ftp://ftp.sdsu.edu/pub/vtprint">ftp://ftp.sdsu.edu/pub/vtprint</A></CODE> 及
+<CODE>
+<A HREF="http://www.sdsu.edu/~garrett">http://www.sdsu.edu/~garrett</A></CODE> 可取得．
+<P>另外一支叫 <CODE>xprt</CODE> 的程式也能做到．它可在 <CODE>
+<A HREF="ftp://sunsite.unc.edu/pub/Linux/system/printing">ftp://sunsite.unc.edu/pub/Linux/system/printing</A></CODE> 找到．
+<P>
+<H2><A NAME="ss11.5">11.5 Linux 能不能夠自動地配置串列設備?</A>
+</H2>
+
+<P>可以．要讓 Linux 在啟動的時候自動地偵測並且設定串列設備的話，把這一行:
+<BLOCKQUOTE><CODE>
+<PRE>
+/sbin/setserial /dev/ttyS3 auto_irq skip_test autoconfig
+</PRE>
+</CODE></BLOCKQUOTE>
+
+加到你的 <CODE>/etc/rc.d/rc.local</CODE> 或是 <CODE>/etc/rc.d/rc.serial</CODE> 檔案裡面．
+對每一個你希望自動配置的串列埠都要做．要確定所給的是一個真正存在於你電腦上的設備名稱．
+<P>
+<H3>多埠卡的注意事項</H3>
+
+<P>對於卡的位址，以及 IRQs 查閱 <CODE>setserial</CODE> 程式隨附的 <CODE>rc.serial</CODE>．
+它有很多關於多埠卡的細節，包括輸出入位址以及設備名稱．
+<P>
+<H2><A NAME="ss11.6">11.6 使用串列控制台</A>
+</H2>
+
+<P>在第三十六期的 <EM>Linux Journal</EM> 在 <CODE>
+<A HREF="http://www.ssc.com/lj/issue36/index.html">http://www.ssc.com/lj/issue36/index.html</A></CODE> 有篇文章解釋如何使用串列控制台(serial console)．
+不幸的是，寄電子郵件給作者都被退回．我希望這篇文章會很快地上述 URL 的 <EM>Linux Journal</EM> 網站中．
+<P>
+<H2><A NAME="ss11.7">11.7 更高的串列流量</A>
+</H2>
+
+<P>如果在一部使用 (E)IDE 磁碟機的系統上你發現流量很慢而且串列埠常溢滿，你可以取得 <CODE>hdparm</CODE>．
+這是一個可以修改 (E)IDE 參數，包含讓一磁碟 IRQ 動作期間其它 IRQs 仍可工作．
+這會改善反應速度並幫助消除溢滿．確定小心地讀過了線上手冊，因為某些磁碟/控制卡組合不喜歡它並且可能損毀檔案系統．
+<P>也可以看一下一個叫 <CODE>irqtune</CODE> 的工具，可以改變一個裝置 IRQ 的優先順序，例如你數據機所在的串列埠．這也可能改善你系統的串列流量．
+<CODE>irqtune</CODE> 的常見問題解答(FAQ)可在 <CODE>
+<A HREF="http://www.best.com/~cae/irqtune">http://www.best.com/~cae/irqtune</A></CODE> 找到．
+<P>
+<HR>
+<A HREF="Serial-HOWTO-12.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Serial-HOWTO-10.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Serial-HOWTO.html#toc11"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

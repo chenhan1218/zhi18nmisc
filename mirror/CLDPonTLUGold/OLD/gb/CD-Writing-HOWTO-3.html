@@ -1,0 +1,255 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="LinuxDoc-Tools 0.9.16">
+ <TITLE>CD-Writing HOWTO: 烧录光碟</TITLE>
+ <LINK HREF="CD-Writing-HOWTO-4.html" REL=next>
+ <LINK HREF="CD-Writing-HOWTO-2.html" REL=previous>
+ <LINK HREF="CD-Writing-HOWTO.html#toc3" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="CD-Writing-HOWTO-4.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="CD-Writing-HOWTO-2.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="CD-Writing-HOWTO.html#toc3"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s3">3.</A> <A HREF="CD-Writing-HOWTO.html#toc3">烧录光碟</A></H2>
+
+<P>
+<BLOCKQUOTE>
+"If to smoke you turn I shall not cease to fiddle while you burn."
+<I>(Roman emperor Nero about burning his own classic-CDs, AD64. He
+misunderstood it completely.)</I>
+</BLOCKQUOTE>
+</P>
+
+<P>在 Linux 下烧录光碟有以下两个步骤：</P>
+<P>
+<UL>
+<LI> 将所需的资□ ( 档案，音乐或全部 ) 包装成一些特别格式的档案。</LI>
+<LI> 用<CODE>cdrecord</CODE> 将这些档案写入光碟中。</LI>
+</UL>
+</P>
+<P>这一章会详尽讲解烧录资料及音乐光碟的步骤。</P>
+
+
+<H2><A NAME="ss3.1">3.1</A> <A HREF="CD-Writing-HOWTO.html#toc3.1">烧录光碟片 (纯资料)</A>
+</H2>
+
+<P>请留意，由于收集软件所需的时间总会比预计中的长，故此有一个需要考虑的
+问题，便是后期才找到的档案不能写入原先烧录过或已完成烧录的光碟。</P>
+<P>&lt;!-
+可重写光碟随时都可以在空馀的位置写入资料，只要你没有关闭光碟，再在光
+碟开一个区域，变成multi-session 光碟，便可写入资料，不过这个做法也
+有缺点，就是会浪费档案目录表的空间。
+-->
+还要紧记光碟中有一定容量的空间会用作储存ISO-9660-档案系统的资料，通
+常会用上数MB，所以一只650MB的光碟，实际上只有约620MB可用。</P>
+
+<H3>建立光碟影像档</H3>
+
+<P>任何一种储存媒体，不论软片，硬碟，抑或光碟，在使用前都必须先建立
+档案系统，在DOS而言即格式化，使其拥有一个档案系统。这个档案系统
+将会用作组织及合并储存媒体上的档案。</P>
+<P>一般用来格式化硬碟机分割区的工具都会先写入一个空的档案系统到硬碟分割区中，
+然后它便会被挂上和在使用者有需的时才抄写档案在其中。不过一只可烧录光碟只能
+写入一次，如果我们写入一个空的档案系统，它就会被格式化 — 不过它永远都会是
+一只空的光碟。可重写的光碟都是一样的，因为你不能改变 arbritary sectors ，不
+过你可以消除整只光碟的内容。</P>
+
+<P>所以我们需要一个工具能够一边抄写档案一边建立档案系统在
+光碟中·这工具叫做 <CODE>mkisofs</CODE>·以下就是这工具的使用
+例子：</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+mkisofs  -r   -o cd_image   private_collection/
+              `---------'   `-----------------'
+                   |               |
+                写入至      以这个目录做输入
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>'-r' 选项设定所有在光碟中的档案为公众可读和开启 Rock Ridge 延伸。
+这是很多人想要的东西不过使用前你必须肯定知道你自己在做什么。
+(提示：没有 '-r' 选项的话那个 mount-point 就会变成 <CODE>private_collection</CODE>!)。</P>
+<P><CODE>mkisofs</CODE> 会尝试将所有档案的转为 DOS 的8.3格式以确保最高的兼容性。
+若遇上命名冲突 (不同档案有相同的名称)，这时就会在档案中使用数字而有关该档
+案的资料就会在 STDERR (通常都是萤幕) 中显示。 不要担心：在 Linux 中你永远
+不会看到 8.3 格式的档案因为 Linux 会使用 Rock Ridge 延伸而所有档案的资料都
+会在 Rock Ridge 延伸中 (使用权限，档案名称，等等)。</P>
+<P>到现在你可能会问为什么 <CODE>mkisofs</CODE> 的输出不直接写入可写光碟机中。这有
+两个原因：</P>
+<P>
+<UL>
+<LI><CODE>mkisofs</CODE> 不晓得怎样驱动可写光碟。</LI>
+<LI>你可能需要在烧录前测试一下影像档。</LI>
+<LI>在慢的机器中它会可靠些 (看章节 4.).</LI>
+</UL>
+</P>
+<P>会在下面讲述怎样烧录一只光碟。</P>
+<P>有些人可能会想不如建立一个独立的分割区来写入影像以代替档案。
+我并不赞同这同方法因为如果你写入到错误的分割区(由打字错误所造成)的话
+，你便会遗失整个 Linux 系统 (我就试过这情况)。再者，这样做会造成磁碟
+空间浪费因为光碟影像是一种暂时性的资料，当它被烧录到光碟后它便可以删
+除。不过用硬碟分割区可以节省你删除一个 650 MB 档案的时间。 (不过如果
+你有一个额外的分割区可以令你节省删除影像档的时间。)</P>
+
+
+<H3>测试光碟影像档</H3>
+
+<P>Linux 可以好似磁碟分割区般将档案挂上。这是一个很好用的功能它可以用来
+检查目录配置和档案使用权限是不是你所要求那样。虽然现在的光碟很便宜，
+但是烧录过程依然是很费时的，所以你起码需要做一个快速的测试。</P>
+<P>要将 <CODE>光碟影像档</CODE> 挂上 <CODE>/cdrom</CODE> ，请用以下的指令</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+mount -t iso9660 -o ro,loop=/dev/loop0 cd_image /cdrom
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>你现在可以在 <CODE>/cdrom</CODE> 底下检查下你的档案 — 现在的位置便是它
+们在真正光碟中的位置。要卸除光碟影像档，你只需要打 <CODE>umount /cdrom</CODE>
+。(警告：如果你是使用 Linux 核心 2.0.31 或以前的版本，你就有可能看不见
+最后的几个档案。 请使用较新的核心。 The option -pad for cdrecord applies to 
+audio-CDs only and the optional option -pad for mkisofs requires a patch, which is as much work to apply than to upgrade to a bug-free Linux-kernel.)</P>
+<P>注意:
+<BLOCKQUOTE>
+比较旧的 <CODE>mount</CODE> 是不能处理 loopback-devices。如果你是使用旧的 <CODE>mount</CODE> 的话现在是时候更新你的 Linux 了。
+<P>有很多人都建议我增加一些关于如何取得最新 mout 工具的资料
+在这份 mini-HOWTO 中。但我都一一拒绝。如困你的 Linux 套件
+附送了旧版本的 <CODE>mount</CODE>：报告这是一个臭虫。如果你的
+你的 Linux 套件是不能轻易升级，报告这是一个臭虫。</P>
+<P>如果我将所有有关怎样更正设计不良 Linux 套件的资料，这份
+mini-HOWTO 就会变得很长及很难阅读。</P>
+</BLOCKQUOTE>
+</P>
+
+
+<H3>写入光碟影像到光碟中</H3>
+
+<P>没有太多的东西要做。如果你未试过这个指令，现在是时候试下试了</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+cdrecord -scanbus
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>这个指令会告诉你你的可写光碟机是挂在那个 SCIS-device 中。所有
+其他的尝试方法都已经被删除 (尤其是关于 generic SCSI devices 命
+名规则 (naming scheme) 的危险方法)。</P>
+<P>不过在介绍最后一个指今前先让我提醒你件事，因为可写入光碟机的缓
+冲区是很少，所以它要求所输入的资料流是连续的。正因如此，在烧录
+的过程中是不可中断的，否则会烧录失败。如果你删除一个很大的档案
+就会很容易中断资料流。例如：你删除一个 650 MB 大小档案的时候，
+核心便需要更新硬碟大约 650,000 个 blocks (假设你的档案系统是 
+1k 一个 block 的话) 这需要很长的时间和很可能会令资料流延迟几
+秒。不过，如果在一部很快的电脑上看电邮，浏览网页或甚至编译核心
+都不会影响烧录程序。</P>
+<P>请注意世上是没有一个烧录器可以重置雷射的位置和它不能返回
+受干扰的点上再次进行烧录。所以何任的震动或撞击都能使你正
+在烧录的光碟受到破坏。</P>
+
+<P>如果你准备好的话，你可以下以下的指今：</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+shell&gt; SCSI_BUS=0   # taken from listing 1 "scsibus0:"
+shell&gt; SCSI_ID=6    # taken from listing 1 "TOSHIBA XM-3401"
+shell&gt; SCSI_LUN=0
+shell&gt; cdrecord -v speed=2 dev=$SCSI_BUS,$SCSI_ID,$SCSI_LUN \
+                   -data  cd_image
+
+# 同上面一样，不过短些：
+shell&gt; cdrecord -v speed=2 dev=0,6,0  -data  cd_image
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>为了增加可读性，可写入光碟机的资讯都储存在这三个环境变数中：
+SCSI_BUS, SCSI_ID, SCSI_LUN。而选项 -data 则是用来烧录资料光
+碟用的。</P>
+<P>如果你是使用 cdrecord 来覆写 CD-RW，你一定要用 "blank= . . ." 
+来删除所有旧有内容。请看 man-page 来学习有什么方法来清除所有
+CD-RW 的所有内容。</P>
+<P>如果你有一部 400 Mhz 电脑，你可以将 mkisofs 的输出直接输出至
+cdrecord 中：</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+shell&gt; IMG_SIZE=`mkisofs -R -q -print-size private_collection/`
+shell&gt; mkisofs -r  private_collection/  \
+|cdrecord  speed=2  dev=0,6,0
+            tsize=${IMG_SIZE}s  -data  -
+#       don't forget the s --^         ^-- read data from STDIN
+</PRE>
+</CODE></BLOCKQUOTE>
+
+第一个指令只是用来检查一下光碟影像的内容并没有实质用途 (你需要用
+cdrecord-distribution 中的 mkisofs 才可使用这个指令)。你的可写入
+光碟可能不需要知道光碟影像档的大小，这样你便不需要下这个指令。输
+出的大小必需用 tsize-parameter 来传递给 cdrecord。 (这个数字是储
+存 IMG_SIZE 这个环境变数中)。最后的指令是用 pipe 来串连 mkisofs 
+和 cdrecord 这两个指令。</P>
+
+
+<H2><A NAME="ss3.2">3.2</A> <A HREF="CD-Writing-HOWTO.html#toc3.2">烧录音乐光碟</A>
+</H2>
+
+<P>要烧录一只音乐光碟的步骤与烧录资料光碟的步骤都大同小异。
+最主要的二个分别之一是音乐光碟包含音轨，而这些音轨必需组织成
+独立的影像。所以如果你想烧录十条音轨的话，你就要建立十个影像
+档。另一个分别是光碟影像的格式不是 ISO-9660 (或者你想要的格或)，
+不过它是 "16 bit stereo samples in PCM coding at 44100 samples/second (44,1 kHz)".</P>
+<P>其中一个软件叫做 sox 它可以将音乐档案转为所需的格式。
+它的用法是很简单直接：</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+shell&gt; sox  killing-my-software.wav  killing-my-software.cdr
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>这个指令会将 killing-my-software 这首歌由 WAV 格式转为 CDR 格式。
+请看 man-page 来取得更多有关 sox 所确认的格式及延伸档名。因为转变
+过程需要耗用硬碟空间，所以 cdrecord 已内建支援 WAV 和 AU 格式了。
+所以如果你的音乐档案有 .wav 或 .au (and the samplerate "stereo, 16 bit, 44,1 kHz")延伸的话，你便不需要做人手转换。</P>
+<P>如果你有用 -audio 选项，cdrecord 就会将影像档烧录成音轨。而其他的选项
+就如同烧录一般资料一样 (除非你有非特别的要求)。以下三个指令都是相同的不
+过它们读取不同音乐档案格式：</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+shell&gt; cdrecord -v speed=2 dev=0,6,0  -audio  track1.cdr track2.cdr...
+shell&gt; cdrecord -v speed=2 dev=0,6,0  -audio  track1.wav track2.wav...
+shell&gt; cdrecord -v speed=2 dev=0,6,0  -audio  track1.au  track2.au...
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>其中一个特别例子是 MPEG-3 档案，它可以用 "mpg123 -s track1.mp3 > track.cdr"
+来转换成所需要的格式。另一个方法是用 "8hz-mp3" 来转换成 WAV 档案格式。</P>
+<P>如果你现在烧录音乐光碟的话，你会发现音轨之间会有 2 秒的延迟。
+如果你的可写入光碟机支援 "disc at once" (DAO) 的话，你可以尝试用最新的 cdrecord
+来解决此一问题。</P>
+
+
+<H2><A NAME="ss3.3">3.3</A> <A HREF="CD-Writing-HOWTO.html#toc3.3">混合式光碟</A>
+</H2>
+
+
+<P>没有太多要说。只示范了怎样混合使用 -data　和　-audio 选项以达到烧录混合光碟：</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+cdrecord  -v dev=0,6,0  -data  cd_image  -audio  track*.cdr
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+
+
+
+<HR>
+<A HREF="CD-Writing-HOWTO-4.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="CD-Writing-HOWTO-2.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="CD-Writing-HOWTO.html#toc3"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

@@ -1,0 +1,194 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>From VMS to Linux HOWTO: Real Life Examples </TITLE>
+ <LINK HREF="VMS-to-Linux-HOWTO-12.html" REL=next>
+ <LINK HREF="VMS-to-Linux-HOWTO-10.html" REL=previous>
+ <LINK HREF="VMS-to-Linux-HOWTO.html#toc11" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="VMS-to-Linux-HOWTO-12.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="VMS-to-Linux-HOWTO-10.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="VMS-to-Linux-HOWTO.html#toc11"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="Examples"></A> <A NAME="s11">11. Real Life Examples </A></H2>
+
+<P>
+<P>UNIX' core idea is that there are many simple commands that can linked
+together via piping and redirection to accomplish even really complex tasks.
+Have a look at the following examples. I'll only explain the most complex
+ones; for the others, please study the above sections and the man pages.
+<P><B>Problem</B>: <CODE>ls</CODE> is too quick and the file names fly away.
+<P><B>Solution</B>:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ ls | less
+</PRE>
+</CODE></BLOCKQUOTE>
+<P><B>Problem</B>: I have a file containing a list of words. I want to sort it
+in reverse order and print it.
+<P><B>Solution</B>:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ cat myfile.txt | sort -r | lpr
+</PRE>
+</CODE></BLOCKQUOTE>
+<P><B>Problem</B>: my data file has some repeated lines! How do I get rid of them?
+<P><B>Solution</B>:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ sort datafile.dat | uniq > newfile.dat
+</PRE>
+</CODE></BLOCKQUOTE>
+<P><B>Problem</B>: I have a file called 'mypaper.txt' or 'mypaper.tex' or some 
+such somewhere, but I don't remember where I put it. How do I find it?
+<P><B>Solution</B>:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ find ~ -name "mypaper*" 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Explanation: <CODE>find</CODE> is a very useful command that lists all the files 
+in a directory tree (starting from <CODE>~</CODE> in this case). Its output 
+can be filtered to meet several criteria, such as <CODE>-name</CODE>.
+<P><B>Problem</B>: I have a text file containing the word 'entropy' in this
+directory, is there anything like <CODE>SEARCH</CODE>?
+<P><B>Solution</B>: yes, try
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ grep -l 'entropy' *
+</PRE>
+</CODE></BLOCKQUOTE>
+<P><B>Problem</B>: somewhere I have text files containing the word 'entropy', I'd
+like to know which and where they are. Under VMS I'd use <CODE>search entropy
+[...]*.*;*</CODE>, but <CODE>grep</CODE> can't recurse subdirectories. Now what?
+<P><B>Solution</B>: 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ find . -exec grep -l "entropy" {} \; 2> /dev/null
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Explanation: <CODE>find .</CODE> outputs all the file names starting from the 
+current directory, <CODE>-exec grep -l "entropy"</CODE> is an action to be 
+performed on each file (represented by <CODE>{}</CODE>), <CODE>\</CODE> 
+terminates the command. If you think this syntax is awful, you're right.
+<P>In alternative, write the following script:
+<P>
+<HR>
+<PRE>
+#!/bin/sh
+# rgrep: recursive grep
+if [ $# != 3 ]
+then
+  echo "Usage: rgrep --switches 'pattern' 'directory'"
+  exit 1
+fi
+find $3 -name "*" -exec grep $1 $2 {} \; 2> /dev/null
+</PRE>
+<HR>
+<P>Explanation: <CODE>grep</CODE> works like <CODE>search</CODE>, and combining it with
+<CODE>find</CODE> we get the best of both worlds.
+<P><B>Problem</B>: I have a data file that has two header lines, then every
+line has 'n' data, not necessarily equally spaced. I want the 2nd and 
+5th data value of each line. Shall I write a Fortran program...?
+<P><B>Solution</B>: nope. This is quicker:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ awk 'NL > 2 {print $2, "\t", $5}' datafile.dat > newfile.dat
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Explanation: the command <CODE>awk</CODE> is actually a programming language: 
+for each line starting from the third in <CODE>datafile.dat</CODE>, print out 
+the second and fifth field, separated by a tab. Learn some <CODE>awk</CODE>---it 
+saves a lot of time.
+<P><B>Problem</B>: I've downloaded an FTP site's <CODE>ls-lR.gz</CODE> to check its
+contents. For each subdirectory, it contains a line that reads "total xxxx",
+where xxxx is size in kbytes of the dir contents. I'd like to get the grand
+total of all these xxxx values.
+<P><B>Solution</B>:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ zcat ls-lR.gz | awk ' $1 == "total" { i += $2 } END {print i}'
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Explanation: <CODE>zcat</CODE> outputs the contents of the <CODE>.gz</CODE> file and pipes 
+to <CODE>awk</CODE>, whose man page you're kindly requested to read ;-)
+<P><B>Problem</B>: I've written a Fortran program, <CODE>myprog</CODE>, to calculate a 
+parameter from a data file. I'd like to run it on hundreds of data files 
+and have a list of the results, but it's a nuisance to ask each time for 
+the file name. Under VMS I'd write a lengthy command file, and under Linux?
+<P><B>Solution</B>: a very short script. Make your program look for the data 
+file '<CODE>mydata.dat</CODE>' and print the result on the screen (stdout), then 
+write the following script:
+<P>
+<HR>
+<PRE>
+#!/bin/sh
+# myprog.sh: run the same command on many different files
+# usage: myprog.sh *.dat
+for file in $*  # for all parameters (e.g. *.dat)
+do
+  # append the file name to result.dat
+  echo -n "${file}:    " >> results.dat
+  # copy current argument to mydata.dat, run myprog 
+  # and append the output to results.dat
+  cp ${file} mydata.dat ; myprog >> results.dat
+done
+</PRE>
+<HR>
+<P><B>Problem</B>: I want to replace `geology' with `geophysics' in all my 
+text files. Shall I edit them all manually?
+<P><B>Solution</B>: nope. Write this shell script:
+<P>
+<HR>
+<PRE>
+#!/bin/sh
+# replace $1 with $2 in $*
+# usage: replace "old-pattern" "new-pattern" file [file...]
+OLD=$1          # first parameter of the script
+NEW=$2          # second parameter
+shift ; shift   # discard the first 2 parameters: the next are the file names
+for file in $*  # for all files given as parameters
+do
+# replace every occurrence of OLD with NEW, save on a temporary file
+  sed "s/$OLD/$NEW/g" ${file} > ${file}.new
+# rename the temporary file as the original file
+  /bin/mv ${file}.new ${file}
+done
+</PRE>
+<HR>
+<P><B>Problem</B>: I have some data files, I don't know their length and have to
+remove their last but one and last but two lines. Er... manually?
+<P><B>Solution</B>: no, of course. Write this script:
+<P>
+<HR>
+<PRE>
+#!/bin/sh
+# prune.sh: removes n-1th and n-2th lines from files
+# usage: prune.sh file [file...]
+for file in $*   # for every parameter
+do
+  LINES=`wc -l $file | awk '{print $1}'`  # number of lines in file
+  LINES=`expr $LINES - 3`                 # LINES = LINES - 3
+  head -n $LINES $file > $file.new        # output first LINES lines
+  tail -n 1 $file >> $file.new            # append last line
+done
+</PRE>
+<HR>
+<P>I hope these examples whetted your appetite...
+<P>
+<P>
+<HR>
+<A HREF="VMS-to-Linux-HOWTO-12.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="VMS-to-Linux-HOWTO-10.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="VMS-to-Linux-HOWTO.html#toc11"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

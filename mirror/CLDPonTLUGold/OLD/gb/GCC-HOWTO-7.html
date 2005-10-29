@@ -1,0 +1,113 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>The Linux GCC HOWTO中译版V0.2: 动态载入</TITLE>
+ <LINK HREF="GCC-HOWTO-8.html" REL=next>
+ <LINK HREF="GCC-HOWTO-6.html" REL=previous>
+ <LINK HREF="GCC-HOWTO.html#toc7" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="GCC-HOWTO-8.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="GCC-HOWTO-6.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="GCC-HOWTO.html#toc7"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s7">7. 动态载入</A></H2>
+
+<P><EM>这一章节目前是简短了一点；当我掠尽ELF HOWTO时，就是这部份再度扩展的时候了。</EM>
+<P>
+<H2><A NAME="ss7.1">7.1 基本概念</A>
+</H2>
+
+<P> Linux有共享程式库，如果之前你已坐著读完上一章节，想必现在一听到像这样的说词，便会立刻感到头昏。有一些照惯例而言是在连结时期便该完成的工作，必须延迟到载入时期才能完成。
+<H2><A NAME="ss7.2">7.2 错误讯息</A>
+</H2>
+
+<P>把你连结的错误寄给我！我不会做任何的事，不过我可以把它们写起来**
+<P>
+<DL>
+<P>
+<DT><B> <CODE>can't load library: /lib/libxxx.so, Incompatible version</CODE></B><DD><P>（a. out only） 这是指你没有xxx程式库的正确的主要版本。可别以为随随
+便便弄个连结到你目前拥有的版本就可以了，如果幸运的话，就只会造成你的程式分页错误而已。去抓新的版本.ELF类似的情况会造成像下面这样的讯息：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ftp: can't load library 'libreadline.so.2'
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<DT><B><CODE>warning using incompatible library version xxx</CODE></B><DD><P>（a. out only）你的程式库的次要版本比起这支程式用来编译的还要旧。程式依然可以执行。只是可能啦！我想，升个级应该没什麽伤害吧！
+<P>
+</DL>
+<P>
+<H2><A NAME="index.81"></A> <A NAME="index.80"></A> <A NAME="ss7.3">7.3 控制动态载入器的运作</A>
+  </H2>
+
+<P>有一组环境变数会让动态载入器有所反应。大部份的环境变数对<CODE>ldd</CODE>的用途要比起对一般users的还要来得更多。而且可以很方便的设定成由ldd配合各种参数来执行。这些变数包括，
+<P>
+<UL>
+<LI><CODE>LD_BIND_NOW</CODE> --- 正常来讲，函数在呼叫之前是不会让程式寻找的。设定这个旗号会使得程式库一载入，所有的寻找便会发生，同时也造成起始的时间较慢。当你想测试程式，确定所有的连结都没有问题时，这项旗号就变得很有用。
+</LI>
+<LI><CODE>LD_PRELOAD</CODE>可以设定一个档案，使其具有*覆盖*函数定义的能力。例如，如果你要测试记忆体分配的方略，而且还想置换*malloc*，那麽你可以写好准备替换的副程式，并把它编译成<CODE>mallolc.</CODE>，然後：
+
+<BLOCKQUOTE><CODE>
+<PRE>
+$ LD_PRELOAD=malloc.o; export LD_PRELOAD
+$ some_test_program
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+<CODE>LD_ELF_PRELOAD</CODE> 与 <CODE>LD_AOUT_PRELOAD</CODE> 很类似，但是仅适用於正确的二进位型态。如果设定了
+<CODE>LD_</CODE><EM>something</EM><CODE>_PRELOAD</CODE> 与 <CODE>LD_PRELOAD</CODE> ，比较明确的那一个会被用到。
+</LI>
+<LI> <CODE>LD_LIBRARY_PATH</CODE>是一连串以分号隔离的目录名称，用来搜寻共享程式库。对ld而言，并<EM>没有</EM>任何的影响；这项只有在执行期间才有影响。另外，对执行setuid与setgid的程式而言，这一项是无效的。而<CODE>LD_ELF_LIBRARY_PATH</CODE>与<CODE>LD_AOUT_LIBRARY_PATH</CODE>这两种旗号可根据各别的二进位型式分别导向不同的搜寻路径。一般正常的运作下，不应该会用到<CODE>LD_LIBRARY_PATH</CODE>；把需要搜寻的目录加到<CODE>/etc/ld.so.conf/</CODE>里；然後重新执行ldconfig。
+</LI>
+<LI> <CODE>LD_NOWARN</CODE> 仅适用於a.out。一旦设定了这一项（<CODE>LD_NOWARN=true; export LD_NOWARN</CODE>），它会告诉载入器必须处理fatal-warnings（像是次要版本不相容等）的警告讯息。
+</LI>
+<LI><CODE>LD_WARN</CODE>仅适用於ELF。设定这一项时，它会将通常是致命讯息的“Can*t find library”转换成警告讯息。对正常的操作而言，这并没有多大的用处，可是对ldd就很重要了。
+</LI>
+<LI><CODE>LD_TRACE_LOADED_OBJECTS</CODE>仅适用於ELF。而且会使得程式以为它们是由<CODE>ldd</CODE>所执行的：
+
+<BLOCKQUOTE><CODE>
+<PRE>
+$ LD_TRACE_LOADED_OBJECTS=true /usr/bin/lynx
+        libncurses.so.1 => /usr/lib/libncurses.so.1.9.6
+        libc.so.5 => /lib/libc.so.5.2.18
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+</UL>
+<P>
+<H2><A NAME="index.83"></A> <A NAME="index.82"></A> <A NAME="ss7.4">7.4 以动态载入撰写程式</A>
+  </H2>
+
+<P>如果你很熟悉Solaris 2.x所支援的动态载入的工作的话，你会发现Linux在这点上与其非常的相近。这一部份在H.J.Lu的ELF程式设计文件内与<CODE>dlopen(3)</CODE>的manual page（可以在ld.so的套件上找到）上有广泛的讨论。这里有个不错的简单□例：以<CODE>-ldl</CODE>连结。
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#include &lt;dlfcn.h>
+#include &lt;stdio.h>
+
+main()
+{
+  void *libc;
+  void (*printf_call)();
+
+  if(libc=dlopen("/lib/libc.so.5",RTLD_LAZY))
+  {
+    printf_call=dlsym(libc,"printf");
+    (*printf_call)("hello, world\n");
+  }
+
+}
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>
+<HR>
+<A HREF="GCC-HOWTO-8.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="GCC-HOWTO-6.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="GCC-HOWTO.html#toc7"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

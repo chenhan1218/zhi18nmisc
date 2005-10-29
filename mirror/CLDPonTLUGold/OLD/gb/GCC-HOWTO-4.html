@@ -1,0 +1,316 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>The Linux GCC HOWTO中译版V0.2: 移植程式与编译程式</TITLE>
+ <LINK HREF="GCC-HOWTO-5.html" REL=next>
+ <LINK HREF="GCC-HOWTO-3.html" REL=previous>
+ <LINK HREF="GCC-HOWTO.html#toc4" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="GCC-HOWTO-5.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="GCC-HOWTO-3.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="GCC-HOWTO.html#toc4"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s4">4. 移植程式与编译程式</A></H2>
+
+<H2><A NAME="index.25"></A> <A NAME="ss4.1">4.1 gcc自行定义的符号</A>
+ </H2>
+
+<P>只要执行gcc时，附加<CODE> -v</CODE>这个参数，就能找出你所用的这版gcc，自动帮你定义了什麽符号。例如，我的机器看起来会像这样：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ echo 'main(){printf("hello world\n");}' | gcc -E -v -
+Reading specs from /usr/lib/gcc-lib/i486-box-linux/2.7.2/specs
+gcc version 2.7.2
+ /usr/lib/gcc-lib/i486-box-linux/2.7.2/cpp -lang-c -v -undef
+-D__GNUC__=2 -D__GNUC_MINOR__=7 -D__ELF__ -Dunix -Di386 -Dlinux
+-D__ELF__ -D__unix__ -D__i386__ -D__linux__ -D__unix -D__i386
+-D__linux -Asystem(unix) -Asystem(posix) -Acpu(i386)
+-Amachine(i386) -D__i486__ -
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>假若你正在写的程式码会用到一些Linux独有的特性，那麽把那些无法移植的程式码，以条件式编译的前置命令封括起来，可是个不错的主意呢！如下所示∶
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#ifdef __linux__
+/* ... funky stuff ... */
+#endif /* linux */
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>用<CODE>__linux__</CODE>就可以达成目的；看仔细一点，<EM>不是</EM><CODE>linux</CODE>喔。尽管<CODE>linux</CODE>也有定义，毕竟，这个仍然不是POSIX的标准。
+<P>
+<P>
+<H2><A NAME="ss4.2">4.2 线上求助说明</A>
+</H2>
+
+<P> gcc编译器参数的说明文件是gcc info page（在Emacs内，按下<CODE>C-h i</CODE>，然後选‘gcc’的选项）。要是弄不出来，不是卖你CD-ROM的人没把这个东东压给你，不然就是你现在用的是旧版的。遇到这种情况，最好的方法是移动尊臀到archive
+<A HREF="ftp://prep.ai.mit.edu/pub/gnu">ftp://prep.ai.mit.edu/pub/gnu</A>或是它的mirrors站台，去把gcc的原始档案抓回家，重新烹饪一番。
+<P>gcc manual page（<CODE>gcc.1</CODE>） 可以说是已经过时了，要是你吃饱了撑著没事干硬是想看，它就会告诉你说别无聊了。
+<P>
+<H3><A NAME="index.27"></A> <A NAME="index.26"></A> 旗正飘飘&nbsp;  </H3>
+
+<P> 在命令列上执行gcc时，只要在它的屁股後面加上<CODE>-O</CODE><EM>n</EM>的选项，就能让gcc乖乖的替你生出最佳编码的机器码。这里的<EM>n</EM>是一个可有可无的小整数，不同版本的gcc，<EM>n</EM>的意义与其正确的功效都不一样，不过，典型的□围是从0（不要鸡婆，我不要最佳编码。）变化到2（最佳编码要多一点。），再升级到3（最佳编码要再多一点，多一点）。
+<P>gcc在其内部会将这些数字转译成一系列的<CODE>-f</CODE>与<CODE>-m</CODE>的选项。执行gcc时带上旗号<CODE>-v</CODE>与<CODE>-Q</CODE>，你就能很清楚的看出每一种等级的<CODE>-O</CODE>是对应到那些选项。好比说，就<CODE>-O2</CODE>来讲，我的gcc告诉会我说：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+enabled: -fdefer-pop -fcse-follow-jumps -fcse-skip-blocks
+-fexpensive-optimizations
+         -fthread-jumps -fpeephole -fforce-mem -ffunction-cse -finline
+         -fcaller-saves -fpcc-struct-return -frerun-cse-after-loop
+         -fcommon -fgnu-linker -m80387 -mhard-float -mno-soft-float
+         -mno-386 -m486 -mieee-fp -mfp-ret-in-387
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>要是你用的最佳编码等级高於你的编译器所能支援的（e.g. <CODE>-O6</CODE>），那麽它的效果就跟你用你的编译器<EM>所能</EM>提供的最高等级的效果是一样的。说实在的，发行出去的gcc程式码，用在编译时竟是如此处理这等问题，真的不是什麽好的构想。日後若是有更进步的最佳编码方法具体整合到新的版本里，而你（或是你的users）还是试著这样做的话，可能就会发现gcc会中断你的程式了。
+<P>
+<A NAME="index.28"></A>  
+从gcc 2.7.0升级到2.7.2的users应该注意一点，使用<CODE>-O2</CODE>时会有一个bug。更糟糕的是，强度折减参数(strength reduction)居然没有用！要是你喜欢重新编译gcc的话，是有那麽一个修正的版本可以更正这项错误；不然的话，一定要确定每次编译时都有加上<CODE>-fno-strength-reduce</CODE>喔！
+<P>11/12/97译
+<P>
+<P>
+<P>
+<H3>有个性的微处理器</H3>
+
+<P> 有一些<CODE>-m</CODE>的旗号十分有用处，但是却无法藉由各种等级的<CODE>-O</CODE>打开来使用。这之中最重要的有是<CODE>-m386</CODE>和<CODE>-m486</CODE>这两种，用来告诉gcc该把正在编译的程式码视作专为386或是486机器所写的。不论是用哪一种<CODE>-m</CODE>来编译程式码，都可以在彼此的机器上执行，-m486编译出来的码会比较大，不过拿来在386的机器上跑也不会比较慢就是了。
+<P>目前尚无<CODE>-mpentium</CODE>或是<CODE>-m586</CODE>的旗号。Linus建议我们可以用<CODE>-m486 -malign-loops=2 -malign-jumps=2 -malign-functions=2</CODE>来得到最佳编码的486程式码，这样做正好就可以避免alignment（Pentium并不需要）有过大的gaps发生。Michael Meissner说：
+<P>
+<BLOCKQUOTE>
+我的第六感告诉我，<CODE>-mno-strength-reduce</CODE>（嘿！要晓得我可不是在谈强度折减参数的bug呀，那已经是另外一个争论的战场了。）一样也可以在x86的机器上产生较快的程式码，这是因为x86的机器对暂存器有著不可磨灭的□渴在，而且GCC's method of grouping registers into spill registers vs. other registers doesn't help either。传统上，强度折减的结果会使得编译器去利用加法暂存器以加法运算来取代乘法运算。事实上，我在怀疑<CODE>-fcaller-saves</CODE>可能也只是个漏洞也说不定。
+</BLOCKQUOTE>
+
+<BLOCKQUOTE>
+而我的第七感则再度的告诉我说，<CODE>-fomit-frame-pointer</CODE>可能会也可能不会有任何的赚头。从这点来看，就是意谓著有另一个暂存器可以用来处理记忆体分配的问题。另方面，若纯粹从x86的机器在转换它的指令集成为机器码的方法上来看，便意谓著堆叠所用到的记忆体空间要比frame所用到的还要来得多；换句话说，Icache对程式码而言并没有实质上的帮助，若是阁下用了<CODE>-fomit-frame-pointer</CODE>的话，同时也是告诉编译器在每次呼叫函数之後，就必须修正堆叠的指标；然而，就frame来讲，若呼叫的次数不多的话，则允许堆叠暂时堆积起来。
+</BLOCKQUOTE>
+<P>有关这方面主题的最後一段话仍是来自於Linus：
+<P>
+<BLOCKQUOTE>
+要注意的是，如果你想要得到最佳状况的执行效能，可千万别相信我的话。无论如何，一定要进行测试。gcc编译器还有许多的参数可用，其中可能就有一种最特别的组合，可以给你最佳编码的结果。
+</BLOCKQUOTE>
+<P>11/14/97译
+5/15/98修正
+<P>
+<P>
+<H3><A NAME="index.33"></A> <A NAME="index.32"></A> <A NAME="index.31"></A> <A NAME="index.30"></A> <A NAME="index.29"></A> <CODE>Internal compiler error: cc1 got fatal signal 11</CODE>     </H3>
+
+<P> Signal 11是指 SIGSEGV，或者 ‘segmentation violation’。通常这是指
+说gcc对自己所用的指标感到困惑，而且还尝试著把资料写入不属於它的记忆体里。所以，这可能是一个gcc的bug。
+然而，大体而言，gcc是一支经过严密测试且可靠度良好的软体佳作。它也用了大量复杂的资料结构与惊人的指标数量。简言之，若是要评选本世纪最挑惕与最一丝不□的RAM测试程式，gcc绝对可以一摘后冠。假如你<EM>无法重新复制这只bug</EM>---当你重新开始编译时，错误的讯息并没有一直出现在同一个地方---那几乎可以确定,是你的硬体本身有问题(CPU,记忆体,主机板或是快取记忆体).<B>千万不要</B>因为你的电脑可以通过开机程序的测试、或是Windows可以跑得很顺、或者其它什麽的，就回过头来大肆宣传说这是gcc的一个bug；你所做的这些测试动作，通常没有什麽实际上的价值，这是很合理的结论。另外，也不要因为编译核心时，总是停留在‘<CODE>make zImage</CODE>’的阶段，就要大骂这是gcc的bug---当然它会停在那儿啊！做‘<CODE>make zImage</CODE>’时，需要编译的档案可能就超过200档案；我们正在研拟一个替代的方案。
+<P>
+<P> 如果你可以重覆产生这个bug，而且（最好是这样啦！）可以写一个短小的程式来展示这只bug的话，你就可以把它做成bug报告，然後email给FSF，或者是linux-gcc通信论坛。你可以去参考gcc的说明文件，看看有什麽详细的资讯,是他们所需要的。
+<P>
+<P>
+<H2><A NAME="ss4.3">4.3 移植能力</A>
+</H2>
+
+<P> 据报，近日来许多正面的消息指出，若是有某件东东到现在都还没移植到Linux上去，那麽可以肯定的是，它一定一点价值也没有。:-)
+<P>嗯！正经一点。一般而言，原始码只需要做一些局部的修改，就可以克服Linux 100%与POSIX相容的特质。如果你做了任何的修改，而将此部份传回给原作者，会是很有建设性的举动。这样日後就只需要用到‘make’，就能得到一个可执行的档案了。
+<P>
+<H3>BSD教徒 (有 <CODE>bsd_ioctl</CODE>、<CODE>daemon</CODE> 与 <CODE>&lt;sgtty.h&gt;</CODE>)</H3>
+
+<P> 编译程式时，可以配合<CODE>-I/usr/include/bsd</CODE>与连结<CODE>-lbsd</CODE>的程式库。（例如：在你的Makefile档内，把<CODE>-I/usr/include/bsd</CODE>加到<CODE>CFLAGS</CODE>那一行；把<CODE>-lbsd</CODE>加到<CODE>LDFLAGS</CODE>那一行）。如果你真的那麽想要BSD型态的信号行为，也<EM>不</EM>需要再加上<CODE>-D__USE_BSD_SIGNAL</CODE>了。那是因为当你用了<CODE>-I/usr/include/bsd</CODE>与含括了标头档<CODE>&lt;signal.h&gt;</CODE>之後，make时就会自动加入了。
+<P>
+<H3><A NAME="index.38"></A> <A NAME="index.37"></A> <A NAME="index.36"></A> <A NAME="index.35"></A> <A NAME="index.34"></A> 失落的封印(<CODE>SIGBUS</CODE>, <CODE>SIGEMT</CODE>, <CODE>SIGIOT</CODE>, <CODE>SIGTRAP</CODE>, <CODE>SIGSYS</CODE> etc)     </H3>
+
+<P> Linux与POSIX是完全相容的。不过，有些信号并不是POSIX定义的---ISO/IEC 9945-1:1990 (IEEE Std 1003.1-1990), paragraph B.3.3.1.1 sez:
+<P>
+<BLOCKQUOTE>
+“在POSIX.1中省略了SIGBUS、SIGEMT、SIGIOT、SIGTRAP与SIGSYS信号，那是因为它们的行为与实作的方式息息相关，而且也无法进行适当的分类。确认实作方式後，便可以发送这些信号，可是必须以文件说明它们是在什麽样的环境底下发送出来的，以及指出任何与它们的发展相关的限制。”
+</BLOCKQUOTE>
+<P>
+<P>想要修正这个问题，最简单也是最笨的方法就是用<CODE>SIGUNUSED</CODE>重新定义这些信号。<EM>正确的</EM>方法应该是以条件式的编译<CODE>#ifdef</CODE>来处理这些问题才对：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#ifdef SIGSYS
+/* ... non-posix SIGSYS code here .... */
+#endif
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>11/15/97译
+5/22/98修正
+<P>
+<H3><A NAME="index.39"></A> K &amp; R  </H3>
+
+<P>gcc是一个与ANSI相容的编译器；奇怪的是，目前大多数的程式码都不符合ANSI所定的标准。如果你热爱ANSI，喜欢用ANSI提供的标准来撰写C程式，似乎除了加上<CODE>-traditional</CODE>的旗号之外，就没有其它什麽可以多谈的了。There is a certain amount of finer-grained control over which varieties of brain damage to emulate;请自行查阅gcc info page。
+<P>要注意的是，尽管你用了<CODE>-traditional</CODE>来改变语言的特性，它的效果也仅局限於gcc所能够接受的□围。例如, <CODE>-traditional</CODE>会打开<CODE>-fwritable-strings</CODE>，使得字串常数移至资料记忆体空间内(从程式码记忆体空间移出来，这个地方是不能任意写入的)。这样做会让程式码的记忆体空间无形中增加的。
+<P>
+<H3><A NAME="index.41"></A> <A NAME="index.40"></A> 前置处理器的符号卯上函数原型宣告  </H3>
+
+<P>最常见的问题是，如众所皆知，Linux中有许多常用的函数都定义成巨集存放在标头档内，此时若有相似的函数原型宣告出现在程式码内，前置处理器会拒绝进行语法分析的前置作业。常见的有<CODE>atoi()</CODE>与<CODE>atol()</CODE>。
+<P>
+<H3><A NAME="index.42"></A> <CODE>sprintf()</CODE> </H3>
+
+<P>在大部份的Unix系统上，<CODE>sprintf(string, fmt, ...)</CODE>传回的是<CODE>string</CODE>的指标，然而，这方面Linux（遵循ANSI）传回的却是放入string内的字元数目.进行移植时，尤其是针对SunOS，需有警觉的心。
+<P>
+<H3><A NAME="index.49"></A> <A NAME="index.48"></A> <A NAME="index.47"></A> <A NAME="index.46"></A> <A NAME="index.45"></A> <A NAME="index.44"></A> <A NAME="index.43"></A> <CODE>fcntl</CODE> 与相关的函数；<CODE>FD_*</CODE>家族的定义到底摆在哪里?       </H3>
+
+<P>就在<CODE>&lt;sys/time.h&gt;</CODE>里头。 为了真正的原型宣告，当你用了<CODE>fcntl</CODE>，可能你也想含括标头档<CODE>&lt;unistd.h&gt;</CODE>进来。
+<P>一般而言，函数的manual page会在SYNOPSIS章节内列出需要的<CODE>标头档</CODE>。
+<P>
+<P>
+<H3><A NAME="index.50"></A> <CODE>select()</CODE>的计时---程式执行时会处於忙碌-等待的状态 </H3>
+
+<P>很久很久以前,，<CODE>select()</CODE>的计时参数只有唯读的性而已。即使到了最近，manual pages仍然有下面这段的警告：
+<P>
+<BLOCKQUOTE>
+select()应该是藉由修正时间的数值（如果有的话），再传回自原始计时开始後所剩馀的时间。未来的版本可能会使这项功能实现。因此，就目前而言，若以为呼叫select()之後，计时指标仍然不会被修正过，可是一种非常不明智的想法喔！
+</BLOCKQUOTE>
+<P>未来就在我们的眼前了！至少，在这儿你绝对可以看到。函数<CODE>select()</CODE>传回的，是扣除等待尚未到达的资料所耗费的时间後，其剩馀的时间数值。如果在计时结束时，都没有资料传送进来，计时引数便会设为0；如果接著还有任何的select()，以同样的计时structure来呼叫，那麽select()便会立刻结束。
+<P>若要修正这项问题，只要每次呼叫<CODE>select()</CODE>前，都把计时数值放到计时 structure内，就没有问题了。把下面的程式码，
+<BLOCKQUOTE><CODE>
+<PRE>
+      struct timeval timeout;
+      timeout.tv_sec = 1; timeout.tv_usec = 0;
+      while (some_condition)
+            select(n,readfds,writefds,exceptfds,&amp;timeout); 
+</PRE>
+</CODE></BLOCKQUOTE>
+
+改成，
+<BLOCKQUOTE><CODE>
+<PRE>
+      struct timeval timeout;
+      while (some_condition) {
+            timeout.tv_sec = 1; timeout.tv_usec = 0;
+            select(n,readfds,writefds,exceptfds,&amp;timeout);
+      }
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>这个问题，在有些版本的Mosaic里是相当著名的，只要一次的等待，Mosaic就挂在那里了。Mosaic的萤幕右上角，是不是有个圆圆的、会旋转的地球动画。那颗球转得愈快，就表示资料从网路上传送过来的速率愈慢！
+<P>
+<H3><A NAME="index.52"></A> <A NAME="index.51"></A> 产生中断的系统呼叫  </H3>
+
+<H3>特徵：</H3>
+
+<P>当一支程式以Ctrl-Z中止、然後再重新执行时□或者是其它可以产生Ctrl-C中断信号的情况，如子程序的终结等□系统就会抱怨说"interrupted system call"或是"write: unknown error"，或者诸如此类的讯息。
+<P>
+<H3>问题点：</H3>
+
+<P>POSIX的系统检查信号的次数，比起一些旧版的Unix是要多那麽一点。如果是Linux，可能就会执行signal handlers了□
+<P>
+<UL>
+<LI> 非同步地(计时器的滴答声)</LI>
+<LI> 系统呼叫的传回值</LI>
+<LI> 在下列系统呼叫的执行期间∶
+<CODE>select()</CODE>, <CODE>pause()</CODE>, <CODE>connect()</CODE>,<CODE>accept()</CODE>, <CODE>read()</CODE> on terminals, sockets, pipes or files in <CODE>/proc</CODE>, <CODE>write()</CODE> on terminals, sockets, pipes or the line printer, <CODE>open()</CODE> on FIFOs, PTYs or serial lines,<CODE>ioctl()</CODE> on terminals, <CODE>fcntl()</CODE> with command <CODE>F_SETLKW</CODE>, <CODE>wait4()</CODE>, <CODE>syslog()</CODE>, any TCP or NFS operations.  </LI>
+</UL>
+<P>就其它的作业系统而言，你需要的可能就是下面这些系统呼叫了：
+<CODE>creat()</CODE>, <CODE>close()</CODE>, <CODE>getmsg()</CODE>, <CODE>putmsg()</CODE>,
+<CODE>msgrcv()</CODE>, <CODE>msgsnd()</CODE>, <CODE>recv()</CODE>, <CODE>send()</CODE>,
+<CODE>wait()</CODE>, <CODE>waitpid()</CODE>, <CODE>wait3()</CODE>, <CODE>tcdrain()</CODE>,
+<CODE>sigpause()</CODE>, <CODE>semop()</CODE> to this list.
+<P>
+<P>在系统呼叫期间，若有一信号（那支程式本身应准备好handler因应了）产生，handler就会被呼叫。当handler将控制权转移回系统呼叫时，它会侦测出它已经产生中断，而且传回值会立刻设定成-1，而<CODE>errno设定成EINTR</CODE>。程式并没有想到会发生这种事，所以就挂了。
+<P>有两种修正的方法可以选择：
+<P>(1) 对每个你自行安装的signal handler，都须在sigaction的旗号加上<CODE>SA_RESTART</CODE>。例如，把下列的程式，
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+  signal (sig_nr, my_signal_handler);
+</PRE>
+</CODE></BLOCKQUOTE>
+
+改成，
+<BLOCKQUOTE><CODE>
+<PRE>
+  signal (sig_nr, my_signal_handler);
+  { struct sigaction sa;
+    sigaction (sig_nr, (struct sigaction *)0, &amp;sa);
+#ifdef SA_RESTART
+    sa.sa_flags |= SA_RESTART;
+#endif
+#ifdef SA_INTERRUPT
+    sa.sa_flags &amp;= ~ SA_INTERRUPT;
+#endif
+    sigaction (sig_nr, &amp;sa, (struct sigaction *)0);
+  }
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>要注意的是，当这部份的变更大量应用到系统呼叫之後，呼叫<CODE>read()</CODE>、<CODE>write()</CODE>、<CODE>ioctl()</CODE>、 <CODE>select()</CODE>、 <CODE>pause()</CODE> 与 <CODE>connect()</CODE>时，你仍然得自行检查<CODE>EINTR</CODE>。如下所示：
+<P>(2) 你自己得很明确地检查<CODE>EINTR</CODE>：
+<P>这里有两个针对<CODE>read()</CODE>与<CODE>ioctl()</CODE>的例子。
+<P>
+<P>原始的程式片段，使用<CODE>read()</CODE>：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+int result;
+while (len > 0) { 
+  result = read(fd,buffer,len);
+  if (result &lt; 0) break;
+  buffer += result; len -= result;
+}
+</PRE>
+</CODE></BLOCKQUOTE>
+
+修改成,
+<BLOCKQUOTE><CODE>
+<PRE>
+int result;
+while (len > 0) { 
+  result = read(fd,buffer,len);
+  if (result &lt; 0) { if (errno != EINTR) break; }
+  else { buffer += result; len -= result; }
+}
+</PRE>
+</CODE></BLOCKQUOTE>
+
+原始的程式片段，使用<CODE>ioctl()</CODE>：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+int result;
+result = ioctl(fd,cmd,addr);
+</PRE>
+</CODE></BLOCKQUOTE>
+
+修改成，
+<BLOCKQUOTE><CODE>
+<PRE>
+int result;
+do { result = ioctl(fd,cmd,addr); }
+while ((result == -1) &amp;&amp; (errno == EINTR));
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>注意一点，有些版本的BSD Unix，其内定的行为是重新执行系统呼叫。若要让系统呼叫中断，得使用 <CODE>SV_INTERRUPT</CODE>或<CODE>SA_INTERRUPT</CODE>旗号。
+<P>
+<P>
+<H3><A NAME="index.56"></A> <A NAME="index.55"></A> <A NAME="index.54"></A> <A NAME="index.53"></A> 可以写入的字串    </H3>
+
+<P> gcc对其users总怀抱著乐观的想法，相信当他们打算让某个字串当作常数来用时---那它就真的只是字串常数而已。因此，这种字串常数会储存在程式码的记忆体区段内。这块区域可以page到磁碟机的image上，避免耗掉swap的记忆体空间，而且任何尝试写入的举动都会造成分页的错误(segmentation fault)。这可是一种特色呢！
+<P>对老旧一点的程式而言，这可能会产生一个问题。例如，呼叫<CODE>mktemp()</CODE>，传递的引数(arguments)是字串常数。 <CODE>mktemp()</CODE>会尝试著在*适当的位置*重新写入它的引数。
+<P>修正的方法不外乎(a)以<CODE>-fwritable-strings</CODE>编译，迫使gcc将此常数置放在资料记忆体空间内；或者(b)将侵犯地权的部份重新改写，配置一个不为常数的字串，在呼叫前，先以strcpy()将资料拷贝进去。
+<P>
+<H3><A NAME="index.57"></A> 为什麽呼叫<CODE>execl()</CODE>会失败？ </H3>
+
+<P>那是因为你呼叫的方式不对。<CODE>execl</CODE>的第一个引数是你想要执行的程式名.第二个与接续的引数会变成你所呼叫的程式的<CODE>argv</CODE>阵列。记住：传统上，<CODE>argv[0]</CODE>是只有当程式没有带著引数执行时，才会有设定值。所以罗，你应该这样写：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+execl("/bin/ls","ls",NULL);
+</PRE>
+</CODE></BLOCKQUOTE>
+
+而不是只有，
+<BLOCKQUOTE><CODE>
+<PRE>
+execl("/bin/ls", NULL);
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>执行程式而不带任何引数，可解释成是一种邀请函，目的是把此程式的动态程式库独立的特性印出来。至少，a.out是这样的。就ELF而言。事情就不是这样了.
+<P>
+<P>（如果你想得知此程式库的资讯，有一些更简单的介面可用；参考动态载入那一章节，或是<CODE>ldd</CODE>的manual page。）
+<P>11/16/97译
+6/2/98修正
+<P>
+<P>
+<HR>
+<A HREF="GCC-HOWTO-5.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="GCC-HOWTO-3.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="GCC-HOWTO.html#toc4"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

@@ -1,0 +1,249 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="LinuxDoc-Tools 0.9.16">
+ <TITLE>3D Accelerated With Nvidia HOWTO: 故障排除</TITLE>
+ <LINK HREF="3D-Accelerated-With-Nvidia-HOWTO-7.html" REL=previous>
+ <LINK HREF="3D-Accelerated-With-Nvidia-HOWTO.html#toc8" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<IMG SRC="img/next.png" ALT="Next">
+<A HREF="3D-Accelerated-With-Nvidia-HOWTO-7.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="3D-Accelerated-With-Nvidia-HOWTO.html#toc8"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s8">8.</A> <A HREF="3D-Accelerated-With-Nvidia-HOWTO.html#toc8">故障排除</A></H2>
+
+<H2><A NAME="ss8.1">8.1</A> <A HREF="3D-Accelerated-With-Nvidia-HOWTO.html#toc8.1">我要如何得到故障信息的具体含义?</A>
+</H2>
+
+<P>一般来说,这些都在 /var/lov/XFree86.*.log 日志当中.
+"(WW)"代表警讯 "(EE)"代表错误</P>
+<H2><A NAME="ss8.2">8.2</A> <A HREF="3D-Accelerated-With-Nvidia-HOWTO.html#toc8.2">不能执行 startx, 日志当中有这样的讯息:"(EE) NVIDIA(0): Failed to initialize the NVdriver kernel module!"</A>
+</H2>
+
+<P>这是核心模组的问题, 请先用 lsmod 查看模组的载入情况, 如果没有AGP驱动模组请用
+modprobe 载入, 如果在载入的时候出现问题, 可能你所载入的模组并不是为你的核心编译的.
+在编译的驱动程式的时候可以指定你的核心: 'make install SYSINCLUDE=/path/to/kernel/headers'
+模组的名称为 "NVdriver"</P>
+
+<H2><A NAME="ss8.3">8.3</A> <A HREF="3D-Accelerated-With-Nvidia-HOWTO.html#toc8.3">我能启动X, 但是 OpenGL的应用无效</A>
+</H2>
+
+<P>这可能和函式库有关, 请执行 "ldconfig"
+,另外请检视 XF86Config设定档, 确信里面有加载glx的描述.</P>
+
+<H2><A NAME="ss8.4">8.4</A> <A HREF="3D-Accelerated-With-Nvidia-HOWTO.html#toc8.4">OpenGL 软体出现如下警讯是什么问题?</A>
+</H2>
+
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+ Error: Could not open /dev/nvidiactl because the permissions
+        are too restrictive.  Please see the FREQUENTLY ASKED QUESTIONS
+        section of /usr/share/doc/NVIDIA_GLX-1.0/README for steps
+        to correct.
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+<P>看起来像是PAM安全模组的问题(它变更了设备的访问权限),
+如果要解决它,请关闭PAM. 
+如果你的 /etc/security/ 目录里有 console.perms 设定档
+请将以 &lt; dri &gt; 开头的字句整行移除.
+如果你的系统里有 /etc/logindevperms 请移除与 /dev/nvidiactl 有关的字句.
+然后执行 chmod 0666 /dev/nvidia* ; chown root /dev/nvidia*</P>
+
+<H2><A NAME="ss8.5">8.5</A> <A HREF="3D-Accelerated-With-Nvidia-HOWTO.html#toc8.5">OpenGL 程式挂掉并且有如下警讯:</A>
+</H2>
+
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+WARNING: Your system is running with a buggy dynamic loader.
+        This may cause crashes in certain applications.  If you
+        experience crashes you can try setting the environment
+        variable __GL_SINGLE_THREADED.  For more information please
+        consult the FREQUENTLY ASKED QUESTIONS section in the file
+        /usr/share/doc/NVIDIA_GLX-1.0/README.
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+<P>这是老版本的动态加载器造成的. 请设定环境变量 __GL_SINGLE_THREADED 为任意值.
+如果你使用bash shell ,请你这样执行:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+ export __GL_SINGLE_THREADED
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+<P>如果你使用 csh 和相关的shell 请这样执行:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+setenv __GL_SINGLE_THREADED
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+<H2><A NAME="ss8.6">8.6</A> <A HREF="3D-Accelerated-With-Nvidia-HOWTO.html#toc8.6">在我执行 雷神III 切换显示模式时, 它挂掉了.</A>
+</H2>
+
+<P>照上面的方法设定 __GL_SINGLE_THREADED</P>
+
+<H2><A NAME="ss8.7">8.7</A> <A HREF="3D-Accelerated-With-Nvidia-HOWTO.html#toc8.7">当我执行 startx 时, X 挂掉了, 并在 XFree86 日志中留有如下记录:</A>
+</H2>
+
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+(II) LoadModule: "nvidia"
+        (II) Loading /usr/X11R6/lib/modules/drivers/nvidia_drv.o
+        No symbols found in this module
+        (EE) Failed to load /usr/X11R6/lib/modules/drivers/nvidia_drv.o
+        (II) UnloadModule: "nvidia"
+        (EE) Failed to load module "nvidia" (loader failed, 256)
+        ...
+        (EE) No drivers available.
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+<P> nvidia_drv.o 需要一个符号连结, 有些rpm版本在安装时没有建立这种连结,
+推荐你用 NVIDIA_GLX 的 tar 安装包进行安装. </P>
+<H2><A NAME="ss8.8">8.8</A> <A HREF="3D-Accelerated-With-Nvidia-HOWTO.html#toc8.8">我的系统可以运行, 但不稳定, 这是怎么回事?</A>
+</H2>
+
+<P>这与AGP模式有关, 可以通过 Option "NvAgp" "0至3的值" 来设定.
+"0"表示关闭加速; "1" 表示使用NVAGP; "2" 表示使用AGPGART; "3" 表示使用 AGPART,
+如果失效, 就自动使用NVAGP模式.
+注意: 要使用 AGPGART 模式, 你必需将它编译进核心,或者是编译成模组.
+如果系统核心当中有 AGPGART, NVAGP 模式将不起任何作用. 所以推荐你将 AGPGART
+编译成模组. 另外要注意的是, 变更驱动程式后要重新启动你的机器才能生效.</P>
+<P>以下的芯片集支援 NVAGP 模式, 其它的芯片集请使用 AGPGART 模式.
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+Intel 440LX
+  o Intel 440BX
+  o Intel 440GX
+  o Intel 815 ("Solano")   
+  o Intel 820 ("Camino")   
+  o Intel 830
+  o Intel 840 ("Carmel")   
+  o Intel 845 ("Brookdale")
+  o Intel 845G
+  o Intel 850 ("Tehama")
+  o Intel 860 ("Colusa")
+  o AMD 751 ("Irongate")
+  o AMD 761 ("IGD4")   
+  o AMD 762 ("IGD4 MP")
+  o VIA 8371   
+  o VIA 82C694X
+  o VIA KT133
+  o VIA KT266
+  o RCC 6585HE
+  o Micron SAMDDR ("Samurai") 
+  o Micron SCIDDR ("Scimitar")
+  o nForce AGP
+  o ALi 1621
+  o ALi 1631
+  o ALi 1647
+  o ALi 1651
+  o ALi 1671
+  o SiS 630
+  o SiS 633
+  o SiS 635
+  o SiS 645
+  o SiS 730
+  o SiS 733
+  o SiS 735
+  o SiS 745
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+<P>一些 Linux 核心在AMD架构的CPU上运行时可能会出现与AGP有关的Bug.
+它们是:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+ AMD Athlon XP
+ AMD Athlong 4
+ AMD Athlon MP and Models 6 
+ AMD Duron
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+
+你可以在开机的时候避开它们的Bug: 在 GRUB 中输入 mem=nopentium
+或在 lilo.conf 设定档中加入 : append = "mem=nopentium"</P>
+
+<P>设定 BIOS 中AGP的范围在 0xEA 和 0xEE 之间. </P>
+<P>请升级你的 BIOS.</P>
+<P>设定 AGP的速率档位:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+insmod NVdriver NVreg_ReqAGPRate=2   # 只使用第2档
+insmod NVdriver NVreg_ReqAGPRate=1   # 只使用第1档
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+<P>也可以在 /etc/modules.conf 设定档中进行描述:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+alias char-major-195 NVdriver
+options NVdriver NVreg_ReqAGPRate=2  
+options NVdriver NVreg_ReqAGPRate=1 
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+<H2><A NAME="ss8.9">8.9</A> <A HREF="3D-Accelerated-With-Nvidia-HOWTO.html#toc8.9">为什么我的 OpenGL 软体慢得要死?</A>
+</H2>
+
+<P>可能它还在使用老的函式库.</P>
+
+
+<H2><A NAME="ss8.10">8.10</A> <A HREF="3D-Accelerated-With-Nvidia-HOWTO.html#toc8.10">在编译核心驱动程式时出现警讯:</A>
+</H2>
+
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+You appear to be compiling the NVdriver kernel module with
+        a compiler different from the one that was used to compile
+        the running kernel. This may be perfectly fine, but there
+        are cases where this can lead to unexpected behaviour and
+        system crashes.
+
+        If you know what you are doing and want to override this
+        check, you can do so by setting IGNORE_CC_MISMATCH.
+
+        In any other case, set the CC environment variable to the
+        name of the compiler that was used to compile the kernel.
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+<P>系统上的核心不是用当前的GCC编译的, 请重新编译核心, 并在重新启动时载入新核心.</P>
+<H2><A NAME="ss8.11">8.11</A> <A HREF="3D-Accelerated-With-Nvidia-HOWTO.html#toc8.11">X 挂掉了, 并出现警讯"Failed to allocate LUT context DMA"</A>
+</H2>
+
+<P>解决方法同上一个问题一样.</P>
+
+<HR>
+<IMG SRC="img/next.png" ALT="Next">
+<A HREF="3D-Accelerated-With-Nvidia-HOWTO-7.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="3D-Accelerated-With-Nvidia-HOWTO.html#toc8"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

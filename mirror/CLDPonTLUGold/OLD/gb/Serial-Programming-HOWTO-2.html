@@ -1,0 +1,90 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>The Linux Serial Programming HOWTO: 开始</TITLE>
+ <LINK HREF="Serial-Programming-HOWTO-3.html" REL=next>
+ <LINK HREF="Serial-Programming-HOWTO-1.html" REL=previous>
+ <LINK HREF="Serial-Programming-HOWTO.html#toc2" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Serial-Programming-HOWTO-3.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Serial-Programming-HOWTO-1.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Serial-Programming-HOWTO.html#toc2"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s2">2. 开始</A></H2>
+
+<P>
+<H2><A NAME="ss2.1">2.1 侦错</A>
+</H2>
+
+<P>最好的侦错你程式码的方法是建构另一台 Linux box, 并把两台电脑用 null-modem 缆线连接. 用 miniterm
+(可在 LDP 程式设计师指南取得
+(<CODE>ftp://sunsite.unc.edu/pub/Linux/docs/LDP/programmers-guide/lpg-0.4.tar.gz</CODE> 在□例那个目录下) 以传送字元到你的 Linux box.
+Miniterm 很容易编译而它会把所有输入到键盘的字元透过序列埠传送.
+只有这个宣告定义会被检查
+<CODE>#define MODEMDEVICE "/dev/ttyS0"</CODE>.
+如果是 COM1 设定为 <CODE>ttyS0</CODE>, 如果是 COM2 设定为 <CODE>ttyS1</CODE> 等等..
+先前的测试是必要的, <EM>所有的</EM> 字元都将以 raw 方式 (不经任何处理) 直接传送. 测试是否连接正确, 在两台电脑上都启动 miniterm 然後随便在键盘上乱按. 在其中一台上输入的字元应该会显示在另一台电脑上反之亦同. 但输入的字元不会回应到与之相连的萤幕上.
+<P>要自制 null-modem 的电缆, 你必需要把 TxD (传送) 及
+RxD (接收) 两线对调. 详细的说明在 Serial-HOWTO 的第 7 段.
+<P>当然也可以只用一台电脑来作相同的测试, 只要电脑上有两个未使用的序列埠. 当然你也就要执行两个 miniterm 来当虚拟控制台. 如果你是藉由拔去滑鼠来取得另一个序列埠, 记得要把 <CODE>/dev/mouse</CODE> 装置重新导向, 如果它存在的话. 如果你使用多埠的序列埠控制卡, 请确定它已设定正确. 当我在我的电脑上测试时也曾经因为设定错误而出过槌. 当我连到另一台电脑, 通讯埠开始传送字元. 就因为刚好这不是完整的非同步式传输, 所以可在同一台电脑上执行两个程式.
+<P>
+<H2><A NAME="ss2.2">2.2 连接埠设定</A>
+</H2>
+
+<P><CODE>/dev/ttyS*</CODE> 装置会被当成连接到你的 Linux box 的终端机, 并且在启动後就设定好了. 这个观念在你写 raw 装置的通讯程式时必需记住. 也就是说这个连接埠被设定为回应所有自这个装置送出的字元, 而用在资料传输时通常这种要改变这种工作模式.
+<P>所有的参数可以由一个小程式简单的完成. 设定参数被放在一个结构体内 <CODE>struct termios</CODE>, 他的定义档在 <CODE>&lt;asm/termbits.h&gt;</CODE>:
+<BLOCKQUOTE><CODE>
+<PRE>
+#define NCCS 19
+struct termios {
+        tcflag_t c_iflag;               /* 输入模式旗标 */
+        tcflag_t c_oflag;               /* 输出模式旗标 */
+        tcflag_t c_cflag;               /* 控制模式旗标 */
+        tcflag_t c_lflag;               /* 区域模式旗标 */
+        cc_t c_line;                    /* 行控制 (line discipline) */
+        cc_t c_cc[NCCS];                /* 控制特性 */
+};
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>这个档案也包含所有的旗标定义. 输入模式旗标在
+<CODE>c_iflag</CODE> 掌管所有的输入处理, 这就意谓著由装置上传来的字元在还没用 <CODE>read</CODE> 功能读取前可以先处理过. 同理 <CODE>c_oflag</CODE> 掌管所有的输出处理. <CODE>c_cflag</CODE> 包含连接埠的设定, 如 鲍率, 每字元多少位元, 停止位元, 等等.. 区域模式旗标放在 <CODE>c_lflag</CODE> 用来侦测字元是否回应, 而讯号会送到你的程式, 等等.. 最後
+<CODE>c_cc</CODE> 阵列定义了档案终了的控制字元, 停止,
+等等..  预设的控制字元值放在
+<CODE>&lt;asm/termios.h&gt;</CODE>. 有关旗标的细节摆在使用手册 <CODE>termios(3)</CODE>. <CODE>termios</CODE> 结构体内的
+<CODE>c_line</CODE> 行控制 (line discipline) 元素, 不能在 POSIX 相容的系统下使用
+译者注:这里所说的 line discipline 虽然我翻成 行控制 但还是很难说出那是舍. 如果想知道请看看 kernel :( .
+<P>
+<P>
+<H2><A NAME="ss2.3">2.3 序列装置的输入观念</A>
+</H2>
+
+<P>有三个输入的观念要说明. 按照所要写的应用程式选用适合的观念. 尽量避免使用回圈来读取单一的字元再组成字串. 我曾这样做过, 会掉字元, 且对 <CODE>read</CODE> 而言不会显示任何错误.
+<P>
+<H3>标准输入程序</H3>
+
+<P>这是终端机的标准处理程序, 但用来与其他 dl 型式的以行为单位的输入通讯也很有用, 也就是 <CODE>read</CODE> 会传回一整行完整的输入资料. 行预设的终止字元是 <CODE>NL</CODE>
+(ASCII <CODE>LF</CODE>), 档案结束符, 或行终止字元. 预设环境下, <CODE>CR</CODE> (是 DOS/Windows 预设的行终止符) 不会终止一行的叙述.
+<P>标准的输入处理程序还可以处理 清除, 删除字, 重印字元, 及转换 <CODE>CR</CODE> 为 <CODE>NL</CODE> 等等功能..
+<P>
+<H3>非标准输入程序</H3>
+
+<P>非标准输入程序可以用在需要每次读取固定数量字元的情况, 并允许使用字元输入时间的计时器. 这种模式可以用在读取固定字元数量的应用程式, 或者所连接的装置会突然送出大量字元的状况.
+<P>
+<P>
+<H3>非同步式输入</H3>
+
+<P>以上所叙述的两种模式都可以用在非同步与同步的传输模式. 预设是在同步的模式下工作, 也就是在尚未读取完之前, <CODE>read</CODE> 的状态会被阻断. 而非同步模式下 <CODE>read</CODE> 的状态会直接返回并送出讯号到所叫用的程式直到完成工作. 这个讯号可以由讯号的处理程式 handler...来接收.
+<P>
+<H3>等待来自多个讯号来源的输入</H3>
+
+<P>这并不是一个不一样的输入模式. 如果你要透过序列埠连接并处理多个装置的话, 它是满有用的. 在我的应用程式中我必需在几乎同一时间内, 透过 TCP/IP socket 及序列埠处理来自其他电脑的输入讯号. 下面这个□例程式将等待来自两个不同输入源的讯号. 如果其中一个信号源出现, 他就会被处理, 而程式会继续等待新的输入讯号.
+<P>以下这个方法看起来相当覆杂, 但请记住 Linux 是一个多工的作业系统. <CODE>select</CODE> 这个系统呼叫并不会在等待输入讯号时把 CPU 负载加重, 而如果你用回圈方式来等待输入讯号将使得其它同时执行的行程被拖慢.
+<P>
+<P>
+<HR>
+<A HREF="Serial-Programming-HOWTO-3.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Serial-Programming-HOWTO-1.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Serial-Programming-HOWTO.html#toc2"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

@@ -1,0 +1,124 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux AX25-HOWTO, Amateur Radio.: Configuring a Rose port.</TITLE>
+ <LINK HREF="AX25-HOWTO-11.html" REL=next>
+ <LINK HREF="AX25-HOWTO-9.html" REL=previous>
+ <LINK HREF="AX25-HOWTO.html#toc10" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="AX25-HOWTO-11.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="AX25-HOWTO-9.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="AX25-HOWTO.html#toc10"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s10">10. Configuring a Rose port.</A></H2>
+
+<P>The Rose packet layer protocol is similar to layer three of the X.25
+specification. The kernel based Rose support is a <B>modified</B> version of the
+<A HREF="http://fpac.lmi.ecp.fr/f1oat/f1oat.html">FPAC Rose implementation</A>.
+<P>The Rose packet layer protocol protocol relies on, and uses the AX.25 ports
+you have created. The Rose protocol rides on top of the AX.25 protocol.
+To configure Rose you must create a configuration file that describes the
+Rose ports you want. You can create multiple Rose ports if you wish, the same
+procedure applies for each.
+<P>
+<H2><A NAME="ss10.1">10.1 Configuring <CODE>/etc/ax25/rsports</CODE> </A>
+</H2>
+
+<P>                                          
+The file where you configure your Rose interfaces is the
+<CODE>/etc/ax25/rsports</CODE> file. This file describes the Rose port in much
+the same way as the <CODE>/etc/ax25/axports</CODE> file describes the AX.25 ports.
+<P>This file is formatted as follows:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+name  addresss  description
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Where:
+<DL>
+<DT><B>name</B><DD><P>is the text name that you wish to refer to the port by.
+<DT><B>address</B><DD><P>is the 10 digit Rose address you wish to assign to this port.
+<DT><B>description</B><DD><P>is a free text description of the port.
+</DL>
+<P>An example would look something like the following:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+rose  5050294760  Rose Port
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Note that Rose will use the default callsign/ssid configured on each
+AX.25 port unless you specify otherwise.
+<P>To configure a seperate callsign/ssid for Rose to use on each port you
+use the <EM>rsparms</EM> command as follows:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# /usr/sbin/rsprams -call VK2KTJ-10
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>This example would make Linux listen for and use the callsign/ssid
+<CODE>VK2KTJ-10</CODE> on all of the configured AX.25 ports for Rose calls.
+<P>
+<H2><A NAME="ss10.2">10.2 Creating the Rose Network device.</A>
+</H2>
+
+<P>When you have created the <CODE>/etc/ax25/rsports</CODE> file you may create the
+Rose device in much the same way as you did for the AX.25 devices.
+This time you use the <EM>rsattach</EM> command. The <EM>rsattach</EM> command creates
+network devices named `<CODE>rose[0-5]</CODE>'. The first time you use the
+<EM>rsattach</EM> command it create the `<CODE>rose0</CODE>' device, the second time
+it creates the `<CODE>rose1</CODE>' device etc. For example:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# rsattach rose
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>This command would start the Rose device (<CODE>rose0</CODE>) configured with the
+details specified in the <CODE>/etc/ax25/rsports</CODE> file for the entry
+named `<CODE>rose</CODE>'.
+<P>
+<H2><A NAME="ss10.3">10.3 Configuring Rose Routing</A>
+</H2>
+
+<P>The Rose protocol currently supports only static routing. The <EM>rsparms</EM>
+utility allows you to configure your Rose routing table under Linux.
+<P>For example:
+<BLOCKQUOTE><CODE>
+<PRE>
+# rsparms -nodes add 5050295502 radio vk2xlz
+</PRE>
+</CODE></BLOCKQUOTE>
+
+would add a route to Rose node <CODE>5050295502</CODE> via an AX.25 port named
+`<CODE>radio</CODE>' in your <CODE>/etc/ax25/axports</CODE> file to a neighbour
+with the callsign <CODE>VK2XLZ</CODE>.
+<P>You may specify a route with a mask to capture a number of Rose destinations
+into a single routing entry. The syntax looks like:
+<BLOCKQUOTE><CODE>
+<PRE>
+# rsparms -nodes add 5050295502/4 radio vk2xlz
+</PRE>
+</CODE></BLOCKQUOTE>
+
+which would be identical to the previous example except that it would match
+any destination address that matched the first four digits supplied, in this
+case any address commencing with the digits <CODE>5050</CODE>. An alternate form
+for this command is:
+<BLOCKQUOTE><CODE>
+<PRE>
+# rsparms -nodes add 5050/4 radio vk2xlz
+</PRE>
+</CODE></BLOCKQUOTE>
+
+which is probably the less ambiguous form.
+<P>
+<HR>
+<A HREF="AX25-HOWTO-11.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="AX25-HOWTO-9.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="AX25-HOWTO.html#toc10"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

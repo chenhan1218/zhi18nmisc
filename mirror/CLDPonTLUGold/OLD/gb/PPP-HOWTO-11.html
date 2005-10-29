@@ -1,0 +1,79 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>PPP HOWTO 中译版: 使用 PPP 与 root 权限</TITLE>
+ <LINK HREF="PPP-HOWTO-12.html" REL=next>
+ <LINK HREF="PPP-HOWTO-10.html" REL=previous>
+ <LINK HREF="PPP-HOWTO.html#toc11" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="PPP-HOWTO-12.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="PPP-HOWTO-10.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="PPP-HOWTO.html#toc11"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="root"></A> <A NAME="s11">11. 使用 PPP 与 root 权限</A></H2>
+
+<P>因为 PPP 需要设定网路设备，变更核心递送表格以及诸如此类的动作，所以它需要以 root 的权限来做这些事．
+<P>
+<P>如果 root 以外的使用者要能建立 PPP  连线，那麽 pppd 程式应该设为以 root 的身分执行(setuid):-
+<BLOCKQUOTE><CODE>
+<PRE>
+-rwsr-xr-x   1 root     root        95225 Jul 11 00:27 /usr/sbin/pppd
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>如果 <CODE>/usr/sbin/ppd</CODE> 不是设定为这样，那麽以 <B>root</B> 的身分下这个指令:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+chmod u+s /usr/sbin/pppd
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>这样是让 pppd 以 root 的权限执行，即使是由一般使用者所执行的．
+这能让一般使用者执行的 pppd 具有必要的权限建立网路界面及核心递送表格．
+<P>
+<P>以 root 的身分执行的程式在安全上是潜在的漏洞，所以你对於设定为 'setuid' 的程式必须非常地小心．
+许多地程式(包括 pppd)已经被小心地撰写以将用 root 的身分执行的危险降到最低，所以这样做应该是安全地(不过不保证)．
+<P>
+<P>根据你希望你的系统如何运作而定，特别是如果你希望你系统里的任何使用者都能启始 PPP 连结，你应该把你的 ppp-on/off 指令稿设定为全部的人都可以读取／执行．（如果你的 PC 只由你使用那麽这样大概不错）．
+<P>
+<P>然而，如果你不希望任何人都能起始 PPP  连线（例如，你的孩子在你的 Linux PC 上有帐号而你不希望他们在没有你的监督下连上网际网路），你将得建立一个 PPP 群组（编辑 <CODE>/etc/group</CODE> 档案）并且:
+<UL>
+<LI>将 pppd 设定为以 root 的权限执行，拥有者是 root 而群组是 PPP，而其它的权限都关闭．它看起来应该像这样
+<BLOCKQUOTE><CODE>
+<PRE>
+-rwsr-x---   1 root     PPP        95225 Jul 11 00:27 /usr/sbin/pppd
+</PRE>
+</CODE></BLOCKQUOTE>
+
+ </LI>
+<LI>使 ppp-on/off 指令稿由使用者 root 以及群组 PPP  所拥有
+</LI>
+<LI>使 ppp-of/off 指令稿能由群组 PPP 读取／执行
+<BLOCKQUOTE><CODE>
+<PRE>
+  -rwxr-x---   1 root     PPP           587 Mar 14  1995 /usr/sbin/ppp-on
+  -rwxr-x---   1 root     PPP           631 Mar 14  1995 /usr/sbin/ppp-off
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>关闭其它的存取权限
+</LI>
+<LI>把能够起动 PPP  的使用者加入 /etc/group 档案的 PPP 群组里</LI>
+</UL>
+<P>
+<P>即使如此，一般使用者仍然无法以软体的方式中止连结．
+执行 <CODE>ppp-off</CODE> 指令稿需要 root 的权限．然何，任何使用者都可以关掉数据机(或将电话线由内接式数据机拔下)．
+<P>
+<P>另外一种(更好的)办法，允许使用者使用 <CODE>sudo</CODE> 来起动 ppp 连结．
+这样可以提供更佳的安全性并且可以让你设定让任何(可信任的)使用者使用指令稿来启动/结束连结．
+使用 <CODE>sudo</CODE> 可以让一位可信任的使用者乾净而安全地启动/结束 PPP 连结．
+<P>
+<HR>
+<A HREF="PPP-HOWTO-12.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="PPP-HOWTO-10.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="PPP-HOWTO.html#toc11"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

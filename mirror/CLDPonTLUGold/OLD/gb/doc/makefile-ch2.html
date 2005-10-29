@@ -1,0 +1,416 @@
+<!doctype html public "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<HEAD>
+   <meta http-equiv="Content-Type" content="text/html; charset=gb2312">
+   <meta name="Generator" content="Microsoft Word 97">
+   <meta name="GENERATOR" content="Mozilla/4.5 [zhtw]C-CCK-MCD   (Win98; I) [Netscape]">
+   <title>第一章 如何写一个简单的Makefile</title>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 4, 1);</SCRIPT>
+
+<A HREF="makefile-ch1.html">第一章</A>
+<HR>
+
+<center><font face="华康POP1体W7"><font size=+3>第二章 巨集(Macros)</font></font></center>
+
+<dir>
+<center><font face="华康细圆体"><font size=-1>文法规则(Syntax Rules)</font></font></center>
+</dir>
+
+<center><font face="华康细圆体"><font size=-1>定义在make内部的巨集(Internally
+Defined Macros)</font></font>
+<p><font face="华康细圆体"><font size=-1>在命令列上定义的巨集(Macros Defined
+on the Command Line)</font></font>
+<p><font face="华康细圆体"><font size=-1>Shell变数 (Shell Variable)</font></font>
+<p><font face="华康细圆体"><font size=-1>指派巨集的优先顺序(Priority of
+Macro Assignments)</font></font>
+<p><font face="华康细圆体"><font size=-1>把环境变数当作内定值(Relying on
+Environment Variable for Defaults)</font></font>
+<p><font face="华康细圆体"><font size=-1>巨集字串的代换(Macro String Substitution)</font></font>
+<p><font face="华康细圆体"><font size=-1>给必备档案与目标所用的内部巨集(Internal
+Macros for Prerequisites and Targets)</font></font></center>
+
+<p><font face="华康细圆体">前一章的描述档仍然稍嫌繁琐,因为里头包含了一些重复的内容.
+你能够很容易的想像,在真实的专案(project)中,目标(targets)都会根据许多的档案来建立,而且很可能会以各个不同的观点来建造,因此大量的重复内容是无法避免的.
+但是大多数实际的描述档都十分简洁</font>□<font face="华康细圆体">大概只有10~50行.
+会造成这些档案如此简洁的可能原因在於make中两个十分有用的特徵: 巨集(macro)与後置规则(suffix
+rule). 我们在本章讨论巨集,而在第三章讨论後置规则.</font>
+<p><font face="华康细圆体">在描述档中的项目(entry),如果有以下形式</font>
+<p><b><i><font face="MS Gothic">name = text string</font></i></b>
+<p><font face="华康细圆体">就是巨集的定义. 接下来的描述档内容,如果使用了</font>
+<p><font face="MS Gothic"><b><i>$(name)</i></b> 或是 <b><i>${name}</i></b></font>
+<p><font face="华康细圆体">就会被翻译成 <b><i>text string</i></b></font>
+<p><font face="华康细圆体">所以下列这些□例都是有效的巨集定义</font>
+<p><b><i><font face="MS Gothic">LIBES = -lX11</font></i></b>
+<p><b><i><font face="MS Gothic">objs = draw.o plot_points.o root_data.o</font></i></b>
+<p><b><i><font face="MS Gothic">CC = /usr/fred/bin/cc</font></i></b>
+<p><b><i><font face="MS Gothic">23 = </font>“<font face="MS Gothic">This
+is the (23)rd run</font>”</i></b>
+<p><b><i><font face="MS Gothic">OPT =</font></i></b>
+<p><b><i><font face="MS Gothic">DEBUG_FLAG = #empty now, bug assign </font>□<font face="MS Gothic">g
+for debugging</font></i></b>
+<p><b><i><font face="MS Gothic">BINDIR = /usr/local/bin</font></i></b>
+<p><font face="华康细圆体">在同一个档案若是定义了上述的巨集,则稍後的内容中如果看起来像是下面这样:</font>
+<p><b><i><font face="MS Gothic">plot : ${objs}</font></i></b>
+<p><b><i><font face="MS Gothic">${CC} </font>□<font face="MS Gothic">o
+plot ${DEBUG_FLAG} ${objs} ${LIBES}</font></i></b>
+<p><b><i><font face="MS Gothic">mv plot ${BINDIR}</font></i></b>
+<p><font face="华康细圆体">当你下了指令</font>
+<p><b><i><font face="MS Gothic">make plot</font></i></b>
+<p><font face="华康细圆体">之後,上面的内容会被翻译成</font>
+<p><b><i><font face="MS Gothic">/usr/fred/bin/cc </font>□<font face="MS Gothic">o
+plot draw.o plot_points.o root_data.o -lX11</font></i></b>
+<p><b><i><font face="MS Gothic">mv plot /usr/local/bin</font></i></b>
+<p><font face="华康细圆体">来执行.</font>
+<p><font face="华康细圆体">这个简短的□例显示了我们使用巨集的主要理由.
+第一,你可以方便的引用一再重复出现於描述档里头的各种档案(如<b><i>${objs}</i></b>)或是指令项目(如<b><i>${CC}</i></b>).
+在这个□例中,当我们要建造plot这个项目时,<b><i>objs</i></b>引用了目的档,而<b><i>LIBES</i></b>引用了函式库目录.
+巨集使得我们在修改描述档时,可以很容易地避免不一致的情况发生,例如如果我们引用了两次<b><i>CC</i></b>这个巨集,当我们有一天想用gcc时,我们只要修改<b><i>CC</i></b>的定义,就可以同时修改两个地方,但是如果没有使用巨集,就必须修改两次,当引用次数很多时,就十分可能出现错误,而产生不一致的情形.
+第二,巨集可以允许这次建造时的定义跟下次建造时的定义不一样,例如<b><i>DEBUG_FLAG</i></b>控制了编译器是否要产生符号资讯(symbolic
+information)给除错器(debugger)使用,我们要除错时,只要将<b><i>DEBUG_FLAG</i></b>变成
+</font><b><i>□<font face="华康细圆体">g</font></i>即可,而一般要产生发行版本(release)时,就将<i>DEBUG_FLAG</i>变成空巨集,什麽也没有定义就可以了.
+在巨集中定义目录是司空见惯的事,像是□例中定义的<i>BINDIR</i>,就是就是为了避免重复,并且在建造时便於修改而定义的巨集.</b>
+<p><font face="华康POP1体W7"><font size=+1>文法规则</font>(Syntax Rules)</font>
+<p><font face="华康细圆体">在一行巨集定义中包含了一个等号. make把等号左边的名称(name,通常是一大串文字与数字的组合)和等号右边的一大串字元关连起来.
+你不必使用单引号或是双引号来限定这一大串字元的□围. 如果你使用引号来限定字串的□围,就像前面的<b><i>23</i></b>这个巨集定义,那麽引号会被当作是字串的一部份,这一点与C/C++的用法略有差距,请使用者注意.</font>
+<p><font face="华康细圆体">在一个描述档里头的任何一行中,井字号(#)代表一个巨集定义结束,而且开始注解的部份.
+有时候巨集本身(name)与其定义都相当长,你可以在行末使用一个倒斜线(\)来代表这一行尚未结束,并且和下一行是连续的.
+为了保证make可以分辨巨集定义和指令(command)或依附关系列(dependency line)的差别,在巨集名称(name)前不允许有tab字元,并且在等号前也不能有冒号(:).</font>
+<p><font face="华康细圆体">因为在使用make时,每个字串(string)的最终目的都是用在shell指令(shell
+command)上,空白(white space)的处理相当随便(casually). 紧接在等号左边或是右边的空白或是tab字元都会被去除.
+当你使用倒斜线(\)要延续一行到下一行时,make会自动把这个倒斜线以空白取代之,所有在倒斜线周围的空白,tab字元,换行字元(new
+lines),最後都会被简化成单一的空白. 除了在倒斜线或是等号这些特出的地方以外,make会保留内嵌在字串里头的所有空白和tab字元.</font>
+<p><font face="华康细圆体">巨集名称(macro name,上面我们都简写成name)如果根据传统的话,里头的英文字母都是大写.但是就如同前面的□例一样,你仍然可以使用你喜欢的大小写字母,数字,或是底线来组合成你想要的巨集名称.
+如果你要使用其他的标点符号,有时候可以正常运作(也就是有些符号的使用会发生错误),但是我们建议你避免使用他们.
+很难去预测哪些符号会使make产生文法剖析错误(parse error). 但是特别要避免使用构成shell提示符号的字元(shell
+metacharacter),例如 <b><i>></i></b> 或是 <b><i>\</i></b>.</font>
+<p><font face="华康细圆体">当你引用了巨集</font>□<font face="华康细圆体">也就是说,你想要make把这个巨集名称(name)取代成巨集定义里头等号的右半部(text
+string)</font>□<font face="华康细圆体">你必须将巨集名称用小括号(<b><i>()</i></b>)或是大括号(<b><i>{}</i></b>)涵括起来,然後在前面加上钱字号(<b><i>$</i></b>).
+在本书中,我们使用大括号,因为在函式库关系(relation to libraries)中有另外的意义(这个主题我们会在第三章
+後置规则(suffix rule) 中讨论).</font>
+<p><font face="华康细圆体">单独一个字元的巨集名称不需要用小括号或是大括号括起来,但是使用括号把巨集名称括起来是个好习惯.
+假设有下面这个巨集定义,</font>
+<dir><b><i><font face="MS Gothic">A = XYZ</font></i></b></dir>
+<font face="华康细圆体">我们要引用时,使用 <b><i>$A</i></b> , <b><i>$(A)</i></b>
+, <b><i>${A}</i></b> 所得到的结果都相同.</font>
+<p><font face="华康细圆体">在巨集定义中引用巨集名称也是允许的,例如:</font>
+<p><b><i><font face="MS Gothic">ABC =XYZ</font></i></b>
+<p><b><i><font face="MS Gothic">FILE = TEXT.${ABC}</font></i></b>
+<p><font face="华康细圆体">如果我们使用<b><i>${FILE}</i></b>最後就会以<b><i>TEXT.XYZ</i></b>取代</font>
+<p><font face="华康细圆体">一个在等号右边没有字串的巨集定义(像是<b><i>OPT</i></b>和<b><i>DEBUG_FLAG</i></b>),就是被指派了空字串(null
+string),因此,在前面的□例中,cc这个指令在执行时,<b><i>${DEBUG_FLAG}</i></b>就会以</font>”<font face="华康细圆体">什麽都没有</font>”<font face="华康细圆体">来取代,好像<b><i>${DEBUG_FLAG}</i></b>没有在那里一样.</font>
+<p><font face="华康细圆体">此外,如果你引用了一个巨集名称,但是却没有定义它,make会把它以空字串来取代.
+因此,引用未定义的巨集名称不会得到任何错误讯息.</font>
+<p><font face="华康细圆体">你不必担心巨集定义的顺序,这使得巢状定义(nest
+definition)变得很简单就可以做到(虽然一旦你定义了递回式巨集(recursive macro),make可以正确的离开然後向你抱怨;<b>也就是说,就算你定义了无法结束的递回式巨集,make仍然有办法离开这个巨集,而不会停留在无法结束的巨集之中</b>):</font>
+<dir><b><i><font face="MS Gothic">SOURCE = ${MY_SRC} ${SHARED_SRC}</font></i></b>
+<p><b><i><font face="MS Gothic">MY_SRC = parse.c search_file.c</font></i></b>
+<p><b><i><font face="MS Gothic">SHARED_DIR = /users/b_proj/src</font></i></b>
+<p><b><i><font face="MS Gothic">SHARED_SRC = ${SHARED_DIR}/depend.c</font></i></b></dir>
+<font face="华康细圆体">不管上面的巨集定义是以什麽样的顺续排列,<b><i>${SOURCE}</i></b>最後都会以</font>
+<p><b><i><font face="MS Gothic">parse.c search_file.c /users/b_proj/depend.c</font></i></b>
+<p><font face="华康细圆体">取代之.(但是这里有一个限制:巨集定义必须出现在任何一个依附关系列(dependency
+line)出现其巨集名称之前.) 这种顺序上的自由也隐含了一个限制,就是你不能在描述档里头的一处定义一个巨集,然後在描述档的某一处再重新定义它.
+make会使用最新的定义来取代所有引用到此巨集的地方,不管巨集的引用出现在最新的巨集定义之前或是最新的巨集定义之後(<b>也就是离档案开头越远的巨集定义就会被当成每一个引用此巨集时所参考的定义,不管你重新定义了多少次</b>).
+如果你想要动态地重新定义巨集,你必须递回式地叫用make,这是一个我们会在第五章
+专案管理(Project Management)里头会讨论到的主题.</font>
+<p><font face="华康POP1体W7"><font size=+1>定义在make内部的巨集</font>(Internally
+Defined Macros)</font>
+<p><font face="华康细圆体">make已经用巨集定义的方式,事先定义了许多公用的命令.
+例如<b><i>${CC}</i></b>这个巨集被make用来代表C的编译器,而${LD}这个巨集则被用来代表连结器(linker).
+这些事先定义的巨集,它们的优点在於使用了我们在第三章才会提到的後置规则(suffix
+rule). 但是如果你了解後置规则,当你看到下面的描述档内容时,你就可以很容易地了解:</font>
+<dir><b><i><font face="MS Gothic">basic.o : basic.c</font></i></b></dir>
+<b><i><font face="MS Gothic">${CC} </font>□<font face="MS Gothic">c basic.c</font></i></b>
+<p><font face="华康细圆体">上面这两行产生的效果相当於</font>
+<p><b><i><font face="MS Gothic">basic.o : basic.c</font></i></b>
+<p><b><i><font face="MS Gothic">CC </font>□<font face="MS Gothic">c basic.c</font></i></b>
+<p><font face="华康细圆体">如果你回过头去看本章的第一个□例,你就会发现重新定义了<b><i>CC</i></b>,所以使得<b><i>CC</i></b>这个巨集名称的内容变成<b><i>/usr/fred/bin/cc</i></b>.
+你会在多变(volatile)的发展环境里头的巨集中,常常发现这一种巨集使用方法,一般所使用的工具像是C编译器,在这种环境底下,都被彻底地换掉了.
+所以很可能<b><i>/usr/fred/bin/cc</i></b>是某个人自己个人特有的编译器,而不再是原来的<b><i>cc</i></b>这个C编译器了.
+虽然大多数的程式设计师都不必担心他们的编译器的稳定度,这个例子展示了你要如何使用make里头的巨集功能来支援身处更种不同条件下的人所做的工作.</font>
+<p><font face="华康细圆体">对每一个make里头的指令来说,它们都以巨集的形式来定义,但是还有另外一些巨集被用来定义命令(command)的选项(option).
+程式设计师一般把他们用在C编译器里头的选项储存在<b><i>CFLAGS</i></b>这个巨集名称里头,<b><i>ld</i></b>(连结器)的选项储存在<b><i>LDFLAG</i></b>里头,还有其他林林总总.
+这些都会在第三章 後置规则(suffix rule)里头被讨论到,因为它们跟後置规则比较有关</font>
+<p><font face="华康细圆体">第三章也会提到利用<b><i>-p</i></b>这个选项来显示出所有定义在make内部的巨集.</font>
+<p><font face="华康POP1体W7"><font size=+1>在命令列上定义的巨集</font>(Macros
+Defined on the Command Line)</font>
+<p><font face="华康细圆体">你可以在命令列上使用make的同时也定义巨集. 下面就是一个例子:</font>
+<p><b><i><font face="MS Gothic">$make jgref DIR=/usr/obj</font></i></b>
+<p><font face="华康细圆体">上面这个命令把字串<b><i>/usr/obj</i></b>指派给<b><i>DIR</i></b>这个巨集名称;在描述档里头我们就可以透过<b><i>${DIR}</i></b>来取用<b><i>/usr/obj</i></b>这个字串.我们常常会发现我们要建造的程式(也就是目标(target))会出现在巨集定义之前,例如上面的例子,目标<b><i>jgref</i></b>就在巨集定义<b><i>DIR</i></b>
+之前,但是顺序上的先後跟所得到的结果是完全没有关系的. 这是因为等号(=)使得命令列上的参数被当做是巨集定义,也因此就符合前面所说的</font>□<font face="华康细圆体">各个巨集定义在描述档中出现的顺序跟结果完全无关.</font>
+<p><font face="华康细圆体">如果在命令列上的巨集定义包含了许多的文字,请把它们用单引号或是双引号括起来.
+这纯粹只是shell语法上的问题,这些引号保证shell会将这些巨集定义当做是同一个参数传给make(在命令列上,以空白间隔的每个字都会被当成独立的参数,除非把这些字用引号括起来,否则就会被shell解译成单一的参数).</font>
+<p><font face="华康细圆体">例如:</font>
+<p><b><i><font face="MS Gothic">$make jgref </font>“<font face="MS Gothic">DIR=/usr/proj
+/usr/lib /usr/proj/lib</font>”</i></b>
+<p><font face="华康细圆体">最後我们要讲到在Bourne shell与Korn shell之中,你可以把巨集定义放在<b><i>make</i></b>命令之前:</font>
+<p><b><i><font face="MS Gothic">$DIR=/usr/proj make jgref</font></i></b>
+<p><font face="华康细圆体">这个顺序上的不同,一但遇到定义有相冲突时,在采用定义时的优先顺序上会有微小的差别.
+我们在本章的後面会讨论这个次序上的问题.</font>
+<p><font face="华康POP1体W7"><font size=+1>Shell变数</font>(Shell Variable)</font>
+<p><font face="华康细圆体">当你使用<b><i>make</i></b>命令时,shell变数(shell
+variable)也是执行环境的一部份,因此在描述档里头,可以把这些shell变数拿来当做巨集使用.
+但是在引用它们之前,如果这些shell变数的名称多於一个字元的话,就必须使用小括号或是大括号将它们括起来(就如同本章前面部份所说的一样).
+因此,如果你在使用<b><i>make</i></b>之前就先定义了变数给shell:</font>
+<p><b><i><font face="MS Gothic">$DIR=/usr/proj ; export DIR</font></i></b>
+<p><b><i><font face="MS Gothic">$make jgref</font></i></b>
+<p><font face="华康细圆体">然後你可以在描述档里面用<b><i>DIR</i></b>这个shell变数,就好像把<b><i>DIR</i></b>当做巨集名称一样:</font>
+<p><b><i><font face="MS Gothic">SRC = ${DIR}/src</font></i></b>
+<p><b><i><font face="MS Gothic">jgref :</font></i></b>
+<p><b><i><font face="MS Gothic">cd ${DIR}; </font>…</i></b>
+<p><font face="华康细圆体">上面的命令在Bourne shell和Korn shell之中都可以正常地运作,但是C
+shell的使用者如果要增加shell变数给你所在的环境,就必须使用<b><i>setenv</i></b>这个指令:</font>
+<p><b><i><font face="MS Gothic">$setenv DIR /usr/proj</font></i></b>
+<p><font face="华康细圆体">所以,藉由上述定义shell变数的方法(注:shell变数也可以叫做环境变数(environment
+variable)),任何你在.profile或是.login或是用任何其他方法所定义的shell变数,都可以在描述档里头以巨集的方式来使用它们.</font>
+<p><font face="华康细圆体">记住这些</font>”<font face="华康细圆体">使用方法跟巨集相同的环境变数</font>”<font face="华康细圆体">和我们在第四章
+命令(command)的最後所讨论到在使用的可能性上有限的</font>”<font face="华康细圆体">被动态指派的shell变数</font>”<font face="华康细圆体">两者之间的差别.
+後面这种环境变数在使用时必须用到两个钱字号($$),它可以不需要用小括号或是大括号括起来,而且只要经过换行符号(\n),这个环境变数就无效了.</font>
+<p><font face="华康POP1体W7"><font size=+1>指派巨集的优先顺序</font>(Priority
+of Macro Assignments)</font>
+<p><font face="华康细圆体">我们已经看过不少在描述档里头所引用之巨集的来源:利用目前的环境变数,在命令列上直接定义巨集,或是make里头内定(default)的定义,还有在描述档里头定义,使得我们可以在描述档里头引用利用这些方法所定义的巨集.
+如果以不同方式定义的巨集互相有冲突时(也就是不同的来源定义了相同的巨集名称),make会采用哪个定义呢?
+比如说,如果在描述档里头就定义了<b><i>DIR</i></b>,其内容为<b><i>/usr/proj</i></b>,但是在目前的环境变数中,也有一个叫做<b><i>DIR</i></b>的环境变数,其内容为<b><i>/usr/proj/lib</i></b>,那麽make会采用哪一个定义呢?
+下面就是优先权的顺序,从优先权最小到优先权最大:</font>
+<p><b><font face="华康细圆体">1.make内部的(default,内定的)已有的定义.</font></b>
+<p><b><font face="华康细圆体">2.目前的环境变数. 在Korn shell和Bourne shell里头,如果把巨集定义在<i>make</i>指令之前的话,此巨集相当於环境变数.</font></b>
+<p><b><font face="华康细圆体">3.在描述档里头的巨集定义.</font></b>
+<p><b><font face="华康细圆体">4.在使用<i>make</i>指令时,所定义的巨集,但是是位於<i>make</i>指令之後,相较於第2项,虽然同样都是在</font></b><font face="华康细圆体">命令列上,但是因为顺序上的差异引发了微小的不同.</font>
+<p><font face="华康细圆体">所以我们可以知道,描述档里头的定义最终决定了使用<b><i>make</i></b>指令时要采用哪个定义.我们在描述档里头的巨集定义不会被环境变数(包括在<b><i>make</i></b>指令之前的定义)或是make内部的巨集定义所覆盖掉,但是会被你在使用<b><i>make</i></b>指令时所定义(在<b><i>make</i></b>指令之後)的巨集覆盖.</font>
+<p><font face="华康细圆体">优先权最低的环境变数有时候是我们所需要的,因为专案发展小组有时候会希望不同成员所使用的发展环境一致.
+在一些情况下,你也会希望环境变数的内容去覆盖掉描述档里头的定义,举例来说,你可能会希望把专案里头内定的巨集定义置换成你自己的巨集定义,而且你必须一直不断地执行<b><i>make</i></b>.
+最简单的解决方法就是在你的环境变数里头定义巨集,然後强制这些环境变数去覆盖描述档里头的巨集定义.
+在使用<b><i>make</i></b>时加上 </font><b><i>□<font face="华康细圆体">e</font></i>
+这个选项,这样一来,就会把不同来源之巨集定义的优先权变成下面的顺序,由最低到最高:</b>
+<p><b>1.make内部的(default,内定的)已有的定义.</b>
+<p><b>2.在描述档里头的巨集定义.</b>
+<p><b>3.目前的环境变数. 在Korn shell和Bourne shell里头,如果把巨集定义在<i>make</i>指令之前的话,此巨集相当於环境变数.</b>
+<p><b>4.在使用<i>make</i>指令时,所定义的巨集,但是是位於<i>make</i>指令之後,相较於第2项,虽然同样都是在</b>
+<p><b>这里有一个□例,在描述档里头有下列这个项目:</b>
+<p><b><i><font face="MS Gothic">TESTER = default_test</font></i></b>
+<p><b><i><font face="MS Gothic">test : srcfile.c</font></i></b>
+<p><b><i><font face="MS Gothic">${TESTER} srcfile.c</font></i></b>
+<p><font face="华康细圆体">当你定义了<b><i>TESTER</i></b>这个环境变数:</font>
+<p><b><i><font face="MS Gothic">$TESTER=new_test</font></i></b>
+<p><b><i><font face="MS Gothic">$export TESTER</font></i></b>
+<p><font face="华康细圆体">则下面的指令会忽略掉你在环境变数中的定义,而采用在描述档里头的定义:</font>
+<p><b><i><font face="MS Gothic">$make test</font></i></b>
+<p><b><i><font face="MS Gothic">default_ srcfile.c</font></i></b>
+<p><font face="华康细圆体">但是下面的指令会使用你在环境变数里头的定义,而忽略掉在描述档里头的定义:</font>
+<p><b><i><font face="MS Gothic">$make </font>□<font face="MS Gothic">e
+test</font></i></b>
+<p><b><i><font face="MS Gothic">new_test srcfile.c</font></i></b>
+<p><font face="华康POP1体W7"><font size=+1>把环境变数当作内定值</font>(Relying
+on Environment Variable for Defaults)</font>
+<p><font face="华康细圆体">环境变数传统上被用来处理系统之间或是使用者之间的差异（而且很可能被过度的使用）.
+举例来说,如果一个软体贩售者或是系统管理者希望软体工具被安装在<b><i>/usr/local</i></b>这个目录之下,而其他人却比较喜欢把软体工具安装在<b><i>/usr/share</i></b>这个目录之下,安装这些软体工具所用的工具,藉由在路径名称(pathname)里头安插一个变数,然後告诉使用者为他们的所使用的系统适当地定义这个变数,就可以满足他们各自的喜好.</font>
+<p><font face="华康细圆体">既然make把环境变数当成是巨集来看待,当你在建造你的程式时,你就可以使用相同的技巧.很多人当他们必须执行递回式make(recursive
+make)的时候很喜欢使用环境变数,就如同在第五章 专案管理(project management)里头所看到的一样.
+使用环境变数比起在每次呼叫<b><i>make</i></b>时在命令列上定义巨集以传递给make还要来的方便多了.</font>
+<p><font face="华康细圆体">这里有一些□例巨集和一个从描述档里面摘录下来的项目,它们都广泛地使用环境变数.
+□例中假设你将你的个人工具放在每个系统里头一个叫做<b><i>tool</i></b>的目录之中.
+在这个□例里头有个实际上并不存在的特殊的工具叫做<b><i>filter</i></b>.</font>
+<p><b><i><font face="MS Gothic">TOOL_DIR = ${PROJECT_TREE}/tool</font></i></b>
+<p><b><i><font face="MS Gothic">FILTER = ${TOOL_DIR}/filter</font></i></b>
+<p><b><i><font face="MS Gothic">source_stream:</font></i></b>
+<p><b><i><font face="MS Gothic">cat *.c | ${FILTER} </font>…</i></b>
+<p><font face="华康细圆体">这个□例可以保持独立性的关键在於在这个档案里头的每样东西都把<b><i>PROJECT_TREE</i></b>当作是根目录(root
+directory)但是档案里头没有任何一处定义了<b><i>PROJECT_TREE</i></b>, 定义<b><i>PROJECT_TREE</i></b>这件事必须由每个使用者来做.
+因此,如果你的系统中<b><i>tool</i></b>目录位於<b><i>/usr/local</i></b>,使用者就在他们的<b><i>.profile</i></b>(使用Bourne
+shell或Korn shell时)这个档案中加入下面这行:</font>
+<p><b><i><font face="MS Gothic">PROJECT_TREE=/usr/local ; export PROJECT_TREE</font></i></b>
+<p><font face="华康细圆体">或者是在他们的<b><i>.cshrc</i></b>（使用C shell时）这个档案中加入下面这行:</font>
+<p><b><i><font face="MS Gothic">setenv PROJECT_TREE /usr/local</font></i></b>
+<p><font face="华康细圆体">这个定义就会在整个描述档里头使用,因此TOOL_DIR与FILTER就可以设定成适当於此系统的值,最後我们使用:</font>
+<p><b><i><font face="MS Gothic">make source_stream</font></i></b>
+<p><font face="华康细圆体">这个指令後,就会产生正确的指令:</font>
+<p><b><i><font face="MS Gothic">cat *.c | /usr/local/tool/filter</font></i></b>
+<p><font face="华康细圆体">如果你把<b><i>PROJECT_TREE</i></b>定义在描述档里头,对於其他<b><i>tool</i></b>目录不是放在<b><i>/usr/local</i></b>目录底下的人就会造成很大的不便.
+这些人为了覆盖掉在描述档里头的巨集定义,就必须在定义环境变数後在<b><i>make</i></b>命令後头加上
+</font><b><i>□<font face="华康细圆体">e</font></i> 这个选项,或是呼叫<i>make</i>命令以後在命令列上定义<i>PROJECT_TREE</i>,这些都是较不方便的作法.</b>
+<p><b>我们可以发现,把<i>PROJECT_TREE</i>留著先不要定义会比较具有弹性</b>□<font face="华康细圆体">只要使用者确定他们定义了这个环境变数.
+如果他们没有定义这个环境变数会发生什麽事呢? 会出现一些麻烦,这就是环境变数最大的缺点.
+在上面的□例之中,如果我们没有定义<b><i>PROJECT_TREE</i></b>,当我们在描述档里头引用到这个巨集时,就会被空字串(null
+string)所取代. 因此当我们下指令:</font>
+<p><b><i><font face="MS Gothic">make source_stream</font></i></b>
+<p><font face="华康细圆体">时,就会产生指令:</font>
+<p><b><i><font face="MS Gothic">cat *.c | /tool/filter</font></i></b>
+<p><font face="华康细圆体">然而<b><i>/tool/filter</i></b>这个软体工具并不存在於这个位置上,所以这行指令就会出错.
+使用者很可能根本不知道究竟哪里出了错,所以很多同一个团队里的人会浪费很多时间就为了抓出造成这个问题的原因,而造成这个问题的主因却又是如此简单.</font>
+<p><font face="华康细圆体">顺道一提,就是如果你把下面这一行放在描述档里头,它不代表<b><i>PROJECT_TREE</i></b>是未定义的巨集.</font>
+<p><b><i><font face="MS Gothic">PORJECT_TREE =</font></i></b>
+<p><font face="华康细圆体">上面这行把<b><i>PROJECT_TREE</i></b>定义成空字串,如果你在环境变数中也定义了<b><i>PROJECT_TREE</i></b>,那麽这行会覆盖掉你在环境变数中的定义.</font>
+<p><font face="华康细圆体">也许你想要做的只是设定一个符合大多数使用者的内定（default）巨集定义,而且使用者需要时也可以很容易地更改成他们所希望的定义.
+也就是说,如果大多数系统上的根(root)是/usr/local,你可以采用这个定义,而使用者不必去担心这个定义的内容.
+但是到了其他的系统上,而根的位置又不相同时,使用者可以在<b><i>.profile</i></b>或是<b><i>.cshrc</i></b>里头设定环境变数,而你的描述档可以顾及这件事.</font>
+<p><font face="华康细圆体">很令人惊讶的是,你在make里头无法做到上述这件事.
+你可以不定义一个巨集,或者你可以定义一个巨集然後让它很难被修改. 如果真的要实作出可以支援内定（default）观念的描述档,你要跳开make然後改成使用shell命令稿(shell
+script).</font>
+<p><font face="华康细圆体">一个符合上述功能的shell命令稿</font>□<font face="华康细圆体">通常叫做包装者(wrapper)</font>□<font face="华康细圆体">就如同下面所看到的一样,这个命令稿会去确认使用者是否定义了<b><i>PROJECT_TREE</i></b>这个环境变数.
+如果定义了,就保留原先使用者的定义,如果没有,就使用你内定的定义. 最後一行呼叫<b><i>make</i></b>指令,把所有命令列上的参数传递给它.</font>
+<p><b><i><font face="MS Gothic">If</font></i></b>
+<p><b><i><font face="MS Gothic">test </font>□<font face="MS Gothic">z
+</font>“<font face="MS Gothic">$PROJECT_TREE</font>”</i></b>
+<p><b><i><font face="MS Gothic">then</font></i></b>
+<p><b><i><font face="MS Gothic">PROJECT_TREE=/usr/local ; export PROJECT_TREE</font></i></b>
+<p><b><i><font face="MS Gothic">fi</font></i></b>
+<p><b><i><font face="MS Gothic">make $*</font></i></b>
+<p><font face="华康细圆体">现在你必须训练你的使用者来使用这个命令稿而不是使用<b><i>make</i></b>指令.
+举例来说,如果这个命令稿叫做<b><i>make_local</i></b>,他们要建造目标时必须下的指令为:</font>
+<p><b><i><font face="MS Gothic">$make_local source_stream</font></i></b>
+<p><font face="华康细圆体">上面的程序整体看起来非常的拐弯抹角,但是几乎可以正常地运作.
+最可能会让人疑惑地方在於复杂的命令参数;例如,参数中的引号会被截掉,最後<b><i>make</i></b>指令并不会看到引号.
+也就是说,上述的命令跟下面这个指令:</font>
+<p><b><i><font face="MS Gothic">$make_local </font>“<font face="MS Gothic">source_stream</font>”</i></b>
+<p><font face="华康细圆体">会产生相同的结果.</font>
+<p><font face="华康细圆体">如同环境变数,你要把使用包装者命令稿（wrapper
+script）作为最後手段,不到必要的时候绝对不去使用,因为在解决了就问题後,他们常常会带来新的问题.
+举例来说,有一个公用程式你不能在这一节里头的□例给予定位(locate)</font>□<font face="华康细圆体">就是make_local这个命令稿本身</font>
+<p><font face="华康POP1体W7"><font size=+1>巨集字串的代换</font>(Macro
+String Substitution)</font>
+<p><font face="华康细圆体">(这个功能并不是每一种版本的make都会提供;请参阅附录C,可以找到方法来检查你的make是否提供此功能)</font>
+<p><font face="华康细圆体">假设你定义了一个巨集:</font>
+<p><b><i><font face="MS Gothic">SRCS = defs.c redraw.c calc.c</font></i></b>
+<p><font face="华康细圆体">然後在描述档里头有下面这一行指令:</font>
+<p><b><i><font face="MS Gothic">ls ${SRCS:.c=.o}</font></i></b>
+<p><font face="华康细圆体">如果指令要求列出的档案存在的话,就在萤幕上会产生的结果如下;</font>
+<p><b><i><font face="MS Gothic">calc.o defs.o redraw.o</font></i></b>
+<p><font face="华康细圆体">当巨集的引用使用了相当艰深的语法,这种用法所产生的效用十分简单.
+make会先使用由<b><i>${SRC}</i></b>所代换而来的字串,然後此字串中,如果含有冒号(:)之後等号(=)之前的字串(此□例中是<b><i>.c</i></b>),就用等号後面的字串(此□例中是<b><i>.o</i></b>)来取代.
+这种功能使得我们可以轻易的维护许多群只有档案名称<b>结尾</b>不同的档案.
+比如说:</font>
+<p><b><i><font face="MS Gothic">SRCS = defs.c redraw.c calc.c</font></i></b>
+<dir><b><i><font face="MS Gothic">FINAL_OBJS = ${SRC:.c=.o}</font></i></b>
+<p><b><i><font face="MS Gothic">DEBUG_OBJS = ${SRC:.c=_dbg.o}</font></i></b></dir>
+<font face="华康细圆体">上面这个例子,我们可以很容易的维护三种不同档名结尾的九个档案.一旦你增加或是移除了新的档案,你只要在<b><i>SRC</i></b>的定义中增加或删除部分内容就可以同时维护这三种只有档名结尾不同的档案.所以<b><i>${FINAL_OBJS}</i></b>最後会变成</font>
+<p><b><i><font face="MS Gothic">defs.o redraw.o calc.o</font></i></b>
+<p><font face="华康细圆体">而<b><i>${DEBUG_OBJS}</i></b>会变成</font>
+<p><b><i><font face="MS Gothic">defs_dbg.o redraw_dbg.o calc_dbg.o</font></i></b>
+<p><font face="华康细圆体">如果你想要完全由那些档名结尾为 <b><i>_dbg.o</i></b>
+的档案来建造你的可执行档,你可以在描述档里头加上下面的项目:</font>
+<p><b><i><font face="MS Gothic">plot_debug: ${DEBUG_OBJS}</font></i></b>
+<p><b><i><font face="MS Gothic">${CC} </font>□<font face="MS Gothic">o
+plot_debug ${DEBUG_OBJS}</font></i></b>
+<p><font face="华康细圆体">字串的取代有十分严格的限制;只能在一个巨集内容的结尾或是刚好在空白之前.所以,如果我们像下面这种做法:</font>
+<p><b><i><font face="MS Gothic">LETTERS =xyz xyzabc abcxyz</font></i></b>
+<p><b><i>…</i></b>
+<p><b><i><font face="MS Gothic">echo ${LETTERS:xyz=DEF}</font></i></b>
+<p><font face="华康细圆体">就只会在萤幕里输出:</font>
+<p><b><i><font face="MS Gothic">DEF xyzabc abcDEF</font></i></b>
+<p><font face="华康细圆体">我们可以发现第二个字串并不在空白之前,所以没有被取代掉,而最後一个<b><i>xyz</i></b>是巨集内容的结尾,所以被取代了</font>…<font face="华康细圆体">这个结果完全符合我们上面所提到的限制.</font>
+<p><font face="华康细圆体">在使用巨集字串的代换功能时,等号右边的字串可以是空字串(null
+string),而等号右边的字串不可以是空字串,举例来说:</font>
+<p><b><i><font face="MS Gothic">SOURCES = src1.c src2.c glob.c</font></i></b>
+<p><b><i><font face="MS Gothic">EXECS = ${SOURCES:.c=}</font></i></b>
+<p><font face="华康细圆体">所以最後<b><i>${EXECS}</i></b>会被</font>
+<p><b><i><font face="MS Gothic">src1 src2 glob</font></i></b>
+<p><font face="华康细圆体">所取代.</font>
+<p><font face="华康细圆体">在其他种版本的make里头,还有其他种更具威力的巨集字串取代方法可以使用,但是每一种版本的差异性都非常大,因此请多参阅你所使用make版本的说明文件.</font>
+<p><font face="华康细圆体">有很多时候,你会希望只要定义单一一个集合的指令,就可以在各种不同型态的档案上照常运作.编译.c的档案造成.o的档案是一个十分明显的例子.
+第三章 後置规则(suffix rule)中将会介绍一般在make里头所使用的解决办法.但是你还是会发现巨集和字串取代对於处理和确认字尾以外的样式(pattern)上还是十分有用的;例如这一节所提到的
+_dbg.o 这个样式就是一个很好的例子.</font>
+<p><font face="华康POP1体W7"><font size=+1>给必备档案与目标所用的内部巨集</font>(Internal
+Macros for Prerequisites and Targets)</font>
+<p><font face="华康细圆体">每一次make读进一列描述档里头的相依关系时,它会自己定义许多属於它自己的巨集.这会使得描述档的撰写较简单,而且当我们要修改或增加描述档里面的项目(entry)时也容易多了.这些一般性的巨集我们可以在附录A
+快速参阅 里面看到列表.</font>
+<p><font face="华康细圆体">当我们引用 <b><i>$@</i></b> 这个巨集时,最後会被代换成</font>”<font face="华康细圆体">目前的目标</font>”<font face="华康细圆体">,这个巨集在描述档里头相当普遍,因为目标(target)通常与你所想要建造(build)的档案有相同的名称.因此,一个用来编译出执行档的项目都用
+<b><i>@</i></b> 这个巨集来当作输出档案的名称:</font>
+<p><b><i><font face="MS Gothic">plot_prompt : basic.o prompt.o</font></i></b>
+<p><b><i><font face="MS Gothic">cc </font>□<font face="MS Gothic">o $@
+basic.o prompt.o</font></i></b>
+<p><font face="华康细圆体">当我们引用 <b><i>$?</i></b> 这个巨集时,最後会被代换成</font>”<font face="华康细圆体">一列比目前目标还要新的必备档</font>”<font face="华康细圆体">.
+举例来说,假设你有一个叫做<b><i>libops</i></b>的函式库,里面包含了三个目的档
+<b><i>interact.o sched.o gen.o</i></b> .而下面这个项目(entry)的目的就是要用比函式库还要新的目的档来重建此函式库:</font>
+<p><b><i><font face="MS Gothic">libops : interact.o sched.o gen.o</font></i></b>
+<p><b><i><font face="MS Gothic">ar r $@ $?</font></i></b>
+<p><font face="华康细圆体">当你第一次建造<b><i>libops</i></b>这个项目时,这三个模组(目的档)都会被用来建造新的函式库,因为<b><i>make</i></b>把不存在的目标当作是过期的目标(因此三个模组一定都比我们的目标来的新).</font>
+<p><b><i><font face="MS Gothic">$make libops</font></i></b>
+<p><b><i><font face="MS Gothic">ar r libops interact.o sched.o gen.o</font></i></b>
+<p><font face="华康细圆体">之後如果你重新建造了<b><i>sched.o</i></b>,则当我们要重新再建造<b><i>libops</i></b>函式库时,在此函式库中只有<b><i>sched.o</i></b>这个模组会被最新建造的<b><i>sched.o</i></b>取代:</font>
+<p><b><i><font face="MS Gothic">$cc </font>□<font face="MS Gothic">c sched.c</font></i></b>
+<p><b><i><font face="MS Gothic">$make libops</font></i></b>
+<p><b><i><font face="MS Gothic">ar r libops sched.o</font></i></b>
+<p><font face="华康细圆体">我们会在 第三章 後置规则(suffixes)里头更详细地谈到函式库.</font>
+<p><font face="华康细圆体">在描述档里面的一个单一的项目中,你可以在依附关系列里面使用多个目标和多个必备档,我们假设有下面这麽一个项目:</font>
+<p><b><i><font face="MS Gothic">new_spec new_impl : menus hash store</font></i></b>
+<p><b><i><font face="MS Gothic">date >> $@</font></i></b>
+<p><b><i><font face="MS Gothic">ls $? >> $@</font></i></b>
+<p><font face="华康细圆体">假设我们已经建造了<b><i>new_spec</i></b>与<b><i>new_impl</i></b>两个目标.如果有人在昨天修改了<b><i>menus</i></b>且重新建造<b><i>new_impl</i></b>,而今天某人修改了<b><i>store</i></b>,我们可以知道,对<b><i>new_spec</i></b>来说,<b><i>menus</i></b>和<b><i>store</i></b>都比它新,但是对<b><i>new_impl</i></b>来说,目前只有<b><i>store</i></b>比它新.因此当我们重新建造这两个目标时,会发生下面情形:</font>
+<p><b><i><font face="MS Gothic">$make new_spec</font></i></b>
+<p><b><i><font face="MS Gothic">date >> new_spec</font></i></b>
+<p><b><i><font face="MS Gothic">ls menus store >> new_spec</font></i></b>
+<p><b><i><font face="MS Gothic">$make new_impl</font></i></b>
+<p><b><i><font face="MS Gothic">date >> new_impl</font></i></b>
+<p><b><i><font face="MS Gothic">ls store >> new_impl</font></i></b>
+<p><font face="华康细圆体">另一种 <b><i>$@</i></b> 的形式是 <b><i>$$@</i></b>
+,此巨集有两个钱字号.(这个用法并非所有不同版本的make都适用;请参阅附录C来检查你的系统是否有此特徵)
+这个巨集只有在依附关系列上出现才具有意义</font>□<font face="华康细圆体">也就是说,这个巨集只有在指定必备档案时才具有意义(位於依附关系列的冒号右边).
+相较之下, <b><i>$@</i></b> 与 <b><i>$?</i></b> 只能出现在命令列上.</font>
+<p><font face="华康细圆体">其实 <b><i>$$@</i></b> 与 <b><i>$@</i></b> 都参考到相同的东西,即目前的目标名称.因为make读入并解译描述档的每一列时有一定的顺序,因此两个钱字号是必要的.如果描述档里头有下面这样的依附关系列:</font>
+<p><b><i><font face="MS Gothic">docmk : $$@.c</font></i></b>
+<p><font face="华康细圆体">则最後会被代换成</font>
+<p><b><i><font face="MS Gothic">docmk : docmk.c</font></i></b>
+<p><font face="华康细圆体">这种用法在我们建立大量其原始档只有一个档案的执行档时非常有用.举例来说,在建造UNIX系统命令(UNIX下每个命令都是一个执行档)所在的原始码目录下,常常会有类似下面内容的描述档:</font>
+<p><b><i><font face="MS Gothic">CMDS = cat dd echo date cc cmp comm ar
+ld chown</font></i></b>
+<p><b><i><font face="MS Gothic">${CMDS} : $$@.c</font></i></b>
+<p><b><i><font face="MS Gothic">${CC} </font>□<font face="MS Gothic">O
+$? </font>□<font face="MS Gothic">o $@</font></i></b>
+<p><font face="华康细圆体">当我们在命令列下指令:</font>
+<p><b><i><font face="MS Gothic">$make echo</font></i></b>
+<p><font face="华康细圆体">的时候,结果就好像我们在描述档里头有下面这个项目一样:</font>
+<p><b><i><font face="MS Gothic">echo : echo.c</font></i></b>
+<p><b><i><font face="MS Gothic">cc </font>□<font face="MS Gothic">O echo.c
+</font>□<font face="MS Gothic">o echo</font></i></b>
+<p><font face="华康细圆体">同理,如果我们在命令列上打入:</font>
+<p><b><i><font face="华康细圆体">#make cat date cmp ar</font></i></b>
+<p><font face="华康细圆体">的话,则make会依序建造每个目标,比如说,当make把<b><i>cat</i></b>当成目标名称时,
+<b><i>$$@</i></b> 就会被代换成<b><i>cat</i></b>,而当make把<b><i>date</i></b>当作目标来建造时,
+<b><i>$$@</i></b> 就会被代换成<b><i>date</i></b>,其他以此类推.</font>
+<p><font face="华康细圆体">顺道一提,当我们使用名称只有单一字元的巨集时,所使用的语法亦适用於这一节所提到的巨集名称(<b><i>@</i></b>和<b><i>?</i></b>).只要你喜欢,你可以写成
+<b><i>$(@)</i></b> 或 <b><i>${@}</i></b> 或 <b><i>$@</i></b> ,结果都相同.</font>
+<p><font face="华康细圆体">还有许多额外的内部巨集并没有在这里提到,这些内部巨集同样的可以从巨集定义中萃取出档名部分或是目录部分.你会在第三章和第五章看到这些内部巨集的应用.附录A里头有这些内部巨集的列表以及它们所能做到的变化.</font>
+<p><font face="华康细圆体">把在本章中所学到的东西全部综合起来,在第一章里头的描述档就会变得比精简,但是可读性就不高了:</font>
+<p><font face="华康细圆体">　</font>
+<p><font face="华康细圆体">　</font>
+<p><font face="华康细圆体">　</font>
+<p><b><i><font face="MS Gothic">OBJS = main.o iodat.o dorun.o io.o</font></i></b>
+<p><b><i><font face="MS Gothic">LIB = /usr/proj/lib/crtn.a</font></i></b>
+<p><b><i><font face="MS Gothic">program : ${OBJS} ${LIB}</font></i></b>
+<p><b><i><font face="MS Gothic">${CC} </font>□<font face="MS Gothic">o
+$@ ${OBJS} ${LIB}</font></i></b>
+<p><b><i><font face="MS Gothic">main.o : main.c</font></i></b>
+<p><b><i><font face="MS Gothic">${CC} </font>□<font face="MS Gothic">c
+$?</font></i></b>
+<p><b><i><font face="MS Gothic">iodat.o : iodat.c</font></i></b>
+<p><b><i><font face="MS Gothic">${CC} </font>□<font face="MS Gothic">c
+$?</font></i></b>
+<p><b><i><font face="MS Gothic">dorun.o : dorun.c</font></i></b>
+<p><b><i><font face="MS Gothic">${CC} </font>□<font face="MS Gothic">c
+$?</font></i></b>
+<p><b><i><font face="MS Gothic">lo.o : lo.s</font></i></b>
+<p><b><i><font face="MS Gothic">${AS} </font>□<font face="MS Gothic">o
+$@ $?</font></i></b>
+<p><font face="华康细圆体">你很可能会觉得编译<b><i>program</i></b>这个项目所使用的指令里头太过麻烦,应该可以用
+<b><i>$?</i></b> 这个巨集来取代 <b><i>${OBJS} ${LIB}</i></b>.但是如果我们这样做的话,会出现问题.因为
+<b><i>$?</i></b> 所表示的只是比目标档案还要新的必备档案,但是<b><i>cc</i></b>指令在建造<b><i>program</i></b>的时候,必须连结所有的目的模组才可以.也就是说,如果我们用<b><i>$?</i></b>
+这个巨集来取代 <b><i>${OBJS} ${LIB}</i></b>,万一<b><i>OBJS</i></b>与LIB里面定义的档案在第一次建造後又再度被更新了,那麽下次建造时<b><i>cc</i></b>将不能成功的连结每一个建造<b><i>program</i></b>所需要的目的模组,因为
+<b><i>$?</i></b> 只被代换成已经被更新过的目的模组而已.</font>
+<p><font face="华康细圆体">上面这个简化过的描述档里面的後面四个项目看起来还是觉得太过繁琐.而且当整个程式所需的档案日渐增多的时候,如果要在这个描述档里面增加新项目或删减项目,必须要特别小心,因此也造成了此描述档在维护上的困难.如果你使用的make版本有巨集字串代换的功能,那麽你可以用下面撰写方法让将来在描述档的维护上更简单:</font>
+<p><b><i><font face="MS Gothic">C_OBJS = main.o iodat.o dorun.o</font></i></b>
+<p><b><i><font face="MS Gothic">${C_OBJS} : $${@:.o=.c}</font></i></b>
+<p><b><i><font face="MS Gothic">${CC} </font>□<font face="MS Gothic">c
+$?</font></i></b>
+<p><font face="华康细圆体">这样一来,将来就可以十分简单地增加新的必备档案或是删除就有的必备档案.</font>
+<p><font face="华康细圆体">不过make还提供一种更明了的解决方法,可以用来解决档案集合(files
+in aggregates).在下一章中,我们将可以看到,後置规则如何完成自动化的工作,并且如何大大地减少我们撰写描述档所必须花费的功夫.</font>
+<p><font face="华康细圆体">　</font>
+<p><font face="华康细圆体">　</font>
+<br><b><font face="华康细圆体">译者:王森(moli)</font></b>
+<br><b><font face="华康细圆体">1995国立成功大学工程科学系</font></b>
+<br><b><font face="华康细圆体">1999国立交通大学科技管理研究所</font></b>
+<br><b><font face="华康细圆体">行动电话:0939278600</font></b>
+<br><b><font face="华康细圆体">如有问题,请<a href="mailto:moli@tomail.com.tw">email至moli@tomail.com.tw</a></font></b>
+<br><b><font face="华康细圆体">请大家指教..</font></b>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</html>

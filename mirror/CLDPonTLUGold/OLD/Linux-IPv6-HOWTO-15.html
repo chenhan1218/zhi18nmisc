@@ -1,0 +1,557 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="LinuxDoc-Tools 0.9.16">
+ <TITLE>Linux IPv6 HOWTO: 防火牆</TITLE>
+ <LINK HREF="Linux-IPv6-HOWTO-16.html" REL=next>
+ <LINK HREF="Linux-IPv6-HOWTO-14.html" REL=previous>
+ <LINK HREF="Linux-IPv6-HOWTO.html#toc15" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Linux-IPv6-HOWTO-16.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="Linux-IPv6-HOWTO-14.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="Linux-IPv6-HOWTO.html#toc15"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s15">15.</A> <A HREF="Linux-IPv6-HOWTO.html#toc15">防火牆</A></H2>
+
+<H2><A NAME="ss15.1">15.1</A> <A HREF="Linux-IPv6-HOWTO.html#toc15.1">使用 netfilter6防火牆</A>
+</H2>
+
+<P>netfilter6防火牆只支持2.4以上的核心.早期的2.2核心您只能用41號協議過濾IPv6-in-IPv4.</P>
+<P>警告: 按照例子那樣設定並不能真正地保護您的作業系統.</P>
+<H2><A NAME="ss15.2">15.2</A> <A HREF="Linux-IPv6-HOWTO.html#toc15.2">更多的資訊:</A>
+</H2>
+
+<P>
+<UL>
+<LI>    
+<A HREF="http://www.netfilter.org/">Netfilter project</A></LI>
+<LI>    
+<A HREF="http://lists.samba.org/pipermail/netfilter/">maillist archive of netfilter users</A>
+</LI>
+<LI>    
+<A HREF="http://lists.samba.org/pipermail/netfilter-devel/">maillist archive of netfilter developers</A></LI>
+<LI>    
+<A HREF="http://www.bieringer.de/linux/IPv6/status/IPv6+Linux-status-kernel.html#netfilter6">Unofficial status informations</A></LI>
+</UL>
+   </P>
+
+
+<H2><A NAME="ss15.3">15.3</A> <A HREF="Linux-IPv6-HOWTO.html#toc15.3">準備</A>
+</H2>
+
+<P>下載最新的核心:   <BR>
+ 
+<A HREF="http://www.kernel.org/">http://www.kernel.org/</A>   </P>
+<P> 下載最新的iptables:</P>
+<P>           tar:<BR>
+  
+<A HREF="http://www.netfilter.org/">http://www.netfilter.org/</A>  </P>
+<P>Source RPM for rebuild of binary (for RedHat systems): <BR>
+  
+<A HREF="ftp://ftp.redhat.com/redhat/linux/rawhide/SRPMS/SRPMS/">ftp://ftp.redhat.com/redhat/linux/rawhide/SRPMS/SRPMS/</A>             </P>
+
+<H3>解開源代碼</H3>
+
+<P>解開源代碼與更名
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+        # tar z|jxf kernel-version.tar.gz|bz2 
+        # mv linux linux-version-iptables-version+IPv6 
+        
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<P>解開 iptables 源代碼
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+         # tar z|jxf iptables-version.tar.gz|bz2 
+        
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<P>Apply pending patches 
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+         # make pending-patches KERNEL_DIR=/path/to/src/linux-version-iptables-version/ 
+        
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Apply additional IPv6 related patches (still not in the vanilla kernel included) 
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+         # make patch-o-matic KERNEL_DIR=/path/to/src/linux-version-iptables-version/ 
+        
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<P>在下面的選單中回答yes:
+<UL>
+<LI>ah-esp.patch </LI>
+<LI>masq-dynaddr.patch (only needed for systems with dynamic IP assigned WAN connections like PPP or PPPoE) </LI>
+<LI>ipv6-agr.patch.ipv6 </LI>
+<LI>ipv6-ports.patch.ipv6 </LI>
+<LI>LOG.patch.ipv6 </LI>
+<LI>REJECT.patch.ipv6 </LI>
+</UL>
+</P>
+<P>檢視IPv6括展:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+         # make print-extensions 
+         Extensions found: IPv6:owner IPv6:limit IPv6:mac IPv6:multiport
+        
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<H3>Configure, build and install new kernel(設定,編譯,安裝新的核心)</H3>
+
+<P>進入代碼目錄:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+        # cd /path/to/src/linux-version-iptables-version/ 
+        
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<P>改變Makefile 
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+         - EXTRAVERSION = 
+         + EXTRAVERSION = -iptables-version+IPv6-try 
+        
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<P>運行相關的設定:Run configure, enable IPv6 related 
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+         Code maturity level options 
+                  Prompt for development and/or incomplete code/drivers : yes 
+            Networking options 
+                  Network packet filtering: yes 
+                  The IPv6 protocol: module 
+                       IPv6: Netfilter Configuration 
+                             IP6 tables support: module 
+                             All new options like following: 
+                                   limit match support: module 
+                                   MAC address match support: module 
+                                   Multiple port match support: module 
+                                   Owner match support: module 
+                                   netfilter MARK match support: module 
+                                   Aggregated address check: module 
+                                   Packet filtering: module 
+                                        REJECT target support: module 
+                                        LOG target support: module 
+                                   Packet mangling: module 
+                                   MARK target support: module 
+        
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+<P>在系統的其它方面進行相應的修改.</P>
+
+<H3>Rebuild and install binaries of iptables (打造一個新的iptables)</H3>
+
+<P>確定您的核心源代碼存在於:    /usr/src/linux/ </P>
+
+<P>Rename older directory 
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+         # mv /usr/src/linux /usr/src/linux.old
+        
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+
+<P>Create a new softlink </P>
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+         # ln /path/to/src/linux-version-iptables-version /usr/src/linux 
+        
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<P>Rebuild SRPMS 
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+         # rpm --rebuild /path/to/SRPMS/iptables-version-release.src.rpm
+        
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<P> Install new iptables packages (iptables + iptables-ipv6) 安裝新的iptables
+<UL>
+<LI>On RH 7.1 systems, 通常已經有一個更早的版本, therefore use "freshen" 
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+         # rpm -Fhv /path/to/RPMS/cpu/iptables*-version-release.cpu.rpm 
+        
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</LI>
+<LI>如果沒有安裝,您就親自來吧:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+         # rpm -ihv /path/to/RPMS/cpu/iptables*-version-release.cpu.rpm 
+        
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+
+  </LI>
+<LI>如果在RH6.2上安裝,要加上"--nodep":
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+         # rpm -ihv --nodep /path/to/RPMS/cpu/iptables*-version-release.cpu.rpm 
+        
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>可能要為iptables加上一個softlink: 
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+          # ln -s /lib/iptables/ /usr/lib/iptables
+        
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</LI>
+</UL>
+</P>
+
+<H2><A NAME="ss15.4">15.4</A> <A HREF="Linux-IPv6-HOWTO.html#toc15.4">使用方法</A>
+</H2>
+
+<H3>檢視</H3>
+
+<P>將模組掛進來:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+         # modprobe ip6_tables  
+        
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+<P>檢視
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+         # [ ! -f /proc/net/ip6_tables_names ] &amp;&amp; echo "Current kernel doesn't support
+         ? 'ip6tables' firewalling (IPv6)!" 
+        
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<H2><A NAME="ss15.5">15.5</A> <A HREF="Linux-IPv6-HOWTO.html#toc15.5">使用ip6tables</A>
+ </H2>
+
+<P>  
+<BLOCKQUOTE><CODE>
+<PRE>
+16.3.2.1. List all IPv6 netfilter entries
+
+Short 
+
+# ip6tables -L 
+ 
+
+
+Extended 
+
+# ip6tables -n -v --line-numbers -L 
+ 
+
+List specified filter
+# ip6tables -n -v --line-numbers -L INPUT 
+ 
+
+ 加入一個日誌:
+# ip6tables --table filter --append INPUT  -j LOG --log-prefix "INPUT:"
+? --log-level 7 
+ 
+
+加入一個入站丟棄的條件:
+# ip6tables --table filter --append INPUT  -j DROP 
+ 
+
+移除一個條件:
+# ip6tables --table filter --delete INPUT 1 
+ 
+
+允許 ICMPv6:
+Using older kernels (unpatched kernel 2.4.5 and iptables-1.2.2) no type can be specified
+
+
+允許入站 ICMPv6 經過 tunnels 
+
+# ip6tables -A INPUT -i sit+ -p icmpv6 -j ACCEPT 
+ 
+
+
+允許出站 ICMPv6 經過 tunnels 
+# ip6tables -A OUTPUT -o sit+ -p icmpv6 -j ACCEPT 
+ 
+
+Newer kernels allow specifying of ICMPv6 types:
+
+# ip6tables -A INPUT -p icmpv6 --icmpv6-type echo-request -j ACCEPT
+ 
+
+限制Rate-limiting
+Because it can happen (author already saw it to times) that an ICMPv6 storm will raise up, you should use available rate limiting for at least ICMPv6 ruleset. In addition logging rules should also get rate limiting to prevent DoS attacks against syslog and storage of log file partition. An example for a rate limited ICMPv6 looks like:
+
+# ip6tables -A INPUT --protocol icmpv6 --icmpv6-type echo-request -j ACCEPT --match limit --limit 30/minute
+ 
+
+ 允許入站的 SSH
+Here an example is shown for a ruleset which allows incoming SSH connection from a specified IPv6 address 
+
+
+  允許來自 3ffe:ffff:100::1/128 的 SSH 入站 
+
+# ip6tables -A INPUT -i sit+ -p tcp -s 3ffe:ffff:100::1/128 --sport 512:65535
+? --dport 22 -j ACCEPT 
+ 
+
+
+允許回應包Allow response packets (此刻 IPv6 連結追蹤不在 mainstream netfilter6 implemented 當中) 
+
+# ip6tables -A OUTPUT -o sit+ -p tcp -d 3ffe:ffff:100::1/128 --dport 512:65535
+? --sport 22 ! --syn j ACCEPT 
+ 
+
+充許 tunneled IPv6-in-IPv4
+Tto accept tunneled IPv6-in-IPv4 packets, 在IPv4 防火牆做相應的設定 firewall setup relating to such packets, for example 
+
+
+充許 interface ppp0 的 IPv6-in-IPv4 入站 
+
+# iptables -A INPUT -i ppp0 -p ipv6 -j ACCEPT 
+ 
+
+
+充許 interface ppp0 的 IPv6-in-IPv4 出站 
+
+# iptables -A OUTPUT -o ppp0 -p ipv6 -j ACCEPT 
+ 
+
+If you have only a static tunnel, you can specify the IPv4 addresses, too, like 
+
+
+充許來自 endpoint 1.2.3.4 的 IPv6-in-IPv4 通過 interface ppp0 入站 
+
+# iptables -A INPUT -i ppp0 -p ipv6 -s 1.2.3.4 -j ACCEPT 
+ 
+
+
+充許來自 endpoint 1.2.3.4 的 IPv6-in-IPv4 通過 interface ppp0 入站 
+
+# iptables -A OUTPUT -o ppp0 -p ipv6 -d 1.2.3.4 -j ACCEPT 
+ 
+
+16.3.2.10. Protection against incoming TCP connection requests
+極力推薦! 出於安全考慮 您應當加入一個阻止TCP 連結請求入站的條件 . Adapt "-i" option, if other interface names are in use! 
+
+
+阻止入站的 TCP 連結請求 
+
+# ip6tables -I INPUT -i sit+ -p tcp --syn -j DROP 
+ 
+
+在路由器後面 阻止入站的 TCP 連結請求 
+
+# ip6tables -I FORWARD -i sit+ -p tcp --syn -j DROP 
+ 
+
+可能這些條件以經存在其它地方,但這是您想當然的想法.最好建一個包含很多條件的 script 然後執行. 
+
+16.3.2.11.阻止入站的 UDP 連結請求 
+
+極力推薦! 提起過我的防火牆資訊可以控制出站 UDP/TCP 會話的端口. 所以如果您的本地IPv6系統使用本地端口 比如:從 32768 至 60999 您也可以像這樣過濾UDP連結 (直到連結跟蹤正常工作) like: 
+
+
+阻止入站的 UDP 數據包 , 斬斷請求出站的回應數據包 
+
+# ip6tables -I INPUT -i sit+ -p udp ! --dport 32768:60999 -j DROP 
+ 
+
+
+在路由器上面阻止入站的 UDP 數據包轉寄到路由器後面的主機
+
+ip6tables -I FORWARD -i sit+ -p udp ! --dport 32768:60999 -j DROP 
+ 
+   
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+
+<H3>實例:</H3>
+
+<P>下面這個實例是一個經典, 由 Happy netfilter6 ruleset 生成:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# ip6tables -n -v -L 
+Chain INPUT (policy DROP 0 packets, 0 bytes) 
+ pkts bytes target     prot opt in     out     source               destination
+    0     0 extIN      all      sit+   *       ::/0                 ::/0 
+    4   384 intIN      all      eth0   *       ::/0                 ::/0 
+    0     0 ACCEPT     all      *      *       ::1/128              ::1/128 
+    0     0 ACCEPT     all      lo     *       ::/0                 ::/0 
+    0     0 LOG        all      *      *       ::/0                 ::/0       
+?        LOG flags 0 level 7 prefix `INPUT-default:' 
+    0     0 DROP       all      *      *       ::/0                 ::/0 
+ 
+Chain FORWARD (policy DROP 0 packets, 0 bytes) 
+ pkts bytes target     prot opt in     out     source               destination
+? 
+    0     0 int2ext    all      eth0   sit+    ::/0                 ::/0 
+    0     0 ext2int    all      sit+   eth0    ::/0                 ::/0 
+    0     0 LOG        all      *      *       ::/0                 ::/0       
+?        LOG flags 0 level 7 prefix `FORWARD-default:' 
+    0     0 DROP       all      *      *       ::/0                 ::/0 
+ 
+Chain OUTPUT (policy DROP 0 packets, 0 bytes) 
+ pkts bytes target     prot opt in     out     source               destination
+? 
+    0     0 extOUT     all      *      sit+    ::/0                 ::/0 
+    4   384 intOUT     all      *      eth0    ::/0                 ::/0 
+    0     0 ACCEPT     all      *      *       ::1/128              ::1/128 
+    0     0 ACCEPT     all      *      lo      ::/0                 ::/0 
+    0     0 LOG        all      *      *       ::/0                 ::/0       
+?        LOG flags 0 level 7 prefix `OUTPUT-default:' 
+    0     0 DROP       all      *      *       ::/0                 ::/0 
+ 
+Chain ext2int (1 references) 
+ pkts bytes target     prot opt in     out     source               destination
+? 
+    0     0 ACCEPT     icmpv6    *      *       ::/0                 ::/0 
+    0     0 ACCEPT     tcp      *      *       ::/0                 ::/0       
+?        tcp spts:1:65535 dpts:1024:65535 flags:!0x16/0x02 
+    0     0 LOG        all      *      *       ::/0                 ::/0       
+?        LOG flags 0 level 7 prefix `ext2int-default:' 
+    0     0 DROP       tcp      *      *       ::/0                 ::/0 
+    0     0 DROP       udp      *      *       ::/0                 ::/0 
+    0     0 DROP       all      *      *       ::/0                 ::/0 
+ 
+Chain extIN (1 references) 
+ pkts bytes target     prot opt in     out     source               destination
+? 
+    0     0 ACCEPT     tcp      *      *       3ffe:400:100::1/128  ::/0       
+?        tcp spts:512:65535 dpt:22 
+    0     0 ACCEPT     tcp      *      *       3ffe:400:100::2/128  ::/0       
+?        tcp spts:512:65535 dpt:22 
+    0     0 ACCEPT     icmpv6    *      *       ::/0                 ::/0 
+    0     0 ACCEPT     tcp      *      *       ::/0                 ::/0       
+?        tcp spts:1:65535 dpts:1024:65535 flags:!0x16/0x02 
+    0     0 ACCEPT     udp      *      *       ::/0                 ::/0       
+?        udp spts:1:65535 dpts:1024:65535 
+    0     0 LOG        all      *      *       ::/0                 ::/0       
+?        limit: avg 5/min burst 5 LOG flags 0 level 7 prefix `extIN-default:' 
+    0     0 DROP       all      *      *       ::/0                 ::/0 
+ 
+Chain extOUT (1 references) 
+ pkts bytes target     prot opt in     out     source               destination
+? 
+    0     0 ACCEPT     tcp      *      *       ::/0                
+? 3ffe:ffff:100::1/128tcp spt:22 dpts:512:65535 flags:!0x16/0x02 
+    0     0 ACCEPT     tcp      *      *       ::/0                
+? 3ffe:ffff:100::2/128tcp spt:22 dpts:512:65535 flags:!0x16/0x02 
+    0     0 ACCEPT     icmpv6    *      *       ::/0                 ::/0 
+    0     0 ACCEPT     tcp      *      *       ::/0                 ::/0       
+?        tcp spts:1024:65535 dpts:1:65535 
+    0     0 ACCEPT     udp      *      *       ::/0                 ::/0       
+?        udp spts:1024:65535 dpts:1:65535 
+    0     0 LOG        all      *      *       ::/0                 ::/0       
+?        LOG flags 0 level 7 prefix `extOUT-default:' 
+    0     0 DROP       all      *      *       ::/0                 ::/0 
+ 
+Chain int2ext (1 references) 
+ pkts bytes target     prot opt in     out     source               destination
+? 
+    0     0 ACCEPT     icmpv6    *      *       ::/0                 ::/0 
+    0     0 ACCEPT     tcp      *      *       ::/0                 ::/0       
+?        tcp spts:1024:65535 dpts:1:65535 
+    0     0 LOG        all      *      *       ::/0                 ::/0       
+?        LOG flags 0 level 7 prefix `int2ext:' 
+    0     0 DROP       all      *      *       ::/0                 ::/0 
+    0     0 LOG        all      *      *       ::/0                 ::/0       
+?        LOG flags 0 level 7 prefix `int2ext-default:' 
+    0     0 DROP       tcp      *      *       ::/0                 ::/0 
+    0     0 DROP       udp      *      *       ::/0                 ::/0 
+    0     0 DROP       all      *      *       ::/0                 ::/0 
+ 
+Chain intIN (1 references) 
+ pkts bytes target     prot opt in     out     source               destination
+? 
+    0     0 ACCEPT     all      *      *       ::/0                
+? fe80::/ffc0:: 
+    4   384 ACCEPT     all      *      *       ::/0                 ff02::/16 
+ 
+Chain intOUT (1 references) 
+ pkts bytes target     prot opt in     out     source               destination
+? 
+    0     0 ACCEPT     all      *      *       ::/0                
+? fe80::/ffc0:: 
+    4   384 ACCEPT     all      *      *       ::/0                 ff02::/16 
+    0     0 LOG        all      *      *       ::/0                 ::/0       
+?        LOG flags 0 level 7 prefix `intOUT-default:' 
+    0     0 DROP       all      *      *       ::/0                 ::/0 
+        
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<HR>
+<A HREF="Linux-IPv6-HOWTO-16.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="Linux-IPv6-HOWTO-14.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="Linux-IPv6-HOWTO.html#toc15"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

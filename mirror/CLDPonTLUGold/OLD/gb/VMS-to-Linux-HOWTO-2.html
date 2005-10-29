@@ -1,0 +1,236 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>如何从 VMS 转移到 Linux (From VMS to Linux HOWTO): 牛刀小试 </TITLE>
+ <LINK HREF="VMS-to-Linux-HOWTO-3.html" REL=next>
+ <LINK HREF="VMS-to-Linux-HOWTO-1.html" REL=previous>
+ <LINK HREF="VMS-to-Linux-HOWTO.html#toc2" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="VMS-to-Linux-HOWTO-3.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="VMS-to-Linux-HOWTO-1.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="VMS-to-Linux-HOWTO.html#toc2"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="Short Intro"></A> <A NAME="s2">2. 牛刀小试 </A></H2>
+
+<P>
+<P>这些绝对是您在第一次登入系统前必须知道的一些事情，放轻松，不会太复杂的。
+<P>
+<H2><A NAME="ss2.1">2.1 档案</A>
+</H2>
+
+<P>
+<P>
+<UL>
+<LI> 在 VMS 上的档名的表示法是 <CODE>filename.extension;version</CODE>。
+但是在 Linux 上，档案的版本号码将不会再出现（重要的限制，请参阅 
+<A HREF="VMS-to-Linux-HOWTO-10.html#Numbered Backups Under Linux">Linux 上的档案版本</A>); 
+档名最常只能有 255 个字元，档名中可以出现很多个点 “．”。例如：<CODE>This.is_a_FILEname.txt</CODE>.
+</LI>
+<LI> Linux 对档名的大小写是有分别的： 
+<CODE>FILENAME.txt</CODE> 和 <CODE>filename.txt</CODE> 是两个完全不一样的档名; 
+<CODE>ls</CODE> 是一个指令，可以被执行，但是 <CODE>LS</CODE> 却不是指令，会出现错误讯息。
+</LI>
+<LI> 档名的第一个字元如果是一点“．”，则这个档名是`隐藏档' （也就是说，如果不加特别指令的话，一般的 ls 将不会显示出这些隐藏档），
+而档案的结尾如果是“蚯蚓号”'<CODE>~</CODE>' ，这表示备份档案（或是暂存档）．
+
+</LI>
+</UL>
+<P>现在，下表整理出把 VMS 的指令对应到 Linux 上的指令．
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+
+VMS                                     Linux
+---------------------------------------------------------------------
+
+$ COPY file1.txt file2.txt              $ cp file1.txt file2.txt
+$ COPY [.dir]file.txt []                $ cp dir/file.txt .
+$ COPY [.dir]file.txt [-]               $ cp dir/file.txt ..
+$ DELETE *.dat;*                        $ rm *dat
+$ DIFF file1 file2                      $ diff -c file1 file2
+$ PRINT file                            $ lpr file
+$ PRINT/queue=queuename file            $ lpr -Pprintername file
+$ SEARCH *.tex;* "geology"              $ grep geology *tex
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>其他对於目录方面的指令，请见一章节；档案的属性（protections, ownership...）请参照 
+<A HREF="VMS-to-Linux-HOWTO-8.html#Advanced Topics">进阶</A>。
+<P>
+<H2><A NAME="ss2.2">2.2 目录</A>
+</H2>
+
+<P>
+<P>
+<UL>
+<LI> 在同一个节点（node）或是装置（device），在 VMS 上，目录的形式看起来应该像这样：<CODE>[top.dir.subdir]</CODE>; 
+在 Linux 上是：<CODE>/top/dir/subdir/</CODE>. 对上层的目录我们称为“根目录”（<CODE>/</CODE>）; 
+所有子目录，都是由根目录向下延伸： <CODE>/bin</CODE>,
+<CODE>/usr</CODE>, <CODE>/tmp</CODE>, <CODE>/etc</CODE>, 等等。
+</LI>
+<LI> 目录名称 <CODE>/home</CODE> 是存放使用者目录，例如：<CODE>/home/guido</CODE>, <CODE>/home/warner</CODE>, 等等。
+当使用者登入的时候，她们会登入到她们自己拥有的使用者目录；这和 <CODE>SYS$LOGIN</CODE> 是有异曲同工之妙。
+切换到只用者目录有个方便的方法：使用“蚯蚓号”'<CODE>~</CODE>'。
+所以，<CODE>cd ~/tmp</CODE> 和 <CODE>cd /home/guido/tmp</CODE> 是一样的意思。
+</LI>
+<LI> 目录名称的命名方式和档案名称的命名方式相同。 再者，
+每个目录都会有两个特别的目录名称：一个是：<CODE>.</CODE> ，表示指到自己的目录。 (像 <CODE>[]</CODE>)；
+一个是：<CODE>..</CODE> ，表示指到上一层目录 (像 <CODE>[-]</CODE>)。
+</LI>
+</UL>
+ 
+<P>让我们来看看其他的例子：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+
+VMS                                     Linux
+---------------------------------------------------------------------
+
+$ CREATE/DIR [.dirname]                 $ mkdir dirname
+$ CREATE/DIR [.dir1.dir2.dir3]          $ mkdirhier dir1/dir2/dir3
+   n/a                                  $ rmdir dirname
+                                        (if dirname is empty)
+                                        $ rm -R dirname
+$ DIRECTORY                             $ ls
+$ DIRECTORY [...]file.*;*               $ find . -name "file*"
+$ SET DEF SYS$LOGIN                     $ cd
+$ SET DEF [-]                           $ cd ..
+$ SET DEF [top.dir.subdir]              $ cd /top/dir/subdir
+$ SET DEF [.dir.subdir]                 $ cd dir/subdir
+$ SHOW DEF                              $ pwd
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>对於档案的属性（protections, ownership），还有一些进阶主题，请参照 
+<A HREF="VMS-to-Linux-HOWTO-8.html#Advanced Topics">进阶</A>.
+<P>
+<H2><A NAME="ss2.3">2.3 程式</A>
+</H2>
+
+<P>
+<P>
+<UL>
+<LI> 指令，编译过的程式（执行档），和 shell scripts (VMS 上的 `command files') 并没有强制规定需要有特定的副档名。
+像 <CODE>.EXE</CODE> or <CODE>.COM</CODE> 等，只要您喜欢，您想要她叫什麽名字都可以。
+如果您使用 <CODE>ls -F</CODE> 来察看执行档的时候，您会发现执行档会被标示成 '<CODE>*</CODE>' 。
+</LI>
+<LI> 欲执行可执行的程式，只要输入指令名称就可以了。（没有所谓的 <CODE>RUN PROGRAM.EXE</CODE> 或是 <CODE>@COMMAND</CODE>)。 
+注意：这个执行档必须指定某路径。基本上，预设录经包含了 <CODE>/bin</CODE>,
+<CODE>/usr/bin</CODE>, <CODE>/usr/X11R6/bin</CODE>, 等等。 如果，您自己写了一个程式，
+您可以将这个程式放在您自己的预设路径中（如何操作，请参照 
+<A HREF="VMS-to-Linux-HOWTO-9.html#Configuring">设定</A>）。
+或是您也可以指定一个绝对路径来执行这只程式，例如：<CODE>/home/guido/data/myprog</CODE>; 或是
+使用相对路径 <CODE>./myprog</CODE> 。
+</LI>
+<LI> 指令的参数在 VMS 上是使用 <CODE>/OPTION=</CODE> 来完成，而在 Linux 上，
+我们使用 <CODE>-switch</CODE> 或是 <CODE>--switch</CODE> （<CODE>switch</CODE> 参数可能是一个字元，许多字的组合，或是一个字）。
+比较特别的，参数 <CODE>-R</CODE> (recursive) 在 Linux 上和 在 VMS 上 <CODE>[...]</CODE> 扮演著相同的功能;
+</LI>
+<LI> 在命令列中，您可以一次下很多个指令：
+
+<BLOCKQUOTE><CODE>
+<PRE>
+$ command1 ; command2 ; ... ; commandn
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI> Linux 大部分的弹性来自於两个特性，而这两个特性在 VMS 上却很难被表示出来，或是根本就没有。
+她们分别是：I/O 重导(redirection) 和 管道 (piping)。 （曾经有人告诉我最近的 DCL 版本有支援重导(redirection)和管道(piping)，
+可是我没有那个版本）。重导(redirection) 在 VMS 上只是从属的特徵（像指令里的参数 <CODE>/OUTPUT=</CODE> ）， 
+或是一个难讨好的行程(process)。
+例如：
+
+<BLOCKQUOTE><CODE>
+<PRE>
+$ DEFINE /USER SYS$OUTPUT OUT 
+$ DEFINE /USER SYS$INPUT IN
+$ RUN PROG
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+在 Linux 就只要这样就可以达成：
+
+<BLOCKQUOTE><CODE>
+<PRE>
+$ prog &lt; in > out
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+Piping 实际上在 VMS 上并没有提供，但是在 Linux 却是一个重要的角色。
+典型的例子如下：
+
+<BLOCKQUOTE><CODE>
+<PRE>
+$ myprog &lt; datafile | filter_1 | filter_2 >> result.dat 2> errors.log &amp;
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+意思是说：程式 <CODE>myprog</CODE> 导入一个档案为 input （由 “<CODE>&lt;</CODE>”读入档案 <CODE>datafile</CODE>）。
+其执行後的结果被转为(pipe)另一个程式(filter_1) 的 input，处理後得到的结果再转为另外一只程式(filter_2)的 input，
+再作进一步的处理後，最後的结果被附加到 result.dat 档案上，将错误讯息覆盖到 errors.log 的档案上。
+而这一切的动作，都在背景执行。
+想要看更精彩的例子，请参照 
+<A HREF="VMS-to-Linux-HOWTO-11.html#Examples">实例</A>.
+</LI>
+</UL>
+ 
+<P>对於多工，`queues', 或其他类似主题，请参阅 
+<A HREF="VMS-to-Linux-HOWTO-8.html#Advanced Topics">进阶</A>.
+<P>
+<H2><A NAME="Quick Tour"></A> <A NAME="ss2.4">2.4 快速浏览 </A>
+</H2>
+
+<P>
+<P>现在您可以来试试 Linux 的威力了。输入您的 login name 和 password。假设您的 login name 是
+<CODE>john</CODE> ，Password 是 <CODE>My_PassWd</CODE>, <EM>不要</EM> 输入 <CODE>John</CODE> 或是 <CODE>my_passwd</CODE>。
+记住，大小写对 Unix 来说，是不同的意思。
+<P>一当您登入後，您就会看到系统提示符号(prompt)；可能看起来像 <CODE>machinename:$</CODE>。 
+如果您想更改您的系统提示符号，或是在您一 Login 後就自动执行一些程式，您可能需要去编辑一个隐藏档（<CODE>.profile</CODE> 或是 <CODE>.bash_profile</CODE>）。
+（实例请参照“组态设定”一章节 
+<A HREF="VMS-to-Linux-HOWTO-9.html#Configuring">设定</A>）。
+这和 VMS 上的<CODE>LOGIN.COM</CODE> 有异曲同工之妙。
+<P>您可以使用 ALT--F1, ALT--F2, ... ALT--F6 来切换六个 `virtual consoles'。
+当您其中的一个 virtual consoles 正在忙於处理某一只程式的时候，您可以任意的切换到任何一个 virtual consoles 继续您其他的工作。
+试著切换登入到其他的 virtual consoles 吧！
+<P>现在您可能想要开始执行 X Windows 了吧（以後我们简称为 X）。X 是图形界面环境，
+有点像 DECWindows --- 实际上，DECWindows 是衍生自 X Window system.
+请输入 <CODE>startx</CODE> 并且等待几秒您将会看到 <CODE>xterm</CODE> 或是其他类似的终端机模拟程式被开启，
+可能还会有一个工作列。（视您系统管理员如何设定，不一样的设定，所看到的结果将会不同）。
+试著在桌面上同时按下滑鼠的左右键，您可以看到一个弹跳视选单出现（滑鼠按键的功能也因设定不同而有不同的功能）。
+<P>进入 X 後，如果想要执行文字模式的终端机 (`console') 同时按住下列任一组按键：
+CTRL--ALT--F1 ... CTRL--ALT--F6 （需要同时按）。是看看！如果想要跳回视窗界面，可以
+同时按下 ALT--F7 就可以了。欲结束 X ，这著选单上的 exit 选项结束，或是同时按下
+CTRL--ALT--BS.
+<P>输入下列指令，可以列出您现在目录下的档案（包括隐藏档）：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ ls -al
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>按 SHIFT--PAG UP 可以往回卷到以前的萤幕。
+<P>现在我们来看看指令 <CODE>ls</CODE> 的说明档(help)，
+输入：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ man ls
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>按下 'q' 可以跳出。如果要登出，可以输入 <CODE>exit</CODE> 登出目前终端机。
+如果想要关机，可以同时按下 CTRL--ALT--DEL 并且等带数秒就可以了。
+(<EM>注意：</EM> 绝对不要直接就关掉您电脑上的电源，请按照一定的关机程序才可以关掉电源，不然可能会伤害到档案系统）。
+<P>如果您想您已经可以上路了，那就放手去作吧！但是，如果我是您的话，可会先跳到进阶主题这一章节：
+<A HREF="VMS-to-Linux-HOWTO-8.html#Advanced Topics">进阶</A>.
+<P>
+<P>
+<HR>
+<A HREF="VMS-to-Linux-HOWTO-3.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="VMS-to-Linux-HOWTO-1.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="VMS-to-Linux-HOWTO.html#toc2"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

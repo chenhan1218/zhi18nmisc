@@ -1,0 +1,251 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux Quake HOWTO: Tips &amp; Tricks</TITLE>
+ <LINK HREF="Quake-HOWTO-7.html" REL=next>
+ <LINK HREF="Quake-HOWTO-5.html" REL=previous>
+ <LINK HREF="Quake-HOWTO.html#toc6" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Quake-HOWTO-7.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Quake-HOWTO-5.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Quake-HOWTO.html#toc6"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s6">6. Tips &amp; Tricks</A></H2>
+
+<P>
+<P>
+<P>
+<H2><A NAME="no-setuid"></A> <A NAME="ss6.1">6.1 Running X and GL games without setuid  </A>
+ </H2>
+
+<P>If you only run the X and GL versions of Quake, QuakeWorld or Quake II,
+you don't need to run them with root permissions.  SVGA is the only mode
+that must be run as root.  The X versions just need access to 
+<CODE>/dev/dsp</CODE>, the sound device.  The GL versions need access to the
+3Dfx card as well as to <CODE>/dev/dsp</CODE>.
+<P><CODE>/dev/dsp</CODE> needs to be readable and writeable by Quake.  Most 
+distributions give it 662 (<CODE>rw-rw--w-</CODE>) permissions by default.  The
+simplest solution is to just <CODE>chmod 666 /dev/dsp</CODE>.  On most systems,
+the ability to read from the sound device will not pose a significant security
+threat.  If this approach is unacceptable for your system, create a group that
+owns <CODE>/dev/dsp</CODE> and make your Quake players members of that group.
+<P>You need the <CODE>/dev/3dfx</CODE> driver from Daryll Strauss' glide page
+(
+<A HREF="http://glide.xxedgexx.com/3DfxRPMS.html">http://glide.xxedgexx.com/3DfxRPMS.html</A>) in order run glide 
+applications (like GLQuake) non-root.  Download the <CODE>Device3Dfx.xxx.rpm</CODE>
+package and install according to the instructions on the web page.
+After you've installed the driver, make sure <CODE>/dev/3dfx</CODE> has
+666 permissions (<CODE>chmod 666 /dev/3dfx</CODE>).
+<P>When <CODE>/dev/dsp</CODE> and <CODE>/dev/3dfx</CODE> are properly set up, you can
+remove the setuid bit from your Quake/QW/Q2 executables.  Just do
+(as root) <CODE>chmod 0755 XXXXX</CODE>, where XXXXX is either <CODE>glquake</CODE>,
+<CODE>quake.x11</CODE>, or <CODE>quake2</CODE>.
+<P>If you've been playing as root prior to making these changes, many of your Quake
+files (like savegames) may be owned by root and inaccessible to a normal
+user, so remember to change the files' ownership before you attempt to
+play the game non-root.
+<P>
+<P>
+<H2><A NAME="running-from-x"></A> <A NAME="ss6.2">6.2 Running SVGA and GL games from X </A>
+**</H2>
+
+<P>The GLX Quakeworld and Quake II clients are native X
+applications, but since they use Mesa rather than the 3Dfx
+mini-driver, they're slower than the <CODE>lib3dfxgl.so</CODE>
+versions.  For this reason, you may still favor this way of starting
+games from X over using the GLX clients.
+<P>This is based on a Linux Gazette 2 Cent Tip by Joey Hess (
+<A HREF="mailto:joey@kite.ml.org">joey@kite.ml.org</A>) The original is at
+<A HREF="http://www.ssc.com/lg/issue20/lg_tips20.html#squake">http://www.ssc.com/lg/issue20/lg_tips20.html#squake</A><P>Yes, it's possible to run the Quake games from X if you're root, but such
+behavior is naughty, and you still run the risk of having Quake crash
+and leave the console unresponsive.  With a little work you can make it
+possible for a regular user to run SVGA and GL Quake from X <EM>AND</EM>
+automatically switch back to X when the program is finished, regardless of
+whether it exited normally or not.
+<P>Note: when I say "Quake" in the text below, I really mean "quake, glquake
+squake, qwcl, glqwcl, qwcl.x11 or quake2".
+<P>
+<UL>
+<LI>First, you'll need the <B>open(1)</B> package by Jon Tombs. This
+is a set of two very small programs that allow you to switch between
+virtual consoles and start programs on them.  Download open from 
+<A HREF="http://sunsite.unc.edu/pub/Linux/utils/console/">http://sunsite.unc.edu/pub/Linux/utils/console/</A>.  You shouldn't
+have to do much more than <CODE>make;make install</CODE> to compile and install
+it. Once it's installed, you need to make the <CODE>open</CODE> and
+<CODE>switchto</CODE> executables setuid root.  So do this:
+<BLOCKQUOTE><CODE>
+<PRE>
+     cd /usr/local/bin
+     chown root open switchto
+     chmod 4755 open switchto
+     
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>Next, save the following code to a file called <CODE>getvc.c</CODE>:
+<HR>
+<PRE>
+        /* getvc.c
+         * Prints the number of the current VC to stdout. Most of this code
+         * was ripped from the open program, and this code is GPL'd
+         *
+         * Joey Hess, Fri Apr  4 14:58:50 EST 1997
+         */
+             
+         #include &lt;sys/vt.h>
+         #include &lt;fcntl.h>
+           
+         main () {
+           int fd = 0;
+           struct vt_stat vt;
+             
+           if ((fd = open("/dev/console",O_WRONLY,0)) &lt; 0) {
+             perror("Failed to open /dev/console\n");
+             return(2);
+           }
+           if (ioctl(fd, VT_GETSTATE, &amp;vt) &lt; 0) {
+             perror("can't get VTstate\n");
+             close(fd);
+             return(4);
+           }
+           printf("%d\n",vt.v_active);
+         }
+            
+         /* End of getvc.c */
+     
+</PRE>
+<HR>
+
+Compile it and install it somewhere in your <CODE>$PATH</CODE>:
+<BLOCKQUOTE><CODE>
+<PRE>
+     gcc getvc.c -o getvc
+     strip getvc
+     mv getvc /usr/local/bin
+     
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>Now create a script called <CODE>runvc</CODE>:
+your <CODE>$PATH</CODE>:
+<HR>
+<PRE>
+     #!/bin/sh
+     # Run something on a VC, from X, and switch back to X when done.
+     # GPL Joey Hess, Thu, 10 Jul 1997 23:27:08 -0400
+     exec open -s -- sh -c "$* ; chvt `getvc`"
+     
+</PRE>
+<HR>
+
+Make it executable and put it somewhere in your <CODE>$PATH</CODE>:
+<BLOCKQUOTE><CODE>
+<PRE>
+     chmod 755 runvc
+     mv runvc /usr/local/bin
+     
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+Now you can use the <CODE>runvc</CODE> command to start Quake. Continue to use 
+whatever command line you usually use to start your game, but put <CODE>runvc</CODE>
+at the beginning:
+<BLOCKQUOTE><CODE>
+<PRE>
+     runvc ./quake2 +set vid_ref gl +connect quake.foo.com
+     
+</PRE>
+</CODE></BLOCKQUOTE>
+
+You'll automatically switch to a VC, run Quake and then switch back to X
+when it's done!</LI>
+</UL>
+<P>
+<P>
+<H2><A NAME="ss6.3">6.3 Keeping the mouse inside the window in X</A>
+</H2>
+
+<P>From the Quake II <CODE>readme.linux</CODE> file:
+<BLOCKQUOTE>
+By default, the mouse will not be 'tied' to the Quake2 window.
+To cause Quake2 to grab the mouse, select 'Windowed Mouse' from the video
+menu, or type '_windowed_mouse 0' at the console.  Do the reverse to
+release it.  You can bind keys to grab and release the mouse in the
+console, like so:
+bind i "_windowed_mouse 1"
+bind o "_windowed_mouse 0"
+Then "i" will grab the mouse and "o" will release it.
+</BLOCKQUOTE>
+<P>
+<H2><A NAME="ss6.4">6.4 3Dfx "tweak" settings work in Linux too</A>
+</H2>
+
+<P>You may have seen or heard mention of ways to "tweak" Quake's OpenGL 
+performance by setting various environment variables.  These variables
+are equally valid under Linux. You just set them slightly differently.
+If a Windows/DOS "tweak" guide tells you to:
+<BLOCKQUOTE><CODE>
+<PRE>
+     SET SST_GRXCLK=59
+     
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Under Linux, do it like this:
+<BLOCKQUOTE><CODE>
+<PRE>
+     export SST_GRXCLK=59
+     
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss6.5">6.5 The Poor Man's Server Browser</A>
+</H2>
+
+<P>Joe S. (
+<A HREF="mailto:jszabo@eden.rutgers.edu">jszabo@eden.rutgers.edu</A>) suggests:
+<BLOCKQUOTE><CODE>
+<PRE>
+     a trick I do with qstat:
+     I make a file of my favorite servers, then do
+     qstat -f /C/quake2/file.txt | less
+     
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>hit control z to suspend, then copy the ip address or hostname I want
+with gpm to a command line like:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+     ./quake2 +connect expert.eqclans.com
+     
+</PRE>
+</CODE></BLOCKQUOTE>
+
+Then I can use fg to go back to the list later...
+<P>
+<H2><A NAME="miniport"></A> <A NAME="ss6.6">6.6 Using <CODE>lib3dfxgl.so</CODE> for Quake I </A>
+**</H2>
+
+<P>You can use the 3Dfx mini-driver (<CODE>lib3dfxgl.so</CODE>) from
+Quakeworld or Quake II with <CODE>glquake</CODE> too. Simply copy
+the <CODE>glqwcl.3dfxgl</CODE> or <CODE>quake2.3dfxgl</CODE> 
+scripts to a new file, say <CODE>glquake.3dfxgl</CODE>. Then edit the
+<CODE>glquake.3dfxgl</CODE> script so it runs <CODE>glquake</CODE> instead of
+<CODE>glqwcl</CODE>.
+The same restrictions about running as root apply here, as do
+the differences between running under glibc and libc5.
+See the 
+<A HREF="Quake-HOWTO-2.html#qw-3dfxgl">Quakeworld</A> or 
+<A HREF="Quake-HOWTO-3.html#q2-3dfxgl">Quake II</A> sections for more information on
+<CODE>lib3dfxgl.so</CODE>.
+<P>
+<HR>
+<A HREF="Quake-HOWTO-7.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Quake-HOWTO-5.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Quake-HOWTO.html#toc6"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

@@ -1,0 +1,243 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux AX25-HOWTO, Amateur Radio.: Configuring Linux to accept Packet connections.</TITLE>
+ <LINK HREF="AX25-HOWTO-13.html" REL=next>
+ <LINK HREF="AX25-HOWTO-11.html" REL=previous>
+ <LINK HREF="AX25-HOWTO.html#toc12" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="AX25-HOWTO-13.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="AX25-HOWTO-11.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="AX25-HOWTO.html#toc12"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s12">12. Configuring Linux to accept Packet connections.</A></H2>
+
+<P>Linux is a powerful operating system and offers a great deal of flexibility
+in how it is configured. With this flexibility comes a cost in configuring
+it to do what you want. When configuring your Linux machine to accept incoming
+AX.25, NetRom or Rose connections there are a number of questions you need to
+ask yourself. The most important of which is: "What do I want users to see when
+they connect?". People are developing neat little applications that may be
+used to provide services to callers, a simple example is the <EM>pms</EM> program
+included in the AX25 utilities, a more complex example is the <EM>node</EM> program
+also included in the AX25 utilities. Alternatively you might want to give
+users a login prompt so that they can make use of a shell account, or you
+might even have written your own program, such as a customised database or a
+game, that you want people to connect to. Whatever you choose, you must tell
+the AX.25 software about this so that it knows what software to run when it
+accepts an incoming AX.25 connection.
+<P>The <EM>ax25d</EM> program is similar to the <EM>inetd</EM> program commonly used
+to accept incoming TCP/IP connections on unix machines. It sits and listens
+for incoming connections, when it detects one it goes away and checks a
+configuration file to determine what program to run and connect to that
+connection. Since this the standard tool for accepting incoming AX.25, NetRom
+and Rose connections I'll describe how to configure it.
+<P>
+<H2><A NAME="ss12.1">12.1 Creating the <CODE>/etc/ax25/ax25d.conf</CODE> file.</A>
+</H2>
+
+<P>This file is the configuration file for the <EM>ax25d</EM> AX.25 daemon which
+handles incoming AX.25, NetRom and Rose connections.
+<P>The file is a little cryptic looking at first, but you'll soon discover
+it is very simple in practice, with a small trap for you to be wary of.
+<P>The general format of the <CODE>ax25d.conf</CODE> file is as follows:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# This is a comment and is ignored by the ax25d program.
+[port_name] || &lt;port_name> || {port_name}
+&lt;peer1>    window T1 T2 T3 idle N2 &lt;mode> &lt;uid> &lt;cmd> &lt;cmd-name> &lt;arguments>
+&lt;peer2>    window T1 T2 T3 idle N2 &lt;mode> &lt;uid> &lt;cmd> &lt;cmd-name> &lt;arguments>
+parameters window T1 T2 T3 idle N2 &lt;mode>
+&lt;peer3>    window T1 T2 T3 idle N2 &lt;mode> &lt;uid> &lt;cmd> &lt;cmd-name> &lt;arguments>
+   ...
+default    window T1 T2 T3 idle N2 &lt;mode> &lt;uid> &lt;cmd> &lt;cmd-name> &lt;arguments>
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Where:
+<DL>
+<DT><B>#</B><DD><P>at the start of a line marks a comment and is completely ignored
+by the <EM>ax25d</EM> program.
+<DT><B>&lt;port_name&gt;</B><DD><P>is the name of the AX.25, NetRom or Rose
+port as specified in the <CODE>/etc/ax25/axports</CODE>, <CODE>/etc/ax25/nrports</CODE>
+and <CODE>/etc/ax25/rsports</CODE> files. The name of the port is surrounded
+by the `<CODE>[]</CODE>' brackets if it is an AX.25 port, the `<CODE>&lt;&gt;</CODE>' brackets
+if it is a NetRom port, or the `<CODE>{}</CODE>' brackets if it is a Rose port.
+There is an alternate form for this field, and that is use prefix the port name
+with `<CODE>callsign/ssid via</CODE>' to indicate that you wish accept calls to the
+callsign/ssid via this interface. The example should more clearly illustrate
+this.
+<DT><B>&lt;peer&gt;</B><DD><P>is the callsign of the peer node that this particular
+configuration applies to. If you don't specify an SSID here then any SSID will
+match.
+<DT><B>window</B><DD><P>is the AX.25 Window parameter (K) or MAXFRAME parameter for
+this configuration.
+<DT><B>T1</B><DD><P>is the Frame retransmission (T1) timer in half second units.
+<DT><B>T2</B><DD><P>is the amount of time the AX.25 software will wait for another
+incoming frame before preparing a response in 1 second units.
+<DT><B>T3</B><DD><P>is the amount of time of inactivity before the AX.25 software
+will disconnect the session in 1 second units.
+<DT><B>idle</B><DD><P>is the idle timer value in seconds.
+<DT><B>N2</B><DD><P>is the number of consecutive retransmissions that will occur
+before the connection is closed.
+<DT><B>&lt;mode&gt;</B><DD><P>provides a mechanism for determining certain types of
+general permissions. The modes are enabled or disabled by supplying a
+combination of characters, each representing a permission. The characters
+may be in either upper or lower case and must be in a single block with no
+spaces.
+<DL>
+<DT><B>u/U</B><DD><P>UTMP                   - currently unsupported.
+<DT><B>v/V</B><DD><P>Validate call          - currently unsupported.
+<DT><B>q/Q</B><DD><P>Quiet                  - Don't log connection
+<DT><B>n/N</B><DD><P>check NetRom Neighbour - currently unsupported.
+<DT><B>d/D</B><DD><P>Disallow Digipeaters   - Connections must be direct, not digipeated.
+<DT><B>l/L</B><DD><P>Lockout                - Don't allow connection.
+<DT><B>*/0</B><DD><P>marker                 - place marker, no mode set.
+</DL>
+<DT><B>&lt;uid&gt;</B><DD><P>is the userid that the program to be run to support the
+connection should be run as.
+<DT><B>&lt;cmd&gt;</B><DD><P>is the full pathname of the command to be run, with no
+arguments specified.
+<DT><B>&lt;cmd-name&gt;</B><DD><P>is the text that should appear in a <EM>ps</EM> as
+the command name running (normally the same as &lt;cmd&gt; except without the
+directory path information.
+<DT><B>&lt;arguments&gt;</B><DD><P>are the command line argument to be passed to the
+&lt;:cmd&gt; when it is run. You pass useful information into these arguments
+by use of the following tokens:
+<DL>
+<DT><B>%d</B><DD><P>Name of the port the connection was received on.
+<DT><B>%U</B><DD><P>AX.25 callsign of the connected party without the SSID, in
+uppercase.
+<DT><B>%u</B><DD><P>AX.25 callsign of the connected party without the SSID, in
+lowercase.
+<DT><B>%S</B><DD><P>AX.25 callsign of the connected party with the SSID, in
+uppercase.
+<DT><B>%s</B><DD><P>AX.25 callsign of the connected party with the SSID, in
+lowercase.
+<DT><B>%P</B><DD><P>AX.25 callsign of the remote node that the connection came
+in from without the SSID, in uppercase.
+<DT><B>%p</B><DD><P>AX.25 callsign of the remote node that the connection came
+in from without the SSID, in lowercase.
+<DT><B>%R</B><DD><P>AX.25 callsign of the remote node that the connection came
+in from with the SSID, in uppercase.
+<DT><B>%r</B><DD><P>AX.25 callsign of the remote node that the connection came
+in from with the SSID, in lowercase.
+</DL>
+</DL>
+<P>You need one section in the above format for each AX.25, NetRom or Rose
+interface you want to accept incoming AX.25, NetRom or Rose connections on.
+<P>There are two special lines in the paragraph, one starts with the string
+`<CODE>parameters</CODE>' and the other starts with the string `<CODE>default</CODE>'
+(yes there is a difference). These lines serve special functions.
+<P>The `<CODE>default</CODE>' lines purpose should be obvious, this line acts as a
+catch-all, so that any incoming connection on the &lt;interface_call&gt;
+interface that doesn't have a specific rule will match the `<CODE>default</CODE>'
+rule. If you don't have a `<CODE>default</CODE>' rule, then any connections not
+matching any specific rule will be disconnected immediately without notice.
+<P>The `<CODE>parameters</CODE>' line is a little more subtle, and here is the trap
+I mentioned earlier. In any of the fields for any definition for a peer you
+can use the `*' character to say `use the default value'. The
+`<CODE>parameters</CODE>' line is what sets those default values. The kernel
+software itself has some defaults which will be used if you don't specify any
+using the `<CODE>parameters</CODE>' entry. The trap is that the these defaults
+apply <B>only</B> to those rules <B>below</B> the `<CODE>parameters</CODE>'
+line, not to those above. You may have more than one `<CODE>parameters</CODE>' rule
+per interface definition, and in this way you may create groups of default
+configurations. It is important to note that the `<CODE>parameters</CODE>' rule
+does not allow you to set the `<CODE>uid</CODE>' or `<CODE>command</CODE>' fields.
+<P>
+<H2><A NAME="ss12.2">12.2 A simple example <CODE>ax25d.conf</CODE> file.</A>
+</H2>
+
+<P>Ok, an illustrative example:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# ax25d.conf for VK2KTJ - 02/03/97
+# This configuration uses the AX.25 port defined earlier.
+
+# &lt;peer> Win T1  T2  T3  idl N2 &lt;mode> &lt;uid> &lt;exec> &lt;argv[0]>[&lt;args....>]
+
+[VK2KTJ-0 via radio]
+parameters 1    10  *  *  *   *   *
+VK2XLZ     *     *  *  *  *   *   *    root  /usr/sbin/axspawn axspawn %u +
+VK2DAY     *     *  *  *  *   *   *    root  /usr/sbin/axspawn axspawn %u +
+NOCALL     *     *  *  *  *   *   L
+default    1    10  5 100 180 5   *    root  /usr/sbin/pms pms -a -o vk2ktj
+
+[VK2KTJ-1 via radio]
+default    *     *    *   *   *   0    root /usr/sbin/node node
+
+&lt;netrom>
+parameters 1    10  *  *  *   *   *
+NOCALL     *     *  *  *  *   *   L
+default    *     *  *  *  *   *   0        root /usr/sbin/node node
+
+{VK2KTJ-0 via rose}
+parameters 1    10  *  *  *   *   *
+VK2XLZ     *     *  *  *  *   *   *    root  /usr/sbin/axspawn axspawn %u +
+VK2DAY     *     *  *  *  *   *   *    root  /usr/sbin/axspawn axspawn %u +
+NOCALL     *     *  *  *  *   *   L
+default    1    10  5 100 180 5   *    root  /usr/sbin/pms pms -a -o vk2ktj
+
+{VK2KTJ-1 via rose}
+default    *     *    *   *   *   0    root /usr/sbin/node node radio
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>This example says that anybody attempting to connect to the callsign
+`<CODE>VK2KTJ-0</CODE>' heard on the AX.25 port called `<CODE>radio</CODE>' will have
+the following rules applied:
+<P>Anyone whose callsign is set to `NOCALL' should be locked out, note the
+use of mode `L'.
+<P>The <CODE>parameters</CODE> line changes two parameters from the kernel defaults
+(Window and T1) and will run the <EM>/usr/sbin/axspawn</EM> program for
+them. Any copies of <EM>/usr/sbin/axspawn</EM> run this way will appear
+as <EM>axspawn</EM> in a <EM>ps</EM> listing for convenience. The next two
+lines provide definitions for two stations who will receive those permissions.
+<P>The last line in the paragraph is the `catch all' definition that everybody
+else will get (including VK2XLZ and VK2DAY using any other SSID other than -1).
+This definition sets all of the parameters implicitly and will cause the
+<EM>pms</EM> program to be run with a command line argument indicating that
+it is being run for an AX.25 connection, and that the owner callsign is
+<CODE>VK2KTJ</CODE>. (See the `Configuring the PMS' section below for more details).
+<P>The next configuration accepts calls to <CODE>VK2KTJ-1</CODE> via the <CODE>radio</CODE>
+port. It runs the <EM>node</EM> program for everybody that connects to it.
+<P>The next configuration is a NetRom configuration, note the use of the
+greater-then and less-than braces instead of the square brackets. These
+denote a NetRom configuration. This configuration is simpler, it simply
+says that anyone connecting to our NetRom port called `<CODE>netrom</CODE>' will
+have the <EM>node</EM> program run for them, unless they have a callsign of
+`<CODE>NOCALL</CODE>' in which case they will be locked out.
+<P>The last two configurations are for incoming Rose connections. The first
+for people who have placed calls to `<CODE>vk2ktj-0</CODE>' and the second for
+`<CODE>VK2KTJ-1</CODE> at the our Rose node address. These work precisely the same
+way. Not the use of the curly braces to distinguish the port as a Rose
+port.
+<P>This example is a contrived one but I think it illustrates clearly the
+important features of the syntax of the configuration file. The configuration
+file is explained fully in the <CODE>ax25d.conf</CODE> <EM>man</EM> page. A more detailed
+example is included in the <CODE>ax25-utils</CODE> package that might be useful
+to you too.
+<P>
+<H2><A NAME="ss12.3">12.3 Starting <EM>ax25d</EM></A>
+</H2>
+
+<P>When you have the two configuration files completed you start <EM>ax25d</EM>
+with the command:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# /usr/sbin/ax25d
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>When this is run people should be able to make AX.25 connections to your
+Linux machine. Remember to put the <CODE>ax25d</CODE> command in your <EM>rc</EM>
+files so that it is started automatically when you reboot each time.
+<P>
+<HR>
+<A HREF="AX25-HOWTO-13.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="AX25-HOWTO-11.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="AX25-HOWTO.html#toc12"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

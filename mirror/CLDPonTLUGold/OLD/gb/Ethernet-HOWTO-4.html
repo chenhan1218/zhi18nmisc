@@ -1,0 +1,1267 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Linux以太网-HOWTO: 有关销售商/制造厂家/型号的信息</TITLE>
+ <LINK HREF="Ethernet-HOWTO-5.html" REL=next>
+ <LINK HREF="Ethernet-HOWTO-3.html" REL=previous>
+ <LINK HREF="Ethernet-HOWTO.html#toc4" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Ethernet-HOWTO-5.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Ethernet-HOWTO-3.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Ethernet-HOWTO.html#toc4"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="card-intro"></A> <A NAME="s4">4. 有关销售商/制造厂家/型号的信息</A></H2>
+
+<P>
+<P>下面按照销售商名称和产品标识的字母顺序列出了许多网卡。在每个产品ID旁都标明了“支持”、“半支持”或“不支持”。
+<P>支持意味著该网卡的驱动程序存在，而且许多人在愉快地使用著此驱动程序，它看起来相当可靠。
+<P>半支持意味著该网卡的驱动程序存在，但至少下面的描述中有一个是真实的：(1) 驱动程序或硬件有Bug，会导致性能差、连接失败甚至死机。(2) 驱动程序是新的或网卡不够普及，因此驱动程序得到的使用/测试机会很少，驱动程序的作者收到很少的反馈信息。很明显(2)比(1)要好一些，在网卡/驱动程序的独立描述中会指明它属于哪种情况。对这两种情况，在运行<CODE>make config</CODE>回答“Prompt for development and/or incomplete code/drivers?”时都应该回答“Y”。
+<P>不支持意味著该网卡目前还没有可使用的驱动程序。这可能是由于对很少见的硬件缺乏兴趣，也可能是销售商还没有发布编写驱动程序所需的硬件资料。
+<P>注意，“支持”和“半支持”之间的区别是相当主观的，是基于新闻组和邮件列表信息上得到的用户反馈进行区分的。（无论如何，一个人来测试每个版本内核上所有网卡的所有驱动程序是不可能的！！！）所以你可能会发现一个被标为半支持的网卡工作得很好（这样很不错），或者一个被标为支持的网卡给你带来无穷的麻烦（这样就不够好）。
+<P>在这些状态后面，列出了Linux内核中给出的驱动程序名称。这也是<CODE>/etc/conf.modules</CODE>模块配置文件里<CODE>alias eth0 driver_name</CODE>一行所使用的驱动程序模块的名称。
+<P>
+<P>
+<H2><A NAME="3com"></A> <A NAME="ss4.1">4.1 3Com</A>
+</H2>
+
+<P>
+<P>如果你确定不了你的网卡是什么，但认为它是3Com网卡，你可以通过集成块编号来识别它。3Com有一本资料“通过集成块编号识别适配器”（ref 24500002），它应该能让你弄明白。参见
+<A HREF="Ethernet-HOWTO-7.html#3com-tech">3Com的技术信息</A>以了解如何从3Com索取该资料。
+<P>注意，3Com还有个有各种好东西的WWW/FTP站点：<CODE>ftp.3Com.com</CODE>，你也许想去看看。对于某些他们的网卡甚至还有Linux驱动程序，可能你想检验一下。据说他们的驱动程序不太稳定，或者在SMP和非基于ix86的机器上不稳定，所以需要记住这一点。
+<P>
+<P>
+<H3><A NAME="3c501"></A> 3c501</H3>
+
+<P>状态：半支持，驱动程序名称：3c501
+<P>这种过时的石器时代的8比特网卡用起来会很头疼的。象瘟疫一样躲开它吧。不要买这种网卡，哪怕是开玩笑也不要买。它的性能很差劲，而且很容易坏掉。
+<P>对那些还不肯相信的人来说，3c501一次只能干一件事——在从其单包缓存移出一个数据包时，它不能接收另一个包，在载入一个发送包时也不能接收一个包。对于两台处理一个包并回答会花掉10毫秒的基于8088的计算机之间的网络而言，这就不错了，但现代网络几乎每次事务都会发送背靠背数据包。
+<P>AutoIRQ可以工作，没使用DMA，自动检测只能查看<CODE>0x280</CODE>和<CODE>0x300</CODE>，诊断级别通过第三个启动参数设置。
+<P>再说一遍，<EM>强烈反对</EM>使用3c501！更差的是在IP广播内核中，在侦听<EM>所有</EM>广播包时你会进入暂停状态。阅读源码头部的注释以得到更多的细节。
+<P>
+<H3><A NAME="3c503"></A> EtherLink II, 3c503, 3c503/16</H3>
+
+<P>状态：支持，驱动程序名称：3c503 (+8390)
+<P>3c503没有“EEPROM setup”，所以在Linux下运行该网卡无需使用诊断/设置程序。3c503的共享内存地址是用跳线设置的，与启动PROM地址共享。熟悉其它ISA网卡的人可能会被弄糊涂，因为其它ISA网卡除非有启动PROM，都是让跳线设为“禁止”的。
+<P>因为WD80x3的总线宽度一样，这些网卡的速度也应该一样，但实际上更慢一些。这些共享内存的的以太网卡还有一种不使用8390工具的可编程I/O模式（它们的工程师发现了太多的Bug！）。Linux的3c503驱动程序也可以工作在3c503的可编程I/O模式，但不如共享内存模式可靠，而且更慢。同样，在更新驱动程序时可编程I/O模式没有很好地测试。不要使用可编程I/O模式，除非要与MS-DOS兼容。
+<P>3c503的IRQ中断线用软件设置，在EEPROM中没有其痕迹。与MS-DOS驱动程序不同，Linux的驱动程序有autoIRQ的能力：它使用{5,2/9,3,4}中第一条可用IRQ中断线，在每次运行ifconfig时进行选择。（老式的驱动程序版本在启动时选择IRQ。）如果没有IRQ中断线可用，“ifconfig”里的ioctl()调用将返回EAGAIN。
+<P>某些使用503会遇到的常见问题在
+<A HREF="Ethernet-HOWTO-2.html#3com-probs">3Com网卡的问题</A>中进行了讨论。
+<P>如果你想把该驱动程序作为一个可载入的模块，应该阅读
+<A HREF="Ethernet-HOWTO-9.html#modules">把以太网驱动程序作为模块使用</A>以了解有关模块的信息。
+<P>注意，一些旧的无盘386工作站有一个板上的3c503（3Com制造，但用其它名称销售，如“Bull”），但销售商ID不是3Com的ID，所以检测不出来。更多的资料可以在Etherboot软件包里找到，要启动这些无盘工作站你一定得有这些东西。
+<P>
+<H3><A NAME="3c505"></A> Etherlink Plus 3c505</H3>
+
+<P>状态：半支持，驱动程序名称：3c505
+<P>这些网卡使用i82586芯片，但没有太多的有关这些网卡的资料。标准内核包含该驱动程序，但它被归为alpha版本的驱动程序。参见
+<A HREF="Ethernet-HOWTO-2.html#alfa">Alpha驱动程序</A>以了解在Linux下使用alpha/测试版本以太网驱动程序的重要信息。
+<P>如果你要使用这样的网卡，还应该读一下<CODE>/usr/src/linux/drivers/net/README.3c505</CODE>文件。它包含了你可以使用/禁止的各种选项。
+<P>
+<H3><A NAME="3c507"></A> Etherlink-16 3c507</H3>
+
+<P>状态：半支持，驱动程序名称：3c507
+<P>该网卡使用了一块Intel芯片，其驱动程序的开发与Intel的Ether Express驱动程序开发关系很密切。在标准的内核发行版本中包含了其驱动程序，但是是作为一个alpha版本的驱动程序。参见
+<A HREF="Ethernet-HOWTO-2.html#alfa">Alpha驱动程序</A>以了解在Linux下使用alpha/测试版本以太网驱动程序的重要信息。
+<P>
+<H3><A NAME="3c509"></A> Etherlink III, 3c509 / 3c509B</H3>
+
+<P>状态：支持，驱动程序名称：3c509
+<P>这种网卡相当便宜，而且对ISA的无总线控制的设计而言性能相当好。其缺点在于原始的3c509要求很低的中断延迟。3c509B有一个较大的缓存，应该没有这个问题。（见下文。）这些网卡使用PIO传输，与ne2000网卡相似，相对而言，wd8013一类使用共享内存的网卡效率更高一些。
+<P>原始的3c509有一个小的包缓存（总共4kB，2kB Rx，2kB Tx），如果中断屏蔽的时间过长，驱动程序就会丢弃数据包。要减轻这个问题，可以尝试在IDE磁盘传输过程中不屏蔽中断（参见<CODE>man hdparm</CODE>），或者提高ISA总线速度使IDE传输结束得早一些。
+<P>新型号的3c509B板上缓存为8kB，并且可以把Rx/Tx划分成4/4、5/3或6/2。这一设置要用DOS配置工具来改变，并保存在EEPROM上。这会减轻上面提到原始3c509的问题。
+<P>3c509B的用户可以使用提供的DOS工具来禁止<EM>即插即用</EM>支持，<EM>并</EM>把输出媒介设置为要求的东西。目前的Linux驱动程序还<EM>不</EM>支持自动检测媒介设置，所以<EM>必须</EM>选择10Base-T、10Base-2或AUI。注意，要完全禁止PnP，需要使用<CODE>3C5X9CFG /PNP:DISABLE</CODE>并重新冷启动以确保设置生效。
+<P>有些人询问DOS配置工具中出现的“Server or Workstation”和“Highest Modem Speed”设置。Donald写道：“这些只不过是给驱动程序的提示，而Linux驱动程序不使用这些参数：它总是优化为高吞吐量，而非低延迟（‘Server’）。低延迟对于老式的无窗口IPX吞吐量非常关键。为了减少延迟，3c509的MS-DOS驱动程序对某些操作禁止中断，阻塞串口中断。因此需要‘modem speed’设置。Linux驱动程序只对整个包进行操作，例如在数据包完全传到网卡后才开始发送该数据包，从而避免了长时间禁止中断的需要。”
+<P>注意，ISA网卡检测使用的方法与大多数网卡不同。基本上是通过发送数据到ID_PORT（从端口<CODE>0x100</CODE>到<CODE>0x1ff</CODE>，间隔为<CODE>0x10</CODE>）要求网卡响应。这一检测方法意味著在多ISA的3c509配置中，某个特定网卡<EM>总</EM>是首先被检测，而硬件以太网地址最低的网卡<EM>总</EM>是作为<CODE>eth0</CODE>。这其实没什么问题，但有些人想为特定的接口分配一个6字节的硬件地址。如果有多块3c509网卡，最好不指定I/O端口（即使用I/O=zero）使用<CODE>ether=0,0,ethN</CODE>命令，让自动检测来排列哪一块网卡作为第一块网卡。使用非零的I/O值会使该命令无法检测所有的网卡，所以不要这样做。
+<P>如果这使你感到困扰，看一下Donald的最新驱动程序，你可以在未使用的内存地址域中使用一个<CODE>0x3c509</CODE>值，使检测的顺序符合你的要求。
+<P>
+<H3><A NAME="cork"></A> 3c515</H3>
+
+<P>状态：支持，驱动程序名称：3c515
+<P>这是3Com的ISA 100Mbps产品，编码名为“CorkScrew”。v2.2内核里包含了从Donald那儿得到的这些网卡的相对较新的驱动程序。要获得更新的资料，可以访问Vortex的网页：
+<P>
+<A HREF="http://www.scyld.com/linux/drivers/vortex.html">Vortex</A><P>
+<P>
+<H3><A NAME="3c523"></A> 3c523</H3>
+
+<P>状态：半支持，驱动程序名称：3c523
+<P>这个MCA总线的网卡使用i82586，Chris Beauregard修改了ni52驱动程序用于这些网卡。在v2.2内核源码树里可以找到它的驱动程序。
+<P>更多的细节可以在MCA-Linux的网页上找到
+<CODE>http://glycerine.cetmm.uni.edu/mca/</CODE>
+<P>
+<H3><A NAME="3c527"></A> 3c527</H3>
+
+<P>状态：不支持。
+<P>对，这是另一个MCA网卡，对它没兴趣。如果你坚持用MCA，最好用3c529。
+<P>
+<H3><A NAME="3c529"></A> 3c529</H3>
+
+<P>状态：支持，驱动程序名称：3c509
+<P>这个网卡实际上使用与3c509相同的芯片组。实际上早在内核里加进对MCA的支持之前，Donald就已经在3c509的驱动程序里放了些钩子函数，在探测完EISA网卡后，开始探测ISA网卡之前，检查MCA网卡。所需的MCA探测代码被包含在与v2.2内核一起提供的驱动程序里。更多的细节可以在MCA-Linux网页上找到：
+<P><CODE>http://glycerine.cetmm.uni.edu/mca/</CODE>
+<P>
+<H3>3c562</H3>
+
+<P>状态：支持，驱动程序名称：3c589（独立发行）
+<P>这个PCMCIA网卡是3c589B网卡与modem的组合。对于终端用户，modem与一个标准的modem一样。唯一的麻烦是要使两个独立的Linux驱动程序共用一个中断。该卡上有一些新的寄存器和一些支持共享中断的硬件。需要使用支持共享中断的v2.0以上的内核版本。
+<P>
+<P>再次感谢Cameron提供给David Hinds的样品和资料。请在David发行的PCMCIA软件包里寻找支持。
+<P>参见
+<A HREF="Ethernet-HOWTO-8.html#pcmcia">PCMCIA支持</A>以了解更多的有关PCMCIA芯片组、socket启用软件等信息。
+<P>
+<H3>3c575</H3>
+
+<P>状态：未知。
+<P>这个PCMCIA网卡的驱动程序正在开发中，但愿以后会包含在David的PCMCIA软件包里。最好检查一下PCMCIA软件包以了解目前的状态。
+<P>
+<H3><A NAME="3c579"></A> 3c579</H3>
+
+<P>状态：支持，驱动程序名称：3c509
+<P>EISA版本的509。目前的EISA版本还使用同样的16比特宽的芯片，而不是32比特的接口，所以性能上的改善并不令人惊奇。确定网卡被配置为EISA寻址模式。阅读上面的3c509一节以了解驱动程序的信息。
+<P>
+<H3><A NAME="3c589"></A> 3c589 / 3c589B</H3>
+
+<P>状态：半支持，驱动程序名称：3c589
+<P>现在这种PCMCIA网卡已经被很多人使用了相当长时间。注意对它的支持（目前）还不包括在缺省的内核源码树内。名称中“B”的含义与3c509的情况相同。
+<P>在Donald的ftp站点和David Hinds的PCMCIA软件包里都有可用的驱动程序。你还需要一套支持PCMCIA控制器的芯片组。参见
+<A HREF="Ethernet-HOWTO-8.html#pcmcia">PCMCIA支持</A>以了解更多的有关PCMCIA芯片组、socket启用软件等信息。
+<P>
+<H3><A NAME="vortex"></A> 3c590 / 3c595</H3>
+
+<P>状态：支持，驱动程序名称：3c59x
+<P>这些“Vortex”网卡是用在PCI总线机器上的，'590是10Mbps的产品，'595是3Com的100Mbs产品。注意'595也可以象'590一样运行（即使用10Mbps模式）。驱动程序包含在v2.0内核源码中，但还在不断升级。如果在使用v2.0内核里的驱动程序时遇到问题，可以从下面的URL获取一个更新的驱动程序：
+<P>
+<A HREF="http://www.scyld.com/linux/drivers/vortex.html">Vortex</A><P>注意，现在有两种不同的3c590网卡，较早的型号有32kB的板上内存，后来的型号只有8kB的板上内存。可能你买一个新的3c59x还没有多久，它就正在被3c90x所取代。如果你是买别人的二手货，想法弄到一个32kB的型号。3c595网卡有64kB板上内存，因为无法只用8kB的RAM就能达到100Mbps！
+<P>感谢Cameron Spitzer和3Com的Terry Murphy给Donald提供网卡和资料，使Donald能写出驱动程序来。
+<P>
+<H3>3c592 / 3c597</H3>
+
+<P>状态：支持，驱动程序名称：3c59x
+<P>这些是EISA版本的3c59x系列网卡。3c592/3c597（又名为Demon）可以使用上面讨论的vortex驱动程序。
+<P>
+<H3>3c900 / 3c905 / 3c905B / 3c905C</H3>
+
+<P>状态：支持，驱动程序名称：3c59x
+<P>这些网卡（又名为“Boomerang”，或EtherLink III XL）是用来取代3c590/3c595网卡的。
+<P>对Cyclone的“B”版本的支持最近才加进来。要在v2.0之前的内核使用该网卡，必须从如下的Donald站点获取更新后的<CODE>3c59x.c</CODE>驱动程序：
+<P>
+<A HREF="http://www.scyld.com/network">Vortex-Page</A><P>
+<P>
+<H3>3c985</H3>
+
+<P>状态：支持，驱动程序名称：acenic
+<P>Jes Sorensen提供的驱动程序在v2.2内核里能找到。除了3Com的型号，它还支持几种其它的吉比特网卡。
+<P>
+<H2><A NAME="accton"></A> <A NAME="ss4.2">4.2 Accton</A>
+</H2>
+
+<P>
+<P>
+<H3>Accton MPX</H3>
+
+<P>状态：支持，驱动程序名称：ne (+8390)
+<P>不要被它的名字骗了。它还是NE2000兼容网卡，可以使用ne2000驱动程序。
+<P>
+<H3>Accton EN1203, EN1207, EtherDuo-PCI</H3>
+
+<P>状态：支持，驱动程序名称：de4x5, tulip或rtl8139
+<P>显然有几种修订版的EN1207（A到D），其中A、B和C是基于tulip的，而D版本的是基于RealTek 8139（驱动程序不同）。所以在购买时要确定如果出问题可以退回。
+<P>
+<H3>Accton EN2209 Parallel Port Adaptor (EtherPocket)</H3>
+
+<P>状态：半支持，驱动程序名称：?
+<P>现在有这些并口适配器的驱动程序，但还不包括在2.0或2.1版本内核源码中。可以从如下主页获取驱动程序：
+<P><CODE>http://www.unix-ag.uni-siegen.de/~nils/accton_linux.html</CODE>
+<P>
+<P>
+<H3>Accton EN2212 PCMCIA Card</H3>
+
+<P>状态：半支持，驱动程序名称：?
+<P>David Hinds在编写该网卡的驱动程序，最好检查一下他的PCMCIA软件包以了解目前的状态。
+<P>
+<P>
+<H2><A NAME="allied-telesis"></A> <A NAME="ss4.3">4.3 Allied Telesyn/Telesis</A>
+</H2>
+
+<P>
+<P>
+<H3><A NAME="at-1500"></A> AT1500</H3>
+
+<P>状态：支持，驱动程序名称：lance
+<P>这些是使用79C960版本的AMD LANCE的系列低成本以太网卡。它们是可以控制总线的网卡，因此是一种可用的较快的ISA总线以太网卡。
+<P>DMA选择和芯片号码信息可以在
+<A HREF="#lance">AMD LANCE</A>找到。
+<P>更多有关基于AMD LANCE的以太网卡的技术信息可以在
+<A HREF="Ethernet-HOWTO-7.html#amd-notes">Notes on AMD...</A>找到。
+<P>
+<H3><A NAME="at1700"></A> AT1700</H3>
+
+<P>状态：支持，驱动程序名称：at1700
+<P>注意，要在<CODE>make config</CODE>时访问该驱动程序依然需要先在回答“Prompt for development and/or incomplete code/drivers?”时回答“Y”。这只是因为这种网卡很少见，导致驱动程序稳定性的反馈太少。如果与内核一起提供的驱动程序出现问题，也许你会对以下的替代驱动程序感兴趣：<CODE>http://www.cc.hit-u.ac.jp/nagoya/at1700/</CODE>
+<P>Allied Telesis的AT1700系列网卡是基于Fujitsu的MB86965芯片的。该芯片使用可编程I/O接口和一对固定大小的传输缓存。这样在发送背靠背的一小组数据包时，切换缓存带来的停顿较小。
+<P>该网卡的一个独特之处在于除了能够驱动10baseT的100欧姆UTP（非屏蔽双绞线）之外，还能够驱动一般安装在令牌环上的150欧姆STP（屏蔽双绞线）。该网卡还有一个光纤版本(AT1700FT)。
+<P>用在AT1700上的Fujitsu芯片有一个设计上的缺陷：它需要机器断电来完全重起。使用reset按钮无法重起总线接口。这也不是太坏，只不过在重起后才能可靠地被检测到。解决方法是在内核检测AT1700有问题时关机器重起。
+<P>
+<P>
+<H3><A NAME="at2400"></A> AT2400</H3>
+
+<P>状态：支持，驱动程序名称： ne, ne2k-pci (+8390) 
+<P>还是PCI NE2000兼容网卡，它是基于RealTek 8029芯片的。
+<P>
+<H3><A NAME="at2450"></A> AT2450</H3>
+
+<P>状态：支持，驱动程序名称：pcnet32
+<P>这是PCI版本的AT1500，而且没有Boca的79c970 PCI网卡那样的问题。DMA选择和芯片号码信息可以在
+<A HREF="#lance">AMD LANCE</A>找到。
+<P>更多有关基于AMD LANCE的以太网卡的技术信息可以在
+<A HREF="Ethernet-HOWTO-7.html#amd-notes">Notes on AMD...</A>找到。
+<P>
+<H3>AT2500</H3>
+
+<P>状态：半支持，驱动程序名称：rtl8139
+<P>该网卡使用RealTek的8139芯片——参见
+<A HREF="#rtl8139">RealTek 8139</A>一节。
+<P>
+<H3><A NAME="at2540"></A> AT2540FX</H3>
+
+<P>状态：半支持，驱动程序名称：eepro100
+<P>该网卡使用i82557芯片，因此可能/应该能够使用eepro100的驱动程序。如果你试用过，请发给我一份报告以更新本信息。
+<P>
+<H2><A NAME="amd"></A> <A NAME="ss4.4">4.4 AMD / Advanced Micro Devices</A>
+</H2>
+
+<P>
+<P>AMD的Carl Ching友好地提供了非常详尽的所有有关AMD以太网产品的资料，对澄清本节内容很有帮助。
+<P>
+<H3><A NAME="lance"></A> AMD LANCE (7990, 79C960/961/961A, PCnet-ISA)</H3>
+
+<P>状态：支持，驱动程序名称：lance
+<P>这实际上不是AMD的以太网卡。你会阅读本小节的原因是，你在网卡上只能找到AMD标记和上述数字。7990是原始的“LANCE”芯片，但大多数资料（包括本文档）都按照“LANCE”芯片对待所有这些类似的芯片。（......我可以加一句：这样是不对的。）
+<P>上面这些数字指明了作为许多以太网卡的核心的AMD芯片。例如，Allied Telesis的AT1500（参见
+<A HREF="#at-1500">AT1500</A>）和NE1500/2100（参见
+<A HREF="#ne1500">NE1500</A>）就使用了这些芯片。
+<P>7990/79c90早已被新版本所取代。79C960（又名PCnet-ISA）主要包含79c90核心以及所有其它必须的硬件支持，可作为单片以太网卡的解决方案。79c961(PCnet-ISA+)是'960的无跳线即插即用版本。ISA系列的最后一个芯片是79c961A(PCnet-ISA II)，增加了全双工的功能。除了那些使用共享内存配置的原始7990的非常古老的网卡，所有使用这些芯片的网卡都可以使用lance.c驱动程序。可以通过DMA通道没有跳线来辨认出这些老网卡。
+<P>一个常见的问题是遇到“busmaster arbitration failure”消息。在固定的时间之内（50us）LANCE驱动程序无法访问总线时就会出现这一消息。这通常预示主板上的总线控制DMA被破坏，或者某些其它设备霸占了总线，或者DMA通道出现冲突。如果你的BIOS设置中有“GAT option”（保证存取时间），那么试著改变一下其设置看看有没有效。
+<P>同样要注意，对一个合法网卡，驱动程序只查看以下地址：<CODE>0x300, 0x320, 0x340, 0x360</CODE>，启动参数<CODE>ether=</CODE>所提供的地址被静悄悄地略过了（对此将进行修改），所以现在要确定你的网卡配置为上述的一个I/O地址。
+<P>即使安装了超过16MB的内存，该驱动程序依然工作得很好，因为必要时它会使用低端内存“bounce-buffers”（即在发送数据到网卡进行传输之前，16MB以上内存的数据会先拷贝到16MB以下的一个缓存里。）
+<P>DMA通道可以用除此之外不被使用的dev->mem_start值的低位进行设置（又名PARAM_1）。（参见
+<A HREF="Ethernet-HOWTO-9.html#ether">PARAM_1</A>）如果没有设置，那么按次序启用每个空闲的DMA通道并检查是否初始化成功来进行探测。
+<P>HP-J2405A板是个例外：在该板上很容易读出EEPROM设置的IRQ和DMA的值。
+<P>参见
+<A HREF="Ethernet-HOWTO-7.html#amd-notes">Notes on AMD...</A>以了解更多有关这些芯片的信息。
+<P>
+<H3><A NAME="pcnet-32"></A> AMD 79C965 (PCnet-32)</H3>
+
+<P>状态：支持，驱动程序名称：pcnet32
+<P>这是PCnet-32——用于VL总线和局部总线系统的原始LANCE芯片的32比特总线控制版本。这些芯片可以用标准的<CODE>lance.c</CODE>驱动程序操作，同时还有一个不受任何ISA总线有关16MB限制的32比特版本的驱动程序（<CODE>pcnet32.c</CODE>）。
+<P>
+<H3><A NAME="pcnet-pci"></A> AMD 79C970/970A (PCnet-PCI)</H3>
+
+<P>状态：支持，驱动程序名称：pcnet32
+<P>这是PCnet-PCI——与PCnet-32相似，不过是为基于PCI总线系统设计的。请参阅上面的PCnet-32信息。这意味著需要构建一个启用PCI BIOS支持的内核。'970A在原始的'970设计上增加了全双工支持及其它一些特性。
+<P>注意，Boca制造的79C970无法用在较快的奔腾机器上。这是个硬件错误，它也会影响DOS用户。参考Boca一节以了解更多的细节。
+<P>
+<H3>AMD 79C971 (PCnet-FAST)</H3>
+
+<P>状态：支持，驱动程序名称：pcnet32
+<P>这是用于PCI系统的AMD的100Mbit芯片，也支持全双工操作。1996年6月出产。
+<P>
+<H3>AMD 79C972 (PCnet-FAST+)</H3>
+
+<P>状态：支持，驱动程序名称：pcnet32
+<P>已经证实该网卡工作情况与'971一样。
+<P>
+<H3>AMD 79C974 (PCnet-SCSI)</H3>
+
+<P>状态：支持，驱动程序名称：pcnet32
+<P>这是PCnet-SCSI——从以太网的观点来看基本上按'970处理。参看上文。不要问是否支持芯片的SCSI部分——本文是<EM>以太网-HowTo</EM>，不是SCSI-HowTo。
+<P>
+<H2><A NAME="ansel"></A> <A NAME="ss4.5">4.5 Ansel Communications</A>
+</H2>
+
+<P>
+<P>
+<H3>AC3200 EISA</H3>
+
+<P>状态：半支持，驱动程序名称：ac3200
+<P>注意，要在<CODE>make config</CODE>时访问该驱动程序依然需要先在回答“Prompt for development and/or incomplete code/drivers?”时回答“Y”。这只是因为这种网卡很少见，导致驱动程序稳定性的反馈太少。
+<P>其驱动程序作为alpha测试驱动程序被包含在目前的内核里。该网卡是基于ne2000和wd80x3网卡上使用的普通的NS8390芯片。请参见本文的
+<A HREF="Ethernet-HOWTO-2.html#alfa">Alpha驱动程序</A>以了解在Linux下使用alpha版驱动程序的重要信息。
+<P>如果你在使用该网卡，请让我们知道它的工作情况，虽然在v1.1.25内核里就包含了其驱动程序，但反馈信息很少。
+<P>如果你想把该驱动程序作为一个可载入的模块，应该阅读
+<A HREF="Ethernet-HOWTO-9.html#modules">把以太网驱动程序作为模块使用</A>以了解有关模块的信息。
+<P>
+<H2><A NAME="ss4.6">4.6 Apricot</A>
+</H2>
+
+<P>
+<P>
+<H3>Apricot Xen-II On Board Ethernet</H3>
+
+<P>状态：半支持，驱动程序名称：apricot
+<P>这是使用i82596总线控制芯片的板上以太网卡。它的I/O地址只能是<CODE>0x300</CODE>。从驱动程序的源码上得知，其IRQ也被硬件固定为10。
+<P>早期版本的驱动程序倾向于认为<CODE>0x300</CODE>处存放的一定是apricot NIC。后来才对硬件地址进行检查以避免错误的检测。
+<P>
+<H2><A NAME="arcnet"></A> <A NAME="ss4.7">4.7 Arcnet</A>
+</H2>
+
+<P>状态：支持，驱动程序名称：arcnet (arc-rimi, com90xx, com20020)
+<P>由于该网卡的价格非常低廉而且以太网性能很好，可能人们会有很多机会捐献出他们的Arcnet硬件，使得很多家用系统都使用Arcnet。
+<P>Arcnet的一个优点在于所有的网卡接口都一样，所以只需要一个驱动程序。它还内建了错误处理机制，据信不会丢失数据包。（对UDP来说这可太棒了！）注意，arcnet驱动程序使用“arc0”作为自己的名字，而不是通常的以太网设备名“eth0”。
+<P>在标准内核里包含了若干设置跳线、一般提示和邮寄Bug报告地址的信息文件。
+<P>据信100Mbs的ARCnet网卡也可以同样使用该驱动程序！
+<P>
+<H2><A NAME="ss4.8">4.8 AT&amp;T</A>
+</H2>
+
+<P>
+<P>注意，AT&amp;T的StarLAN是一种孤岛技术，跟SynOptics的LattisNet一样，不能在标准的10Base-T环境里使用，没有能进行“相互交流”的Hub。
+<P>
+<H3>AT&amp;T T7231 (LanPACER+)</H3>
+
+<P>状态：不支持。
+<P>这些StarLAN网卡使用的接口类似于i82586芯片。Matthijs Melchior（<CODE>matthijs.n.melchior@att.com</CODE>）曾经试著用过3c507的驱动程序，好象差不多可以工作了。但从那之后就再没听过多少消息了。
+<P>
+<H2><A NAME="boca"></A> <A NAME="ss4.9">4.9 Boca Research</A>
+</H2>
+
+<P>
+<P>不错，他们不光是制造多口串行卡。
+<P>
+<H3>Boca BEN400</H3>
+
+<P>状态：支持，驱动程序名称：ne (+8390)
+<P>显然这是一款NE2000兼容网卡，使用VIA VT86C916芯片。
+<P>
+<H3><A NAME="boca-ben"></A> Boca BEN (ISA, VLB, PCI)</H3>
+
+<P>状态：支持，驱动程序名称：lance, pcnet32
+<P>这些网卡都是基于AMD的PCnet芯片。需要警告一下潜在的买家，许多用户在使用这些VLB/PCI网卡时遇到了没完没了的麻烦。快的奔腾系统用户受到了特别的打击。注意这并不是驱动程序的问题，因为DOS/Win/NT用户也一样遇到麻烦。Boca的技术支持电话号码是(407) 241-8088，也可以通过<CODE>75300.2672@compuserve.com</CODE>找到他们。老式的ISA网卡看来没遇到这种问题。
+<P>Boca对受影响的使用者提供“包修”服务，需要增加一个缺少的电容，虽然可以解决一些问题，但对大多数人来说并非百分之百奏效。
+<P>如果您<EM>仍然</EM>想买这种网卡，至少试著得到一个7天无条件退货的条款，这样一旦出问题你就可以退货。
+<P>有关AMD芯片更一般的信息可以在
+<A HREF="#lance">AMD LANCE</A>找到。
+<P>基于AMD LANCE的以太网卡的更多技术信息可以在
+<A HREF="Ethernet-HOWTO-7.html#amd-notes">Notes on AMD...</A>找到。
+<P>
+<H2><A NAME="ctron"></A> <A NAME="ss4.10">4.10 Cabletron</A>
+</H2>
+
+<P>
+<P>Donald写道：“是的，又一个不肯提供编程资料的公司。他们要等待几个月来最终确定
+所有他们的资料都是私有的，蓄意浪费我的时间。如果可以的话，象躲避瘟疫一样避免使用他们的网卡。还要注意，有人曾打电话给Cabletron，结果听到什么‘有个D. Becker在编写Linux下的驱动程序’之类的话——好象我是为他们工作的。完全不是这么回事。”
+<P>
+<P>看来自从几年前Donald写了上述注释后，Cabletron改变他们对于编程资料的政策（象Xircom一样）——如果你想证实这一点或索取编程信息的话，发个e-mail给<CODE>support@ctron.com</CODE>。但是，现在几乎没有人对老式的E20xx和E21xx网卡提出修改/更新驱动程序的要求了。
+<P>
+<H3><A NAME="e10xx"></A> E10**, E10**-x, E20**, E20**-x</H3>
+
+<P>状态：半支持，驱动程序名称：ne (+8390)
+<P>这些差不多算是NEx000兼容网卡，据报告可以使用标准的NEx000驱动程序，这要感谢探测时的ctron特性检查。如果有问题，几乎不可能修复，因为没有编程资料。
+<P>
+<H3><A NAME="e2100"></A> E2100</H3>
+
+<P>状态：半支持，驱动程序名称：e2100 (+8390)
+<P>又来了，在编程资料私有的情况下什么都做不了。E2100的设计很差劲。每次传送数据包映射它的共享内存时，它都要映射到<EM>整个128K的区域！</EM>这就意味著你<B>无法</B>在此区域安全地使用另一个中断驱动的共享内存设备，包括另一个E2100。绝大多数时间它都正常工作，但时不时地会咬你一口。（对，这个问题可以通过传送数据包时关中断来避免，但那样几乎肯定会丢失时钟ticks。）同样，如果错误地对板进行了编程，或者在错误的时刻暂停机器，即使reset按钮都无法生效。你<EM>必须</EM>关机并<EM>保持</EM>30秒之后再开机。
+<P>媒介选择是自动进行的，但可以用dev-&gt;mem_end参数的低比特位来覆盖。参见
+<A HREF="Ethernet-HOWTO-9.html#ether">PARAM_2</A>。模块用户可以在<CODE>/etc/conf.modules</CODE>文件里指定<CODE>xcvr=N</CODE>值作为<CODE>option</CODE>。
+<P>同样，不要把E2100当成NE2100的兼容网卡。E2100是采用NatSemi的DP8390的共享内存设计，大致与伤脑筋的WD8013相似，而NE2100（和NE1500）是用总线控制的AMD的LANCE设计的。
+<P>在标准内核里包含了E2100的驱动程序。但是，无法看到其编程资料，不要指望有Bug修复。除非你已经买了该网卡，不要用它。
+<P>如果你想把该驱动程序作为一个可载入的模块，应该阅读
+<A HREF="Ethernet-HOWTO-9.html#modules">把以太网驱动程序作为模块使用</A>以了解有关模块的信息。
+<P>
+<H3><A NAME="e2200"></A> E22**</H3>
+
+<P>状态：半支持，驱动程序名称：lance
+<P>按照Cabletron技术公告牌上的资料，这些网卡使用标准AMD的PC-Net芯片组（参见
+<A HREF="#lance">AMD PC-Net</A>）而且可以使用普通的lance驱动程序。
+<P>
+<H2><A NAME="ss4.11">4.11 Cogent</A>
+</H2>
+
+<P>
+<P>下面是进行联系的地址和方法：
+<P>
+<P>
+<PRE>
+        Cogent Data Technologies, Inc.
+        175 West Street, P.O. Box 926
+        Friday Harbour, WA 98250, USA.
+
+        Cogent Sales
+        15375 S.E. 30th Place, Suite 310
+        Bellevue, WA 98007, USA.
+
+        技术支持：
+        Phone (360) 378-2929 between 8am and 5pm PST
+        Fax (360) 378-2882
+        Compuserve GO COGENT
+        Bulletin Board Service (360) 378-5405
+        Internet: support@cogentdata.com
+</PRE>
+<P>
+<H3>EM100-ISA/EISA</H3>
+
+<P>状态：半支持，驱动程序名称：smc9194
+<P>这些网卡使用SMC的91c100芯片，可以使用SMC的91c92驱动程序，但还没得到证实。
+<P>
+<H3>Cogent eMASTER+, EM100-PCI, EM400, EM960, EM964</H3>
+
+<P>状态：支持，驱动程序名称：de4x5, tulip
+<P>这些是另一种DEC的21040网卡，希望可以使用标准21040驱动程序很好地工作。
+<P>EM400和EM964是使用DEC的21050桥接器和4片21040芯片的4端口网卡。
+<P>参见
+<A HREF="#dec-21040">DEC 21040</A>以了解这些网卡的更多信息和当前驱动程序的状况。
+<P>
+<H2><A NAME="ss4.12">4.12 Compaq</A>
+</H2>
+
+<P>
+<P>Compaq并不真正从事制造以太网卡，但他们的很多系统都在主板上嵌入了以太网控制器。
+<P>
+<H3>Compaq Deskpro / Compaq XL (Embedded AMD Chip)</H3>
+
+<P>状态：支持，驱动程序名称：pcnet32
+<P>诸如XL系列的机器在主板上有一片AMD的79c97x PCI芯片，可以使用标准的LANCE驱动程序。但在使用前，必须使用一些技巧把PCI BIOS放到可以被Linux发现的地方。Frank Maas友好地提供了其中的细节：
+<P>“Compaq机器的这个问题在于其PCI目录被载入高端内存，Linux内核无法达到那一点。结果：网卡检测不到，也无法使用（另外鼠标也不工作）。其解决方法（在http://www-c724.uibk.ac.at/XL/里有详尽的描述）是载入MS-DOS，使用Compaq编写的一个小驱动程序，然后用LOADLIN载入Linux内核。好吧，你也许想说“呸、呸”，但到目前为止，这是所我知道的唯一办法。那个小驱动程序的作用只不过是把PCI目录放到其正常的存储位置（这样Linux就可以找到它了）”
+<P>更多有关AMD芯片的一般资料可以在
+<A HREF="#lance">AMD LANCE</A>找到。
+<P>
+<H3>Compaq Nettelligent/NetFlex（嵌入ThunderLAN芯片）</H3>
+
+<P>状态：支持，驱动程序名称：tlan
+<P>这些系统使用Texas Instruments的ThunderLAN芯片。有关ThunderLAN驱动程序的资料可在
+<A HREF="#tlan">ThunderLAN</A>找到。
+<P>
+<H3>Compaq PCI card</H3>
+
+<P>状态：支持，驱动程序名称：eepro100
+<P>检查你的网卡——如果它的零件登记号是323551-821或者上面有一片intel 82558芯片，那它就是另一种基于Intel EEPro100的网卡。
+<P>
+<P>
+<H2><A NAME="ss4.13">4.13 Danpex</A>
+</H2>
+
+<P>
+<P>
+<H3>Danpex EN9400</H3>
+
+<P>状态：支持，驱动程序名称：de4x5, tulip
+<P>又一个基于DEC的21040芯片的网卡，据报告性能挺好，价格比较便宜。
+<P>参见
+<A HREF="#dec-21040">DEC 21040</A>以了解这些网卡的更多信息和当前驱动程序的状况。
+<P>
+<H2><A NAME="d-link"></A> <A NAME="ss4.14">4.14 D-Link</A>
+</H2>
+
+<P>
+<P>
+<H3><A NAME="de-100"></A> DE-100, DE-200, DE-220-T, DE-250</H3>
+
+<P>状态：支持，驱动程序名称：ne (+8390)
+<P>一些早期的D-Link网卡没有PROM的标识<CODE>0x57</CODE>，但ne2000驱动程序能识别它们。对于软件配置的网卡，可以从<CODE>www.dlink.com</CODE>得到配置程序。DE2**网卡曾经广为报道在早期版本的Linux下会产生传输地址不匹配的虚假错误。注意，有一些Digital (DEC)的网卡也叫做DE100和DE200，只是名称相同而已。
+<P>
+<H3><A NAME="de-520"></A> DE-520</H3>
+
+<P>状态：支持，驱动程序名称：pcnet32
+<P>这是使用PCI版本AMD的LANCE芯片的PCI网卡。DMA选择和芯片号码信息可以在
+<A HREF="#lance">AMD LANCE</A>找到。
+<P>更多有关基于AMD LANCE的以太网卡的技术信息可以在
+<A HREF="Ethernet-HOWTO-7.html#amd-notes">Notes on AMD...</A>找到。
+<P>
+<H3>DE-528</H3>
+
+<P>状态：支持，驱动程序名称：ne, ne2k-pci (+8390)
+<P>很明显D-Link已经开始制造PCI NE2000兼容网卡了。
+<P>
+<P>
+<H3><A NAME="de-530"></A> DE-530</H3>
+
+<P>状态：支持，驱动程序名称：de4x5, tulip
+<P>这是一款使用DEC的21040 PCI芯片的通用网卡，据报告可以使用通用的21040 tulip驱动程序。注意，它不是DFE-530。
+<P>参见
+<A HREF="#dec-21040">DEC 21040</A>以了解这些网卡的更多信息和当前驱动程序的状况。
+<P>
+<H3><A NAME="de-600"></A> DE-600</H3>
+
+<P>状态：支持，驱动程序名称：de600
+<P>笔记本电脑以及想让电脑快捷地联上以太网的用户可能用该网卡比较好。在缺省的内核源码树里有它的驱动程序，是Bjorn Ekwall <CODE>bj0rn@blox.se</CODE>编写的。通过并口可以从该网卡获得180kb/s的传送速度。请阅读内核源码树里的README.DLINK文件。
+<P>注意，<EM>现在</EM>传递给<CODE>ifconfig</CODE>的设备名为<CODE>eth0</CODE>，而不是以前用的<CODE>dl0</CODE>。
+<P>如果你的并口<EM>不</EM>是在标准的<CODE>0x378</CODE>，那么需要重新进行编译，因为地址是直接编译到驱动程序里的。同样还要注意，某些笔记本电脑主板上的并口位于<CODE>0x3bc</CODE>，某些一体化板卡的并口也是这样。
+<P>
+<H3><A NAME="de-620"></A> DE-620</H3>
+
+<P>状态：支持，驱动程序名称：de620
+<P>与DE-600一样，只是有两种输出格式。Bjorn为1.1以上版本内核里的这种型号网卡编写了驱动程序。参见上面有关DE-600的信息。
+<P>
+<H3><A NAME="de-650"></A> DE-650</H3>
+
+<P>状态：半支持，驱动程序名称：de650 (?)
+<P>这种PCMCIA网卡已经被有些人在他们的笔记本电脑上使用一段时间了。它是个基本的8390设计，与NE2000很相象。LinkSys的PCMCIA网卡和IC-Card的Ethernet都被认为是DE-650兼容网卡。注意，目前其驱动程序还<EM>不</EM>是标准内核的一部分，所以需要做一些打补丁的工作。参见本文档的
+<A HREF="Ethernet-HOWTO-8.html#pcmcia">PCMCIA支持</A>。
+<P>
+<H3>DFE-530TX</H3>
+
+<P>状态：支持，驱动程序名称：via-rhine
+<P>又一款使用VIA Rhine芯片组。（参见
+<A HREF="#rhine">VIA Rhine</A>）不要把它同基于tulip的网卡DE-530相混淆。
+<P>
+<H3>DFE-538TX</H3>
+
+<P>状态：支持，驱动程序名称：rtl8139, 8139too
+<P>该网卡使用RealTek 8139芯片——参见
+<A HREF="#rtl8139">RealTek 8139</A>一节。
+<P>
+<H2><A NAME="dfi"></A> <A NAME="ss4.15">4.15 DFI</A>
+</H2>
+
+<P>
+<P>
+<H3><A NAME="dfi-300"></A> DFINET-300和DFINET-400</H3>
+
+<P>状态：支持，驱动程序名称：ne (+8390)
+<P>又一款拙劣设计的NE兼容网卡——这些网卡在PROM的前三个字节使用“DFI”，而不是象所有NE1000和NE2000网卡那样在第14和15字节使用<CODE>0x57</CODE>。（300是8比特的伪NE1000兼容卡，400是伪NE2000兼容卡。）
+<P>
+<P>
+<H2><A NAME="dec"></A> <A NAME="ss4.16">4.16 Digital / DEC</A>
+</H2>
+
+<P>
+<P>
+<H3><A NAME="dec-200"></A> DEPCA, DE100/1, DE200/1/2, DE210, DE422</H3>
+
+<P>状态：支持，驱动程序名称：depca
+<P>源文件“depca.c”里的说明包含了在一台机器里如何使用多块此类网卡。注意，DE422是EISA网卡。这些网卡都是基于AMD的LANCE芯片。参见
+<A HREF="#lance">AMD LANCE</A>以了解更多信息。同时最多只能使用两块ISA网卡，因为它们的I/O基址只能设置在<CODE>0x300</CODE>和<CODE>0x200</CODE>。如果想这么做的话，请阅读标准内核源码树中的驱动程序源文件<CODE>depca.c</CODE>里的注释。
+<P>其驱动程序也可以用在基于Alpha CPU的机器上，用户还可以使用其中的各种ioctl()函数。
+<P>
+<H3><A NAME="dec-ewrk3"></A> Digital EtherWorks 3 (DE203, DE204, DE205)</H3>
+
+<P>状态：支持，驱动程序名称：ewrk3
+<P>这些网卡使用DEC的私有芯片，而不是象早期的DE200网卡那样使用LANCE芯片。它们支持共享内存和可编程I/O两种工作方式，但在使用PIO模式时其性能会下降50%。共享内存的大小可以设置为2kB、32kB或64kB，但驱动程序只进行了2kB和32kB下的测试。在驱动程序文件<CODE>ewrk3.c</CODE>的开头有更多的信息（包括如何把它作为可载入模块使用），在<CODE>README.ewrk3</CODE>里也有此类信息。在发行的标准内核里包含了这两个文件。与depca.c一样，该驱动程序也支持Alpha CPU。
+<P>标准的驱动程序里有一些有趣的ioctl()调用，可以用来获取或清除数据包统计信息、读/写EEPROM、改变硬件地址等。黑客可以阅读源代码以了解更多此类信息。
+<P>除了其它工具软件，David还为这些网卡编写了一个配置工具（依照DOS程序<CODE>NICSETUP.EXE</CODE>）。这些都可以在大多数Linux的FTP站点的目录<CODE>/pub/Linux/system/Network/management</CODE>下找到——查找文件<CODE>ewrk3tools-X.XX.tar.gz</CODE>。
+<P>
+<P>
+<H3><A NAME="dec-eisa"></A> DE425 EISA, DE434, DE435, DE500  </H3>
+
+<P>状态：支持，驱动程序名称：de4x5, tulip
+<P>这些网卡是基于下面会提到的21040芯片。DE500使用21140芯片提供10/100Mbs以太网的连接。阅读下面的21040一节以了解其它信息。在非DEC网卡使用此驱动程序时还有一些编译时的选项。细节可见<CODE>README.de4x5</CODE>。
+<P>所有Digital网卡都自动探测媒介（除了DE500暂时因为专利的原因还不支持这一点）。
+<P>驱动程序也支持Alpha CPU，可以被作为模块载入。用户可以通过ioctl()调用访问驱动程序的内部——参考“ewrk3”工具和de4x5.c源码以了解如何使用。
+<P>
+<H3><A NAME="dec-21040"></A> DEC 21040, 21041, 2114x, Tulip </H3>
+
+<P>状态：支持，驱动程序名称：de4x5, tulip
+<P>DEC 21040是Digital的总线控制单片以太网卡产品，与AMD的PCnet芯片类似。21040是为PCI总线结构特别设计的。显然目前不再生产这些芯片了，因为Intel购买了DEC的半导体部分，更倾向于使用他们自己的以太网卡芯片。
+<P>对基于此芯片的网卡可以在<EM>两个</EM>驱动程序之间进行选择。上面讨论了DE425驱动程序，还有一个通用的21040“tulip”驱动程序。
+<P><B>警告：</B>即使你的网卡是基于该芯片的，<EM>驱动程序也可能出问题</EM>。Davies写道：
+<P>“无法保证‘tulip.c’或‘de4x5.c’可以驱动任一基于DC2114x的网卡，除非说明支持该网卡。为什么？？因为一个寄存器，通用寄存器（CSR12），(1)DC21140A中的CSR12是可编程的，而各个销售商的实现各不相同；(2)DC21142/3中的CSR12现在是个SIA控制寄存器（按照DC21041的方式）。唯一的希望是SROM可以编码来帮助构建驱动程序。但这并非可以确保的解决方案，因为有些销售商（如SMC的9332网卡）并未遵从Digital Semiconductor推荐的SROM编程格式。”
+<P>从非技术的角度上说，这就意味著你无法确定一个未知的采用DC2114x芯片的网卡可以使用Linux驱动程序，所以在购买网卡<EM>之前</EM>，最好确定一下可以退货。
+<P>在很多近期的SMC EtherPower网卡中也发现21041芯片被用来代替21040。21140可以支持100Base-T，并使用21040芯片的Linux驱动程序。如果要对非DEC的网卡使用David的<CODE>de4x5</CODE>驱动程序，请先看一下<CODE>README.de4x5</CODE>里的细节。
+<P>如果有问题的话，请试著从Donald的ftp/WWW站点获取最新的驱动程序版本。
+<P>
+<A HREF="http://www.scyld.com/network">Tulip Driver</A><P>那里还有一个各种使用21040芯片的网卡/销售商的（非完全）列表。
+<P>
+<H2><A NAME="ss4.17">4.17 Farallon</A>
+</H2>
+
+<P>Farallon销售EtherWave适配器和收发器。其设备可以把多个10baseT设备构成菊花链。
+<P>
+<H3>Farallon Etherwave</H3>
+
+<P>状态：支持，驱动程序名称：3c509
+<P>据说这是一个包含EtherWave收发器的3c509兼容网卡。可以成功地使用目前的Linux的3c509驱动程序。对于一般的应用，该网卡过于昂贵了，但在某些特殊情况下可以使用它。小Hub的价格在$125以上，Etherwave还要在板卡的价格之上增加$75-$100——如果拉一根线太少的话就物有所值，如果是缺少两个网络就不值得这么做了。
+<P>
+<H3>Farallon PCI 593</H3>
+
+<P>状态：支持，驱动程序名称：de4x5, tulip
+<P>据说该网卡可以被<CODE>de4x5</CODE>驱动程序检测到。
+<P>
+<H2><A NAME="ss4.18">4.18 Fujitsu</A>
+</H2>
+
+<P>
+<P>与许多网络芯片制造商不同，Fujitsu还制造和销售一些基于他们自己芯片的网卡。
+<P>
+<H3>Fujitsu FMV-181/182/183/184</H3>
+
+<P>状态：支持，驱动程序名称：fmv18x
+<P>从驱动程序来看，这些网卡就是Fujitsu的MB86965网卡的简单改进，这使它们与Allied Telesis的AT1700网卡很相似。
+<P>
+<H2><A NAME="hp"></A> <A NAME="ss4.19">4.19 Hewlett Packard</A>
+</H2>
+
+<P>
+<P>272**网卡使用可编程I/O，与NE*000板卡类似，但是数据传输端口可以在不访问的时候“关闭”，以避免自动探测驱动程序时的麻烦。
+<P>感谢Glenn Talbott帮助澄清了本节有关HP硬件版本号的疑惑。
+<P>
+<H3>HP Night Director+ 10/100</H3>
+
+<P>
+<P>状态：支持，驱动程序名称：pcnet32
+<P>看来这些网卡使用的是AMD 79C972芯片。
+<P>
+<P>
+<H3><A NAME="hp-27245a"></A> 27245A</H3>
+
+<P>状态：支持，驱动程序名称：hp (+8390)
+<P>这是基于8比特8390的10BaseT网卡，出于所有8比特的缘故不推荐使用。几年前该网卡被重新设计为高度集成的，引起了一些只影响测试程序的初始化时的变化，对LAN驱动程序没有影响。（新的网卡在切换进入和退出环回模式后并不立刻处于“准备好”的状态。）
+<P>如果你想把该驱动程序作为一个可载入的模块，应该阅读
+<A HREF="Ethernet-HOWTO-9.html#modules">把以太网驱动程序作为模块使用</A>以了解有关模块的信息。
+<P>
+<H3>HP EtherTwist, PC Lan+ (27247, 27252A)</H3>
+
+<P>状态：支持，驱动程序名称：hp+ (+8390)
+<P>HP的PC Lan+与标准的HP PC Lan网卡不同。从v1.1.x开发时其驱动程序就被加入到标准内核的驱动程序列表中。它可以象ne2000一样工作在PIO模式，也可以象wd8013一样工作在共享内存模式。
+<P>47B是基于16比特8390的10BaseT w/AUI，而52A是基于16比特8390的ThinLAN w/AUI。这些网卡用于收发数据包缓冲的板上RAM为32K，而不是一般的16KB，而且都提供自动识别LAN连接器的功能。
+<P>如果你想把该驱动程序作为一个可载入的模块，应该阅读
+<A HREF="Ethernet-HOWTO-9.html#modules">把以太网驱动程序作为模块使用</A>以了解有关模块的信息。
+<P>
+<H3>HP-J2405A</H3>
+
+<P>状态：支持，驱动程序名称：lance
+<P>这些网卡比27247/27252A便宜而且稍微快一点儿，但少了一些特性，如AUI、ThinLAN连接与启动PROM插座。这是一个相当通用的LANCE设计，但设计时的一个不起眼的决定使它与通用的“NE2100”驱动程序不兼容。感谢HP的Glenn Talbott提供的资料，使驱动程序能够包含对它的特别支持（包括从板上读取DMA通道）。
+<P>更多有关基于LANCE的网卡信息可以在
+<A HREF="Ethernet-HOWTO-7.html#amd-notes">Notes on AMD...</A>中找到。
+<P>
+<H3>HP-Vectra On Board Ethernet</H3>
+
+<P>状态：支持，驱动程序名称：lance
+<P>HP-Vectra在主板上有一个AMD的PCnet芯片。       DMA选择和芯片号码信息可以在
+<A HREF="#lance">AMD LANCE</A>找到。
+<P>更多有关基于AMD LANCE的以太网卡的技术信息可以在
+<A HREF="Ethernet-HOWTO-7.html#amd-notes">Notes on AMD...</A>找到。
+<P>
+<H3>HP 10/100 VG Any Lan Cards (27248B, J2573, J2577, J2585, J970, J973)</H3>
+
+<P>状态：支持，驱动程序名称：hp100
+<P>该驱动程序还支持某些Compex VG产品。由于驱动程序支持ISA、EISA和PCI网卡，所以在对内核源码运行<CODE>make config</CODE>时可以在ISA网卡下找到它。
+<P>
+<H3>HP NetServer 10/100TX PCI (D5013A)</H3>
+
+<P>状态：支持，驱动程序名称：eepro100
+<P>显然这只是重新标记过的Intel EtherExpress Pro 10/100B网卡。参见Intel一节以了解更多信息。
+<P>
+<P>
+<H2><A NAME="ibm"></A> <A NAME="ss4.20">4.20 IBM / International Business Machines</A>
+</H2>
+
+<P>
+<P>
+<H3><A NAME="thinkpad-300"></A> IBM Thinkpad 300</H3>
+
+<P>状态：支持，驱动程序名称：znet
+<P>它与基于Intel的Zenith Z-note兼容。参见
+<A HREF="#z-note">Z-note</A>以了解更多信息。
+<P>据信下面这个站点有一个新版本Thinkpad的全面的有用资料数据库。我还没有亲自去查看过。
+<P>
+<A HREF="http://peipa.essex.ac.uk/html/linux-thinkpad.html">Thinkpad-info</A><P>对不便于使用WWW浏览器的读者，可以试试<CODE>peipa.essex.ac.uk:/pub/tp750/</CODE>
+<P>
+<H3>IBM Credit Card Adaptor for Ethernet</H3>
+
+<P>状态：半支持，驱动程序名称：?（独立发行）
+<P>该PCMCIA网卡可以在Linux下正常使用。同样需要指出的是，笔记本电脑需要有支持PCMCIA的芯片组，而且要把支持PCMCIA的补丁加进标准内核。参见本文档中的
+<A HREF="Ethernet-HOWTO-8.html#pcmcia">PCMCIA支持</A>。
+<P>
+<H3>IBM 10/100 EtherJet PCI</H3>
+
+<P>状态：支持，驱动程序名称：eepro100
+<P>据说该网卡与Intel EtherExpress Pro 100驱动程序兼容。
+<P>
+<H3>IBM Token Ring</H3>
+
+<P>状态：半支持，驱动程序名称：ibmtr
+<P>要支持令牌环不仅仅需要写一个设备驱动程序，还要为令牌环编写源路由例程。编写时花费时间最多的地方就是源路由。
+<P>开始的驱动程序开发是针对IBM的ISA和MCA令牌环网卡，并在MCA 16/4 Megabit令牌环板上进行过测试，但在其它基于Tropic的板上也可以工作。
+<P>
+<H2><A NAME="ss4.21">4.21 ICL Ethernet Cards</A>
+</H2>
+
+<P>
+<P>
+<H3>ICL EtherTeam 16i/32</H3>
+
+<P>状态：支持，驱动程序名称：eth16i
+<P>驱动程序支持该网卡的ISA (16i)和EISA (32)两个版本。它使用的Fujitsu的MB86965芯片也被用在at1700网卡上。
+<P>
+<H2><A NAME="intel"></A> <A NAME="ss4.22">4.22 Intel Ethernet Cards</A>
+</H2>
+
+<P>
+<P>注意，各种Intel网卡的命名是乱七八糟的。如果有问题，检查网卡上主要芯片的<CODE>i8xxxx</CODE>号码，对PCI网卡使用<CODE>/proc</CODE>目录下的PCI信息，然后再与这里列出的数字进行比较。
+<P>
+<H3>Ether Express</H3>
+
+<P>状态：支持，驱动程序名称：eexpress
+<P>该网卡使用intel的i82586芯片。驱动程序的早期版本（在v1.2内核里）是alpha-测试驱动程序，大多数人在使用时会遇到麻烦。v2.0内核里的驱动程序要好得多，虽然其源码还被列为实验性的，而且在较快的机器上问题更多。
+<P>在驱动程序源码开头的注释里列出了一些与这些网卡有关的问题（并进行了修正！）。至少有一个用户报告说有死锁，使得把驱动程序里所有的<CODE>outb</CODE>替换为<CODE>outb_p</CODE>的工作放慢下来。同时还要检查一下驱动程序报告的RAM缓存大小与Intel配置工具报告的是否一致。
+<P>
+<H3>Ether Express PRO/10 (PRO/10+)</H3>
+
+<P>状态：支持，驱动程序名称：eepro
+<P>Bao Chau Ha编写了这些网卡的驱动程序，早在1.3.x内核中就包含了它。该驱动程序也可以使用在一些基于i82595芯片的Compaq内建以太网系统上。可能需要在适当的地方使用网卡自带的配置工具禁用PnP支持。
+<P>
+<H3>Ether Express PRO/10 PCI (EISA)</H3>
+
+<P>状态：半支持，驱动程序名称：?（独立发行）
+<P>有一个在缺省内核外独立发行的PCI版本的驱动程序。这些网卡使用PLX9036 PCI接口芯片和Intel的i82596 LAN控制器芯片。如果你的网卡上有i82557芯片，那么你的网卡就<EM>不</EM>是该类型网卡，而是下面要讨论的版本，需要EEPro100驱动程序。
+<P>可以从如下站点获得PRO/10 PCI网卡的alpha驱动程序及使用指导：
+<P>
+<A HREF="http://www.ultranet.com/~stalba/eep10pci.html">EEPro10 Driver</A><P>如果是EISA网卡，可能要改一下驱动程序在不同情况下（PCI与EISA）使用的检测机制。
+<P>
+<P>
+<H3><A NAME="eepro100"></A> Ether Express PRO 10/100B</H3>
+
+<P>状态：支持，驱动程序名称：eepro100
+<P>注意，该驱动程序<EM>不</EM>支持老式的100A网卡。驱动程序里列出的芯片号码是i82557/i82558。更新驱动程序或寻找支持，请访问：
+<P>
+<A HREF="http://www.scyld.com/network">EEPro-100B Page</A><P>
+<H2><A NAME="ss4.23">4.23 Kingston</A>
+</H2>
+
+<P>Kingston制造各种网卡，包括NE2000+、基于AMD PCnet的网卡和基于DEC tulip的网卡。大多数网卡都可以使用相应的驱动程序。参见
+<A HREF="http://www.kingston.com">Kingston Web Page</A>。
+<P>
+<P>
+<H2><A NAME="ss4.24">4.24 LinkSys</A>
+</H2>
+
+<P>LinkSys制造少量不同的NE2000兼容网卡、一些正统的ISA网卡、一些即插即用的ISA网卡以及一些基于支持ne2000-PCI芯片组的ne2000-PCI兼容网卡。它们的型号太多，这里就不一一列出了。
+<P>LinkSys对Linux是友好的，拥有一个专门的Linux支持WWW主页，甚至在某些产品的包装盒上印有Linux字样。请访问：
+<P><CODE>http://www.linksys.com/support/solution/nos/linux.htm</CODE>
+<P>
+<H3>LinkSys Etherfast 10/100 Cards.</H3>
+
+<P>状态：支持，驱动程序名称：tulip
+<P>注意，这些网卡有几种“修订版”（即使用不同的芯片组），都使用一样的网卡名。第一种使用DEC芯片组。第二种修订版使用Lite-On PNIC 82c168 PCI网络接口控制器，该网卡的第三种修订版使用LinkSys 82c169 NIC芯片。对后两种版本网卡的支持已经被合并到标准的tulip驱动程序里——按照当前所用驱动程序的版本，可能需要进行版本升级来支持它们。
+<P>更多的有关PNIC信息可在下面找到：
+<P><CODE>http://www.scyld.com/linux/drivers/pnic.html</CODE>
+<P>有关这些网卡各种版本的进一步资料可以在上面提到过的LinkSys的WWW站点得到。
+<P>
+<P>
+<H3>LinkSys Pocket Ethernet Adapter Plus (PEAEPP)</H3>
+
+<P>状态：支持，驱动程序名称：de620
+<P>据说这是DE-620兼容网卡，而且据报道可以正常使用DE-620的驱动程序。参见
+<A HREF="#de-620">DE-620</A>以了解更多信息。
+<P>
+<H3>LinkSys PCMCIA Adaptor</H3>
+
+<P>状态：支持，驱动程序名称：de650 (?)
+<P>有人猜想这是重新标记过的DE-650。参见
+<A HREF="#de-650">DE-650</A>以了解更多信息。
+<P>
+<H2><A NAME="ss4.25">4.25 Microdyne (Eagle)</A>
+</H2>
+
+<P>Eagle Technology（又称Novell网卡）被卖给Microdyne。如果在这里的列表上找不到你的网卡，请检查本文档的Novell一节。虽然Microdyne现在不再积极销售网卡，在他们的网站<CODE>ftp.mcdy.com</CODE>上还有一些与产品相关的资料。
+<P>
+<H3>Microdyne Exos 205T</H3>
+
+<P>状态：半支持，驱动程序名称：?
+<P>这是另一款基于i82586的网卡。Dirk Niggemann <CODE>dirk-n@dircon.co.uk</CODE>编写了一个自己认为属于“pre-alpha”的驱动程序，希望有人进行测试。要了解细节请写信给他。
+<P>
+<H2><A NAME="ss4.26">4.26 Mylex</A>
+</H2>
+
+<P>
+<P>如果想询问有关Mylex的问题，请通过如下号码与他们联系。
+<P>
+<PRE>
+        MYLEX CORPORATION, Fremont
+        Sales:  800-77-MYLEX, (510) 796-6100
+        FAX:    (510) 745-8016.
+</PRE>
+<P>他们也有一个WEB站点：
+<A HREF="http://www.mylex.com">Mylex WWW Site</A><P>
+<H3>Mylex LNE390A, LNE390B</H3>
+
+<P>状态：支持，驱动程序名称：lne390 (+8390)
+<P>这些是相当老的使用与wd80x3相似的共享内存方式的EISA网卡。在目前的2.1.x系列内核里有它们的驱动程序。应该确定共享内存地址被设置在1MB以下，或者在机器所安装物理RAM的最高地址之上。
+<P>
+<H3>Mylex LNP101</H3>
+
+<P>状态：支持，驱动程序名称：de4x5, tulip
+<P>这是基于DEC的21040芯片的PCI网卡。可以选择10BaseT、10Base2和10Base5输出。LNP101网卡被证实可以使用通用的21040驱动程序。
+<P>参见有关21040芯片一节（
+<A HREF="#dec-21040">DEC 21040</A>）以了解更多信息。
+<P>
+<H3>Mylex LNP104</H3>
+
+<P>状态：半支持，驱动程序名称：de4x5, tulip
+<P>LNP104使用DEC的21050芯片来处理<EM>四个</EM>独立的10BaseT端口。它应该可以使用最近的可以共享中断的21040驱动程序，但（我觉察到）这一尝试还没有人报告使用过。
+<P>
+<H2><A NAME="novell"></A> <A NAME="ss4.27">4.27 Novell Ethernet, NExxxx及其相关兼容卡。</A>
+</H2>
+
+<P>
+<P>前缀“NE”来自Novell Ethernet。Novell按照最便宜的NatSemi数据手册设计并把制造权卖（扔？）给了Eagle，就是为了向市场提供价格合理的以太网卡。（目前被广泛使用的NE2000网卡。）
+<P>
+<H3><A NAME="ne2k"></A> NE1000, NE2000</H3>
+
+<P>状态：支持，驱动程序名称：ne (+8390)
+<P>ne2000现在是按照NatSemi的8390芯片进行基本设计的通用名称。它们使用可编程I/O，而不是共享内存，使得安装简单，但性能有一点降低，而且带来几个问题。有关NE2000网卡的一些普遍性问题列在
+<A HREF="Ethernet-HOWTO-2.html#ne2k-probs">Problems with...</A>里。
+<P>有些NE2000兼容卡使用National Semiconductor的“AT/LANTic”83905芯片，提供与wd8013相似的共享内存模式和EEPROM软件配置。共享内存模式比可编程I/O模式占用的CPU要少（也就是更有效）。
+<P>一般来说，把NE2000兼容卡的I/O地址放在<CODE>0x300</CODE>不是个好主意，因为几乎<EM>每一个</EM>设备驱动程序启动时都探测这个地址。某些差劲的NE2000兼容卡在被探测到错误区域时处理不当会导致机器死锁。同样，<CODE>0x320</CODE>也不好，因为SCSI驱动程序会探测<CODE>0x330</CODE>。
+<P>Donald为所有ne2000网卡编写了一个NE2000诊断程序（ne2k.c）。参见
+<A HREF="Ethernet-HOWTO-6.html#diag">诊断程序</A>以了解更多信息。
+<P>如果你想把该驱动程序作为一个可载入的模块，应该阅读
+<A HREF="Ethernet-HOWTO-9.html#modules">把以太网驱动程序作为模块使用</A>以了解有关模块的信息。
+<P>
+<H3><A NAME="ne2k-pci"></A> NE2000-PCI (RealTek/Winbond/Compex)</H3>
+
+<P>状态：支持，驱动程序名称：ne, ne2k-pci (+8390)
+<P>是的，无论相信与否，人们制造的PCI网卡是基于十多年前设计的ne2000接口。目前几乎所有这些网卡都是基于RealTek的8029芯片或Winbond的89c940芯片。显然Compex、KTI、VIA和Netvin的网卡也使用这些芯片，只是PCI ID不同。
+<P>最新的v2.0内核支持对所有这些网卡的自动检测与使用。（如果你使用v2.0.34之前的内核版本，把它升级以确保网卡被检测到。）目前有两个可选的驱动程序，一个是原始的ISA/PCI驱动程序<CODE>ne.c</CODE>，另一个是相对较新的只支持PCI的驱动程序<CODE>ne2k-pci.c</CODE>。
+<P>要使用原始的ISA/PCI驱动程序，在运行<CODE>make config</CODE>时必须对“Other ISA cards”选项回答“Y”，与ISA网卡使用同一个NE2000驱动程序。（这会让你意识到这些网卡并不像PCNet-PCI或DEC 21040网卡一样智能......）
+<P>较新的只支持PCI的驱动程序与ISA/PCI驱动程序的区别在于去掉了对所有老式8比特网卡的支持，而且在移动网卡上的数据时使用更大的数据块，不再有老式ISA-NE2000网卡可靠操作所必需的中间暂停。这样驱动程序变得小了一些，效率也高了一些，但在普通应用中这一区别并没明显到令人激动的地步。（如果希望得到最高效率/最低的CPU占用率，那么PCI-NE2000不过是个差劲的选择。）驱动程序更新及更多信息可以在下面找到：
+<P><CODE>http://www.scyld.com/linux/drivers/ne2k-pci.html</CODE>
+<P>如果你的NE2000 PCI网卡<EM>没有</EM>被最新版本的驱动程序检测到，请与<CODE>/usr/src/linux/MAINTAINERS</CODE>里列出的NE2000驱动程序维护者联系，并附上<CODE>cat /proc/pci</CODE>和<CODE>dmesg</CODE>的输出，以便把对该网卡的支持加到驱动程序里。
+<P>还要注意，有些网卡的制造商在明知道他们的网卡完全不同时（如PCNet-PCI或RealTek的8139），依然在产品包装上写著“NE2000 Compatible”。如果有疑问的话，按照本文档查看一下主要芯片的编号。
+<P>
+<H3>NE-10/100</H3>
+
+<P>状态：不支持。
+<P>这些是基于National Semiconductor的DP83800和DP83840芯片的ISA 100Mbps网卡。目前没有驱动程序支持它，也没听说有谁在编写这样的驱动程序。除了一个简单的PDF文件，目前还没有足以编写驱动程序的有关该芯片的资料。
+<P>
+<H3><A NAME="ne1500"></A> NE1500, NE2100</H3>
+
+<P>状态：支持，驱动程序名称：lance
+<P>这些网卡使用AMD的原始7990 LANCE芯片，可以使用Linux的lance驱动程序。较新的NE2100兼容卡使用AMD更新后的PCnet/ISA芯片。
+<P>某些老版本的lance驱动程序在使用autoIRQ从原始Novell/Eagle 7990网卡获取中断线时会遇到麻烦。希望现在已经被修正了。如果问题没解决，就用LILO来指定IRQ，还有问题的话，请告诉我们。
+<P>DMA选择和芯片号码信息可以在
+<A HREF="#lance">AMD LANCE</A>找到。
+<P>更多有关基于AMD LANCE的以太网卡的技术信息可以在
+<A HREF="Ethernet-HOWTO-7.html#amd-notes">Notes on AMD...</A>找到。
+<P>
+<P>
+<H3>NE/2 MCA</H3>
+
+<P>状态：半支持，驱动程序名称：ne2
+<P>若干公司生产了几种NE2000微通道网卡。v2.2内核里提供的ne2驱动程序可以检测如下MCA网卡：Novell Ethernet Adapter NE/2、Compex ENET-16 MC/P和Arco Ethernet Adapter AE/2。
+<P>
+<H3><A NAME="ne3200"></A> NE3200</H3>
+
+<P>状态：不支持。
+<P>这种老式的EISA网卡把一片8MHz的80186与一片i82586混合使用。没人为它编写驱动程序，因为没有该网卡的资料，而且也没有对其驱动程序的真正需求。
+<P>
+<H3><A NAME="ne3210"></A> NE3210</H3>
+
+<P>状态：支持，驱动程序名称：ne3210 (+8390)
+<P>这一EISA网卡与NE3200完全不同，它使用Nat Semi的8390芯片。其驱动程序可以在v2.2内核源码树中找到。确定共享内存地址被设置在1MB以下，或者在机器所安装物理RAM的最高地址之上。
+<P>
+<H3>NE5500</H3>
+
+<P>状态：支持，驱动程序名称：pcnet32
+<P>这些不过是AMD PCnet-PCI网卡（'970A）芯片。更多有关基于LANCE/PCnet的网卡信息可以在
+<A HREF="#lance">AMD LANCE</A>找到。
+<P>
+<P>
+<H2><A NAME="ss4.28">4.28 Proteon</A>
+</H2>
+
+<P>
+<P>
+<H3>Proteon P1370-EA</H3>
+
+<P>状态：支持，驱动程序名称：ne (+8390)
+<P>很明显这是一款NE2000兼容卡，在Linux下工作得挺好。
+<P>
+<H3>Proteon P1670-EA</H3>
+
+<P>状态：支持，驱动程序名称：de4x5, tulip
+<P>这是另一款基于DEC的Tulip芯片的PCI网卡。据说在Linux下工作得挺好。
+<P>参见有关21040芯片一节（
+<A HREF="#dec-21040">DEC 21040</A>）以了解更多信息。
+<P>
+<P>
+<H2><A NAME="ss4.29">4.29 Pure Data</A>
+</H2>
+
+<P>
+<P>
+<H3>PDUC8028, PDI8023</H3>
+
+<P>状态：支持，驱动程序名称：wd (+8390)
+<P>PureData的PDUC8028和PDI8023系列网卡差不多就是wd80x3的兼容网卡——在<CODE>wd.c</CODE>驱动程序里有特别的代码来探测这些网卡。
+<P>
+<H2><A NAME="ss4.30">4.30 Racal-Interlan</A>
+</H2>
+
+<P>
+<P>可以通过WWW站点<CODE>www.interlan.com</CODE>联系Racal Interlan。我认为在过去他们曾被称为MiCom-Interlan。
+<P>
+<H3>ES3210</H3>
+
+<P>状态：半支持，驱动程序名称：es3210
+<P>这是一款基于EISA 8390的共享内存网卡。有一个实验性的驱动程序与v2.2内核一起发行，据说工作得挺好，但（至少）对早期版本网卡的EISA IRQ和共享内存地址的检测有点问题。（这个问题并不仅限于Linux......）这样就需要给驱动程序提供中断和地址。例如，网卡为IRQ 5，共享内存在<CODE>0xd0000</CODE>，使用模块化驱动程序，则在<CODE>/etc/conf.modules</CODE>里添上<CODE>options es3210 irq=5 mem=0xd0000</CODE>。或者使用编译进内核的驱动程序，在启动时提供<CODE>ether=5,0,0xd0000,eth0</CODE>。I/O基址是自动检测的，所以在此使用一个零值。
+<P>
+<H3>NI5010</H3>
+
+<P>状态：半支持，驱动程序名称：ni5010
+<P>以前需要另外寻找这些老式8比特MiCom-Interlan网卡的驱动程序，现在它被作为一个实验性的驱动程序与v2.2内核一起发行了。
+<P>
+<H3>NI5210</H3>
+
+<P>状态：半支持，驱动程序名称：ni52
+<P>该网卡也是使用Intel的芯片。Michael Hipp编写了一个驱动程序，作为“alpha”驱动程序被包含在标准内核里。Michael希望得到该网卡用户的反馈。参见
+<A HREF="Ethernet-HOWTO-2.html#alfa">Alpha驱动程序</A>以了解在Linux下使用alpha/测试版本以太网驱动程序的重要信息。
+<P>
+<H3><A NAME="ni65xx"></A> NI6510 （不是EB）</H3>
+
+<P>状态：半支持，驱动程序名称：ni65
+<P>也有一个基于LANCE的NI6510网卡的驱动程序，而且也是Michael Hipp编写的。它同样也是“alpha”驱动程序。出于某些原因，该网卡与通用的LANCE驱动程序不兼容。参见
+<A HREF="Ethernet-HOWTO-2.html#alfa">Alpha驱动程序</A>以了解在Linux下使用alpha/测试版本以太网驱动程序的重要信息。
+<P>
+<H3>EtherBlaster（又名NI6510EB）</H3>
+
+<P>状态：支持，驱动程序名称：lance
+<P>从1.3.23内核开始，通用的lance驱动程序里增加了对NI6510EB专有标识<CODE>0x52, 0x44</CODE>进行的检查。但有人报告说不是所有NI6510EB网卡该标识都一样，这会导致lance驱动程序检测不出你的网卡。如果出现了这一问题，可以把探测（大约在lance.c的第322行）改为printk()，把你的网卡上的值打印出来，然后用它们来代替缺省的<CODE>0x52, 0x44</CODE>。
+<P>在使用lance驱动程序时，网卡可能运行在“高性能”模式下，而不是NI6510兼容模式。
+<P>
+<P>
+<H2><A NAME="ss4.31">4.31 RealTek</A>
+</H2>
+
+<P>
+<P>
+<H3><A NAME="aep-100"></A> RealTek RTL8002/8012 (AT-Lan-Tec) Pocket adaptor</H3>
+
+<P>状态：支持，驱动程序名称：atp
+<P>这是一款AT-Lan-Tec与（可能的）其它一些供应商出售的通用低成本的OEM袖珍适配器。在标准内核里包含其驱动程序。注意，驱动程序源文件“atp.c”里包含了一些实质性的信息。
+<P>注意，对于早期版本的驱动程序，传递给<CODE>ifconfig</CODE>的设备名<EM>不</EM>是<CODE>eth0</CODE>，而是<CODE>atp0</CODE>。
+<P>
+<H3>RealTek 8009</H3>
+
+<P>状态：支持，驱动程序名称：ne (+8390)
+<P>这是一款ISA NE2000兼容网卡，据说使用Linux的NE2000驱动程序工作得挺好。程序<CODE>rset8009.exe</CODE>可以从RealTek的WWW站点<CODE>http://www.realtek.com.tw</CODE>获取——或者用FTP从该站点下载。
+<P>
+<H3>RealTek 8019</H3>
+
+<P>状态：支持，驱动程序名称：ne (+8390)
+<P>这是上述网卡的即插即用版本。使用DOS软件禁止PnP功能，启用无跳线配置，把网卡的I/O地址和中断设为可用值，然后就行了。（如果要把驱动程序用作模块的话，不要忘记在<CODE>/etc/conf.modules</CODE>里添加一个<CODE>io=0xNNN</CODE>选项。）程序<CODE>rset8019.exe</CODE>可以从RealTek的WWW站点<CODE>http://www.realtek.com.tw</CODE>获取——或者用FTP从该站点下载。
+<P>
+<H3>RealTek 8029</H3>
+
+<P>状态：支持，驱动程序名称：ne, ne2k-pci (+8390)
+<P>这是一款NE2000兼容的PCI单芯片产品。现在各个销售商都在销售使用该芯片的网卡。参见
+<A HREF="#ne2k-pci">NE2000-PCI</A>以了解使用该网卡的有关信息。注意，这依然是附在PCI总线上的十多年前的老式设计。其性能并不比相应的ISA型号好多少。
+<P>
+<P>
+<H3><A NAME="rtl8139"></A> RealTek 8129/8139</H3>
+
+<P>状态：半支持，驱动程序名称：rtl8139
+<P>另一款RealTek的PCI单芯片以太网产品。基于该芯片的网卡的驱动程序被包括在Linux的v2.0.34发行版本中。目前在回答是否要使用v2.2内核里的实验性驱动程序时，依然要回答“Y”以获得使用该驱动程序的权利。
+<P>Donald说基于该芯片的网卡的价格与PCI NE2000兼容网卡大致相同（在有些地方甚至会便宜13美元！），虽然8139的设计并非最好的10/100板子，还是要比PCI NE2000兼容网卡好。
+<P>2.4.x内核还有一个叫做<CODE>8139too</CODE>的驱动程序，是基于rtl8139的，但试图处理一些人们报告的更普遍的问题，所以如果使用的是2.4内核，可以试一下。
+<P>
+<H2><A NAME="ss4.32">4.32 Sager</A>
+</H2>
+
+<P>
+<P>
+<H3>Sager NP943</H3>
+
+<P>状态：半支持，驱动程序名称：3c501
+<P>这只不过是一款S.A. PROM前缀不同的3c501兼容网卡。我认为它跟原始的3c501一样伤脑筋。其驱动程序检查NP943 I.D.之后把它当成3c501来处理。参见
+<A HREF="#3c501">3Com 3c501</A>以了解为什么实际上不需要使用这些网卡。
+<P>
+<H2><A NAME="ss4.33">4.33 Schneider &amp; Koch</A>
+</H2>
+
+<P>
+<P>
+<H3>SK G16</H3>
+
+<P>状态：支持，驱动程序名称：sk_g16
+<P>其驱动程序被包含在v1.1内核中，是PJD Weichmann和SWS Bern编写的。似乎SK G16与NI6510相似，都是基于LANCE芯片的第一版（7990）。再重复一次，似乎该网卡无法使用通用的LANCE驱动程序。
+<P>
+<H2><A NAME="ss4.34">4.34 SEEQ</A>
+</H2>
+
+<P>
+<P>
+<H3>SEEQ 8005</H3>
+
+<P>状态：支持，驱动程序名称：seeq8005
+<P>驱动程序里只包含了很少的网卡信息，所以这里也没有多少相关信息。如果有问题的话，最好发e-mail给源码中列出的驱动程序作者。
+<P>
+<H2><A NAME="smc"></A> <A NAME="ss4.35">4.35 SMC (Standard Microsystems Corp.) </A>
+</H2>
+
+<P>
+<P>
+<P>在许多年前wd8003和wd8013还是主流产品时，Western Digital的以太网部门就被SMC收购了。在那之后，SMC继续制造基于8390的ISA网卡（Elite16、Ultra、EtherEZ），并增加了几种PCI产品。
+<P>与SMC的联系方法：
+<P>SMC / Standard Microsystems Corp., 80 Arkay Drive, Hauppage, New York,
+11788, USA.  Technical Support via phone: 800-992-4762 (USA) or
+800-433-5345 (Canada) or 516-435-6250 (Other Countries).
+Literature requests: 800-SMC-4-YOU (USA) or 800-833-4-SMC (Canada)
+or 516-435-6255  (Other Countries).  Technical Support via E-mail:
+<CODE>techsupt@ccmail.west.smc.com</CODE>. FTP Site: <CODE>ftp.smc.com</CODE>.
+WWW Site: 
+<A HREF="http://www.smc.com">SMC</A>.
+<P>
+<H3>WD8003, SMC Elite</H3>
+
+<P>状态：支持，驱动程序名称：wd (+8390)
+<P>这些是网卡的8比特版本。8比特的8003比较便宜，但只在流量小的用途上是划算的。注意，某些没有EEPROM的网卡（使用跳线的兼容卡，或非常<EM>非常古老</EM>的wd8003网卡）无法报告它们使用的中断线。此时，如果使用auto-irq失败，驱动程序就会静悄悄地分配IRQ 5。你可以从SMC的FTP站点获取设置/驱动程序磁盘。注意，某些较新的SMC的“SuperDisk”程序检测不到那些确实古老的无EEPROM的网卡。文件<CODE>SMCDSK46.EXE</CODE>看来是个相当全面的方法。前面提到的档案中的一个ASCII文本文件里给出了所有这些网卡的跳线设置。最新（最好？）的版本可以从<CODE>ftp.smc.com</CODE>得到。
+<P>这些基本上与它们的16比特对应网卡（WD8013 / SMC Elite16）是一样，所以可以从下一节了解更多的信息。
+<P>
+<P>
+<H3><A NAME="8013"></A> WD8013, SMC Elite16</H3>
+
+<P>状态：支持，驱动程序名称：wd (+8390)
+<P>若干年后，SMC在设计中添加了更多的寄存器和一个EEPROM。（第一块wd8003网卡已经面世十年了！）兼容卡一般使用的名称为“8013”，而且通常采用无EEPROM（用跳线）的设计。近期型号的SMC网卡使用SMC的83c690芯片，代替了早期网卡上的原始Nat Semi的DP8390。共享内存设计使网卡的速度比PIO网卡快了一点，尤其是对较大的数据包。更重要的是，从驱动程序的角度来看，避免了8390可编程I/O模式的几个Bug，允许多个线程安全地访问数据包缓存，而且在热启动探测时不会因为可编程I/O数据寄存器导致死机。
+<P>无EEPROM的网卡在无法读取选定的中断时会尝试auto-irq，如果失败的话，它会静悄悄地分配IRQ 10。（8比特版本分配IRQ 5。）
+<P>板上内存大小不标准的网卡可以在启动时指定内存大小（如果使用模块的话，把它作为<CODE>/etc/conf.modules</CODE>中的一个选项）。8比特网卡的标准内存大小为8kB，16比特网卡为16kB。例如，老式的WD8003EBT网卡可以用跳线设置为32kB内存。要完全使用这些RAM，需要如下操作（对I/O=0x280和IRQ 9）：
+<HR>
+<PRE>
+        LILO: linux ether=9,0x280,0xd0000,0xd8000,eth0
+</PRE>
+<HR>
+<P>参见
+<A HREF="Ethernet-HOWTO-2.html#8013-probs">8013问题</A>以了解某些常见问题。
+<P>如果你想把该驱动程序作为一个可载入的模块，应该阅读
+<A HREF="Ethernet-HOWTO-9.html#modules">把以太网驱动程序作为模块使用</A>以了解有关模块的信息。
+<P>
+<H3><A NAME="ultra"></A> SMC Elite Ultra</H3>
+
+<P>状态：支持，驱动程序名称：smc-ultra (+8390)
+<P>该以太网卡是基于SMC的83c790芯片，比83c690多几个新特性。虽然有一种与老式SMC以太网卡相似的模式，它无法与老的WD80*3驱动程序完全兼容。但在这种模式下，它可以与其它8390驱动程序共享大部分代码，而且操作比WD8013兼容网卡稍微快一点。
+<P>由于Ultra部分<EM>看起来象</EM>8013，所以Ultra探测应当在wd8013探测错误地识别一个Ultra网卡之前找到它。
+<P>Donald提到可以为Ultra的“Altego”模式编写一个独立的驱动程序，该模式允许把发送链接起来进行，其代价是接收缓存的利用效率会下降，但是也可能不下降。
+<P>总线控制SCSI主机适配器的用户需要注意：在与Interactive UNIX一起发行的手册里提到，SMC Ultra里的一个Bug会导致aha-154X主机适配器运行的SCSI磁盘数据损坏。这可能影响aha-154X兼容卡，如BusLogic板和AMI-FastDisk SCSI主机适配器。
+<P>SMC承认在Interactive和老式Windows NT驱动程序上会出现这个问题。它是早期版本的网卡存在的硬件冲突，可以通过驱动程序的设计解决。目前的Ultra驱动程序通过只在与网卡传递数据时才启用共享内存避免了这个问题。确定你的内核版本至少是1.1.84以上，或者启动时报告的驱动程序版本至少为<CODE>smc-ultra.c:v1.12</CODE>，否则就会出问题。
+<P>如果你想把该驱动程序作为一个可载入的模块，应该阅读
+<A HREF="Ethernet-HOWTO-9.html#modules">把以太网驱动程序作为模块使用</A>以了解有关模块的信息。
+<P>
+<H3><A NAME="ultra32"></A> SMC Elite Ultra32 EISA</H3>
+
+<P>状态：支持，驱动程序名称：smc-ultra32 (+8390)
+<P>这个EISA网卡与其相应的ISA网卡有很多共同点。在v2.0和v2.2内核里都包含了一个可以使用（而且稳定）的驱动程序。感谢Leonard Zubkoff买了一些这样的网卡，使得Linux里能够增加对它们的支持。
+<P>
+<H3>SMC EtherEZ (8416)</H3>
+
+<P>状态：支持，驱动程序名称：smc-ultra (+8390)
+<P>该网卡使用SMC的83c795芯片并支持即插即用特性。它也有<EM>SMC Ultra</EM>兼容模式，可以使用Linux的Ultra驱动程序。要得到最佳效果，请使用SMC提供的程序（通过他们的FTP/WWW站点）禁用PnP，并把它配置为共享内存模式。参见上面有关Ultra驱动程序的说明。
+<P>对于v1.2内核，该网卡必须被配置为共享内存模式。但v2.0内核可以在共享内存或可编程I/O模式下使用该网卡。共享内存模式稍微快一点，而且对CPU资源的占用少一些。
+<P>
+<H3><A NAME="smc-pci"></A> SMC EtherPower PCI (8432)</H3>
+
+<P>状态：支持，驱动程序名称：de4x5, tulip
+<P>先声明一点：EtherPower II是一款完全不同的网卡。往下看！这些网卡是基本的DEC 21040产品，即一个大芯片和若干收发器。Donald在开发通用21040驱动程序（又名<CODE>tulip.c</CODE>）时使用了一块这样的网卡。再一次感谢Duke Kamstra提供了开发时所用的网卡。
+<P>某些近期版本的这种网卡使用较新的DEC 21041芯片，在使用早期版本的tulip驱动程序时可能会有问题。如果遇到麻烦，请确定使用的是最新发布的驱动程序，它可能还没有被包含在目前的内核源码树中。
+<P>参见
+<A HREF="#dec-21040">DEC 21040</A>以了解这些网卡的更多信息和当前驱动程序的状况。
+<P>很明显，EtherPower-II网卡的最新版本使用9432芯片。目前还不清楚它是否可以使用现在的驱动程序。同样，如果无法确信的话，在购买网卡<EM>之前</EM>，先确定如果不能使用Linux驱动程序就可以退货。
+<P>
+<H3><A NAME="smc-pci-II"></A> SMC EtherPower II PCI (9432)</H3>
+
+<P>状态：半支持，驱动程序名称：epic100
+<P>这些网卡是基于SMC 83c170芯片，与基于Tulip的网卡完全不同。在v2.0和v2.2内核里包含支持它的新驱动程序。更多的细节请访问：
+<P><CODE>http://www.scyld.com/linux/drivers/epic100.html</CODE>
+<P>
+<P>
+<H3>SMC 1211TX 10/100</H3>
+
+<P>状态：半支持，驱动程序名称：rtl8139
+<P>显然SMC已经不再是如Ultra和EPIC那样提供网卡的同一家公司。芯片设计部分现在叫做SMSC，而SMC的名称是与低端OEM板联系在一起的，就像这块板一样——带一块修改过的EEPROM的RealTek 8139。
+<P>
+<H3>SMC 3008</H3>
+
+<P>状态：不支持。
+<P>这些8比特网卡是基于Fujitsu MB86950的，它是Linux at1700驱动程序所用MB86965的古老版本。Russ说可以通过阅读at1700.c代码和他自己的Tiara网卡DOS驱动程序包（tiara.asm）来编写它的驱动程序。这些网卡不是很常见。
+<P>
+<H3>SMC 3016</H3>
+
+<P>状态：不支持。
+<P>这些是16比特的I/O映射8390网卡，与通用NE2000网卡很相似。如果你能从SMC得到说明资料，那么移植NE2000驱动程序将相当简单。这些网卡不是很常见。
+<P>
+<H3>SMC-9000 / SMC 91c92/4</H3>
+
+<P>状态：支持，驱动程序名称：smc9194
+<P>SMC9000是基于91c92芯片的VLB网卡。91c92也出现在若干其它品牌网卡上，但相当少见。
+<P>
+<H3>SMC 91c100</H3>
+
+<P>状态：半支持，驱动程序名称：smc9194
+<P>据说SMC 91c92驱动程序支持该款基于100Base-T芯片的网卡，但目前还未得到证实。
+<P>
+<H2><A NAME="ss4.36">4.36 Texas Instruments</A>
+</H2>
+
+<P>
+<P>
+<H3><A NAME="tlan"></A> ThunderLAN</H3>
+
+<P>状态：支持，驱动程序名称：tlan
+<P>该驱动程序覆盖了许多Compaq的内建以太网设备，包括NetFlex和Netelligent系列。它还支持Olicom的2183、2185、2325和2326产品。
+<P>
+<H2><A NAME="ss4.37">4.37 Thomas Conrad</A>
+</H2>
+
+<P>
+<P>
+<H3>Thomas Conrad TC-5048</H3>
+
+<P>
+<P>这是基于DEC的21040芯片的另一款PCI网卡。
+<P>参见有关21040芯片一节（
+<A HREF="#dec-21040">DEC 21040</A>）以了解更多信息。
+<P>
+<H2><A NAME="ss4.38">4.38 VIA</A>
+</H2>
+
+<P>
+<P>你可能没见过VIA网卡，但VIA制造的几种网络芯片被用在其它厂家的以太网卡上。他们有一个WWW站点：
+<P><CODE>http://www.via.com.tw/</CODE>
+<P>
+<H3>VIA 86C926 Amazon</H3>
+
+<P>状态：支持，驱动程序名称：ne, ne2k-pci (+8390)
+<P>该控制器芯片是VIA提供的PCI-NE2000。你可以选择ISA/PCI驱动程序<CODE>ne.c</CODE>或者只支持PCI的驱动程序
+<HR>
+<PRE>
+&lt;tt/ne2k-pci.c/
+</PRE>
+<HR>
+。参见PCI-NE2000一节以了解更多信息。
+<P>
+<H3><A NAME="rhine"></A> VIA 86C100A Rhine II (and 3043 Rhine I)</H3>
+
+<P>Status 支持，驱动程序名称：via-rhine
+<P>这一相当新的驱动程序可以在目前的2.0和2.1内核里找到。它是在86C926 NE2000芯片上的改进，支持总线控制权传递，但严格的缓存32比特字节对齐的要求限制了从中得到的好处。要了解更多细节和驱动程序更新，参见：
+<P><CODE>http://www.scyld.com/linux/drivers/via-rhine.html</CODE>
+<P>
+<P>
+<H2><A NAME="ss4.39">4.39 Western Digital</A>
+</H2>
+
+<P>
+<P>请参见
+<A HREF="#smc">SMC</A>以了解有关SMC网卡的信息。（SMC在多年前就收购了Western Digital的网卡部门。）
+<P>
+<H2><A NAME="ss4.40">4.40 Winbond</A>
+</H2>
+
+<P>Winbond实际上并不制造和向大众销售完整的网卡——他们生产单片以太网芯片，其它公司购买并在PCI板上印上自己的名字，然后通过零售店销售。可以从下面得到一些设置程序和技术支持：
+<P><CODE>http://www.winbond.com.tw</CODE>
+<P>
+<H3>Winbond 89c840</H3>
+
+<P>状态：半支持，驱动程序名称：winbond-840
+<P>该芯片被描述为“NE2000网卡和Tulip兼容网卡杂交产生的突变体”——参见驱动程序的注释以了解更多 细节。该驱动程序还没有与内核一起发行，因为它还处于测试阶段（从1998年9月开始）。可以从下面获取驱动程序：
+<P><CODE>http://www.scyld.com/linux/drivers/test/winbond-840.c</CODE>
+<P>
+<H3>Winbond 89c904, 89c905, 89c906</H3>
+
+<P>状态：支持，驱动程序名称：ne (+8390)
+<P>这些是Winbond的ISA 10Mbps ne2000兼容以太网芯片。设置程序可以从Winbond站点获得。
+<P>
+<H3>Winbond 89c940</H3>
+
+<P>状态：支持，驱动程序名称：ne, ne2k-pci (+8390)
+<P>该芯片是很多制造商出售的低价PCI ne2000网卡上最常见的两个芯片之一。注意，这依然是附在PCI总线上的十多年前的老式设计。其性能并不比相应的ISA型号好多少。
+<P>
+<H2><A NAME="xircom"></A> <A NAME="ss4.41">4.41 Xircom</A>
+</H2>
+
+<P>
+<P>在很长一段时间里，除非你签署文件放弃你的生命，Xircom不愿意发布编写驱动程序所需的编程信息。显然有足够多的Linux用户不断纠缠他们，要得到驱动程序支持（Xircom声称支持所有通用网络操作系统......），所以他们改变了政策，无需再签署不公开协议，允许公开有关资料。有些人说他们将要公开SCO驱动程序的源码，另一些被告知他们不再提供象早期PE型号那样“被废弃”的产品资料。如果你感兴趣并想自己了解一下，可以联系Xircom：1-800-874-7875, 1-800-438-4526 或 +1-818-878-7600。
+<P>
+<H3>Xircom PE1, PE2, PE3-10B*</H3>
+
+<P>状态：不支持。
+<P>不要抱太大希望，但如果你有一个这样的并口适配器，可以在DOS仿真器下使用Xircom提供的DOS驱动程序使用它。你需要允许DOSEMU访问并口，可能还要和SIG（DOSEMU的傻瓜中断生成器）一起使用。
+<P>
+<H3>Xircom PCMCIA Cards</H3>
+
+<P>状态：半支持，驱动程序名称：????
+<P>在David Hinds的PCMCIA软件包里有一些Xircom的PCMCIA网卡驱动程序。查看一下以了解最新信息。
+<P>
+<H2><A NAME="zenith"></A> <A NAME="ss4.42">4.42 Zenith</A>
+</H2>
+
+<P>
+<P>
+<H3><A NAME="z-note"></A> Z-Note</H3>
+
+<P>状态：支持，驱动程序名称：znet
+<P>内建的Z-Note网络适配器是基于使用<EM>两个</EM>DMA通道的Intel i82593。在目前的内核版本里有一个（alpha?）驱动程序。与所有笔记本电脑和袖珍适配器一样，在运行<CODE>make config</CODE>时它被放在“Pocket and portable adaptors”部分。同时还要注意，IBM ThinkPad 300与Z-Note兼容。
+<P>
+<H2><A NAME="zynx"></A> <A NAME="ss4.43">4.43 Znyx</A>
+</H2>
+
+<P>
+<P>
+<H3>Znyx ZX342 (DEC 21040 based)</H3>
+
+<P>状态：支持，驱动程序名称：de4x5, tulip
+<P>在使用基于该芯片的网卡时可以在<EM>两个</EM>驱动程序中进行选择。David编写了DE425驱动程序，Donald编写了通用的21040驱动程序。
+<P>注意，在1.1.91，David增加了一个编译选项，允许非DEC网卡（如Znyx网卡）使用该驱动程序。请阅读<CODE>README.de4x5</CODE>以了解其中细节。
+<P>参见
+<A HREF="#dec-21040">DEC 21040</A>以了解这些网卡的更多信息和当前驱动程序的状况。
+<P>
+<H2><A NAME="mystery"></A> <A NAME="ss4.44">4.44 识别未知网卡</A>
+</H2>
+
+<P>
+<P>好吧，假设你叔叔的侄子的邻居的朋友有一个兄弟，在他给儿子的宠物大老鼠做窝的AT箱子里找到了一块老式ISA以太网卡。不知什么原因这块网卡最后落到你的手里，想在Linux下使用，但没人知道这块网卡是什么，也没有任何资料。
+<P>首先，寻找可以作为线索的任何明显的型号编码。如果型号里包含2000，那么很有可能是块NE2000兼容网卡。上面有8003和8013的网卡可能是Western/Digital的WD80x3网卡，或者是SMC Elite网卡，或者它们的兼容网卡。
+<P>
+<H3>识别网络接口控制器</H3>
+
+<P>寻找网卡上最大的芯片。那就是网络控制器（NIC），大多数都可以从部分编号上识别出来。如果你知道网卡上是哪一种NIC，下文就能帮你弄清是哪一种网卡。
+<P>可能最常见的NIC还是National Semiconductor的DP8390，又名NS32490，又名DP83901，又名DP83902，又名DP83905，又名DP83907。这些不过是National生产的一部分芯片！其它一些公司，如Winbond和UMC，生产DP8390和DP83905兼容部件，如Winbond的89c904（与DP83905兼容）和UMC的9090。如果网卡由8390构成，那么它可能就是一个ne1000或ne2000兼容网卡。其次常用的基于8390的网卡是wd80x3网卡及其兼容卡。使用DP83905的网卡可以被认为是ne2000<EM>或</EM>wd8013。新版本的通用wd80x3和SMC Elite网卡在原来DP8390的位置上用的是83c690。SMC Ultra网卡采用83c790，使用与wd80x3网卡稍有区别的驱动程序。SMC EtherEZ网卡采用83c795，使用的驱动程序与SMC Ultra网卡一样。所有基于某种8390或8390兼容芯片的BNC网卡都有一片紧靠BNC连接器的16针DIP芯片8392（或83c692，又或???392）。
+<P>另一个在老式网卡上找到的常见NIC是Intel的i82586。使用该NIC的网卡包括3c505、3c507、3c523、Intel的EtherExpress-ISA、Microdyne的Exos-205T和Racal-Interlan的NI5210。
+<P>原始AMD LANCE NIC的编号为AM7990，较新的版本包括79c960、79c961、79c965、79c970和79c974。上面的大多数网卡都可以使用Linux的LANCE驱动程序，有个例外是使用自己驱动程序的老式Racal-Interlan的NI6510网卡。
+<P>使用DEC的21040、21041、21140或类似的编号NIC的较新的PCI网卡可以使用Linux的tulip或de4x5驱动程序。
+<P>其它有一个印著RTL8029、89C940或86C926的大芯片的PCI网卡是ne2000兼容网卡，v2.0以上版本Linux里的ne驱动程序在启动时可以自动检测这些网卡。
+<P>
+<H3>识别以太网地址</H3>
+
+<P>
+<P>每一个以太网卡都有一个唯一的6字节网卡地址。同一个制造商生产的每一块网卡的该地址的前三个字节都是一样的。例如，所有的SMC网卡都以<CODE>00:00:c0</CODE>开始。制造商分配的后三个字节对于自己生产的每一块网卡都是唯一的。
+<P>如果你的网卡上有个标签给出了网卡地址的全部六个字节，就可以通过前三个字节查到它的销售商。但一般PROM插座上贴的标签上只打印了后三个字节，没什么用。
+<P>你可以从RFC-1340上找到分配给销售商的地址。显然有很多地方可以找到最新的地址列表。通过WWW或FTP查找<CODE>EtherNet-codes</CODE>或<CODE>Ethernet-codes</CODE>就可以找到一些资料。
+<P>
+<H3>通过FCC ID号码识别网卡</H3>
+
+<P>
+<P>作为网卡通常在销售给用户之前必须通过的验证过程的一部分，网卡要被FCC测试，并把由此获得的FCC ID印在网卡上。例如，某块网卡上有<CODE>FCC ID: J158013EWC</CODE>——那么该网卡就是SMC/WD8013-EWC。<CODE>www.driverguide.com</CODE>和<CODE>drdriver.com</CODE>一类的某些WEB站点使用FCC ID列表来帮助ID号不明显的情况。
+<P>
+<H3>使用未知网卡的技巧</H3>
+
+<P>
+<P>如果还无法确定是哪一种网卡，但至少缩小了可能的范围，那么你可以构建一个包括全部可能驱动程序的内核，然后看看其中的哪一个可以在启动时自动检测到网卡。
+<P>如果内核没有检测到网卡，那么就是网卡没有被配置到一个驱动程序寻找网卡时探测的地址上。此时，需要从当地的Linux的FTP站点下载<CODE>scanport.tar.gz</CODE>，看看它能否定位出你的网卡跳线所设的地址。它扫描从<CODE>0x100</CODE>到<CODE>0x3ff</CODE>的ISA I/O地址以寻找<CODE>/proc/ioports</CODE>里没有注册的设备。如果它在某个特定地址发现了一个未知设备，那么就可以用一个启动参数<CODE>ether=</CODE>把它明确设定为以太网卡探测的地址。
+<P>如果你设法检测到了网卡，那么一般可以依次改变未知跳线来了解跳线的作用，并查看被检测到的网卡所用I/O基址和中断。中断设置一般可以通过查看跳线在网卡背面所焊接的位置来得到。从网卡有金属插座的一端数背面的“金手指”，相应于金手指4、21、22、23、24、25、34、35、36、37、38分别是中断9、7、6、5、4、3、10、11、12、15、14。8比特网卡只用到金手指31。
+<P>看起来没什么用的跳线一般是用来选择可选启动ROM的内存地址。靠近BNC或RJ-45或AUI的其它跳线一般是用来选择输出媒介的。一般它们也在印著YCL、Valor或Fil-Mag的“黑盒子”变压器附近。
+<P>如下URL收集了很多各种网卡的跳线设置：
+<P>
+<A HREF="http://www.slug.org.au/NIC/">Ethercard Settings</A><P>
+<P>
+<H2><A NAME="ss4.45">4.45 非以太网设备的驱动程序</A>
+</H2>
+
+<P>
+<P>在Linux源码里有若干在网络程序看来是<EM>象以太网</EM>设备的其它驱动程序，但实际上不是以太网设备。为了本文档的完整性，把它们简要地列在这里。
+<P><CODE>dummy.c</CODE>——该驱动程序的目的是提供一个设备来指出路由，但并不实际传输数据。
+<P><CODE>eql.c</CODE>——负荷均衡，控制多个设备（一般是modem）并在其中平衡发送负载，对网络程序表现为单个设备。
+<P><CODE>ibmtr.c</CODE>——IBM的令牌环，并非真正的以太网。令牌环要求源路由以及其它一些麻烦事。
+<P><CODE>loopback.c</CODE> ——环回设备，你的机器发出的所有数据包的目的地还是你自己的机器。从本质上说只是把数据包从发送队列移到接收队列。
+<P><CODE>pi2.c</CODE>——Ottawa业余无线电爱好者俱乐部PI和PI2的接口。
+<P><CODE>plip.c</CODE>——并行线Internet协议，允许两台计算机通过并口的端到端方式连接互相发送数据包。
+<P><CODE>ppp.c</CODE>——端到端协议（PPP，RFC1331），在端到端的连接（一般为modem）上传输多协议数据帧。
+<P><CODE>slip.c</CODE>——串行线Internet协议，允许两台计算机通过串口（一般通过modem）的端到端方式连接互相发送数据包。
+<P><CODE>tunnel.c</CODE>——提供一个IP通道，可以使网络数据流透明地穿过子网。
+<P><CODE>wavelan.c</CODE>——由Intel的82586协处理器控制的类以太网无线电收发器。82586也被用在诸如Intel EtherExpress的其它以太网卡上。
+<P>
+<HR>
+<A HREF="Ethernet-HOWTO-5.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Ethernet-HOWTO-3.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Ethernet-HOWTO.html#toc4"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

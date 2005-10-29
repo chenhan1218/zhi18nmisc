@@ -1,0 +1,124 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Zip Drive Mini-HOWTO: 使用 ZIP 磁碟機</TITLE>
+ <LINK HREF="ZIP-Drive-7.html" REL=next>
+ <LINK HREF="ZIP-Drive-5.html" REL=previous>
+ <LINK HREF="ZIP-Drive.html#toc6" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+<A HREF="ZIP-Drive-7.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="ZIP-Drive-5.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="ZIP-Drive.html#toc6"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s6">6. 使用 ZIP 磁碟機</A></H2>
+
+<P>如果你已經建立好所有需要的元件，那麼核心應該能在開機時辨識出你的配接卡以及磁碟機。
+如果你是用可載入式模組的方式建立驅動程式的話，接下來的討論僅適用於模組以載入後的情形。
+<P>在大部分情形下，SCSI 和 並列埠版本的磁碟機表現相同，除了並列埠版本的比較慢以外。
+<P>
+<P>
+<H2><A NAME="ss6.1">6.1 Fdisk, mke2fs, mount, 等等</A>
+</H2>
+
+<P>一旦你知道你的 ZIP 磁碟機所屬的磁碟裝置名稱，你就已經準備就緒。
+你能夠使用 Linux 的磁碟管理命令來對該磁碟裝置進行操作。
+<CODE>fdisk</CODE>（或者 <CODE>cfdisk</CODE>）是用來規劃磁碟的分割表。
+<CODE>mke2fs</CODE> 能用來將分割區格式化（Format）成 ext2 檔案系統 -- 這是 Linux 下最常使用的檔案系統。
+<CODE>mount</CODE> 則是用來將格式化好的分割區連接到你的目錄體系中。
+<P>如果你對這些工具並不熟悉，你應該研讀一下這些工具的手冊。
+請小心注意 <CODE>fdisk</CODE> 程式現在有許多十分不一樣的版本 - 請務必小心。
+<P>我將陳述兩個常見的案例。
+<P>
+<H2><A NAME="ss6.2">6.2 使用一片已經用 DOS 格式化好的磁片</A>
+</H2>
+
+<P>如果你有一張原本由 Iomega 的工具程式格式化成 DOS 檔案結構的 ZIP 磁片，那麼掃瞄分割表時應該會發現磁片上有一個分割區 <CODE>/dev/sda4</CODE>。
+<P>你應該先建立一個用來掛載 ZIP 磁片的目錄，例如 <CODE>/zip</CODE>，然後以 MS-DOS 檔案系統格式將磁片掛載起來：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       mkdir /zip
+       mount -t vfat /dev/sda4 /zip
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>你也可以用 msdos 來取代上面的 vfat。兩者的差別在於， vfat 支援長檔名，而 msdos 不支援。
+現在，磁片上的檔案應該會出現在 /zip 目錄下。
+當磁片被掛載了，你將無法由磁碟機中將磁片退出。
+當你完成了對磁片的存取，你可以卸載磁片來切斷磁片和目錄體系的連接，並取出磁片：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       umount /zip
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>一旦你已經建好 /zip 這個掛載點 - 你不需要再建立一次。
+所以稍後你能再將另一片磁片掛載在那兒。
+<P>
+<H2><A NAME="ss6.3">6.3 重新將磁片格式化成 Linux 格式的磁片</A>
+</H2>
+
+<P>
+<P>如果你想要消去 ZIP 磁片上原有的檔案系統，並建立 Linux 的檔案系統，你應該使用 fdisk 來重新規劃整片磁片的分割區：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       fdisk /dev/sda
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>並且刪除所有已存在的分割區（用 fdisk 的 <CODE>d</CODE> 命令）。
+接著，用 <CODE>n</CODE> 命令建立一個新的分割區，選擇主分割區號碼 1 ，用 <CODE>w</CODE> 命令將分割表寫到磁片上，然後用 <CODE>q</CODE> 命令離開 fdisk 程式。
+<P>接著格式化分割區：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       mke2fs /dev/sda1
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>（數字 1 就是你在 <CODE>fdisk</CODE> 中給定該分割區的分割區編號）。
+現在，你可以將磁片掛載起來：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       mount -t ext2 /dev/sda1 /zip
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>（再次使用我們之前建立的掛載點）。
+<P>
+<H2><A NAME="ss6.4">6.4 fstab 檔</A>
+</H2>
+
+<P>/etc/fstab 能讓你對 mount 命令進行設定。
+我希望系統上登錄的任何使用者都能掛載及寫入 ZIP 磁片，因此我在 fstab 的檔案結尾加了兩列像這樣的內容：
+<P>
+<PRE>
+   /dev/sda1    /zip            ext2            noauto,rw,user,nosuid,sync
+   /dev/sda4    /zipdos         vfat            noauto,rw,user,nosuid,sync,mode=0777
+   
+</PRE>
+<P>這裡假設你有一個 /zip 目錄和一個 /zipdos 目錄。
+如果你要所有使用者都能夠讀寫 ZIP 磁片，請確定你設定了適當的存取權限，例如 <B>chmod 666 /zip</B>。
+你必須以 root 的身份執行 chmod 命令。
+上面 fstab 的內容也假設了你的 DOS 格式 ZIP 磁片的分割區編號是 4 （在我的系統是 sda4），以及 ext2（Linux）格式的磁片分割區編號是 1（sda1）。
+你可以用 <B>man mount</B> 找到更多 fstab 檔案的設定選項資料。
+<P>如果你在 fstab 檔案中加入上面兩列設定，那麼你可以用 <B> mount /zipdos </B> 掛載 DOS 格式磁片。
+如果你要掛載 Linux ext2 格式的磁片，那麼命令是 <B> mount /zip </B>。
+<P>
+<P>
+<H2><A NAME="ss6.5">6.5 ZIP Tools 工具磁片</A>
+</H2>
+
+<P>
+<P>如果你想使用隨 ZIP 磁碟機附贈的磁片，還有一點額外的工作要做。
+這些磁片在出貨時，軟體控制的寫入保護功能是被開啟的。
+大部分的人在要在 Linux 下使用 ZIP 磁片時，會先在 DOS 下將寫入保護功能關閉。
+Linux 無法存取被寫入保護鎖定的磁片，所以必須先用 Iomega 的工具程式來解除鎖定。
+<P>相信在 Linux 下，能用來管理磁片的寫入保護以及其他功能的程式，將在不久的將來發展完成<CODE><B>[譯者註]</B></CODE>。
+<P><B><CODE>[譯者註] 現在已經有一些工具程式可以用來控制 ZIP 磁片的各種狀態，計有 mtools 中的 mzip(1) ，以及現在由 Mirko Kraft 所發展維護的 ziptool 等等。</CODE></B>
+<P>
+<HR>
+<A HREF="ZIP-Drive-7.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="ZIP-Drive-5.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="ZIP-Drive.html#toc6"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

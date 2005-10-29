@@ -1,0 +1,175 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Linux Serial HOWTO 中译版: 故障排除</TITLE>
+ <LINK HREF="Serial-HOWTO-14.html" REL=next>
+ <LINK HREF="Serial-HOWTO-12.html" REL=previous>
+ <LINK HREF="Serial-HOWTO.html#toc13" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Serial-HOWTO-14.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Serial-HOWTO-12.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Serial-HOWTO.html#toc13"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s13">13. 故障排除</A></H2>
+
+<H2><A NAME="ss13.1">13.1 我不断地收到 ``line <EM>NNN</EM> of inittab invalid''</A>
+</H2>
+
+<P>要确定你对你的 <CODE>init</CODE> 版本使用正确的文法．这里所没有的一些 <CODE>init</CODE> 会在 <CODE>/etc/inittab</CODE> 档案里使用不同的文法．
+要确定你对你的 <CODE>getty</CODE> 版本使用正确的文法．
+<P>
+<H2><A NAME="ss13.2">13.2 当我试著拨号时，它说 ``/dev/cua<EM>N</EM>: Device or resource busy''</A>
+</H2>
+
+<P>这个问题可能发生在 DCD 或 DTR 没有设定正确的时候．
+DCD 应该只在真的有连线时(像是有人拨接进来)才被设定，而不是在 <CODE>getty</CODE> 持续监看该埠的时候．
+检查并确定你的数据机正确地配置成只在真正连线时才设定 DCD．
+DTR 应该在任何东西使用或监看线路时设定，像是 <CODE>getty</CODE>, <CODE>kermit</CODE>, 或其它通讯程式．
+<P>另一个引起 ``device busy''  错误的普遍原因是你设定你的串列埠使用一个已经被某种其它东西使用的中断．
+在每一个设备初始化的时後，它会要求 Linux 允许它使用它的硬体中断．
+Linux 持续追踪那个中断被指定给谁，而如果你的中断已经被占用，你的设备将不能适当地初始化．
+该设备真的并没有什麽办法告诉你发生的这件事，除了当你尝试去使用它的时候，它会回应 ``device-busy'' 错误讯息．
+检查你所有的卡(串列，乙太网路，SCSI 界面等等)．找寻硬体中断冲突的地方．
+<P>
+<H2><A NAME="ss13.3">13.3 我持续接到 ``Id S<EM>N</EM> respawning too fast: disabled for 5 minutes''</A>
+</H2>
+
+<P>确定你的数据机有正确的配置．查看暂存器 <CODE>E</CODE> 和 <CODE>Q</CODE>．
+这可能发生在你的数据机跟 <CODE>getty</CODE> 沟通的时候．
+<P>确定你正确地从 <CODE>/etc/inittab</CODE> 呼叫 <CODE>getty</CODE>．
+使用错误的文法或设备名称将会引起严重的问题．
+<P>以下法检查你的 <CODE>/etc/gettydefs</CODE> 文法是否正确:
+<BLOCKQUOTE><CODE>
+<PRE>
+linux# getty -c /etc/gettydefs
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>这也可能发生在 <CODE>uugetty</CODE> 初使化失败时．参阅 
+<A HREF="#nowork">getty 或 uugetty 仍然无法运作</A> 一节．
+<P>
+<H2><A NAME="ss13.4">13.4 串列设备很慢或是串列设备只能单向传送</A>
+</H2>
+
+<P>     
+你的硬体中断可能有冲突．确定没有硬体中断是被分享的．
+检查你所有的卡(串列卡, 乙太网路卡, SCSI 等等)确定你串列设备配的跳接设定以及 <CODE>setserial</CODE> 参数是正确的．
+同时检查 <CODE>/proc/ioports</CODE> 及 <CODE>/proc/interrups</CODE> 以确定是否有冲突发生．
+<P>
+<H2><A NAME="ss13.5">13.5 我的数据机在某人断线後瘫痪或是 <CODE>uugetty</CODE> 并没有重新执行</A>
+</H2>
+
+<P>     
+这在 DTR 讯号掉下而你的数据机没有重置时会发生．
+这个问题在我身上发生的时候我看到我的 RD 跟 SD LEDs 疯狂地闪烁．你需要让你的数据机重置．
+大部份的 Hayes 相容数据机使用 <CODE>&amp;D3</CODE> 来做这件事，但是在我的 USR Courier 上，我得要设 <CODE>&amp;D2</CODE> 以及 <CODE>S13=1</CODE>．查阅你的数据机手册．
+<P>
+<H2><A NAME="ss13.6">13.6 我将我的终端机连到我的 PC  上，但是在我输入签入名称之後，它就锁住不动</A>
+</H2>
+
+<P>
+<UL>
+<LI>如果你使用 <CODE>getty</CODE>:
+在你的 <CODE>/etc/gettydefs</CODE> 项目里可能没有设 <CODE>CLOCAL</CODE> 给终端机，而且可能你用的并不是完整的 null modem 连接线．
+你需要 <CODE>CLOCAL</CODE> 来告诉 Linux 忽略数据机控制信号．它看起来像这里这样:
+<BLOCKQUOTE><CODE>
+<PRE>
+# 38400 bps Dumb Terminal entry
+DT38400# B38400 CS8 CLOCAL # B38400 SANE -ISTRIP CLOCAL #@S @L login: #DT38400
+
+# 19200 bps Dumb Terminal entry
+DT19200# B19200 CS8 CLOCAL # B19200 SANE -ISTRIP CLOCAL #@S @L login: #DT19200
+
+# 9600 bps Dumb Terminal entry
+DT9600# B9600 CS8 CLOCAL # B9600 SANE -ISTRIP CLOCAL #@S @L login: #DT9600
+</PRE>
+</CODE></BLOCKQUOTE>
+
+接下来，用 <CODE>kill</CODE> 砍掉该 <CODE>getty</CODE> 行程这样新行程会以新的项目产生．
+</LI>
+<LI>如果你使用 <CODE>agetty</CODE>:
+加上 <CODE>-L</CODE> 旗标到你的 <CODE>/etc/initab</CODE> 中的 <CODE>agetty</CODE> 那行．
+这会使得它忽略数据机控制信号．然後键入 <CODE>init q</CODE> 以重新执行 <CODE>init</CODE>．
+这个项目看起来像这样:
+<BLOCKQUOTE><CODE>
+<PRE>
+s1:345:respawn:/sbin/agetty -L 9600 ttyS1 vt100
+</PRE>
+</CODE></BLOCKQUOTE>
+</LI>
+</UL>
+<P>
+<H2><A NAME="ss13.7">13.7 在高速下，我的数据机漏失资料</A>
+</H2>
+
+<P>如果你尝试在大於 38400 bps 的速率下使用你的数据机，而你并没有 16550A UARTs 的话，你应该要将它们升级．
+有关 UARTs 的说明参阅 
+<A HREF="Serial-HOWTO-12.html#uart">什麽是 UARTs?</A> 一节．
+<P>
+<H2><A NAME="ss13.8">13.8 在系统启动时，Linux 没有依照我的配置回报串列设备．</A>
+</H2>
+
+<P>这是事实．Linux 在系统启动时并没有做任何的 IRQ 侦测，它只做串列设备侦测．
+所以，不要理会它所显示有关硬体中断的部份，因为它只是假定使用标准的硬体中断．
+这是因为硬体中断侦测不可靠，而且可能被瞒骗而这样做的．
+<P>所以即使我的 <CODE>ttyS2</CODE> 设在 IRQ5，我仍然看到
+<BLOCKQUOTE><CODE>
+<PRE>
+Jan 23 22:25:28 misfits vmunix: tty02 at 0x03e8 (irq = 4) is a 16550A
+</PRE>
+</CODE></BLOCKQUOTE>
+
+在 Linux 启动时，你必须使用 <CODE>setserial</CODE> 来告诉 Linux 你所使用的硬体中断．
+Linux 启动後，你可以查看 <CODE>/proc/interrupts</CODE> 档以了解真正被配置的 IRQ 是什麽． 
+<P>
+<H2><A NAME="ss13.9">13.9 当我使用我的数据机叫用 Linux 机器时 <CODE>rz</CODE> 以及/或是 <CODE>sz</CODE> 不动</A>
+</H2>
+
+<P>如果 Linux 在你尝试传送档案时会寻找 <CODE>/dev/modem</CODE> 的话，查看 <CODE>/etc/profile</CODE> 以及 <CODE>/etc/csh.cshrc</CODE>．
+某些发行套件会在这些地方定义一些别名，最著名的是 Slackware．
+这些别名扰乱了 zmodem 程式．把它们拿掉或是更正它们．
+<P>
+<H2><A NAME="ss13.10">13.10 我的萤幕印出看起来很好玩的字元</A>
+</H2>
+
+<P>这在当你把二进位资料送往萤幕的时候会发生在虚拟控制台上，或者有时候会发生在串列连线上．
+修复这个问题的方法是输入 <CODE>echo ^v^[c</CODE>．因为控制字元之故，它是:
+<BLOCKQUOTE><CODE>
+<PRE>
+linux% echo &lt;ctrl>v&lt;esc>c
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="nowork"></A> <A NAME="ss13.11">13.11 <CODE>getty</CODE> 或 <CODE>uugetty</CODE> 仍然无法运作</A>
+</H2>
+
+<P><CODE>getty_ps</CODE> 上有个 <CODE>DEBUG</CODE> 选项．编辑你的 <CODE>/etc/conf.{uu}getty.ttyS</CODE><EM>N</EM> 配置档并加上 <CODE>DEBUG=</CODE><EM>NNN</EM>．
+其中 <EM>NNN</EM> 是下列的数字组合之一，根据你想要侦测什麽错误而定:
+<BLOCKQUOTE><CODE>
+<PRE>
+D_OPT   001            option settings
+D_DEF   002            defaults file processing
+D_UTMP  004            utmp/wtmp processing
+D_INIT  010            line initialization (INIT)
+D_GTAB  020            gettytab file processing
+D_RUN   040            other runtime diagnostics
+D_RB    100            ringback debugging
+D_LOCK  200            uugetty lockfile processing
+D_SCH   400            schedule processing
+D_ALL   777            everything 
+</PRE>
+</CODE></BLOCKQUOTE>
+
+设定 <CODE>DEBUG=010</CODE> 是个开始的好地方．
+<P>如果你正在执行 <CODE>syslogd</CODE> 的话，侦错资讯将会出现在你的记录档里．
+如果你没有执行 <CODE>syslogd</CODE> 那麽 <CODE>getty</CODE> 的资讯将会出现在 <CODE>/tmp/getty:ttyS</CODE><EM>N</EM> 里而 <CODE>uugetty</CODE> 的资讯则会出现在 <CODE>/tmp/uugetty:ttyS</CODE><EM>N</EM> 里，而且它们也会被放到 <CODE>/var/adm/getty.log</CODE> 里去．
+查看侦错资讯看看发生了什麽．最可能的是，你将得要调整一些你配置档里的参数，并且重新配置你的数据机．
+<P>你应该也去试试 <CODE>mgetty</CODE>．有些人在使用它时更为幸运．
+<P>
+<HR>
+<A HREF="Serial-HOWTO-14.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Serial-HOWTO-12.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Serial-HOWTO.html#toc13"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

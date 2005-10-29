@@ -1,0 +1,73 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>XFree86 字体美化 Mini HOWTO: X Server 的设定</TITLE>
+ <LINK HREF="FDU-3.html" REL=next>
+ <LINK HREF="FDU-1.html" REL=previous>
+ <LINK HREF="FDU.html#toc2" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+<A HREF="FDU-3.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="FDU-1.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="FDU.html#toc2"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s2">2. X Server 的设定</A></H2>
+
+<P>下面是一些很容易就可以让 X 表现更好的步骤:
+<H2><A NAME="ss2.1">2.1 设定 FontPath</A>
+</H2>
+
+<P>想要解决字型的问题，首先得看看 <CODE>XF86Config</CODE> 档。(通常放在 <CODE>/usr/X11/lib/X11/XF86Config</CODE> 或 <CODE>/etc/X11/XF86Config</CODE>)。若你还没猜出来的话， 其中对字型最重要的部份就是 <CODE>FontPath</CODE>。在钻研它之前，最好先检查 X 的其他设定。错误的萤幕设定比错误的字型设定更令人头痛。确定你萤幕的更新频率(refresh rate)在正常使用□围中已经设到最高 (85Hz 很好，75Hz 普通，60 Hz 很不舒服)。
+<P>用你最顺手的文字编辑器来编辑 <CODE>XF86Config</CODE>。在档案开头的 File 那节，你应该会看到类似下面的东西:
+<P>
+<PRE>
+FontPath        "/usr/X11R6/lib/X11/fonts/misc/"
+FontPath        "/usr/X11R6/lib/X11/fonts/Type1/"
+FontPath        "/usr/X11R6/lib/X11/fonts/Speedo/"
+FontPath        "/usr/X11R6/lib/X11/fonts/75dpi/"
+FontPath        "/usr/X11R6/lib/X11/fonts/100dpi/"
+</PRE>
+<P>这部份在 XFree86 3.x 和 4.x 里应该相同，或至少类似。<CODE>FontPath</CODE> 告诉 X 到那里去找在显示器上画字用的字型。排列的顺序是很重要的，当一个 X 应用程式向 X 要求画一些字，X server 通常偏好采用正在使用的字型。然後它去检查 <CODE>FontPath</CODE>，使用第一个能满足 X client 要求的字型。请注意，Redhat 6.x 的 xfs 采用另一种方式来设定 FontPath。请参考第 3.2.2 节以了解 xfs。
+<P>预设安装通常将 75dpi 的字型放在 100dpi 前面。若你有一台高解析度的显示器，这表示非常小的字。若你正是这种情形，第一个要用的方法就是将 75dpi 和 100dpi 的 FontPath 对调。
+<P>
+<PRE>
+FontPath        "/usr/X11R6/lib/X11/fonts/misc/"
+FontPath        "/usr/X11R6/lib/X11/fonts/Type1/"
+FontPath        "/usr/X11R6/lib/X11/fonts/Speedo/"
+FontPath        "/usr/X11R6/lib/X11/fonts/100dpi/"
+FontPath        "/usr/X11R6/lib/X11/fonts/75dpi/"
+</PRE>
+<P>然後指出你偏好使用不能缩放的点阵字。若你曾经使用 Netscape 或是其他使用较大字型来显示标题的程式，你将会发现这些字型会呈现锯齿状。这样很难看，必须要修正。所以在 misc，100dpi 和 75dpi 的後面加上 <CODE>:unscaled</CODE>。若想要的话，你也可以同时使用能缩放和不能缩放的字，只要将不能缩放的字的 <CODE>FontPath</CODE> 放在前面，告诉 X 说若可能的话，尽量使用不能缩放的字。
+<P>
+<PRE>
+FontPath        "/usr/X11R6/lib/X11/fonts/misc:unscaled"
+FontPath        "/usr/X11R6/lib/X11/fonts/100dpi:unscaled"
+FontPath        "/usr/X11R6/lib/X11/fonts/75dpi:unscaled"
+FontPath        "/usr/X11R6/lib/X11/fonts/Type1"
+FontPath        "/usr/X11R6/lib/X11/fonts/Speedo"
+FontPath        "/usr/X11R6/lib/X11/fonts/misc"
+FontPath        "/usr/X11R6/lib/X11/fonts/100dpi"
+FontPath        "/usr/X11R6/lib/X11/fonts/75dpi"
+</PRE>
+<P>做了这些改变後，重新启动 X。桌面是不是已经比较漂亮呢?
+<H2><A NAME="ss2.2">2.2 X server 命令列选项 (command line options)</A>
+</H2>
+
+<P>下面一件要做的事是调整 X server 的命令列选项。您将会想要用 <CODE>-dpi</CODE> 来指定显示的解析度是每英□几点。现今很多系统都使用高解析度的显示器，可能它们需要用 100dpi。 
+<P>若你是在 console 的提示列下启动 X，键入
+<P>
+<PRE>
+ $ startx -dpi 100
+</PRE>
+<P>若你是采用 xdm 这类的图形登录介面，你需要编辑你的 <CODE>/usr/X11/lib/X11/xdm/Xservers</CODE> 档 (或是 <CODE>/etc/X11/xdm/Xservers</CODE>)。在里面有 Xserver 的命令列。我的档案里有下面这一行:
+<P>
+<PRE>
+ :0 local /usr/X11R6/bin/X -dpi 100 -gamma 1.6
+</PRE>
+<P>你可在 X 和 Xserver 的 manpage 中找到更多的资讯。
+<HR>
+<A HREF="FDU-3.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="FDU-1.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="FDU.html#toc2"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

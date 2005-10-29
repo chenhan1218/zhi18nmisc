@@ -1,0 +1,202 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Linux XFree86 HOWTO 中譯版: 設定 XFree86</TITLE>
+ <LINK HREF="XFree86-HOWTO-5.html" REL=next>
+ <LINK HREF="XFree86-HOWTO-3.html" REL=previous>
+ <LINK HREF="XFree86-HOWTO.html#toc4" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="XFree86-HOWTO-5.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="XFree86-HOWTO-3.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="XFree86-HOWTO.html#toc4"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s4">4. 設定 XFree86</A></H2>
+
+<P>
+<H2><A NAME="ss4.1">4.1 一般設定</A>
+</H2>
+
+<P>以前,要設定好 XFree86 以便能使用你的滑鼠, 鍵盤, 顯示器, 和顯示卡,
+是辛苦的差事, 需要大量的親自動手去設定和嚐試調整[hand-hacking]
+一個很複雜的設定檔案, 那可說是一種不可言傳的藝術.
+現在不再需要了; 在3.2/3.3版後,使這個過程幾乎沒什意義了.
+你所要做的是開啟 <CODE>XF86Setup</CODE> 程式.
+<P>這程式乃依賴現今所有新出貨而且搭配具 EGA/VGA 能力之顯示器的PC硬體情況而定.
+它採用 VGA16 server 而且利用它以最低階共通性 640x480 模式來開啟 X.
+然後它執行互動式程式,它帶你經過連續五個設定面板 -- mouse, keyboard, 
+(video) card, monitor, 和 `other' (各式各樣的 server 選項). 全部過程相當簡單.
+<P>(如果你是用 Red Hat Linux, 你可以使用另一個叫作 <CODE>xf86config</CODE> 程式.
+它的作用非常像是 <CODE>XF86Setup</CODE> ,但是其本身不是使用 X 介面與 VGA16 server.)
+<P>有一小點要記住的是,如果你像大多數人使用目前的PC, 你的鍵盤實際上是 XF86Setup
+所呼叫的 `Generic 102-key PC (intl)' 而不是預定的 `Generic 101-key PC'.
+如果你選擇預定的(101), 在你鍵盤[keyboard]的極右邊(數字及其相關
+[numeric keypad and friends])上的按鍵群[key cluster]可能會沒有作用.  
+<P>如果你不確定你顯示器的型式[monitor type],你可以連續試試它所列出的型式.
+就依你的習慣由上往下試(較上面的選項所包含的是較低 dot-clock 
+速度, 而且對硬體要求也比較低). 
+如果發生了混亂或嚴重地扭曲變形[distorted]的圖形時, 
+請往回試[Back off]. 小部分的扭曲變形 (圖形稍太大,稍太小,或稍偏離中心) 
+不是什麼大問題; 你是可以馬上藉由微調[fine-tuning]此 mode 來修正.
+<P>再者, 當程式打開 <CODE>xvidtune</CODE> 允許你去調整[tweak]你的顯示模式[video mode],
+別讓初始的警告視窗,使你感到緊張. 現在多頻顯示器[multisync monitors]
+(不像他們以前是用定頻的) 不會因為用這方式而就輕易損壞.
+<P>XF86Config 可以假設你的滑鼠裝置是在 /dev/mouse. 
+如果你發現這沒作用時,你可能需要連結 /dev/mouse 
+到滑鼠實際所在 /dev/ca[01] 那. 如果你發現當 
+<HR>
+<PRE>
+gpm
+</PRE>
+<HR>
+
+正在執行,而 XFree86 給你一個 "mouse busy" 的錯誤訊息時, 那你則需要連結到
+/dev/ttyS[01] 來取代.
+<P>設定的過程操作有選定符合你的顯示卡一般型態的 server (像是 <CODE>XF86_VGA16</CODE>, 
+<CODE>XF86_Mach64</CODE>, or <CODE>XF86_S3</CODE>) 以及設定 <CODE>XF86Config</CODE> 檔案,
+而 server 開始啟動時會讀取該檔中的你安裝時已指定的特殊參數.
+<CODE>XF86Config</CODE> 的所在位置會隨時你的 OS 不同而變, 
+但有個地方可找找看是在 <CODE>/etc/X11</CODE>.  
+<P>在較早的 XFree86 版本, <CODE>XF86Setup</CODE> 會直接將 `X' 指令連接所選擇的 server.
+在最近的版本, 取而代之的是將 `X' 連接到叫 Xwrapper 的 set-user-id wrapper 程式.
+這想法是所有的 setuid root stuff 都落在 Xwrapper 之中,
+所以 server 就不必在用 setuid root.
+<P>
+<H2><A NAME="ss4.2">4.2 解決困難</A>
+</H2>
+
+<P>當你剛開始開啟 X server, 有些項目偶爾會沒有設定很正確.
+這總是幾乎會由你的設定檔案中的一些問題所引起的.
+通常在是顯示器的 timing values 不正確, 或顯示卡的 dot clocks 設定不正確.
+少數問題可以藉由 <CODE>xvidtune</CODE> 來解決; 當螢幕上實在是混亂不清楚時,通常是表示
+你需要回到 XF86Setup 而選擇功能比較低的顯示器型式[monitor type].
+<P>如果你的顯示好像捲曲[roll], 或邊邊模糊不清[fuzzy], 這很清楚地表示顯示器的
+timing values 或 dot clocks 是錯的. 再者,
+要確定你是正確地指出你的顯示卡晶片組, 在 <CODE>XF86Config</CODE> 中的 
+<CODE>Device</CODE> 段落之其它項目也是如此.
+絕對要確定你是使用正確的 X server ,而且 <CODE>/usr/X11R6/bin/X</CODE> 有符號連結
+[symbolic link]到這個 server.
+<P>如果發生其它所有失敗的情況, 試試 ''赤裸地[bare]'' 開啟 X; 也就是, 
+使用像這樣的指令:
+<BLOCKQUOTE><CODE>
+<PRE>
+X > /tmp/x.out 2>&amp;1 
+</PRE>
+</CODE></BLOCKQUOTE>
+
+然後你可以砍去 X server (使用 <CODE>ctrl-alt-backspace</CODE> 鍵的組合) 
+而且檢查 <CODE>/tmp/x.out</CODE> 的內容. X server 會報告任何警告及錯誤---舉例,
+如果你的顯示卡沒有一個 dot clock 可相符合你顯示器所支援的模式.
+<P>記住你可以使用 <CODE>ctrl-alt-numeric +</CODE> 和 <CODE>ctrl-alt-numeric -</CODE> 
+來切換在 <CODE>XF86Config</CODE> 中的 <CODE>Screen</CODE> 段落的 <CODE>Modes</CODE> 行
+所列出的顯示模式. 若最高解析度模式不能看起來很適當,試試切到較低的解析度.
+這至少會讓你知道你的 X 設定這部分是正確的運作.
+<P>再者, 檢查一下你顯示器上的垂直與水平之大小/對準旋紐.
+在很多情況下,當 X 剛開啟時, 這些是需要調整的. 舉個例子,
+如果顯示器好像有點偏一邊時, 通常你能夠使用顯示器的控制來修正這個.
+<P>USENET 的 newsgroup <CODE>comp.windows.x.i386unix</CODE> 主要是在討論有關 XFree86,
+<CODE>comp.os.linux.x</CODE> 也是. 看一下 newsgroup 
+那些與你的顯示卡有關的文章也許是個好主意---你也許剛好看到某些人跟你有相同的問題.
+<P>
+<H2><A NAME="ss4.3">4.3 自定設定</A>
+</H2>
+
+<P>如果你的顯示器能支援 1600x1200 -- 而用 XF86Setup 
+來安裝之最高所能夠支援的解析度是 1280x1024,
+那麼你會需要親自動手去嘗試調整你的 X 之設定,以便取得最佳化的表現.
+<P>如果基於這個理由或其它理由, 而你想要親自動手去嘗試調整你的顯示設定,
+去看一下 LDP 的 XFree86 Video Timings HOWTO, 
+<A HREF="http://sunsite.unc.edu/LDP/HOWTO/XFree86-Video-Timings-HOWTO.html">http://sunsite.unc.edu/LDP/HOWTO/XFree86-Video-Timings-HOWTO.html</A>.
+(這就是 XFree86
+的 `Videomodes.doc' 檔案之最新的 HTML 版本.)
+<P>
+<H2><A NAME="ss4.4">4.4 使用 16-位元 的顏色</A>
+</H2>
+
+<P>
+<P>根據內定的, X 使用 8-位元 色深[color depth]而有256色. 為避開這種限制,
+很多應用程式配置他們自己的色彩對應圖[colormap],導致瞬間顏色轉換,
+當游標在兩個各擁有自己的色彩對應圖之視窗移動時. 
+Arena WWW 瀏覽器就是這樣子.
+<P>如果你想要使用先進的圖形化的應用程式,256色也許不足夠.
+你可能需要有 16-位元 色深 (65,536 顏色). 但要注意的是,
+不是所有應用程式都要工作在 16-位元 顏色下的.
+<P>你能簡單地使用 16-位元 的色深而有 65K 的不同色,
+藉由開啟 X 時,用以下指令
+<P>
+<HR>
+<PRE>
+    startx -- -bpp 16
+</PRE>
+<HR>
+<P>或者將下列這行
+<P>
+<HR>
+<PRE>
+    exec X :0 -bpp 16
+</PRE>
+<HR>
+<P>擺進你的 .xserverrc 檔案內. 然而,為了使這使能正常工作, 你需要有 
+<HR>
+<PRE>
+screen
+</PRE>
+<HR>
+ 段落在你的 XF86Config 檔案中:
+<P>
+<HR>
+<PRE>
+    DefaultColorDepth 16
+</PRE>
+<HR>
+<P>如果你使用 xdm,你可能需要改變 Xservers 檔案, 其大概位置是在
+/etc/X11/xdm/. 典型的設定檔就只有一行, 看起來就像這樣
+<P>
+<HR>
+<PRE>
+      :0 local /usr/X11R6/bin/X
+</PRE>
+<HR>
+<P>加上 
+<HR>
+<PRE>
+-bpp 16
+</PRE>
+<HR>
+ 到這 startup 選項:
+<P>
+<HR>
+<PRE>
+      :0 local /usr/X11R6/bin/X -bpp 16
+</PRE>
+<HR>
+<P>再者,你會需要把色深 16 (bits)的顯示加入你的 X 設定檔的 `screen' 段落部分.
+一般你可以直接複製 8-bit顯示部分,而改變色深大小.
+<P>較多顏色要你的顯示卡在相同的時間內能轉換成更多資料. 如果你的顯示卡不能應付,
+那麼就是解析度[resolution]或是更新率[refresh rate]必須要降低. 
+XFree 內定的是降低解析度. 如果你要保持解析度而降低更新率,
+你必須新加入一行適當的 Modeline 到你的 XF86Config 檔案中, 
+其定義具有最低更新率下的解析度.舉個例子, 取代舊值
+<BLOCKQUOTE><CODE>
+<PRE>
+Modeline "1024x768"  75  1024 1048 1184 1328 768 771 777 806 -hsync -vsync
+</PRE>
+</CODE></BLOCKQUOTE>
+
+換成
+<BLOCKQUOTE><CODE>
+<PRE>
+Modeline "1024x768"  65  1024 1032 1176 1344 768 771 777 806 -hsync -vsync.
+</PRE>
+</CODE></BLOCKQUOTE>
+
+這裏的魔術數字 75 和 65 是各個時脈率[clock rates], 那些是你找到 X 記錄在你的 
+.X.err 檔案裏的. 查詢一下在 XF86 文件的 monitors 檔案,有關在 16 位元色深下
+最適合你的顯示卡能夠傳送最大時脈率的 Modelines.
+<P>
+<HR>
+<A HREF="XFree86-HOWTO-5.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="XFree86-HOWTO-3.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="XFree86-HOWTO.html#toc4"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

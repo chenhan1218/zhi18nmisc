@@ -1,0 +1,204 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE> Serial HOWTO: Serial Port Devices /dev/ttyS2, etc. </TITLE>
+ <LINK HREF="Serial-HOWTO-8.html" REL=next>
+ <LINK HREF="Serial-HOWTO-6.html" REL=previous>
+ <LINK HREF="Serial-HOWTO.html#toc7" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Serial-HOWTO-8.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Serial-HOWTO-6.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Serial-HOWTO.html#toc7"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="ttySN_"></A> <A NAME="s7">7. Serial Port Devices /dev/ttyS2, etc. </A></H2>
+
+<P> For creating devices in the device directory see:
+<P>
+<A HREF="#create_dev">Creating Devices In the /dev directory</A><P>
+<H2><A NAME="ss7.1">7.1 Devfs (The new Device File System)</A>
+</H2>
+
+<P> This is a new type of device interface to Linix.  It's optional
+starting with kernel 2.4.  It's more efficient than the conventional
+interface and makes it easy to deal with a huge number of devices.
+The device names have all changed as well.  But there's an option to
+continue using the old names.  For a detailed description of it see:
+<A HREF="http://www.atnf.csiro.au/~rgooch/linux/docs/devfs.html">http://www.atnf.csiro.au/~rgooch/linux/docs/devfs.html</A><P>The name changes (if used) are: ttyS2 becomes tts/2 (Serial port),
+tty3 becomes vc/3 (Virtual Console), ptyp1 becomes pty/m1 (PTY
+master), ttyp2 becomes pty/s2 (PTY slave).  "tts" looks like a
+directory which contains devices "files": 0, 1, 2, etc.  All of these
+new names should still be in the /dev directory although optionally
+one may put them elsewhere.
+<P>
+<H2><A NAME="dev_nos"></A> <A NAME="ss7.2">7.2 Serial Port Device Names &amp; Numbers </A>
+</H2>
+
+<P> Devices in Linux have major and minor numbers (unless you use the
+new devfs).  The serial port ttySx (x=0,1,2, etc.) has major number 4.
+You may see this (and the minor numbers too) by typing: "ls -l ttyS*"
+in the /dev directory.
+<P>There formerly was an alternate name for each serial port.  For
+example, ttyS2 would have cua2 as an alternate name.  You may still
+have the cua devices in your /dev directory but they are now
+deprecated.  Their drivers behave slightly different than for the ttyS
+ones.  Device Obsolete">."') See the Modem-HOWTO
+section: "cua Device Obsolete">.
+<P>Dos/Windows use the COM name while the <CODE>setserial</CODE> program uses
+tty00, tty01, etc.  Don't confuse these with dev/tty0, dev/tty1, etc.
+which are used for the console (your PC monitor) but are not serial
+ports.  The table below is for the "standard" case (but yours could be
+different).
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+                                                 IO      devfs
+ dos            major minor       major minor  address   name
+COM1  /dev/ttyS0  4,  64;  /dev/cua0  5,  64     3F8   /dev/tts/0
+COM2  /dev/ttyS1  4,  65;  /dev/cua1  5,  65     2F8   /dev/tts/1
+COM3  /dev/ttyS2  4,  66;  /dev/cua2  5,  66     3E8   /dev/tts/2
+COM4  /dev/ttyS3  4,  67;  /dev/cua3  5,  67     2E8   /dev/tts/3
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss7.3">7.3 Universal Serial Bus Ports</A>
+</H2>
+
+<P> Although the USB is not covered in this HOWTO, the serial ports on
+the USB are: /dev/ttyUSB0 /dev/ttyUSB1, etc.
+<P>
+<H2><A NAME="ss7.4">7.4 Link ttySN to /dev/modem</A>
+</H2>
+
+<P> On some installations, two extra devices will be created, 
+<CODE>/dev/modem</CODE> for your modem and <CODE>/dev/mouse</CODE> for a
+mouse.  Both of these are symbolic links to the appropriate serial
+device in <CODE>/dev</CODE> which you specified during the installation
+Except if you have a bus mouse, then <CODE>/dev/mouse</CODE> will point to
+the bus mouse device).
+<P>Formerly the use of <CODE>/dev/modem</CODE> was discouraged since lock
+files might not realize that it was really say <CODE>/dev/ttyS2</CODE>.
+The newer lock file system doesn't fall into this trap so it's now OK
+to use such links.
+<P>
+<P>
+<P>
+<H2><A NAME="ss7.5">7.5 Which Connector on the Back of my PC is ttyS1, etc?</A>
+</H2>
+
+<H3>Inspect the connectors</H3>
+
+<P> Inspecting the connectors may give some clues but is often not
+definitive.  The serial connectors on the back side of a PC are
+usually DB connectors with male pins.  9-pin is the most common but
+some are 25-pin (especially older PCs like 486s).  There may be one
+9-pin (perhaps ttyS0 ??) and one 25-pin (perhaps ttyS1 ??).  For two
+9-pin ones the top one might be ttyS0.
+<P>If you only have one serial port connector on the back of your PC,
+this may be easy.  If you also have an internal modem, a program like
+wvdial may be able to tell you what port it's on (unless it's a PnP
+that hasn't been PnP configured yet).  A report from setserial (at
+boot-time or run by you from the command line) should help you
+identify the non-modem port.  
+<P>If you have two serial connectors it may be more difficult.
+First check manuals (if any) for your computer.  Look at the
+connectors for meaningful labels.  You might even want to take off the
+PC's cover and see if there are any meaningful labels on the card
+where the internal ribbon cables plug in.  Labels (if any) are likely
+to say something like "serial 1", "serial 2" or A, B.  Which com port it
+actually is will depend on jumper or PnP settings (sometimes shown in
+a CMOS setup menu).  But 1 or A are more likely to be ttyS0 with 2 or
+B ttyS1.
+<P>
+<H3>Send bytes to the port</H3>
+
+<P> Labels are not apt to be definitive so here's another method.  If
+the serial ports have been configured correctly per setserial, then
+you may send some bytes out a port and try to detect which connector
+(if any) it's coming out of.  One way to send such a signal is to copy
+a long text file to the port using a command like: cp my_file_name
+/dev/ttyS1.  A voltmeter connected to the DTR pin (see Serial-HOWTO
+for Pinout) will display positive as soon as you give the copy
+command.
+<P>The transmit pin should go from several volts negative to a voltage
+fluctuating around zero after you start sending the bytes.  If it doesn't
+(but the DTR went positive) then you've got the right port but it's
+blocked from sending.  This may be due to a wrong IRQ, -clocal being
+set, etc.  The command "<CODE>stty -F /dev/ttyS1 -a</CODE>" should show
+clocal (and not -clocal).  If not, change it to clocal.
+<P>Another test is to jumper the transmit and receive pins (pins 2 and 3
+of either the 25-pin or 9-pin connector) of a test serial port.  Then
+send something to each port (from the PCs keyboard) and see if it gets
+sent back.  If it does it's likely the port with the jumper on it.
+Then remove the jumper and verify that nothing gets sent back.  Note
+that if "echo" is set (per stty) then a jumper creates an infinite
+loop.  Bytes that pass thru the jumper go into the port and come right
+back out of the other pin back to the jumper.  Then they go back in
+and out again and again.  Whatever you send to the port repeats itself
+forever (until you interrupt it by removing the jumper, etc.).  This
+may be a good way to test it as the repeating test messages halt when
+the jumper is removed.
+<P>As a jumper you could use a mini (or micro) jumper cable and perhaps
+use a scrap of paper to prevent the mini clips from accidentally
+touching the metal of the connector.  Whatever you use as a jumper
+take care not to bend or excessively scratch the pins.  To receive
+something from a port, you can go to a virtual terminal (Alt-F2 for
+example) and type something like "cp /dev/ttyS2 /dev/tty".  Then at
+another virtual terminal you may send something to ttyS2 (or whatever)
+by "echo test_message > /dev/ttyS2".  Then go back to the receive
+virtual terminal and look for the test_message.  See 
+<A HREF="Serial-HOWTO-13.html#ser_elect_test">Serial Electrical Test Equipment</A> for
+more info.  
+<P>
+<H3>Connect a device to the connector</H3>
+
+<P> Another way to try to identify a serial port is to connect some
+physical serial device to it and see if it works.  But a problem here
+is that it might not work because it's not configured right.  A serial
+mouse might get detected if connected.
+<P>
+<H3>Missing connectors</H3>
+
+<P> If the software shows that you have more serial ports than you
+have connectors for (including an internal modem which counts as a
+serial port) then you may have a serial port that has no connector.
+Some motherboards come with a serial port with no cable or serial DB
+connector.  Someone may build a PC from this and omit the connector.
+There may be a "serial" label on the motherboard but no ribbon cable
+connects to the pins next to this label.  To use this port you must
+get a ribbon cable/connector.  I've seen different wiring arrangements
+for such ribbon cables so beware.
+<P>
+<H2><A NAME="create_dev"></A> <A NAME="ss7.6">7.6 Creating Devices In the /dev directory </A>
+</H2>
+
+<P>If you don't have a device "file" that you need, you will have to
+create it with the <CODE>mknod</CODE> command or with the MAKEDEV shell
+script.  Example, suppose you needed to create <CODE>ttyS0</CODE>:
+<BLOCKQUOTE><CODE>
+<PRE>
+linux# mknod -m 666 /dev/ttyS0 c 4 64
+</PRE>
+</CODE></BLOCKQUOTE>
+
+You can use the <CODE>MAKEDEV</CODE> script, which lives in <CODE>/dev</CODE>.
+See the man page for it.  This simplifies the making of devices.  For
+example, if you needed to make the devices for <CODE>ttyS0</CODE> you
+would type:
+<BLOCKQUOTE><CODE>
+<PRE>
+linux# cd /dev
+linux# ./MAKEDEV ttyS0
+</PRE>
+</CODE></BLOCKQUOTE>
+
+This handles the devices creation and should set the correct permissions.
+For making multiport devices see 
+<A HREF="Serial-HOWTO-5.html#make_multi">Making multiport devices in the /dev directory</A>.
+<P>
+<HR>
+<A HREF="Serial-HOWTO-8.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Serial-HOWTO-6.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Serial-HOWTO.html#toc7"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

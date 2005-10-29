@@ -1,0 +1,119 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Database-SQL-RDBMS HOW-TO document for Linux (PostgreSQL Object Relational Database System): Performance Tuning of PostgreSQL server</TITLE>
+ <LINK HREF="PostgreSQL-HOWTO-9.html" REL=next>
+ <LINK HREF="PostgreSQL-HOWTO-7.html" REL=previous>
+ <LINK HREF="PostgreSQL-HOWTO.html#toc8" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="PostgreSQL-HOWTO-9.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="PostgreSQL-HOWTO-7.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="PostgreSQL-HOWTO.html#toc8"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s8">8. Performance Tuning of PostgreSQL server</A></H2>
+
+<P>Generally database server is standalone box connected to network.
+Since database server is the only unix process which runs on the CPU, you
+can do several optimizations to speed up the server.
+<H2><A NAME="ostune"></A> <A NAME="ss8.1">8.1 OS Tuning for Database server </A>
+</H2>
+
+<P>To get more bang for a given CPU processing power, do the following:-
+<UL>
+<LI> Recompile linux kernel to make it small and lean. Remove items 
+which are not used. See kernel 
+howto at 
+<A HREF="http://www.linuxdoc.org/HOWTO/Kernel-HOWTO.html">http://www.linuxdoc.org/HOWTO/Kernel-HOWTO.html</A>
+<P>
+</LI>
+<LI> Turn off unneccessary unix processes - on linux/unix systems run chkconfig
+<HR>
+<PRE>
+bash$ su - root
+bash# man chkconfig
+bash# chkconfig --help
+bash# chkconfig --list | grep on | less
+From the above list, turn off the processes you do not want to start automatically -
+bash# chkconfig --level 0123456 &lt;service name> off
+Next time when the machine is booted these services will not be started.
+Now, shutdown the services manually which you just turning off.
+bash# cd /etc/rc.d/init.d
+bash# ./&lt;service name> stop
+</PRE>
+<HR>
+
+<P>
+</LI>
+<LI> Do not run any other application processes which are unnecessary.
+<P>
+</LI>
+<LI> Do not leave X-Window running unattended. Because X-window processes
+consume memory, CPU load and can be a serious security hole from outside attacks.
+The X-window managers generally used are KDE, GNOME, CDE, XDM and others. 
+You must exit the X-window immediately after using and most of the time
+you should see command line console login prompt on the database server machine.</LI>
+</UL>
+<H2><A NAME="ostune"></A> <A NAME="ss8.2">8.2 Tuning Database server process</A>
+</H2>
+
+<P>General tuning tips:
+<UL>
+<LI> Indices can speed up queries. The <B>explain</B> command allows
+you to see how PostgreSQL is interpreting your query, and which indices
+are being used.</LI>
+<LI> Use the <B>cluster</B> command to group data in base tables to match
+an index. See the <B>man cluster(1)</B> manual page for more details.</LI>
+<LI> If you are doing a lot of inserts, consider doing them in a large
+batch using the <B>copy</B> command. This is much faster than individual inserts.</LI>
+<LI> Statements not in a <B>begin work/commit</B> transaction block
+are considered to be in their own transaction. Consider performing several
+statements in a single transaction block. This reduces the
+transaction overhead. Also consider dropping and recreating indices when
+making large data changes.</LI>
+<LI> It is suggested that you purchase the "Performance Tuning guide" and
+tuning support from 
+<A HREF="http://www.postgresql.org">PostgreSQL Corp.</A>.</LI>
+</UL>
+<P>Specialized tuning tips: 
+<P>
+<UL>
+<LI> Internal tuning of PostgreSQL is a complex topic. You need a sound
+knowledge of source code and internals of postgresql. It is strongly
+recommended that only professionals attempt specialized tuning tips given below:</LI>
+<LI> You can disable <B>fsync()</B> by starting the 
+postmaster with a <B>-o -F</B> option. This will prevent <B>fsync()</B>
+from flushing to disk after  every transaction. But there is risk of losing
+data due to power/media failure. 
+You can reduce the risk of losing data due to power failure by having 
+the 
+<A HREF="http://apc.com/products/ups.cfm">APC UPS</A>
+(Uninterrupted Power Supply) and media failures by disk RAID systems 
+(
+<A HREF="http://www.linuxdoc.org/HOWTO/Antares-RAID-sparcLinux-HOWTO/index.html">Antares-Sparc-Raid</A>
+system,
+<A HREF="http://www.linuxdoc.org/HOWTO/Software-RAID-HOWTO.html">Software-Raid</A>
+system,
+<A HREF="http://www.linuxdoc.org/HOWTO/Software-RAID-0.4x-HOWTO.html">Old-Software-Raid</A>
+system,
+<A HREF="http://www.linuxdoc.org/HOWTO/Root-RAID-HOWTO.html">Root-Raid</A>
+system,
+<A HREF="http://www.linuxdoc.org/HOWTO/Boot+Root+Raid+LILO.html">Boot-Root-Raid</A>
+system) 
+to gaurd against media failures.</LI>
+<LI> Use the postmaster <B>-B</B> option to increase the number of
+shared memory buffers used by the back-end processes. If you make this
+parameter too high, the postmaster may not start up because you've exceeded your
+kernel's limit on shared memory space. Each buffer is 8K and the default is 64 buffers.</LI>
+<LI> Use the back-end <B>-S</B> option to increase the maximum
+amount of memory used by each backend process for temporary sorts. 
+The <B>-S</B> value is measured in kilobytes, and the default is 512 (i.e., 512K).
+It is unwise to make this value too large, or you may run out of memory when
+query invokes several concurrent sorts.</LI>
+</UL>
+<HR>
+<A HREF="PostgreSQL-HOWTO-9.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="PostgreSQL-HOWTO-7.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="PostgreSQL-HOWTO.html#toc8"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

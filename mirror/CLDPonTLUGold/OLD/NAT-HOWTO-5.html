@@ -1,0 +1,69 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Linux 2.4 NAT HOWTO: 控制哪些要 NAT</TITLE>
+ <LINK HREF="NAT-HOWTO-6.html" REL=next>
+ <LINK HREF="NAT-HOWTO-4.html" REL=previous>
+ <LINK HREF="NAT-HOWTO.html#toc5" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="NAT-HOWTO-6.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="NAT-HOWTO-4.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="NAT-HOWTO.html#toc5"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s5">5. 控制哪些要 NAT</A></H2>
+
+<P>您需要建立一些 NAT 規則﹐來告訴核心哪些連線要改變﹐同時如何去改變它們。要做到這點﹐我們需要一個非常多用途的 <CODE>iptables</CODE> 工具﹐同時指定 `-t nat' 選項告訴它去修改 NAT 表格。
+<P>
+<P>NAT 規則的表格含有三個列表叫做`chains' ﹕每一條規則都按順序檢查﹐直到找到一個相符的比對。該三個鏈就叫做 PREROUTING (對 Destination NAT 來說﹐因為封包首先是傳入的)﹑POSTROUTING (對 Source NAT 來說﹐因為封包是離開的)﹑以及 OUTPUT (對 Destination NAT 來說﹐是指那些由本機產生的封包)。
+<P>
+<P> 假如我夠藝術天份的話﹐下面的圖示將準確模擬出上面所說的概念。
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+      _____                                     _____
+     /     \                                   /     \
+   PREROUTING -->[Routing ]----------------->POSTROUTING----->
+     \D-NAT/     [Decision]                    \S-NAT/
+                     |                            ^
+                     |                          __|__
+                     |                         /     \
+                     |                        | OUTPUT|
+                     |                         \D-NAT/
+                     |                            ^
+                     |                            |
+                     --------> Local Process ------
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>於前述的每一點﹐當一個封包通過我們要查看的相關連線之時﹐如果它是一個新建連線﹐我們查看它在 NAT 表格裡對應的鏈﹐看看能對之做些什麼動作。而由此獲得的答案就應用於該連線將來的所有封包。
+<P>
+<H2><A NAME="ss5.1">5.1 用 iptables 做簡單的選擇</A>
+</H2>
+
+<P><CODE>iptables</CODE> 具有如後所列的許多標準選項。所有那些帶雙減號的選項都是可以縮寫的﹐只要 <CODE>iptables</CODE> 仍可將之與其它可能的選項區分開來就行。如果您的核心以模組形式來支援 iptables ﹐您就需要首先載入 ip_tables.o ﹕ `insmod ip_tables'。
+<P>
+<P>這裡﹐最重要的一個選項是表格選擇選項﹕ `-t' 。對於所有的 NAT 操作﹐您會想用 `-t nat' 來表示 NAT 表格。第二個重要的選項是以 `-A' 增加一條新規則至鏈的末端 (如﹕`-A POSTROUTING')﹐或以  `-I' 插入至前端(如﹕`-I PREROUTING')。
+<P>
+<P>您可以指定您要做 NAT 的封包來源地址 (`-s' 或 `--source') 與目的地 (`-d' or `--destination')。這兩個選項後面可以後接一個單一的 IP 地址 (如﹕192.168.1.1)﹐或一個名稱 (如﹕ www.kernelnotes.org)﹐或一個網路地址 (如﹕192.168.1.0/24 或 192.168.1.0/255.255.255.0)。
+<P>
+<P>您也可以指定要比對的傳入 (`-i' 或 `--in-interface') 和傳出 (`-o' or `--out-interface') 界面﹐但哪一個界面可以指定則取決於您要將規則寫入哪一個鏈去﹕對於 PREROUTING ﹐您可以選擇傳入界面﹐但對於 POSTROUTING (以及 OUTPUT)﹐您可以選擇傳出界面。如果您不小心用錯了﹐ <CODE>iptables</CODE> 就會給您一個錯誤。
+<P>
+<H2><A NAME="ss5.2">5.2 關於挑選哪些封包來 mangle 的細節</A>
+</H2>
+
+<P>我前面已經說過﹐您可以指定來源和目的地地址。如果您省略來源地址的選項﹐那麼就泛指任何來源。如果您省略目的地地址﹐則泛指所有目的地地址。
+<P>
+<P>您還可以指定一個特定協定 (`-p' or `--protocol')呢﹐例如 TCP 或 UDP﹕只有這些協定的封包才符合該規則。其主要原因是﹐指定 tcp 或 udp 協定可以允許更多選項﹕尤其是  `--source-port' 與 `--destination-port' 選項 (縮寫為 `--sport' 與 `--dport' )。
+<P>
+<P>這些選項可以讓您指定只有哪些特定來源和目的地埠口的封包才符合該規則。這在您要重導 web 請求  (TCP port 80 或 8080) 但又怕影響其它封包的時候﹐就很好用了。
+<P>
+<P>這些選項必須接在  `-p' 選項的後面(這會在為該協定載入共享函式庫時有副作用)。您可以使用埠口號碼﹐或者是在 /etc/services 檔中的名稱。
+<P>
+<P>所有這些您能選擇的封包之不同品質﹐都詳細列在那個詳細得有點恐怖的 manual page 中了(<CODE>man iptables</CODE>)。
+<P>
+<HR>
+<A HREF="NAT-HOWTO-6.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="NAT-HOWTO-4.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="NAT-HOWTO.html#toc5"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

@@ -1,0 +1,120 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>ISP-Connectivity-mini-HOWTO : 连接外面的世界</TITLE>
+ <LINK HREF="ISP-Connectivity-3.html" REL=next>
+ <LINK HREF="ISP-Connectivity-1.html" REL=previous>
+ <LINK HREF="ISP-Connectivity.html#toc2" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+<A HREF="ISP-Connectivity-3.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="ISP-Connectivity-1.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="ISP-Connectivity.html#toc2"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s2">2. 连接外面的世界</A></H2>
+
+<P>在这份文件中,我们将解释如何使用网路上最常用的 PPP (点对点通讯协定)来连上网
+路.它让你的数据机能和外界"通话".这就像是微软视窗3.x中的 Winsock 小喇叭(Trumpet
+Winsock)以及许多其它你可能从没见过的程式.
+<P>在 Linux 中,我们使用一个叫 chat 的东西来帮我们做拨号至 ISP 的动作,
+接著再用一个叫 pppd 的工具来"利用"这个拨号至 ISP 的连线.你可以把 chat
+想成是你的拨号工具,而 pppd 是你的通讯协定.我们将在下面说明如何设定这两种工具.
+<H2><A NAME="ss2.1">2.1 利用 pppd 和 chat 来连接</A>
+</H2>
+
+<P>或许做这些事情最好的方法就是写一个 shell script 在 root的家目录下,
+取名为<CODE>ppp-connect</CODE>并且在每次你要连线时祈祷一下.我们将会讨论这个方法.
+<P>用root来login,并且用你最习惯的编辑器来编辑 &nbsp;/ppp-connect这个档.
+你等一下将必须你的参数是些什麽.
+<P><I>pppd connect 'chat -v "" "your_init_string" "" ATDTisp_number
+CONNECT "" ogin: your_username word: your_passwd' /dev/tty(0/1/2) speed
+modem</I>
+<P>pppd 在你系统中的 /usr/sbin/pppd ,然候在载入 chat 来帮你拨号. Chat 将会送出
+<I>你的初始字串</I>到数据机上,然後开始拨<I>你 ISP
+的电话</I>然後它就会开始等待萤幕上出现 CONNECT 以及 ogin:
+符号出现(这里没有开头的 l
+是因为第一字元有时会在传送时遗失),接著再送出<I>你的密码</I>,
+到这里 chat就结束了它的工作,将剩下来的部份交给 pppd 来表演.
+<P>最後一个指令是指定你的数据机在那一个连接埠上(我的是在 /dev/ttyS1).
+通常它都是在 ttyS1 (DOS 底下的 COM2),ttyS0 (DOS 底下的 COM1),
+如果你是用 Slackware 的版本,就是 cua1 或是 cua0 .至於 spped 
+指的是你 modem 的速度.我是始用 115200 在我的数据机(33.6k)上.
+如果你是最近才买的电脑(有著 16550 UART ),那麽决对不要比 57600 来的低.
+此外,14.4k 的 modem 可以把它设成 38400.Modem 只会告诉 pppd 它是个 serial/modem.
+如果你不希望有冗长的记录档那就不要加上 -v 选项.
+<P>下面的例子是一个人拨号到一个自动提供 PPP 连线的 ISP(例如:该 ISP
+没有任何选择使用何者协定的画面.)时.这是他 &nbsp;/ppp-connect 里的内容 :
+<P><I>pppd connect 'chat "" "ATZ" "" ATDT555-1800
+CONNECT "" ogin: johnny word: blackjak' /dev/ttyS1 115200
+modem</I>
+<P>但是对有些人而言,他们的 ISP 会有选择何种协定并且不会自动启动 PPP
+服务的人,可能会造成一些问题(译注:像 Hinet).幸运的是, chat
+也能处理这个问题.你只需要增加一些命令到你的 chat 的 script 中即可.
+例如,下面的 johnny 的 ISP 会丢给他一个画面,需要他输入 ppp 来建立 ppp
+连线.他的 shell prompt 是用 $.
+<I>pppd connect 'chat "" "ATZ" "" ATDT555-1800
+CONNECT "" ogin: johnny word: blackjak $ ppp' /dev/ttyS1 115200
+modem</I>
+<P>如果这些超过一个字,确定你有用引号夹住它.我希望你能了解这些意思,
+并且能写出适合你连线的 script.只需改变第一个或第二个 script 中的 johnny
+来配合你的需要,连接埠, ISP ,等等并将它存档.
+<P>现在,你可以设定你的 scipt 并且确定只有 root 才能执行,读,写它.
+这是非常重要的.如果你决定保留 -v 选项,那要确定没有人能看你的记录档.
+因为你的密码将会在纯文字的记录档中被看见.(我很少看见需要 -v 的情况,
+如果你不知道我说这段的意思,那麽请务必移去 -v 选项.
+<H2><A NAME="ss2.2">2.2 IP 的 Doname Names 和次网域(Subnets)</A>
+</H2>
+
+<P>对於大部份使用上面设定连线的人,一个不固定的 IP 位置并不会对他们造成困扰.
+这些人包括基本,一般的使用者,他们只要有拨接的帐号就好,并不需要很高深的技术.
+对於这些人可以跳过这一节,我将会告诉你必需作的重要工作来适切的设定你的系统.
+新手,可以跳过处理固定 IP ,Doname Names, Subnets,的这一节,而只要读这节的
+最後一部份就可以了.
+<P>向你的 ISP 取得固定的 IP 位置可能是免费的,所以,如果你不确定的话,
+可以向你的 ISP 询问.至於我个人,则是要付费来取得固定的 IP 位置.
+固定 IP 或 doname 能让你收发 e-mail 等等.如果你想为你自己获得固定 IP ,
+写 e-mail 给 root@你的ISP.com ,询问他是否能给你一个固定的 IP.
+<P>当你有了固定的 IP 位置,用 grep 在你的 /etc 目录下寻找你旧的 IP 位置在那.
+我必需改变我 sendmail 目录下和 /etc/hosts 档案内容.还有一些必需改变的档案.
+必需靠你自己用 grep 指令把他们给找出来.在你的 /etc/hosts 中用标准的格式加上你
+新的 IP 位置,重新启动你的电脑,那麽你就可以准备连上网路了.
+<P>你现在必需改变你的 script 来配合你新的设定.如果你被迫一开始连线就开启 PPP
+那麽你需要告诉你 ISP 的系统管理者来确保他们的 PPP 系统知道你有固定的 IP
+位址,并且分配给你你自己的位置而不是任意的 IP 位置.如果你会有输入何种协定的
+画面,而且你必需打入 ppp 之类的东西才能开始连线.改变你的 &nbsp;/ppp-connect script
+来送出这些字串来代替你自己在看到 $ 或其它提示符号时自己所输入的字串.
+<P><I>/usr/sbin/pppd :你的 IP 位置</I>
+<P>把你的 ISP 所给你的位置填入.确定你在将位置填入你的 chat script
+时,有用 " "来将它夹住.如果这没有用,询问你的 ISP 说你的 PPP daemon
+在那里,并且要求他下相关的命令.你可以试著保留这些设定,看看你的 ISP 
+是否认得你并且给予你正确的位置.
+<P>下一件要做的事就是为你自己要到一个 domain name.
+我知道在澳洲, .asn.au 和 .org.au 是免费的.在美国,你可以拿到一个 .us
+的免费 domain ,但是可能要一段时间.如果你在澳洲,你一定要去
+<A HREF="http://www.aunic.net/">http://www.aunic.net/</A>
+来注册你的 domain .在美国,则是到
+<A HREF="http://www.internic.net/">http://www.internic.net/</A> .
+<P>要注册网域( domain ),你必须提供 DNS 或其它类似的服务.如果你的 ISP
+不能提供 domain 给你,放弃一个公家的网域 .asn.au 或其它的网域名称,
+并且向 Monolith Internet 要一个 Domain 吧.
+<P>Monolith 为全世界任何人提供一个免费的 Domain.申请的过程完全不必接触到人.
+全部藉由网路表单( web forms )的界面,透过你的网路浏览器( brower )来达成.
+你的 domain 将会是一个 *.ml.org(*是你的申请名字)的形式.
+Monolith 将会为你在当地设立 DNS .如果你希望用 domain 来收发信件,要求你的 ISP
+成为你的 mail exchanger.
+<P>去
+<A HREF="http://www.ml.org/">http://www.ml.org/</A>
+并且填写一份申请书.用你的帐号和密码进入 NIC ,并且取好一个免费的 domain
+吧.你将必需输入你的 IP 位置,所以事先准备好它.你的 domain 将会在几天内
+存在於 DNS 中.
+<P>好了,现在我们将谈到新手的部份,或是那些无法拥有固定 IP 位置及 domain
+的人.你所要做的只有已 root 身份编辑 /etc/hosts 档,叫你的位置为一个不
+会造成冲途的名字,给他一个 10.10.10.10 或是类似的位置,并且重新启动你的电脑.
+<P>现在起,你已经用 pppd 和 chat 设定好你的电脑在10分钟内.现在,让我们到下一段,
+处理有关电子邮件的部份.
+<HR>
+<A HREF="ISP-Connectivity-3.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="ISP-Connectivity-1.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="ISP-Connectivity.html#toc2"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

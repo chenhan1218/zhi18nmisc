@@ -1,0 +1,236 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE> Linux Intranet 伺服器 HOWTO (内部网路伺服器HOWTO): 设立内部网路</TITLE>
+ <LINK HREF="Intranet-Server-HOWTO-6.html" REL=next>
+ <LINK HREF="Intranet-Server-HOWTO-4.html" REL=previous>
+ <LINK HREF="Intranet-Server-HOWTO.html#toc5" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Intranet-Server-HOWTO-6.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Intranet-Server-HOWTO-4.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Intranet-Server-HOWTO.html#toc5"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s5">5. 设立内部网路</A></H2>
+
+<P>无法与不同的工作平台分享资源的话就不能算是一个完整的内部网路了。你
+需要支援其他档案系统， 才能存取他们□头所提供的资料。 本文件提供了
+Linux  与下面大家耳熟能详的档案系统连接的方法。
+<UL>
+<LI>
+<A HREF="#NCPFS">Netware的NCP 档案系统 </A></LI>
+<LI>
+<A HREF="#SMBFS">Windows 的 SMB 档案系统 </A></LI>
+<LI>
+<A HREF="#NFS">Unix 的 NFS 档案系统 </A></LI>
+</UL>
+<P>依照 Linux 的版本不同，这些档案系统都可被编译到 Linux 核心内或是加
+成模组。 如果你并不熟悉编译核心， 你可以参考 Kernel HOWTO 
+<A HREF="http: //sunsite.unc.edu/mdw/HOWTO/Kernel-HOWTO.html">http://sunsite.unc.edu/mdw/HOWTO/Kernel-HOWTO.html</A>
+以及 Module HOWTO 
+<A HREF="http://sunsite.unc.edu/mdw/HOWTO/Module-HOWTO.html">http://sunsite.unc.edu/mdw/HOWTO/Module-HOWTO.html</A>
+有如果把模组与核心一起做编译。
+<P>
+<P>
+<P>
+<H2><A NAME="NCPFS"></A> <A NAME="ss5.1">5.1 NCPFS</A>
+</H2>
+
+<P>要把 Netware 伺服器的档案分享出来的话，你会需要有对 NCP (ncpfs) 的
+支援。 NCPFS 与核心 1.2.x 及 1.3.71  版 (含 ) 以後的核心配合使用。
+他无法与任何早期的 1.3.x 核心相配合使用。它在 Netware 4.x 上无法存
+取 NDS 资料库，但可使用册籍。如果您使用 Netware 4.x 你可以在主控台
+上使用 <CODE>Set Bindery Context</CODE> 命令来打开特定容器对册籍的支援
+:
+<BLOCKQUOTE><CODE>
+<PRE>
+
+  set Bindery Context = CORP.MYDOM;WEBUSER.MYDOM
+</PRE>
+</CODE></BLOCKQUOTE>
+
+在上面的例子中有两个容器已被打开对册藉的支援。
+<P>你可以从 Sunsite 来下载 NCP 档案系统的公用程式， 使用 URL 
+<A HREF="ftp: //sunsite.unc.edu/pub/Linux/system/filesystems/ncpfs/ncpfs.tgz">ftp://sunsite.unc.edu/pub/Linux/system/filesystems/ncpfs/ncpfs.tgz</A>
+(目前为 ncpfs-2.0.10)。
+<P>
+<P>
+<H3>安装</H3>
+
+<P>要安装 ncpfs 公用程式，执行
+<BLOCKQUOTE><CODE>
+<PRE>
+   zcat ncpfs.tgz | tar xvf -
+</PRE>
+</CODE></BLOCKQUOTE>
+
+来把所有档案解到它自己的目录内。在这个例子□你会得到<CODE>ncpfs-2.0.10</CODE>
+目录， 在继续安装前改变目录到这个 ncpfs 目录内。如有需要请阅读
+README 并修改 Makefile 档案。
+<P>
+<P>安装 ncpfs 取决於你使用的核心是哪个版本的。在核心 1.2 上，你只需执
+行 'make'。接著 'make install' 就会安装可执行档以及 man 页了。
+<P>
+<P>如果你使用核心 1.3.71 或以後的版本，你就得重新编译你的核心了。在这
+些核心上，ncpfs 的核心部份已经被包含在主要的原始程式树□头了。想看
+看是否你的核心需要重新编译，请执行
+<BLOCKQUOTE><CODE>
+<PRE>
+   cat /proc/filesystems
+</PRE>
+</CODE></BLOCKQUOTE>
+
+它会显示出一行说核心认得 ncpfs。
+<P>如果 ncpfs 没有出现，你可以重新编译核心或是加上 ncpfs 模组。若要重
+新编译核心， 你须执行 'make config'，当它问你
+<P>
+<P><CODE>The IPX protocol (CONFIG_IPX) [N/y/?]</CODE>
+<P>简单回答 'y'。接下来你会被问到是否需要完整的内部网路，你也许不需。
+等到核心成功地被安装了，重新开机，然後检查<CODE>/proc/filesystems</CODE>。
+如果全部都没问题，再接著安装 ncpfs 公用程式。 改变目录到装著你下载
+的  ncpfs  档案的目录内， 执行  'make'。 在编译完成後再执行  'make
+install' 来安装其他的公用程式与 man 页。
+<P>
+<P>
+<H3>挂上NCPFS</H3>
+
+<P>检查安装，请执行
+<BLOCKQUOTE><CODE>
+<PRE>
+   ipx_configure --auto_interface=on --auto_primary=on
+
+...等个10秒再执行
+
+   slist
+</PRE>
+</CODE></BLOCKQUOTE>
+
+你应该就可以看到 Netware 伺服器的一串列表。我们要开始从 Netware 伺
+服器上分享档案了。
+<P>假设我们需要从伺服器     MYDOM_NW     内的磁碟     VOL1:    □存取
+<CODE>\home\htmldocs</CODE> 目录内的 HTML 档案。我推荐你在这
+台伺服器上建立个新使用者 (如 ) 'EXPORT'， 密码为 'EXP123' 给那些你
+允许他们使用 SYSCON 或 NWADMIN 帐号来存取这个目录的人使用。
+<P>在  Linux  机器上建立个新  <CODE>/mnt/MYDOM_NW</CODE>  目录。 现在执行
+<BLOCKQUOTE><CODE>
+<PRE>
+   ncpmount -S MYDOM_NW -U EXPORT -P EXP123 /mnt/MYDOM_NW
+</PRE>
+</CODE></BLOCKQUOTE>
+
+要挂上 netware 档案系统。执行
+<BLOCKQUOTE><CODE>
+<PRE>
+   ls /mnt/MYDOM_NW/vol1/home/htmldocs
+</PRE>
+</CODE></BLOCKQUOTE>
+
+就会列出在  <CODE>MYDOM_NW/VOL1:  \HOME\HTMLDOCS</CODE>   内
+的所有档案 (使用 Netware  档案表示法 )。 如果你有任何问题， 请阅读
+IPX HOWTO 在 
+<A HREF="http://sunsite.unc.edu/mdw/HOWTO/IPX-HOWTO.html">http://sunsite.unc.edu/mdw/HOWTO/IPX-HOWTO.html</A> 会有更多详
+细的资讯。
+<P>
+<P>
+<H2><A NAME="SMBFS"></A> <A NAME="ss5.2">5.2 SMBFS</A>
+</H2>
+
+<P>若要分享档案到 Windows 伺服器上，你需要有 SMB (smbfs)支援才行。
+<P>你需要从Sunsite上载入SBM档案系统公用程式 
+<A HREF="ftp://sunsite.unc.edu/pub/Linux/system/filesystems/smbfs/smbfs.tgz">ftp://sunsite.unc.edu/pub/Linux/system/filesystems/smbfs/smbfs.tgz</A> (currently smbfs-2.0.1)。
+<P>
+<H3>安装</H3>
+
+<P>要安装 smbfs 公用程式，键入
+<BLOCKQUOTE><CODE>
+<PRE>
+   zcat smbfs.tgz | tar xvf -
+</PRE>
+</CODE></BLOCKQUOTE>
+
+将所有的档案解到它自己的目录内。在这例子□会产生一个 <CODE>smbfs-2.0.1</CODE>
+目录，在接著安装前把目录改到这个 smbfs 目录上。有需要请阅读 README
+及编修 Makefile。
+<P>安装 smbfs 取决於你使用的核心是哪个版本的。在核心 1.2 上，你只需执
+行 'make'。 接著 'make install' 就会安装可执行档以及man页了。
+<P>如果你使用核心 2.0 或以後的版本，你就得重新编译你的核心了。 在这些
+核心上，smbfs 的核心部份已经被包含在主要的原始程式树□头了。想看看
+是否你的核心需要重新编译，请执行
+<BLOCKQUOTE><CODE>
+<PRE>
+   cat /proc/filesystems
+</PRE>
+</CODE></BLOCKQUOTE>
+
+它会显示出一行说核心认得 smbfs。
+<P>如果 smbfs 没有出现，你可以重新编译核心或是加上 smbfs 模组。若要重
+新编译核心， 你须执行 'make config'，当它问你要加上 SMB 档案系统支
+援时回答   yes。   等到核心成功地被安装了，  重新开机，   然後检查
+<CODE>/proc/filesystems</CODE>。 如果全部都没问题 ，再接著安装smbfs公用
+程式。改变目录到装著你下载的 smbfs 档案上，执行 'make'。在编译完成
+後再执行  'make  install' 来安装其他的公用程式与man页。
+<P>
+<H3>挂上 SMBFS</H3>
+
+<P>在我们的例子中，让我们假设 WinNT 伺服器就叫做 'MYDOM_NT'，它分享了
+它的目录 <CODE>C:\PUB\HTMLDOCS</CODE> 以一个没有密码的名字叫
+'HTMLDOCS'。 在 Linux 机器上建立一个新的 <CODE>/mnt/MYDOM_NT</CODE> 目
+录，现在执行下列命令 
+<BLOCKQUOTE><CODE>
+<PRE>
+   smbmount //MYDOM_NT/HTMLDOCS /mnt/MYDOM_NT -n
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>要挂上  SMB (windows  分享的 ) 档案系统。 如果这样无法工作请试看看
+<BLOCKQUOTE><CODE>
+<PRE>
+   smbmount //MYDOM_NT/COMMON /mnt/MYDOM_NT -n -I 172.16.0.3
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>执行下面命令
+<BLOCKQUOTE><CODE>
+<PRE>
+   ls /mnt/MYDOM_NT
+</PRE>
+</CODE></BLOCKQUOTE>
+
+将会列出所有在  <CODE>bsol;bsol;MYDOM_NT\PUB\HTMLDOCS</CODE>
+内的档案列表 (使用 Windows 档案表示法)。
+<P>
+<P>
+<H2><A NAME="NFS"></A> <A NAME="ss5.3">5.3 NFS</A>
+</H2>
+
+<P>首先你需要一个已编译好在□头或有可用的NFS档案系统模组在核心内。
+<P>假设你有个  Unix 主机执行著  NFS， 名字叫做 MYDOM_UNIX， IP 位址为
+172.16.0.4。 你可以经由打入以下命令来输出 (分享 ) 这个主机，就可以
+检查目录了。
+<BLOCKQUOTE><CODE>
+<PRE>
+
+   showmount -e 172.16.0.4
+</PRE>
+</CODE></BLOCKQUOTE>
+
+一旦我们知道输出的目录是可以经由输入适当的  mount 命令即可把它们给
+挂上。 我推荐你在 '/mnt'  目录下建立一个子目录  (如 ) 'MYDOM_UNIX'
+来做为你的挂上点。
+<BLOCKQUOTE><CODE>
+<PRE>
+
+   mount -o rsize=1024,wsize=1024 172.16.0.4:/pub/htmldocs /mnt/MYDOM_UNIX
+</PRE>
+</CODE></BLOCKQUOTE>
+
+这个 rsize  和 wsize 可以依靠你的使用环境做改变的。
+<P>如果你有任何问题请阅读在 
+<A HREF="http://sunsite.unc.edu/mdw/HOWTO/NFS-HOWTO.html">http://sunsite.unc.edu/mdw/HOWTO/NFS-HOWTO.html</A>  内的  NFS
+HOWTO ，□头有对 NFS 系统的深入介绍。
+<P>
+<P>
+<HR>
+<A HREF="Intranet-Server-HOWTO-6.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Intranet-Server-HOWTO-4.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Intranet-Server-HOWTO.html#toc5"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

@@ -1,0 +1,184 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>如何從 VMS 轉移到 Linux (From VMS to Linux HOWTO): 應用 </TITLE>
+ <LINK HREF="VMS-to-Linux-HOWTO-12.html" REL=next>
+ <LINK HREF="VMS-to-Linux-HOWTO-10.html" REL=previous>
+ <LINK HREF="VMS-to-Linux-HOWTO.html#toc11" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="VMS-to-Linux-HOWTO-12.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="VMS-to-Linux-HOWTO-10.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="VMS-to-Linux-HOWTO.html#toc11"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="Examples"></A> <A NAME="s11">11. 應用 </A></H2>
+
+<P>
+<P>UNIX 的主要慨念是希望透過管線(piping)和重導(redirection)的觀念將所有簡單的指令串連起來而可以足夠應付真實生活上所有複雜的工作。
+讓我們來看看下面的例子﹐我將只解釋比較複雜的例子；其他簡單的例子﹐請利用上面我所介紹的觀念和說明文件(man pages)﹐相信您一定可以很快的進入情況。
+<P><B>問題</B>: 如果只使用 <CODE>ls</CODE> 這個指令來顯示檔案﹐如果檔案太多的話﹐常常就一飛而逝﹐還來不及看完﹐結果就被捲上去了：
+<P><B>解決方案</B>:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ ls | less
+</PRE>
+</CODE></BLOCKQUOTE>
+<P><B>問題</B>: 我有一個檔案﹐裡面包含了許多文字﹐我想將之反向排序後列印出來：
+<P><B>解決方案</B>:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ cat myfile.txt | sort -r | lpr
+</PRE>
+</CODE></BLOCKQUOTE>
+<P><B>問題</B>: 我的資料檔內有許多重複的資料﹐我要如何刪除重複的資料呢？
+<P><B>解決方案</B>:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ sort datafile.dat | uniq > newfile.dat
+</PRE>
+</CODE></BLOCKQUOTE>
+<P><B>問題</B>: 我有一個叫做 'mypaper.txt' 或是 'mypaper.tex' 的檔案﹐或是類似這樣的檔案名稱﹐但是我忘記我將她們存放在什麼地方了﹐我要如何找到她們呢？
+<P><B>解決方案</B>:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ find ~ -name "mypaper*" 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>說明: <CODE>find</CODE> 是一個非常有用的指令﹐她可以列出樹狀目錄下的所有檔案﹐(在本例中﹐我們是從 <CODE>~</CODE> 這裡開始尋找﹐也就是 $HOME 的目錄)。
+她的輸出結果可以透過許多條件設定﹐而達到許多不一樣的需求。例如 <CODE>-name</CODE> 。
+<P><B>問題</B>: 我想找一個檔案內的某一個字﹐例如 'entropy'﹐我要如何作呢？有沒有類似像 <CODE>SEARCH</CODE> 這種指令呢?
+<P><B>解決方案</B>: 有的, 試試看 grep 這個指令：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ grep -l 'entropy' *
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>說明：＊表示所有的檔案。
+<P><B>問題</B>: 在某個地方﹐的某個檔案的內容有 'entropy' 這個字, 我想知道是哪一個檔案﹐且放在哪裡﹐
+在 VMS 上我可以使用 <CODE>search entropy
+[...]*.*;*</CODE>, 但是 <CODE>grep</CODE> 這個指令不可以收尋子目錄﹐現在我要如何解決呢？
+<P><B>解決方案</B>: 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ find . -exec grep -l "entropy" {} \; 2> /dev/null
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>說明: <CODE>find .</CODE> 輸出從目前這個目錄下所有的檔案（包含這個目錄下所有子目錄）﹐
+<CODE>-exec grep -l "entropy"</CODE> 是對每一筆由 find 傳出來的檔案重複執行執行(represented by <CODE>{}</CODE>), 
+<CODE>\</CODE> 
+為結束這個指令。如果您覺得的些東西太可怕了﹐沒錯﹐不過您可以試著寫寫下面的 Script。
+<P>
+<P>
+<HR>
+<PRE>
+#!/bin/sh
+# rgrep: recursive grep
+# 遞迴式擷取
+
+if [ $# != 3 ]
+then
+  echo "Usage: rgrep --switches 'pattern' 'directory'"
+  exit 1
+fi
+find $3 -name "*" -exec grep $1 $2 {} \; 2> /dev/null
+</PRE>
+<HR>
+<P>說明: <CODE>grep</CODE> 就像 <CODE>search</CODE>, 結合了
+<CODE>find</CODE> ﹐我們得到了兩者的精華。
+<P><B>問題</B>: 我有一個資料檔案﹐這個檔案共有兩列檔頭(header lines)（也就是說﹐第三筆資料才是我真正的資料）﹐
+如果我想要擷取每筆資料的第二和第五欄的資料﹐我需要寫一個 Fortran 的程式嗎？
+<P><B>解決方案</B>: 不需要。來看看這個具有殺傷力的指令！
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ awk 'NL > 2 {print $2, "\t", $5}' datafile.dat > newfile.dat
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>說明: <CODE>awk</CODE> 這個指令實際上可以說是一種程式語言：上面的意思是說：
+在 <CODE>datafile.dat</CODE> 這個檔案裡﹐從檔案的第三行開始的每一行﹐印出每一行的第二和第五欄位﹐
+以 tab 為分隔符號。學會了 <CODE>awk</CODE> 一定會讓您事半功倍的。
+<P><B>問題</B>: 我從 FTP 站下載了 <CODE>ls-lR.gz</CODE> 這個檔案﹐想要察看檔案內容。
+對每一個子目錄而言﹐她有一行寫說 "total xxxx", 其中 xxxx 表示檔案大小（kbytes）
+我想知道所有 xxxx 值的總和﹐我要如何作呢？
+<P><B>解決方案</B>:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ zcat ls-lR.gz | awk ' $1 == "total" { i += $2 } END {print i}'
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>說明: <CODE>zcat</CODE> 可以列出 <CODE>.gz</CODE> 的檔案內容。然後將 zcat 得到的結果轉送(pipe)到
+<CODE>awk</CODE>。看到了吧！了解 awk 真的對您有很大的幫助喔。RMP！
+<P><B>問題</B>: 我已經寫了一隻 <CODE>myprog</CODE> 的 Fortran 的程式﹐可以計算由命令列傳進來的檔案的資料﹐
+可是﹐我有很多個資料檔需要輸入到這隻程式﹐每一個檔案將會有一個結果檔案。但是每次都要輸入檔名實在很煩人﹐
+在 VMS 上﹐我需要寫一個囉唆的命令檔(command file)才可以解決﹐那麼在 Linux 上呢？
+<P><B>解決方案</B>: 只要一個小小的 Script 就可以解決了。修改您的程式﹐讓您的程式可以預定讀入 '<CODE>mydata.dat</CODE>' 這個檔案﹐
+將結果輸出到螢幕(stdout), 然後編輯下面的 Script：
+<P>
+<HR>
+<PRE>
+#!/bin/sh
+# myprog.sh: run the same command on many different files
+# usage: myprog.sh *.dat
+for file in $*  # for all parameters (e.g. *.dat)
+do
+  # append the file name to result.dat
+  echo -n "${file}:    " >> results.dat
+  # copy current argument to mydata.dat, run myprog 
+  # and append the output to results.dat
+  cp ${file} mydata.dat ; myprog >> results.dat
+done
+</PRE>
+<HR>
+<P><B>問題</B>: 我希望將所有檔案內的 `geology' 字替換成 `geophysics' ﹐我需要手動編輯嗎？！
+<P><B>解決方案</B>: 不需要。 下面的 Shell Script 可以幫您辦到：
+<P>
+<HR>
+<PRE>
+#!/bin/sh
+# replace $1 with $2 in $*
+# usage: replace "old-pattern" "new-pattern" file [file...]
+OLD=$1          # first parameter of the script
+NEW=$2          # second parameter
+shift ; shift   # discard the first 2 parameters: the next are the file names
+for file in $*  # for all files given as parameters
+do
+# replace every occurrence of OLD with NEW, save on a temporary file
+  sed "s/$OLD/$NEW/g" ${file} > ${file}.new
+# rename the temporary file as the original file
+  /bin/mv ${file}.new ${file}
+done
+</PRE>
+<HR>
+<P><B>問題</B>: 我有一些檔案﹐我不知道她們的檔案長度﹐我必須移除這些檔案內的倒數第二和倒數第三行﹐需要手動嗎？
+<P><B>解決方案</B>: 當然不需要﹐還是使用 Shell Script:
+<P>
+<HR>
+<PRE>
+#!/bin/sh
+# prune.sh: removes n-1th and n-2th lines from files
+# usage: prune.sh file [file...]
+for file in $*   # for every parameter
+do
+  LINES=`wc -l $file | awk '{print $1}'`  # 計算總共有幾行
+  LINES=`expr $LINES - 3`                 # LINES = LINES - 3 
+  head -n $LINES $file > $file.new        # 輸出前 LINES 行
+  tail -n 1 $file >> $file.new            # 再將最後一行附加到檔案最後
+done
+</PRE>
+<HR>
+<P>希望以上這些實例增加您不少的食慾...
+<P>
+<P>
+<HR>
+<A HREF="VMS-to-Linux-HOWTO-12.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="VMS-to-Linux-HOWTO-10.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="VMS-to-Linux-HOWTO.html#toc11"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

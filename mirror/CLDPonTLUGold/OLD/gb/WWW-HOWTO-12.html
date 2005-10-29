@@ -1,0 +1,437 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>中文 Linux WWW HOWTO : 连线到Linux伺服器</TITLE>
+ <LINK HREF="WWW-HOWTO-13.html" REL=next>
+ <LINK HREF="WWW-HOWTO-11.html" REL=previous>
+ <LINK HREF="WWW-HOWTO.html#toc12" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="WWW-HOWTO-13.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="WWW-HOWTO-11.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="WWW-HOWTO.html#toc12"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s12">12. 连线到Linux伺服器</A></H2>
+
+<P>请先参考
+<A HREF="WWW-HOWTO-1.html#Intro">Introduction</A>一章中图示的地址。其中1号工作站［W/S1］
+在网路172.16.0.0上，它可以直接存取
+Linux伺服器。而2号工作站［W/S2］在网路172.17.0.0上，必须经由通道［gateway］［即路由器］
+172.17.0.254来存取Linux box。当设定在w/s2的用户时，要提供通道的资讯。Netware称之为
+‘ip_router’。
+<P>
+<P>这□用W/S2来说明用户设定的方式。设定W/S1则只要把地址从172.17.0.5改为172.16.0.5，并
+忽略通道。
+<P>
+<P>如果你不会用到路由器，可跳过下一节并直接到
+<UL>
+<LI> 如果使用Netware：
+<A HREF="#SetupNW">Setup Netware Server</A>。</LI>
+<LI> 如果使用微软client：
+<A HREF="#MSClient">Setup MS Windows Client</A>。</LI>
+</UL>
+<P>
+<H2><A NAME="ss12.1">12.1 设定Linux伺服器</A>
+</H2>
+
+<P><B>如果你没有路由器，跳过本节。</B>
+<P>
+<P>要让2号工作站连到伺服器，须设定Linux伺服器，使之感知路由器。要设定Linux伺服器，须以root登入。
+在命令列敲入
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+   route add gw default 172.16.0.254
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>要在每次启动Linux伺服器後使用通道，可在<CODE>/etc/rc.d/rc.inet1</CODE>中定义通道各行改为
+<CODE>GATEWAY = "172.16.0.254"</CODE>。确定一下，这几行不可写为说明行。
+<P>
+<P>另类作法：还可以在路由器另一端加入另一路由器。指令为
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+   route add -net 172.17.0.0 gw 172.16.0.254
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>如要使Linux每次启动就加入路由器，则将指令写入<CODE>/etc/rc.d/rc.local</CODE>。
+<P>
+<P>
+<P>
+<H2><A NAME="SetupNW"></A> <A NAME="ss12.2">12.2 设定Netware伺服器</A>
+</H2>
+
+<P>要设定Netware伺服器，要有supervisor权限，或至少有Console操作员权限。如果两者都不无法办
+到，就只好请你的系统操作员代你设定了。在伺服器启动LAN的Ethernet_II frame type。作法是
+AUTOEXC.ncf档中写入：
+<BLOCKQUOTE><CODE>
+<PRE>
+   load NE2000 frame=Ethernet_II name=IPNET
+   load TCPIP
+   bind IP to IPNET addr=172.16.0.2 mask=FF.FF.FF.0
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>你可依照你的电脑型态来决定载入NE2000 driver时的slot或board代号。
+(例如: load NE2000 slot=3 frame=.....)
+<P>
+<H2><A NAME="NWClient"></A> <A NAME="ss12.3">12.3 设定Netware Client</A>
+</H2>
+
+<P>在pc上，你可用Win3.1、WFWG 或WIN95。如果你要使用微软或Novell的32 bit Client，
+则Win95和老式Windows的安装方式会不一样。如果你要用16 bit client，则安装方式相同，只要参
+考window 3.x的安装说明即可。如要安装win95的32 bit client直接跳至
+<A HREF="#NWWin95">Windows 95 installation</A>。
+<P>
+<H3><A NAME="NWWin"></A> Windows 3.x</H3>
+
+<P>如果要使用win 3.1或WFWG，可以安装Netware Client［VLMs］及随TCP/IP磁片所附的一些外
+加档案，即
+<P>
+<P>TCPIP.exe, VTCPIP.386, WINSOCK.dll and WLIBSOCK.dll
+<P>
+<P>注意！这个WINSOCK.dll档与Win95及Trumpet的WINSOCK.dll档不同。先用Windows来安装
+Netware Client。然後复制VTCPIP.386、WINSOCK.dll 及WLIBSOCK.dll到 SYSTEM目录，
+复制TCPIP.exe到NWCLIENT目录。现在修改NWCLIENT目录中的STARTNET.bat为
+<BLOCKQUOTE><CODE>
+<PRE>
+   lsl
+   ne2000     ---> your network card driver
+   c:\windows\odihlp.exe     ---->if you are using WFWG
+   ipxodi
+   tcpip        ---> add this line
+   nwip         ---> if you use Netware/IP
+   vlm
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>建立一个次目录［例如说<CODE>\NET\TCP</CODE>］并从<CODE>/etc</CODE>复制HOSTS、
+NETWORKS、 PROTOCOLS及 SERVICES到Linux伺服器或Netware伺服器上的<CODE>SYS:ETC</CODE>
+目录。修改复制的HOSTS档，加入一行描述新的Linux伺服器如下。这样在浏览器中用
+<CODE>http：//linux.mydomain/</CODE>来读这个伺服器的内容而不须用到
+<CODE>http：//172.16.0.1/</CODE>。
+<BLOCKQUOTE><CODE>
+<PRE>
+   127.0.0.1      localhost
+   172.16.0.1      linux.mydomain
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>然後修改NWCLIENT目录中的NET.cfg档为：
+<BLOCKQUOTE><CODE>
+<PRE>
+   Link Driver NE2000
+       port 300
+       int 3
+       MEM D0000
+       FRAME Ethernet_802.2
+
+; ---- add these lines ----
+
+      FRAME Ethernet_II
+
+   Protocol TCPIP
+      PATH TCP_CFG C:\NET\TCP
+      ip_address  172.17.0.5
+      ip_netmask  255.255.255.0
+      ip_router   172.17.0.254     ---> 如果你要用通道来连接HTTP伺服器，则
+                                   ---> 加入通道的地址
+
+   Link Support
+      MemPool 6192       ---> 最小值为1024。试试其他值看看
+      Buffers 10 1580    ---> 这里也能改改
+
+;---------------------------------
+; 如果使用Netware/IP，可以加上下面几行。
+;
+   NWIP
+      NWIP_DOMAIN_NAME  mydomain
+      NSQ_BROADCAST   ON
+      NWIP1_1 COMPATIBILITY   OFF
+      AUTORETRIES     1
+      AUTORETRY SECS  10
+
+</PRE>
+</CODE></BLOCKQUOTE>
+
+修改WINDOWS目录中的SYSTEM.ini档，并为VTCPIP.386加入一项目
+<BLOCKQUOTE><CODE>
+<PRE>
+   [386Enh]
+   .....
+   network=*vnetbios, vipx.386, vnetware.386, VTCPIP.386
+   .....
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>重新开机，执行STARTNET.bat，现在你就可以开始用你最喜爱的浏览器来阅读你的网页了。如果你使用
+<P>
+<H3><A NAME="NWWin95"></A> Windows 95</H3>
+
+<P>本节介绍如何在Win 95上安装32 bit  用户端。首先要安装下述各项：
+<BLOCKQUOTE><CODE>
+<PRE>
+  Netare网路用户端 ［由微软或Novell提供］
+  微软TCP/IP通讯协定
+  网路介面卡
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>要安装这些项目、单擎、我的电脑、控制台、网路、选'新增'。现在会出现一个视窗，显示用户端、
+介面卡、通讯协定及服务。
+<P>要为Netware网路安装用户端：
+<BLOCKQUOTE><CODE>
+<PRE>
+  1.双擎用户端
+  2.单擎Microsoft或Netware Networks
+  3.双擎Client for Netware Networks
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>要安装TCP/IP通讯协定：
+<BLOCKQUOTE><CODE>
+<PRE>
+  1.双擎通讯协定
+  2.单擎Microsoft
+  3.双擎TCP/IP
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>Win 95预设自动安装一些其馀通讯协定。要移除这些预设值的话，先选点之，再选点'移除'键即可。一般而
+言，Win 95会安装Microsoft NetBeui通讯协定及IPX/SPX通用通讯协定。NetBeui可删除。如要
+登入Netware伺服器，则IPX/SPX通讯协定须保留。
+<P>
+<P>要设定TCP/IP，点选Properties，点选IP地址
+按键
+<BLOCKQUOTE><CODE>
+<PRE>
+  Enter your IP address in the &quot;Specify an IP address &quot;
+                        box as 172.17.0.5
+  In the Subnet Mask box enter 255.255.255.0
+</PRE>
+</CODE></BLOCKQUOTE>
+
+点选通道键
+<BLOCKQUOTE><CODE>
+<PRE>
+  Enter your gateway (router) address in the box New gateway
+     as 172.17.0.254
+  Click the Add button
+</PRE>
+</CODE></BLOCKQUOTE>
+
+现在通道地址应出现已安装通道如下。接下来点选'确定'键。
+<P>现在会有讯息视窗出现，要求你重新开机。重新开机後，你就可以开始用浏览器来接上你的HTTP伺服器了。
+<P>
+<H2><A NAME="MSClient"></A> <A NAME="ss12.4">12.4 设定微软用户端</A>
+</H2>
+
+<P>如果要使用微软用户端来存取你的网站，本节告诉你为下述系统安装TCP/IP的细节资料。　
+<UL>
+<LI>
+<A HREF="#MSWFWG">Windows for Workgroups (WFWG)</A></LI>
+<LI>
+<A HREF="#MSWin95">Windows 95</A></LI>
+<LI>
+<A HREF="#MSWinNT">Windows NT 4.0</A></LI>
+</UL>
+
+<B>注：</B>若不想用<CODE>http://172.16.0.1/</CODE>而要用
+<CODE>http：//linux.mydowain/</CODE>来让浏览器及其他网际网路命令定址Linux伺服器，就须修改
+<CODE>host</CODE>档。另外也可以此为其他主机［Netware、Unix、WinNT］加入设定行。Windows家
+族的HOSTS档在<CODE>\WINDOWS</CODE>或<CODE>\WINDOWS\SYSTEM</CODE>中，这
+是由它的版本而定。在其中，为Linux伺服器加入一行指令如下：
+<BLOCKQUOTE><CODE>
+<PRE>
+   127.0.0.1      localhost
+   172.16.0.1     linux.mydomain
+
+   172.16.0.2     netware.mydomain
+   172.16.0.3     winNT.mydomain
+   172.16.0.5     ws_1
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H3><A NAME="MSWFWG"></A> Windows for Workgroups</H3>
+
+<P>
+<P>本节介绍如何在WFWG上安装32 bit用户端。首先要从微软下载Windows所用的TCP/IP驱动器。最新版本
+为3.11b版，可从
+<A HREF="ftp://ftp.microsoft.com">ftp://ftp.microsoft.com</A>或其他
+网站下载名为<CODE>tcp32b.exe</CODE>的档案。要确定在载入TCP/IP-32 bit驱动器之前已先载入
+Win32s。
+<P>
+<P>一旦把这些TCP/IP档案在一暂存目录［例<CODE>C:\TEMP</CODE>］中打开後，就到
+<CODE>\WINDOWS\SYSTEM</CODE> 目录中找
+一份<CODE>OEMSETUP.INF</CODE>档案。如果在的话，给它一个另外的档名，然後将此
+<CODE>OEMSETUP.INF</CODE>档从暂存目录复制到<CODE>\WINDOWS\SYSTEM</CODE>目录中
+。如果在系统中也载入了其它的TCP/IP stacks，在继续设定之前，先把他们移除。
+<P>
+<P>开启网路设定或Windows设定/改变网路设定：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+        点选网路
+        点选安装Microsoft Windows Networks选支援新增网路［如果问的话］
+        选点'确定'键
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>此时会问你网路介面卡-选个合适的答案。如果没问你的话，则：
+<BLOCKQUOTE><CODE>
+<PRE>
+        点选介面卡键
+                选一介面卡［例：NE2000］
+                点选'确定'键
+        点选通讯协定键
+                选MS TCP/IP-32通讯协定
+                点选'确定'键
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>此时会要求你设定各种TCP/IP通讯协定。可以先在介面卡选单中选TCP/IP通讯协定，然後点选'确定'键。
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+1.在IP位址空格中填入172.17.0.5
+2.在Subnet Mask空格中填入255.255.255.0
+3.在default gateway空格中填入通道［路由器］地址为172.17.0.254
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>点选确定後，电脑会要求你重新启动。重新启动後，你就可以用浏览器来接上你的HTTP伺服器了。
+<P>
+<H3><A NAME="MSWin95"></A> Windows 95</H3>
+
+<P>本节介绍如何在Win 95上安装32 bit 用户端。首先要安装下述各项：
+<BLOCKQUOTE><CODE>
+<PRE>
+        微软网路用户端
+        微软TCP/IP通讯协定
+        网路介面卡
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>要安装这些项目、单擎、我的电脑、控制台、网路、选新增。现在会出现一个视窗，显示用户端、介面卡、
+通讯协定及服务。
+要为微软网路安装用户端：
+To install the Client for Microsoft Networks:
+<BLOCKQUOTE><CODE>
+<PRE>
+  1.双擎用户端
+  2.单擎Microsoft
+  3.双擎Client for Microsoft Networks
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>要安装TCP/IP通讯协定：
+<BLOCKQUOTE><CODE>
+<PRE>
+  1.双擎通讯协定
+  2.单擎Microsoft
+  3.双擎TCP/IP
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>Win 95预设自动安装一些其馀通讯协定。要移除这些预设值的话，先选点之，再点选移除键即可。一
+般而言，Win 95会安装Microsoft NetBeui通讯协定。
+<P>
+<P>要设定TCP/IP，点选Properties，点选IP地址按键
+<BLOCKQUOTE><CODE>
+<PRE>
+  Enter your IP address in the &quot;Specify an IP address &quot;
+                        box as 172.17.0.5
+  In the Subnet Mask box enter 255.255.255.0
+</PRE>
+</CODE></BLOCKQUOTE>
+
+点选通道键
+<BLOCKQUOTE><CODE>
+<PRE>
+  Enter your gateway (router) address in the box New gateway
+     as 172.17.0.254
+  Click the Add button
+</PRE>
+</CODE></BLOCKQUOTE>
+
+现在通到地址应出现已安装通道如下。接下来点选'确定'键。
+<P>
+<P>现在会有讯息视窗出现，要求你重新开机。重新开机後，你就可以开始用浏览器来接上你的HTTP伺服器了。
+<P>
+<H3><A NAME="MSWinNT"></A> Windows NT</H3>
+
+<P>本节介绍如何在WinNT 4.0上安装32 bit 用户端。
+先开启控制台/网路
+<BLOCKQUOTE><CODE>
+<PRE>
+    Select the Adapter tab.
+        Click Add to add a new adapter (if you don't have one)
+</PRE>
+</CODE></BLOCKQUOTE>
+
+此时会问你网路介面卡—选一个合适的答案。接下来选择通讯协定
+<BLOCKQUOTE><CODE>
+<PRE>
+    Select the Protocols tab
+        Click Add
+        Select the TCP/IP protocol
+        Click OK
+</PRE>
+</CODE></BLOCKQUOTE>
+
+此时会要求你设定各种TCP/IP通讯协定。可以先在选单中点选 TCP/IP通讯协定，然後点选合适的按键。
+<BLOCKQUOTE><CODE>
+<PRE>
+   Select the tab IP Address
+      Mark the checkbox 'Specify an IP address'
+      In the IP address box enter 172.17.0.5
+      In the Subnet Mask box enter 255.255.255.0
+      Enter your gateway (router) address in the box Default Gateway
+          as 172.17.0.254
+</PRE>
+</CODE></BLOCKQUOTE>
+
+点选'确定'键後，现在会有讯息视窗出现，问你是否要重新开机。重新开机後，你就可以开始用浏览器来接
+上你的HTTP伺服器了。
+<P>
+<H2><A NAME="MacClient"></A> <A NAME="ss12.5">12.5 在Macintosh上设定TCP/IP</A>
+</H2>
+
+<P>如果你要用Macintosh存取你的网站上的资料，本节告诉你为PowerMacs设定MacTCP的细节。
+<P><B>注：</B>若不想用<CODE>http://172.16.0.1/</CODE>，而要用
+<CODE>http://linux.mydomain/</CODE>来让浏览器及其他网际网路命令定址Linux伺服器，
+就须修改<CODE>hosts</CODE>档。此处的hosts档与Unix上用的hosts档不同。
+Mac系统的hosts档是依据RFC-1035标准。另外也可以此为其他主机［Netware、Unix、WinNT］
+加入设定行。MacOS的HOSTS档是在<CODE>System folder</CODE>中的
+<CODE>Preference folder</CODE>中。在其中，为Linux伺服器加入一行指令如下：
+<BLOCKQUOTE><CODE>
+<PRE>
+  linux.mydomain    A  172.16.0.1
+
+  netware.mydomain  A  172.16.0.2
+  winNT.mydomain    A  172.16.0.3
+  ws_1              A  172.16.0.5
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H3><A NAME="MacTCP"></A> MacTCP</H3>
+
+<P>
+<P>本节说明如何安装MacTCP。首先要从Apple公司下载或从Internet Connection CD片取得MacTCP。
+要设定MacTCP，点选Apple Menu/控制台/TCP/IP。在萤幕上将'Connect via：'的设定改为
+'Ethernet'。
+<P>
+<P>将'Configure'设定内容改为'Manually'。
+<BLOCKQUOTE><CODE>
+<PRE>
+  In the IP address box enter 172.17.0.5
+  In the Subnet Mask box enter 255.255.255.0
+  Enter your gateway (router) address in the box
+    Router address as 172.17.0.254
+</PRE>
+</CODE></BLOCKQUOTE>
+
+选'确定'，然後你就可以用浏览器来连上你的HTTP伺服器了。
+<P>
+<HR>
+<A HREF="WWW-HOWTO-13.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="WWW-HOWTO-11.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="WWW-HOWTO.html#toc12"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

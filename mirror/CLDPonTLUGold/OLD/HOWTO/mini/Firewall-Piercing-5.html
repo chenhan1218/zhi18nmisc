@@ -1,0 +1,108 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Firewall Piercing mini-HOWTO: Unsecure solution: piercing using telnet</TITLE>
+ <LINK HREF="Firewall-Piercing-6.html" REL=next>
+ <LINK HREF="Firewall-Piercing-4.html" REL=previous>
+ <LINK HREF="Firewall-Piercing.html#toc5" REL=contents>
+<SCRIPT src="../../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(2, 8, 2);</SCRIPT>
+<A HREF="Firewall-Piercing-6.html"><IMG SRC="../../img/next.gif" ALT="Next"></A>
+<A HREF="Firewall-Piercing-4.html"><IMG SRC="../../img/prev.gif" ALT="Previous"></A>
+<A HREF="Firewall-Piercing.html#toc5"><IMG SRC="../../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s5">5. Unsecure solution: piercing using telnet</A></H2>
+
+<P>
+<P>
+<H2><A NAME="ss5.1">5.1 Principle</A>
+</H2>
+
+<P>If all you can do is telnet (because of a telnet proxy),
+then this solution might be fit for you.
+<P>The firewall-piercing program, <CODE>fwprc</CODE>,
+will use a "tty proxy", <CODE>cotty</CODE>,
+that opens two pseudo-tty devices,
+launches some command on each of those devices' slaves,
+and stubbornly copies every character that one outputs
+to the tty that serves as input of the other command.
+One command will be telnet connection to remote site,
+and the other will be the local <CODE>pppd</CODE>.
+<CODE>pppd</CODE> can then open and control the telnet session
+with a chat script as usual.
+<P>Actually, if your telnet proxy allows connection to an arbitrary port,
+and if you can reliably run a daemon on the remote host
+(with a cron job to relaunch it in case of breakage),
+then you'd better write some program that will just connect
+a local port to the remote one through the proxy,
+so you can use the above secure solution,
+possibly using some variant of <CODE>ssh -t -o "ProxyCommand ..."</CODE>
+(if you submit it to me, I'll gladly integrate such a solution
+to the <CODE>fwprc</CODE> distribution).
+<P>Note: if you must use the unsecure telnet-based solution,
+be sure that nothing lies in your target account
+that you want to keep secret or untampered,
+since the password will be sent in clear text accross the Internet.
+<H2><A NAME="ss5.2">5.2 fwprc</A>
+</H2>
+
+<P>I wrote a very well self-documented script
+to pierce firewalls, <CODE>fwprc</CODE>,
+available from
+<A HREF="http://fare.tunes.org/files/fwprc/">my site</A>,
+together with <CODE>cotty</CODE>
+(which is required by <CODE>fwprc</CODE> 0.2 and later).
+At the time of my writing these lines, latest versions are
+<CODE>fwprc</CODE> 0.3e and <CODE>cotty</CODE> 0.4.
+<P>The name "fwprc" is voluntarily made unreadable and unpronounceable,
+so that it will confuse the incompetent paranoid sysadm
+who might be the cause of the firewall that annoys you
+(of course, there can be legitimate firewalls, too,
+and even indispensable ones;
+security is all a matter of <EM>correct</EM> configuration).
+If you must read it aloud, choose the worst way you can imagine.
+<P>CONTEST! CONTEST! Send me a <CODE>.au</CODE> audio file
+with a digital audio recording of how you pronounce "fwprc".
+The worst entry will win a free upgrade and his name
+on the <CODE>fwprc</CODE> 1.0 page!
+<P>I tested the program in several settings,
+by configuring it through resource files.
+But of course, by Murphy's law, it will break for you.
+Feel free to contribute enhancements that will make life
+easier to other people who'll configure it after you.
+<H2><A NAME="ss5.3">5.3 .fwprcrc</A>
+</H2>
+
+<P><CODE>fwprc</CODE> can be customized through a file <CODE>.fwprcrc</CODE>
+meant to be the same on both sides of the firewall.
+Having several alternate configurations to choose from is sure possible
+(for instance, <EM>I</EM> do it),
+and is left as an exercise to the reader.
+<P>To begin with, copy the appropriate section of <CODE>fwprc</CODE>
+(the previous to last) into a file named <CODE>.fwprcrc</CODE>
+in your home directory.
+Then replace variable values with stuff that fits your configuration.
+Finally, copy to the other host, and test.
+<P>Default behavior is to use <CODE>pppd</CODE> locally, and <CODE>slirp</CODE> remotely.
+To modify that, you can redefine the appropriate function
+in your <CODE>.fwprcrc</CODE> with such a line as:
+<BLOCKQUOTE><CODE>
+remote_IP_emu () { remote_pppd }
+</CODE></BLOCKQUOTE>
+<P>Note that <CODE>SLiRP</CODE> is safer than <CODE>pppd</CODE>,
+and easier to have access to,
+since it does not require being root on the remote machine,
+and needn't additional firewall configuration to prevent
+connections from the outside world into the firewalled network.
+The basic functionality in <CODE>SLiRP</CODE> works quite well,
+but I haven't managed to get some advertised pluses to work
+(like run-time controllability).
+Of course, since it is free software,
+feel free to hack the source
+so as to actually implement or fix whichever feature you need.
+<HR>
+<A HREF="Firewall-Piercing-6.html"><IMG SRC="../../img/next.gif" ALT="Next"></A>
+<A HREF="Firewall-Piercing-4.html"><IMG SRC="../../img/prev.gif" ALT="Previous"></A>
+<A HREF="Firewall-Piercing.html#toc5"><IMG SRC="../../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

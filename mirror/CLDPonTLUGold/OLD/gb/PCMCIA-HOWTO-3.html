@@ -1,0 +1,216 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Linux PCMCIA HOWTO 中文版: 解决安装与建构的问题</TITLE>
+ <LINK HREF="PCMCIA-HOWTO-4.html" REL=next>
+ <LINK HREF="PCMCIA-HOWTO-2.html" REL=previous>
+ <LINK HREF="PCMCIA-HOWTO.html#toc3" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="PCMCIA-HOWTO-4.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="PCMCIA-HOWTO-2.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="PCMCIA-HOWTO.html#toc3"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s3">3. 解决安装与建构的问题</A></H2>
+
+<P> 在本章节□会指出一些常见的 PCMCIA 子系统的失败模式。请您试著在
+这些例子中找出您所遇到的问题之症状。本章只描述”一般的错误”问题，
+因此并不针对特定的卡片或驱动程式。
+<P>想要除错在我们试著经由  PCMCIA 装置来安装 Linux 时遇到的 PCMCIA 驱
+动程式问题几近乎不可能。甚至您能从症状中知道是哪方面的问题，想要修
+改安装磁片又很难，尤其是无法在 Linux 系统下存取时。 要自订安装磁片
+完全要仰赖 Linux 供应者的的选择了，这也不在本文件的□围内。 但一般
+来说， 最佳的步骤是先使用其他的方法来安装好 Linux， 然後拿到最新的
+PCMCIA 驱动程式後，再来除错那些仍存在的问题。
+<P>
+<H2><A NAME="ss3.1">3.1 基本 PCMCIA 核心模组并没载入</A>
+</H2>
+
+<P> 症状:
+<UL>
+<LI> ”核心版本不符合”之错误讯息在 PCMCIA 启动手稿执行时出现。</LI>
+<LI>在启动後， <CODE>lsmod</CODE> 并没秀出任何的 PCMCIA 模组。</LI>
+<LI><CODE>cardmgr</CODE>  执行报告 ``no pcmcia driver in /proc/devices''
+在系统日志中。</LI>
+</UL>
+<P>核心模组中包括它的版本资讯会在模组被载入时与现在的核心相核对。检查
+的方式视 <CODE>CONFIG_MODVERSIONS</CODE> 这项核心选项来看。 如果这项目是否
+定的， 核心版本号码就会被编译到每一个模组内，而 <CODE>insmod</CODE> 会检查
+这项是否与执行中的核心是相符合的。 如果 <CODE>CONFIG_MODVERSIONS</CODE> 是
+yes，核心所提报的每个符号会被做成一份检查总览 (Checksum)。这些程式
+码都会被与相对应的程式码相比对後编译成模组。这麽做旨在让模组们减少
+版本依赖度， 因为检查总览只会在核心介面更动时才会跟著变动， 且对於
+小小的核心更新升级几乎维持与原来相同。在实务上，检查总览已变成更加
+的严格，因为有许多的核心介面都依赖是在编译时期时核心选项的设定。而
+且，检查总览己变成一个判断相容度的极端悲观的工具了。
+<P>有些 PCMCIA 模组需要核心服务程式，但这些服务程式可能存在或不存在，
+这完全要看核心的建构。 例如，SCSI 控制卡驱动程式就需要核心已被建构
+支援了 SCSI 了。网路驱动程式就需要支援网路的核心。如果核心缺少了一
+需要的功能，<CODE>insmod</CODE> 可能会报告出有未定义的符号而不去载入该模组
+。
+<P>这样继续的结果是，核心模组紧密地与核心版本以及许多的核心建构选项的
+设定相结合。一般来说，结核心 2.0.31 版的一组被编译好的模组并无法被
+其他的核心 2.0.31 版本上使用。除非有特别地注意到将两个建构成相同的
+设定。这个问题，就让那些供应已编译好的核心模组的工作变得有点奇怪了
+。
+<P>您有几种选项：
+<P>
+<UL>
+<LI>如果您拥有的是 Linux 供应版内之未经编译的驱动程式， 请检查您所使用
+的核心是和该供应版一起的未经编译的核心。如果您想使用未经编译的模组
+，一般来说你得使用与它想伴的核心。
+</LI>
+<LI>如果你重新建构或升级你的核心了，你可能需要编译和安装新的 PCMCIA 套
+件。 如果你已经有安装了核心原始树的话，做这件事就得容易了。 请参考
+PCMCIA-HOWTO 有更详细的指示。
+</LI>
+<LI>在某些情形下，与其他系统元件的不相容可能会导致无法正确载入核心模组
+元件。      如果您自己升级核心，      请注意详列模组原始档案树内之
+<CODE>Documentation/Changes</CODE>  档案内针对模组公用程式及二进位公具
+程式中列明的最小需求 (``minimal requirements'')。
+</LI>
+</UL>
+<P>
+<H2><A NAME="ss3.2">3.2 插断扫描失败</A>
+</H2>
+
+<P>
+<P>症状:
+<UL>
+<LI>当 PCMCIA 驱动程式被载入时系统却动也不动，就算并没有卡片插著时也一
+样。</LI>
+<LI>系统日志在系统当机锁死前显示成功地侦测到 PCMCIA 控制器，但还没显示
+插断侦测的结果时。</LI>
+</UL>
+<P>在辨视 PCMCIA 控制器之後，插槽驱动程式会侦测空著的插断号码。这个动
+作会为每个显然是空著的插断做程式化, 然後产生一个 `` 软的 '' 插断，
+来看看是否这个插断可以被正确地被侦测到。有些时候，侦测到一些特殊的
+插断时会影响到其他的系统设备。
+<P>这麽侦测的理由是，我们要辨视出真正空著可用的插断。 (例如，那些不是
+被任何其他   Linux  设备驱动程式所预留著的，  也并非实体上已连接著
+PCMCIA 控制器的，或是已连接著其他的设备但并没有驱动程式的。)
+<P>有二种继续的方法:
+<UL>
+<LI>插断探测工作可以使用插槽驱动程式内的  <CODE>irq_list</CODE> 参数设定来限制
+只对某些插槽实施而已。例如 ``<CODE>irq_list=5, 9, 10</CODE>'' 会限制只对这
+三个插断做扫描探测而已。所有的 PCMCIA 设备会被限制只能使用这几个插
+断而已 (假如它们略过了侦测动作 )。你可能需要□试几次失败并再接再厉
+地才能找到哪些插断可以被安全地侦测使用的。</LI>
+<LI>插断探测工作可以被完全地关闭掉，在载入插槽驱动程式时使用了 ``do_scan=0''
+选项。这麽做，会让原定的插断清单被使用著，它们已经避免使用那些已经
+被其他设备所占用了的插断。</LI>
+</UL>
+<P>另一个方法，我们可以使用在 PCMCIA 启动手稿中指定 <CODE>PCIC_OPTS</CODE> 的
+设定，例如:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+PCIC_OPTS="irq_list=5,9,10"
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss3.3">3.3 记忆体侦测失败</A>
+</H2>
+
+<P>
+<P>症状:
+<UL>
+<LI>主驱动程式在卡片并不存著时被正确地载入，而且在系统日志内也没有任何
+错误。</LI>
+<LI>系统当机动不了和／或任何卡片插入但在任何哔声响起前就重新开机。</LI>
+</UL>
+<P>或是：
+<UL>
+<LI>任何卡片插入时会产生一个高音的哔声，接著低沈的哔声。</LI>
+<LI>任何卡片都被误认 ``anonymous memory cards''。</LI>
+<LI>系统日志报告说有很多的记忆体□围已被排除在外了。</LI>
+</UL>
+<P>主模组程式在第一次插入卡片使做一定记忆体扫描。这个动作有潜在可能地
+干涉到其他记忆体映射的设备。另外，pre-3.0.0 版本前的驱动程式套件还
+会做比现今的驱动程式版本更进一步的扫描。记忆体窗是被定义在
+<CODE>/etc/pcmcia/config.opts</CODE> 内。 预设的窗口很大，所以它可能会
+帮助来限制扫描到较窄的□围。比较合理的□围可试看看包含进以下的位址
+：0xd0000-0xdffff, 0xc0000-0xcffff, 0xc8000-0xcffff, 或
+0xd8000-0xdffff。
+<P>如果你有 DOS 或 Windows 版的 PCMCIA 驱动程式， 你就可以 you may be
+able to deduce what memory region those drivers use. 请记得 DOS 的
+记忆体位址通常都使用 `` 段 '' 位址形式，也就是它会将尾巴的十六位元
+数字省略掉（所以   0xd0000  的绝对位址就是  0xd000  ）。  记得在改
+<CODE>/etc/pcmcia/config.opts</CODE> 时要确认这项。
+<P>
+<H2><A NAME="ss3.4">3.4 错误地侦测卡片的插入与抽出</A>
+</H2>
+
+<P>症状：
+<UL>
+<LI>在开机使卡片有插著并被侦测到且正确地被建构了。</LI>
+<LI>驱动程式不会反应出卡版被插入或移出，或是记录在系统日志、或时哔声响
+。</LI>
+</UL>
+<P>一般来说，卡槽驱动程式 (<CODE>i82365</CODE> 或 <CODE>tcic</CODE>) 会自动地侦测并选
+择一个适合的插断来传送卡片状态的更动。 某些 Intel 相容控制器的自动
+插断侦测不能工作。 包含 Cirrus 晶片和装在 IBM ThinkPads 上的晶片。
+如果在侦测时设备无法起动，它的插断也会是□置的。这种状态下，卡槽驱
+动程式也许会挑到一个已被其他装置使用中的插断来使用。
+<P>在 <CODE>i82365</CODE> 和 <CODE>tcic</CODE> 的驱动程式□的 <CODE>irq_list</CODE>  选项可以
+用来限制哪些插断可以被测试的。这个插断列表可被限制成只被 PCMCIA 卡
+所使用或用来监控卡片状态的改变。 另外 <CODE>cs_irq</CODE> 选项可明白地设定
+哪个插断要被用来监控卡片状态的改变的。
+<P>如果您无法找到可正常工作的插断号码，还有一个票选状态模式可用：不论
+是 <CODE>i82365</CODE> 或 <CODE>tcic</CODE> 都接受 <CODE>poll_interval=100</CODE> 这选项，
+用来票选卡片的每秒的改变状态。如果您的系统已短缺可被 PCMCIA 卡使用
+的插断时这个选项也可以被使用。特别是在系统内有一种以上的 PCMCIA 控
+制器时就必须注意这点了。
+<P>所有的这些选项必须在 <CODE>PCIC_OPTS=</CODE> 这行来设定， 看您的系统是设在
+<CODE>/etc/rc.d/rc.pcmcia</CODE> □或是 <CODE>/etc/sysconfig/pcmcia</CODE>
+。
+<P>
+<H2><A NAME="ss3.5">3.5 两张卡之间的资源相冲突</A>
+</H2>
+
+<P>
+<P>Symptoms:
+<UL>
+<LI>两张卡片在各自独自使用时可以工作，</LI>
+<LI>但当两张卡一起被插著时，却只有一个可以正常工作。</LI>
+</UL>
+<P>通常这就表示已经和某个 Linux 不知道的系统设备相冲突了。PCMCIA 设备
+是被动态建构的，所以，例如，插断是在被需要时被分配的，而不是特别被
+指定到特别的卡片或是插槽的。现在有一个可用资源的清单，卡片会在他们
+被建构时依序地被指派给资源的。在这种状况下，最後被建构的卡片会被指
+派到一个并非是空□著的资源上了。
+<P>您可检查系统日志有哪些资源被非正在工作的卡片所占用著。在
+<CODE>/etc/pcmcia/config.opts</CODE>   □把这些排除在外，   再重新启动
+<CODE>cardmgr</CODE> 精灵来再载入资源资料库。
+<P>
+<H2><A NAME="ss3.6">3.6 设备建构并没有完成</A>
+</H2>
+
+<P>症状：
+<UL>
+<LI>当一个卡片被插入时，确实可听到一个高音的哔声响。</LI>
+<LI>接下来的卡片不管是插入或移出都不被理睬。</LI>
+</UL>
+<P>这表示卡片已被成功地辨视了。但是 <CODE>cardmgr</CODE> 因某些原因已无法完成
+建构程序。最有可能的原因是在卡片设定手稿的某一步骤被困住了。当一个
+网路卡被插入时并没有接上一个正活动中的网路上时，网路手稿被困住了，
+这就是最好的例子。
+<P>要找出问题出在哪□，你可以手动执行一个设定手稿来看看它是被困在哪儿
+的。这个手稿就放在 <CODE>/etc/pcmcia</CODE> 目录内。他们会使用二个参数
+：设备名称及动件。 <CODE>cardmgr</CODE> 精会把记录建构的命令记录在系统日志
+内。 例如， 在系统日志中显示出  `./network  命令开始了 eth0'' 是被
+<CODE>cardmgr</CODE> 最後一个执行的命令，以下的命令会追踪这个手稿：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+cd /etc/pcmcia
+sh -x ./network start eth0
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<HR>
+<A HREF="PCMCIA-HOWTO-4.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="PCMCIA-HOWTO-2.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="PCMCIA-HOWTO.html#toc3"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

@@ -1,0 +1,101 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Linux Serial HOWTO 中譯版: 更進一步...</TITLE>
+ <LINK HREF="Serial-HOWTO-13.html" REL=next>
+ <LINK HREF="Serial-HOWTO-11.html" REL=previous>
+ <LINK HREF="Serial-HOWTO.html#toc12" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Serial-HOWTO-13.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Serial-HOWTO-11.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Serial-HOWTO.html#toc12"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s12">12. 更進一步...</A></H2>
+
+<P>這一節並不需要閱讀，但是可能帶給你一些對於 Unix 以及電子通訊世界更進一步的了解．
+<P>
+<H2><A NAME="ss12.1">12.1 什麼是鎖定檔案(lock files)?</A>
+</H2>
+
+<P>Lock files 只是單純的一個檔案用來表示某個特定的設備正在使用中．
+它們保存在 <CODE>/usr/spool/uucp</CODE> 或是 <CODE>/var/lock</CODE> 裡面．
+Linux 的 lock files 名字都是 <CODE>LCK..</CODE><EM>name</EM>，其中的 <EM>name</EM> 不是設備名稱就是一個 UUCP 節點名稱．
+有些程序建立這些 locks 以便讓它們自己可以獨佔該設備的存取權．
+例如如果你從你的數據機撥號出去，將會出現一個 lock 告訴其它程序現在已經有人正在使用數據機．
+Lock files 裡面主要是包含鎖住該設備的程序的行程號碼(PID)．
+大部份的程式會查閱 lock，然後檢查行程表(process table)中鎖定該設備的行程來試著決定這個 lock 是否仍然有效．
+如果發現這個 lock 是有效的話，這個程式(應該)要結束．
+如果不是，某些程式會刪除過時的 lock，然後使用該設備，並在行程執行時建立他們自己的 lock．
+其它的程式就只好結束並告訴你該設備正在使用中．
+<P>
+<H2><A NAME="ss12.2">12.2 ``baud'' 對 ``bps''</A>
+</H2>
+
+<P>``baud'' 跟 ``bps'' 可能是電腦/電子通訊這個領域裡最常被錯用的術語之一．
+當它們事實上並不相同的時候，很多人仍交替使用這些術語．
+<DL>
+<DT><B>鮑率(baud)</B><DD><P>鮑率是每秒鐘數據機(調變解調器，<B>mo</B>dulator-<B>dem</B>odulator)送出多少次訊號改變的度量．
+例如，鮑率為 1200 的含意是信號每隔 833 微秒(microsecond)即改變一次．
+普遍的鮑率有 50, 75, 110, 300, 600, 1200 以及 2400．大部份的高速數據機所使用的鮑率為 2400．
+因為語音級(voice-grade)電話線路的頻寬限制，超過 2400 的鮑率很難達的到，而只能在非常純淨的電話線品質下才能運作．
+``baud''一詞在 Emile Baudot 之後才有，他是非同步電報印表機(asynchronous telegraph printer)的發明者．
+<P>
+<DT><B>每秒傳輸位元(bps)</B><DD><P>每秒位元傳輸率是每秒鐘傳輸多少位元的度量．普遍每秒位元傳輸率有 50, 75, 110, 300, 1200, 2400, 4800, 9600, ... 115200．
+在使用 V.42bis  壓縮(壓縮最大率 4:1)的數據機下，<EM>理論上</EM>每秒位元傳輸率可以高達 115200．
+這是許多人在錯用 ``baud'' 這個字時所指的意思．        
+</DL>
+        
+<P>所以，如果高速數據機以 2400 baud 運作，它們如何能夠傳送 14400 bps?
+數據機對每個 baud 編碼來表示某一數量的位元而使得 bps 能大於 baud．
+這樣一來，當二個或更多位元編碼成一個 baud 的時候，bps 就會超越 baud．
+如果你的數據機是以 14400 bps 連線的話，它將會以 2400 baud 的速度每個 baud 傳送六個位元．
+<P>     
+這個混淆是怎麼樣開始的? 嗯，回到今天的低速數據機還是昨天的高速數據機那個時代，每秒位元傳輸率跟信號改變率實際上是完全相等的．
+每個 bit 編碼成一個 baud．人們交替使用 bps 以及 baud 是因為它們的數字相同．
+例如一台 300 bps 的數據機其信號改變率也是 300．
+當高速數據機普及後一切都改變了，而且每秒位元傳輸率超過了信號改變率．
+<P>
+<H2><A NAME="uart"></A> <A NAME="ss12.3">12.3 什麼是 UARTs? 它們如何影響效能?</A>
+</H2>
+
+<P>UARTs (通用非同步接收轉換器，<B>U</B>niversal <B>A</B>syncronous <B>R</B>eceiver <B>T</B>ransmitter)是你 PC 串列卡上的晶片．
+它們的功用是把資料轉成位元，將這些位元送上串列線路，然後在另一端重新建立資料．
+UARTs 是以位元組為單位處理資料，很方便地也是美國標準交換碼(ASCII)的字元大小．
+<P>假定是你有一台連接到你 PC 的終端機．當你鍵入一個字元時，終端機把它交給它的轉換器(也是 UART 的一種)．
+該轉換器以指定的速率把這個位元組送到串列線路上，每次一個位元．
+在 PC 這一端，接收位元的 UART 拿走所有的位元，然後重新組成位元組並且放到緩衝區裡去．
+<P>有兩種不同的 UARTs 類型．你可能有聽過愚蠢的(dumb)UARTs - 8250 還有 16450，以及先進先出式 UARTs - 16550A．
+要了解它們的不同，首先讓我們來檢驗當 UART 送出或接收一個位元組時所發生的事．
+<P>這 UART 本身並不能對資料做什麼處理，它只是送出以及接收它．
+每次送出或接收一個位元組時，CPU 都會從串列設備接到一個中斷．
+然後 CPU 就把接收到的位元組從 UARTs 的緩衝區搬到記憶體的某處，或是提供另一個位元組給 UART 傳送．
+8250 以及 16450 UARTs 只有一個位元組的緩衝區．這個意思是，每送出或接收一個位元組就會中斷 CPU 一次．
+在低速的情況下這樣沒有問題．但是在高速的傳輸率下，CPU 會忙於處理 UART 而沒有時間照料其它工作．
+在某些情況下，CPU 沒有足夠的餘裕及時處理中斷服務，該位元組將因資料如此快速地傳入而被覆寫．
+<P>這就是 16550A UARTs 有用的地方．這些晶片具有 16 個位元組的先進先出佇列．
+這個意思是它在必須中斷 CPU 之前可以接收或轉換達 16 個位元組．
+它不僅是能等，而且 CPU 現在也可以同時傳送全部 16 個位元組的資料．
+雖然中斷界限(threshold)很少有設到 16 的，這對於其它只有一個位元組緩衝區的 UARTs 而言仍然是一個重要的優點．
+CPU 收到較少的中斷，因此可以自由地做其它事情．資料不會漏失，每個人都很高興．
+(也有 16550 這個 UART，但是它跟 16450 一樣因為它有問題．)
+<P>一般來說， 8250 以及 16450 UARTs 應該能夠勝任高達 38400 bps 的工作速率．
+在高於 38400 bps  的速率下，你可能開始見到資料漏失．
+其它的 PC 作業系統(這裡的定義很寬鬆)，像 DOS 並非是多工的，所以它們有可能可以用 8250 或 16450s 卻應付的更好．
+這就是為什麼有些人並沒有看到資料漏失，直到他們改用 Linux  才發生．
+<P>無-UART(Non-UART)以及智慧型多埠卡使用數位處理機(DSP)晶片來處理額外的緩衝以及控制，如此更能減輕 CPU 的負擔．
+例如，Cyclades Cyclom 及 Stallion EasyIO 這些卡使用 Cirrus Logic CD-1400 RISC 晶片，還有許多卡使用 80186 CPU 或更特別的 RISC CPU 來處理串列輸出入．
+<P>心裡要記得，這些愚蠢型的 UART 並非是壞的，只是它們不適合做高速傳輸．
+當你將終端機或滑鼠連接到這些 UARTs 時應該不會遭遇困難．
+但是對高速數據機而言，16550A 可以說是必須的．
+<P>你可以花多一點點的錢購買有 16550A UARTs 的串列卡，只要詢問電腦商該卡所使用的是什麼型號的 UARTs 即可．
+或者你想升級你現在的卡，你可以只要簡單地購買 16550A 晶片並且置換你現在的 16450 UARTs 晶片．
+它們的腳位相容(pin-to-pin compatible)．有些卡有 UARTs 插槽來作這個用途使用．
+如果不是的話你可以焊接．注意，如果你有錢，買一張新卡將可能會省掉你許多麻煩，它們在 $50 元美金以下．
+<P>
+<HR>
+<A HREF="Serial-HOWTO-13.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Serial-HOWTO-11.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Serial-HOWTO.html#toc12"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

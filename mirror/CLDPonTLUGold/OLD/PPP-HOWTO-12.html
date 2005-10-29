@@ -1,0 +1,402 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>PPP HOWTO 中譯版: 設定 PPP 連接檔案</TITLE>
+ <LINK HREF="PPP-HOWTO-13.html" REL=next>
+ <LINK HREF="PPP-HOWTO-11.html" REL=previous>
+ <LINK HREF="PPP-HOWTO.html#toc12" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="PPP-HOWTO-13.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="PPP-HOWTO-11.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="PPP-HOWTO.html#toc12"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="options"></A> <A NAME="s12">12. 設定 PPP 連接檔案</A></H2>
+
+<P>你必須以 <B>root</B> 身份簽入來建立這些目錄並且編輯這些設立 PPP 連線所需的檔案，即使你想讓所有的使用者都能使用 PPP．
+<P>
+<P>PPP 使用幾個檔案來建立並設定 PPP 連結．這些檔案在 PPP 2.1.2 與 2.2 中的名稱與位置都不同．
+<P>
+<P>在 PPP 2.1.2 中這些檔案是:-
+<HR>
+<PRE>
+/usr/sbin/pppd               # PPP 執行檔
+/usr/sbin/ppp-on             # 撥號/連線指令稿
+/usr/sbin/ppp-off            # 斷線指令稿
+/etc/ppp/options             # 所有連線所使用的選項
+/etc/ppp/options.ttyXX   # 給某一特定通訊埠使用的選項
+</PRE>
+<HR>
+<P>
+<P>在 PPP 2.2 中這些檔案是:-
+<HR>
+<PRE>
+/usr/sbin/pppd                  # PPP 執行檔
+/etc/ppp/scripts/ppp-on         # 撥號/連線指令稿
+/etc/ppp/scripts/ppp-on-dialer  # 撥號的 chat 指令稿部份
+/etc/ppp/scripts/ppp-off        # 斷線指令稿
+/etc/ppp/options                # 所有連線所使用的選項
+/etc/ppp/options.ttyXX          # 給某一特定通訊埠使用的選項
+</PRE>
+<HR>
+<P>
+<P>
+<P>Red Hat Linux 的使用者應注意標準的 Red Hat 4.X 安裝將這些指令稿放在 <CODE>/usr/doc/ppp-2.2.0f-2/scripts</CODE>．
+<P>
+<P>在你的 <CODE>/etc</CODE> 目錄裡應該要有個目錄:
+<BLOCKQUOTE><CODE>
+<PRE>
+drwxrwxr-x   2 root     root         1024 Oct  9 11:01 ppp
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>如果它不存在的話 － 以這樣的權限建立它．
+<P>
+<P>如果這個目錄已經存在，它應該會包含一個稱為 <B>options.tpl</B> 的選項檔案樣板．這個檔案包括在下面．
+<P>
+<P>因為它包含所有 PPP 選項的解釋所以請你把它印出來（配合 pppd 的線上使用手冊來閱讀將會是很有用的）．
+雖然你可以使用這個檔案作為 <CODE>/etc/ppp/options</CODE> 檔案的基礎，但是建立你自己的，沒有包含所有在這個樣板裡的指令的選項檔案可能會更好 － 它會短得多而且比較容易閱讀／維護．
+<P>
+<P>如果你有多個串列線路／數據機（典型的例子是 PPP 伺服器），那麼建立一個一般化的 <CODE>/etc/ppp/options</CODE> 檔案，其中包含每個你提供支援撥入的串列埠所使用的共同選項並且為每一個需要個別設定以建立 PPP 連線的串列線路設立個別的選項檔案．
+<P>
+<P>這些檔案名為 <CODE>options.ttyx1</CODE>, <CODE>options.ttyx2</CODE> 依此類推（其中 <CODE>x</CODE> 是你串列埠的適當代碼）．
+<P>
+<P>然而，對於單一 PPP  連線，你可以直接使用 <CODE>/etc/ppp/options</CODE> 這個檔案．另外一種辦法，你可以把所有的選項放進 pppd 指令作為參數．
+<P>
+<P>使用 <CODE>/etc/ppp/options.ttySx</CODE> 檔案的設定方式會比較容易加以維護．
+如果你使用 PPP  來連線到好幾個不同的節點去的話，那麼你就可以在 <CODE>/etc/ppp/options.site</CODE> 裡面為每個節點建立選項檔案然後在你連線時指定選項檔案作為 PPP 指令的參數．
+(使用 <CODE>file option-file</CODE> 參數於 pppd 的指令列)．
+<P>
+<H2><A NAME="ss12.1">12.1 替代的 options.tpl 檔案</A>
+</H2>
+
+<P>某些個 PPP  的發行套件似乎漏失了 options.tpl 這個檔案，所以在這裡有個完整的檔案．
+我建議你不要直接編輯這個檔案來建立你自己的 <CODE>/etc/ppp/options</CODE>．
+把它拷貝到一個新的檔案然後編輯該檔案比較好．如果你弄亂了你編輯的檔案，你可以回頭從原始檔案再度開始．
+<P>
+<HR>
+<PRE>
+# /etc/ppp/options -*- sh -*- general options for pppd
+# created 13-Jul-1995 jmk
+# autodate: 01-Aug-1995
+# autotime: 19:45
+
+# Use the executable or shell command specified to set up the serial
+# line.  This script would typically use the "chat" program to dial the
+# modem and start the remote ppp session.
+#connect "echo You need to install a connect command."
+
+# Run the executable or shell command specified after pppd has
+# terminated the link.  This script could, for example, issue commands
+# to the modem to cause it to hang up if hardware modem control signals
+# were not available.
+#disconnect "chat -- \d+++\d\c OK ath0 OK"
+
+# async character map -- 32-bit hex; each bit is a character
+# that needs to be escaped for pppd to receive it.  0x00000001
+# represents '\x01', and 0x80000000 represents '\x1f'.
+#asyncmap 0
+
+# Require the peer to authenticate itself before allowing network
+# packets to be sent or received.
+#auth
+
+# Use hardware flow control (i.e. RTS/CTS) to control the flow of data
+# on the serial port.
+#crtscts
+
+# Use software flow control (i.e. XON/XOFF) to control the flow of data
+# on the serial port.
+#xonxoff
+
+# Add a default route to the system routing tables, using the peer as
+# the gateway, when IPCP negotiation is successfully completed.  This
+# entry is removed when the PPP connection is broken.
+#defaultroute
+
+# Specifies that certain characters should be escaped on transmission
+# (regardless of whether the peer requests them to be escaped with its
+# async control character map).  The characters to be escaped are
+# specified as a list of hex numbers separated by commas.  Note that
+# almost any character can be specified for the escape option, unlike
+# the asyncmap option which only allows control characters to be
+# specified.  The characters which may not be escaped are those with hex
+# values 0x20 - 0x3f or 0x5e.
+#escape 11,13,ff
+
+# Don't use the modem control lines.
+#local
+
+# Specifies that pppd should use a UUCP-style lock on the serial device
+# to ensure exclusive access to the device.
+#lock
+
+# Use the modem control lines.  On Ultrix, this option implies hardware
+# flow control, as for the crtscts option.  (This option is not fully
+# implemented.)
+#modem
+
+# Set the MRU [Maximum Receive Unit] value to &lt;n> for negotiation.  pppd
+# will ask the peer to send packets of no more than &lt;n> bytes. The
+# minimum MRU value is 128.  The default MRU value is 1500.  A value of
+# 296 is recommended for slow links (40 bytes for TCP/IP header + 256
+# bytes of data).
+#mru 542
+
+# Set the interface netmask to &lt;n>, a 32 bit netmask in "decimal dot"
+# notation (e.g. 255.255.255.0).
+#netmask 255.255.255.0
+
+# Disables the default behaviour when no local IP address is specified,
+# which is to determine (if possible) the local IP address from the
+# hostname. With this option, the peer will have to supply the local IP
+# address during IPCP negotiation (unless it specified explicitly on the
+# command line or in an options file).
+#noipdefault
+
+# Enables the "passive" option in the LCP.  With this option, pppd will
+# attempt to initiate a connection; if no reply is received from the
+# peer, pppd will then just wait passively for a valid LCP packet from
+# the peer (instead of exiting, as it does without this option).
+#passive
+
+# With this option, pppd will not transmit LCP packets to initiate a
+# connection until a valid LCP packet is received from the peer (as for
+# the "passive" option with old versions of pppd).
+#silent
+
+# Don't request or allow negotiation of any options for LCP and IPCP
+# (use default values).
+#-all
+
+# Disable Address/Control compression negotiation (use default, i.e.
+# address/control field disabled).
+#-ac
+
+# Disable asyncmap negotiation (use the default asyncmap, i.e. escape
+# all control characters).
+#-am
+
+# Don't fork to become a background process (otherwise pppd will do so
+# if a serial device is specified).
+#-detach
+
+# Disable IP address negotiation (with this option, the remote IP
+# address must be specified with an option on the command line or in an
+# options file).
+#-ip
+
+# Disable magic number negotiation.  With this option, pppd cannot
+# detect a looped-back line.
+#-mn
+
+# Disable MRU [Maximum Receive Unit] negotiation (use default, i.e.
+# 1500).
+#-mru
+
+# Disable protocol field compression negotiation (use default, i.e.
+# protocol field compression disabled).
+#-pc
+
+# Require the peer to authenticate itself using PAP.
+# This requires TWO WAY authentication - do NOT use this for a standard
+# PAP authenticated link to an ISP as this will require the ISP machine
+# to authenticate itself to your machine (and it will not be able to).
+#+pap
+
+# Don't agree to authenticate using PAP.
+#-pap
+
+# Require the peer to authenticate itself using CHAP [Cryptographic
+# Handshake Authentication Protocol] authentication.
+# This requires TWO WAY authentication - do NOT use this for a standard
+# CHAP authenticated link to an ISP as this will require the ISP machine
+# to authenticate itself to your machine (and it will not be able to).
+#+chap
+
+# Don't agree to authenticate using CHAP.
+#-chap
+
+# Disable negotiation of Van Jacobson style IP header compression (use
+# default, i.e. no compression).
+#-vj
+
+# Increase debugging level (same as -d).  If this option is given, pppd
+# will log the contents of all control packets sent or received in a
+# readable form.  The packets are logged through syslog with facility
+# daemon and level debug. This information can be directed to a file by
+# setting up /etc/syslog.conf appropriately (see syslog.conf(5)).  (If
+# pppd is compiled with extra debugging enabled, it will log messages
+# using facility local2 instead of daemon).
+#debug
+
+# Append the domain name &lt;d> to the local host name for authentication
+# purposes.  For example, if gethostname() returns the name porsche,
+# but the fully qualified domain name is porsche.Quotron.COM, you would
+# use the domain option to set the domain name to Quotron.COM.
+#domain &lt;d>
+
+# Enable debugging code in the kernel-level PPP driver.  The argument n
+# is a number which is the sum of the following values: 1 to enable
+# general debug messages, 2 to request that the contents of received
+# packets be printed, and 4 to request that the contents of transmitted
+# packets be printed.
+#kdebug n
+
+# Set the MTU [Maximum Transmit Unit] value to &lt;n>. Unless the peer
+# requests a smaller value via MRU negotiation, pppd will request that
+# the kernel networking code send data packets of no more than n bytes
+# through the PPP network interface.
+#mtu &lt;n>
+
+# Set the name of the local system for authentication purposes to &lt;n>.
+# This will probably have to be set to your ISP user name if you are
+# using PAP/CHAP.
+#name &lt;n>
+
+# Set the user name to use for authenticating this machine with the peer
+# using PAP to &lt;u>.
+# Do NOT use this if you are using 'name' above!
+#user &lt;u>
+
+# Enforce the use of the host name as the name of the local system for
+# authentication purposes (overrides the name option).
+#usehostname
+
+# Set the assumed name of the remote system for authentication purposes
+# to &lt;n>.
+#remotename &lt;n>
+
+# Add an entry to this system's ARP [Address Resolution Protocol]
+# table with the IP address of the peer and the Ethernet address of this
+# system.
+#proxyarp
+
+# Use the system password database for authenticating the peer using
+# PAP.
+#login
+
+# If this option is given, pppd will send an LCP echo-request frame to
+# the peer every n seconds. Under Linux, the echo-request is sent when
+# no packets have been received from the peer for n seconds. Normally
+# the peer should respond to the echo-request by sending an echo-reply.
+# This option can be used with the lcp-echo-failure option to detect
+# that the peer is no longer connected.
+#lcp-echo-interval &lt;n>
+
+# If this option is given, pppd will presume the peer to be dead if n
+# LCP echo-requests are sent without receiving a valid LCP echo-reply.
+# If this happens, pppd will terminate the connection.  Use of this
+# option requires a non-zero value for the lcp-echo-interval parameter.
+# This option can be used to enable pppd to terminate after the physical
+# connection has been broken (e.g., the modem has hung up) in
+# situations where no hardware modem control lines are available.
+#lcp-echo-failure &lt;n>
+
+# Set the LCP restart interval (retransmission timeout) to &lt;n> seconds
+# (default 3).
+#lcp-restart &lt;n>
+
+# Set the maximum number of LCP terminate-request transmissions to &lt;n>
+# (default 3).
+#lcp-max-terminate &lt;n>
+
+# Set the maximum number of LCP configure-request transmissions to &lt;n>
+# (default 10).
+# Some PPP servers are slow to start up. You may need to increase this
+# if you keep getting 'serial line looped back' errors and your are SURE
+# that you have logged in correctly and PPP should be starting on the server.
+#lcp-max-configure &lt;n>
+
+# Set the maximum number of LCP configure-NAKs returned before starting
+# to send configure-Rejects instead to &lt;n> (default 10).
+#lcp-max-failure &lt;n>
+
+# Set the IPCP restart interval (retransmission timeout) to &lt;n>
+# seconds (default 3).
+#ipcp-restart &lt;n>
+
+# Set the maximum number of IPCP terminate-request transmissions to &lt;n>
+# (default 3).
+#ipcp-max-terminate &lt;n>
+
+# Set the maximum number of IPCP configure-request transmissions to &lt;n>
+# (default 10).
+#ipcp-max-configure &lt;n>
+
+# Set the maximum number of IPCP configure-NAKs returned before starting
+# to send configure-Rejects instead to &lt;n> (default 10).
+#ipcp-max-failure &lt;n>
+
+# Set the PAP restart interval (retransmission timeout) to &lt;n> seconds
+# (default 3).
+#pap-restart &lt;n>
+
+# Set the maximum number of PAP authenticate-request transmissions to
+# &lt;n> (default 10).
+#pap-max-authreq &lt;n>
+
+# Set the CHAP restart interval (retransmission timeout for
+# challenges) to &lt;n> seconds (default 3).
+#chap-restart &lt;n>
+
+# Set the maximum number of CHAP challenge transmissions to &lt;n>
+# (default 10).
+#chap-max-challenge
+
+# If this option is given, pppd will re-challenge the peer every &lt;n>
+# seconds.
+#chap-interval &lt;n>
+
+# With this option, pppd will accept the peer's idea of our local IP
+# address, even if the local IP address was specified in an option.
+#ipcp-accept-local
+
+# With this option, pppd will accept the peer's idea of its (remote) IP
+# address, even if the remote IP address was specified in an option.
+#ipcp-accept-remote
+</PRE>
+<HR>
+<P>
+<P>
+<H2><A NAME="ss12.2">12.2 我應該使用什麼選項? (無 PAP/CHAP)</A>
+</H2>
+
+<P>嗯，完全視情況而定（唉）．這裡所提供的應該適用於大部份的伺服器．
+<P>
+<P>然而，如果它無法運作的話，閱讀樣板檔(<CODE>/etc/ppp/options.tpl</CODE>) <B>以及</B> pppd 的線上使用手冊<B>並且</B>告訴你所連線之伺服器的系統管理／使用者支援人員．
+<P>
+<P>你還應該注意這裡所展示的連結指令稿也使用了一些給 pppd 的命令列選項以便讓事情容易調整些．
+<P>
+<HR>
+<PRE>
+# /etc/ppp/options (NO PAP/CHAP)
+#
+# 避免 pppd 進入背景執行
+-detach
+#
+# 使用數據機控制線
+modem
+# 使用 uucp 形態的鎖定檔以避免它人取用串列裝置
+lock
+# 使用硬體流量控制
+crtscts
+# 在遞送表格中將此連結建立為預設遞送裝置
+defaultroute
+# 不使用任何"逸出"控制序列
+asyncmap 0
+# 最大傳送封包大小為 552 bytes
+mtu 552
+# 最大接收封包大小為 552 bytes
+mru 552
+#
+#-------END OF SAMPLE /etc/ppp/options (no PAP/CHAP)
+</PRE>
+<HR>
+<P>
+<HR>
+<A HREF="PPP-HOWTO-13.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="PPP-HOWTO-11.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="PPP-HOWTO.html#toc12"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

@@ -1,0 +1,353 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>The Linux Serial Programming HOWTO: 程式範例</TITLE>
+ <LINK HREF="Serial-Programming-HOWTO-4.html" REL=next>
+ <LINK HREF="Serial-Programming-HOWTO-2.html" REL=previous>
+ <LINK HREF="Serial-Programming-HOWTO.html#toc3" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Serial-Programming-HOWTO-4.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Serial-Programming-HOWTO-2.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Serial-Programming-HOWTO.html#toc3"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s3">3. 程式範例</A></H2>
+
+<P>所有的範例來源自 <CODE>miniterm.c</CODE>. The type ahead 暫存器被限制在 255 個字元,  就跟標準輸入程序的最大字串長度相同 (<CODE>&lt;linux/limits.h&gt;</CODE> 或 <CODE>&lt;posix1_lim.h&gt;</CODE>).
+<P>參考程式碼中的註解它會解釋不同輸入模式的使用. 我希望這些程式碼都能被了解. 標準輸入程序的程式範例的註解寫得最好, 其它的範例都只在不同於其它範例的地方做註解.
+<P>敘述不是很完整, 但可以激勵你對這範例做實驗, 以延生出合於你所需應用程式的最佳解.
+<P>別忘記要把序列埠的權限設定正確 (也就是: <CODE>chmod a+rw /dev/ttyS1</CODE>)!
+<P>
+<P>
+<H2><A NAME="ss3.1">3.1 標準輸入程序</A>
+</H2>
+
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#include &lt;sys/types.h>
+#include &lt;sys/stat.h>
+#include &lt;fcntl.h>
+#include &lt;termios.h>
+#include &lt;stdio.h>
+
+/* 鮑率設定被定義在 &lt;asm/termbits.h>, 這在 &lt;termios.h> 被引入 */
+#define BAUDRATE B38400            
+/* 定義正確的序列埠 */
+#define MODEMDEVICE "/dev/ttyS1"
+#define _POSIX_SOURCE 1 /* POSIX 系統相容 */
+
+#define FALSE 0
+#define TRUE 1
+
+volatile int STOP=FALSE; 
+
+main()
+{
+  int fd,c, res;
+  struct termios oldtio,newtio;
+  char buf[255];
+/* 
+  開啟數據機裝置以讀取並寫入而不以控制 tty 的模式
+  因為我們不想程式在送出 CTRL-C 後就被殺掉.
+*/
+ fd = open(MODEMDEVICE, O_RDWR | O_NOCTTY ); 
+ if (fd &lt;0) {perror(MODEMDEVICE); exit(-1); }
+
+ tcgetattr(fd,&amp;oldtio); /* 儲存目前的序列埠設定 */
+ bzero(&amp;newtio, sizeof(newtio)); /* 清除結構體以放入新的序列埠設定值 */
+
+/* 
+  BAUDRATE: 設定 bps 的速度. 你也可以用 cfsetispeed 及 cfsetospeed 來設定.
+  CRTSCTS : 輸出資料的硬體流量控制 (只能在具完整線路的纜線下工作
+            參考 Serial-HOWTO 第七節)
+  CS8     : 8n1 (8 位元, 不做同位元檢查,1 個終止位元)
+  CLOCAL  : 本地連線, 不具數據機控制功能
+  CREAD   : 致能接收字元
+*/
+ newtio.c_cflag = BAUDRATE | CRTSCTS | CS8 | CLOCAL | CREAD;
+ 
+/*
+  IGNPAR  : 忽略經同位元檢查後, 錯誤的位元組
+  ICRNL   : 比 CR 對應成 NL (否則當輸入訊號有 CR 時不會終止輸入)
+            在不然把裝置設定成 raw 模式(沒有其它的輸入處理)
+*/
+ newtio.c_iflag = IGNPAR | ICRNL;
+ 
+/*
+ Raw 模式輸出.
+*/
+ newtio.c_oflag = 0;
+ 
+/*
+  ICANON  : 致能標準輸入, 使所有回應機能停用, 並不送出信號以叫用程式
+*/
+ newtio.c_lflag = ICANON;
+ 
+/* 
+  初始化所有的控制特性
+  預設值可以在 /usr/include/termios.h 找到, 在註解中也有,
+  但我們在這不需要看它們
+*/
+ newtio.c_cc[VINTR]    = 0;     /* Ctrl-c */ 
+ newtio.c_cc[VQUIT]    = 0;     /* Ctrl-\ */
+ newtio.c_cc[VERASE]   = 0;     /* del */
+ newtio.c_cc[VKILL]    = 0;     /* @ */
+ newtio.c_cc[VEOF]     = 4;     /* Ctrl-d */
+ newtio.c_cc[VTIME]    = 0;     /* 不使用分割字元組的計時器 */
+ newtio.c_cc[VMIN]     = 1;     /* 在讀取到 1 個字元前先停止 */
+ newtio.c_cc[VSWTC]    = 0;     /* '\0' */
+ newtio.c_cc[VSTART]   = 0;     /* Ctrl-q */ 
+ newtio.c_cc[VSTOP]    = 0;     /* Ctrl-s */
+ newtio.c_cc[VSUSP]    = 0;     /* Ctrl-z */
+ newtio.c_cc[VEOL]     = 0;     /* '\0' */
+ newtio.c_cc[VREPRINT] = 0;     /* Ctrl-r */
+ newtio.c_cc[VDISCARD] = 0;     /* Ctrl-u */
+ newtio.c_cc[VWERASE]  = 0;     /* Ctrl-w */
+ newtio.c_cc[VLNEXT]   = 0;     /* Ctrl-v */
+ newtio.c_cc[VEOL2]    = 0;     /* '\0' */
+
+/* 
+  現在清除數據機線並啟動序列埠的設定
+*/
+ tcflush(fd, TCIFLUSH);
+ tcsetattr(fd,TCSANOW,&amp;newtio);
+
+/*
+  終端機設定完成, 現在處理輸入訊號
+  在這個範例, 在一行的開始處輸入 'z' 會退出此程式.
+*/
+ while (STOP==FALSE) {     /* 迴圈會在我們發出終止的訊號後跳出 */
+ /* 即使輸入超過 255 個字元, 讀取的程式段還是會一直等到行終結符出現才停止.
+    如果讀到的字元組低於正確存在的字元組, 則所剩的字元會在下一次讀取時取得.
+    res 用來存放真正讀到的字元組個數 */
+    res = read(fd,buf,255); 
+    buf[res]=0;             /* 設定字串終止字元, 所以我們能用 printf */
+    printf(":%s:%d\n", buf, res);
+    if (buf[0]=='z') STOP=TRUE;
+ }
+ /* 回存舊的序列埠設定值 */
+ tcsetattr(fd,TCSANOW,&amp;oldtio);
+}
+
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss3.2">3.2 非標準輸入程序</A>
+</H2>
+
+<P>在非標準的輸入程序模式下, 輸入的資料不會被組合成一行而輸入後的處理功能 (清除, 殺掉, 刪除, 等等.) 都不能使用. 這個模式有兩個功能控制參數:
+<CODE>c_cc[VTIME]</CODE> 設定字元輸入時間計時器, 及 <CODE>c_cc[VMIN]</CODE>
+設定滿足讀取功能的最低字元接收個數.
+<P>如果 MIN &gt; 0 且 TIME = 0, MIN 設定為滿足讀取功能的最低字元接收個數. 由於 TIME 是 零, 所以計時器將不被使用.
+<P>如果 MIN = 0 且 TIME &gt; 0, TIME 將被當做逾時設定值. 滿足讀取功能的情況為讀取到單一字元, 或者超過 TIME 所定義的時間 (t = TIME *0.1 s). 如果超過 TIME 所定義的時間, 則不會傳回任何字元.
+<P>如果 MIN &gt; 0 且 TIME &gt; 0, TIME 將被當做一個分割字元組的計時器. 滿足讀取功能的條件為 接收到 MIN 個數的字元, 或兩個字元的間隔時間超過 TIME 所定義的值. 計時器會在每讀到一個字元後重新計時, 且只會在第一個字元收到後才會啟動.
+<P>如果 MIN = 0 且 TIME = 0, 讀取功能就馬上被滿足. 目前所存在的字元組個數, 或者 將回傳的字元組個數. 根據 Antonino (參考 貢獻) 所說, 你可以用 <CODE>fcntl(fd, F_SETFL, FNDELAY);</CODE> 在讀取前得到相同的結果.
+<P>藉由修改 <CODE>newtio.c_cc[VTIME]</CODE> 及 <CODE>newtio.c_cc[VMIN]</CODE> 上述的模式就可以測試了.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#include &lt;sys/types.h>
+#include &lt;sys/stat.h>
+#include &lt;fcntl.h>
+#include &lt;termios.h>
+#include &lt;stdio.h>
+
+#define BAUDRATE B38400
+#define MODEMDEVICE "/dev/ttyS1"
+#define _POSIX_SOURCE 1 /* POSIX 系統相容 */
+#define FALSE 0
+#define TRUE 1
+
+volatile int STOP=FALSE; 
+
+main()
+{
+  int fd,c, res;
+  struct termios oldtio,newtio;
+  char buf[255];
+
+ fd = open(MODEMDEVICE, O_RDWR | O_NOCTTY ); 
+ if (fd &lt;0) {perror(MODEMDEVICE); exit(-1); }
+
+ tcgetattr(fd,&amp;oldtio); /* 儲存目前的序列埠設定 */
+
+ bzero(&amp;newtio, sizeof(newtio));
+ newtio.c_cflag = BAUDRATE | CRTSCTS | CS8 | CLOCAL | CREAD;
+ newtio.c_iflag = IGNPAR;
+ newtio.c_oflag = 0;
+
+ /* 設定輸入模式 (非標準型, 不回應,...) */
+ newtio.c_lflag = 0;
+ 
+ newtio.c_cc[VTIME]    = 0;   /* 不使用分割字元組計時器 */
+ newtio.c_cc[VMIN]     = 5;   /* 在讀取到 5 個字元前先停止 */
+
+ tcflush(fd, TCIFLUSH);
+ tcsetattr(fd,TCSANOW,&amp;newtio);
+
+
+ while (STOP==FALSE) {       /* 輸入迴圈 */
+   res = read(fd,buf,255);   /* 在輸入 5 個字元後即返迴 */
+   buf[res]=0;               /* 所以我們能用 printf... */
+   printf(":%s:%d\n", buf, res);
+   if (buf[0]=='z') STOP=TRUE;
+ }
+ tcsetattr(fd,TCSANOW,&amp;oldtio);
+}
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss3.3">3.3 非同步式輸入</A>
+</H2>
+
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#include &lt;termios.h>
+#include &lt;stdio.h>
+#include &lt;unistd.h>
+#include &lt;fcntl.h>
+#include &lt;sys/signal.h>
+#include &lt;sys/types.h>
+
+#define BAUDRATE B38400
+#define MODEMDEVICE "/dev/ttyS1"
+#define _POSIX_SOURCE 1 /* POSIX 系統相容 */
+#define FALSE 0
+#define TRUE 1
+
+volatile int STOP=FALSE; 
+
+void signal_handler_IO (int status);   /* 定義訊號處理程序 */
+int wait_flag=TRUE;                    /* 沒收到訊號的話就會是 TRUE */
+
+main()
+{
+  int fd,c, res;
+  struct termios oldtio,newtio;
+  struct sigaction saio;           /* definition of signal action */
+  char buf[255];
+
+  /* 開啟裝置為 non-blocking (讀取功能會馬上結束返回) */
+  fd = open(MODEMDEVICE, O_RDWR | O_NOCTTY | O_NONBLOCK);
+  if (fd &lt;0) {perror(MODEMDEVICE); exit(-1); }
+
+  /* 在使裝置非同步化前, 安裝訊號處理程序 */
+  saio.sa_handler = signal_handler_IO;
+  saio.sa_mask = 0;
+  saio.sa_flags = 0;
+  saio.sa_restorer = NULL;
+  sigaction(SIGIO,&amp;saio,NULL);
+  
+  /* 允許行程去接收 SIGIO 訊號*/
+  fcntl(fd, F_SETOWN, getpid());
+  /* 使檔案ake the file descriptor 非同步 (使用手冊上說只有 O_APPEND 及
+  O_NONBLOCK, 而 F_SETFL 也可以用...) */
+  fcntl(fd, F_SETFL, FASYNC);
+
+  tcgetattr(fd,&amp;oldtio); /* 儲存目前的序列埠設定值 */
+  /* 設定新的序列埠為標準輸入程序 */
+  newtio.c_cflag = BAUDRATE | CRTSCTS | CS8 | CLOCAL | CREAD;
+  newtio.c_iflag = IGNPAR | ICRNL;
+  newtio.c_oflag = 0;
+  newtio.c_lflag = ICANON;
+  newtio.c_cc[VMIN]=1;
+  newtio.c_cc[VTIME]=0;
+  tcflush(fd, TCIFLUSH);
+  tcsetattr(fd,TCSANOW,&amp;newtio);
+ 
+  /* 等待輸入訊號的迴圈. 很多有用的事我們將在這做 */ 
+  while (STOP==FALSE) {
+    printf(".\n");usleep(100000);
+    /* 在收到 SIGIO 後, wait_flag = FALSE, 輸入訊號存在則可以被讀取 */
+    if (wait_flag==FALSE) { 
+      res = read(fd,buf,255);
+      buf[res]=0;
+      printf(":%s:%d\n", buf, res);
+      if (res==1) STOP=TRUE; /* 如果只輸入 CR 則停止迴圈 */
+      wait_flag = TRUE;      /* 等待新的輸入訊號 */
+    }
+  }
+  /* 回存舊的序列埠設定值 */
+  tcsetattr(fd,TCSANOW,&amp;oldtio);
+}
+
+/***************************************************************************
+* 訊號處理程序. 設定 wait_flag 為 FALSE, 以使上述的迴圈能接收字元          *
+***************************************************************************/
+
+void signal_handler_IO (int status)
+{
+  printf("received SIGIO signal.\n");
+  wait_flag = FALSE;
+}
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss3.4">3.4 等待來自多個訊號來源的輸入</A>
+</H2>
+
+<P>這一段很短. 它只能被拿來當成寫程式時的提示, 故範例程式也很簡短. 但這個範例不只能用在序列埠上, 還可以用在被當成檔案來使用的裝置上.
+<P>select 呼叫及伴隨它所引發的巨集共用 <CODE>fd_set</CODE>. <CODE>fd_set</CODE> 則是一個
+位元陣列, 而其中每一個位元代表一個有效的檔案敘述結構. <CODE>select</CODE> 呼叫接受一個有效的檔案敘述結構並傳回 <CODE>fd_set</CODE> 位元陣列, 而該位元陣列中若有某一個位元為 1, 就表示相對映的檔案敘述結構的檔案發生了輸入, 輸出或有例外事件. 而這些巨集提供了所有處理 <CODE>fd_set</CODE> 的功能. 亦可參考手冊 select(2).
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#include &lt;sys/time.h>
+#include &lt;sys/types.h>
+#include &lt;unistd.h>
+
+main()
+{
+   int    fd1, fd2;  /* 輸入源 1 及 2 */
+   fd_set readfs;    /* 檔案敘述結構設定 */
+   int    maxfd;     /* 最大可用的檔案敘述結構 */
+   int    loop=1;    /* 迴圈在 TRUE 時成立 */ 
+
+   /* open_input_source 開啟一個裝置, 正確的設定好序列埠,
+      並回傳回此檔案敘述結構體 */
+   fd1 = open_input_source("/dev/ttyS1");   /* COM2 */
+   if (fd1&lt;0) exit(0);
+   fd2 = open_input_source("/dev/ttyS2");   /* COM3 */
+   if (fd2&lt;0) exit(0);
+   maxfd = MAX (fd1, fd2)+1;  /* 測試最大位元輸入 (fd) */
+
+   /* 輸入迴圈 */
+   while (loop) {
+     FD_SET(fd1, &amp;readfs);  /* 測試輸入源 1 */
+     FD_SET(fd2, &amp;readfs);  /* 測試輸入源 2 */
+     /* block until input becomes available */
+     select(maxfd, &amp;readfs, NULL, NULL, NULL);
+     if (FD_ISSET(fd1))         /* 如果輸入源 1 有訊號 */
+       handle_input_from_source1();
+     if (FD_ISSET(fd2))         /* 如果輸入源 2 有訊號 */
+       handle_input_from_source2();
+   }
+
+}   
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>這個範例程式在等待輸入訊號出現前, 不能確定它會停頓下來. 如果你需要在輸入時加入逾時功能, 只需把 select 呼叫換成:
+<BLOCKQUOTE><CODE>
+<PRE>
+int res;
+struct timeval Timeout;
+
+/* 設定輸入迴圈的逾時值 */
+Timeout.tv_usec = 0;  /* 毫秒 */
+Timeout.tv_sec  = 1;  /* 秒 */
+res = select(maxfd, &amp;readfs, NULL, NULL, &amp;Timeout);
+if (res==0)
+/* 檔案敘述結構數在 input = 0 時, 會發生輸入逾時. */ 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>這個程式會在 1 秒鐘後逾時. 如果超過時間, select 會傳回 0, 但是應該留意 <CODE>Timeout</CODE> 的時間遞減是由 <CODE>select</CODE> 所等待輸入訊號的時間為基準. 如果逾時的值是 0, select 會馬上結束返回.
+<P>
+<P>
+<HR>
+<A HREF="Serial-Programming-HOWTO-4.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Serial-Programming-HOWTO-2.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Serial-Programming-HOWTO.html#toc3"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

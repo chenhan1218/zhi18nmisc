@@ -1,0 +1,78 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Linux 2.4 Advanced Routing HOWTO: 以 Proxy ARP 構建橋接器和偽橋接器 (Building bridges, and pseudo-bridges with Proxy ARP)</TITLE>
+ <LINK HREF="Adv-Routing-HOWTO-18.html" REL=next>
+ <LINK HREF="Adv-Routing-HOWTO-16.html" REL=previous>
+ <LINK HREF="Adv-Routing-HOWTO.html#toc17" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Adv-Routing-HOWTO-18.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Adv-Routing-HOWTO-16.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Adv-Routing-HOWTO.html#toc17"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s17">17. 以 Proxy ARP 構建橋接器和偽橋接器 (Building bridges, and pseudo-bridges with Proxy ARP)</A></H2>
+
+<P>橋接器(bridges)是一種可以安裝在網路中而無須任何重設定(reconfiguration)的設備。一個網路交換器(switch)基本上是一個多埠口橋接器而已。單一的橋接器通常是一個雙埠口的交換器。Linux 也支援帶多張界面的單一橋接器﹐而成為一台真正的交換器。
+<P>橋接器的部署﹐主要是應用於如下情形﹕當面臨一個衰弱的(broken)網路﹐需要進行修復﹐但又不能進行任何變更(alterations)。因為橋接器是一個 layer-2 設備﹐在 IP 的下一層﹐路由器和伺服器是感應不到它的存在的。換而言之﹐您可以通透性的封鎖或修改特定的封包﹐或是進行引導。
+<P>橋接器的另一好處是﹐一個橋接器在掛掉之後﹐可以用一條跳接線(cross cable)或是一個集線器(hub)來代替。
+<P>而壞消息是﹐除非它被明晰的寫在文件上﹐否則一個橋接器可能會導致非常大的困擾。在 traceroute 中不會顯示它﹐但封包卻因為某些緣故神奇失蹤﹐或從點A 變成點B。另外﹐您還要知道﹐公司是否願意修改現行狀況。
+<P>關於 Linux 2.4 橋接器的文件﹐整理於﹕
+<A HREF="http://www.math.leidenuniv.nl/~buytenh/bridge">this page</A>。
+<P>
+<H2><A NAME="ss17.1">17.1 橋接和 iptalbe 的說明 (State of bridging and iptables)</A>
+</H2>
+
+<P>對於 Linux 2.4.3﹐橋接器和 iptables 在沒有外援的情況下﹐彼此都 '看' 不到對方。如果您將封包從 eth0 橋接到 eth1﹐他們並不能 '通過' iptalbes 哦。換句話說﹐您不能進行過濾﹑或 NAT﹑或重整(mangling)﹑或諸如此類。
+<P>目前已有數個計劃進行對此問題的修正﹐而最準確的應算是 Linux 2.4 橋接程式的作者 Lennert Buytenhek 了。不過﹐修補程式尚未完成﹐但看來是可行的。它可以從這個地方找到﹕
+<A HREF="http://www.math.leidenuniv.nl/~buytenh/bridge/devel/bridge-nf/">the experimental bridge patches page</A>。
+<P>我們期待這個問題可以儘快解決。
+<P>
+<H2><A NAME="ss17.2">17.2 橋接與引導 (Bridging and shaping)</A>
+</H2>
+
+<P>這個正如所其標榜的那樣﹐是可以工作的。您要確保設定好每個界面是在哪一端之上﹐否則﹐您可能會將外送的流量引導至內部界面上﹐這顯然南轅北轍。必要時請使用 tcpdump 。
+<P>
+<H2><A NAME="ss17.3">17.3 帶 Poxy-ARP 的偽橋接器 (Pseudo-bridges with Proxy-ARP)</A>
+</H2>
+
+<P>如果您只想實作一台偽橋接器(Pseudo-bridge)﹐儘可跳過後面數個段落﹐直接到 '把它實作出來' 那裡﹐不過﹐看一看實習中它是如何工作的﹐絕對是聰明之舉。
+<P>一個偽橋接器有所不同。預設上﹐橋接器從一個界面將未修改的封包傳遞到另外的界面去。它只參考封包的實體位址而判定要送至何方。換而言之﹐您可以橋接 Linux 不了解的流量﹐只要它能抓到實體位址就可以了。
+<P>而一個 '偽橋接器' 則略有不同﹐它看起來更像一台隱藏的路由器而非橋接器﹐但卻又有橋接器的能力﹐它在網路設計上會構成一些影響。
+<P>事實上的一個優點是﹐因為它不是一個橋接器﹐而封包實際上會經過核心﹐因而可以被過濾﹑修改﹑重導向﹑或是重路由。
+<P>一台真正的橋接器﹐透過設定也能如法泡制﹐但它需要某些特殊的程式﹐例如 Ethernet Frame Diverter﹐或前面提到的修補。
+<P>偽橋接器的另外一個優點是﹐它不會傳遞它不明白的封包 --- 因此可以清理掉網路中許多流量。假如在您需要這些流量的情況下(例如 SAP 封包﹐或 Netbeui)﹐那就使用真正的橋接器吧。
+<P>
+<H3>ARP &amp; Proxy-ARP</H3>
+
+<P>當一台主機想要呼叫同一實體網段上的另一台主機的時候﹐它會送出一個 Address Resolution Protocol 封包﹐說顯淺一點﹐聽起來會像這樣﹕“誰有 10.0.0.1 這個位址﹐請告訴 10.0.0.7”。而作為對這個查詢的回應﹐10.0.0.1 會回報一個簡單的“我在這裡”的封包。
+<P>然後 10.0.0.7 就將封包送到“我在這裡”那個封包所提到的實體位址。同時﹐它也把硬體位址存放在 cache 中﹐保留一段相對較長的時間﹐等到 cache 逾期之後﹐則再重新發問就是了。
+<P>當要架設一個偽橋接器的時候﹐我們要讓橋接器回應這類的 ARP 封包﹐這樣﹐網路上的主機才會將它們的封包送到橋接器這邊來。然後橋接器處理這些封包﹐再送到相關界面去。
+<P>所以﹐簡而言之﹐當一台位於橋接器一端的主機﹐查詢另一端主機的時候﹐橋接器就會回應一個封包﹐告之“交給我就好”。
+<P>透過這個辦法﹐所有數據流量都能夠送到正確的地方去﹐而且都會經過該橋接器。
+<P>
+<H3>把它實作出來 (Implementing it)</H3>
+
+<P>在過去﹐或許會讓 Linux 核心對所有 subnet 進行 'proxy-ARP'。然則﹐要架設一台偽橋接器﹐您必須為兩端指定正確的路由﹐並且﹐建立匹配的 proxy-ARP 規則。這實在不是十分好玩﹐因為光打字就夠累人的了﹐且也極容易出錯而導致橋接器為不知道如何路由的網路作出 ARP 回應。
+<P>在 Linux 2.4 上面(或許也包括 2.2)﹐這個可能性已經排除﹐並且被一個 /proc 目錄中的旗標所取代﹐稱為 'proxy_arp'。下面﹐是架設偽橋接器的步驟﹕
+<P>
+<OL>
+<LI>為兩端的界面分配一個 IP 位址﹕ '左' 青龍﹑'右' 白虎。
+</LI>
+<LI>將路由建立起來﹐讓機器知道哪些主機在左邊﹐哪些在右邊。
+</LI>
+<LI>將兩端的界面之 prox-ARP 打開﹕
+echo 1 >/proc/sys/net/ipv4/conf/ethL/proxy_arp; <BR>
+echo 1 > /proc/sys/net/ipv4/conf/ethR/proxy_arp<BR>
+其中的 L 和 R 分別為左右兩邊的界面號碼。</LI>
+</OL>
+<P>然後﹐不要忘記將 ip_forwarding 旗標打開﹗假如從真正橋接器轉換過濾﹐您或許會發現這旗標是關閉的﹐因為進行橋接的時候並不需要它。
+<P>另外﹐您在進行轉換的時候還要注意﹐您需要清空網路中各電腦的 arp cache --- 因為 arp cache 或許仍保留著先前橋接器的實體位址﹐而事實上卻已成昨日黃花了。
+<P>如在一台 Cisco 上面﹐可以用 'clear arp-cache' 命令來完成﹐在 Linux 上﹐則使用 'arp -d ip.address' 。當然﹐您也可以等 cache 逾時﹐這樣需時更久。
+<P>
+<HR>
+<A HREF="Adv-Routing-HOWTO-18.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Adv-Routing-HOWTO-16.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Adv-Routing-HOWTO.html#toc17"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

@@ -1,0 +1,42 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Linux 2.4 Advanced Routing HOWTO: 流量控管之 backbone 程式 (Backbone applications of traffic control)</TITLE>
+ <LINK HREF="Adv-Routing-HOWTO-16.html" REL=next>
+ <LINK HREF="Adv-Routing-HOWTO-14.html" REL=previous>
+ <LINK HREF="Adv-Routing-HOWTO.html#toc15" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Adv-Routing-HOWTO-16.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Adv-Routing-HOWTO-14.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Adv-Routing-HOWTO.html#toc15"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s15">15. 流量控管之 backbone 程式 (Backbone applications of traffic control)</A></H2>
+
+<P>本章僅作為 backbone routing 的淺介﹐通常用在 >100 megabit 頻寬上﹐而且它所需的技術和您家中的 ADSL 大相徑庭。
+<P>
+<H2><A NAME="ss15.1">15.1 路由器佇列 (Router queues)</A>
+</H2>
+
+<P>在 Internet 上面﹐router queue 的正常行為特性稱為 tail-drop。Tail-drop 就是當佇列達到一定數量之後﹐就開始將所有 '溢出' 的流量丟棄掉。這其實很不公平﹐而且也會導致同步重傳(retransmit synchronisation)。當同步重傳發生之後﹐已經滿載的路由所丟棄的瞬間流量﹐會導致另一波延遲的瞬間流量重傳﹐這樣又會重新填滿已經擁塞的 router。
+<P>為了妥善處理線路的瞬間擁塞﹐backbone routers 通常會裝備較大的佇列。然不幸的是﹐這些佇列雖然可改善吞吐量(throughput)﹐但卻大大的加重延遲﹐且導致 TCP 連線在擁塞的時候變得經常性的流量瞬增。
+<P>這些伴隨著 tail-drop 而來的弊端﹐已在 Internet 上不斷的造成困擾﹐這是由於一些不十分友善(unfriendly)的網路程式使用量不斷增加之故。有見及此﹐Linux 核心向我們提供所謂的 RED (Random Early Detect) 機制。
+<P>RED 事實上也不是什麼萬靈藥﹐不慎淪為實作指數倒退(implement exponential backoff)的程式﹐依然引起頻寬的分配不公﹐然而﹐有了 RED﹐可讓他們不至對其它連線的吞吐量和延遲造成太大傷害。
+<P>統計上﹐ RED 在它達到硬界限(hard limit)之前﹐就會從流程(flows)上丟棄封包。這會讓已擁塞的骨幹線路溫和地放慢﹐並防止同步重傳。這也有助於 TCP 更迅速的丟棄部份封包﹐以保持佇列體積於較低值﹐及有效控制延遲﹐從而更快的找出其 '公平' 速度。封包從特定連線上被丟棄的機率﹐也成比例的相應於其頻寬使用量﹐而非封包的傳送數量。
+<P>關於 backbone﹐光是公平性佇列所需的 per-session 狀態追蹤之複雜性﹐就令您敬而遠之﹐就這點而言﹐ RED 無疑是非常優秀的佇列技術。
+<P>如要使用 RED﹐您必須決定好三個參數﹕Min﹑Max﹑及 burst。Min 用來設定開始丟棄流量之前的最小佇列體積﹐以 byte 為單位﹔Max 則是此演算法所能保持的軟性(soft)最大值﹔而 burst 則設定 '瞬增吞吐流量' 的最大封包數目。
+<P>您要根據預計的佇列延遲﹐再乘以您的頻寬﹐來計算出 min 的設定值。比方說﹐在我的 64kbit/s 的 ISDN 線路上﹐我想要佇列的基本延遲為 200ms﹐那我就將 min 設為 1600 bytes。如果 min 設得太小﹐會降低吞吐量﹔如太大﹐則加重延遲。在一條低速線路上﹐以降低 MTU 來改進互動回應(interactive response)的辦法﹐並不能靠降低 min 設定來作為替代方案。
+<P>您最好將 max 設為 min 的起碼兩倍以上﹐以預防同步。在較低的 min 值的低速線路上﹐將 max 設為 min 的四倍或更多﹐應是明智之舉。
+<P>至於 burst﹐則是用來控制 RED 演算法如何對瞬增流量做出反應。Busrt 必須設定為大於 min/avpkt。實驗上﹐我發現 (min+min+max)/(3*avpkt) 也行得通。
+<P>另外﹐您還要設定 limit 和 avpkt 。Limit 是一個安全值﹐當佇列到達 limit bytes 之後﹐RED 就會 '變成' tail-drop 模式。我通常將 limit 設為 max 的 8 倍數。而 avpkt 就是平均封包體積。在 1500byte MTU 的高速 Internet 線路上設為 1000 是可以接受的。
+<P>相關技術資料﹐請參考 Sally Floyd 和 Van Jacobson 的 
+<A HREF="http://www.aciri.org/floyd/papers/red/red.html">the paper on RED queueing</A> 。
+<P>FIXME: 多多益善。沒錯﹐就是 greg 兄 *您* 啦 :-) - 哈
+<P>
+<P>
+<HR>
+<A HREF="Adv-Routing-HOWTO-16.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Adv-Routing-HOWTO-14.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Adv-Routing-HOWTO.html#toc15"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

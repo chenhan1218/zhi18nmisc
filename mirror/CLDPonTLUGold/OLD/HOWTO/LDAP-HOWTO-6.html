@@ -1,0 +1,291 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>LDAP Linux HOWTO: Additional Information and Features</TITLE>
+ <LINK HREF="LDAP-HOWTO-7.html" REL=next>
+ <LINK HREF="LDAP-HOWTO-5.html" REL=previous>
+ <LINK HREF="LDAP-HOWTO.html#toc6" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="LDAP-HOWTO-7.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="LDAP-HOWTO-5.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="LDAP-HOWTO.html#toc6"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s6">6. Additional Information and Features</A></H2>
+
+<P>In this section you will find information about the Netscape Address Book, a LDAP client that can be used to query your Directory. Also presented are details on how to implement Roaming Access using the Netscape Navigator, version 4.5 or above and your LDAP server. The purpose of introducing these features here is more for giving people an idea about the capabilities of the LDAP protocol. To finish you will see some information about authentication using LDAP, LDAP migration tools, LDAP graphical tools, slapd logs and about safely killing the slapd process.
+<P>
+<H2><A NAME="ss6.1">6.1 Roaming Access</A>
+</H2>
+
+<P>The goal of Roaming Access is that wherever you are on the Net, you can retrieve your bookmarks, preferences, mail filters, etc. using Netscape Navigator and a LDAP server.  This is a very nice feature. Imagine that wherever you access the Web, you can have your own settings on the browser. If you will travel and you need to access that currency site that is stored on your local bookmarks, don't worry. Upload the bookmarks and other configuration files to a LDAP server and you can retrieve them all later, independent of the place you will be.
+<P>To implement Roaming Access you have to follow these steps: 
+<P>
+<UL>
+<LI>Include a new schema file on your slapd.conf configuration file</LI>
+<LI>Set the modification field at the database section of your slapd.conf configuration file</LI>
+<LI>Change you Ldif file adding profile entries for the users that want to use Roaming Access</LI>
+<LI>Configure Netscape Navigator to use the LDAP server as a Roaming 
+Access Server </LI>
+<LI>Restart the LDAP server with the new settings. </LI>
+</UL>
+<P>
+<P>- Including a new schema file: Copy and paste the section bellow and 
+save it as a text file with a .schema extension. Usually you would save 
+it in the directory /usr/local/etc/openldap/schema. If you prefer, the 
+file can be downloaded from: 
+<A HREF="http://home.kabelfoon.nl/~hvdkooij/mull.schema">http://home.kabelfoon.nl/~hvdkooij/mull.schema</A>. Remember that your slapd.conf file should include the core.schema definitions file, using the line:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+include /usr/local/etc/schema/core.schema
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#       This schema requires that the core schema is loaded
+
+# Used to store Netscape Roaming Profile information into OpenLDAP v2.
+# This stores the actual profile name into the database.
+attributeType ( 1.3.6.1.4.1.7081.1.1.1
+         NAME 'nsLIProfileName'
+         DESC 'Store Netscape Roaming Profile name'
+         EQUALITY caseIgnoreMatch
+         SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 )
+
+# Used to store Netscape Roaming Profile information into OpenLDAP v2.
+attributeType ( 1.3.6.1.4.1.7081.1.1.2
+         NAME 'nsLIPrefs'
+         DESC 'Store Netscape Roaming Profile preferences'
+         EQUALITY caseExactIA5Match
+         SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 )
+
+# Used to store Netscape Roaming Profile information into OpenLDAP v2.
+attributeType ( 1.3.6.1.4.1.7081.1.1.3
+         NAME 'nsLIElementType'
+         DESC ''
+         EQUALITY caseIgnoreMatch
+         SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 )
+
+# Used to store Netscape Roaming Profile information into OpenLDAP v2.
+attributeType ( 1.3.6.1.4.1.7081.1.1.4
+         NAME 'nsLIData'
+         DESC 'Store the actual data blocks'
+         EQUALITY bitStringMatch
+         SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 )
+
+# Used to store Netscape Roaming Profile information into OpenLDAP v2.
+attributeType ( 1.3.6.1.4.1.7081.1.1.5
+         NAME 'nsLIVersion'
+         DESC 'Store Netscape Roaming Profile version'
+         EQUALITY integerMatch
+         SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 )
+
+# Used to store Netscape Roaming Profile information into OpenLDAP v2.
+# This is the base holder of the Roaming Profile and must be created before
+# you try to store information into the LDAP database.
+objectClass ( 1.3.6.1.4.1.7081.1.2.1
+         NAME 'nsLIProfile'
+         DESC 'Base holder of the NetScape Roaming Profile'
+         SUP top
+         MUST ( objectClass $ nsLIProfileName )
+         MAY ( nsLIPrefs $ uid $ owner )
+         )
+
+# Used to store Netscape Roaming Profile information into OpenLDAP v2.
+# This object class will store the actual data.
+objectClass ( 1.3.6.1.4.1.7081.1.2.2
+         NAME 'nsLIProfileElement'
+         DESC 'Contains the actual Roaming Profile data'
+         SUP top
+         MUST ( objectClass $ nsLIElementType )
+         MAY ( owner $ nsLIData $ nsLIVersion )
+         )
+
+# EOF
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P> 
+- Setting the modification field: To make sure Netscape can compare your local copy of the profile data against the LDAP server, you need to set modification times in the database. A simple line added in the database section of your slapd.conf file will be sufficient. Just add:
+<BLOCKQUOTE><CODE>
+<PRE>
+lastmod on
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P> 
+- Changing your Ldif file: Each user that wish to try the Roaming Access feature of Netscape needs a profile entry on the Ldif file. Look an example of a simple LDIF file with profiles entries: 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+dn: o=myOrg,c=NL 
+o: myOrg 
+objectclass: organization 
+
+dn: cn=seallers,ou=People,o=myOrg,c=NL 
+cn: seallers 
+userpassword: myPassword 
+objectclass: top 
+objectclass: person 
+
+dn: nsLIProfileName=seallers,ou=Roaming,o=myOrg,c=NL 
+nsLIProfileName: seallers
+owner: cn=seallers,ou=People,o=myOrg,c=NL 
+objectclass: top 
+objectclass: nsLIProfile 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>    
+This entries can be added using the 
+<A HREF="LDAP-HOWTO-5.html#5.4">ldapadd</A> program. Probably in your case you will only need to add the entry correspondent to the roaming profile (dn: nsLIProfileName=...).
+<P>
+<P>- Configuring Netscape Navigator: The next step is to configure Netscape to enable the Roaming Access against your LDAP server. Just follow the sequence: 
+<P>
+<P>Go to Menu Edit => Preferences => Roaming User 
+<P>
+<P>Now you have to first enable Roaming Access for this profile, clicking on the checkbox corresponding to this option. 
+<P>
+<P>Fill the username box with an appropriate value, this must be identical with the nsLIProfileName= part from the User profile entry of the LDIF file. Example: sealers 
+<P>
+<P>Pull down the arrow of the Roaming User option on the left side of the Preferences Window to see the suboptions of Roaming Access. 
+<P>
+<P>Click on Server Information, enable the option LDAP Server and fill the boxes with the following information: 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+Address: ldap://myHost/nsLIProfileName=$USERID,ou=Roaming,o=myOrg,c=NL 
+
+User DN: cn=$USERID,ou=People,o=myOrg,c=NL
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P> 
+IMPORTANT: Netscape automatically substitutes the $USERID variable for the name of the profile you selected before running the browser. So if you selected the profile seallers, it will substitute $USERID for seallers, if you selected profile gonzales, it will
+substitute $USERID for gonzales. If you are not familiar with profiles, run the Profile Manager application that comes on the Netscape Comunicator suite. It's an application designed to satisfy the multiple users of a browser on the same machine, so each one can have their own settings on the browser. 
+<P>
+<P>The final step is to restart the server. Take a look on the 
+<A HREF="LDAP-HOWTO-4.html#4.2">section 4.2</A> to see how you do that safely and on 
+<A HREF="LDAP-HOWTO-4.html#4">section 4</A> to see how to start it again.
+<P>
+<H2><A NAME="ss6.2">6.2 Netscape Address Book</A>
+</H2>
+
+<P>Once you have your LDAP server up and running, you can access it with many different clients (e.g. ldapsearch command line utility). A very interesting one is the Netscape Address Book. It's available from version 4.x of Netscape but you have to use the 4.5 or above version for a stable interoperation with your LDAP server.
+<P>Just follow the sequence: 
+<P>Open Netscape Navigator -&gt; Go to Communicator Menu -&gt; Address Book 
+<P>The Netscape Address Book will be launched with some default LDAP directories. You have to add your own LDAP directory too! 
+<P>Go to File Menu -&gt; New Directory 
+<P>Fill the boxes with your server information. For example: 
+<P>- Description: TUDelft 
+<P>- LDAP Server: dutedin.et.tudelft.nl 
+<P>- Server Root: o=TUDelft, c=NL 
+<P>The default LDAP port is 389. Don't change it, unless you changed this option while building your server. 
+<P>Now, make simple queries to your server, using the box Show Names Containing, or advanced queries, using the Search for button.
+<P>
+<H2><A NAME="ss6.3">6.3 LDAP Migration Tools</A>
+</H2>
+
+<P>The LDAP Migration Tools are a collection of Perl scripts provided by PADL Software Ltd. They are used to convert configuration files to the LDIF format. I recommend reading the license terms before using them, even being free. If you plan to use your LDAP server to authenticate users, this tools may be very useful. Use the Migration Tools to convert your NIS or password archives to the LDIF format, making these files compatible with your LDAP Server. Apply also these Perl Scripts to migrate users, groups, aliases, hosts, netgroups, networks, protocols, RPCs and services from existing nameservices (NIS, flat files and NetInfo) to the LDIF format.
+<P>To download the LDAP Migration Tools and get more information, go to the following address:
+<P>
+<P>
+<BLOCKQUOTE><CODE>
+<A HREF="http://www.padl.com/tools.html">http://www.padl.com/tools.html</A></CODE></BLOCKQUOTE>
+<P>
+<P>The package comes with a README file and the name of the script files are intuitive. Take a first look on the README file and then start applying the scripts.
+<P>
+<H2><A NAME="ss6.4">6.4 Authentication using LDAP</A>
+</H2>
+
+<P>To access the LDAP service, the LDAP client first must authenticate itself to the service. That is, it must tell the LDAP server who is going to be accessing the data so that the server can decide what the client is allowed to see and do. If the client authenticates successfully to the LDAP server, then when the server subsequently receives a request from the client, it will check whether the client is allowed to perform the request. This process is called access control. 
+<P>
+<P>In LDAP, authentication is supplied in the "bind" operation. Ldapv3 supports three types of authentication: anonymous, simple and SASL authentication. A client that sends a LDAP request without doing a "bind" is treated as an anonymous client. Simple authentication consists of sending the LDAP server the fully qualified DN of the client (user) and the client's clear-text password. This mechanism has security problems because the password can be read from the network. To avoid exposing the password in this way, you can use the simple authentication mechanism within an encrypted channel (such as SSL), provided that this is supported by the LDAP server. 
+<P>
+<P>Finally, SASL is the Simple Authentication and Security Layer (RFC 2222). It specifies a challenge-response protocol in which data is exchanged between the client and the server for the purposes of authentication and establishment of a security layer on which to carry out subsequent communication. By using SASL, LDAP can support any type of authentication agreed upon by the LDAP client and server. SASL use will be presented on the next version of this Howto as the installation of the Cyrus SASL library is not yet trivial.
+<P>
+<P>Further on authenticating users to access information from your Directory Tree, your LDAP server can authenticate users from other services too (Sendmail, Login, Ftp, etc.). This is accomplished migrating specific user information to your LDAP server and using a mechanism called PAM (Pluggable Authentication Module). 
+<P>
+<P>Since the beginnings of UNIX, authenticating a user has been accomplished via the user entering a password and the system checking if the entered password corresponds to the encrypted official password that is stored in /etc/passwd. That was in the beginning. Since then, a number of new ways for authenticating users became popular, including more complicated replacements for the /etc/passwd file and hardware devices called Smart cards. The problem is that each time a new authentication schema is developed, it requires all the necessary programs (login, ftpd etc...) to be rewritten to support it. PAM provides a way to develop programs that are independent of authentication scheme. These programs need "authentication modules" to be attatched to them at run-time in order to work. 
+<P>
+<P>The authentication module for LDAP is available as a tar ball on the following address:
+<P>
+<P>
+<BLOCKQUOTE><CODE>
+<A HREF="http://www.padl.com/pam_ldap.html">http://www.padl.com/pam_ldap.html</A></CODE></BLOCKQUOTE>
+<P>
+<P>Here I assume that your Linux distribution is already PAM prepared. If not take a look at this URL: 
+<A HREF="http://www.kernel.org/pub/linux/libs/pam">http://www.kernel.org/pub/linux/libs/pam</A>. Various Linux distributions use different standard settings related to PAM. Usually, the PAM configuration files reside on the <CODE>/etc/pam.d/</CODE> directory. There you can find a file for each service running on your box. As an example, if you want to use the LDAP server for logging users in after your Linux boot up, you should make your Linux PAM compatible (as described in the beginning of this paragraph), install the LDAP PAM module and edit a file called login in the PAM configuration directory (/etc/pam.d/) with the following content:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#%PAM-1.0
+auth       required     /lib/security/pam_securetty.so
+auth       required     /lib/security/pam_nologin.so
+auth       sufficient   /lib/security/pam_ldap.so
+auth       required     /lib/security/pam_unix_auth.so try_first_pass
+account    sufficient   /lib/security/pam_ldap.so
+account    required     /lib/security/pam_unix_acct.so
+password   required     /lib/security/pam_cracklib.so
+password   required     /lib/security/pam_ldap.so
+password   required     /lib/security/pam_pwdb.so use_first_pass
+session    required     /lib/security/pam_unix_session.so
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss6.5">6.5 Graphical LDAP tools</A>
+</H2>
+
+<P>
+<UL>
+<LI>Kldap</LI>
+</UL>
+<P>
+<P>
+<BLOCKQUOTE><CODE>
+Kldap is a graphical LDAP client written for KDE. Kldap has a nice interface and is able to show all the information tree stored on your Directory. You can check some screenshots from the application and download it at:
+</CODE></BLOCKQUOTE>
+<P>
+<P>
+<BLOCKQUOTE><CODE>
+<A HREF="http://www.mountpoint.ch/oliver/kldap/">http://www.mountpoint.ch/oliver/kldap</A></CODE></BLOCKQUOTE>
+<P>
+<P>
+<UL>
+<LI>GQ</LI>
+</UL>
+<P>
+<P>
+<BLOCKQUOTE><CODE>
+GQ is another graphical LDAP client with a simpler interface. It was written for GNOME. It also runs under KDE, the same way Kldap runs under GNOME. The address for downloading and getting more information is:
+</CODE></BLOCKQUOTE>
+<P>
+<P>
+<BLOCKQUOTE><CODE>
+<A HREF="http://biot.com/gq/">http://biot.com/gq/</A></CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss6.6">6.6 Logs</A>
+</H2>
+
+<P>Slapd uses the syslog(8) facility to generate logs. The default user of the syslog(8) facility is LOCAL4, but values from LOCAL0, LOCAL1, up to LOCAL7 are allowed. 
+<P>In order to enable the generation of logs you have to edit your syslog.conf file, usually located in the /etc directory. 
+<P>Create a line like this: 
+<P>local4.*&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/usr/adm/ldalog 
+<P>This will use the default user LOCAL4 for the syslog facility. If you are not familiar with the sintax of this line, take a look at the man pages of syslog, syslog.conf and syslogd. If you want to change the default user or to specify the level of the logs generated, you have the following options while starting slapd: 
+<P>-s syslog-level 
+This option tells slapd at what level debugging statements should be logged to the syslog(8) facility. The level describes the severity of the message, and is a keyword from the
+following ordered list (higher to lower): emerg, alert, crit, err, warning, notice, info, and debug.  Ex: 
+slapd -f myslapd.conf -s debug 
+<P>-l syslog-local-user 
+Selects  the local user of the syslog(8) facility. Values can be LOCAL0, LOCAL1, and so on, up to LOCAL7. The default is LOCAL4. However, this option is only permitted on
+systems that support local users with the syslog(8) facility. 
+<P>Now take a look at the logs generated. They can help you tremendously in solving problems with queries, updates, binding, etc. 
+<P>
+<HR>
+<A HREF="LDAP-HOWTO-7.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="LDAP-HOWTO-5.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="LDAP-HOWTO.html#toc6"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

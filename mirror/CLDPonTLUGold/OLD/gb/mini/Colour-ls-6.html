@@ -1,0 +1,155 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Linux 终端机下的彩色显示: 如何改变系统的预设值: 前景白色而背景是黑色</TITLE>
+ <LINK HREF="Colour-ls-7.html" REL=next>
+ <LINK HREF="Colour-ls-5.html" REL=previous>
+ <LINK HREF="Colour-ls.html#toc6" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+<A HREF="Colour-ls-7.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Colour-ls-5.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Colour-ls.html#toc6"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s6">6. 如何改变系统的预设值: 前景白色而背景是黑色</A></H2>
+
+<P>
+<P>
+<P>你需要告诉你的终端机驱动程式你想要的另一个预设值。要如何作并没有一个标准的方法，不过如果你是用 Linux 的话，你有 setterm 这个程式可以用。
+<P>
+<P>"setterm" 使用终端机资料库□的资料来设定属性。要选择属性的话要这样作
+<BLOCKQUOTE><CODE>
+<PRE>
+setterm -foreground black -background white -store
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>"-store" 参数把现在所作的改变设定成预设值。这需要你现在使用的的终端机种类(在 TERM 环境变数□)在 termcap 资料库□有足够详细的纪录。如果 setterm 因为某种因素不能正常的工作，你还有其它的选择。
+<P>
+<P>
+<H2><A NAME="ss6.1">6.1 Xterm</A>
+</H2>
+
+<P>
+<P>你要有至少一种下列的 xterm，而且要支援彩色。
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+xterm -fg white -bg blue4
+color_xterm -fg white -bg blue4
+color-xterm -fg white -bg blue4
+nxterm -fg white -bg blue4
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>这□的 'color_xterm' 支援彩色版的 'ls'。这□的颜色选择是模彷 SGI 上面使用的颜色。
+<P>
+<H2><A NAME="ss6.2">6.2 虚拟主控台</A>
+</H2>
+
+<P>
+<P>你也可以修改核心，这样就可以一劳永逸的用控制码来改变虚拟主控台的预设值。如果你自己编译核心的话，我建议利用 kernel 的缀补档。
+<P>
+<P>核心的原始码是在 <CODE>/usr/src/linux/drivers/char/console.c</CODE> ，大概在 1940 行，这是你应该修改的地方
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+        def_color       = 0x07;   /* white */
+        ulcolor         = 0x0f;   /* bold white */
+        halfcolor       = 0x08;   /* grey */
+</PRE>
+</CODE></BLOCKQUOTE>
+
+<BLOCKQUOTE><CODE>
+<PRE>
+        def_color       = 0x17;   /* white */
+        ulcolor         = 0x1f;   /* bold white */
+        halfcolor       = 0x18;   /* grey */
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>这边的十六进位数字是给显示卡用的: 最左边的位元(上面□例的 "1")是背景 ; 最右边的位元是前景。0 = 黑色，1 = 蓝色，2 = 绿色，3 = 青色,  4 = 红色, 5 = 紫色，6 = 棕色/黄色，7 = 白色。把数字加 8 可以得到高亮度的颜色。在大部份的情况下，高亮度的背景色 == 闪烁的字加上普通的背景。
+由 
+<A HREF="mailto:sjlam1@mda023.cc.monash.edu.au">sjlam1@mda023.cc.monash.edu.au</A> 所提供
+<P>
+<P>你也可以使用下面的 ANSI 控制码提供一个执行时期的主控台预设值。(在核心原始码□找到的)
+<BLOCKQUOTE><CODE>
+<PRE>
+        ESC [ 8 ]
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>这个控制码把预设值设成目前的前景及背景颜色。然後重设属性的控制码(ESC [ m)让这预设值马上就取代黑白色成为使用中的颜色。
+<P>每次你重开机的时侯你都需要再把这些字串送给主控台。依照你的 Linux 主机用途不同，有好几个档案可以达成这个目的。
+<P>
+<H3>/etc/issue</H3>
+
+<P>
+<P>
+<P>在 Slackware □这就是 "Welcome to Linux xx.yy" 讯息所在的档案，如果你的主机是个人使用的话，从这个档案下手是不错的选择(但对於用 telnet 远端登入使用系统的人就可能有点讨厌)。
+这个档案在每次开机的时侯都会被制造出来，原来的内容则被覆盖，所以你必需要修改开机档案(在 Slackware □是 /etc/rc.d/rc.S，Redhat□是 /etc/rc.d/rc.local)□面的下列几行:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+  echo ""> /etc/issue
+  echo Welcome to Linux `/bin/uname -a | /bin/cut -d\  -f3`. >> /etc/issue
+</PRE>
+</CODE></BLOCKQUOTE>
+
+改成
+<BLOCKQUOTE><CODE>
+<PRE>
+  ESCAPE="在这□放入 ESC 码"
+  echo "${ESCAPE}[H${ESCAPE}[37;44m${ESCAPE}[8]${ESCAPE}[2J"> /etc/issue
+  echo Welcome to Linux `/bin/uname -a | /bin/cut -d\  -f3`. >> /etc/issue
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>这□的控制码会把游标归位、设定颜色(在这□的前景是白色而背景是蓝色)、把这个设定存起来并且把萤幕上其它部份清除掉。
+这□的改变会在下次重开机时生效。别忘了在 emacs 要打入 ESC 字元要按 C-q 键而在 vi □要按 control-v，因为很显然的执行以上程式的 sh 并不了解 <CODE>/033</CODE> 这种用法。
+<P>
+<H3>/etc/profile 或 .profile</H3>
+
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+  if [ "$TERM" = "console" ]; then
+      echo "\033[37;44m\033[8]" #
+# 或使用 setterm。
+      setterm -foreground white -background blue -store
+  fi
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H3>/etc/login 或 .login</H3>
+
+<P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+  if ( "$TERM" == "console" ) then
+    echo "\033[37;44m\033[8]"  
+# 或使用 setterm。
+      setterm -foreground white -background blue -store
+  endif
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>[ 译者注: Linux 的主控台下的 $TERM 环境变数已经是 "linux" 而不是 "console" 了 ]
+<P>
+<H2><A NAME="ss6.3">6.3 远端登入</A>
+</H2>
+
+<P>
+<P>你应该可以用上面示□过的 setterm 程式。当然，远端的机器必需要能够得到足够的资讯来操作你的终端机，而且你的终端机模拟程式要能够支援彩色。
+在我的经验□其它平台上最好的 vt100 终端机模拟程式有下列几种:
+<UL>
+<LI>MS-DOS:         MS-Kermit (免费, 不是 Microsoft 的产品)</LI>
+<LI>Windows 95/NT:  Kermit/95 (共享软体)</LI>
+<LI>OS/2:           Kermit/95 (共享软体)。 请注意标准的 telnet 支援彩色而且可以在本地端设定。</LI>
+</UL>
+<P>关於 kermit 的细节请看 
+<A HREF="http://www.columbia.edu/kermit/">http://www.columbia.edu/kermit/</A> 
+<P>
+<P>
+<HR>
+<A HREF="Colour-ls-7.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Colour-ls-5.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Colour-ls.html#toc6"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

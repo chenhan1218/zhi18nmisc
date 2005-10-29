@@ -1,0 +1,155 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Token-Ring mini-HOWTO: Installation and setup</TITLE>
+ <LINK HREF="Token-Ring-5.html" REL=next>
+ <LINK HREF="Token-Ring-3.html" REL=previous>
+ <LINK HREF="Token-Ring.html#toc4" REL=contents>
+<SCRIPT src="../../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(2, 8, 2);</SCRIPT>
+<A HREF="Token-Ring-5.html"><IMG SRC="../../img/next.gif" ALT="Next"></A>
+<A HREF="Token-Ring-3.html"><IMG SRC="../../img/prev.gif" ALT="Previous"></A>
+<A HREF="Token-Ring.html#toc4"><IMG SRC="../../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s4">4. Installation and setup</A></H2>
+
+<P>
+<DL>
+<DT><B>NOTE:</B><DD><P>These instructions are for patching a 1.2 kernel for token ring support.
+If you have a 2.0 kernel, you only need to recompile the current source
+and say ``<CODE>y</CODE>es'' or ``<CODE>m</CODE>odule''
+when asked for token ring support.
+</DL>
+
+<OL>
+<LI>Install the Token Ring card into the system and configure it
+for the settings that you want to use.
+It is a good idea to see if you can use the card through DOS
+before trying to use it through Linux.  
+If it works in DOS, chances are, it will work in Linux with the same 
+settings. If you have a Plug and Play adapter, if possible,
+lock the settings once you get them where they work.
+</LI>
+<LI>Make a backup of your linux directory.
+This is very important in case you need to totally remove
+the source of the patch from your kernel and go back to your
+original code.
+<BLOCKQUOTE><CODE>
+<PRE>
+cd /usr/src
+tar cvzhf linuxbak.tar.gz linux
+        
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>Uncompress the TokenRing patch.
+<BLOCKQUOTE><CODE>
+<PRE>
+cd /usr/src/patches/token
+gzip -d TokenRing.patch-1.2.0.gz
+        
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>Modify your kernel with the TokenRing patch.
+<BLOCKQUOTE><CODE>
+<PRE>
+cd /usr/src/linux
+patch -p1 &lt; /usr/src/patches/token/TokenRing.patch-1.2.0
+        
+</PRE>
+</CODE></BLOCKQUOTE>
+
+-or-
+<BLOCKQUOTE><CODE>
+<PRE>
+patch -p1 &lt; &lt;directory-of-patchfile>/TokenRing.patch-1.2.0
+        
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>Search your kernel for any rejects from the patch
+and make changes as necessary.
+<BLOCKQUOTE><CODE>
+<PRE>
+find . -name \*.rej -print
+        
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>Search your kernel for the orig files and remove them.
+<BLOCKQUOTE><CODE>
+<PRE>
+find . -name \*.orig -print | xargs rm
+        
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>Configure your kernel and remake.
+<DL>
+<DT><B>NOTE:</B><DD><P>Make sure your swap space is active if you have one.
+</DL>
+
+<BLOCKQUOTE><CODE>
+<PRE>
+cd /usr/src/linux
+make config
+        
+</PRE>
+</CODE></BLOCKQUOTE>
+
+(The patch should have added two lines to your <CODE>config.in</CODE>
+file for the following options)
+<BLOCKQUOTE><CODE>
+<PRE>
+Token Ring support (CONFIG_TR) [y]
+        
+</PRE>
+</CODE></BLOCKQUOTE>
+
+(and further down the list...)
+<BLOCKQUOTE><CODE>
+<PRE>
+IBM Tropic chipset based adaptor support (CONFIG_IBMTR) [y]
+        
+</PRE>
+</CODE></BLOCKQUOTE>
+
+<BLOCKQUOTE><CODE>
+<PRE>
+make dep
+make clean
+make zImage
+        
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>Setup LILO.
+
+First rename your <CODE>/vmlinuz</CODE> kernel to <CODE>vmlinuz.old</CODE>
+then copy the kernel to <CODE>/vmlinuz</CODE>.
+On my system this would consist of copying
+<BLOCKQUOTE>
+<CODE>/usr/src/linux/arch/i386/boot/zImage</CODE> to <CODE>/vmlinuz</CODE>
+and editing <CODE>/etc/lilo.conf</CODE> to boot that kernel.
+</BLOCKQUOTE>
+
+Now from the prompt run ``<CODE>lilo</CODE>''.
+</LI>
+<LI>You should now be able to reboot your system
+and use the Token Ring card in your computer.
+Please check the distribution specifc section
+for any extra configuration information.</LI>
+</OL>
+<HR>
+<A HREF="Token-Ring-5.html"><IMG SRC="../../img/next.gif" ALT="Next"></A>
+<A HREF="Token-Ring-3.html"><IMG SRC="../../img/prev.gif" ALT="Previous"></A>
+<A HREF="Token-Ring.html#toc4"><IMG SRC="../../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

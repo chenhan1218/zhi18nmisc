@@ -1,0 +1,191 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>The X Window User HOWTO: Advanced X Usage</TITLE>
+ <LINK HREF="XWindow-User-HOWTO-11.html" REL=next>
+ <LINK HREF="XWindow-User-HOWTO-9.html" REL=previous>
+ <LINK HREF="XWindow-User-HOWTO.html#toc10" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="XWindow-User-HOWTO-11.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="XWindow-User-HOWTO-9.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="XWindow-User-HOWTO.html#toc10"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s10">10. Advanced X Usage</A></H2>
+
+<P>There's a lot to learn about X, a lot of info buried in the
+inscrutible land of man pages, a lot of things most folks don't bother
+reading.  Some if it is rather important, and it's easy to make some
+mistakes, and get completely stuck.  It can be much harder to build a
+program in X, or check the security of X, or many other things, because
+X and all the things that run on top of it are so vast.  This section 
+is an attempt to cover some of the more advanced and confusing
+situations that may arise.
+<P>
+<H2><A NAME="ss10.1">10.1 Libraries and Compiling X Applications</A>
+</H2>
+
+<P>Sooner or later you will have to deal with compiling applications of
+your own. Later, if you just installed a nice distribution of linux,
+and
+are happy with what you've got, sooner, if you're the kind of person
+who
+likes to tinker and install. Remember, this is a privilege, not a
+right,
+so have fun with it!
+<P>First, a few pointers on compiling programs with X. Many newer
+applications, GNU applictions in particular, come with a script in the
+root directory called <B>configure</B>.  This assumes of course that
+you've extracted the file and are in the directory. This program should
+be run as <CODE>./configure</CODE>, and will automatically detect many
+things
+about your system.  Afterwards, simply running <CODE>make</CODE> and
+perhaps
+becoming root and running <CODE>make install</CODE> will get the program up
+on your system.
+<P>You may have to do a little more tinkering if you do not have a
+<B>configure</B> script available. Many X programs require you to run
+a
+program to make the <B>Makefile</B>, called <CODE>xmkmf</CODE>.  If you
+don't see a <B>Makefile</B> in your directory, this will sometimes
+work, and will generate a suitable configuration for you, and you'll be
+ready to <CODE>make</CODE> from there.
+<P>Sometimes you will have run the <B>configure</B> script, and have been
+warned that you lack a library that would be helpful or necessary to
+properly use that application. For instance, I recently installed the
+<B>xscreensaver</B> application, and found that it would support
+several 3D modes if the <B>Mesa</B> library was installed. If you run
+into this situation and want that library installed, the first thing
+you
+should do is check the CD or installation media for your Linux
+distribution to see if you have the library on there.  That may save
+you
+lots of trouble trying to compile the library.
+<P>Once you get a library compiled and installed and ready to use, you can
+go
+back to the directory you were installing your X program from, remove
+the
+<CODE>config.cache</CODE> file, and run the <B>configure</B> script
+again. Hopefully it will find the library you have installed. Sometimes
+it does not, and you have to tinker to get it working. This happens
+occasionally with libraries you download off the net, that do not
+adequately support the Linux File System Standard (most do, however).
+<P>
+<H2><A NAME="ss10.2">10.2 Basic X Security</A>
+</H2>
+
+<P>It has often been said that X has a very simple security model: All
+or Nothing. This is not much of an exaggeration at all. X can be
+configured to use somewhat sophisticated security, via encryption,
+but that is beyond the scope of this HOWTO (for the present).  It is
+assumed that the user is not using any encryption for this
+discussion.
+<P>First of all, you should try and follow some simple rules when you're
+compiling programs for X (or for any reason, really).  Try not to
+become root any more than necessary.  Configure your programs as a
+normal user with the <CODE>./configure &amp;&amp; make</CODE> (or just
+<CODE>make</CODE> if there's no configure script), and then issue the
+single command to install it as root by typing <CODE>su -c &quot;make
+install&quot;</CODE>, and then typing in the root password at the
+prompt.  That way you won't have to be logged in as root, you can
+just issue a single command, and you're back to your normal user
+prompt. This is a smart, safe way to install software.
+<P>The next thing to think about is running X software as root. Realize
+that X is more or less inherently insecure, and if your primary
+concern for a particular Linux box is security, you really don't want
+to install X at all! Having said that, some folks want to run nice
+fancy configuration programs or package management tools in X. I
+<B>do not</B> recommend starting X as root. It's just not a good
+idea.  There's much, much better ways to do these things!
+<P>If you want to run an X application as root, just log in under your
+normal user account, and launch it from there. As I mentioned above,
+you don't want to be logged in as root any more than absolutely
+necessary. The root user has the ability to do just about anything on
+the system, including about a million ways to destroy it
+completely. Simply go to your <B>xterm</B> or such application and
+type in a command such as <CODE>su -c &quot;glint -display
+:0.0&quot;</CODE> to launch the window on your desktop. Now you have a
+single window running as root, and not the whole desktop. You might
+also want to consider using the complete pathname to the program
+you're running as root, for extra security.
+<P>Tomasz Motylewski also offers the following tip for <B>ssh</B> and
+<B>ssh-agent</B> lovers.  If you put the following in your
+<EM>/usr/X11R6/lib/xinit/Xclients</EM> file:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ eval &quot;exec ssh-agent fvwm${FVWMVER} ${FVWMOPTIONS}&quot; >
+ &quot;$HOME&quot;/.FVWM${FVWMVER}-errors 2>&amp;
+ 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>That is, replace your standard <CODE>fvwm${FVWMVER} ${FVWMOPTIONS}</CODE>
+command with the preceeding. That is to start your window manager as a
+child of <B>ssh-agent</B>. Then you should try <CODE>ssh-add &lt;
+/dev/null</CODE> from an <B>xterm</B> session (if you have  your
+identity RSA key in the file <EM>&nbsp;/.ssh/identity</EM>). If this works
+for you then you should find that you are authenticated in all your X
+windows.
+<P>It should be noted that this is a suggestion from the reader, and the
+author has no experience with <B>ssh</B> at the present, so proceed
+at
+your own risk!  More recent Linux distributions allow for setting up
+<B>ssh</B> automatically, via <CODE>setup</CODE> or something similar,
+which means that you may not have to worry too much about setting it
+up, just understanding how it works.
+<P>
+<H2><A NAME="ss10.3">10.3 More About X Authority</A>
+</H2>
+
+<P>The mysteries of user authentication in X are a prime example of
+the security problems many users encounter with X.  Tomasz Motylewski
+relates the following story, which sums up the situation quite well.
+<P>``...in the default XFree86 configuration X session started by
+``startx''
+accepts commands from everyone
+connecting from localhost. If you start X as user1 and you have user2
+remotely logged in, user2 has full access to your keyboard and desktop
+(once
+my friend played a joke on me and put in his cron commands dumping my X
+desktop image and sending to him every hour). I did not notice it for 2
+weeks!''
+<P>Well that's not exactly a good thing, but unfortunately many readers
+have this exact problem.  Tomasz goes on to point out that if you use
+<B>xdm</B> to log in (as detailed earlier in this HOWTO), rather than
+just running <B>startx</B>, this won't be a problem because access is
+controlled by the <B>xauth</B> program.  By issuing the
+<B>xhost</B> command, you can see who is allowed access to your X
+session.  Any user from the hosts that are listed in the output of the
+<B>xhost</B> command is authorized full access to your screen and
+keyboard.
+<P>If you want to start your X server in a secure fashion from the command
+line, you will need to make the following modifications to your
+configuration.  First, modify <B>startx</B> (probably at 
+<EM>/usr/X11R6/bin/startx</EM>) by changing the last line <CODE>xinit
+$clientargs -- $serverargs</CODE> to read <CODE>exec xinit $clientargs --
+$serverargs -auth ~/.Xauthority</CODE>.
+<P>Then you will also need to edit your <B>.xinitrc</B> or your
+system-wide <EM>/usr/X11R6/lib/xinit/xinitrc</EM> (whichever you are
+actually using, probably the one in your home directory), by adding
+this at the beginning of the file:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ # if Xserver has been run with &quot;-auth ~/.Xauthority&quot; option
+this will
+ # prevent other users on your machine to connect to your X server
+ # unless you allow it explicitly using xhost +host or give them
+ # your ~/.Xauthority file.
+ xauth generate $DISPLAY . trusted
+ 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Always be sure and run <B>xhost</B> to check the security that you
+have configured, to make sure everything is working correctly.
+<P>
+<HR>
+<A HREF="XWindow-User-HOWTO-11.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="XWindow-User-HOWTO-9.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="XWindow-User-HOWTO.html#toc10"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

@@ -1,0 +1,118 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE> Serial HOWTO: Speed (Flow Rate) </TITLE>
+ <LINK HREF="Serial-HOWTO-10.html" REL=next>
+ <LINK HREF="Serial-HOWTO-8.html" REL=previous>
+ <LINK HREF="Serial-HOWTO.html#toc9" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Serial-HOWTO-10.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Serial-HOWTO-8.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Serial-HOWTO.html#toc9"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="speed_"></A> <A NAME="s9">9. Speed (Flow Rate) </A></H2>
+
+<P> By "speed" we really mean the "data flow rate" but almost everybody
+incorrectly calls it speed.  The speed is measured in bits/sec (or
+baud).  Speed is set using the "stty" command or by a program which
+uses the serial port.  See 
+<A HREF="Serial-HOWTO-8.html#stty_">Stty</A><P>
+<H2><A NAME="ss9.1">9.1 Can't Set a High Enough Speed</A>
+</H2>
+
+<P> You need to find out the highest speed supported by your hardware.
+As of late 1998 (and late 2000) most serial ports only supported
+speeds up to 115.2k bps.  Some 56k internal modems support 230.4k bps
+(but it may be hard to find out which ones do).  Recent Linux kernels
+support high speeds (over 115.2k) but you might have some problems
+using it because of one or both of the following reasons:
+<P>
+<OL>
+<LI> Older versions of an application program (or stty) may not
+accept the high speed.</LI>
+<LI> Setserial may show the wrong speed unless you use the baud_base
+option.  In any case the high speed will work OK.</LI>
+</OL>
+<P>
+<H3><A NAME="divisor_"></A> How speed is set in hardware: the divisor and baud_base </H3>
+
+<P> Here's a list of commonly used divisors and their corresponding
+speeds (assuming a maximum speed of 115,200): 1 (115.2k), 2 (57.6k), 3
+(38.4k), 6 (19.2k), 12 (9.6k), 24 (4.8k), 48 (2.4k), 96 (1.2k), etc.
+The serial driver sets the speed in the hardware by sending the
+hardware only a "divisor" (a positive integer).  This "divisor"
+divides the maximum speed of the hardware resulting in a slower speed
+(except a divisor of 1 obviously tells the hardware to run at maximum
+speed).  
+<P>Normally, if you specify a speed of 115.2k (in your communication
+program or by stty) then the serial driver sets the port hardware to
+divisor 1 which obviously sets the highest speed.  If you happen to
+have hardware with a maximum speed of say 230.4k, then specifying
+115.2k will result in divisor 1 and will actually give you 230.4k.
+This is double the speed that you set.  In fact, for any speed you
+set, the actual speed will be double.  If you had hardware that could
+run at 460.8k then the actual speed would be quadruple what you set.
+<P>
+<H3>Work-arounds for setting speed</H3>
+
+<P> To correct this accounting (but not always fix the problem) you
+may use "setserial" to change the baud_base to the actual maximal
+speed of your port such as 230.4k.  Then if you set the speed (by your
+application or by stty) to 230.4k, a divisor of 1 will be used and
+you'll get the same speed as you set.  PROBLEM: stty and many
+communication programs (as of mid 1999) still have 115.2k as their
+maximum speed setting and will not let you set 230.4k, etc.  So in
+these cases one solution is not to change anything with <CODE>setserial</CODE>
+but mentally keep in mind that the actual speed is always double what
+you set.
+<P>There's another work-around which is not much better.  To use it you
+set the baud_base (with setserial) to the maximal speed of your
+hardware.  This corrects the accounting so that if you set say 115.2k
+you actually get 115.2k.  Now you still have to figure out how to set
+the highest speed if your communication program (or the like) will not
+let you do it.  Fortunately, setserial has a way to do this: use the
+"spd_cust" parameter with "divisor 1".  Then when you set the speed to
+38400 in a communication program, the divisor will be set to 1 in the
+port and it will operate at maximum speed.  For example:<BR>
+setserial /dev/ttyS2 spd_cust baud_base 230400 divisor 1<BR>
+Don't try using "divisor" for any other purpose other than the special
+use illustrated above (with spd_cust).
+<P>If there are two or more high speeds that you want to use that your
+communication program can't set, then it's not quite as easy as above.
+But the same principles apply.   You could just keep the default
+baud_base and understand that when you set a speed you are really only
+setting a divisor.  So your actual speed will always be your maximum
+speed divided by whatever divisor is set by the serial driver.  See
+<A HREF="#divisor_">How speed is set in hardware: the divisor and baud_base</A><P>
+<H3>Crystal frequency is not baud_base</H3>
+
+<P> Note that the baud_base setting is usually much lower than the
+frequency of the crystal oscillator in the hardware since the crystal
+frequency is often divided by 16 in the hardware to get the actual top
+speed.  The reason the crystal frequency needs to be higher is so that
+this high crystal speed can be used to take a number of samples of
+each  bit to determine if it's a 1 or a 0.
+<P>
+<P>
+<H2><A NAME="higher_thruput"></A> <A NAME="ss9.2">9.2 Higher Serial Throughput </A>
+</H2>
+
+<P>If you are seeing slow throughput and serial port overruns on a 
+system with (E)IDE disk drives, you can get <CODE>hdparm</CODE>.  This
+is a utility that can modify (E)IDE parameters, including unmasking
+other IRQs during a disk IRQ.  This will improve responsiveness
+and will help eliminate overruns.  Be sure to read the man page very
+carefully, since some drive/controller combinations don't like this
+and may corrupt the filesystem.
+<P>Also have a look at a utility called <CODE>irqtune</CODE> that will change 
+the IRQ priority of a device, for example the serial port that your 
+modem is on.  This may improve the serial throughput on your system.
+The <CODE>irqtune</CODE> FAQ is at 
+<A HREF="http://www.best.com/~cae/irqtune">http://www.best.com/~cae/irqtune</A><P>
+<HR>
+<A HREF="Serial-HOWTO-10.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Serial-HOWTO-8.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Serial-HOWTO.html#toc9"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

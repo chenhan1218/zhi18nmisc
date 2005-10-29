@@ -1,0 +1,323 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="LinuxDoc-Tools 0.9.16">
+ <TITLE>CD-Writing HOWTO: 常问问题及答案</TITLE>
+ <LINK HREF="CD-Writing-HOWTO-5.html" REL=next>
+ <LINK HREF="CD-Writing-HOWTO-3.html" REL=previous>
+ <LINK HREF="CD-Writing-HOWTO.html#toc4" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="CD-Writing-HOWTO-5.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="CD-Writing-HOWTO-3.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="CD-Writing-HOWTO.html#toc4"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s4">4.</A> <A HREF="CD-Writing-HOWTO.html#toc4">常问问题及答案</A></H2>
+
+
+<H2><A NAME="ss4.1">4.1</A> <A HREF="CD-Writing-HOWTO.html#toc4.1">"烧录程序有多敏感"</A>
+</H2>
+
+
+<P>答案：这就要看你的烧录器了。通常较新的型号都会有 1MB 或更多，这样它便可以
+支持 1-2 秒没有资料。如果你想得到更多的资料你可以问生产商或看看硬体手册。</P>
+<P>不管那些资料缓冲器的大小如何你都需要保证一个长时间 300 kb/s 或 600 kb/s 的经常
+输出。</P>
+<P>一些硬碟密集的工作例如更新 <I>locate</I>-资料库。
+减低 maxium flow rate 就肯定会损坏你的光碟；你最好在烧录光碟前用
+<CODE>cron</CODE>， <CODE>at</CODE> 或
+<CODE>anacron</CODE> 来检查一下你有否执行这些工作。</P>
+<P>另一方面，有些人说他们能一面编译核心一面烧录光碟都没有任何问题。
+的确你要一部很快的机器才能做这个实验。</P>
+
+
+
+<H2><A NAME="ss4.2">4.2</A> <A HREF="CD-Writing-HOWTO.html#toc4.2">"fragmentation 会否影响输出呢？"</A>
+</H2>
+
+<P>Fragmentation 通常都不会影响输出。不过你可以很容易制造 pathological cases of fragmentation 来减低你的硬碟输出大约 100 kbyte/second。所以千万不要这样做。:-)</P>
+<P>是的，你的硬碟会 fragmented 经过经年的使用。如果越快fragmented，那档案系统便越
+满。经常保持 10% 或 20% 的空间，这样烧录光碟便没有问题了。</P>
+<P>如果你不肯定的话你可以看看启动时的讯息，你就可以看到你的档案系统有几多磁碟空间 fragmentation 的百份比。你可以用一个非常危险的指令</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+shell&gt; e2fsck -n  /dev/sda5        # '-n' is important!
+[stuff deleted - ignore any errors]
+/dev/sda5: 73/12288 files (12.3% non-contiguous)
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>在这个范例中磁碟空间似乎非常松散 — 不过这里只有 73 个非常小的档案在这
+个档案系统中，所以这个只不过是一个很少的值。</P>
+<P>现在有一个实验性的工具软件叫做 e2defrag 它可以用来 defragment extended-2 
+档案系统。不过现在的版本在私人环境中还是不够稳定。如果你真想 defragment 你
+的档案系统，请先备份 (最好：两份)，尝试 restore 备份，然后建立一个新的档案系
+统 (会破坏旧有的) 最后再 restore 备份。总之这是最安全的技巧。</P>
+
+
+<H2><A NAME="ss4.3">4.3</A> <A HREF="CD-Writing-HOWTO.html#toc4.3">"是否可以将光碟影像档储存在 UMSDOS 档案系统中呢？ "</A>
+</H2>
+
+<P>可以。只有一个档案系统是不能可靠和快速来烧录光碟的，这就是
+<I>network filesystem</I> (<I>NFS</I>)。</P>
+<P>我现在是在一部 (486/66) PC 中使用 UMSDOS 来让Linux 和 DOS/Win 共享磁碟
+空间，而这部 486 是专门来烧录光碟用的。</P>
+
+
+<H2><A NAME="ss4.4">4.4</A> <A HREF="CD-Writing-HOWTO.html#toc4.4">"有无方法可以克服 iso9660 的限制？"</A>
+</H2>
+
+<P>可以。你可以用任何一个档案系统来烧录光碟。不过你不能在其他的操作系统中使
+用这只光碟。</P>
+<P>用这个方法就行了：</P>
+<P>
+<UL>
+<LI>建立一个 650 MB 的空档案。
+<BLOCKQUOTE><CODE>
+<PRE>
+dd if=/dev/zero of="empty_file" bs=1024k count=650
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>然后建立一个extended-2 档案系统在这个档案之上
+<BLOCKQUOTE><CODE>
+<PRE>
+bash&gt; /sbin/mke2fs  empty_file
+empty_file is not a block special device.
+Proceed anyway? (y,n) y
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>用loopback-devices 来挂上这个档案
+<BLOCKQUOTE><CODE>
+<PRE>
+mount -t ext2 -o loop=/dev/loop1 empty_file /mnt
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>抄写一些档案到 /mnt 然后卸除。
+</LI>
+<LI>用 <CODE>cdwrite</CODE> 或 <CODE>cdrecord</CODE> 来看看这个档案 ( 它现在该不是空的 ) 是不是 iso9660-影像。</LI>
+</UL>
+</P>
+<P>如困你想在<CODE>/etc/fstab</CODE> 加一个出入口给那只光碟的话，你便需要取消对那只光
+碟的检查，例如：</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+/dev/cdrom  /cdrom  ext2  defaults,ro  0 0
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>第一个零代表 "不要包含在 dumps" ，第二个零代表 "在启动时不要检错误" ( fsck 
+将不会检查光碟内的错处 ) 。</P>
+
+
+<H2><A NAME="ss4.5">4.5</A> <A HREF="CD-Writing-HOWTO.html#toc4.5">"怎样读取及写入音乐光碟？"</A>
+</H2>
+
+<P>现在有多个软件。最新的叫作 "cdpranoia" 它可以在以下地方下载</P>
+<P>
+<BLOCKQUOTE>
+<A HREF="http://www.mit.edu/afs/sipb/user/xiphmont/cdparanoia/index.html">http://www.mit.edu/afs/sipb/user/xiphmont/cdparanoia/index.html</A>
+</BLOCKQUOTE>
+</P>
+<P>或者你可以尝试 "cdda2wav" 和 "sox" 的组合，可以在 sunsite 和它的 mirror 中取得</P>
+<P>
+<BLOCKQUOTE>
+<A HREF="ftp://sunsite.unc.edu/pub/Linux/apps/sound/cdrom/cdda2wav0.71.src.tar.gz">ftp://sunsite.unc.edu/pub/Linux/apps/sound/cdrom/cdda2wav0.71.src.tar.gz</A><P>
+<A HREF="ftp://sunsite.unc.edu/pub/Linux/apps/sound/convert/sox-11gamma-cb3.tar.gz">ftp://sunsite.unc.edu/pub/Linux/apps/sound/convert/sox-11gamma-cb3.tar.gz</A></P>
+</BLOCKQUOTE>
+</P>
+<P><CODE>cdda2wav</CODE> 令你可以由光碟中抓取到一段特定的(或一整条)音轨然后可以
+将它转为 .wav 档案。 <CODE>sox</CODE> 可以将 wav 档案转回音乐光碟的cdda 格式，
+然后可以用 <CODE>cdwrite</CODE> 将它烧录在光碟上。 如果你是使用最新版本的<CODE>cdrecord</CODE> ，你便不需要使用 <CODE>sox</CODE> 因为 <CODE>cdrecord</CODE>
+已内置支援 .au 和 .wav 档案。</P>
+
+
+<H2><A NAME="ss4.6">4.6</A> <A HREF="CD-Writing-HOWTO.html#toc4.6">"启动系统后怎样找寻SCSI-devices?"</A>
+</H2>
+
+<P><CODE>drivers/scsi/scsi.c</CODE> 有所需要的资料。</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+/*
+ * Usage: echo "scsi add-single-device 0 1 2 3" >/proc/scsi/scsi
+ * with  "0 1 2 3" replaced by your "Host Channel Id Lun".
+ * Consider this feature BETA.
+ *     CAUTION: This is not for hotplugging your peripherals. As
+ *     SCSI was not designed for this you could damage your
+ *     hardware !
+ * However perhaps it is legal to switch on an
+ * already connected device. It is perhaps not
+ * guaranteed this device doesn't corrupt an ongoing data transfer.
+ */
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Please note that this should only be used if your add SCSI-devices at the
+end of the chain. Inserting new SCSI-devices into an existing chain
+disturbs the naming of devices (directory /dev) and may destroy the
+complete content of your harddisk.</P>
+
+
+<H2><A NAME="ss4.7">4.7</A> <A HREF="CD-Writing-HOWTO.html#toc4.7">"可以进行一对一的光碟复制？"</A>
+</H2>
+
+<P>可以。不过你要注意的是如果当读取光碟时有任何的错误发生，都可能令杪写失败。</P>
+<P>第一个情况：你有一个可写光碟机和一个唯读光碟机。你可以用以下的指令</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+cdwrite -v -D /dev/sgc --pad -b  $(isosize  /dev/scd0) /dev/scd0
+or
+cdrecord -v dev=3,0 speed=2 -isosize /dev/scd0
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>你可以从<CODE>/dev/scd0</CODE> 读取资料流然后直接经由<CODE>/dev/sgc</CODE>
+写入光碟中。</P>
+<P>第二个情况：你没有另一个唯读光碟。你便需要用可写光碟机来读取光碟：</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+dd if=/dev/scd0 of=cdimage bs=1c count=`isosize  /dev/scd0`
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>这个指令等同于 <CODE>mkisofs</CODE> ，所以你可以用第三章所提及的方法继续
+馀下的工作。请注意这个方法是不适用于音乐光碟。</P>
+
+
+<H2><A NAME="ss4.8">4.8</A> <A HREF="CD-Writing-HOWTO.html#toc4.8">"Linux 可不可以读取 Joliet 光碟？"</A>
+</H2>
+
+<P>可以。最新的核心 (2.0.36 和以后) 已内置支援 joliet 格式。请记著你要在
+/etc/fstab 中使用 iso9660 和 joliet 两个选项。要取得更多资料，你可以看
+<A HREF="http://www-plateau.cs.berkeley.edu/people/chaffee/joliet.html">http://www-plateau.cs.berkeley.edu/people/chaffee/joliet.html</A>.</P>
+
+
+<H2><A NAME="ss4.9">4.9</A> <A HREF="CD-Writing-HOWTO.html#toc4.9">"怎样用可写光碟机读取光碟？"</A>
+</H2>
+
+<P>就如同你使用普通唯读光碟机一样。没有任何的特别。注意你要使用scd-devices (唯读光碟机) 来读取光碟。以下便是在/etc/fstab 中的范例：</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+/dev/scd0  /cdrom  iso9660  ro,user,noauto  0  0
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+
+
+<H2><A NAME="ss4.10">4.10</A> <A HREF="CD-Writing-HOWTO.html#toc4.10">"怎样放多些资料到光碟中？"</A>
+</H2>
+
+<P>用 <CODE>bzip2</CODE> 以取代其他的压缩器好像 <CODE> gzip</CODE> 或
+<CODE>pkzip</CODE>。这会节省30%的磁碟空间。你可以在以下地方下载</P>
+<P>
+<BLOCKQUOTE>
+<A HREF="http://www.muraroa.demon.co.uk/">http://www.muraroa.demon.co.uk/</A>
+</BLOCKQUOTE>
+</P>
+<P>Instead of writing a true audio-CD, you can optionally convert your
+wav-audio-files into mp3-audio-files and store them on a ISO-9660
+filesystem as regular files. Usually MPEG III gives you a compression
+of 1:10.</P>
+<P>Of course, most CD-players are not able to read files... this is the
+drawback. On the other hand, why not running the music for your next
+party from harddisk? 18 Gbyte are enough for 3000-4000 titles. :-)</P>
+<P>A software MPEG III-encoder is available from
+<BLOCKQUOTE>
+<A HREF="http://www.stud.ifi.uio.no/~larsi/other/8hz-mp3-cheng.tar.gz">http://www.stud.ifi.uio.no/~larsi/other/8hz-mp3-cheng.tar.gz</A>
+</BLOCKQUOTE>
+</P>
+<P>A MPEG III-player is available from
+<BLOCKQUOTE>
+<A HREF="http://homepages.uni-tuebingen.de/student/michael.hipp/mpg123/">http://homepages.uni-tuebingen.de/student/michael.hipp/mpg123/</A>
+</BLOCKQUOTE>
+</P>
+<P>For recorded speech, you may want to try to reduce its size using
+<CODE>shorten</CODE> or "GSM lossy speech compression":</P>
+<P>
+<BLOCKQUOTE>
+<A HREF="ftp://svr-ftp.eng.cam.ac.uk/pub/comp.speech/">ftp://svr-ftp.eng.cam.ac.uk/pub/comp.speech/</A><P>
+<A HREF="http://kbs.cs.tu-berlin.de/~jutta/toast.html">http://kbs.cs.tu-berlin.de/~jutta/toast.html</A></P>
+
+</BLOCKQUOTE>
+</P>
+
+
+<H2><A NAME="ss4.11">4.11</A> <A HREF="CD-Writing-HOWTO.html#toc4.11">"How to make bootable CD-ROMs?"</A>
+</H2>
+
+<P>You must have an 1.44 MB bootable floppy-disk. Create an exact image of
+this floppy-disk by issuing the command</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+dd if=/dev/fd0 of=boot.img bs=18k
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Place this floppy-image into the directory holding the collection of your
+files (or into a subdirectory of it, just as you like). Tell mkisofs about
+this file with the option '-b' and also use '-c'. For details read the file
+README.eltorito in the mkisofs-distribution.</P>
+<P>An interesting application for a custom bootable CD is as a virus-safe
+DOS- or Windows-system. It saves you the money for the harddisks (if you
+have a network and use samba to put the user-data on a
+fileserver). However, this is purely theoretical as nobody reported an
+actual recipe to me.</P>
+<P>Some details about the bootable RedHat CD-ROM is available from 
+<A HREF="http://www.channel1.com/users/rodsmith/rhjol-technical.html">http://www.channel1.com/users/rodsmith/rhjol-technical.html</A>.</P>
+
+
+<H2><A NAME="ss4.12">4.12</A> <A HREF="CD-Writing-HOWTO.html#toc4.12">"How to make CD-ROMs writable somehow?"</A>
+</H2>
+
+<P>There is an <I>overlay-filesystem</I> available for Linux, which is
+mounted over the CD-ROM and intercepts all writing operations. New and
+modified files are stored elsewhere, but for the user it looks like the
+CD-ROM is modified. For more information, see 
+<A HREF="http://home.att.net/~artnaseef/ovlfs/ovlfs.html">http://home.att.net/~artnaseef/ovlfs/ovlfs.html</A>.</P>
+<P>If that is not enough for your needs: wait for the UDF-filesystem to be
+supported by Linux or help developing it (see 
+<A HREF="http://trylinux.com/projects/udf/">http://trylinux.com/projects/udf/</A>.</P>
+
+<H2><A NAME="ss4.13">4.13</A> <A HREF="CD-Writing-HOWTO.html#toc4.13">"Is it possible to use several writers at once?"</A>
+</H2>
+
+<P>Yes. However, it has been only tested with two writers yet. And
+you need a kernel patch for more buffers in the SCSI-generic driver
+(
+<A HREF="ftp://ftp.fokus.gmd.de/pub/unix/cdrecord/alpha">ftp://ftp.fokus.gmd.de/pub/unix/cdrecord/alpha</A>).</P>
+
+
+<H2><A NAME="ss4.14">4.14</A> <A HREF="CD-Writing-HOWTO.html#toc4.14">"Which media is the best?"</A>
+</H2>
+
+<P>The german computer magazine "c't" had a list of tips regarding the blank
+CD-Rs in their november 1996 issue:</P>
+<P>
+<UL>
+<LI> "No-name" discs are generally not of highest quality
+and should better not be used.</LI>
+<LI> If a recordable CD is defective, this is likely to apply to the
+whole batch (if you bought more than one at a time); maybe you are lucky
+and can at least use the first 500MB of such CD-Rs ...</LI>
+<LI> Don't touch the CD-Rs at their shimmering side before writing.</LI>
+</UL>
+</P>
+
+
+<HR>
+<A HREF="CD-Writing-HOWTO-5.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="CD-Writing-HOWTO-3.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="CD-Writing-HOWTO.html#toc4"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

@@ -1,0 +1,126 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Linux 2.4 Advanced Routing HOWTO: 用 Cisco 和/或 6bone 進行 IPv6 tunneling (IPv6 tunneling with Cisco and/or 6bone)</TITLE>
+ <LINK HREF="Adv-Routing-HOWTO-7.html" REL=next>
+ <LINK HREF="Adv-Routing-HOWTO-5.html" REL=previous>
+ <LINK HREF="Adv-Routing-HOWTO.html#toc6" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Adv-Routing-HOWTO-7.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Adv-Routing-HOWTO-5.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Adv-Routing-HOWTO.html#toc6"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s6">6. 用 Cisco 和/或 6bone 進行 IPv6 tunneling (IPv6 tunneling with Cisco and/or 6bone)</A></H2>
+
+<P>By Marco Davids &lt;marco@sara.nl&gt;
+<P>維護者需知﹕
+<P>據我所知﹐目前這個 IPv6-IPv4 tunneling 並非由 GRE tunneling 定義。雖然﹐您可以用 GRE tunnel 設備進行 IPv6 over IPv4 的 tunnel (GRE 可在 IPv4 上作任何的 tunnel)﹐但在這裡使用的設備("sit")﹐僅對 IPv6 over IPv4 進行 tunnel 而已﹐因此或和其它技術有別。
+<P>
+<H2><A NAME="ss6.1">6.1 IPv6 Tunneling</A>
+</H2>
+
+<P>這是 Linux 在 tunneling 技術上的另一應用。這在已經使用 IPv6 的界面上很普遍﹐當然囉﹐您認為很前衛也未嘗不可。後面的 '實作' 範例絕對不是唯一的 IPv6 tunneling 方法。不過﹐它卻是在 Linux 與 Cisco IPv6 兼容路由器之間進行 tunnel 的最常用武器﹐而實驗證明許多人對此也趨之若騖。我不怕以一賠十和您賭一賭 ;-)
+<P>
+<P><B>關於 IPv6 的小秘訣</B>
+<P>比較起 IPv4 位址﹐IPv6 位址顯如龐然大物﹕128 bits 對比 32 bits。這同時也只提供我們需要的事物﹕就是許多﹑許多的 IP 位址﹕340,282,266,920,938,463,463,374,607,431,768,211,465 是一個十分精確的例子。除此以外﹐ IPv6(或 IPng﹐也就是 IP Next Generation)﹐被認為可以在 Internet backbone 路由器上維護更小的路由表﹑更簡單的設備設定﹑更好的 IP 層級安全﹑以及更佳的 QoS 支援。
+<P>例如﹕2002:836b:9820:0000:0000:0000:836b:9886
+<P>每次寫這麼長的 IPv6 位址﹐事實上蠻累人的。因此﹐不妨參考如下規則來簡化一下﹕
+<UL>
+<LI>不要以零開始(和 IPv4 一樣)。</LI>
+<LI>用冒號來區隔這 16 個 bit (或兩個 byte)。</LI>
+<LI>當遇到連續的零的時候﹐您可以這樣寫 :: ﹐但是只能在一個位址上做一次﹐而且位址數量一定要為 16 個 bit。</LI>
+</UL>
+
+參考此規則﹐一個如 2002:836b:9820:0000:0000:0000:836b:9886 的位址﹐也可以寫成 2002:836b:9820::836b:9886﹐顯然簡潔得多。
+<P><B>用於 tunnels 上面</B>
+<P>IPv6 一致被認為能夠取代 IPv4 的地位。由於它相對而言還是一種嶄新技術﹐目前尚難找到純 IPv6 的原始網路。為了讓我們更迅速的過渡﹐於是有了 6bone 的出現。
+<P>原始的 IPv6 網路聯結﹐是透過將 IPv6 協定封裝在 IPv4 封包中﹐然後利用現有的 IPv4 架構從一個 IPv6 站點送到其它站點去。
+<P>恰好﹐這正是 tunnels 切入之處。
+<P>為了使用 IPv6﹐我們必須要先有一個支援它的核心。目前已經有非常多的優秀文件告訴我們如何做到這點﹐不過﹐似乎全都不外乎這幾路板斧﹕
+<UL>
+<LI>使用新的 Linux 版本﹐以及合適的 blibc。</LI>
+<LI>然後抓取最新的核心原始碼。</LI>
+</UL>
+
+如果您全都準備妥當﹐那您就可以繼續上路﹐編譯出一個 IPv6 兼容的核心﹕
+<UL>
+<LI>轉到 /usr/src/linux 並輸入﹕</LI>
+<LI>make menuconfig</LI>
+<LI>選擇 "Networking Options"</LI>
+<LI>選擇 "The IPv6 protocol",﹐"IPv6: enable EUI-64 token format"﹐"IPv6: disable provider based addresses"</LI>
+</UL>
+
+提示﹕不要使用‘模組’的方式﹐這通常工作起來不很完善。
+<P>總而言之﹐將 IPv6 以 '內建' 方式編進核心就是了。然後您可以如常般將設定保存好﹐再繼續核心的編譯。
+<P>提示﹕在真正編譯之前﹐不妨修改一下 Makefie﹕
+EXTRAVERSION = -x ; --> ; EXTRAVERSION = -x-IPv6
+<P>關於核心的編譯和安裝﹐應該有很多優秀文件了﹐本文件就不再贅言。如果您在這裡碰到麻煩﹐請按照您自己的規格參考 Linux 核心編譯的相關文件。
+<P>/usr/src/linux/README 這個檔應該是個不錯的起點。等您過了這一關﹐再用新的核心重新啟動系統﹐然後您可以輸入 '/sbin/ifconfig -a' 命令﹐或許會發現一個全新的'sit0-device'。 SIT 就是  Simple Internet Transition 的意思。果真如此的話﹐不妨開香檳自我慶祝一番﹕您已經距離下一代的 IP 邁出了很大一步了 ;-)
+<P>接下來﹐您或許想要將機器連接起來﹐或是甚至將整個網路連接到其它 IPv6 兼容網路去。而 "6bone" 正是應此運而生的。
+<P>假設您獲得一個這樣的的 IPv6 網路﹕3ffe:604:6:8::/64 ﹐而您想要連接 6bone ﹐或是您的朋友。請注意﹕那個 /64 子網標記的使用辦法參照常規的 IP 位址界定方式就可以了。
+<P>您的 IPv4 位址為 172.16.17.181﹐而 6bone 的 router 也有一個位址為 145.100.1.5。
+<BLOCKQUOTE><CODE>
+<PRE>
+# ip tunnel add sixbone mode sit remote 145.100.1.5 [local 145.100.24.181 ttl 225]
+# ip link set sixbone up
+# ip addr add 3FFE:604:6:7::2/126 dev sixbone
+# ip route add 3ffe::0/16 dev sixbone
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>讓們研究一下上面的句子。第一行﹐我們建立了一個 tunnel 設備﹐叫做 sixbone。然後設定為 sit 模式(IPv6 in IPv4 tunneling)﹐並且要連到哪裡去 (remote)﹐還有從哪裡來 (local)。而 TTL 呢﹐已設到最高﹕255。
+<P>接下來﹐我們將設備跑起來 (up)。再下來﹐我們新增自己的網路位址﹐同時透過這個 tunnel 為 3ffe::/15 設定一個路由 (目前均為 6bone)。如果您目前的執行主機是您的 IPv6 網關的話﹐請增加如下數行﹕
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# echo 1 >/proc/sys/net/ipv6/conf/all/forwarding
+# /usr/local/sbin/radvd
+</PRE>
+</CODE></BLOCKQUOTE>
+
+在最後面的 radvd 是一個路由器廣告程式(advertisement daemon) - like zebra -﹐以支援 IPv6 的自動設定功能。如果您有興趣﹐請用搜索引擎尋找它的相關資訊。您可以用如下命令來檢查一下﹕
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# /sbin/ip -f inet6 addr
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>假如您已經在 IPv6 網關上將 radvd 跑起來﹐並在本地網路上啟動 IPv6 兼容的 Linux 機器﹐那您應該可以享受到 IPv6 的自動設定功能了﹕
+<BLOCKQUOTE><CODE>
+<PRE>
+# /sbin/ip -f inet6 addr
+1: lo: &lt;LOOPBACK,UP&gt; mtu 3924 qdisc noqueue inet6 ::1/128 scope host
+
+3: eth0: &lt;BROADCAST,MULTICAST,UP&gt; mtu 1500 qdisc pfifo_fast qlen 100
+inet6 3ffe:604:6:8:5054:4cff:fe01:e3d6/64 scope global dynamic
+valid_lft forever preferred_lft 604646sec inet6 fe80::5054:4cff:fe01:e3d6/10 
+scope link
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>您還可以進而用 bind 設定 IPv6 位址。原來的 A 記錄﹐在 IPv6 裡面為﹕AAAA。而 in-addr.arpa 則改為 ip6.int。呵﹐光是這個題目就有一大堆資料了。
+<P>越來越多的應用程式已經開始支援 IPv6 了﹐包括 secure shell﹑telnet﹑inetd﹑Mozilla 瀏灠器﹑Apache 網站伺服器﹑以及其它﹐數不勝數。不過﹐這些都不是本路由文件所要討論的啦 ;-)
+<P>在 Cisco 那邊﹐設定檔或許會長得有點像下面的樣子﹕
+<BLOCKQUOTE><CODE>
+<PRE>
+!
+interface Tunnel1
+description IPv6 tunnel
+no ip address
+no ip directed-broadcast
+ipv6 enable
+ipv6 address 3FFE:604:6:7::1/126
+tunnel source Serial0
+tunnel destination 145.100.24.181
+tunnel mode ipv6ip
+!
+ipv6 route 3FFE:604:6:8::/64 Tunnel1
+</PRE>
+</CODE></BLOCKQUOTE>
+
+但是﹐如果您沒有 Cisco 可供設定﹐那就嘗試找 Internet 上的眾多 IPv6 tunnel 經紀幫忙。相信他們都非常樂意在他們的 Cisco 上面為您設定額外的 tunnel 的。而且大部份都可以透過友善的 web 界面進行。您可以用搜索引擎找找 "ipv6 tunnel broker" 看。
+<HR>
+<A HREF="Adv-Routing-HOWTO-7.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Adv-Routing-HOWTO-5.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Adv-Routing-HOWTO.html#toc6"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

@@ -1,0 +1,176 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>CVS-RCS- HOW-TO document for Linux (Source Code Control System): sadd </TITLE>
+ <LINK HREF="CVS-RCS-HOWTO-30.html" REL=next>
+ <LINK HREF="CVS-RCS-HOWTO-28.html" REL=previous>
+ <LINK HREF="CVS-RCS-HOWTO.html#toc29" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="CVS-RCS-HOWTO-30.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="CVS-RCS-HOWTO-28.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="CVS-RCS-HOWTO.html#toc29"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="sadd"></A> <A NAME="s29">29. sadd </A></H2>
+
+<P><B>NOTE : <I>Korn shell /bin/ksh is got by installing pdksh*.rpm from Linux contrib cdrom</I></B>
+<P>Save this file as text file and chmod a+rx on it.
+<P>
+<HR>
+<PRE>
+#!/bin/ksh
+
+# CVS program sadd
+# Program to add the file to CVS
+
+# Every filename is composed of 3 parts - Home directory, sub-directory 
+# and the filename. The full-path is $HOME/$subdir/$fname
+# And in CVS the same directory structure is maintained (by 
+# variable $subdir) therefore in cvs we will have $CVSROOT/$subdir/$fname
+# In this program these 4 variables $HOME, $CVSROOT, $subdir and $fname
+# play an important role. For example, sample values can be like
+# HOME=/home/aldev, subdir=myproject/src CVSROOT=/home/cvsroot 
+# and fname=foo.cpp
+
+# Caution: Put double-quotes to protect the variables having 
+#          spaces, like "$HOME/$subdir" if subdir is 'some foo.cpp'
+
+cmdname=`basename $0`
+if [ $# -lt 1 ]; then
+        print "\nUsage: $cmdname &lt;filename/directory> \n"
+        exit
+fi
+
+onearg="$1"
+if [ ! -f "$onearg" -a ! -d "$onearg" ]; then
+        print "\nArgument $onearg is not a file or a directory!"
+        print "Usage: $cmdname &lt;filename/directory> \n"
+        exit
+fi
+
+# Argument is a directory name .....
+homedir=` echo $HOME | cut -f1 -d' '  `
+if [ "$homedir" = "" ]; then
+        print "\nError: \$HOME is not set!!\n"
+        exit
+fi
+
+cvs_root=` echo $CVSROOT | cut -f1 -d' '  `
+if [ "$cvs_root" = "" ]; then
+        print "\nError: \$CVSROOT is not set!!\n"
+        exit
+fi
+
+cur_dir=`pwd`
+len=${#homedir}
+len=$(($len + 2))
+subdir=` echo $cur_dir | cut -b $len-2000 `
+#echo "subdir is : " $subdir
+tmpaa=`dirname "$onearg" `
+if [ "$tmpaa" = "." ]; then
+        fname="$onearg"
+        if [ "$subdir" = "" ]; then
+                subdir=$tmpaa
+        fi
+else
+        fname=`basename "$onearg" `
+        if [ "$subdir" = "" ]; then
+                subdir=$tmpaa
+        else
+                subdir="$subdir/$tmpaa"
+        fi
+fi
+#echo "subdir is : " $subdir
+#echo "fname is : " $fname
+
+# CVS directory in your local directory is required for all commands..
+if [ ! -d  "$homedir/$subdir/CVS" ]; then
+        tmpaa=` (cd "$CVSROOT/$subdir"; find * -prune -type f -print | head -1 ) `
+        tmpbb=`basename $tmpaa | cut -d',' -f1 `
+        if [ "$tmpaa" = "" -o ! -f "$CVSROOT/$subdir/$tmpbb,v" ]; then
+                print "\nThe directory $homedir/$subdir/CVS does not exist"
+                print "You must do a sget on `basename $subdir` directory. Give -"
+                print "       cd $homedir/`dirname $subdir` "
+                print "       sget `basename $subdir` "
+                exit
+        else
+                # Now try to create CVS in local dir by sget
+                (
+                        cd "$homedir"
+                        if [ "$subdir" = "." ]; then  # don't use dot, will mess up cvs
+                                cvs -r checkout -A $tmpbb
+                        else
+                                cvs -r checkout -A "$subdir/$tmpbb"
+                        fi
+                )
+        fi
+fi
+
+# Check if file exists ....
+if [ $# -eq 1 ]; then
+        if [ -f "$onearg" ]; then
+                cvs add "$onearg"
+                exit
+        fi
+elif [ $# -gt 1 ]; then
+        print "\n\n\nAdding all the files in the current directory to CVS"
+        print "Directories will not be added"
+        print -n "Hit return to continue or CTRL+C to abort..."
+        read ans
+        for ii in $@
+        do
+                if [ -f "$ii" ]; then
+                        cvs add "$ii"
+                fi
+        done;
+        exit
+fi
+
+# When $subdir is "." then you are at the root directory
+if [ "$subdir" = "." ]; then
+        # The $onearg is a directory and not a file at this point...
+        if [ -d "$CVSROOT/$onearg" ]; then
+                print "\nDirectory $onearg already exists in CVSROOT"
+                exit
+        else
+                # You are adding at root directory $CVSROOT
+                if [ "$2" = "" -o "$3" = "" ]; then
+                        print "\nUsage: $cmdname &lt;directory> &lt;vendor tag> &lt;release tag>"
+                        print "For example - "
+                        print " $cmdname foo_directory V_1_0 R_1_0"
+                        exit
+                else
+                        (
+                                cd "$homedir/$subdir";
+                                cvs import "$onearg" $2 $3
+                        )
+                fi
+        fi
+else
+        # If current directory exists in CVS...
+        if [ -d "$CVSROOT/$subdir/$onearg" ]; then
+                print "\nDirectory $onearg already in CVS repository!"
+                exit
+        else
+                (
+                        if [ -d "$homedir/$subdir/$onearg/CVS" ]; then 
+                                print "\nError: Directory $homedir/$subdir/$onearg/CVS exists!!"
+                                print "\nAborting now ...."
+                                exit
+                        fi
+
+                        # For import you MUST change to target directory
+                        # and you MUST specify full-path starting with $subdir
+                        cd "$homedir/$subdir/$onearg";
+                        cvs import "$subdir/$onearg" Ver_1 Rel_1
+                )
+        fi
+fi
+</PRE>
+<HR>
+<HR>
+<A HREF="CVS-RCS-HOWTO-30.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="CVS-RCS-HOWTO-28.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="CVS-RCS-HOWTO.html#toc29"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

@@ -1,0 +1,502 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux IP Masquerade HOWTO: Background Knowledge</TITLE>
+ <LINK HREF="IP-Masquerade-HOWTO-3.html" REL=next>
+ <LINK HREF="IP-Masquerade-HOWTO-1.html" REL=previous>
+ <LINK HREF="IP-Masquerade-HOWTO.html#toc2" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="IP-Masquerade-HOWTO-3.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="IP-Masquerade-HOWTO-1.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="IP-Masquerade-HOWTO.html#toc2"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s2">2. Background Knowledge</A></H2>
+
+<P>
+<P>
+<H2><A NAME="ss2.1">2.1 What is IP Masquerade?</A>
+</H2>
+
+<P>IP Masquerade is a networking function in Linux similar to one-to-many NAT (Network Address Translation) found in many commercial firewalls and network routers.  For example, if a Linux host is connected to the Internet via PPP, Ethernet, etc., the IP Masquerade feature allows other "internal" computers connected to this Linux box (via PPP, Ethernet, etc.) to also reach the Internet as well.  Linux IP Masquerading allows for this functionality even though these internal machines don't have <EM>an officially assigned IP addresses</EM>. 
+<P>MASQ allows a set of machines to <EM>invisibly</EM> access the Internet via the MASQ gateway.  To other machines on the Internet, all this outgoing traffic will appear to be from the IP MASQ Linux server itself.  In addition to the added functionality, IP Masquerade provides the foundation to create a VERY secure networking environment.  With a well built firewall, breaking the security of a well configured masquerading system and internal LAN should be considerably difficult. 
+<P>If you would like to know more on how MASQ differs from 1:1 NAT and Proxy
+solutions, please see the 
+<A HREF="IP-Masquerade-HOWTO-7.html#what-is-masq">what-is-masq</A>
+ FAQ entry.
+<P>
+<H2><A NAME="ss2.2">2.2 Current Status</A>
+</H2>
+
+<P>IP Masquerade has been out for several years now and is fairly mature as Linux enters the 2.2.x kernel stage.  Kernels since Linux 1.3.x have had MASQ support built-in.  Today many individuals and commercial businesses are using it with excellent results.  
+<P>Common network uses like Web browsing, TELNET, FTP, PING, TRACEROUTE, etc. work well over IP Masquerade.  Other communications such as FTP, IRC, and Real Audio work well with the appropriate IP MASQ modules loaded.  Other network-specific programs like streaming audio (MP3s, True Speech, etc) work too.  Some fellow users on the mailing list have even had good results with video conferencing software.   
+<P>It should also be noted that running IP Masquerade with only ONE network card
+(NIC) to MASQ between internal and external Ethernet networks is NOT
+recommended.  For more details, please see the 
+<A HREF="IP-Masquerade-HOWTO-7.html#aliasing">aliasing</A>
+ FAQ section
+for full details.
+<P>Anyway, please refer to 
+<A HREF="IP-Masquerade-HOWTO-6.html#Supported Client Software">Supported Client Software</A>
+ section for a more complete listing of software supported. 
+<P>IP Masquerade works well as a server to other 'client machines' running various different OS and hardware platforms. There are successful cases with internal MASQed systems using :
+<P>
+<P>
+<UL>
+<LI>Unix:  Sun Solaris, *BSD, Linux, Digital UNIX, etc.</LI>
+<LI>Microsoft Windows 2000, NT (3.x and 4.x), 95/98/ME, Windows for Workgroups (with the TCP/IP package) </LI>
+<LI>IBM OS/2</LI>
+<LI>Apple Macintosh MacOS machines running either MacTCP or Open Transport</LI>
+<LI>DOS-based systems with packet drivers and the NCSA Telnet package</LI>
+<LI>VAXen</LI>
+<LI>Compaq/Digital Alpha running Linux and NT</LI>
+<LI>even Amiga computers with AmiTCP or AS225-stack.   </LI>
+</UL>
+<P>The list goes on and on but the point is, if your OS platform talks TCP/IP, it should work with IP Masquerade!
+<P>
+<H2><A NAME="ss2.3">2.3 Who Can Benefit From IP Masquerade?</A>
+</H2>
+
+<P>
+<UL>
+<LI>If you have a Linux host connected to the Internet and </LI>
+<LI>if you have some computers running TCP/IP connected to a Linux box on a local subnet, and/or </LI>
+<LI>if your Linux host has more than one modem and acts as a PPP or SLIP server connecting other computers, which </LI>
+<LI>those <B>OTHER</B> machines do not have official or public assigned IP addresses (i.e. addressed with private TCP/IP numbers). </LI>
+<LI>And of course, if you want those <B>OTHER</B> machines to communicate to the Internet without spending extra money to get additional Public / Official TCP/IP addresses from your ISP and either configure Linux to be a router or purchase an external router. </LI>
+</UL>
+<P>
+<H2><A NAME="ss2.4">2.4 Who Doesn't Need IP Masquerade?</A>
+</H2>
+
+<P>
+<UL>
+<LI>If your machine is a stand-alone Linux host connected to the Internet (though setting up a firewall is a good idea), or</LI>
+<LI>if you already have multiple assigned public addresses for your <B>OTHER</B> machines, and</LI>
+<LI>of course, if you don't like the idea of a 'free ride' using Linux and feel more comfortable using expensive commercial tools to do the exact same thing. </LI>
+</UL>
+<P>
+<H2><A NAME="ss2.5">2.5 How does IP Masquerade Work?</A>
+</H2>
+
+<P>From the original IP Masquerade FAQ by Ken Eves:
+<PRE>
+  Here is a drawing of the most simple setup:
+
+   SLIP/PPP         +------------+                         +-------------+
+   to ISP provider  |  Linux     |         SLIP/PPP        | Anybox      |
+  &lt;---------- modem1|    #1      |modem2 ----------- modem3|             |
+    111.222.121.212 |            |           192.168.0.100 |             |
+                    +------------+                         +-------------+
+
+    In the above drawing, a Linux box with IP_MASQUERADING is installed as
+  Linux #1 and is connected to the Internet via SLIP/or/PPP using modem1.  It has
+  an assigned public IP address of 111.222.121.212.  It also has modem2 connected
+  to allow callers to dial-in and start a SLIP/or/PPP connection.  
+
+    The second system (which doesn't have to be running Linux) calls into the
+  Linux #1 box and starts a SLIP/or/PPP connection.  It does NOT have a publicly
+  assigned IP address from the Internet so it uses the private address
+  192.168.0.100. (see below for more info)
+
+    With IP Masquerade and the routing configured properly, the machine
+  "Anybox" can interact with the Internet as if it was directly connected to the
+  Internet (with a few small exceptions).
+
+Quoting Pauline Middelink:
+
+  Do not forget to mention that the "ANYBOX" machine should have the 
+  Linux #1 box configured as its gateway (whether is be the default route or just 
+  a subnet is no matter). If the "ANYBOX" machine can not do this, the Linux 
+  machine should be configured to support proxy arp for all routed addresses. But,
+  the setup and configuration of proxy arp is beyond the scope of the document.
+
+The following is an excerpt from a previous post on comp.os.linux.networking which
+has been edited to match the names used in the above example:
+
+   o I tell machine ANYBOX that my PPP or SLIPed Linux box is its gateway.
+   o When a packet comes into the Linux box from ANYBOX, it will assign it 
+     a new TCP/IP source port number and slap its own IP address in the packet
+     header, saving the originals.  The MASQ server will then send the modified 
+     packet out over the SLIP/PPP interface to the Internet.
+   o When a packet returns from the Internet to the Linux box, Linux examines 
+     if the port number is one of those ports that was assigned above.  If so, the
+     MASQ server will get the original port and IP address, put them back in the 
+     returned packet header, and send the packet to ANYBOX.
+   o The host that sent the packet will never know the difference. 
+</PRE>
+<P>
+<P><B>Another IP Masquerading Example:</B>
+<P>
+<P>A typical example is given in the diagram below:
+<PRE>
+
+    +----------+
+    |          |  Ethernet
+    | A-box    |::::::
+    |          |.2   : 192.168.0.x
+    +----------+     :
+                     :      +----------+   PPP   
+    +----------+     :   .1 |  Linux   |   link
+    |          |     :::::::| Masq-Gate|:::::::::::::::::::// Internet
+    | B-box    |::::::      |          |  111.222.121.212
+    |          |.3   :      +----------+
+    +----------+     :
+                     :
+    +----------+     :
+    |          |     :
+    | C-box    |::::::
+    |          |.4    
+    +----------+  
+                
+    |                       |          |
+    | &lt;-Internal Network--> |          | &lt;- External Network ---->
+    |                       |          |
+</PRE>
+<P>In this example, there are (4) computer systems that we are concerned
+about.   There is also presumably something on the far right that your
+PPP connection to the Internet comes through (terminal server, etc.) and 
+that there is some remote host (very far off to the right of the page) 
+out on the Internet that you are interested communicating with).  The 
+Linux system <B><CODE>Masq-Gate</CODE></B> is the IP Masquerading gateway for ALL 
+the internal network of machines <B><CODE>A-box</CODE></B>, <B><CODE>B-box</CODE></B> and 
+<B><CODE>C-box</CODE></B> to get to the Internet.  The internal network uses one 
+of the 
+<A HREF="http://www.cis.ohio-state.edu/htbin/rfc/rfc1918.html">several RFC-1918 assigned private network addresses</A> where in this 
+case, the Class-C network 192.168.0.0.  The Linux box having the TCP/IP 
+address 192.168.0.1 while the other systems having the addresses:
+<P>
+<UL>
+<LI>A-Box: 192.168.0.2</LI>
+<LI>B-Box: 192.168.0.3</LI>
+<LI>C-Box: 192.168.0.4</LI>
+</UL>
+<P>
+<P>The three machines, <CODE>A-box</CODE>, <CODE>B-box</CODE> and <CODE>C-box</CODE>, 
+can be running any operating system as long as they can speak TCP/IP.  
+OSes  such as <B>Windows 95</B>, <B>Macintosh MacTCP or OpenTransport </B> or even another <B>Linux box</B> can connect to other machines on the 
+Internet.  When running, the masquerading system or <CODE>MASQ-gate</CODE> 
+converts all of these internal connections so that they appear to originate
+from <CODE>masq-gate</CODE> itself.  MASQ then arranges so that data coming 
+back in to a masqueraded connection is relayed back to the proper 
+originating system.   Because of this, the systems on the internal 
+network see a direct route to the internet and are unaware that their 
+data is being masqueraded.  This is called a "Transparent" connection.
+<P>NOTE:  Please see the 
+<A HREF="IP-Masquerade-HOWTO-7.html#FAQ">FAQ</A>
+ for more details on topics such as:
+<P>
+<UL>
+<LI>The differences between NAT, MASQ, and Proxy servers.</LI>
+<LI>How packet firewalls work</LI>
+</UL>
+<P>
+<P>
+<P>
+<A NAME="2.2.x-Requirements"></A> <P>
+<H2><A NAME="ss2.6">2.6 Requirements for IP Masquerade on Linux 2.2.x</A>
+</H2>
+
+<P>
+<P>
+<BLOCKQUOTE>
+ <B>** Please refer to 
+<A HREF="http://ipmasq.cjb.net/">IP Masquerade Resource</A> for the latest information. **</B> 
+</BLOCKQUOTE>
+ 
+<P>
+<UL>
+<LI>Kernel 2.2.x source available from 
+<A HREF="http://www.kernel.org/">http://www.kernel.org/</A> <BR>
+NOTE #1: Linux 2.2.x kernels less than 2.2.16 have a TCP root exploit vunerability and versions less than 2.2.11 have a IPCHAINS fragmentation bug.  Because of this, people running strong IPCHAINS rulesets are open to attack.  Please upgrade your kernel to a fixed version.
+<P>NOTE #2: Most newer 
+<A HREF="IP-Masquerade-HOWTO-7.html#MASQ-supported-Distributions">MASQ-supported-Distributions</A>
+ such as Redhat 5.2 might not be Linux 2.2.x ready for your setup.  Tools like DHCP, NetUtils, etc. will need to be upgraded.  More details can be found in the HOWTO.
+<P>
+</LI>
+<LI>Loadable kernel modules, preferably 2.1.121 or newer available from 
+<A HREF="http://www.pi.se/blox/modutils/index.html">http://www.pi.se/blox/modutils/index.html</A> or 
+<A HREF="ftp://ftp.ocs.com.au/pub/modutils/">ftp://ftp.ocs.com.au/pub/modutils/</A>
+<P>
+</LI>
+<LI>A running TCP/IP network or LAN covered in 
+<A HREF="http://www.linuxdoc.org/HOWTO/NET3-4-HOWTO.html">Linux NET-3-4 HOWTO</A> and the 
+<A HREF="http://www.linuxdoc.org/LDP/nag/nag.html">Network Administrator's Guide</A> <BR> Also check out the 
+<A HREF="http://www.ecst.csuchico.edu/~dranch/LINUX/index-linux.html#TrinityOS">TrinityOS</A> document.  TrinityOS is a very comprehensive guide on Linux networking.  Including topics like IP MASQ, security, DNS, DHCP, Sendmail, PPP, Diald, NFS, IPSEC-based VPNs, and performance sections to name a few.  Over Fifty sections in all!
+<P>
+</LI>
+<LI>Connectivity to Internet for your Linux host covered in 
+<A HREF="http://www.linuxdoc.org/HOWTO/ISP-Hookup-HOWTO.html">Linux ISP Hookup HOWTO</A>, 
+<A HREF="http://www.linuxdoc.org/HOWTO/PPP-HOWTO.html">Linux PPP HOWTO</A>, 
+<A HREF="http://www.ecst.csuchico.edu/~dranch/LINUX/index-linux.html#TrinityOS">TrinityOS</A>, 
+<A HREF="http://www.linuxdoc.org/HOWTO/mini/DHCP/index.html">Linux DHCP mini-HOWTO</A>, 
+<A HREF="http://www.linuxdoc.org/HOWTO/Cable-Modem/index.html">Linux Cable Modem mini-HOWTO</A> and 
+<A HREF="http://www.linuxdoc.org/HOWTO/mini/ADSL.html">http://www.linuxdoc.org/HOWTO/mini/ADSL.html</A>
+<P>
+</LI>
+<LI>IP Chains 1.3.9 or newer available from 
+<A HREF="http://netfilter.filewatcher.org/ipchains/">http://netfilter.filewatcher.org/ipchains/</A>.<BR>
+Additional information on version requirements, find the newest IPCHAINS HOWTO, etc is at the 
+<A HREF="http://netfilter.filewatcher.org/ipchains/">Linux IP Chains page</A>
+<P>
+</LI>
+<LI>Know how to configure, compile, and install a new Linux kernel as described in the 
+<A HREF="http://www.linuxdoc.org/HOWTO/Kernel-HOWTO.html">Linux Kernel HOWTO</A>
+<P>
+</LI>
+<LI>You can download and use various optional IP Masquerade tools to enable other functionality such as:
+
+<UL>
+<LI>TCP/IP port-forwarders or re-directors:
+<UL>
+<LI>
+<A HREF="http://juanjox.kernelnotes.org/">IP PortForwarding (IPMASQADM) - RECOMMENDED</A> or his old 
+<A HREF="http://www.geocities.com/SiliconValley/Campus/4869/">mirror</A>.</LI>
+</UL>
+</LI>
+</UL>
+
+<P>ICQ MASQ module
+<UL>
+<LI>
+<A HREF="http://members.tripod.com/~djsf/masq-icq/">Andrew Deryabin's ICQ MASQ module </A> </LI>
+</UL>
+<P>
+<P>PORTFW FTP Solutions:
+<UL>
+<LI>There are both 2.2.x and 2.0.x kernel MASQ Module solutions for PORTFWed FTP to a MASQed machine.  Please see the Application Page on the 
+<A HREF="http://ipmasq.cjb.net">IPMASQ WWW site</A> for full details.</LI>
+<LI>There is a full FTP proxy application from SuSe that will also allow
+for PORTFWed-like functionality to reach an internal FTP server.  For more
+details, please see the 
+<A HREF="http://www.suse.de/en/support/proxy_suite/index.html">SuSe Proxy URL</A> for more details.</LI>
+</UL>
+<P>
+<P>IPROUTE2 for True 1:1 NAT, Policy-based (source) routing, and Traffic Shaping:
+<P>
+<UL>
+<LI>
+<A HREF="ftp://ftp.inr.ac.ru/ip-routing/">ftp://ftp.inr.ac.ru/ip-routing</A>
+<P>
+</LI>
+<LI>Documentation can be found at 
+<A HREF="http://www.compendium.com.ar/policy-routing.txt">http://www.compendium.com.ar/policy-routing.txt</A> </LI>
+<LI>The 
+<A HREF="http://www.linuxdoc.org/HOWTO/Adv-Routing-HOWTO.html">Advanced Routing HOWTO</A></LI>
+<LI>
+<A HREF="http://defiant.coinet.com/iproute2/">http://defiant.coinet.com/iproute2/</A>
+<P>Some source code mirrors are:
+<P>
+<A HREF="ftp://linux.wauug.org/pub/net">ftp://linux.wauug.org/pub/net</A>
+<A HREF="ftp://ftp.nc.ras.ru/pub/mirrors/ftp.inr.ac.ru/ip-routing/">ftp://ftp.nc.ras.ru/pub/mirrors/ftp.inr.ac.ru/ip-routing/</A>
+<A HREF="ftp://ftp.gts.cz/MIRRORS/ftp.inr.ac.ru/">ftp://ftp.gts.cz/MIRRORS/ftp.inr.ac.ru/</A>
+<A HREF="ftp://ftp.funet.fi/pub/mirrors/ftp.inr.ac.ru/ip-routing/">ftp://ftp.funet.fi/pub/mirrors/ftp.inr.ac.ru/ip-routing/ (STM1 to USA)</A>
+<A HREF="ftp://sunsite.icm.edu.pl/pub/Linux/iproute/">ftp://sunsite.icm.edu.pl/pub/Linux/iproute/</A>
+<A HREF="ftp://ftp.sunet.se/pub/Linux/ip-routing/">ftp://ftp.sunet.se/pub/Linux/ip-routing/</A>
+<A HREF="ftp://ftp.nvg.ntnu.no/pub/linux/ip-routing/">ftp://ftp.nvg.ntnu.no/pub/linux/ip-routing/</A>
+<A HREF="ftp://ftp.crc.ca/pub/systems/linux/ip-routing/">ftp://ftp.crc.ca/pub/systems/linux/ip-routing/</A>
+<A HREF="ftp://ftp.paname.org">ftp://ftp.paname.org (France)</A>
+<A HREF="ftp://donlug.ua/pub/mirrors/ip-route/">ftp://donlug.ua/pub/mirrors/ip-route/</A>
+<A HREF="ftp://omni.rk.tusur.ru/mirrors/ftp.inr.ac.ru/ip-routing/">ftp://omni.rk.tusur.ru/mirrors/ftp.inr.ac.ru/ip-routing/</A><P>RPMs are available at 
+<A HREF="ftp://omni.rk.tusur.ru/Tango/">ftp://omni.rk.tusur.ru/Tango/</A> and at 
+<A HREF="ftp://ftp4.dgtu.donetsk.ua/pub/RedHat/Contrib-Donbass/KAD/">ftp://ftp4.dgtu.donetsk.ua/pub/RedHat/Contrib-Donbass/KAD/</A><P>
+</LI>
+</UL>
+<P>Please see the 
+<A HREF="http://ipmasq.cjb.net/">IP Masquerade Resource</A> page for more information available on these patches and possibly others as well.
+</LI>
+</UL>
+<P>
+<A NAME="2.3.x/2.4.x-Requirements"></A> <P>
+<H2><A NAME="ss2.7">2.7 Requirements for IP Masquerade on Linux 2.3.x and 2.4.x</A>
+</H2>
+
+<P>
+<P>
+<BLOCKQUOTE>
+ <B>** Please refer to 
+<A HREF="http://ipmasq.cjb.net/">IP Masquerade Resource</A> for the latest information. **</B> 
+</BLOCKQUOTE>
+ 
+<P>
+<A NAME="NetFilter"></A> 
+<UL>
+<LI>The newest 2.3.x and 2.4.x kernels are now using a completely new system called NetFilter (much like the 2.2.x kernels went to IPCHAINS).  Fortunately <B>unlike</B> the migration to IPCHAINS, the new NetFilter tool has kernel modules that can actually NATIVELY support both IPCHAINS and IPFWADM syntax so re-writing your old script is not required.  Now, there might be several benefits to do a re-write (speed, new features, etc) but that is dependant on how good your old rulesets were.  Many architectural changes have gone into this new code that will give the user a lot more flexibility, future features, etc.  
+<P>Some of the new functionality includes the following pros and cons:
+<P><B>PROs:</B>
+<UL>
+<LI><P>
+</LI>
+<LI>Offers TRUE 1:1 NAT functionality for those who have TCP/IP subnets to play with</LI>
+<LI>Built-in PORT Forwarding which makes IPMASQADM no longer required</LI>
+<LI>The new built-in PORTFWing ability works for both external and internal traffic.  This means that users using PORTFW for external traffic and REDIR for internal redirection don't have to use two tools any more!</LI>
+<LI>Full Policy-Based routing features (source-based TCP/IP address routing)</LI>
+<LI>Compatibly with Linux's FastRoute feature for significantly faster packet forwartding (a.k.a Linux network switching)</LI>
+<LI>Fully supports TCP/IP v4, v6, and even DECnet (ack!)</LI>
+<LI>Supports wildcard interface names like ppp* for PPP0, PPP1, etc</LI>
+<LI>Supports filtering on both input and output INTERFACES</LI>
+<LI>Ethernet MAC filtering</LI>
+<LI>Denial of Service (DoS) packet rate limiting</LI>
+<LI>Very simple and generic Stateful-like inspection functionality</LI>
+<LI>Packet REJECTs now have user-selectable return ICMP messages</LI>
+<LI>Variable levels of logging (different packets can goto different SYSLOG levels</LI>
+</UL>
+<P><B>CONs:</B>
+<UL>
+<LI><P>
+</LI>
+<LI>Because Netfilter is an entirely new architecure, most of all the old
+MASQ kernel modules need to be re-written.  Namely, on the FTP module has been
+updated though the following modules remain to be re-written:
+<P>ip_masq_cuseeme.o  ip_masq_icq.o  ip_masq_quake.o   ip_masq_user.o
+ip_masq_irc.o  ip_masq_raudio.o  ip_masq_vdolive.o
+<P>There is documentation on how to do this porting at 
+<A HREF="http://netfilter.kernelnotes.org/unreliable-guides/netfilter-hacking-HOWTO-5.html">http://netfilter.kernelnotes.org/unreliable-guides/netfilter-hacking-HOWTO-5.html</A>, If you have the time, you talent would highly appreciated to get these ported over quickly.
+</LI>
+</UL>
+<P>As of this version of the HOWTO, Netfilter is NOT covered.  Once the feature set of NetFilter is set, it will be added to -this- HOWTO or possibly a new HOWTO.  Until then, please see the following links for the available NetFilter documentation.  As it stands, the new NetFilter code will share 95% of the same setup and troubleshooting issues that IPCHAINS users have today.  Because of this fact, this HOWTO is still very relevant for NetFilter firewall and NAT users.
+<P>
+<A HREF="http://netfilter.filewatcher.org/unreliable-guides/index.html">http://netfilter.filewatcher.org/unreliable-guides/index.html</A> and more specifically 
+<A HREF="http://netfilter.filewatcher.org/unreliable-guides/NAT-HOWTO.html">http://netfilter.filewatcher.org/unreliable-guides/NAT-HOWTO.html</A> 
+<P>
+</LI>
+</UL>
+<P>Please see the 
+<A HREF="http://ipmasq.cjb.net/">IP Masquerade Resource</A> page for more information available on these patches and possibly others as well.
+<P>
+<P>
+<A NAME="2.0.x-Requirements"></A> <P>
+<H2><A NAME="ss2.8">2.8 Requirements for IP Masquerade on Linux 2.0.x</A>
+</H2>
+
+<P>
+<P>
+<BLOCKQUOTE>
+ <B>** Please refer to 
+<A HREF="http://ipmasq.cjb.net/">IP Masquerade Resource</A> for the latest information. **</B> 
+</BLOCKQUOTE>
+<P>
+<UL>
+<LI>Any decent computer hardware.  See the 
+<A HREF="IP-Masquerade-HOWTO-7.html#FAQ-Hardware">FAQ-Hardware</A>
+ section for more details.
+<P>
+</LI>
+<LI>Kernel 2.0.x source available from 
+<A HREF="http://www.kernel.org/">http://www.kernel.org/</A><BR>
+(Most modern Linux 
+<A HREF="IP-Masquerade-HOWTO-7.html#MASQ-supported-Distributions">MASQ-supported-Distributions</A>
+ such as Redhat 5.2 have modular kernels with all the IP Masquerade kernel options compiled in.  In such cases, there is no need to compile a new Linux kernel.  If you are UPGRADING your kernel, you should be aware of what other programs might be required and/or upgraded (mentioned later in the HOWTO.)
+<P>
+</LI>
+<LI>Loadable kernel modules, preferably 2.1.85 or newer available from 
+<A HREF="http://www.pi.se/blox/modutils/index.html">http://www.pi.se/blox/modutils/index.html</A> or 
+<A HREF="ftp://ftp.ocs.com.au/pub/modutils/">ftp://ftp.ocs.com.au/pub/modutils/</A>
+<BR>
+(modules-1.3.57 is the minimal requirement)
+<P>
+</LI>
+<LI>A running TCP/IP network or LAN covered in 
+<A HREF="http://www.linuxdocs.org/NET3-4-HOWTO.html">Linux NET-3-4 HOWTO</A> and the 
+<A HREF="http://www.linuxdoc.org/LDP/nag/nag.html">Network Administrator's Guide</A><BR>
+Also check out the 
+<A HREF="http://www.ecst.csuchico.edu/~dranch/LINUX/index-linux.html#TrinityOS">TrinityOS</A> deocument.  TrinityOS is a very comprehensive guide on Linux networking including topics like IP MASQ, security, DNS, DHCP, Sendmail, PPP, Diald, NFS, IPSEC-based VPNs, and performance sections just to name a few.  Over Fifty sections in all!
+<P>
+</LI>
+<LI>Connectivity to the Internet for your Linux host covered in 
+<A HREF="http://www.linuxdoc.org/HOWTO/ISP-Hookup-HOWTO.html">Linux ISP Hookup HOWTO</A>, 
+<A HREF="http://www.linuxdoc.org/HOWTO/PPP-HOWTO.html">Linux PPP HOWTO</A>, 
+<A HREF="http://www.ecst.csuchico.edu/~dranch/LINUX/index-linux.html#TrinityOS">TrinityOS</A>, 
+<A HREF="http://www.linuxdoc.org/HOWTO/mini/DHCP/index.html">Linux DHCP mini-HOWTO</A>, 
+<A HREF="http://www.linuxdoc.org/HOWTO/Cable-Modem/index.html">Linux Cable Modem mini-HOWTO</A> and 
+<A HREF="http://www.linuxdoc.org/HOWTO/mini/ADSL.html">Linux ADSL mini-HOWTO</A>
+<P>
+</LI>
+<LI>Ipfwadm 2.3 or newer available from 
+<A HREF="ftp://ftp.xos.nl/pub/linux/ipfwadm/ipfwadm-2.3.0.tar.gz">ftp://ftp.xos.nl/pub/linux/ipfwadm/ipfwadm-2.3.tar.gz</A><BR>
+More information on version requirement is on the 
+<A HREF="http://www.xos.nl/linux/ipfwadm/">Linux IPFWADM page</A>
+<P>
+<UL>
+<LI>If you are interested in running IPCHAINS on a 2.0.38+ kernel, see 
+<A HREF="http://www-miaif.lip6.fr/willy/pub/linux-patches/">Willy Tarreau's IPCHAINS enabler for 2.0.36</A> or 
+<A HREF="http://www.linuxdoc.org/HOWTO/IPCHAINS-HOWTO.html">Rusty's IPCHAINS for 2.0.x kernels</A></LI>
+</UL>
+<P>
+</LI>
+<LI>Know how to configure, compile, and install a new Linux kernel as described in the 
+<A HREF="http://www.linuxdoc.org/HOWTO/Kernel-HOWTO.html">Linux Kernel HOWTO</A>
+<P>
+</LI>
+<LI>You can also apply various optional IP Masquerade patches to enable other functionality such as:
+<P>     
+<UL>
+<LI>TCP/IP port-forwarders or re-directors:  With these tools, you can get some non-MASQ friendly programs to work behind a MASQ server.  In addition to this, you can configure a MASQ server to let Internet users contact internal WWW, TELNET, SMTP, FTP (with a patch), etc., servers.  See 
+<A HREF="IP-Masquerade-HOWTO-6.html#Forwarders">Forwarders</A>
+ section of the HOWTO for more information.  Here is a list of IP Masquerading patches for 2.0.x kernels:
+<P>
+<UL>
+<LI>Steven Clarke's 
+<A HREF="http://www.ox.compsoc.org.uk/~steve/portforwarding.html">IP PortForwarding (IPPORTFW)</A> - <B>RECOMMENDED</B></LI>
+<LI>
+<A HREF="http://ipmasq.cjb.net/ipautofw.tar.gz">IP AutoForward</A> and 
+<A HREF="ftp://ftp.netis.com/pub/members/rlynch/ipautofw.tar.gz">a mirror</A> (IPAUTOFW) - 
+<A HREF="http://ipmasq.cjb.net/tcpdeath.html">NOT Recommended</A></LI>
+<LI>
+<A HREF="http://ipmasq.cjb.net/redir_0.7.orig.tar.gz">REDIR</A> for TCP (REDIR) - NOT Recommended</LI>
+<LI> 
+<A HREF="http://ipmasq.cjb.net/udpred.c.gz">UDP redirector</A> (UDPRED) - NOT Recommended</LI>
+</UL>
+<P>PORTFWed FTP:
+<P>
+<UL>
+<LI>If you are going to port forward FTP traffic to an internal FTP server, you might need to download 
+<A HREF="http://ipmasq.cjb.net/patches/portfw-ftp-patch.tgz">Fred Viles's FTP server patch via HTTP</A> or 
+<A HREF="ftp://ftp.e-infomax.com/ipmasq/patches/portfw-ftp-patch.tgz">Fred Viles's FTP server patch via FTP</A>.  The reason for "might" is some users have had success while other needs this modified kernel module.  Explicit details on this topic can be found in the 
+<A HREF="IP-Masquerade-HOWTO-6.html#Forwarders">Forwarders</A>
+ section of the HOWTO.</LI>
+</UL>
+<P>X-Windows display forwarders:
+<UL>
+<LI>
+<A HREF="ftp://sunsite.unc.edu/pub/Linux/X11/compress/dxpc-3.7.0.tar.gz">X-windows forwarding (DXCP)</A></LI>
+</UL>
+<P>ICQ MASQ module
+<UL>
+<LI>
+<A HREF="http://members.tripod.com/~djsf/masq-icq/">Andrew Deryabin's ICQ MASQ module </A></LI>
+</UL>
+<P>PPTP (GRE) and SWAN (IPSEC) VPNs tunneling forwarders:
+<UL>
+<LI>
+<A HREF="ftp://ftp.rubyriver.com/pub/jhardin/masquerade/ip_masq_vpn.html">John Hardin's VPN Masquerade forwarders</A> or the old patch for just 
+<A HREF="http://ipmasq.cjb.net/ip_masq_pptp.patch.gz">PPTP Support</A>.  </LI>
+</UL>
+<P>Game specific patches:
+<UL>
+<LI>Glenn Lamb's 
+<A HREF="ftp://ftp.netcom.com/pub/mu/mumford/loose-udp-2.0.36.patch.gz">LooseUDP for 2.0.36+</A> patch.  
+<P>Please note that some WWW browsers with automatically uncompress this .gz file.  To download this file, hold down the SHIFT key as you click on the above URL.  
+<P>Also check out Dan Kegel's 
+<A HREF="http://www.alumni.caltech.edu/~dank/peer-nat.html">NAT Page</A> for more information.  Additional information can be found in the 
+<A HREF="IP-Masquerade-HOWTO-6.html#Game-Clients">Game-Clients</A>
+ section and the 
+<A HREF="IP-Masquerade-HOWTO-7.html#FAQ">FAQ</A>
+ section.
+</LI>
+</UL>
+</LI>
+</UL>
+<P>Please see the 
+<A HREF="http://ipmasq.cjb.net/">IP Masquerade Resource</A> page for more information available on these patches and possibly others as well.  
+<P>
+</LI>
+</UL>
+<P>
+<P>
+<HR>
+<A HREF="IP-Masquerade-HOWTO-3.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="IP-Masquerade-HOWTO-1.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="IP-Masquerade-HOWTO.html#toc2"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

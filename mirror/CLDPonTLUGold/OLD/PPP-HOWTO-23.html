@@ -1,0 +1,184 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>PPP HOWTO 中譯版: 建立連結之後 - /etc/ppp/ip-up 指令稿</TITLE>
+ <LINK HREF="PPP-HOWTO-24.html" REL=next>
+ <LINK HREF="PPP-HOWTO-22.html" REL=previous>
+ <LINK HREF="PPP-HOWTO.html#toc23" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="PPP-HOWTO-24.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="PPP-HOWTO-22.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="PPP-HOWTO.html#toc23"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="ip-up"></A> <A NAME="s23">23. 建立連結之後 - <CODE>/etc/ppp/ip-up</CODE> 指令稿</A></H2>
+
+<P>一旦 PPP 連結建立後， pppd 會找尋 <CODE>/etc/ppp/ip-up</CODE> 指令稿．
+如果這個指令稿存在並且可以執行的話，那麼 PPP  伺服程式就會執行這個指令稿．
+這允許你自動執行任何可能有必要的特殊遞送路徑指令及任何你想在每次 PPP 連結啟動時執行的動作．
+<P>
+<P>這不過就是一般普通的 shell 指令稿，可以做任何指令稿能做的事(也就是，任何你想做的事)．
+<P>
+<P>例如，你可能想要 sendmail 趕快處理在郵件佇列中等待外送的訊息．
+<P>
+<P>類似地，你可以在 <CODE>ip-up</CODE> 裡插入一些指令取得（使用 POP）在你的 ISP 那邊等著你的任何電子郵件．
+<P>
+<P>不過在 <CODE>/etc/ppp/ip-up</CODE> 也有些限制:-
+<P>
+<UL>
+<LI>它以局限的環境變數以增加安全性．這也就是說你必須給出執行檔的全部路徑名稱等．</LI>
+<LI>技術上來說，<CODE>/etc/ppp/ip-up</CODE> 是一個<EM>程式</EM>而非指令稿．
+這是說它可以被直接執行 - 也因此它在第一行開始必須具有標準的 file magic (<CODE>#!/bin/bash</CODE>) 並且能被 root 讀取及執行．</LI>
+</UL>
+<P>
+<H2><A NAME="ss23.1">23.1 特殊遞送路徑</A>
+</H2>
+
+<P>如果你連結的是兩個區域網路，你將得設立一個到 '外面的' 區域網路的指定遞送路徑．
+這可以很容易的使用 <CODE>/etc/ppp/ip-up</CODE> 指令稿達成．唯一的困難發生在你的機器有多個 PPP  連結時．
+<P>
+<P>這是因為 <CODE>/etc/ppp/ip-up</CODE> 這個指令稿是由每一個起動的 ppp 連線所執行的，所以你得要小心地為每一個起動的連結執行正確的遞送指令!
+<P>
+<H2><A NAME="ss23.2">23.2 處理電子郵件佇列</A>
+</H2>
+
+<P>當兩個區域網路的連結建立之後，你可能想要確定放在佇列中的電子郵件被<EM>清出</EM> - 送到它的目的地．
+這可以用適當的呼叫 <CODE>sendmail</CODE> 來達成． 
+<P>
+<P>在 pppd 傳遞給指令稿的特定參數上使用 bash 的 `case' 敘述來完成這個工作．
+例如，這是我用來處理我們的廣域網路連結及通往我家乙太網路的（也是由相同的 PPP  伺服器處理）<CODE>/etc/ppp/ip-up</CODE> 指令稿．
+<P>
+<H2><A NAME="ss23.3">23.3 一個 <CODE>/etc/ppp/ip-up</CODE> 指令稿的例子</A>
+</H2>
+
+<P>下面的例子提供不同的使用範例．
+<P>
+<HR>
+<PRE>
+#!/bin/bash
+#
+# Script which handles the routing issues as necessary for pppd
+# Only the link to Newman requires this handling.
+#
+# When the ppp link comes up, this script is called with the following
+# parameters
+#       $1      the interface name used by pppd (e.g. ppp3)
+#       $2      the tty device name
+#       $3      the tty device speed
+#       $4      the local IP address for the interface
+#       $5      the remote IP address
+#       $6      the parameter specified by the 'ipparam' option to pppd
+#
+case "$5" in
+# Handle the routing to the Newman Campus server
+        202.12.126.1)
+                /sbin/route add -net 202.12.126.0 gw 202.12.126.1
+# and flush the mail queue to get their email there asap!
+                /usr/sbin/sendmail -q &amp;
+                ;;
+        139.130.177.2)
+# Our Internet link
+# When the link comes up, start the time server and synchronise to the world
+# provided it is not already running
+                if [ ! -f /var/lock/subsys/xntpd ]; then
+                        /etc/rc.d/init.d/xntpd.init start &amp;
+                fi
+# Start the news server (if not already running)
+                if [ ! -f /var/lock/subsys/news ]; then
+                        /etc/rc.d/init.d/news start &amp;
+                fi
+                ;;
+        203.18.8.104)
+# Get the email down to my home machine as soon as the link comes up
+# No routing is required as my home Ethernet is handled by IP
+# masquerade and proxyarp routing.
+                /usr/sbin/sendmail -q &amp;
+                ;;
+        *)
+esac
+exit 0
+</PRE>
+<HR>
+<P>
+<P>起動通往我們 Newman 校園的 ppp 連結以及這個指令稿的結果，我們最後得到下面這個遞送表格記錄（這台機器也是我們通常用的 PPP 伺服器並且處理我們的網際網路連結）．
+我已經在這個輸出裡加入一些註解以解釋每個項目是什麼:
+<P>
+<HR>
+<PRE>
+[root@kepler /root]# route -n
+Kernel routing table
+Destination     Gateway         Genmask         Flags MSS    Window Use Iface
+# the HOST route to our remote internet gateway
+139.130.177.2   *               255.255.255.255 UH    1500   0      134 ppp4
+# the HOST route to our Newman campus server
+202.12.126.1    *               255.255.255.255 UH    1500   0       82 ppp5
+# the HOST route to my home ethernet
+203.18.8.104    *               255.255.255.255 UH    1500   0       74 ppp3
+# two of our general dial up PPP lines
+203.18.8.64     *               255.255.255.255 UH    552    0        0 ppp2
+203.18.8.62     *               255.255.255.255 UH    552    0        1 ppp1
+# the specific network route to the Newman campus LAN
+202.12.126.0    202.12.126.1    255.255.255.0   UG    1500   0        0 ppp5
+# the route to our local Ethernet (super-netting two adjacent C classes)
+203.18.8.0      *               255.255.254.0   U     1500   0     1683 eth0
+# the route to the loop back device
+127.0.0.0       *               255.0.0.0       U     3584   0      483 lo
+# the default route to the Internet
+default         139.130.177.2   *               UG    1500   0     3633 ppp4
+</PRE>
+<HR>
+<P>
+<H2><A NAME="ss23.4">23.4 處理電子郵件</A>
+</H2>
+
+<P>上一節提及如何處理外送的郵件 － 一旦連線建立之後簡單地藉由清出郵件佇列達成．
+<P>如果你執行連往廣域網路的連結，你可以跟遠端區域網路的網路管理者協調請它們執行完全相同的動作．
+例如，在我們的廣域網路連結中 Newman 校園那一端的 <CODE>/etc/ppp/ip-up</CODE> 指令稿看起來像:
+<P>
+<HR>
+<PRE>
+#!/bin/bash
+#
+# Script which handles the routing issues as necessary for pppd
+# Only the link to Hedland requires this handling.
+#
+# When the ppp link comes up, this script is called with the following
+# parameters
+#       $1      the interface name used by pppd (e.g. ppp3)
+#       $2      the tty device name
+#       $3      the tty device speed
+#       $4      the local IP address for the interface
+#       $5      the remote IP address
+#       $6      the parameter specified by the 'ipparam' option to pppd
+#
+case "$5" in
+        203.18.8.4)
+                /usr/sbin/sendmail -q
+                ;;
+        *)
+esac
+exit 0
+</PRE>
+<HR>
+<P>
+<P>然而如果你只能使用動態 IP 號碼方式的 PPP  連線連往你的 ISP，你得從在你 ISP 機器上的帳號取得你的電子郵件．
+這通常是使用 POP(Post Office Protocol)協定來達成的．可以使用 `popclient' 程式處理這個程序 － 而 <CODE>ip-up</CODE> 指令稿也可以為你自動化這個程序．
+<P>
+<P>簡單地建立一個 <CODE>/etc/ppp/ip-up</CODE> 指令稿，其中包含有起動 popclient 程式的適當指令．
+在我執行 Red Hat Linux  的膝上型電腦上（任何旅行時我都帶著它）是這樣的
+<P>
+<HR>
+<PRE>
+popclient -3 -c -u hartr -p &lt;password> kepler.hedland.edu.au |formail -s procmail
+</PRE>
+<HR>
+<P>
+<P>你可以使用 slurp 或其它軟體以相同的方式取得網路新聞，以及諸如此類的服務．
+記得，ip-up 這個指令稿只是個標準的 bash 指令稿因此可以用來自動化當每次適當的 PPP 連結建立時需要完成的任何功能．
+<P>
+<HR>
+<A HREF="PPP-HOWTO-24.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="PPP-HOWTO-22.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="PPP-HOWTO.html#toc23"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

@@ -1,0 +1,114 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE> Modem-HOWTO : Serial Port Devices /dev/ttyS2, etc. </TITLE>
+ <LINK HREF="Modem-HOWTO-10.html" REL=next>
+ <LINK HREF="Modem-HOWTO-8.html" REL=previous>
+ <LINK HREF="Modem-HOWTO.html#toc9" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Modem-HOWTO-10.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Modem-HOWTO-8.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Modem-HOWTO.html#toc9"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="ttySN_"></A> <A NAME="s9">9. Serial Port Devices /dev/ttyS2, etc. </A></H2>
+
+<P> For creating devices in the device directory see:
+the Serial-HOWTO: "Creating Devices In the /dev directory". 
+<P>
+<P>
+<H2><A NAME="ss9.1">9.1 Devfs (The new Device File System)</A>
+</H2>
+
+<P> This is a new type of device interface to Linix.  It's optional
+starting with kernel 2.4.  It's more efficient than the conventional
+interface and makes it easy to deal with a huge number of devices.
+The device names have all changed as well.  But there's an option to
+continue using the old names.  For a detailed description of it see:
+<A HREF="http://www.atnf.csiro.au/~rgooch/linux/docs/devfs.html">http://www.atnf.csiro.au/~rgooch/linux/docs/devfs.html</A><P>The name changes (if used) are: ttyS2 becomes tts/2 (Serial port),
+tty3 becomes vc/3 (Virtual Console), ptyp1 becomes pty/m1 (PTY
+master), ttyp2 becomes pty/s2 (PTY slave).  "tts" looks like a
+directory which contains devices "files": 0, 1, 2, etc.  All of these
+new names should still be in the /dev directory although optionally
+one may put them elsewhere.
+<P>
+<H2><A NAME="dev_nos"></A> <A NAME="ss9.2">9.2 Serial Port Device Names &amp; Numbers </A>
+</H2>
+
+<P> Devices in Linux have major and minor numbers (unless you use the
+new devfs).  The serial port ttySx (x=0,1,2, etc.) has major number 4.
+You may see this (and the minor numbers too) by typing: "ls -l ttyS*"
+in the /dev directory.
+<P>There formerly was an alternate name for each serial port.  For
+example, ttyS2 would have cua2 as an alternate name.  You may still
+have the cua devices in your /dev directory but they are now
+deprecated.  Their drivers behave slightly different than for the ttyS
+ones.  Device Obsolete">."') 
+<P>Dos/Windows use the COM name while the <CODE>setserial</CODE> program uses
+tty00, tty01, etc.  Don't confuse these with dev/tty0, dev/tty1, etc.
+which are used for the console (your PC monitor) but are not serial
+ports.  The table below is for the "standard" case (but yours could be
+different).
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+                                                 IO      devfs
+ dos            major minor       major minor  address   name
+COM1  /dev/ttyS0  4,  64;  /dev/cua0  5,  64     3F8   /dev/tts/0
+COM2  /dev/ttyS1  4,  65;  /dev/cua1  5,  65     2F8   /dev/tts/1
+COM3  /dev/ttyS2  4,  66;  /dev/cua2  5,  66     3E8   /dev/tts/2
+COM4  /dev/ttyS3  4,  67;  /dev/cua3  5,  67     2E8   /dev/tts/3
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss9.3">9.3 Universal Serial Bus Ports</A>
+</H2>
+
+<P> Although the USB is not covered in this HOWTO, the serial ports on
+the USB are: /dev/ttyUSB0 /dev/ttyUSB1, etc.
+<P>
+<H2><A NAME="ss9.4">9.4 Link ttySN to /dev/modem</A>
+</H2>
+
+<P> On some installations, two extra devices will be created, 
+<CODE>/dev/modem</CODE> for your modem and <CODE>/dev/mouse</CODE> for a
+mouse.  Both of these are symbolic links to the appropriate serial
+device in <CODE>/dev</CODE> which you specified during the installation
+Except if you have a bus mouse, then <CODE>/dev/mouse</CODE> will point to
+the bus mouse device).
+<P>Formerly the use of <CODE>/dev/modem</CODE> was discouraged since lock
+files might not realize that it was really say <CODE>/dev/ttyS2</CODE>.
+The newer lock file system doesn't fall into this trap so it's now OK
+to use such links.
+<P>
+<P>
+<P>
+<H2><A NAME="cua_dev"></A> <A NAME="ss9.5">9.5 cua Device Obsolete </A>
+</H2>
+
+<P> Each ttyS device has a corresponding cua device.  But the cua
+device is deprecated so it's best to use ttyS (unless cua is
+required).  There is a difference between cua and ttyS but a savvy
+programmer can make a ttyS port behave just like a cua port so there
+is no real need for the cua anymore.  Except that some older programs
+may need to use the cua.
+<P>What's the difference?  The main difference between cua and ttyS has
+to do with what happens in a C-program when an ordinary "open" command
+tries to open the port. If a cua port has been set to check modem
+control signals, the port can be opened even if the CD modem control
+signal says not to.  Astute programming (by adding additional lines to
+the program) can force a ttyS port to behave this way also.  But a cua
+port can be more easily programmed to open for dialing out on a modem
+even when the modem fails to assert CD (since no one has called into
+it and there's no carrier).  That's why cua was once used for dial-out
+and ttyS used for dial-in.
+<P>Starting with Linux kernel 2.2, a warning message is put in the
+kernel log when one uses cua.  This is an omen that cua is defunct and
+should be avoided if possible.
+<P>
+<HR>
+<A HREF="Modem-HOWTO-10.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Modem-HOWTO-8.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Modem-HOWTO.html#toc9"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

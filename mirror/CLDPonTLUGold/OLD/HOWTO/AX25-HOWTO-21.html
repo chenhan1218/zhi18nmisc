@@ -1,0 +1,611 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux AX25-HOWTO, Amateur Radio.: Some sample configurations.</TITLE>
+ <LINK HREF="AX25-HOWTO-22.html" REL=next>
+ <LINK HREF="AX25-HOWTO-20.html" REL=previous>
+ <LINK HREF="AX25-HOWTO.html#toc21" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="AX25-HOWTO-22.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="AX25-HOWTO-20.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="AX25-HOWTO.html#toc21"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s21">21. Some sample configurations.</A></H2>
+
+<P>Following are examples of the most common types of configurations. These
+are guides only as there are as many ways of configuring your network as there
+are networks to configure, but they may give you a start.
+<P>
+<H2><A NAME="ss21.1">21.1 Small Ethernet LAN with Linux as a router to Radio LAN</A>
+</H2>
+
+<P>Many of you may have small local area networks at home and want to
+connect the machines on that network to your local radio LAN. This is
+the type of configuration I use at home. I arranged to have a suitable
+block of addresses allocated to me that I could capture in a single route
+for convenience and I use these on my Ethernet LAN. Your local IP coordinator
+will assist you in doing this if you want to try it as well. The addresses
+for the Ethernet LAN form a subset of the radio LAN addresses. The following
+configuration is the actual one for my linux router on my network at home:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+                                          .      .   .    .    . .
+  ---                                .
+   | Network       /---------\     .    Network
+   | 44.136.8.96/29|         |    .     44.136.8/24        \ | /
+   |               | Linux   |   .                          \|/
+   |               |         |  .                            |
+   |          eth0 | Router  |  .  /-----\    /----------\   |
+   |---------------|         |-----| TNC |----| Radio    |---/
+   |   44.136.8.97 |  and    |  .  \-----/    \----------/
+   |               |         | sl0
+   |               | Server  | 44.136.8.5
+   |               |         |    .
+   |               |         |     .
+   |               \_________/       .
+  ---                                     .      .   .    .    . .
+</PRE>
+</CODE></BLOCKQUOTE>
+
+<BLOCKQUOTE><CODE>
+<PRE>
+#!/bin/sh
+# /etc/rc.net
+# This configuration provides one KISS based AX.25 port and one
+# Ethernet device.
+
+echo "/etc/rc.net"
+echo "  Configuring:"
+
+echo -n "    loopback:"
+/sbin/ifconfig lo 127.0.0.1
+/sbin/route add 127.0.0.1
+echo " done."
+
+echo -n "    ethernet:"
+/sbin/ifconfig eth0 44.136.8.97 netmask 255.255.255.248 \
+                broadcast 44.136.8.103 up
+/sbin/route add 44.136.8.97 eth0
+/sbin/route add -net 44.136.8.96 netmask 255.255.255.248 eth0
+echo " done."
+
+echo -n "    AX.25: "
+kissattach -i 44.136.8.5 -m 512 /dev/ttyS1 4800
+ifconfig sl0 netmask 255.255.255.0 broadcast 44.136.8.255
+route add -host 44.136.8.5 sl0
+route add -net 44.136.8.0 window 1024 sl0
+
+echo -n "    Netrom: "
+nrattach -i 44.136.8.5 netrom
+
+echo "  Routing:"
+/sbin/route add default gw 44.136.8.68 window 1024 sl0
+echo "    default route."
+echo done.
+
+# end
+</PRE>
+</CODE></BLOCKQUOTE>
+<P><CODE>/etc/ax25/axports</CODE>
+<BLOCKQUOTE><CODE>
+<PRE>
+# name  callsign        speed   paclen  window  description
+4800    VK2KTJ-0        4800    256     2       144.800 MHz
+</PRE>
+</CODE></BLOCKQUOTE>
+<P><CODE>/etc/ax25/nrports</CODE>
+<BLOCKQUOTE><CODE>
+<PRE>
+# name  callsign        alias   paclen  description
+netrom  VK2KTJ-9        LINUX   235     Linux Switch Port
+</PRE>
+</CODE></BLOCKQUOTE>
+<P><CODE>/etc/ax25/nrbroadcast</CODE>
+<BLOCKQUOTE><CODE>
+<PRE>
+# ax25_name     min_obs def_qual        worst_qual      verbose
+4800            1       120             10              1
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<UL>
+<LI>You must have IP_FORWARDING enabled in your kernel.</LI>
+<LI>The AX.25 configuration files are pretty much those used as examples
+in the earlier sections, refer to those where necessary.</LI>
+<LI>I've chosen to use an IP address for my radio port that is not within
+my home network block. I needn't have done so, I could have easily used
+<CODE>44.136.8.97</CODE> for that port too.</LI>
+<LI><CODE>44.136.8.68</CODE> is my local IPIP encapsulated gateway and hence
+is where I point my default route.</LI>
+<LI>Each of the machines on my Ethernet network have a route:
+<BLOCKQUOTE><CODE>
+<PRE>
+route add -net 44.0.0.0 netmask 255.0.0.0 \
+        gw 44.136.8.97 window 512 mss 512 eth0
+</PRE>
+</CODE></BLOCKQUOTE>
+
+The use of the <EM>mss</EM> and <EM>window</EM> parameters means that I can
+get optimum performance from both local Ethernet and radio based connections.</LI>
+<LI>I also run my smail, http, ftp and other daemons on the router machine
+so that it needs to be the only machine to provide others with facilities.</LI>
+<LI>The router machine is a lowly 386DX20 with a 20Mb harddrive and a very
+minimal linux configuration.</LI>
+</UL>
+<P>
+<H2><A NAME="ss21.2">21.2 IPIP encapsulated gateway configuration.</A>
+</H2>
+
+<P>Linux is now very commonly used for TCP/IP encapsulated gateways around
+the world. The new tunnel driver supports multiple encapsulated routes
+and makes the older <EM>ipip</EM> daemon obsolete.
+<P>A typical configuration would look similar to the following.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+                                          .      .   .    .    . .
+  ---                                .
+   | Network       /---------\     .    Network
+   | 154.27.3/24   |         |    .     44.136.16/24       \ | /
+   |               | Linux   |   .                          \|/
+   |               |         |  .                            |
+   |          eth0 | IPIP    |  .  /-----\    /----------\   |
+---|---------------|         |-----| TNC |----| Radio    |---/
+   |   154.27.3.20 | Gateway |  .  \-----/    \----------/
+   |               |         | sl0
+   |               |         | 44.136.16.1
+   |               |         |    .
+   |               |         |     .
+   |               \_________/       .
+  ---                                     .      .   .    .    . .
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>The configuration files of interest are:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# /etc/rc.net
+# This file is a simple configuration that provides one KISS AX.25
+# radio port, one Ethernet device, and utilises the kernel tunnel driver
+# to perform the IPIP encapsulation/decapsulation
+#
+echo "/etc/rc.net"
+echo "  Configuring:"
+#
+echo -n "    loopback:"
+/sbin/ifconfig lo 127.0.0.1
+/sbin/route add 127.0.0.1
+echo " done."
+#
+echo -n "    ethernet:"
+/sbin/ifconfig eth0 154.27.3.20 netmask 255.255.255.0 \
+                broadcast 154.27.3.255 up
+/sbin/route add 154.27.3.20 eth0
+/sbin/route add -net 154.27.3.0 netmask 255.255.255.0 eth0
+echo " done."
+#
+echo -n "    AX.25: "
+kissattach -i 44.136.16.1 -m 512 /dev/ttyS1 4800
+/sbin/ifconfig sl0 netmask 255.255.255.0 broadcast 44.136.16.255
+/sbin/route add -host 44.136.16.1 sl0
+/sbin/route add -net 44.136.16.0 netmask 255.255.255.0 window 1024 sl0
+#
+echo -n "    tunnel:"
+/sbin/ifconfig tunl0 44.136.16.1 mtu 512 up
+#
+echo done.
+#
+echo -n "Routing ... "
+source /etc/ipip.routes
+echo done.
+#
+# end.
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>and:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# /etc/ipip.routes
+# This file is generated using the munge script
+#
+/sbin/route add -net 44.134.8.0 netmask 255.255.255.0 tunl0 gw 134.43.26.1
+/sbin/route add -net 44.34.9.0 netmask 255.255.255.0 tunl0 gw 174.84.6.17
+/sbin/route add -net 44.13.28.0 netmask 255.255.255.0 tunl0 gw 212.37.126.3
+   ...
+   ...
+   ...
+</PRE>
+</CODE></BLOCKQUOTE>
+<P><CODE>/etc/ax25/axports</CODE>
+<BLOCKQUOTE><CODE>
+<PRE>
+# name  callsign        speed   paclen  window  description
+4800    VK2KTJ-0        4800    256     2       144.800 MHz
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Some points to note here are:
+<P>
+<UL>
+<LI>The new tunnel driver uses the <EM>gw</EM> field in the routing table
+in place of the <EM>pointopoint</EM> parameter to specify the address of
+the remote IPIP gateway. This is why it now supports multiple routes per
+interface.</LI>
+<LI>You <B>can</B> configure two network devices with the same address.
+In this example both the <CODE>sl0</CODE> and the <CODE>tunl0</CODE> devices have
+been configured with the IP address of the radio port. This is done so that
+the remote gateway sees the correct address from your gateway in encapsulated
+datagrams sent to it.</LI>
+<LI>The route commands used to specify the encapsulated routes can be
+automatically generated by a modified version of the <EM>munge</EM> script.
+This is included below. The route commands would then be written to a separate
+file and read in using the <EM>bash</EM> <CODE>source /etc/ipip.routes</CODE>
+command (assuming you called the file with the routing commands
+<CODE>/etc/ipip.routes</CODE>) as illustrated. The source file must be in the
+NOS route command format.</LI>
+<LI>Note the use of the <EM>window</EM> argument on the <EM>route</EM>
+command. Setting this parameter to an appropriate value improves the
+performance of your radio link.</LI>
+</UL>
+<P>
+<P>The new tunnel-munge script:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#!/bin/sh
+#
+# From: Ron Atkinson &lt;n8fow@hamgate.cc.wayne.edu>
+#
+#  This script is basically the 'munge' script written by Bdale N3EUA
+#  for the IPIP daemon and is modified by Ron Atkinson N8FOW. It's 
+#  purpose is to convert a KA9Q NOS format gateways route file 
+#  (usually called 'encap.txt') into a Linux routing table format
+#  for the IP tunnel driver.               
+#
+#        Usage: Gateway file on stdin, Linux route format file on stdout.
+#               eg.  tunnel-munge &lt; encap.txt > ampr-routes
+#
+# NOTE: Before you use this script be sure to check or change the 
+#       following items:
+#
+#     1) Change the 'Local routes' and 'Misc user routes' sections
+#        to routes that apply to your own area (remove mine please!)
+#     2) On the fgrep line be sure to change the IP address to YOUR
+#        gateway Internet address. Failure to do so will cause serious
+#        routing loops.
+#     3) The default interface name is 'tunl0'. Make sure this is
+#        correct for your system.
+
+echo "#"
+echo "# IP tunnel route table built by $LOGNAME on `date`"
+echo "# by tunnel-munge script v960307."
+echo "#"
+echo "# Local routes"
+echo "route add -net 44.xxx.xxx.xxx netmask 255.mmm.mmm.mmm dev sl0"
+echo "#"
+echo "# Misc user routes"
+echo "#"
+echo "# remote routes"
+
+fgrep encap | grep "^route" | grep -v " XXX.XXX.XXX.XXX" | \
+awk '{
+        split($3, s, "/")
+        split(s[1], n,".")
+        if      (n[1] == "")    n[1]="0"
+        if      (n[2] == "")    n[2]="0"
+        if      (n[3] == "")    n[3]="0"
+        if      (n[4] == "")    n[4]="0"
+        if      (s[2] == "1")   mask="128.0.0.0"
+        else if (s[2] == "2")   mask="192.0.0.0"
+        else if (s[2] == "3")   mask="224.0.0.0"
+        else if (s[2] == "4")   mask="240.0.0.0"
+        else if (s[2] == "5")   mask="248.0.0.0"
+        else if (s[2] == "6")   mask="252.0.0.0"
+        else if (s[2] == "7")   mask="254.0.0.0"
+        else if (s[2] == "8")   mask="255.0.0.0"
+        else if (s[2] == "9")   mask="255.128.0.0"
+        else if (s[2] == "10")  mask="255.192.0.0"
+        else if (s[2] == "11")  mask="255.224.0.0"
+        else if (s[2] == "12")  mask="255.240.0.0"
+        else if (s[2] == "13")  mask="255.248.0.0"
+        else if (s[2] == "14")  mask="255.252.0.0"
+        else if (s[2] == "15")  mask="255.254.0.0"
+        else if (s[2] == "16")  mask="255.255.0.0"
+        else if (s[2] == "17")  mask="255.255.128.0"
+        else if (s[2] == "18")  mask="255.255.192.0"
+        else if (s[2] == "19")  mask="255.255.224.0"
+        else if (s[2] == "20")  mask="255.255.240.0"
+        else if (s[2] == "21")  mask="255.255.248.0"
+        else if (s[2] == "22")  mask="255.255.252.0"
+        else if (s[2] == "23")  mask="255.255.254.0"
+        else if (s[2] == "24")  mask="255.255.255.0"
+        else if (s[2] == "25")  mask="255.255.255.128"
+        else if (s[2] == "26")  mask="255.255.255.192"
+        else if (s[2] == "27")  mask="255.255.255.224"
+        else if (s[2] == "28")  mask="255.255.255.240"
+        else if (s[2] == "29")  mask="255.255.255.248"
+        else if (s[2] == "30")  mask="255.255.255.252"
+        else if (s[2] == "31")  mask="255.255.255.254"
+        else                    mask="255.255.255.255"
+
+if (mask == "255.255.255.255")  
+        printf "route add -host %s.%s.%s.%s gw %s dev tunl0\n"\
+                ,n[1],n[2],n[3],n[4],$5
+else                            
+        printf "route add -net %s.%s.%s.%s gw %s netmask %s dev tunl0\n"\
+                ,n[1],n[2],n[3],n[4],$5,mask
+ }'
+
+echo "#"
+echo "# default the rest of amprnet via mirrorshades.ucsd.edu"
+echo "route add -net 44.0.0.0 gw 128.54.16.18 netmask 255.0.0.0 dev tunl0"
+echo "#"
+echo "# the end"
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss21.3">21.3 AXIP encapsulated gateway configuration</A>
+</H2>
+
+<P>Many Amateur Radio Internet gateways encapsulate AX.25, NetRom and Rose in
+addition to tcp/ip. Encapsulation of AX.25 frames within IP datagrams is
+described in RFC-1226 by Brian Kantor. Mike Westerhof wrote an implementation
+of an AX.25 encapsulation daemon for unix in 1991. The ax25-utils package
+includes a marginally enhanced version of it for Linux.
+<P>An AXIP encapsulation program accepts AX.25 frames at one end, looks at the
+destination AX.25 address to determine what IP address to send them to,
+encapsulates them in a tcp/ip datagram and then transmits them to
+the appropriate remote destination. It also accepts tcp/ip datagrams
+that contain AX.25 frames, unwraps them and processes them as if it had
+received them directly from an AX.25 port. To distinguish IP datagrams
+containing AX.25 frames from other IP datagrams which don't, AXIP datagrams
+are coded with a protocol id of 4 (or 94 which is now deprecated). This
+process is described in RFC-1226.
+<P>The <EM>ax25ipd</EM> program included in the ax25-utils package presents itself
+as a program supporting a KISS interface across which you pass AX.25 frames,
+and an interface into the tcp/ip protocols. It is configured with a single
+configuration file called <CODE>/etc/ax25/ax25ipd.conf</CODE>.
+<P>
+<H3>AXIP configuration options.</H3>
+
+<P>The <EM>ax25ipd</EM> program has two major modes of operation. "digipeater"
+mode and "tnc" mode. In "tnc" mode the daemon is treated as though it
+were a kiss TNC, you pass KISS encapsulated frames to it and it will
+transmit them, this is the usual configuration. In "digipeater" mode, you
+treat the daemon as though it were an AX.25 digipeater. There are subtle
+differences between these modes.
+<P>In the configuration file you configure "routes" or mappings between
+destination AX.25 callsigns and the IP addresses of the hosts that you
+want to send the AX.25 packets too. Each route has options which will be
+explained later.
+<P>Other options that are configured here are
+<LI>the tty that the <EM>ax25ipd</EM> daemon will open and its speed (usually
+one end of a pipe)</LI>
+<LI>what callsign you want to use in "digipeater" mode</LI>
+<LI>beacon interval and text</LI>
+<LI>whether you want to encapsulate the AX.25 frames in IP datagrams or in
+UDP/IP datagrams. Nearly all AXIP gateways use IP encapsulation, but some
+gateways are behind firewalls that will not allow IP with the AXIP protocol id
+to pass and are forced to use UDP/IP. Whatever you choose must match
+what the tcp/ip host at the other end of the link is using.</LI>
+<P>
+<H3>A typical <CODE>/etc/ax25/ax25ipd.conf</CODE> file.</H3>
+
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#
+# ax25ipd configuration file for station floyd.vk5xxx.ampr.org
+#
+# Select axip transport. 'ip' is what you want for compatibility
+# with most other gateways.
+#
+socket ip
+#
+# Set ax25ipd mode of operation. (digi or tnc)
+#
+mode tnc
+#
+# If you selected digi, you must define a callsign.  If you selected
+# tnc mode, the callsign is currently optional, but this may change
+# in the future! (2 calls if using dual port kiss)
+#
+#mycall vk5xxx-4
+#mycall2 vk5xxx-5
+#
+# In digi mode, you may use an alias. (2 for dual port)
+#
+#myalias svwdns
+#myalias2 svwdn2
+#
+# Send an ident every 540 seconds ...
+#
+#beacon after 540
+#btext ax25ip -- tncmode rob/vk5xxx -- Experimental AXIP gateway
+#
+# Serial port, or pipe connected to a kissattach in my case
+#
+device /dev/ttyq0
+#
+# Set the device speed
+#
+speed 9600
+#
+# loglevel 0 - no output
+# loglevel 1 - config info only
+# loglevel 2 - major events and errors
+# loglevel 3 - major events, errors, and AX25 frame trace
+# loglevel 4 - all events
+# log 0 for the moment, syslog not working yet ...
+#
+loglevel 2
+#
+# If we are in digi mode, we might have a real tnc here, so use param to
+# set the tnc parameters ...
+#
+#param 1 20
+#
+# Broadcast Address definition. Any of the addresses listed will be forwarded
+# to any of the routes flagged as broadcast capable routes.
+#
+broadcast QST-0 NODES-0
+#
+# ax.25 route definition, define as many as you need.
+# format is route (call/wildcard) (ip host at destination)
+# ssid of 0 routes all ssid's
+#
+# route &lt;destcall> &lt;destaddr> [flags]
+#
+# Valid flags are:
+#         b  - allow broadcasts to be transmitted via this route
+#         d  - this route is the default route
+#
+route vk2sut-0 44.136.8.68 b
+route vk5xxx 44.136.188.221 b
+route vk2abc 44.1.1.1
+#
+#
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H3>Running <EM>ax25ipd</EM></H3>
+
+<P>
+<DL>
+<DT><B>Create your <CODE>/etc/ax25/axports</CODE> entry:</B><DD><P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# /etc/ax25/axports
+#
+axip    VK2KTJ-13       9600    256     AXIP port
+#
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<DT><B>Run the <EM>kissattach</EM> command to create that port:</B><DD><P>
+<BLOCKQUOTE><CODE>
+<PRE>
+/usr/sbin/kissattach /dev/ptyq0 axip
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<DT><B>Run the <EM>ax25ipd</EM> program:</B><DD><P>
+<BLOCKQUOTE><CODE>
+<PRE>
+/usr/sbin/ax25ipd &amp;
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<DT><B>Test the AXIP link:</B><DD><P>
+<BLOCKQUOTE><CODE>
+<PRE>
+call axip vk5xxx
+</PRE>
+</CODE></BLOCKQUOTE>
+</DL>
+<P>
+<H3>Some notes about the routes and route flags</H3>
+
+<P>The "<CODE>route</CODE>" command is where you specify where you want your AX.25
+packets encapsulated and sent to. When the <EM>ax25ipd</EM> daemon receives
+a packet from its interface, it compares the destination callsign with each
+of the callsigns in its routing table. If if finds a match then the ax.25
+packet is encapsulated in an IP datagram and then transmitted to the host
+at the specified IP address.
+<P>There are two flags you can add to any of the route commands in the
+<CODE>ax25ipd.conf</CODE> file. The two flags are:
+<DL>
+<DT><B>b</B><DD><P>traffic with a destination address matching any of those on
+the list defined by the "<CODE>broadcast</CODE>" keyword should be transmitted via
+this route.
+<DT><B>d</B><DD><P>any packets not matching any route should be transmitted via
+this route.
+</DL>
+<P>The broadcast flag is very useful, as it enables informations that is normally
+destined for all stations to a number of AXIP destinations. Normally axip
+routes are point-to-point and unable to handle 'broadcast' packets.
+<P>
+<H2><A NAME="ss21.4">21.4 Linking NOS and Linux using a pipe device</A>
+</H2>
+
+<P>Many people like to run some version of NOS under Linux because it has
+all of the features and facilities they are used to. Most of those people
+would also like to have the NOS running on their machine capable of talking
+to the Linux kernel so that they can offer some of the linux capabilities
+to radio users via NOS.
+<P>Brandon S. Allbery, KF8NH, contributed the following information to explain
+how to interconnect the NOS running on a Linux machine with the kernel
+code using the Linux pipe device.
+<P>Since both Linux and NOS support the slip protocol it is possible to link
+the two together by creating a slip link. You could do this by using two
+serial ports with a loopback cable between them, but this would be slow
+and costly. Linux provides a feature that many other Unix-like operating
+systems provide called `pipes'. These are special pseudo devices that
+look like a standard tty device to software but in fact loopback to another
+pipe device. To use these pipes the first program must open the <B>master</B>
+end of the pipe, and the open then the second program can open the
+<B>slave</B> end of the pipe. When both ends are open the programs can
+communicate with each other simply by writing characters to the pipes in the
+way they would if they were terminal devices.
+<P>To use this feature to connect the Linux Kernel and a copy of NOS, or some
+other program you first must choose a pipe device to use. You can find one
+by looking in your <CODE>/dev</CODE> directory. The master end of the pipes are
+named: <CODE>ptyq[1-f]</CODE> and the slave end of the pipes are known as:
+<CODE>ttyq[1-f]</CODE>. Remember they come in pairs, so if you select
+<CODE>/dev/ptyqf</CODE> as your master end then you must use <CODE>/dev/ttyqf</CODE>
+as the slave end.
+<P>Once you have chosen a pipe device pair to use you should allocate the master
+end to you linux kernel and the slave end to the NOS program, as the Linux
+kernel starts first and the master end of the pipe must be opened first.
+You must also remember that your Linux kernel must have a different IP address
+to your NOS, so you will need to allocate a unique address for it if you
+haven't already.
+<P>You configure the pipe just as if it were a serial device, so to create
+the slip link from your linux kernel you can use commands similar to the
+following:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# /sbin/slattach -s 38400 -p slip /dev/ptyqf &amp;
+# /sbin/ifconfig sl0 broadcast 44.255.255.255 pointopoint 44.70.248.67 /
+        mtu 1536 44.70.4.88
+# /sbin/route add 44.70.248.67 sl0
+# /sbin/route add -net 44.0.0.0 netmask 255.0.0.0 gw 44.70.248.67
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>In this example the Linux kernel has been given IP address <CODE>44.70.4.88</CODE>
+and the NOS program is using IP address <CODE>44.70.248.67</CODE>. The
+<EM>route</EM> command in the last line simply tells your linux kernel to route
+all datagrams for the amprnet via the slip link created by the
+<EM>slattach</EM> command. Normally you would put these commands into your
+<CODE>/etc/rc.d/rc.inet2</CODE> file after all your other network configuration
+is complete so that the slip link is created automatically when you reboot.
+Note: there is no advantage in using <EM>cslip</EM> instead of <EM>slip</EM>
+as it actually reduces performance because the link is only a virtual
+one and occurs fast enough that having to compress the headers first takes
+longer than transmitting the uncompressed datagram.
+<P>To configure the NOS end of the link you could try the following:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# you can call the interface anything you want; I use "linux" for convenience.
+attach asy ttyqf - slip linux 1024 1024 38400
+route addprivate 44.70.4.88 linux
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>These commands will create a slip port named `linux' via the slave end of
+the pipe device pair to your linux kernel, and a route to it to make it
+work. When you have started NOS you should be able to ping and telnet to
+your NOS from your Linux machine and vice versa. If not, double check that
+you have made no mistakes especially that you have the addresses configured
+properly and have the pipe devices around the right way.
+<P>
+<P>
+<HR>
+<A HREF="AX25-HOWTO-22.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="AX25-HOWTO-20.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="AX25-HOWTO.html#toc21"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

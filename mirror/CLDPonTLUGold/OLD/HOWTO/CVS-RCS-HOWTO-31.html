@@ -1,0 +1,130 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>CVS-RCS- HOW-TO document for Linux (Source Code Control System): sfreeze </TITLE>
+ <LINK HREF="CVS-RCS-HOWTO-30.html" REL=previous>
+ <LINK HREF="CVS-RCS-HOWTO.html#toc31" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<IMG SRC="../img/next.gif" ALT="Next">
+<A HREF="CVS-RCS-HOWTO-30.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="CVS-RCS-HOWTO.html#toc31"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="sfreeze"></A> <A NAME="s31">31. sfreeze </A></H2>
+
+<P><B>NOTE : <I>Korn shell /bin/ksh is got by installing pdksh*.rpm from Linux contrib cdrom</I></B>
+<P>Save this file as text file and chmod a+rx on it.
+<P>
+<HR>
+<PRE>
+#!/bin/ksh
+
+# CVS program sfreeze
+# Program to freeze and cut out the release of source tree from CVS
+
+cmdname=`basename $0`
+
+Usage()
+{
+        clear
+        print "\nUsage: $cmdname symbolic_tag &lt;directory name> "
+
+        print "\nFor example :- "
+        print "   cd \$HOME"
+        print "   $cmdname  REVISION_1   myprojectsource_directory"
+        print "To see the list of revisons do -"
+        print "slog &lt;filename> and see the symbolic name and do -"
+        print "cvs history -T"
+
+        print "\nTo create a branch off-shoot from main trunk, use"
+        print "the -b and -r options which makes the tag a branch tag. This is"
+        print "useful for creating a patch to previously released software"
+        print "For example :- "
+        print "   cd \$HOME"
+        print "   cvs rtag -b -r REVISION_1   REVISION_1_1   myprojectsource_directory"
+        print " "
+
+#   print "\nTag info is located at \$CVSROOT/CVSROOT/taginfo,v"
+#   print "You can do - cd $HOME; sget CVSROOT"
+#   print "to see this file"
+        exit
+}
+
+# Command getopt will not supported in next major release.
+# Use getopts instead.
+#while getopts r: ii
+#do
+#       case $ii in
+#               r) FLAG1=$ii; OARG1="$OPTARG";;
+#               ?) Usage; exit 2;;
+#       esac
+#done
+#shift ` expr $OPTIND - 1 `
+
+#echo FLAG1 = $FLAG1 , OARG1 = $OARG1
+
+if [ $# -lt 2 ]; then
+        Usage
+fi
+
+if [ ! -d $2 ]; then
+        print "\nError: Second argument $2 is not a directory!"
+        print "       Aborting $cmdname...."
+        print " "
+        exit
+fi
+
+homedir=` echo $HOME | cut -f1 -d' '  `
+if [ "$homedir" = "" ]; then
+        print "\nError: \$HOME is not set!!\n"
+        exit
+fi
+
+cur_dir=`pwd`
+len=${#homedir}
+len=$(($len + 2))
+subdir=` echo $cur_dir | cut -b $len-2000 `
+#echo "subdir is : " $subdir
+
+# CVS directory in your local directory is required for all commands..
+if [ ! -d  "$homedir/$subdir/CVS" ]; then
+        tmpaa=` (cd "$CVSROOT/$subdir"; find * -prune -type f -print | head -1 ) `
+        tmpbb=`basename $tmpaa | cut -d',' -f1 `
+        if [ "$tmpaa" = "" -o ! -f "$CVSROOT/$subdir/$tmpbb,v" ]; then
+                print "\nThe directory $homedir/$subdir/CVS does not exist"
+                print "You must do a sget on `basename $subdir` directory. Give -"
+                print "       cd $homedir/`dirname $subdir` "
+                print "       sget `basename $subdir` "
+                exit
+        else
+                # Now try to create CVS in local dir by sget
+                (
+                        cd "$homedir"
+                        if [ "$subdir" = "." ]; then  # don't use dot, will mess up cvs
+                                cvs -r checkout -A $tmpbb
+                        else
+                                cvs -r checkout -A "$subdir/$tmpbb"
+                        fi
+                )
+        fi
+fi
+
+if [ "$cur_dir" != "$homedir" ]; then
+        print "\nYou are not in home directory $homedir!!"
+        print "You must give the sfreeze command "
+        print "from home directory $homedir"
+        exit
+fi
+
+# cvs rtag symbolic_tag &lt;directory name>
+cvs rtag $1 $2
+
+print "\nDone $cmdname. $cmdname successful"
+</PRE>
+<HR>
+<HR>
+<IMG SRC="../img/next.gif" ALT="Next">
+<A HREF="CVS-RCS-HOWTO-30.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="CVS-RCS-HOWTO.html#toc31"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

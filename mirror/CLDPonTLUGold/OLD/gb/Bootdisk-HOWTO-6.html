@@ -1,0 +1,217 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="LinuxDoc-Tools 0.9.16">
+ <TITLE>The Linux Bootdisk HOWTO: 把它们放在一起：制作磁片(组) -- Putting them together: Making the diskette(s)</TITLE>
+ <LINK HREF="Bootdisk-HOWTO-7.html" REL=next>
+ <LINK HREF="Bootdisk-HOWTO-5.html" REL=previous>
+ <LINK HREF="Bootdisk-HOWTO.html#toc6" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Bootdisk-HOWTO-7.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="Bootdisk-HOWTO-5.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="Bootdisk-HOWTO.html#toc6"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s6">6.</A> <A HREF="Bootdisk-HOWTO.html#toc6">把它们放在一起：制作磁片(组) -- Putting them together: Making the diskette(s)</A></H2>
+
+
+<P>进行到这里，你已经有一个 kernel 与一个压缩的 root filesystem 。如果你正在制作一张 boot/root 磁片，请检查它们的 size ，以确定它们都能放在同一张磁片上。如果你正在制作一套两张磁片的 boot + root 磁片组。请检查 root filesystem 以确定它能放在一张磁片上。</P>
+<P>你应该决定是否使用 LILO 以启动 bootdisk的 kernel 。替代的方法是直接把 kernel copy 到磁片上，然后不使用 LILO 开机。使用 LILO 的好处在于让你能够提供一些参数给 kernel ，这些参数对初始化硬体来说可能是必要的(请检查你系统上的 /etc/lilo.conf 档。如果这个档存在，而且有一行像``<CODE>append=...</CODE>''，你可能需要这个特点 (feature))。使用 LILO 的缺点在于建造 bootdisk 变得更为复杂，并且占用稍嫌较多的空间。你将必须设定一个小型而独立的 filesystem ，我们称之为 <EM>kernel filesystem</EM>，在其中你传送 kernel 以及一些 LILO 所需的其它档案。</P>
+<P>
+<!--
+lilo filesystem
+-->
+<!--
+lilo.conf
+-->
+<!--
+kernel , parameters
+-->
+</P>
+<P>如果你将要使用 LILO ，请继续读下去；如果你要直接传送 kernel ，先跳过此，直接到 
+<A HREF="#TransferringWithoutLILO">Without using LILO</A> 这一节。</P>
+
+<H2><A NAME="ss6.1">6.1</A> <A HREF="Bootdisk-HOWTO.html#toc6.1">用 LILO 传送 kernel -- Transferring the kernel with LILO</A>
+</H2>
+
+<P>
+<A NAME="TransferringWithLILO"></A> </P>
+<P>你所必须做的第一件事是为 LILO 编写一个小型的组态档。这个档看起来像这样：
+<HR>
+<PRE>
+        boot      =/dev/fd0
+        install   =/boot/boot.b
+        map       =/boot/map
+        read-write
+        backup    =/dev/null
+        compact
+        image     =KERNEL
+        label     =Bootdisk
+        root      =/dev/fd0
+</PRE>
+<HR>
+
+关于这些参数的说明请看 LILO's user documentation 。你或许也会想从你硬碟上的 /etc/lilo.conf 档，加入一行 <CODE>append=...</CODE> 到这个组态档中。</P>
+<P>把这个组态档存成 bdlilo.conf 。</P>
+<P>现在你必须制作一个小型的档案系统，我们称之为 <EM>kernel filesystem</EM> ，有别于 root filesystem 。</P>
+<P>首先，指出这个 filesystem 应该会有多大。用 blocks 计算你 kernel 的 size (这个 size 用 ``<CODE>ls -l KERNEL</CODE>'' 显示出来，是被 1024 所除并强迫进位)，然后加 50 。这个 50 blocks 是估计的空间，为 inodes 与其它档案所需。如果你想要，你可以精确地计算这个数字，或是就用 50 就好了。如果你正在制作两张磁片的磁片组，你会高估这个空间，因为无论如何第一张磁片只给 kernel 使用。我们称这个数字会 <CODE>KERNEL_BLOCKS</CODE> 。</P>
+<P>请把软碟片放入软碟机 (为求简便，我们假设是 /dev/fd0)，然后在其上制作 ext2 kernel filesystem 。
+<PRE>
+        mke2fs -i 8192 -m 0 /dev/fd0 KERNEL_BLOCKS
+</PRE>
+</P>
+<P>
+<!--
+inodes, allocation
+-->
+
+``<CODE>-i 8192</CODE>'' 指定我们想要每 8192 bytes 一个 node 。接下来， mount 这个 filesystem ，移除 lost+found 目录，然后为 LILO 造出 dev 与 boot 这两个目录：
+<PRE>
+        mount /dev/fd0 /mnt
+        rm -rf /mnt/lost+found
+        mkdir /mnt/{boot,dev}
+</PRE>
+</P>
+<P>再来，造出设备档 /dev/null 与 /dev/fd0 。不用寻找设备号码，你只要从你的硬碟上用 <CODE>-R</CODE> copy它们：
+<PRE>
+        cp -R /dev/{null,fd0} /mnt/dev
+</PRE>
+ 
+LILO 需要一份它的 boot loader 的 copy ， boot.b ，你可以从你的硬碟得到它。它通常是放在 /boot 目录内。
+<PRE>
+        cp /boot/boot.b /mnt/boot
+</PRE>
+
+最后，随附你的 kernel ， copy 你在上一节所编写的 LILO 组态档。它们两者可以被放在根目录下。
+<PRE>
+        cp bdlilo.conf KERNEL /mnt
+</PRE>
+
+LILO 所需的每一项现在都在 kernel filesystem上，所以你已准备好去执行它。 LILO 的 <CODE>-r</CODE> 旗号(flag)被用作安装 boot loader 在某个其它的 root 上：
+<PRE>
+        lilo -v -C bdlilo.conf -r /mnt
+</PRE>
+</P>
+<P>LILO 应该可以在无错的情况下执行，在此之后，你可以看看你的 kernel filesystem ，应该长得像这样：
+<HR>
+<PRE>
+total 361
+  1 -rw-r--r--   1 root     root          176 Jan 10 07:22 bdlilo.conf
+  1 drwxr-xr-x   2 root     root         1024 Jan 10 07:23 boot/
+  1 drwxr-xr-x   2 root     root         1024 Jan 10 07:22 dev/
+358 -rw-r--r--   1 root     root       362707 Jan 10 07:23 vmlinuz
+boot:
+total 8
+  4 -rw-r--r--   1 root     root         3708 Jan 10 07:22 boot.b
+  4 -rw-------   1 root     root         3584 Jan 10 07:23 map
+dev:
+total 0
+  0 brw-r-----   1 root     root       2,   0 Jan 10 07:22 fd0
+  0 crw-r--r--   1 root     root       1,   3 Jan 10 07:22 null           
+</PRE>
+<HR>
+</P>
+<P>
+<!--
+kernel filesystem
+-->
+</P>
+<P>如果档案 size 和你自己的 filesystem 有稍微不同，请不用担心。</P>
+<P>现在请把磁片留在软碟机内，然后前进到 
+<A HREF="#SettingRamdiskWord">Setting the ramdisk word</A> 这一节。</P>
+
+<H2><A NAME="ss6.2">6.2</A> <A HREF="Bootdisk-HOWTO.html#toc6.2">不使用 LILO 来传送 kernel -- Transferring the kernel without LILO</A>
+</H2>
+
+<P>
+<A NAME="TransferringWithoutLILO"></A> </P>
+<P>如果你 <EM> 不 </EM> 使用LILO，那么就用 <CODE>dd</CODE> 指令来传送 kernel 给 bootdisk ：
+<PRE>
+        % dd if=KERNEL of=/dev/fd0 bs=1k
+        353+1 records in
+        353+1 records out
+</PRE>
+</P>
+<P>在这个例子中， <CODE>dd</CODE> 写入了 353 个完整记录(records) + 1个partial record ，所以 kernel 占用了 354 个软碟片的 blocks 。这个数字称为 <CODE>KERNEL_BLOCKS</CODE> ，请记得它，这个数字要给下一节使用。</P>
+<P>最后，请设定 root device 为软碟片自己，然后再设定 root 要被载入成 read/write ：
+<PRE>
+        rdev /dev/fd0 /dev/fd0
+        rdev -R /dev/fd0 0
+</PRE>
+</P>
+<P>
+<!--
+rdev
+-->
+</P>
+<P>在第二个 <CODE>rdev</CODE> 指令中，请小心地使用 <CODE>-R</CODE> 。</P>
+
+<H2><A NAME="ss6.3">6.3</A> <A HREF="Bootdisk-HOWTO.html#toc6.3">设定ramdisk -- Setting the ramdisk word</A>
+</H2>
+
+<P>
+<A NAME="SettingRamdiskWord"></A> </P>
+<P>在 kernel image内的是 <EM>ramdisk word</EM> ，它伴随其它选项，指定了 root filesystem 应该在哪里被找到。这个 word 会被以 <CODE>rdev</CODE> 指令，来进行存取与设定，而它的内容被解释如下：</P>
+<P>
+<PRE>
+        bits  0-10:     Offset to start of ramdisk, in 1024 byte blocks
+        bits 11-13:     unused
+        bit     14:     Flag indicating that ramdisk is to be loaded
+        bit     15:     Flag indicating to prompt before loading rootfs
+</PRE>
+</P>
+<P>如果 bit 15 被设定，在开机时 (boot-up) ，会提示你把一张新的软碟片放入软碟机中。这对一套双磁片的开机磁片组来说是必要的。</P>
+<P>依据你是建造一张单一的 boot/root 磁片，还是两张 "boot + root" 的磁片组，这里会产生两种情况。</P>
+<P>
+<OL>
+<LI> 如果你是建造一张单一磁片，压缩的 root filesystem 会被放置在 kernel 之后，所以 offset 会是第一块 free block (这个值应该会与 <CODE>KERNEL_BLOCKS</CODE> 相等) 。 Bit 14 会被设定为 1 ，而 bit 15 会被设定为 0 。
+
+举例来说，假设你正建造一张单一磁片，而 root filesystem 将自 block 253 (10进位)开始。那么， ramdisk word 值应该是 253 (10进位) ， bit 14 设为 1 而 bit 15 设为 0 。要计算这个值，你可以简单地加一加这个 10 进位数字。 253 + (2^14) = 253 + 16384 = 16637 。如果你并不十分了解这个数字从何而来，把这数字放到工程计算机上，然后把它转换为 2 进位，
+</LI>
+<LI> 如果你建造的是一套双磁片组，那么 root filesystem 将自第二张磁片的 block 0 开始，所以 offset 为 0 。 Bit 14 设为 1 而 bit 15 设为 1 。在这个情况下， 10 进位值是 2^14 + 2^15 = 49152 。
+</LI>
+</OL>
+</P>
+<P>
+<!--
+ramdisk word
+-->
+<!--
+rdev
+-->
+</P>
+<P>在仔细地为 ramdisk word 计算后，请用 <CODE>rdev -r</CODE> 设定它。请注意要使用 <EM>10 进位 </EM> 值。如果你使用 LILO ，传给 <CODE>rdev</CODE> 的引数在此应该是 <EM>mounted kernel path</EM> ，比如说 /mnt/vmlinuz；如果你用 <CODE>dd</CODE> 来 copy kernel ，替换成使用软碟机名称(<EM> 比如说 </EM>/dev/fd0)。
+<PRE>
+        rdev -r KERNEL_OR_FLOPPY_DRIVE  VALUE
+</PRE>
+</P>
+<P>如果你使用 LILO ，现在请把磁片 unmount 。</P>
+
+<H2><A NAME="ss6.4">6.4</A> <A HREF="Bootdisk-HOWTO.html#toc6.4">传送root filesystem -- Transferring the root filesystem</A>
+</H2>
+
+
+<P>最后一步是要传送 root filesystem 。</P>
+<P>
+<UL>
+<LI> 如果 root filesystem 将被放置在做为 kernel 之 <EM> 相同 </EM> 磁片上，请使用 <CODE>dd</CODE> 指令及其 <CODE>seek</CODE> 选项传送它，这会指定要跳过多少个 blocks ：
+<PRE>
+        dd if=rootfs.gz of=/dev/fd0 bs=1k seek=KERNEL_BLOCKS
+</PRE>
+
+</LI>
+<LI> 如果 root filesystem 会被放置在 <EM> 第二张 </EM> 磁片上，请自磁碟机中拿走第一张软碟片然后放入第二张磁碟片，接著将 root filesystem 传送到其上：
+<PRE>
+        dd if=rootfs.gz of=/dev/fd0 bs=1k
+</PRE>
+</LI>
+</UL>
+</P>
+<P>恭喜你，已经完成了！</P>
+<P>在把 bootdisk 挪为紧急使用之前，请记得先测试它 !如果你的成品不能执行，请继续读下去。</P>
+
+<HR>
+<A HREF="Bootdisk-HOWTO-7.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="Bootdisk-HOWTO-5.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="Bootdisk-HOWTO.html#toc6"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

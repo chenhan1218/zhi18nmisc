@@ -1,0 +1,148 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux From Scratch: Making the LFS system bootable</TITLE>
+ <LINK HREF="Linux-From-Scratch-HOWTO-6.html" REL=next>
+ <LINK HREF="Linux-From-Scratch-HOWTO-4.html" REL=previous>
+ <LINK HREF="Linux-From-Scratch-HOWTO.html#toc5" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Linux-From-Scratch-HOWTO-6.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Linux-From-Scratch-HOWTO-4.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Linux-From-Scratch-HOWTO.html#toc5"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s5">5. Making the LFS system bootable</A> </H2>
+
+<H2><A NAME="ss5.1">5.1 Installing Sysvinit</A>
+ </H2>
+
+<P>Under normal circumstances, after the kernel is done loading and initializing
+various system components, it attempts to load a program called <CODE>init</CODE> which
+will finalize the system boot process. The package found on most if not every
+single Linux system is called Sysvinit and that's the program we're going to
+install on our LFS system.
+<P>
+<UL>
+<LI>Unpack the Sysvinit archive</LI>
+<LI>Enter the src directory</LI>
+<LI>Edit the <CODE>Makefile</CODE> file</LI>
+<LI>Somewhere in this file, but before the rule <EM>all:</EM> put this line: <EM>ROOT =
+$LFS</EM></LI>
+<LI>Precede every /dev on the last four lines in this file by <EM>$(ROOT)</EM></LI>
+</UL>
+<P>After applying the $(ROOT) parts to the last four lines, they should
+look like this:
+<P>
+<PRE>
+   @if [! -p $(ROOT)/dev/initctl ]; then \
+   echo "Creating $(ROOT)/dev/initctl"; \
+   rm -f $(ROOT)/dev/initctl; \
+   mknod -m 600 $(ROOT)/dev/initctl p; fi
+ 
+</PRE>
+<P>
+<UL>
+<LI>Install the package by running:</LI>
+</UL>
+<P>
+<PRE>
+make -e LDFLAGS=-static; make install
+ 
+</PRE>
+<H2><A NAME="ss5.2">5.2 Configuring Sysvinit</A>
+ </H2>
+
+<P>In order for Sysvinit to work, we need to create it's configuration file.
+Create the <CODE>$LFS/etc/inittab</CODE> file containing the following:
+<P>
+<PRE>
+# Begin /etc/inittab
+ 
+id:2:initdefault:
+ 
+ca:12345:ctrlaltdel:/sbin/shutdown -t1 -a -r now
+ 
+1:2345:respawn:/sbin/sulogin
+ 
+# End /etc/inittab
+ 
+</PRE>
+<H2><A NAME="ss5.3">5.3 Creating passwd &amp; group files</A>
+ </H2>
+
+<P>As you can see from the inittab file, when we boot the system, init will
+start the sulogin program and sulogin will ask you for user root's password.
+This means we need to have at least a passwd file present on the LFS system.
+<P>
+<UL>
+<LI>Create the $LFS/etc/passwd file containing the following: <EM>root:s394ul1Bkvmq2:0:0:root:/root:/bin/bash</EM></LI>
+<LI>Create the $LFS/etc/group file containing the following: <EM>root::0:</EM></LI>
+</UL>
+<P>The encoded password string above is: <EM>lfs123</EM>
+<P>When you logon to your LFS system, enter <EM>lfs123</EM> when asked to enter user
+root's password.
+<H2><A NAME="ss5.4">5.4 Installing the Bash shell</A>
+ </H2>
+
+<P>When sulogin asks you for the root password and you've entered the password,
+a shell needs to be started. Usually this is the bash shell. Since there are
+no libraries installed yet, we need to link bash statically, just like we did
+with Sysvinit.
+<P>
+<UL>
+<LI>Unpack the Bash archive</LI>
+<LI>Install Bash by running:</LI>
+</UL>
+<P>
+<PRE>
+./configure --enable-static-link
+make; make -e prefix=$LFS/usr install
+mv $LFS/usr/bin/bash $LFS/bin 
+cd $LFS/bin; ln -s bash sh
+ 
+</PRE>
+<H2><A NAME="ss5.5">5.5 Adding an entry to LILO</A>
+ </H2>
+
+<P>In order to being able to boot from this partition, we need to update our
+<CODE>/etc/lilo.conf</CODE> file. Add the following lines to lilo.conf:
+<P>
+<PRE>
+image=&lt;currently used image&gt;
+   label=&lt;label&gt;
+   root=$LFS
+   read-only
+ 
+</PRE>
+<P>Replace &lt;currently used image&gt; by the kernel image file that you
+are using to boot your normal Linux system. &lt;label&gt; can be anything you
+want it to be. I named the label &quot;lfs&quot; What you enter as &lt;label&gt;
+is what you enter at the LILO-prompt when you choose with system to boot.
+<P>Now run the <CODE>lilo</CODE> program to update the boot loader.
+<H2><A NAME="ss5.6">5.6 Testing the system</A>
+ </H2>
+
+<P>After you've completed this section, we can test the system by rebooting
+into LFS and see if we can log on to it. When you reboot and are at the LILO
+prompt, enter the label you have entered in the lilo.conf file to start the
+LFS system. Then enter root's password and you should be on the bash-prompt
+now. You won't be able to shutdown the system with a program like shutdown.
+Although the program is present, it will give you the following error: &quot;You
+don't exist. Go away.&quot; when you try to use the program. The meaning of
+this error is that the system isn't able to locate the password file. Although
+the shutdown program is statically linked against the libraries it needs, it
+still depends on the NSS Library (Name Server Switch) which is part of the
+GNU C Library, which will be installed in a later chapter. This NSS library
+passes on information where (in this case) the passwd file can be found.
+<P>For now you can reboot the system using the <CODE>reboot -f</CODE> command. This will
+bypass shutting down the system using the shutdown program and reboot immediately.
+Since the file system is mounted read-only this will not harm our system in
+any way (though you might get a warning next time you try to mount the system
+that it wasn't unmounted cleanly the last time and that you should run e2fsck
+to make sure the file system is still intact).
+<HR>
+<A HREF="Linux-From-Scratch-HOWTO-6.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Linux-From-Scratch-HOWTO-4.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Linux-From-Scratch-HOWTO.html#toc5"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

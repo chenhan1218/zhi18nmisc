@@ -1,0 +1,223 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>The Clock Mini-HOWTO: Detailed instructions for clock(8)</TITLE>
+ <LINK HREF="Clock-4.html" REL=previous>
+ <LINK HREF="Clock.html#toc5" REL=contents>
+<IMG SRC="../../img/../../img/../../img/next.gif" ALT="Next">
+<A HREF="Clock-4.html"><IMG SRC="../../img/../../img/../../img/prev.gif" ALT="Previous"></A>
+<A HREF="Clock.html#toc5"><IMG SRC="../../img/../../img/../../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s5">5. Detailed instructions for clock(8)</A></H2>
+
+<P>This section is retained from the earlier version of this
+mini-HOWTO, and is provided for anyone still using the old
+<CODE>clock(8)</CODE> program. Everything you need to know is in the man
+page, but the following discussion will walk you through the
+process.
+<P>
+<DL>
+<DT><B>Note</B><DD><P>You must be <B>root</B> to run &quot;<CODE>clock</CODE>&quot;,
+or any other program that affects either the system time
+or the CMOS clock.
+</DL>
+<H2><A NAME="ss5.1">5.1 Checking your installation</A>
+</H2>
+
+<P>Check your system startup files for a command like
+&quot;<CODE>clock -a</CODE>&quot; or &quot;<CODE>clock -ua</CODE>&quot;.
+Depending on which distribution you're using, it might be in
+<CODE>/etc/rc.local</CODE>, or
+<CODE>/etc/rc.d/rc.sysinit</CODE>, or some
+similar place.
+<P>If it says &quot;<CODE>clock -s</CODE>&quot; or &quot;<CODE>clock
+-us</CODE>&quot;, change the &quot;<CODE>s</CODE>&quot; to an
+&quot;<CODE>a</CODE>&quot;, and then check to see if you have the
+file <CODE>/etc/adjtime</CODE>, which contains a single
+line that looks something like this:
+<BLOCKQUOTE><CODE>
+<PRE>
+0.000000 842214901 0.000000
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>These numbers are the correction factor (in seconds per day),
+the time the clock was last corrected (in seconds since Jan 1, 1970),
+and the partial second that was rounded off last time.
+If you don't have this file, login as <B>root</B> and create it,
+with a single line that looks like this (all zeros):
+<BLOCKQUOTE><CODE>
+<PRE>
+0.0 0 0.0
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Then run &quot;<CODE>clock -a</CODE>&quot; or &quot;<CODE>clock
+-ua</CODE>&quot; manually from the shell to update the 2nd number
+(use the &quot;<CODE>u</CODE>&quot; if your clock is set to
+Universal instead of local time).
+<H2><A NAME="ss5.2">5.2 Measuring your clock's drift rate</A>
+</H2>
+
+<P>First, you need to know what time it is <CODE>:-)</CODE>. Your local
+time of day number may or may not be accurate. My favorite method
+is to call WWV's voice announcment at (303)499-7111 (this is a
+toll call). If you have access to a network time server, you can
+use the <CODE>ntpdate</CODE> program from the <CODE>xntpd</CODE> package
+(use the <CODE>-b</CODE> flag to keep the kernel from messing with
+the CMOS clock). Otherwise use &quot;<CODE>date -s
+hh:mm:ss</CODE>&quot; to set the kernel time by hand, and then
+&quot;<CODE>clock -w</CODE>&quot; to set the CMOS clock from the
+kernel clock. You'll need to remember when you last set the
+clock, so write down the date someplace where you won't lose it.
+If you used <CODE>ntpdate</CODE>, do &quot;<CODE>date +%s</CODE>&quot;
+and write down the number of seconds since Jan 1,1970.
+<P>Then come back some days or weeks later and see how far the clock
+has drifted. If you're setting the clock by hand, I'd recommend
+waiting at least two weeks, and only calculate the drift rate to
+the nearest .1 sec/day. After several months you could get to the
+nearest .01 sec/day (some people claim more accuracy than that,
+but I'm being conservative here). If you use <CODE>ntpdate</CODE> you
+shouldn't have to wait that long, but in any case you can always
+fine-tune it later.
+<P>You can have cron run &quot;<CODE>clock -a</CODE>&quot; at regular
+intervals to keep the system time in line with the (corrected)
+CMOS time. This command will also be run from your startup file
+every time you boot the system, so if you do that often (as some
+of us do), that may be enough for your purposes.
+<P>Note that certain programs may complain
+if the system time jumps by more than one second at a time,
+or if it jumps backwards.
+If you have this problem, you can use <CODE>xntpd</CODE> or <CODE>ntpdate</CODE>
+to correct the time more gradually.
+<H2><A NAME="ss5.3">5.3 Example</A>
+</H2>
+
+<H3>To set time</H3>
+
+<P>Login as <B>root</B>.
+Dial (303)499-7111 (voice), listen for time announcement.
+Then type:
+<BLOCKQUOTE><CODE>
+<PRE>
+date -s hh:mm:ss
+</PRE>
+</CODE></BLOCKQUOTE>
+
+but don't press enter until you hear the beep. (You could use
+&quot;<CODE>ntpdate</CODE>&quot; here instead of
+&quot;<CODE>date</CODE>&quot;, and skip the phone call) This sets
+the &quot;kernel time&quot;. Then type:
+<BLOCKQUOTE><CODE>
+<PRE>
+clock -w
+</PRE>
+</CODE></BLOCKQUOTE>
+
+This sets the CMOS time to match the kernel time.
+Then type:
+<BLOCKQUOTE><CODE>
+<PRE>
+date +%j
+</PRE>
+</CODE></BLOCKQUOTE>
+
+(or &quot;<CODE>date +%s</CODE>&quot; if you used
+&quot;<CODE>ntpdate</CODE>&quot; instead of
+&quot;<CODE>date</CODE>&quot; above) and write down the number it
+gives you for next time.
+<H3>To reset time and check drift rate</H3>
+
+<P>Find the date you wrote down last time.
+Login as <B>root</B>
+Then type:
+<BLOCKQUOTE><CODE>
+<PRE>
+clock -a
+</PRE>
+</CODE></BLOCKQUOTE>
+
+This sets the kernel time to match the current CMOS time.
+Dial (303)499-7111 (voice), listen for announcement.
+Then type:
+<BLOCKQUOTE><CODE>
+<PRE>
+date
+</PRE>
+</CODE></BLOCKQUOTE>
+
+and press enter when you hear the beep, but while you're waiting,
+write down the time they announce, and don't hang up yet.
+This tells you what time your machine thought it was,
+when it should have been exactly on the minute.
+Now type in
+<BLOCKQUOTE><CODE>
+<PRE>
+date hh:mm:00
+</PRE>
+</CODE></BLOCKQUOTE>
+
+using the minute *<B>after</B>* the one that was just announced,
+and press enter when you hear the beep again (now you can hang up).
+For <CODE>hh</CODE> use the local hour.
+This sets the &quot;kernel time&quot;.
+Then type:
+<BLOCKQUOTE><CODE>
+<PRE>
+clock -w
+</PRE>
+</CODE></BLOCKQUOTE>
+
+which writes the new (correct) time to the CMOS clock.
+Now type:
+<BLOCKQUOTE><CODE>
+<PRE>
+date +%j
+</PRE>
+</CODE></BLOCKQUOTE>
+
+(or &quot;<CODE>date +%s</CODE>&quot; if that's what you used before)
+<P>You now have three numbers (two dates and a time)
+that will allow you to calculate the drift rate.
+<H3>Calculating the correction factor</H3>
+
+<P>When you ran &quot;<CODE>date</CODE>&quot; on the minute, was your
+machine slow or fast? If it was fast, you'll have to subtract
+some number of seconds, so write it down as a negative number. If
+it was slow, you have to add some seconds, so write it down as
+positive.
+<P>Now subtract the two dates. If you used &quot;<CODE>date
++%j</CODE>&quot;, the numbers represent the day-of-year
+(1-365, or 1-366 in leap years). If you've passed Jan 1 since you
+last set the clock you'll have to add 365 (or 366) to the 2nd
+number. If you used &quot;<CODE>date +%s</CODE>&quot; then
+your number is in seconds, and you'll have to divide it by 86400
+to get days.
+<P>If you already had a correction factor in
+<CODE>/etc/adjtime</CODE>,
+you'll have to account for the number of seconds you've already
+corrected. If you've overcorrected, this number will have the
+opposite sign of the one you just measured; if you've
+undercorrected it will have the same sign. Multiply the old
+correction factor by the number of days, and then add the new
+number of seconds (signed addition-- if the two numbers have the
+same sign, you'll get a larger number, if they have opposite
+signs, you'll get a smaller number).
+<P>Then divide the total number of seconds by the number of days to
+get the new correction factor, and put it in
+<CODE>/etc/adjtime</CODE> in place of the old one. Write
+down the new date (in seconds or days) for next time.
+<P>Here's what my <CODE>/etc/adjtime</CODE> looks like:
+<BLOCKQUOTE><CODE>
+<PRE>
+-9.600000 845082716 -0.250655
+</PRE>
+</CODE></BLOCKQUOTE>
+
+(note 9.6 seconds per day is nearly five minutes per month!)
+<P>
+<HR>
+<IMG SRC="../../img/../../img/../../img/next.gif" ALT="Next">
+<A HREF="Clock-4.html"><IMG SRC="../../img/../../img/../../img/prev.gif" ALT="Previous"></A>
+<A HREF="Clock.html#toc5"><IMG SRC="../../img/../../img/../../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  <SCRIPT>EndPage();</SCRIPT>  <SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

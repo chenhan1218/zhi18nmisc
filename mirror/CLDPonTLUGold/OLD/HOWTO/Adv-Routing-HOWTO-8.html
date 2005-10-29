@@ -1,0 +1,277 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux 2.4 Advanced Routing HOWTO: Using Class Based Queueing for bandwidth management</TITLE>
+ <LINK HREF="Adv-Routing-HOWTO-9.html" REL=next>
+ <LINK HREF="Adv-Routing-HOWTO-7.html" REL=previous>
+ <LINK HREF="Adv-Routing-HOWTO.html#toc8" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Adv-Routing-HOWTO-9.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Adv-Routing-HOWTO-7.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Adv-Routing-HOWTO.html#toc8"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s8">8. Using Class Based Queueing for bandwidth management</A></H2>
+
+<P>Now, when I discovered this, it <EM>really</EM> blew me away. Linux 2.2 comes with
+everything to manage bandwidth in ways comparable to high-end dedicated
+bandwidth management systems.
+<P>Linux even goes far beyond what Frame and ATM provide. 
+<P>The two basic units of Traffic Control are filters and queues. Filters place
+traffic into queues, and queues gather traffic and decide what to send
+first, send later, or drop. There are several flavours of filters and queues.
+<P>The most common filters are fwmark and u32, the first lets you use the Linux
+netfilter code to select traffic, and the second allows you to select
+traffic based on ANY header. The most notable queue is Class Based
+Queue. CBQ is a super-queue, in that it contains other queues (even other
+CBQs).
+<P>It may not be immediately clear what queueing has to do with bandwidth
+management, but it really does work. 
+<P>For our frame of reference, I have modelled this section on an ISP where I
+learned the ropes, so to speak, Casema Internet in The Netherlands. Casema,
+which is actually a cable company, has internet needs both for their
+customers and for their own office. Most corporate computers there have
+access to the internet. In reality, they have lots of money to spend and do
+not use Linux for bandwidth management.
+<P>We will explore how our ISP could have used Linux to manage their bandwidth.
+<P>
+<H2><A NAME="ss8.1">8.1 What is queueing?</A>
+</H2>
+
+<P>With queueing we determine the order in which data is <EM>sent</EM>. It it important
+to realise that we can only shape data that we transmit. How does this changing
+the order determine the speed of transmission? Imagine a cash register which
+is able to process 3 customers per minute.
+<P>People wishing to pay go stand in line at the 'tail end' of the queue. This
+is 'FIFO queueing' (First In, First Out). Let's suppose however that we let certain people always
+join in the middle of the queue, instead of at the end. These people spend
+a lot less time in the queue and are therefore able to shop faster. 
+<P>With the way the internet works, we have no direct control of what people
+send us. It's a bit like your (physical!) mailbox at home. There is no way
+you can influence the world to modify the amount of mail they send you,
+short of contacting everybody.
+<P>However, the internet is mostly based on TCP/IP which has a few features
+that help us. TCP/IP has no way of knowing the capacity of the network
+between two hosts, so it just starts sending data faster and faster ('slow
+start') and when packets start getting lost, because there is no room to
+send them, it will slow down.
+<P>This is the equivalent of not reading half of your mail, and hoping that
+people will stop sending it to you. With the difference that it works for
+the Internet :-)
+<P>FIXME: explain congestion windows
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+[The Internet] ---&lt;E3, T3, whatever>--- [Linux router] --- [Office+ISP]
+                                      eth1          eth0
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Now, our Linux router has two interfaces which I shall dub eth0 and eth1.
+eth1 is connected to our router which moves packets from to and from our
+fibre link.
+<P>eth0 is connected to a subnet which contains both the corporate firewall and
+our network head ends, through which we can connect to our customers.
+<P>Because we can only limit what we send, we need two separate but possibly
+very similar sets of rules. By modifying queueing on eth0, we determine how
+fast data gets sent to our customers, and therefore how much downstream
+bandwidth is available for them. Their 'download speed' in short.
+<P>On eth1, we determine how fast we send data to The Internet, how fast our
+users, both corporate and commercial can upload data.
+<P>
+<H2><A NAME="ss8.2">8.2 First attempt at bandwidth division</A>
+</H2>
+
+<P>CBQ enables us to generate several classes, and even classes within classes.
+The larger devisions might be called 'agencies'. Within these classes may be
+things like 'bulk' or 'interactive'.
+<P>For example, we may have a 10 megabit connection to 'the internet'
+which is to be shared by our customers, and our corporate needs. We should
+not allow a few people at the office to steal away large amounts of
+bandwidth which we should sell to our customers.
+<P>On the other hand, or customers should not be able to drown out the traffic
+from our field offices to the customer database.
+<P>Previously, one way to solve this was either to use Frame relay/ATM and
+create virtual circuits. This works, but frame is not very fine grained, ATM
+is terribly inefficient at carrying IP traffic, and neither have standardised
+ways to segregate different types of traffic into different VCs. 
+<P>However, if you do use ATM, Linux can also happily perform deft acts of fancy
+traffic classification for you too. Another way is to order separate
+connections, but this is not very practical and also not very elegant, and
+still does not solve all your problems.
+<P>CBQ to the rescue!
+<P>Clearly we have two main classes, 'ISP' and 'Office'. Initially, we really
+don't care what the divisions do with their bandwidth, so we don't further
+subdivide their classes.
+<P>We decide that the customers should always be guaranteed 8 megabits of
+downstream traffic, and our office 2 megabits. 
+<P>Setting up traffic control is done with the iproute2 tool <CODE>tc</CODE>.
+<BLOCKQUOTE><CODE>
+<PRE>
+# tc qdisc add dev eth0 root handle 10: cbq bandwidth 10Mbit avpkt 1000
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Ok, lots of numbers here. What has happened? We have configured
+the 'queueing discipline' of eth0. With 'root' we denote that this is the root
+discipline. We have given it the handle '10:'. We want to do CBQ, so we
+mention that on the command line as well. We tell the kernel that it can
+allocate 10Mbit and that the average packet size is somewhere around 1000
+octets.
+<P>Now we need to generate our root class, from which all others descend:
+<BLOCKQUOTE><CODE>
+<PRE>
+# tc class add dev eth0 parent 10:0 classid 10:1 cbq bandwidth 10Mbit rate \
+  10Mbit allot 1514 weight 1Mbit prio 8 maxburst 20 avpkt 1000
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Even more numbers to worry about - the Linux CBQ implementation is very
+generic. With 'parent 10:0' we indicate that this class descends from the
+root of qdisc handle '10:' we generated earlier. With 'classid 10:1' we
+name this class.
+<P>We really don't tell the kernel a lot more, we just generate a
+class that completely fills the available device. We also specify that the
+MTU (plus some overhead) is 1514 octets. We also 'weigh' this class with
+1Mbit - a tuning parameter.
+<P>We now generate our ISP class:
+<BLOCKQUOTE><CODE>
+<PRE>
+# tc class add dev eth0 parent 10:1 classid 10:100 cbq bandwidth 10Mbit rate \
+  8Mbit allot 1514 weight 800Kbit prio 5 maxburst 20 avpkt 1000 \
+  bounded
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>We allocate 8Mbit, and indicate that this class must not exceed this by
+adding the 'bounded' parameter. Otherwise this class would have started
+borrowing bandwidth from other classes, something we will discuss later on.
+<P>To top it off, we generate the root Office class:
+<BLOCKQUOTE><CODE>
+<PRE>
+# tc class add dev eth0 parent 10:1 classid 10:200 cbq bandwidth 10Mbit rate \
+  2Mbit allot 1514 weight 200Kbit prio 5 maxburst 20 avpkt 1000 \
+  bounded
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>To make this a bit clearer, a diagram which shows our classes:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
++-------------[10: 10Mbit]-------------------------+
+|+-------------[10:1 root 10Mbit]-----------------+|
+||                                                ||
+|| +-----[10:100 8Mbit]---------+ [10:200 2Mbit]  ||
+|| |                            | |            |  ||
+|| |          ISP               | |   Office   |  ||
+|| |                            | |            |  ||
+|| +----------------------------+ +------------+  ||
+||                                                ||
+|+------------------------------------------------+|
++--------------------------------------------------+
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Ok, now we have told the kernel what our classes are, but not yet how to
+manage the queues. We do this presently, in one fell swoop for both classes.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# tc qdisc add dev eth0 parent 10:100 sfq quantum 1514b perturb 15
+# tc qdisc add dev eth0 parent 10:200 sfq quantum 1514b perturb 15
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>In this case we install the Stochastic Fairness Queueing discipline (sfq),
+which is not quite fair, but works well up to high bandwidths without
+burning up CPU cycles. There are other queueing disciplines available which
+are better, but need more CPU. The Token Bucket Filter is often used.
+<P>Now there is only one thing left to do and that is to explain to the kernel
+which packets belong to which class. Initially we will do this natively with
+iproute2, but more interesting applications are possible in combination with
+netfilter.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# tc filter add dev eth0 parent 10:0 protocol ip prio 100 u32 match ip dst \
+  150.151.23.24 flowid 10:200
+
+# tc filter add dev eth0 parent 10:0 protocol ip prio 25 u32 match ip dst \
+  150.151.0.0/16 flowid 10:100
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Here is is assumed that our office hides behind a firewall with IP address
+150.151.23.24 and that all our other IP addresses should be considered to be
+part of the ISP.
+<P>The u32 match is a very simple one - more sophisticated matching rules are
+possible when using netfilter to mark our packets, which we can than match on
+in tc.
+<P>Now we have fairly divided the downstream bandwidth, we need to do the same
+for the upstream. For brevity's sake, all in one go:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# tc qdisc add dev eth1 root handle 20: cbq bandwidth 10Mbit avpkt 1000
+
+# tc class add dev eth1 parent 20:0 classid 20:1 cbq bandwidth 10Mbit rate \
+  10Mbit allot 1514 weight 1Mbit prio 8 maxburst 20 avpkt 1000
+
+# tc class add dev eth1 parent 20:1 classid 20:100 cbq bandwidth 10Mbit rate \
+  8Mbit allot 1514 weight 800Kbit prio 5 maxburst 20 avpkt 1000 \
+  bounded
+
+# tc class add dev eth1 parent 20:1 classid 20:200 cbq bandwidth 10Mbit rate \
+  2Mbit allot 1514 weight 200Kbit prio 5 maxburst 20 avpkt 1000 \
+  bounded
+
+# tc qdisc add dev eth1 parent 20:100 sfq quantum 1514b perturb 15
+# tc qdisc add dev eth1 parent 20:200 sfq quantum 1514b perturb 15
+
+# tc filter add dev eth1 parent 20:0 protocol ip prio 100 u32 match ip src \
+  150.151.23.24 flowid 20:200
+
+# tc filter add dev eth1 parent 20:0 protocol ip prio 25 u32 match ip src \
+  150.151.0.0/16 flowid 20:100
+</PRE>
+</CODE></BLOCKQUOTE>
+<H2><A NAME="ss8.3">8.3 What to do with excess bandwidth</A>
+</H2>
+
+<P>In our hypothetical case, we will find that even when the ISP customers
+are mostly offline (say, at 8AM), our office still gets only 2Mbit, which is
+rather wasteful.
+<P>By removing the 'bounded' statements, classes will be able to borrow
+bandwidth from each other.
+<P>Some classes may not wish to borrow their bandwidth to other classes. Two
+rival ISPs on a single link may not want to offer each other freebees. In
+such a case, you can add the keyword 'isolated' at the end of your 'tc class
+add' lines.
+<P>
+<H2><A NAME="ss8.4">8.4 Class subdivisions</A>
+</H2>
+
+<P>FIXME: completely untested suppositions! Try this!
+<P>We can go further than this. Should the employees at the office decide to all
+fire up their 'napster' clients, it is still possible that our database runs
+out of bandwidth. Therefore, we create two subclasses, 'Human' and 'Database'.
+<P>Our database always needs 500Kbit, so we have 1.5Mbit left for Human
+consumption.
+<P>We now need to create two new classes, within our Office class:
+<BLOCKQUOTE><CODE>
+<PRE>
+# tc class add dev eth0 parent 10:200 classid 10:250 cbq bandwidth 10Mbit rate \
+  500Kbit allot 1514 weight 50Kbit prio 5 maxburst 20 avpkt 1000 \
+  bounded
+
+# tc class add dev eth0 parent 10:200 classid 10:251 cbq bandwidth 10Mbit rate \
+  1500Kbit allot 1514 weight 150Kbit prio 5 maxburst 20 avpkt 1000 \
+  bounded
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>FIXME: Finish this example!
+<P>
+<H2><A NAME="ss8.5">8.5 Loadsharing over multiple interfaces</A>
+</H2>
+
+<P>FIXME: document TEQL
+<P>
+<HR>
+<A HREF="Adv-Routing-HOWTO-9.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Adv-Routing-HOWTO-7.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Adv-Routing-HOWTO.html#toc8"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

@@ -1,0 +1,522 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="LinuxDoc-Tools 0.9.16">
+ <TITLE>The Linux Bootdisk HOWTO: 建立一个root filesystem -- Building a root filesystem</TITLE>
+ <LINK HREF="Bootdisk-HOWTO-5.html" REL=next>
+ <LINK HREF="Bootdisk-HOWTO-3.html" REL=previous>
+ <LINK HREF="Bootdisk-HOWTO.html#toc4" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Bootdisk-HOWTO-5.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="Bootdisk-HOWTO-3.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="Bootdisk-HOWTO.html#toc4"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s4">4.</A> <A HREF="Bootdisk-HOWTO.html#toc4">建立一个root filesystem -- Building a root filesystem</A></H2>
+
+<P>
+<A NAME="BuildRoot"></A> </P>
+<P>造出 root filesystem 涉及选择能让系统正常运作所必备的档案。在这一节中，我们将叙述如何建造一个 <EM> 压缩的 root filesystem</EM> 。在磁片上建造一个直接挂上做为根目录 (root) 之未经压缩的 filesystem 是较不普遍的观念；这个替代方案叙述在 
+<A HREF="Bootdisk-HOWTO-8.html#NonRamdiskRoot">Non-ramdisk Root Filesystem</A> 这一节中。</P>
+
+<H2><A NAME="ss4.1">4.1</A> <A HREF="Bootdisk-HOWTO.html#toc4.1">概观 -- Overview</A>
+</H2>
+
+
+<P>root filesystem 必须包含支援完整 Linux 系统运作所需的每一个项目。为了能够达成这个目的，这张磁片必须包括能让 Linux 系统运作最起码 (minimum) 的需求：</P>
+<P>
+<UL>
+<LI> 基本的档案系统架构，</LI>
+<LI> 最起码的目录： <CODE>/dev, /proc, /bin, /etc, /lib, /usr, /tmp</CODE>,</LI>
+<LI> 基本的工具程式： <CODE>sh, ls, cp, mv</CODE>, etc.,</LI>
+<LI> 最起码的组态设定档： <CODE>rc, inittab, fstab</CODE>, etc.,</LI>
+<LI> 设备档： <CODE>/dev/hd*, /dev/tty*, /dev/fd0</CODE>, etc.,</LI>
+<LI> Runtime 函式库以提供工具程式所使用之基本功能 (functions) 。</LI>
+</UL>
+</P>
+<P>当然，任何系统只有在你能于其上执行某些东西时才会显得有用，而一张 root 磁片通常只有在你能做到以下事情时才会显得有用：</P>
+<P>
+<UL>
+<LI> 检查另一台磁碟机的 file system ，举例来说，检查你硬碟上的 root file system ，你必须能够从另一台磁碟机启动 Linux ，例如你可以用一张 root 磁片办到这件事。然后你可以在你原本的 root 磁碟机未被挂上时，对其执行 <CODE>fsck </CODE> 。
+</LI>
+<LI> 使用档案 (archive) 与压缩工具程式，诸如 <CODE>cpio, tar, gzip</CODE> 与 <CODE>ftape</CODE> ，从备份 (backup) 恢复储存所有或部分你原本 root 磁碟机的资料。</LI>
+</UL>
+</P>
+<P>我们将叙述如何建造一个 <EM> 压缩的 </EM> filesystem ，就是平时被压缩在磁片上，只有当开机时，才会解压缩后存入ramdisk 。
+<!--
+compressed root filesystem
+-->
+
+用压缩 filesystem 的方式，你可以在一张标准的 1440K 磁片上放入很多档案 (大约 6 megabytes) 。因为 filesystem 比磁片大很多，我们不能直接把它建在磁片上。我们必须在其它地方建立它，压缩它，然后再把它 copy 到磁片上。</P>
+
+<H2><A NAME="ss4.2">4.2</A> <A HREF="Bootdisk-HOWTO.html#toc4.2">制作 filesystem -- Creating the filesystem</A>
+</H2>
+
+<P>
+<A NAME="CreatingRootFS"></A> </P>
+<P>为了建造如此的一个 filesystem ，你需要一个多出而够大的设备，能够让你在压缩之前存放所有的档案。你将需要一个能够存放大约 4 megabytes档案的设备。有以下几种选择：</P>
+<P>
+<UL>
+<LI> 使用 <B>ramdisk</B> (DEVICE = /dev/ram0)。在这种情况下，记忆体被模拟成一台磁碟机。 Ramdisk 必须大到能够存放一个适当大小的 filesystem 。如果你使用 LILO ，请检查你的组态设定档 (/etc/lilo.conf) ，找到一行像
+<PRE>
+ RAMDISK = nnn
+</PRE>
+
+<!--
+RAMDISK_SIZE, LILO parameter
+-->
+
+这行决定可以分配给 ramdisk 的 RAM 之极大值。预设值是 4096K ，这应该是足够了。你应该不可能尝试在一台少于 8MB RAM 的电脑上使用如此的 ramdisk 。
+
+请检查以确认你有一个设备档像是 /dev/ram0, /dev/ram 或是 /dev/ramdisk 。如果没有，请自己以 <CODE>mknod</CODE> (major number 1, minor 0)造出 /dev/ram0 。
+</LI>
+<LI> 如果你有一个未使用且够大的硬碟 partition (差不多几megabytes大就可以了)，就使用它吧。
+</LI>
+<LI> 使用一个 <B>loopback device</B> ，这可以把一个磁碟档案当做是一台设备来使用。使用 loopback device 时，你可以在硬碟上造出一个  3 megabyte 的档案，并于其上建造 filesystem 。
+
+键入 <CODE>man losetup</CODE> 找寻指令以使用 loopback devices 。如果你没有 <CODE>losetup</CODE> ，你可以从 
+<A HREF="ftp://ftp.win.tue.nl/pub/linux/utils/util-linux/">ftp://ftp.win.tue.nl/pub/linux/utils/util-linux/</A> 目录中， util-linux 套件 (package) 内相容版本之 <CODE>mount</CODE> 与 <CODE>unmount</CODE> 的随附物中找到它。
+
+如果在你的系统上没有 loop device 档 (/dev/loop0, /dev/loop1, etc.)，那么你必须用 ``<CODE>mknod /dev/loop0 b 7 0</CODE>'' 自己造出一个。一旦安装好这些特别的 <CODE>mount</CODE> 与 <CODE>umount</CODE> 二进位档，就请在一台容量够大的硬碟上造出一个暂存档 (temporary file)(eg, /tmp/fsfile) 。你可以使用像这样子的指令：
+<BLOCKQUOTE><CODE>
+dd if=/dev/zero of=/tmp/fsfile bs=1k count=<I>nnn</I>
+</CODE></BLOCKQUOTE>
+
+以造出一个 <EM>nnn</EM>-block 的档案。
+
+请使用自己的档名取代以下的 DEVICE 。当你下了 mount 指令，你同时要加上 ``<CODE>-o loop</CODE>'' 选项以告知 mount 是使用 loopback device 。 
+<!--
+loopback device
+-->
+
+举例来说：
+<PRE>
+        mount -o loop -t ext2 /tmp/fsfile /mnt
+</PRE>
+
+
+以挂上 loopback device 的方式，把 /tmp/fsfile 挂上 <CODE>/mnt</CODE> 这个 mount point 。用 <CODE>df</CODE> 指令可让你看到以上的结果。</LI>
+</UL>
+</P>
+<P>在你选择其中一种方法后，请准备 DEVICE 以：
+<PRE>
+        dd if=/dev/zero of=DEVICE bs=1k count=4096
+</PRE>
+</P>
+<P>这行指令送出一堆 0 把DEVICE填满。用 0 填满 device 是关键的一步，因为 filesystem之后将会被压缩，所以所有未使用的部分应被用 0 填满以达到最大的压缩比。无论何时你从你的 root filesystem 删除档案，请记得这个事实。实际上 filesystem 只是释出 (de-allocate) 这些 blocks ， <EM>但是并没有再把它们填为 0 </EM>。如果你执行过很多次删除与 copy 的动作，你的压缩 filesystem 最后会比必要的大出很多。</P>
+<P>
+<!--
+inodes, allocation
+-->
+
+下一步就是造出 filesystem 。 Linux kernel 承认两种能让 root disks 自动地被 copy 到 ramdisk 上的 file system 。它们是 minix 与 ext2 ，其中 ext2 是比较受欢迎的。如果使用 ext2 ，你会发现使用 <CODE>-i</CODE> 选项指定比预设值更多的 inodes 是有助益的；我们建议用 <CODE>-i 2000</CODE> ，这样你就不会用完 inodes 。如果不用上述选项，你可以移除许多不必要的 <CODE>/dev</CODE> 档案以节省 inodes 。 <CODE>mke2fs</CODE> 预设会造出 360 个 inodes在一张 1.44Mb 的磁片上。我发现在我目前的救援 root 磁片上， 120 个 inodes 是相当足够了，但是如果你把所有的设备档都放入 <CODE>/dev</CODE> 目录中，那么你很容易会超过 360 个inodes 。使用压缩的 root filesystem 可让你拥有较大的 filesystem ，同时预设会有更多的 inodes ，但是你仍然必须要不就是减少档案数量，要不就是增加 inodes 数目。</P>
+<P>因此，你所使用的指令看起来会像这样：
+<PRE>
+        mke2fs -m 0 -i 2000 DEVICE
+</PRE>
+</P>
+<P>(如果你使用的是一个 loopback device ，那么请用你目前所用的磁碟档案替换掉上面的 DEVICE 。)
+<!--
+loopback device
+-->
+</P>
+<P><CODE>mke2fs</CODE> 指令会自动地侦测可获得的空间，然后依据侦测对自身进行组态设定。 ``<CODE>-m 0</CODE>'' 参数避免保留空间给 root ，因此可提供更多可用的磁碟空间。</P>
+<P>下一步，挂上这个 device ：</P>
+<P>
+<PRE>
+        mount -t ext2 DEVICE /mnt
+</PRE>
+ 
+(如果 mount point 并不存在，你必须自行造出一个 mount point <CODE>/mnt</CODE> 。) 在剩下的章节中，所有的目的 (destination) 目录都被假设是相对于 <CODE>/mnt</CODE> 。</P>
+
+<H2><A NAME="ss4.3">4.3</A> <A HREF="Bootdisk-HOWTO.html#toc4.3">移植档案系统 -- Populating the filesystem</A>
+</H2>
+
+
+<P>以下是你的 root filesystem 最起码该有的目录</P>
+<P>此处所呈现之目录架构仅供 root diskette 使用。真正的 Linux 系统有一套更为复杂且设计良好的架构方法，称为 
+<A HREF="http://www.pathname.com/fhs/2.0/fhs-toc.html">Filesystem Hierarchy Standard</A> ，它决定档案应该如何放置。
+:</P>
+<P>
+<UL>
+<LI>/dev -- 里面存放设备档 (Devices) ，为达成 I/O 工作所需</LI>
+<LI>/proc -- Directory stub required by the proc filesystem</LI>
+<LI>/etc -- 里面存放系统组态设定档</LI>
+<LI>/sbin -- 重要的 (critical) 系统二进位执行档 (binaries)</LI>
+<LI>/bin -- 被认为是系统一部分的基本二进位执行档</LI>
+<LI>/lib -- 提供 run-time 支援的共享函式库</LI>
+<LI>/mnt -- 维护其它磁碟所用的磁碟挂入点 (mount point)</LI>
+<LI>/usr -- 额外的工具程式与应用程式</LI>
+</UL>
+</P>
+<P>
+<!--
+proc
+-->
+<!--
+mnt
+-->
+<!--
+usr
+-->
+</P>
+<P>上述目录的其中三个在 root filesystem 上会是空的，所以它们只需要用 <CODE>mkdir</CODE> 造出来。 /proc 目录基本上是一个把 proc filesystem 放置于其下的 stub 。 /mnt 与 /usr 这两个目录只是在 boot/root 系统运作时所使用的 mount points 。因此再重覆一次，这些目录只需要被造出来就可以了。</P>
+<P>剩下的四个目录描述于以下各节。</P>
+
+<H3>/dev</H3>
+
+
+<P>
+<!--
+device (dev) directory
+-->
+</P>
+<P>/dev 目录包含一群特别的档案，这些档案是给系统上所有设备使用的，这样的 /dev 目录每个 Linux 系统都一定会有。这个目录本身是一个普通目录，可以以一般的方法用 <CODE>mkdir</CODE> 造出来。然而，这些特别的档案必须以特别的方法用 <CODE>mknod</CODE> 指令造出来。</P>
+<P>但还是有一条捷径 -- 直接 copy 你现有 /dev 目录的内容，然后再清除你不想要的设备档。唯一的要求是 copy 这些特别的设备档时，要用 <CODE>-R</CODE> 选项。这个选项会 copy 整个目录中的档案，但是不会 copy 这些档案的内容。请确定使用 <EM>大写字母 R</EM> 。这个指令是：
+<PRE>
+        cp -dpR /dev /mnt
+</PRE>
+</P>
+<P>在此我们假设磁片是被挂在 /mnt 底下。 <CODE>dp</CODE> 选项 (switches) 确保 symbolic links 是以 links 的方式来 copy ，而不是 copy 链结档所指向的 target file ，同时原本的档案属性也被保留，因此保留了档案的所有权资讯。</P>
+<P>如果你想要用高难度技巧完成这个任务，就利用 <CODE>ls -l</CODE> 列出你想要的设备档之 major 与 minor device numbers ，然后再用 <CODE>mknod</CODE> 在磁片上造出它们。</P>
+<P>无论如何 copy 这些设备档，还是要检查任何你所需之设备档 (device special file) 是否已放入这张救援磁片中。举例来说， <CODE>ftape</CODE> 使用磁带设备，如果你想要从 bootdisk 存取软式磁带机，你就需要 copy 所有有关的设备档。</P>
+<P>请注意，每一个设备档需要一个 inode ，但 inodes 一直都是稀少的资源，特别是在磁片 filesystems 上。因此，从磁片上的 /dev 目录移除任何你所不需要的设备档是有意义的。举例来说，如果你没有 SCSI 磁碟，你可以放心地移除所有以 <CODE>sd</CODE> 开头的设备档。同样地，如果你并不想使用你的序列埠 (serial port) ，那么你也可以移除所有以 <CODE>cua</CODE> 开头的设备档。</P>
+<P><EM> 请确定从这个目录放入了以下档案的： </EM>
+<CODE>console, kmem, mem, null, ram0 and tty1</CODE>.</P>
+
+<H3>/etc</H3>
+
+<P>
+<!--
+etc directory
+-->
+</P>
+<P>这个目录包含了重要的组态设定档。在大部分的系统上，这些档案被分为三个群组：</P>
+<P>
+<OL>
+<LI> 一直都是必备的， <I>e.g.</I> <CODE>rc, fstab, passwd</CODE> 。
+<!--
+rc
+-->
+<!--
+fstab
+-->
+<!--
+passwd
+-->
+</LI>
+<LI> 可能是必备的，但是没有人能十分确定。</LI>
+<LI> 偷跑进来的垃报。</LI>
+</OL>
+</P>
+<P>通常可以用以下指令识出哪些是非基本的档案：</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+        ls -ltru
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>这个指令将档案依据上次被存取的日期，以先早后晚 (reverse) 的顺序列出，所以如果有任何档案不会被存取，那么它们就可以从 root 磁片中删去。</P>
+<P>在我的 root 磁片上，我的组态档数目已减至 15 个。这可减少我处理以下三种档案的工作：</P>
+<P>
+<OL>
+<LI> 我必须为 boot/root 系统进行组态设定的档案：
+
+<OL>
+<LI>rc.d/* -- 系统启动与改变 run level 的 scripts</LI>
+<LI><CODE>fstab</CODE> -- 要被挂上的 file systems 清单</LI>
+<LI><CODE>inittab</CODE> -- 给 <CODE>init</CODE> process 的参数，于开机时启动的第一个 process 。 
+<!--
+init
+-->
+</LI>
+</OL>
+
+</LI>
+<LI> 我们应该为 boot/root 系统整理的档案：
+<OL>
+<LI><CODE>passwd</CODE> -- 重要的使用者、 home 目录等其它项目的清单。</LI>
+<LI>group -- 使用者群组。 
+<!--
+user groups
+-->
+</LI>
+<LI>shadow -- 使用者的密码。你可能没有这个档。 
+<!--
+shadow passwords
+-->
+</LI>
+<LI>termcap -- the terminal capability database.</LI>
+</OL>
+
+
+如果系统安全 (security) 对你很重要，那么 passwd 与 shadow 应该被删减，以避免将使用者密码 copy 出系统，这样当你从磁片开机时，不想要的 logins 会被拒绝。 
+<!--
+restoring files
+-->
+
+
+请确定 <CODE>passwd</CODE> 至少包含了 <CODE>root</CODE> 。如果你要让其他的使用者 login ，请确定他们的 home 目录与 shells 都存在。
+
+termcap ，终端机资料库，一般而言有几百个 kilobytes 。你 boot/root 磁片的版本应该被删减到只包含你所使用的终端机，这通常就是 <CODE>linux</CODE> 或 <CODE>linux-console</CODE> 项目 (entry) 。
+</LI>
+<LI>The rest.  They work at the moment, so I leave them alone.
+</LI>
+</OL>
+</P>
+<P>Out of this, 我实际上只必须设定两个档，而它们所应包含的项目惊人地少。
+<UL>
+<LI>rc 应该包含：
+<PRE>
+        #!/bin/sh
+        /bin/mount -av
+        /bin/hostname Kangaroo
+</PRE>
+
+
+请确定上述的目录都是正确的。你并不需要真地去执行 <CODE>hostname</CODE> -- 如果你执行只是让系统比较好看 (译注：如此系统会有个名字) 。
+</LI>
+<LI><CODE>fstab</CODE> 应该至少要包含：
+
+<PRE>
+        /dev/ram0       /               ext2    defaults
+        /dev/fd0        /               ext2    defaults
+        /proc           /proc           proc    defaults
+</PRE>
+
+
+你可以从你现存的 fstab copy 你想要的项目，但是你并不应该自动地挂上你硬碟任何的 partitions ；请对这些项目使用 <CODE>noauto</CODE> 关键字 (译注：用 noauto 代替 default ) 。当使用 bootdisk 时，你的硬碟可能是早已损坏或挂了。
+</LI>
+</UL>
+</P>
+<P>你的 <CODE>inittab</CODE> 应该被改变，以使其中 <CODE>sysinit</CODE> 这行能执行 rc 或无论什么将被执行的基本开机 script 。同时，如果你想要确保不可从序列埠 login ，请在所有行尾包括 ttys 或 ttyS 的 getty 项目前加上「#」符号 (comment out) 。请保留 tty 埠以让你可以在 console 前 login 。</P>
+<P>一个最起码的 <CODE>inittab</CODE> 档看起来样这样：
+<PRE>
+        id:2:initdefault:
+        si::sysinit:/etc/rc
+        1:2345:respawn:/sbin/getty 9600 tty1
+        2:23:respawn:/sbin/getty 9600 tty2
+</PRE>
+ </P>
+<P><CODE>inittab</CODE> 档定义了系统在各种不同的情况中将执行什么项目，包括 startup 、切换至多使用者模式等等。请仔细地检查在 inittab 中被提及的档案名称 (filenames) ；如果 <CODE>init</CODE> 不能找到所提及的程式，那么 bootdisk 将会停止运作，而你甚至不会得到错误讯息。</P>
+<P>
+<!--
+hardcoded locations
+-->
+</P>
+<P>请注意，某些程式不能被移到其它地方，因为其它程式已在撰写时，就把它们的档案位置写死了 (hardcode) 。举例来说在我的系统上， /etc/shutdown 已把 /etc/reboot 的位置写死在其中。如果我移动了 reboot 到 /bin/reboot，然后下达一个 <CODE>shutdown</CODE> 指令，将会因为找不到 <CODE>reboot</CODE> 档而发生错误。</P>
+<P>
+<!--
+etc directory
+-->
+</P>
+<P>剩下来的，就是 copy 在你 /etc 目录中的所有文字档 (text files) ，再加上在你 /etc 目录中，你无法确定你需不需要的所有可执行档。需要指示 (guide) 者，请参考在 
+<A HREF="Bootdisk-HOWTO-13.html#Listings">Sample roodisk directory listings</A> 的样本清单。也许只要 copy 这些档案就足够了，但是系统差异会有很大的影响，所以你无法确定你系统上相同的档案组合，就一定等于清单中的档案。唯一确定的方法就是从 <CODE>inittab</CODE> 著手，并找出需要什么。</P>
+<P>现在大部分的系统使用 /etc/rc.d/ 目录，其中包含给不同 run levels 的shell scripts 。最起码会有一个单一的 rc script，但是仅从你现存的系统 copy <CODE>inittab</CODE> 与 /etc/rc.d 这两个目录，然后删减 rc.d 目录中的 shell scripts 以移除和磁片系统环境无关的 processing ，会是较为简单的做法。</P>
+
+<H3>/bin 与 /sbin</H3>
+
+<P>
+<!--
+bin directory
+-->
+
+<!--
+sbin directory
+-->
+</P>
+<P>/bin 目录是一个放置为了执行基本作业 (operations) 而所需之额外工具程式的方便好地方，这些工具程式诸如 <CODE>ls</CODE>, <CODE>mv</CODE>, <CODE>cat</CODE> 与 <CODE>dd</CODE> 。 <CODE></CODE>bin/ 与 /sbin 这两个目录的档案清单范例请见 
+<A HREF="Bootdisk-HOWTO-13.html#Listings">Sample rootdisk directory listings</A> 。但范例中并没有包括任何从备份复原时所需之工具程式，诸如 <CODE>cpio</CODE>, <CODE>tar</CODE> 与 <CODE>gzip</CODE> 。这是因为我把这些东西放在另一张 (separate) 工具程式磁片上，以节省 boot/root 磁片的空间。一旦 boot/root 磁片被开机启动，就会被 copy 到 ramdisk 并释放软碟机，让软碟机能挂上另一张磁片，就是工具程式片。我通常把它挂上当做 /usr 。</P>
+<P>工具程式磁片 (utility diskette) 的制作被描述在下面 
+<A HREF="Bootdisk-HOWTO-8.html#UtilityDisk">Building a utility disk</A> 这节。保留一份相同版本之备份用工具程式的copy是比较好的，这个备份用工具程式被用来制作备份，如此你就不用浪费时间在尝试安装不能读取你备份磁带的版本。</P>
+<P>请确定你包括了以下程式： <CODE>init</CODE>, <CODE>getty</CODE> 或相等的程式, <CODE>login</CODE>, <CODE>mount</CODE>, 某种可以执行你rc scripts 的 shell, 以及一个从 <CODE>sh</CODE> 指向这个 shell 的 link 。</P>
+<P>
+<!--
+init
+-->
+<!--
+getty
+-->
+<!--
+login
+-->
+<!--
+shells
+-->
+</P>
+
+<H3>/lib</H3>
+
+<P>
+<!--
+library (lib) directory
+-->
+
+<!--
+libraries
+-->
+</P>
+<P>在 /lib 中，你要放入必要的共享函式库 (libraries) 与载入程式 (loaders) 。如果无法在你的 /lib 目录中找到必要的函式库，那么系统将不能够开机。如果你很幸运，你可能会看到告诉你为什么会发生如此情况的错误讯息。</P>
+<P>
+<!--
+libc.so
+-->
+
+近来每一个程式至少都要求 libc 函式库， libc.so.<EM>N</EM> ，其中 <EM>N</EM> 是目前版本的编号。请检查你的 /lib 目录。 Libc.so.N 通常是一个 symlink ，它指向一个具有完整版本编号的档名：</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+% ls -l /lib/libc*
+-rwxr-xr-x   1 root     root      4016683 Apr 16 18:48 libc-2.1.1.so*
+lrwxrwxrwx   1 root     root           13 Apr 10 12:25 libc.so.6 -> libc-2.1.1.so*
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>在这个情况下，你会想要 libc-2.1.1.so 。为了找到其它函式库，你应该要看过所有你打算包括的二进位档，并且用 <CODE>ldd</CODE> 指令检查它们的相依性。举例来说：</P>
+<P>
+<PRE>
+        % ldd /sbin/mke2fs
+        libext2fs.so.2 => /lib/libext2fs.so.2 (0x40014000)
+        libcom_err.so.2 => /lib/libcom_err.so.2 (0x40026000)
+        libuuid.so.1 => /lib/libuuid.so.1 (0x40028000)
+        libc.so.6 => /lib/libc.so.6 (0x4002c000)
+        /lib/ld-linux.so.2 => /lib/ld-linux.so.2 (0x40000000)
+</PRE>
+
+在右手边的每一个档案是一定要有的。有些档案可能是一个 symbolic link 。</P>
+<P>请注意某些函式库 <EM> 相当地大 </EM>，而且并不能轻易地配合你的 root filesystem 。举例来说，上述的 libc.so 大约有 4 megabytes 。因此，在你 copy 它们到你 root filesystem 的同时，你可能需要除去一些函式库。请看 
+<A HREF="Bootdisk-HOWTO-8.html#Slimfast">Reducing root filesystem size</A> 这一节以了解 instructions 。</P>
+<P>
+<!--
+loaders
+-->
+</P>
+<P>在 /lib 内，你也必须包括一个 loader 供这些函式库使用。这个 loader 不是 ld.so (给 A.OUT 函式库使用)，就是 ld-linux.so (给 ELF 函式库使用)。较新版的 <CODE>ldd</CODE> 会如同上述的例子，正确地告诉你需要哪一种 loader ，然而旧版的就不会。如果你并不确定你需要哪一种 loader ，就对函式库执行 <CODE>file</CODE> 指令。举例来说：
+<PRE>
+% file /lib/libc.so.4.7.2 /lib/libc.so.5.4.33 /lib/libc-2.1.1.so
+/lib/libc.so.4.7.2: Linux/i386 demand-paged executable (QMAGIC), stripped
+/lib/libc.so.5.4.33: ELF 32-bit LSB shared object, Intel 80386, version 1, stripped
+/lib/libc-2.1.1.so: ELF 32-bit LSB shared object, Intel 80386, version 1, not stripped
+</PRE>
+
+<CODE>QMAGIC</CODE> 指出 <CODE>4.7.2</CODE> 版是给 A.OUT 函式库使用，而 <CODE>ELF</CODE> 指出 <CODE>5.4.33</CODE> 以及 <CODE>2.1.1</CODE> 版是给 ELF 使用。 
+<!--
+ELF
+-->
+</P>
+<P>请 copy 你所需要的指定 loader(s) 到你所建立的 root filesystem 。针对所包括的二进位档，函式库与 loaders 应该被 <EM> 仔细地检查 </EM> 。如果 kernel 不能载入所需的函式库，那么 kernel 就会在没有错误讯息的情况下停止运作。</P>
+
+<H2><A NAME="ss4.4">4.4</A> <A HREF="Bootdisk-HOWTO.html#toc4.4">对 PAM 与 NSS 的提供 -- Providing for PAM and NSS</A>
+</H2>
+
+<P>
+<A NAME="PAMandNSS"></A> </P>
+<P>你的系统可能会需要动态地载入未被 ldd 所见的函式库。如果你没有提供函式库给这些项目，那么你会在登录 (log in) 或使用你的 bootdisk 时遭遇到困难。</P>
+
+<H3>PAM (Pluggable Authentication Modules)</H3>
+
+
+<P>如果你的系统使用 PAM (Pluggable Authentication Modules) ，那么你必须在你的 bootdisk上为 PAM 做一些预备。简而言之， PAM 是一种复杂精密的模组化方法，针对使用者认证以及控制使用者对服务的存取。一个决定你的系统是否使用 PAM 的简单方法，是对你的 login 可执行档执行 ldd ；如果输出包括 libpam.so ，你就需要 PAM 。</P>
+<P>幸运地，安全性通常并非 bootdisk 所关心的议题，因为任何对机器有实际存取权的人，通常能做任何他们无论如何想做的事。因此，你可以有效地关闭 PAM ，只要在你的 root filesystem 造出一个简单的 /etc/pam.conf 档，这个档看起来像这样：</P>
+<P>
+<HR>
+<PRE>
+OTHER   auth       optional     /lib/security/pam_permit.so
+OTHER   account    optional     /lib/security/pam_permit.so
+OTHER   password   optional     /lib/security/pam_permit.so
+OTHER   session    optional     /lib/security/pam_permit.so
+</PRE>
+<HR>
+</P>
+<P>请记得也 copy /lib/security/pam_permit.so 这个档到你的 root filesystem 。这个函式库只有大约 8K ，因此它只占用极小量的 overhead 。</P>
+<P>请记得这个组态设定允许任何人对这台机器上的档案以及服务有完整的存取权。如果你因某种理由而在乎你 bootdisk 的安全性，那么你就必须 copy 一些或是全部你硬碟的 PAM setup 到你的 root filesystem 。请确定曾仔细地读过 PAM 文件，并且 copy 任何在 /lib/security 中所需要的函式库到你的 root filesystem 上。</P>
+<P>你同时必须包含 /lib/libpam.so 到你的 bootdisk 上。但是你已知这件事，因为你已对 /bin/login 执行过 ldd ，这动作显示了其相依性。</P>
+
+<H3>NSS (Name Service Switch)</H3>
+
+
+<P>如果你正使用 glibc (aka libc6) ，你就必须为名称服务 (name switch) 进行预备，否则你会无法 log in 。 /etc/nsswitch.conf 这个档案控制资料库对各式服务之搜寻 (lookups) 。如果你并不打算从网路上存取服务 (比如说： DNS或 NIS 搜寻)，那么你只需要准备一个简单的 nsswitch.conf 档，这个档案看起来像这样：</P>
+<P>
+<HR>
+<PRE>
+     passwd:     files
+     shadow:     files
+     group:      files
+     hosts:      files
+     services:   files
+     networks:   files
+     protocols:  files
+     rpc:        files
+     ethers:     files
+     netmasks:   files
+     bootparams: files
+     automount:  files
+     aliases:    files
+     netgroup:   files
+     publickey:  files
+</PRE>
+<HR>
+</P>
+<P>这样就指定每一项服务只被 local files 提供。你同时需要包括 /lib/libnss_files.so.<EM>X</EM> ，在此 <EM>X</EM> 是 1 的话是指 glibc 2.0 ，而 2 的话是指 glibc 2.1 。这个函式库将被以动态方式载入以处理档案搜寻。</P>
+<P>如果你打算从你的 bootdisk 存取网路，那么你会想要制作一个更精巧复杂的 nsswitch.conf 档。细节请参考 nsswitch man page。最后，请记得你必须为你所指定的每一项 <EM>服务 (service)</EM> ，把 /lib/libnss_<EM>service</EM>.so.1 档放入 bootdisk 中。</P>
+
+<H2><A NAME="ss4.5">4.5</A> <A HREF="Bootdisk-HOWTO.html#toc4.5">模组 -- Modules</A>
+</H2>
+
+<P>
+<!--
+modules
+-->
+</P>
+<P>如果你有一个模组化的 kernel ，你必须考量在开机后，你想要从你的 bootdisk 上载入哪一种模组。你可能会想要包括 <CODE>ftape</CODE> 与 <CODE>zftape</CODE> 模组 (如果你的备份磁带是floppy tape)，以及给 SCSI 设备用的模组 (如果你有 SCSI 设备)，也可能是 PPP 或 SLIP 支援的模组 (如果你在紧急情况下想要存取网路)。</P>
+<P>这些模组可能会被放在 /lib/modules 。你同时也应该包括 <CODE>insmod</CODE>, <CODE>rmmod</CODE> 与 <CODE>lsmod</CODE> 。根据你是否想要自动地载入模组，你可能也要包括 <CODE>modprobe</CODE>, <CODE>depmod</CODE> 与 <CODE>swapout</CODE> 。如果你使用 <CODE>kerneld</CODE>，请与 /etc/conf.modules 一起包括进来。</P>
+<P>然而，使用模组的主要优点在于你可以把非关键 (non-critical)模组移到 utility disk 上，在需要用到时才载入，这样在你的 root disk 上会使用比较少的空间。如果你要处理许多不同的设备，这个方法比建立一个内建支援许多设备的巨大 kernel 来得好。</P>
+<P>请注意，为了启动 (boot) 一个压缩的 ext2 filesystem ，你必须有 ramdisk 与内建 ext2 支援。 <EM> 它们不能够以模组的方式被提供。 </EM></P>
+
+<H2><A NAME="ss4.6">4.6</A> <A HREF="Bootdisk-HOWTO.html#toc4.6">一些最后的细节 -- Some final details</A>
+</H2>
+
+
+<P>某些系统程式，诸如 <CODE>login</CODE> ，当 /var/run/utmp 档与 /var/log 目录不存在时，会发出警告。所以：</P>
+<P>
+<PRE>
+        mkdir -p /mnt/var/{log,run{
+        touch /mnt/var/run/utmp
+</PRE>
+</P>
+<P>最后，在你设定 (set up) 完所有你所需的函式库后，执行 <CODE>ldconfig</CODE> 以在 root filesystem上重新制作 (remake) /etc/ld.so.cache 。这个 cache 会告诉 loader 到哪里找到函式库。要重新制作 ld.so.cache，请下达以下指令：
+<PRE>
+        chdir /mnt; chroot /mnt /sbin/ldconfig
+</PRE>
+</P>
+<P>
+<!--
+ldconfig
+-->
+
+<!--
+ld.so.cache
+-->
+</P>
+<P><CODE>chroot</CODE> 是必要的，因为 <CODE>ldconfig</CODE> 总是会为 root filesystem 重新制作 cache 。</P>
+
+<H2><A NAME="ss4.7">4.7</A> <A HREF="Bootdisk-HOWTO.html#toc4.7">Wrapping it up</A>
+</H2>
+
+<P>
+<A NAME="WrappingItUp"></A> </P>
+<P>一旦你完成 root filesystem 的建构工作，就 unmount 它，将之 copy 成一个档案并压缩它：
+<PRE>
+        umount /mnt
+        dd if=DEVICE bs=1k | gzip -v9 > rootfs.gz
+</PRE>
+</P>
+<P>结束后，你会有一个名为 rootfs.gz 的档案，这就是你被压缩过的 root filesystem。你应该检查它的 size 以确保它能放在一张软碟片上；如果不行，你就必须回溯并移除一些档案。 
+<A HREF="Bootdisk-HOWTO-8.html#Slimfast">Reducing root filesystem size</A> 这节有一些提示，告诉你有关减少 root filesystem 的 size 。</P>
+
+<HR>
+<A HREF="Bootdisk-HOWTO-5.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="Bootdisk-HOWTO-3.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="Bootdisk-HOWTO.html#toc4"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

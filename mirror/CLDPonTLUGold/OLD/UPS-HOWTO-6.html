@@ -1,0 +1,149 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>中文 UPS Howto: 硬體的注意事項</TITLE>
+ <LINK HREF="UPS-HOWTO-5.html" REL=previous>
+ <LINK HREF="UPS-HOWTO.html#toc6" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<IMG SRC="img/next.gif" ALT="Next">
+<A HREF="UPS-HOWTO-5.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="UPS-HOWTO.html#toc6"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s6">6. 硬體的注意事項</A></H2>
+
+<P>
+<H2><A NAME="make-cable"></A> <A NAME="ss6.1">6.1 如何製作訊號纜線</A>
+</H2>
+
+<P>本節的內容只是些我在網路上看到的資訊。我並沒有親自試過，
+所以我無法依我的經驗寫下來。如果有人有經驗，麻煩您為我寫這一節 :)。
+同時也請您參考 
+<@ref>gps1000ACCODATA 的 GPS1000</A> 中有關 
+GPS1000 的資料，不必說，
+<@ref>gps1000ACCODATA 的 GPS1000</A><@ref>ups-specificUPS 資料節選</A>
+這一節中所有特殊 UPS 的資料也是值得參考的。
+<P>
+<PRE>
+   >From miquels@caution.cistron.nl.mugnet.org Wed Jul 21 14:26:33 1993
+   Newsgroups: comp.os.linux
+   Subject: Re: UPS interface for Linux?
+   From: miquels@caution.cistron.nl.mugnet.org (Miquel van Smoorenburg)
+   Date: Sat, 17 Jul 93 18:03:37
+   Distribution: world
+   Organization: Cistron Electronics.
+
+   In article &lt;1993Jul15.184450.5193@excaliber.uucp>
+   joel@rac1.wam.umd.edu (Joel M. Hoffman) writes:
+   > 我正打算要購買 UPS (不斷電系統)，我注意到有些具有 LAN 的介面，
+   > 可以在停電時向 LAN 送訊號。
+   >
+   > 而 Linux 有沒有這樣的介面呢?
+   >
+   > 謝謝您的回答。
+   >
+   >-Joel
+   >(joel@wam.umd.edu)
+   >
+
+   當我在修改上一版的 SysVinit 時 (現在的版本是 2.4)，
+   那時我的電腦有一個 UPS ，所以我加入了對它的支援。
+   您也許已在最近的一個 &lt;signal.h> 標頭檔中看到了 #define SIGPWR 30
+   這一行 :-)。總之，我並沒有那個特殊的介面，但大多數的 UPS
+   是靠產生或中斷一個電源中斷訊號在運作的。
+   我想到一個簡單的方式可以將它的訊號線連接到電腦訊列阜的 DCD
+   接腳。在 SysVinit 套件中有一個叫做 'powerd' 
+   的常駐程式可以追蹤並監視該訊號線，當訊號的狀態改變時它會送一個 SIGPWR
+   的訊號給 init 程式，因此 init 便可以採取適當的行動 (像是在 5
+   分鐘之後讓系統關機) 。如何將訊號線與 UPS 相連在 "powerd.c"
+   已有說明，但我還是圖示如下以做為解釋:
+
+
+                        +------------------------o  DTR
+                        |
+                      +---+
+                      |   | resistor
+                      |   | 10 kilo-Ohm
+                      |   |
+                      +---+                                To serial port.
+                        |
+          +-----o-------+------------------------o  DCD
+          |             |
+          o  UPS        |
+        \    relais     |
+         \              |
+          |             |
+          +-----o-------+------------------------o  GND
+
+   畫得還可以嗎?
+
+   希望這樣會有幫助。
+
+   SysVinit 可以在 sunsite (或可能在 tsx-11) 下找到，檔名是 
+   SysVinit2.4.tar.z 。
+
+   Mike.
+
+   --
+
+   Miquel van Smoorenburg, &lt;miquels@cistron.nl.mugnet.org>
+   Ibmio.com: cannot open CONFIG.SYS: file handle broke off.
+
+
+   >From danny@caution.cistron.nl.mugnet.org Wed Jul 21 14:27:04 1993
+   Newsgroups: comp.os.linux
+   Subject: Re: UPS interface for Linux?
+   From: danny@caution.cistron.nl.mugnet.org (Danny ter Haar)
+   Date: Mon, 19 Jul 93 11:02:14
+   Distribution: world
+   Organization: Cistron Electronics.
+
+   In article &lt;9307174330@caution.cistron.nl.mugnet.org>
+   miquels@caution.cistron.nl.mugnet.org (Miquel van Smoorenburg) writes:
+   > 如何將訊號線與 UPS 相連在 "powerd.c" 已有說明，
+   > 但我還是圖示如下以做為解釋:
+
+   該圖示並不十分清楚，請改用以下的圖示!
+   >
+   >                     +------------------------o  DTR
+   >                     |
+   >                   +---+
+   >                   |   | resistor
+   >                   |   | 10 kilo-Ohm
+   >                   |   |
+   >                   +---+                                To serial port.
+   >                     |
+   >       +-----o-------+------------------------o  DCD
+   >       |
+   >       o  UPS
+   >     \    relais
+   >      \
+   >       |
+   >       +-----o--------------------------------o  GND
+   >
+
+   其中 DTR 接腳是保持在高電位，則當 UPS 的外界輸入電源消失時，
+   那個開關 (relais) 會關閉。而電腦便是監視 DCD 輸入接腳，等著它變成低電位。
+   當事情發生時它將會啟動關機程序 ...
+
+   _____
+   Danny
+
+   --
+   &lt;=====================================================================>
+   Danny ter Haar  &lt;dannyth@hacktic.nl> or &lt;danny@cistron.nl.mugnet.org>
+   Robins law #103: 'a couple of lightyears can't part good friends'
+</PRE>
+<P>
+<H2><A NAME="hacking"></A> <A NAME="ss6.2">6.2 訊號纜線反向分析及修改 power.c</A>
+</H2>
+
+<P>
+<P>
+<P>
+<HR>
+<IMG SRC="img/next.gif" ALT="Next">
+<A HREF="UPS-HOWTO-5.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="UPS-HOWTO.html#toc6"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

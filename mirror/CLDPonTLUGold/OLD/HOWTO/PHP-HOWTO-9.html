@@ -1,0 +1,168 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>PHP HOW-TO: Debugging PHP </TITLE>
+ <LINK HREF="PHP-HOWTO-10.html" REL=next>
+ <LINK HREF="PHP-HOWTO-8.html" REL=previous>
+ <LINK HREF="PHP-HOWTO.html#toc9" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="PHP-HOWTO-10.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="PHP-HOWTO-8.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="PHP-HOWTO.html#toc9"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="debugphp"></A> <A NAME="s9">9. Debugging PHP </A></H2>
+
+<P>
+<H2><A NAME="ss9.1">9.1 Debug Tool  - phpCodeSite</A>
+</H2>
+
+<P>PHP Debugger called 'phpCodeSite' is available at 
+<A HREF="http://phpcodesite.phpedit.com">http://phpcodesite.phpedit.com</A>
+and see also 
+<A HREF="PHP-HOWTO-18.html#Appendix C">Appendix C</A><H2><A NAME="ss9.2">9.2 Debug Tool  - phpDebug</A>
+</H2>
+
+<P>PHP Debugger is available at 
+<A HREF="http://www.phpdebug.com">http://www.phpdebug.com</A><H2><A NAME="ss9.3">9.3 Debug with FILE and LINE</A>
+</H2>
+
+<P>To debug PHP programs create a file "debug2.inc" having the 
+following functions :
+<HR>
+<PRE>
+&lt;?php
+
+/* define this variable, to prevent double declaration. */
+if (!defined("_DEBUG2_DEFINED_")) 
+{
+        define("_DEBUG2_DEFINED_", 1 );
+}
+else
+        return; // if this file is already included then return
+
+# file name : debug2.inc
+# Functions for debuging the PHP source code
+#*****************************************************************
+# Copyright policy is GNU/GPL but additional request is
+# that you include author's name and email on all copies
+# Author : Al Dev Email: alavoor@yahoo.com
+#*****************************************************************
+
+# Usage of this functions -
+# In your source code put something like -
+# debug2_(__FILE__, __LINE__, "f_somevariable", $f_somevariable);
+# And this will generate output in debug.out file.
+
+//function debug2_($fname, $lname, $debug_var, $debug_value=0) {}
+
+// Give read, exec for all on directory /debug2_logs
+// chmod a+rwx /debug2_logs
+// But here you need to open the file in append mode.
+$fp_debug2 = fopen("/debug2_logs/debug.out", "a");
+if ($fp_debug2 == false)
+{
+        print "&lt;b>File open failed - global.var.inc&lt;b>";
+        exit;
+}
+
+function debug2_($fname, $lname, $debug_var, $debug_value=0)
+{
+        global $fp_debug2;
+
+        //print "&lt;br> debug_value is : $debug_value &lt;br>";
+        if (!$debug_value)
+        {
+                fwrite($fp_debug2, "\n ". $fname ."  ". $lname .": $debug_var");
+        }
+        else
+        {
+                fwrite($fp_debug2, "\n ". $fname . " ". $lname .": $debug_var = $debug_value");
+        }
+        //print "&lt;br> f_cookie is : $f_cookie &lt;br>";
+}
+
+// In your first page, which is generally index.php3 
+// truncate the debug2_logs file in beginning of code
+function init_debug_file()
+{
+        global $fp_debug2;
+
+        $fp_debug2 = fopen("/debug2_logs/debug.out", "w");
+        if ($fp_debug2 == false)
+        {
+                print "&lt;b>File open failed - global.var.inc&lt;b>";
+                exit;
+        }
+        system("chmod a+rwx /debug2_logs/debug.out");
+}
+
+?>
+</PRE>
+<HR>
+<P>In your PHP source code initial page which is generally index.php3, put 
+a line like 
+<HR>
+<PRE>
+&lt;?php
+        include ("debug2.inc");
+
+        init_debug_file();
+        // all other commands follows here ...
+        // ...........
+?>
+</PRE>
+<HR>
+<P>To output debug values, in your PHP source code files, put debug2_() calls
+as illustrated below:
+<HR>
+<PRE>
+&lt;?php
+include ("debug2.inc");
+debug2_(__FILE__, __LINE__, "f_somevariable", $f_somevariable);
+
+function aa()
+{
+        $aa = 8;
+        debug2_(__FILE__, __LINE__, "aa", $aa);
+}
+?>
+</PRE>
+<HR>
+<P>When you run the PHP program the output will be traced in the file called
+debug.out giving the filename, linenumber, variable name and it's value.
+<P>Use the debug2_() generously in your code. The usage of debug2_() calls
+in your program will <B>NOT</B> have any impact on the 
+final production code and 
+also has no impact on the performance because they will be filtered out
+as described below. You can use copy and paste to save time 
+of typing debug2() calls
+or use the 'yank to buffer' feature of Vi editor and paste.
+<P>When you are done development and testing and when you are ready to 
+deploy on the production server, filter out the debug2_ calls from
+your source code. At unix prompt -
+<HR>
+<PRE>
+bash$ mkdir production
+bash$ grep -v debug2_  filea.php3 > production/filea.php3
+</PRE>
+<HR>
+
+For a large group of files -
+<HR>
+<PRE>
+bash$ mkdir production
+bash$ ls *.php3 | while read ans 
+do 
+        grep -v  debug2_ $ans > production/$ans
+done
+</PRE>
+<HR>
+
+And now copy the files from production to the deployment area.
+<HR>
+<A HREF="PHP-HOWTO-10.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="PHP-HOWTO-8.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="PHP-HOWTO.html#toc9"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

@@ -1,0 +1,94 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>如何設置“虛擬私有網路(VPN)”: 著手執行。</TITLE>
+ <LINK HREF="VPN-7.html" REL=next>
+ <LINK HREF="VPN-5.html" REL=previous>
+ <LINK HREF="VPN.html#toc6" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+<A HREF="VPN-7.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="VPN-5.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="VPN.html#toc6"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s6">6. 著手執行。</A></H2>
+
+<P>
+<H2><A NAME="ss6.1">6.1 登入</A>
+</H2>
+
+<P>
+<P>現在，你應該已經測試過 ssh 是否能夠正常地工作。如果，slave 拒絕你登入，請閱讀
+記錄檔。也許是檔案使用權限或 sshd ，在設定上的問題。
+<P>
+<H2><A NAME="ss6.2">6.2 啟動 ppp </A>
+</H2>
+
+<P>
+<P>登入到 slave 帳戶，並執行：
+<PRE>
+sudo /usr/sbin/pppd passive  
+ 
+</PRE>
+
+此時，如果工作正常你應該會看到一些亂碼。假設，沒有出現亂碼，不是 sudo 就是 pppd
+有問題。請參考，記錄檔﹑<EM>/etc/ppp/options</EM> ﹑和 <EM>.ppprc </EM>，等檔案
+，以便找出是那個命令出了問題。問題排除後，將 'passive' 這個字寫到 .ppprc 裡，然
+後再試一次。以壓下 enter﹑'~'﹑和 '^Z'等按鍵的方式，清除螢幕上的亂碼，繼續
+工作。現在，你應該會看到 master 的“輸入提示符號(prompt)”，然後執行 kill %1
+。如果你想知道更多有關“逸出字元(escape character)”的說明，請參閱“調整(tuning)”
+那一節。
+<P>
+<H2><A NAME="ss6.3">6.3 一次完成兩個動作</A>
+</H2>
+
+<P>
+<P>當然，你也可以這麼做
+<P>
+<PRE>
+ssh -l slave polanski sudo /usr/sbin/pppd 
+ 
+</PRE>
+<P>如果工作正常，它就會當著你的面，傳送一些看似亂碼的資料。
+<P>
+<H2><A NAME="ss6.4">6.4 Pty 的重導功能</A>
+</H2>
+
+<P>
+<P>這次，我們試著重導上面的動作：
+<PRE>
+/usr/local/bin/pty-redir /usr/bin/ssh -l slave polanski sudo /usr/sbin/pppd  
+ 
+</PRE>
+<P>好長的句子，不是嗎？你應該使用 ssh 執行檔的完全路徑名稱，為了安全的理由，pty-redir
+程式只允許你使用這種方式。現在，你會透過這個程式取得一個裝置名稱。假設，你取得的
+是 <EM>/dev/ttyp0 </EM> 。你可以使用 ps 命令來檢視目前的狀況。請找尋 'p0' 這個裝
+置的相關敘述。
+<P>
+<H2><A NAME="ss6.5">6.5 這個裝置上面，會有些什麼東西？</A>
+</H2>
+
+<P>
+<P>試著執行
+<PRE>
+/usr/sbin/pppd /dev/ttyp0 local 192.168.0.1:192.168.0.2  
+ 
+</PRE>
+<P>來建立連線。然後，檢視 ifconfig 命令的輸出結果，看是否已經建立了這個裝置，然後
+，使用 ping 來檢查你的虛擬網路。
+<P>
+<H2><A NAME="ss6.6">6.6 設定路由</A>
+</H2>
+
+<P>
+<P>除了設定主防火牆主機的路由，次防火牆主機也要設定。現在，你應該能夠從公司的一個
+內部網路上的主機，ping 到其它內部網路上的主機。接著，設定額外的防火牆規則。現
+在，你已經擁有了 VPN 的環境，你可以設定公司兩個內部網路之間的連接規則。
+<P>
+<P>
+<HR>
+<A HREF="VPN-7.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="VPN-5.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="VPN.html#toc6"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

@@ -1,0 +1,241 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>From VMS to Linux HOWTO: Programming </TITLE>
+ <LINK HREF="VMS-to-Linux-HOWTO-6.html" REL=next>
+ <LINK HREF="VMS-to-Linux-HOWTO-4.html" REL=previous>
+ <LINK HREF="VMS-to-Linux-HOWTO.html#toc5" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="VMS-to-Linux-HOWTO-6.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="VMS-to-Linux-HOWTO-4.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="VMS-to-Linux-HOWTO.html#toc5"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="Programming"></A> <A NAME="s5">5. Programming </A></H2>
+
+<P>
+<P>Programming under Linux is <EM>much</EM> better: there are lots of tools that
+make programming easier and quicker. For instance, the drudgery of
+editing--saving--exiting--compiling--re-editing can be cut short by using
+editors like <CODE>emacs</CODE> or <CODE>jed</CODE>, as seen above.
+<P>
+<H2><A NAME="ss5.1">5.1 Fortran</A>
+</H2>
+
+<P>
+<P>Not substantial differences here, but note that at the time of writing the
+available (free) compilers are not 100% compatible with VMS'; expect
+some minor quirks. (It's actually the VMS compiler which has non-standard
+extensions.) See <CODE>/usr/doc/g77/DOC</CODE> or <CODE>/usr/doc/f2c/f2c.ps</CODE>
+for details.
+<P>Your sysadm has installed a native compiler called <CODE>g77</CODE> (good but, as of
+version 0.5.21, still not perfectly compatible with DEC Fortran) or possibly
+the Fortran to C translator, <CODE>f2c</CODE>, and one of the front-ends that make it
+mimic a native compiler. In my experience, the package <CODE>yaf77</CODE> is the
+one that provides best results.
+<P>To compile a Fortran program with <CODE>g77</CODE>, edit the source, save it with
+extension <CODE>.f</CODE>, then do:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ g77 myprog.f
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>which creates by default an executable called <CODE>a.out</CODE> (you don't have
+to link anything). To give the executable a different name and do some 
+optimisation:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ g77 -O2 -o myprog myprog.f
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Beware of optimisations! Ask your sysadm to read the documentation that
+comes with the compiler and tell you if there are any problems.
+<P>To compile a subroutine:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ g77 -c mysub.f
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>This creates a file <CODE>mysub.o</CODE>. To link this subroutine to a program, 
+you'll do
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ g77 -o myprog myprog.f mysub.o
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>If you have many external subroutines and you want to make a library, do the
+following:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ cd subroutines/
+$ cat *f >mylib.f ; g77 -c mylib.f
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>This will create <CODE>mylib.o</CODE> that you can link to your programs.
+<P>Finally, to link an external library called, say, <CODE>libdummy.so</CODE>:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ g77 -o myprog myprog.f -ldummy
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>If you have <CODE>f2c</CODE>, you only have to use <CODE>f77</CODE> or <CODE>fort77</CODE> instead
+of <CODE>g77</CODE>.
+<P>Another useful programming tool is <CODE>make</CODE>, described below.
+<P>
+<P>
+<H2><A NAME="ss5.2">5.2 Using <CODE>make</CODE></A>
+</H2>
+
+<P>
+<P>The utility <CODE>make</CODE> is a tool to handle the compilation of programs that
+are split into several source files. The VMS counterparts are <CODE>MMS</CODE>
+and <CODE>MMK</CODE>, which have a different syntax.
+<P>Let's suppose you have source files containing your routines, <CODE>file_1.f,
+file_2.f, file_3.f</CODE>, and a source file of the main program that uses the
+routines, <CODE>myprog.f</CODE>. If you compile your program manually, whenever you
+modify one of the source files you have to figure out which file depends on
+which, which file to recompile first, and so on.
+<P>Instead of getting mad, you can write a `makefile'. This is a text file
+containing the dependencies between your sources: when one is modified, only
+the ones that depend on the modified file will be recompiled.
+<P>In our example, you'd write a makefile like this:
+<P>
+<HR>
+<PRE>
+
+# This is makefile
+# Press the &lt;TAB> key where you see &lt;TAB>!
+# It's important: don't use spaces instead.
+
+myprog: myprog.o file_1.o file_2.o file_3.o
+&lt;TAB>g77 -o myprog myprog.o file_1.o file_2.o file_3.o
+# myprog depends on four object files
+
+myprog.o: myprog.f
+&lt;TAB>g77 -c myprog.f
+# myprog.o depends on its source file
+
+file_1.o: file_1.f
+&lt;TAB>g77 -c file_1.f
+# file_1.o depends on its source file
+
+file_2.o: file_2.f file_1.o
+&lt;TAB>g77 -c file_2.f file_1.o
+# file_2.o depends on its source file and an object file
+
+file_3.o: file_3.f file_2.o
+&lt;TAB>g77 -c file_3.f file_2.o
+# file_3.o depends on its source file and an object file
+
+# end of makefile.
+</PRE>
+<HR>
+<P>Save this file as <CODE>Makefile</CODE> and type <CODE>make</CODE> to compile your program;
+alternatively, save it as <CODE>myprog.mak</CODE> and type <CODE>make -f myprog.mak</CODE>.
+And of course, RMP.
+<P>
+<P>
+<H2><A NAME="ss5.3">5.3 Shell Scripts</A>
+</H2>
+
+<P>
+<P>Shell scripts are the equivalent of VMS' command files, and allow for very
+powerful constructs.
+<P>To write a script, all you have to do is write a standard ASCII file
+containing the commands, save it, then make it executable with the
+command <CODE>chmod +x &lt;scriptfile></CODE>. To execute it, type its name.
+<P>Writing scripts under <CODE>bash</CODE> is such a vast subject it would require a
+book by itself, and I will not delve into the topic any further. I'll just
+give you a more-or-less comprehensive and (hopefully) useful example you can
+extract some basic rules from.
+<P>EXAMPLE: sample.sh
+<P>
+<HR>
+<PRE>
+#!/bin/sh
+# sample.sh
+# I am a comment
+# don't change the first line, it must be there
+echo "This system is: `uname -a`" # use the output of the command
+echo "My name is $0" # built-in variables
+echo "You gave me the following $# parameters: "$*
+echo "First parameter is: "$1
+echo -n "What's your name? " ; read your_name
+echo notice the difference: "hi $your_name" # quoting with "
+echo notice the difference: 'hi $your_name' # quoting with '
+DIRS=0 ; FILES=0
+for file in `ls .` ; do
+  if [ -d ${file} ] ; then # if file is a directory
+    DIRS=`expr $DIRS + 1`  # this means DIRS = DIRS + 1
+  elif [ -f ${file} ] ; then
+    FILES=`expr $FILES + 1`
+  fi
+  case ${file} in
+    *.gif|*jpg) echo "${file}: graphic file" ;;
+    *.txt|*.tex) echo "${file}: text file" ;;
+    *.c|*.f|*.for) echo "${file}: source file" ;;
+    *) echo "${file}: generic file" ;;
+  esac
+done
+echo "there are ${DIRS} directories and ${FILES} files"
+ls | grep "ZxY--!!!WKW"
+if [ $? != 0 ] ; then # exit code of last command
+  echo "ZxY--!!!WKW not found"
+fi
+echo "enough... type 'man bash' if you want more info."
+</PRE>
+<HR>
+<P>
+<H2><A NAME="C"></A> <A NAME="ss5.4">5.4 C </A>
+</H2>
+
+<P>
+<P>Linux is an excellent environment to program in C. Taken for granted that
+you know C, here are a couple of guidelines. To compile your standard
+<CODE>hello.c</CODE> you'll use the <CODE>gcc</CODE> compiler, which comes as part of Linux
+and has the same syntax as <CODE>g77</CODE>:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ gcc -O2 -o hello hello.c
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>To link a library to a program, add the switch <CODE>-l&lt;libname&gt;</CODE>.
+For example, to link the math library and optimize do
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ gcc -O2 -o mathprog mathprog.c -lm
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>(The <CODE>-l&lt;libname&gt;</CODE> switch forces <CODE>gcc</CODE> to link the library 
+<CODE>/usr/lib/lib&lt;libname&gt;.a</CODE>; so <CODE>-lm</CODE> links 
+<CODE>/usr/lib/libm.a</CODE>).
+<P>When your program is made of several source files, you'll need to use the
+utility <CODE>make</CODE> described above. Just use <CODE>gcc</CODE> and C source files in
+the makefile.
+<P>You can invoke some help about the C functions, that are covered by man
+pages, section 3; for example,
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ man 3 printf
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>There are lots of libraries available out there; among the first you'll want
+to use are <CODE>ncurses</CODE>, to handle text mode effects, and <CODE>svgalib</CODE>, to
+do graphics.
+<P>
+<P>
+<HR>
+<A HREF="VMS-to-Linux-HOWTO-6.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="VMS-to-Linux-HOWTO-4.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="VMS-to-Linux-HOWTO.html#toc5"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

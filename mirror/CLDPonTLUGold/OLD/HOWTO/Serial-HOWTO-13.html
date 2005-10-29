@@ -1,0 +1,368 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE> Serial HOWTO: Troubleshooting </TITLE>
+ <LINK HREF="Serial-HOWTO-14.html" REL=next>
+ <LINK HREF="Serial-HOWTO-12.html" REL=previous>
+ <LINK HREF="Serial-HOWTO.html#toc13" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Serial-HOWTO-14.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Serial-HOWTO-12.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Serial-HOWTO.html#toc13"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="trouble_shoot"></A> <A NAME="s13">13. Troubleshooting </A></H2>
+
+<P> See Modem-HOWTO for troubleshooting related to modems or getty for
+modems.  For a Text-Terminal much of the info here will be of value as
+well as the troubleshooting info in Text-Terminal-HOWTO.
+<P>
+<H2><A NAME="ser_elect_test"></A> <A NAME="ss13.1">13.1 Serial Electrical Test Equipment </A>
+</H2>
+
+<H3>Breakout Gadgets, etc.</H3>
+
+<P> While a multimeter (used as a voltmeter) may be all that you need
+for just a few serial ports, simple special test equipment has been
+made for testing serial port lines.  Some are called "breakout ... "
+where breakout means to break out conductors from a cable.  These
+gadgets have a couple of connectors which connect to serial port
+connectors (either at the ends of serial cables or at the back of a
+PC).  Some have test points for connecting a voltmeter.  Others have
+LED lamps which light when certain modem control lines are asserted
+(turned on).  The color of the light may indicate the polarity of the
+signal (positive or negative voltage).  Still others have jumpers so
+that you can connect any wire to any wire.  Some have switches.  
+<P>Radio Shack sells (in 1998) a "RS-232 Troubleshooter" or "RS-232 Line
+Tester" which checks TD, RD, CD, RTS, CTS, DTR, and DSR.  A green
+light means on (+12 v) while red means off (-12 v).  They also sell a
+"RS-232 Serial Jumper Box" which permits connecting the pins anyway
+you choose.
+<P>
+<H3>Measuring Voltages</H3>
+
+<P> Any voltmeter or multimeter, even the cheapest that sells for
+about $10, should work fine.  Trying to use other methods for
+checking voltage is tricky.  Don't use a LED unless it has a series
+resistor to reduce the voltage across the LED.  A 470 ohm resistor is
+used for a 20 ma LED (but not all LED's are 20 ma).  The LED will
+only light for a certain polarity so you may test for + or - voltages.
+Does anyone make such a gadget for automotive circuit testing??  Logic
+probes may be damaged if you try to use them since the TTL voltages
+for which they are designed are only 5 volts.  Trying to use a 12 V
+incandescent light bulb is not a good idea.  It won't show polarity
+and due to limited output current of the UART it probably will not
+even light up.
+<P>To measure voltage on a female connector you may plug in a bent paper
+clip into the desired opening.  The paper clip's diameter should be no
+larger than the pins so that it doesn't damage the contact.  Clip
+an alligator clip (or the like) to the paper clip to connect up.  Take
+care not to touch two pins at the same time with any metal object.
+<P>
+<H3>Taste Voltage</H3>
+
+<P> As a last resort, if you have no test equipment and are willing to
+risk getting shocked (or even electrocuted) you can always taste the
+voltage.  Before touching one of the test leads with your tongue, test
+them to make sure that there is no high voltage on them.  Touch both
+leads (at the same time) to one hand to see if they shock you.  Then
+if no shock, wet the skin contact points by licking and repeat.  If
+this test gives you a shock, you certainly don't want to use your
+tongue.
+<P>For the test for 12 V, Lick a finger and hold one test lead in it.
+Put the other test lead on your tongue.  If the lead on your tongue is
+positive, there will be a noticeable taste.  You might try this with
+flashlight batteries first so you will know what taste to expect.
+<P>
+<H2><A NAME="ss13.2">13.2 Serial Monitoring/Diagnostics </A>
+</H2>
+
+<P> A few Linux programs will monitor the modem control lines and
+indicate if they are positive (1) or negative (0).  See section 
+<A HREF="Serial-HOWTO-8.html#serial_mon">Serial Monitoring/Diagnostics</A><P>
+<H2><A NAME="ss13.3">13.3 (The following subsections are in both the Serial and Modem HOWTOs)</A>
+</H2>
+
+<H2><A NAME="cant_find_port"></A> <A NAME="ss13.4">13.4 My Serial Port is Physically There but Can't be Found </A>
+</H2>
+
+<P> If a physical device (such as a modem) doesn't work at all it may
+mean that the device is not at the I/O address that setserial
+thinks it's at.  It could also mean (for a PnP card) that is doesn't
+yet have an address.  Thus it can't be found.  
+<P>Check the BIOS menus and BIOS messages.  For the PCI bus use lspci or
+scanpci.  If it's an ISA bus PnP serial port, try "pnpdump --dumpregs"
+and/or see Plug-and-Play-HOWTO.  Using "scanport" will scan all ISA
+bus ports and may discover an unknown port that could be a serial port
+(but it doesn't probe the port).  It could hang your PC.  You may try
+probing with setserial.  See 
+<A HREF="Serial-HOWTO-8.html#probing_ss">Probing</A>.  If
+nothing seems to get thru the port it may be accessible but have a bad
+interrupt.  See 
+<A HREF="#slow_">Extremely Slow: Text appears on the screen slowly after long delays</A>.  Use <CODE>setserial -g</CODE> to
+see what the serial driver thinks and check for IRQ and I0 address
+conflicts.  Even if you see no conflicts the driver may have incorrect
+information (view it by "setserial" and conflicts may still exist.
+<P>If two ports have the same IO address then probing it will erroneously
+indicate only one port.  Plug-and-play detection will find both ports
+so this should only be a problem if at least one port is not
+plug-and-play.  All sorts of errors may be reported/observed for
+devices illegally "sharing" a port but the fact that there are two
+devices on the same a port doesn't seem to get detected (except
+hopefully by you).  In the above case, if the IRQs are different then
+probing for IRQs with setserial might "detect" this situation by
+failing to detect any IRQ.  See 
+<A HREF="Serial-HOWTO-8.html#probing_ss">Probing</A>. 
+<P>
+<H2><A NAME="slow_"></A> <A NAME="ss13.5">13.5 Extremely Slow: Text appears on the screen slowly after long delays  </A>
+</H2>
+
+<P> It's likely mis-set/conflicting interrupts.  Here are some of the
+symptoms which will happen the first time you try to use a modem,
+terminal, or serial printer.  In some cases you type something but
+nothing appears on the screen until many seconds later.  Only the last
+character typed may show up.  It may be just an invisible
+&lt;return&gt; character so all you notice is that the cursor jumps
+down one line.  In other cases where a lot of data should appear on
+the screen, only a batch of about 16 characters appear.  Then there is
+a long wait of many seconds for the next batch of characters.  You
+might also get "input overrun" error messages (or find them in logs).
+<P>For more details on the symptoms and why this happens see
+<P>
+<A HREF="Serial-HOWTO-14.html#irq_prob_details">Interrupt Problem Details</A> and/or 
+<A HREF="Serial-HOWTO-14.html#irq_conflict">Interrupt Conflicts</A> and/or 
+<A HREF="Serial-HOWTO-14.html#irq_ng">Mis-set Interrupts</A>.
+If it involves Plug-and-Play devices, see also Plug-and-Play-HOWTO. 
+<P>As a quick check to see if it really is an interrupt problem, set the
+IRQ to 0 with "setserial".  This will tell the driver to use
+polling instead of interrupts.  If this seems to fix the "slow"
+problem then you had an interrupt problem.  You should still try to
+solve the problem since polling uses excessive computer resources.
+<P>Checking to find the interrupt conflict may not be easy since Linux
+supposedly doesn't permit any interrupt conflicts and will send you a
+<A HREF="#busy_err">/dev/ttyS?: Device or resource busy</A> error
+message if it thinks you are attempting to create a conflict.  But a
+real conflict can be created if "setserial" has told the kernel
+incorrect info.  The kernel has been lied to and thus doesn't think
+there is any conflict.  Thus using "setserial" will not reveal the
+conflict (nor will looking at /proc/interrupts which bases its info on
+"setserial").  You still need to know what "setserial" thinks so that
+you can pinpoint where it's wrong and change it when you determine
+what's really set in the hardware.
+<P>What you need to do is to check how the hardware is set by checking
+jumpers or using PnP software to check how the hardware is actually
+set.  For PnP run either "pnpdump --dumpregs" (if ISA bus) or run
+"lspci" (if PCI bus).  Compare this to how Linux (e.g. "setserial")
+thinks the hardware is set.
+<P>
+<H2><A NAME="ss13.6">13.6 Somewhat Slow: I expected it to be a few times faster</A>
+</H2>
+
+<P> One reason may be that whatever is on the serial port (such as a
+modem, terminal, printer) doesn't work as fast as you thought it did.
+<P>
+<P>Another possible reason is that you have an obsolete serial port: UART
+8250, 16450 or early 16550 (or the serial driver thinks you do).  See
+<P>
+<A HREF="Serial-HOWTO-15.html#uart_">What Are UARTS?</A> 
+Use "setserial -g /dev/ttyS*".
+If it shows anything less than a 16550A, this may be your problem.
+If you think that "setserial" has it wrong check it out.  See 
+<A HREF="Serial-HOWTO-8.html#set_serial">What is Setserial</A> for more info.  If you
+really do have an obsolete serial port, lying about it to setserial
+will only make things worse.
+<P>
+<H2><A NAME="irqs_shown_wrong"></A> <A NAME="ss13.7">13.7 The Startup Screen Show Wrong IRQs for the Serial Ports.</A>
+ </H2>
+
+<P> Linux does not do any IRQ detection on startup.  When the serial
+module loads it only does serial device detection.  Thus, disregard
+what it says about the IRQ, because it's just assuming the standard
+IRQs.  This is done, because IRQ detection is unreliable, and can be
+fooled.  But if and when setserial runs from a start-up script, it
+changes the IRQ's and displays the new (and hopefully correct) state
+on on the startup screen.  If the wrong IRQ is not corrected by a
+later display on the screen, then you've got a problem.
+<P>So, even though I have my <CODE>ttyS2</CODE> set at IRQ 5, I still see
+<BLOCKQUOTE><CODE>
+<PRE>
+ttyS02 at 0x03e8 (irq = 4) is a 16550A
+</PRE>
+</CODE></BLOCKQUOTE>
+
+at first when Linux boots.  (Older kernels may show "ttyS02" as
+"tty02" which is the same as ttyS2).  You may need to use
+<CODE>setserial</CODE> to tell Linux the IRQ you are using. 
+<P>
+<H2><A NAME="ss13.8">13.8 "Cannot open /dev/ttyS?: Permission denied"</A>
+</H2>
+
+<P> Check the file permissions on this port with "ls -l /dev/ttyS?"_
+If you own the ttyS? then you need read and write permissions: crw
+with the c (Character device) in col. 1.  It you don't own it then it
+should show rw- in cols. 8 &amp; 9 which means that everyone has read and
+write permission on it.  Use "chmod" to change permissions.  There are
+more complicated ways to get access like belonging to a "group" that
+has group permission.
+<P>
+<H2><A NAME="ss13.9">13.9 "Operation not supported by device" for ttyS?</A>
+</H2>
+
+<P> This means that an operation requested by setserial, stty, etc.
+couldn't be done because the kernel doesn't support doing it.
+Formerly this was often due to the "serial" module not being loaded.
+But with the advent of PnP, it may likely mean that there is no modem
+(or other serial device) at the address where the driver (and
+setserial) thinks it is.  If there is no modem there, commands (for
+operations) sent to that address obviously don't get done.  See 
+<A HREF="Serial-HOWTO-6.html#io-irq_in_hdw">What is set in my serial port hardware?</A><P>If the "serial" module wasn't loaded but "lsmod" shows you it's now
+loaded it might be the case that it's loaded now but wasn't loaded
+when you got the error message.  In many cases the module will
+automatically loaded when needed (if it can be found).  To force
+loading of the "serial" module it may be listed in the file:
+/etc/modules.conf or /etc/modules.  The actual module should reside
+in: /lib/modules/.../misc/serial.o.
+<P>
+<H2><A NAME="ss13.10">13.10 "Cannot create lockfile. Sorry"</A>
+</H2>
+
+<P> When a port is "opened" by a program a lockfile is created in
+/var/lock/.  Wrong permissions for the lock directory will not allow a
+lockfile to be created there.  Use "ls -ld /var/lock" to see if the
+permissions are OK: usually rwx for everyone (repeated 3 times).  If
+it's wrong, use "chmod" to fix it.  Of course, if there is no "lock"
+directory no lockfile can be created there.  For more info on
+lockfiles see 
+<A HREF="Serial-HOWTO-10.html#lockfiles_">What Are Lock Files</A> 
+<P>
+<H2><A NAME="ss13.11">13.11 "Device /dev/ttyS? is locked."</A>
+</H2>
+
+<P> This means that someone else (or some other process) is supposedly
+using the serial port.  There are various ways to try to find out what
+process is "using" it.  One way is to look at the contents of the
+lockfile (/var/lock/LCK...).  It should be the process id.  If the
+process id is say 100 type "ps 100" to find out what it is.  Then if
+the process is no longer needed, it may be gracefully killed by "kill
+100".  If it refuses to be killed use "kill -9 100" to force it to be
+killed, but then the lockfile will not be removed and you'll need to
+delete it manually.  Of course if there is no such process as 100 then
+you may just remove the lockfile but in most cases the lockfile should
+have been automatically removed if it contained a stale process id
+(such as 100).
+<P>
+<H2><A NAME="busy_err"></A> <A NAME="ss13.12">13.12 "/dev/tty? Device or resource busy" </A>
+</H2>
+
+<P> This means that the device you are trying to access (or use) is
+supposedly busy (in use) or that a resource it needs (such as an IRQ)
+is supposedly being used by another device (the resource is "busy").
+This message is easy to understand if it only means that the device is
+busy (in use).  But it often means that a resource is in use.  What
+makes it even more confusing is that in some cases neither the device
+not the resources that it needs are actually "busy".
+<P>The ``resource busy'' part often means (example for <CODE>ttyS2</CODE>) ``You
+can't use <CODE>ttyS2</CODE> since another device is using ttyS2's
+interrupt.'' The potential interrupt conflict is inferred from what
+"setserial" thinks.  A more accurate error message would be ``Can't
+use <CODE>ttyS2</CODE> since the setserial data (and kernel data) indicates
+that another device is using <CODE>ttyS2</CODE>'s interrupt''.  If two devices
+use the same IRQ and you start up only one of the devices, everything
+is OK because there is no conflict yet.  But when you next try to
+start the second device (without quitting the first device) you get a
+"... busy" error message.  This is because the kernel only keeps track
+of what IRQs are actually in use and actual conflicts don't happen
+unless the devices are in use (open).   The situation for I/O address
+(such as 0x3f8) conflict is similar.
+<P>This error is sometimes due to having two serial drivers: one a module
+and the other compiled into the kernel.  Both drivers try to grab the
+same resources and one driver finds them "busy".
+<P>There are two possible cases when you see this message:
+<OL>
+<LI> There may be a real resource conflict that is being avoided.</LI>
+<LI> Setserial has it wrong and the only reason <CODE>ttyS2</CODE> can't be
+used is that setserial erroneously predicts a conflict.</LI>
+</OL>
+<P>What you need to do is to find the interrupt setserial thinks
+<CODE>ttyS2</CODE> is using.  Look at /proc/tty/driver/serial (if you have
+it).  You should also be able to find it with the "setserial" command
+for <CODE>ttyS2</CODE>.   But due to a bug (reported by me in Nov. 2000) you
+get the same "... busy" error message when you try this with
+"setserial". 
+<P>To try to resolve this problem reboot or: exit or gracefully kill all
+likely conflicting processes.   If you reboot: 1. Watch the boot-time
+messages for the serial ports.  2. Hope that the file that runs
+"setserial" at boot-time doesn't (by itself) create the same conflict
+again.
+<P>If you think you know what IRQ say <CODE>ttyS2</CODE> is using then you may
+look at /proc/interrupts to find what else (besides another serial
+port) is currently using this IRQ.  You might also want to double
+check that any suspicious IRQs shown here (and by "setserial") are
+correct (the same as set in the hardware).  A way to test whether or
+not it's a potential interrupt conflict is to set the IRQ to 0
+(polling) using "setserial".  Then if the busy message goes away, it
+was likely a potential interrupt conflcit.  It's not a good idea to
+leave it permanently set at 0 since it will make the CPU work too
+hard.
+<P>
+<H2><A NAME="ss13.13">13.13 "Input/output error" from setserial or stty</A>
+</H2>
+
+<P> You may have typed "ttys" instead of "ttyS".  You will see this
+error message if you try to use the setserial command for any device
+that is not a serial port.  It also may mean that the serial port is
+in use (busy or opened) and thus the attempt to get/set parameters by
+setserial or stty failed.  It could also mean that there isn't any
+serial port at the IO address that setserial thinks your port is at.
+<P>
+<H2><A NAME="ss13.14">13.14 Overrun errors on serial port</A>
+</H2>
+
+<P> This is an overrun of the hardware FIFO buffer and you can't
+increase its size.  See 
+<P>
+<P>
+<P>
+<H2><A NAME="ss13.15">13.15 Port get characters only sporadically</A>
+</H2>
+
+<P> There could be some other program running on the port.  Use "top"
+(provided you've set it to display the port number) or "ps -alxw".
+Look at the results to see if the port is being used by another
+program.  Be on the lookout for the gpm mouse program which often runs
+on a serial port.
+<P>
+<H2><A NAME="ss13.16">13.16 Troubleshooting Tools</A>
+</H2>
+
+<P> These are some of the programs you might want to use in
+troubleshooting: 
+<UL>
+<LI> "lsof /dev/ttyS*" will list serial ports which are open.</LI>
+<LI> "setserial" shows and sets the low-level hardware configuration
+of a port (what the driver thinks it is).  See 
+<A HREF="Serial-HOWTO-8.html#set_serial">What is Setserial</A> </LI>
+<LI> "stty" shows and sets the configuration of a port (except for
+that handled by "setserial").
+See the section 
+<A HREF="Serial-HOWTO-8.html#stty_">Stty</A></LI>
+<LI> "modemstat" or "statserial" will show the current state of
+various modem signal lines (such as DTR, CTS, etc.)</LI>
+<LI> "irqtune" will give serial port interrupts higher
+priority to improve performance.</LI>
+<LI> "hdparm" for hard-disk tuning may help some more.</LI>
+<LI> "lspci" shows the actual IRQs, etc. of hardware on the PCI bus.</LI>
+<LI> "pnpdump --dumpregs" shows the actual IRQs, etc. of hardware for
+PnP devices on the ISA bus.</LI>
+<LI> Some "files" in the /proc tree (such as ioports, interrupts,
+and tty/driver/serial).</LI>
+</UL>
+<P>
+<P>
+<P>
+<HR>
+<A HREF="Serial-HOWTO-14.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Serial-HOWTO-12.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Serial-HOWTO.html#toc13"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

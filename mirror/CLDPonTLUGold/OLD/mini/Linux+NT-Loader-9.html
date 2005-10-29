@@ -1,0 +1,100 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Linux + NT OS Loader mini-HOWTO 中譯版: 其它</TITLE>
+ <LINK HREF="Linux+NT-Loader-8.html" REL=previous>
+ <LINK HREF="Linux+NT-Loader.html#toc9" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+<IMG SRC="../img/next.gif" ALT="Next">
+<A HREF="Linux+NT-Loader-8.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Linux+NT-Loader.html#toc9"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s9">9. 其它</A></H2>
+
+<H2><A NAME="ss9.1">9.1 參考資料</A>
+</H2>
+
+<P>
+<UL>
+<LI>The Linux+WindowsNT mini-HOWTO</LI>
+<LI>The FAQ for FreeBSD 2.X</LI>
+</UL>
+<P>
+<H2><A NAME="ss9.2">9.2 感謝</A>
+</H2>
+
+<P>
+<UL>
+<LI>感謝 Xiaoming Yi &lt;z3c20@ttacs.ttu.edu&gt; 提示這些過程也在除了第一顆磁碟外的其它磁碟上運作．</LI>
+<LI>感謝 Frank Dennler &lt;Frank.Dennler@zkb.ch&gt; 提供的磁碟技巧．</LI>
+</UL>
+<P>
+<H2><A NAME="ss9.3">9.3 回饋</A>
+</H2>
+
+<P>任何意見都很歡迎．
+<P>
+<H2><A NAME="ss9.4">9.4 譯注: 以 NT Loader 啟動 FreeBSD</A>
+</H2>
+
+<P>因譯者的電腦中除了 Windows NT 4.0 及 Linux 之外，還裝了 FreeBSD 2.2，於是就仿照上面的做法試試 NT Loader 有沒有辦法啟動 FreeBSD．
+我的 FreeBSD 裝在 <CODE>/dev/sda2</CODE>, 也就是 FreeBSD 的 <CODE>/dev/sd0s2</CODE>.
+按照上面的做法我先將 <CODE>/dev/sda2</CODE> 的 boot sector 存成一檔案:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# dd if=/dev/sda2 of=/bootsect.bsd bs=512 count=1
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>並將它拷貝到 C:\ 下．再於 <CODE>boot.ini</CODE> 中加入
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+C:\BOOTSECT.BSD="FreeBSD"
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>不料這個方法竟然<B>失敗</B>了，無法啟動 FreeBSD!
+<P>
+<P>一方面覺得失望，一方面又不死心．忽然想到，lilo 也可以拿來啟動 FreeBSD．
+於是，又做了下面的實驗，進入 Linux 後，將 <CODE>/etc/lilo.conf</CODE> 改為:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+boot = /dev/fd0
+install = /boot/boot.b
+vga = normal
+
+other = /dev/sda2
+      label = FreeBSD
+      table = /dev/sda
+      loader = /dev/os2_d.b
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>放入一格式化過的磁片，再跑 lilo -v．然後將磁片的啟動磁區變成一檔案:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# dd if=/dev/fd0 of=/bootsect.bsd bs=512 count=1
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>並放到 C:\ 下．移去磁片後重新開機，在 NT Loader 的選單下選擇 FreeBSD，接著就看到:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+  LILO loading FreeBSD
+  >> FreeBSD BOOT @ 0x10000: 639/65536 k of memory
+  Usage: [[0:][fd](0,a)]/kernel][-abcCdhrsv]
+  Use 1:sd(0,a)/kernel to boot sd0 if it is BIOS drive 1
+  Use ? for file list or press Enter for defaults
+  Boot:
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>我<B>成功</B>了!!
+<P>
+<HR>
+<IMG SRC="../img/next.gif" ALT="Next">
+<A HREF="Linux+NT-Loader-8.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Linux+NT-Loader.html#toc9"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

@@ -1,0 +1,220 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>The UPS Howto: Do it yourself guide</TITLE>
+ <LINK HREF="UPS-HOWTO-6.html" REL=next>
+ <LINK HREF="UPS-HOWTO-4.html" REL=previous>
+ <LINK HREF="UPS-HOWTO.html#toc5" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="UPS-HOWTO-6.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="UPS-HOWTO-4.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="UPS-HOWTO.html#toc5"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s5">5. Do it yourself guide</A></H2>
+
+<P>This discussion is specifically tailored for dumb UPS control.
+However, most of the process is about the same for dumb UPSs and smart
+UPSs.  The biggest difference is in the details of how the UPS
+monitoring daemon (typically <CODE>powerd</CODE>) communicates with the UPS.
+<P>Before doing anything, I suggest the following algorithm:
+<UL>
+<LI>Skim this document.</LI>
+<LI>Download and investigate all packages which seem specifically
+tailored to your UPS.</LI>
+<LI>Download and investigate the more generic packages.  Note that
+some of the more generic packages are actually more powerful,
+better documented, and easier to use than their more specific
+counterparts.</LI>
+<LI>If you still can't get things working, or if points are still
+unclear, read this document more carefully, and hack away...</LI>
+</UL>
+<P>
+<P>
+<H2><A NAME="ss5.1">5.1 What you need to do (summary)</A>
+</H2>
+
+<P>
+<UL>
+<LI>Plug the computer into the UPS.</LI>
+<LI>Connect the computer's serial port to the UPS with a special cable.</LI>
+<LI>Run <CODE>powerd</CODE> (or some sort of equivalent) on the computer.</LI>
+<LI>Setup your <CODE>init</CODE> to do something reasonable on powerfail and
+powerok events (like start a <CODE>shutdown</CODE> and kill any currently
+running <CODE>shutdown</CODE>s, respectively, for example).</LI>
+</UL>
+<P>
+<H2><A NAME="ss5.2">5.2 How it's supposed to work</A>
+</H2>
+
+<P>
+<P>
+<DL>
+<DT><B>UPS's job</B><DD><P>When the power goes out, the UPS continues to power the computer and
+signals that the power went out by throwing a relay or turning
+on an opticoupler on it's control port.
+<P>
+<DT><B>Cable's job</B><DD><P>The cable is designed so that when the UPS throws said relay,
+this causes a particular serial port control line (typically
+<CODE>DCD</CODE>) to go high.
+<P>
+<DT><B>Powerd's job</B><DD><P>The <CODE>powerd</CODE> daemon monitors the serial port.  Keeps raised/lowered
+whatever serial port control lines the UPS needs to have
+raised/lowered (typically, <CODE>DTR</CODE> must be kept high and whatever line
+shuts off the UPS must be kept low).  When <CODE>powerd</CODE> sees the
+UPS control
+line go high, it writes <CODE>FAIL</CODE> to <CODE>/etc/powerstatus</CODE> and
+sends the 
+<CODE>init</CODE> process a <CODE>SIGPWR</CODE> signal.  (Older versions of
+<CODE>powerd</CODE> and <CODE>initd</CODE> wrote to <CODE>/etc/powerfail</CODE>.)
+When the control line goes low again, it writes <CODE>OK</CODE> to
+<CODE>/etc/powerstatus</CODE> and sends <CODE>init</CODE>
+a <CODE>SIGPWR</CODE> signal.
+<P>
+<DT><B>Init's job (aside from everything else it does)</B><DD><P>When it receives a <CODE>SIGPWR</CODE>, it looks at <CODE>/etc/powerstatus</CODE>.
+If it contains <CODE>FAIL</CODE> it runs the <CODE>powerfail</CODE> entry from
+<CODE>/etc/inittab</CODE>.  If it contains <CODE>OK</CODE> it runs the
+<CODE>powerokwait</CODE> entry from <CODE>inittab</CODE>.
+<P>
+</DL>
+<P>
+<H2><A NAME="ss5.3">5.3 How to set things up</A>
+</H2>
+
+<P>
+<P>The following presupposes that you have a cable that works properly
+with <CODE>powerd</CODE>.  If you're not sure that your cable works (or how it
+works), see section
+<A HREF="UPS-HOWTO-6.html#hacking">Reverse-engineering cables and hacking powerd.c</A>
+for information on dealing with poorly described cables and
+reconfiguring <CODE>powerd.c</CODE>.  Sections
+<A HREF="UPS-HOWTO-6.html#serial-port">Serial port pin assignments</A> and
+<A HREF="UPS-HOWTO-6.html#ioctl">Ioctl to RS232 correspondence</A>
+will also be useful.
+<P>If you need to make a cable, see section 
+<A HREF="UPS-HOWTO-6.html#make-cable">How to make a cable</A> for the overall details, and the
+subsection of section 
+<A HREF="UPS-HOWTO-8.html#ups-specific">Info on selected UPSs</A> that refers to your UPS.  The latter might also include
+information on manufacturer supplied cables.  You may want to at least
+skim all of section 
+<A HREF="UPS-HOWTO-8.html#ups-specific">Info on selected UPSs</A> because each section has a few additional generally helpful
+details.
+<P>
+<UL>
+<LI>Edit <CODE>/etc/inittab</CODE>.  Put in something like this:
+
+<PRE>
+# What to do when power fails (Halt system &amp; drain battery :):
+pf::powerfail:/etc/powerfailscript +5
+
+# If power is back before shutdown, cancel the running shutdown.
+pg:0123456:powerokwait:/etc/powerokscript
+   
+</PRE>
+
+</LI>
+<LI>Write scripts <CODE>/etc/powerfailscript</CODE> and
+<CODE>/etc/powerokscript</CODE> to shutdown in 5 minutes (or whatever's
+appropriate) and kill any existing <CODE>shutdown</CODE>, respectively.
+Depending on the version of <CODE>shutdown</CODE> that you're using, this will
+be either so trivial that you'll dispense with the scripts, or be a
+1 line <CODE>bash</CODE> script, something along the lines of:
+
+<PRE>
+    kill `ps -aux | grep "shutdown" | grep -v grep | awk '{print $2}'`
+</PRE>
+
+
+and you'll keep the scripts.  (In case it doesn't come out right,
+the first single quote on the above line is a backquote, the
+second and third are single quotes, and the last is also a
+backquote.)
+</LI>
+<LI>Tell <CODE>init</CODE> to re-process the <CODE>inittab</CODE> file with the command:
+
+<PRE>
+    telinit q
+   
+</PRE>
+
+</LI>
+<LI>Edit rc.local so that <CODE>powerd</CODE> gets run upon startup.  The syntax
+is:
+
+<PRE>
+    powerd &lt;line>
+    
+</PRE>
+
+
+Replace <CODE>&lt;line&gt;</CODE> with the serial port that the UPS
+is connected, such as <CODE>/dev/cua1</CODE>.
+</LI>
+<LI>Connect computer's serial port to UPS's serial port.  DO NOT PLUG
+THE COMPUTER INTO UPS YET.
+</LI>
+<LI>Plug a light into the UPS.
+</LI>
+<LI>Turn on the UPS and the light.
+</LI>
+<LI>Run <CODE>powerd</CODE>.
+</LI>
+<LI>Test the setup:
+<UL>
+<LI>Yank the UPS's plug.
+<UL>
+<LI>Check that the light stays on.</LI>
+<LI>Check that <CODE>/etc/powerfailscript</CODE> runs.</LI>
+<LI>Check that <CODE>shutdown</CODE> is running.</LI>
+</UL>
+</LI>
+<LI>Plug the UPS back in.
+<UL>
+<LI>Check that the light stays on.</LI>
+<LI>Check that <CODE>/etc/powerokscript</CODE> runs.</LI>
+<LI>Check that <CODE>/etc/powerfailscript</CODE> is not running.</LI>
+<LI>Check that <CODE>shutdown</CODE> is no longer running.</LI>
+</UL>
+</LI>
+<LI>Yank the UPS's plug again.  Leave it out and make sure that the
+computer shuts down properly in the proper amount of time.
+</LI>
+<LI><B>The Dangerous Part.</B> After everything seems to be
+proper, power down the computer and plug it into the UPS.  Run a
+script that sync's the hard disk every second or so.
+Simultaneously run a second script that keeps doing a find over
+your entire hard disk.  The first is to make this a little
+safer and the second is to help draw lots of power.  Now, pull
+the plug on the UPS, check again that <CODE>shutdown</CODE> is running
+and wait.  Make sure that the computer shuts down cleanly before the
+battery on the UPS gives out.  This is dangerous because if the
+power goes out before the computer shuts down, you can end up with a
+corrupt file system, and maybe even lose all your files.
+You'll probably want to do a full backup before this test, and
+set the shutdown time extremely short to begin with.</LI>
+</UL>
+</LI>
+</UL>
+<P>Congratulations!  You now have a Linux computer that's protected by a UPS
+and will shutdown cleanly when the power goes out!
+<P>
+<P>
+<H2><A NAME="ss5.4">5.4 User Enhancements</A>
+</H2>
+
+<P>
+<P>
+<UL>
+<LI>Hack <CODE>powerd.c</CODE> to monitor the line indicating that the batteries
+are low.  When the batteries get low, do an <B>immediate</B> shutdown.</LI>
+<LI>Modify the shutdown procedure so that if it's shutting down in a
+<CODE>powerfail</CODE> situation, then it turns off the UPS after doing
+everything necessary.</LI>
+</UL>
+<P>
+<HR>
+<A HREF="UPS-HOWTO-6.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="UPS-HOWTO-4.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="UPS-HOWTO.html#toc5"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

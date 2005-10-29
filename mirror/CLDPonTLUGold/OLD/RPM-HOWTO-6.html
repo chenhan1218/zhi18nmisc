@@ -1,0 +1,515 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>RPM HOWTO (RPM at Idle): Building RPMs</TITLE>
+ <LINK HREF="RPM-HOWTO-7.html" REL=next>
+ <LINK HREF="RPM-HOWTO-5.html" REL=previous>
+ <LINK HREF="RPM-HOWTO.html#toc6" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="RPM-HOWTO-7.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="RPM-HOWTO-5.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="RPM-HOWTO.html#toc6"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s6">6. Building RPMs</A></H2>
+
+<P>
+<P>如果您可以自個兒取得所需的軟體，那麼建造 RPM 檔案也是非常簡單的。
+<P>建造 RPM 檔案的基本步驟如下：
+<UL>
+<LI>確定您的 <CODE>/etc/rpmrc</CODE> 已經符合系統所需， 完成設定。</LI>
+<LI>取回所要建造的 source code。</LI>
+<LI>進行所需的 source 檔案 patch 動作， 以使得我們能順利地
+build 整個程式。</LI>
+<LI>為程式套件撰寫一份 spec 檔案。</LI>
+<LI>確認每個檔案都在正確的目錄位置。</LI>
+<LI>使用 RPM 來 build 整個程式套件。</LI>
+</UL>
+<P>如果一切操作正確， RPM 便能順利 build 完成 binary 與 source 程式套件。
+<P>
+<P>
+<P>
+<H2><A NAME="ss6.1">6.1 The rpmrc File</A>
+</H2>
+
+<P>
+<P>目前為止， RPM 系統唯一的設定檔， 是透過 <CODE>/etc/rpmrc</CODE> 檔案來管理。
+其內容範例如下：
+<BLOCKQUOTE><CODE>
+<PRE>
+require_vendor: 1
+distribution: I roll my own!
+require_distribution: 1
+topdir: /usr/src/me
+vendor: Mickiesoft
+packager:  Mickeysoft Packaging Account &lt;packages@mickiesoft.com>
+
+optflags: i386 -O2 -m486 -fno-strength-reduce
+optflags: alpha -O2
+optflags: sparc -O2
+
+signature: pgp
+pgp_name: Mickeysoft Packaging Account
+pgp_path: /home/packages/.pgp
+
+tmppath: /usr/tmp
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>檔案中的 <CODE>require_vendor</CODE> 這一行敘述， 用以控制 RPM
+是否須要找尋 vendor 那一行敘述， 而 verdor 的資訊可能來自
+<CODE>/etc/rpmrc</CODE> 或是 spec 檔案的 header 處。 如果您把上述的號碼改為
+<CODE>0</CODE>， 便能把這項尋找功能關閉。 這樣的設定方式，
+同樣適用於 <CODE>require_distribution</CODE> 與 <CODE>require_group</CODE> 的敘述上。
+<P>接下來， 我們看到 <CODE>distribution</CODE> 這一行， 您可以在此設定， 或是日後在
+spec 檔案的 header 處設定。 當我們在某個 distribution 上 build 程式套件時，
+就算不需要查詢設定， 此行內容的設定正確， 也是能夠帶來許多便利。
+<CODE>vendor</CODE> 那一行的作用， 和上述的 distribution 非常相似，
+但其內容並不限定 ( 例如是 Joe's Software 或 Rock Music Emporium )。
+<P>RPM 目前支援「多平台架構」的程式套件 build 功能， 我們可以在 <CODE>rpmrc</CODE>
+檔案裡指定 ``optflags'' 變數， 當進行程式套件 build 動作時，
+便可依據所需的平台類型， 應用特定的變數內容。 我們將會在接下去的章節裡，
+說明如何使用這些變數。
+<P>除了上述的 macro 設定外， 還有許多其他的設定方式， 您可以使用：
+<BLOCKQUOTE><CODE>
+<PRE>
+rpm --showrc
+</PRE>
+</CODE></BLOCKQUOTE>
+
+來查看系統的 tag 與可供使用的 flag 有哪些。
+<P>
+<H2><A NAME="ss6.2">6.2 The Spec File</A>
+</H2>
+
+<P>在此我們將討論 spec 檔案的設定。 build 一個程式套件時， 我們需要使用到
+spec 檔案， 其內容為該程式套件的說明， 額外還包括一些指令，
+用以指示整個 build 的過程， 還有一份檔案列表， 用以表示程式套件中的檔案，
+分別被安裝到哪裡。
+<P>spec 檔案的命名方式， 最好是遵循標準的慣例， 其格式應該為
+package name-dash-version number-dash-release number-dot-spec。
+<P>這裡我們舉一個小型的 spec 檔案為例 (vim-3.0-1.spec)：
+<BLOCKQUOTE><CODE>
+<PRE>
+Summary: ejects ejectable media and controls auto ejection
+Name: eject
+Version: 1.4
+Release: 3
+Copyright: GPL
+Group: Utilities/System
+Source: sunsite.unc.edu:/pub/Linux/utils/disk-management/eject-1.4.tar.gz
+Patch: eject-1.4-make.patch
+Patch1: eject-1.4-jaz.patch
+%description
+This program allows the user to eject media that is autoejecting like
+CD-ROMs, Jaz and Zip drives, and floppy drives on SPARC machines.
+
+%prep
+%setup
+%patch -p1
+%patch1 -p1
+
+%build
+make RPM_OPT_FLAGS="$RPM_OPT_FLAGS"
+
+%install
+install -s -m 755 -o 0 -g 0 eject /usr/bin/eject
+install -m 644 -o 0 -g 0 eject.1 /usr/man/man1
+
+%files
+%doc README COPYING ChangeLog
+
+/usr/bin/eject
+/usr/man/man1/eject.1
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss6.3">6.3 The Header</A>
+</H2>
+
+<P>檔案 header 的部份， 有幾個特定的欄位內容， 您必須加以設定完成，
+另外還有幾點注意事項。 您必須設定完成的欄位內容如下：
+<UL>
+<LI><CODE>Summary:</CODE> 以一行長度的描述， 來說明程式套件的內容。</LI>
+<LI><CODE>Name:</CODE> 這個檔案名稱必須與您準備使用的 rpm 檔名一致。</LI>
+<LI><CODE>Version:</CODE> 這個版本名稱必須與您準備使用的 rpm 檔名一致。</LI>
+<LI><CODE>Release:</CODE> 這個發行序號必須與您準備使用的 rpm 檔名一致。
+( 也就是說， 如果我們完成一個程式套件， 但事後發現它有些小小的問題，
+必須重新 build 一次， 此時新的程式套件， 其發行序號便是 2 號 )。</LI>
+<LI><CODE>Icon:</CODE> 如果您使用了其他高階的安裝工具程式
+( 像是 Red Hat 的 ``glint'' 程式 )， 那麼這裡可以指定其相對應的圖示檔，
+它必須是一個 gif 檔案， 而且必須位於 SOURCES 目錄。</LI>
+<LI><CODE>Source:</CODE> 這裡指定了那些「未經處理過的 source 檔案」的
+HOME 目錄， 當您想要重新取得 source 檔案， 或是檢察是否有新版本時，
+就需要用到這個設定。 注意事項： 這裡的檔名， 「務必」與您系統上的檔案名稱一致
+( 也就是說， 下載 source 檔案後， 不要去變更其檔案名稱 )。
+同時， 您可以指定一個以上的 source 檔案， 方式如下：
+<BLOCKQUOTE><CODE>
+<PRE>
+Source0: blah-0.tar.gz
+Source1: blah-1.tar.gz
+Source2: fooblah.tar.gz
+</PRE>
+</CODE></BLOCKQUOTE>
+
+這些檔案都會到 <CODE>SOURCES</CODE> 目錄底下 ( 相關的目錄結構說明，
+會在後面的 "The Source Directory Tree" 章節裡加以討論 )。</LI>
+<LI><CODE>Patch:</CODE> 如果您需要重新下載 patch 檔案，
+那麼其目錄位置設定於此。
+注意事項： 這裡的檔名， 必須與您系統上使用的 patch 檔案名稱相符，
+另一方面， 和前述多個 source 檔案的設定一樣， 您也可以指定多個
+patch 檔案名稱。 其格式範例如下：
+<BLOCKQUOTE><CODE>
+<PRE>
+Patch0: blah-0.patch
+Patch1: blah-1.patch
+Patch2: fooblah.patch
+</PRE>
+</CODE></BLOCKQUOTE>
+
+這些檔案都會到 <CODE>SOURCES</CODE> 目錄底下。</LI>
+<LI><CODE>Copyright:</CODE> 這裡的設定， 用以說明程式套件採用何種版權聲明。
+像 GPL、 BSD、 MIT、 public domain、 distributable、 commercial 等，
+都是您可以指定的。</LI>
+<LI><CODE>BuildRoot:</CODE> 您可以指定一個目錄，
+它會被當作是 build 與 install 新程式套件的 ``root'' 目錄，
+如果您想在實際安裝之前， 先行測試程式內容， 可以善用此項設定。</LI>
+<LI><CODE>Group:</CODE> 這裡的設定， 用於高階的安裝工具程式 ( 例如
+Red Hat 的 ``glint'' 程式 ) 當中， 用以說明程式所屬的群組位置。
+目前的群組架構， 大致如下所述：
+<BLOCKQUOTE><CODE>
+<PRE>
+Applications
+    Communications
+    Editors
+        Emacs
+    Engineering
+    Spreadsheets
+    Databases
+    Graphics
+    Networking
+    Mail
+    Math
+    News
+    Publishing
+        TeX
+Base
+    Kernel
+Utilities
+    Archiving
+    Console
+    File
+    System
+    Terminal
+    Text
+Daemons
+Documentation
+X11
+    XFree86
+        Servers
+    Applications
+        Graphics
+        Networking
+    Games
+        Strategy
+        Video
+    Amusements
+    Utilities
+    Libraries
+    Window Managers
+Libraries
+Networking
+    Admin
+    Daemons
+    News
+    Utilities
+Development
+    Debuggers
+    Libraries
+        Libc
+    Languages
+        Fortran
+        Tcl
+    Building
+    Version Control
+    Tools
+Shells
+Games
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI><CODE>%description</CODE>  這個並非真的是 header 項目，
+但您應該連同上述的項目一同填寫， 每個「程式套件」或「子程式套件」，
+都應該有一個 description tag。 這裡允許您輸入多行內容，
+使得程式套件能夠具有一份完整詳盡的說明。
+</LI>
+</UL>
+<P>
+<H2><A NAME="ss6.4">6.4 Prep</A>
+</H2>
+
+<P>這裡是 spec 檔案的另一個段落章節， 用以設定讓 source 檔案就緒，
+以供下一步的 build 動作。 平常我們必須經過 setup， 才能實際進行 <CODE>make</CODE>
+動作， 因此在本段落章節中， 我們將視需要進行 source 檔案的 patch 與 setup。
+<P>有件事值得注意的： 接下來的段落設定， 實際上只是指明某段 shell scripts
+的位置， 您可以將 shell scripts 的內容， 另外以 <CODE>sh</CODE> script
+的方式加以存檔， 並將 script 程式名稱置於 <CODE>%prep</CODE> tag 之後，
+用以執行 source 檔案的 unpack 與 patch 動作。 當然， 以原有之 macro
+型式來做， 應該是方便許多的。
+<P>第一個要說明的 macro 是 <CODE>%setup</CODE>。
+如果我們採用其最簡單的格式 ( 即不加任何命令列參數的情況 )，
+它會單純地將 source 檔案加以 unpack， 並 <CODE>cd</CODE> 進入 source 檔案的目錄。
+除此之外， 您還可以使用下列的選項：
+<P>
+<UL>
+<LI><CODE>-n name</CODE> 這個選項設定會把 build 的目錄設為 <CODE>name</CODE>，
+原預設值為 <CODE>$NAME-$VERSION</CODE>， 其他可能目錄名稱包括
+<CODE>$NAME</CODE>， <CODE>${NAME}${VERSION}</CODE>， 或是 tar
+檔案本身所用的目錄。 ( 請注意到， 上述的 ``$'' 變數，
+並<EM>不是</EM> spec 檔案裡的變數， 它們在這裡只是用來代表一個範例名稱，
+您必須在程式套件裡， 使用實際的檔案名稱與版本名稱 )。</LI>
+<LI><CODE>-c</CODE> 在進行 untar 動作<EM>之前</EM>，
+會先建立一個目錄， 並 cd 進入該目錄。</LI>
+<LI><CODE>-b #</CODE> 在 cd 進入該目錄<EM>之前</EM>，
+會先將 Source# 進行 untar 動作 ( 這個選項與 <CODE>-c</CODE> 選項並存時，
+是沒有意義的， 所以應避免同時使用 )， 而且這個選項，
+僅適用於多個 source 檔案的場合。</LI>
+<LI><CODE>-a #</CODE> 在 cd 進入該目錄<EM>之後</EM>，
+再將 Source# 進行 untar 動作。</LI>
+<LI><CODE>-T</CODE> 這個選項會蓋過原本預設的 untar 動作，
+同時需要一個 <CODE>-b 0</CODE> 或是 <CODE>-a 0</CODE> 的選項來配合，
+當您使用到兩個以上的 source 檔案時， 便需要此項功能。</LI>
+<LI><CODE>-D</CODE> 在解開程式套件之前， <EM>不要</EM>刪除該目錄。
+這個選項僅適用於使用兩個以上 setup macro 之場合，
+而且<EM>只能</EM>用於第一個 setup macro <EM>之後</EM> ( 千萬別用於第一個之內 )。</LI>
+</UL>
+<P>接下來要說明的 macro 是 <CODE>%patch</CODE>。
+它是用來協助自動處理 source 檔案更新的動作， 其相關的選項很多， 列表說明如下：
+<UL>
+<LI><CODE>#</CODE> 會引用 Patch# 當作其所需之更新檔。</LI>
+<LI><CODE>-p #</CODE> 有時 patch(1) 指令需配合指定 strip 的目錄數目，
+你可以在此選項中加以設定。</LI>
+<LI><CODE>-P</CODE> 其預設之動作是引用 <CODE>Patch</CODE> ( 或 <CODE>Patch0</CODE> )，
+當您使用兩個以上的 <CODE>%patch</CODE> macro， 並且需要與第一個
+macro 不同之 patch number 時， 這個選項顯得相當有用。
+它會蓋過原本的預設動作， 並且需要配合一個 <CODE>0</CODE>，
+以使得主要的 source 檔案得以進行 untar 動作。</LI>
+<LI> 您也可以使用 <CODE>%patch#</CODE>，
+而不必使用這樣的指令： <CODE>%patch # -P</CODE></LI>
+</UL>
+<P>這些應該就是全部所需要知道之 macro 說明， 了解它們之後，
+您也可以透過 <CODE>sh</CODE> 之 script 格式， 設定不同的 setup 方法，
+在 <CODE>%build</CODE> macro ( 在下一章節中會提及 ) 之前，
+您所設定之所有選項， 都是經由 <CODE>sh</CODE> 來執行，
+您可以再參考一下前述的範例， 或許可以適用於您的需要。
+<P>
+<H2><A NAME="ss6.5">6.5 Build</A>
+</H2>
+
+<P>這個章節裡， 所述及的並非真正的 macro。 當您把 source 檔案 untar，
+並且 patch 完成， cd 進入目錄之後， 開始準備 build 動作時，
+便是在這裡設定那些控制 build 動作的指令。 而這些指令都還是傳給 <CODE>sh</CODE>，
+所以任何 <CODE>sh</CODE> 之指令， 都可以在此指定 ( 包括 comments 在內 )。
+<B>在 spec 檔案裡的每一段落章節設定中， 您的目前所在目錄位置，
+都會被重新設定為 source directory 的最上層</B>， 所以請牢記在心，
+必要時， 您可以 <CODE>cd</CODE> 進入相關的子目錄。
+<P>
+<H2><A NAME="ss6.6">6.6 Install</A>
+</H2>
+
+<P>這裡所設定的， 同樣也不是 macro， 基本上， 您只須要在此設定一些
+install 所需之指令。 如果您打算在程式套件裡， 提供完整的 <CODE>make
+install</CODE> 指令設定， 那麼請在本段落設定中完成， 不然，
+您也可以更改 makefile 檔案裡， 有關 <CODE>make install</CODE> 的部份，
+然後僅在本段落設定中指定 <CODE>make install</CODE>。 或是， 也可以把整個
+install 的指令交給 <CODE>sh</CODE> 來做。 記住， 您的目前所在目錄位置，
+應該已被重新設定為 source directory 的最上層。
+<P>
+<H2><A NAME="ss6.7">6.7 Optional pre and post Install/Uninstall Scripts</A>
+</H2>
+
+<P>程式套件在安裝與解除安裝之前後，您可以指定 script， 
+使其視情況加以執行。 進行此項動作的主要原因之一，
+便是遇到如下的場合， 譬如說， 我們在安裝或解除安裝一些含有
+shared library 的程式套件時， 需要執行 <CODE>ldconfig</CODE>。
+各式 script 所需之 macro 名稱如下：
+<UL>
+<LI><CODE>%pre</CODE> 執行 pre-install scripts 的 macro。</LI>
+<LI><CODE>%post</CODE> 執行 post-install scripts 的 macro。</LI>
+<LI><CODE>%preun</CODE> 執行 pre-uninstall scripts 的 macro。</LI>
+<LI><CODE>%postun</CODE> 執行 post-uninstall scripts 的 macro。</LI>
+</UL>
+<P>這些段落設定的內容， 可以是任何 <CODE>sh</CODE> 型式之 script，
+不過， 您<EM>無須</EM>指定關鍵敘述 <CODE>#!/bin/sh</CODE>。
+<P>
+<H2><A NAME="ss6.8">6.8 Files</A>
+</H2>
+
+<P>本段落設定當中， 您<EM>必須</EM>列出程式套件內之所屬檔案名稱。
+RPM 本身並無從得知， 執行 <CODE>make install</CODE> 之後， 到底有哪些
+binary 檔案被安裝進去， 目前<EM>並無</EM>他法可以直接解決此問題。
+有些人建議在 install 程式套件的前後， 使用 <CODE>find</CODE> 指令來處理，
+不過在一個多使用者的系統下， 這應該是不可行的， 因為在程式套件
+build 的過程中， 可能有其他與程式套件本身無關的檔案被產生。
+<P>另外還有一些 macro， 它們可用來做一些特殊的工作，
+茲將其列述於下：
+<UL>
+<LI><CODE>%doc</CODE> 用以標示在 install 程式套件時，
+您所想要安裝之 source 檔案裡的說明文件是哪些，
+而這些說明文件會被安裝在
+<CODE>/usr/doc/$NAME-$VERSION-$RELEASE</CODE>。
+您可以在命令列上， 以此 macro 同時指定好幾個說明文件名稱，
+或是以此 macro， 各別為它們一一完成指定。</LI>
+<LI><CODE>%config</CODE> 用以標示程式套件裡的設定檔案是哪些，
+這包括像 sendmail.cf、 passwd 之類的檔案。
+如果您事後 uninstall 了某個程式套件， 而且它含有設定檔案，
+那麼所有沒有改變的檔案會被移除， 而所有已經改變的檔案，
+會在原檔案名稱之後， 加上 <CODE>.rpmsave</CODE> 的延伸名稱。
+同樣的， 您可以在此同時列出多個檔案名稱。</LI>
+<LI><CODE>%dir</CODE> 在檔案列表中， 標明某一個特定的目錄，
+用以說明該目錄為某程式套件所擁有。 如果您在檔案列表中指定一個目錄名稱，
+但卻<EM>沒有</EM>在前面加上<CODE>%dir</CODE> macro， 那麼該目錄內，
+<EM>所有檔案目錄</EM>都會被包含在檔案列表當中， 並在稍後，
+被當作是程式套件的一部份而全被安裝進去。</LI>
+<LI><CODE>%files -f &lt;filename&gt;</CODE> 允許您引用 source
+之 build 目錄裡， 某份檔案清單的內容。 當您遇到某一個程式套件，
+它可以建立自己的檔案清單時， 這個選項便顯得相當不錯，
+您只須要引用該份檔案清單， 不必再自行辛苦地列出。</LI>
+</UL>
+<P>在檔案列表裡， 有個最大的注意事項， 便是目錄的設定。
+如果您不小心將 <CODE>/usr/bin</CODE> 列入， 那麼您的程式套件，
+將會包括系統裡 <CODE>/usr/bin</CODE> 底下的<EM>所有</EM>檔案。
+<P>
+<H2><A NAME="ss6.9">6.9 Building It</A>
+</H2>
+
+<P>
+<H3>The Source Directory Tree</H3>
+
+<P>第一件事， 您必須選定一個適當的 build tree，
+此項設定可在 <CODE>/etc/rpmrc</CODE> 檔案裡完成，
+而大多數人會直接使用 <CODE>/usr/src</CODE>。
+<P>您可能還需要建立下列的目錄， 使得 build tree 的設定能夠完成：
+<UL>
+<LI><CODE>BUILD</CODE> 此目錄便是 RPM 進行所有 build 動作的工作目錄。
+您不必特別地在哪個目錄進行測試性的 build 動作。</LI>
+<LI><CODE>SOURCES</CODE> 此目錄存放著您的「起始」 (original)
+原始 tar 檔案、 與相關的 patch 檔案， RPM 預設會尋找本目錄。</LI>
+<LI><CODE>SPECS</CODE> 此目錄存放所有之 spec 檔案。</LI>
+<LI><CODE>RPMS</CODE> 此目錄存放所有 build 產生之 binary 格式 RPM 檔案。</LI>
+<LI><CODE>SRPMS</CODE> 此目錄存放所有 source 格式 RPM 檔案。</LI>
+</UL>
+<P>
+<H3>Test Building</H3>
+
+<P>首先， 您大概會想要取回 source 檔案， 在沒有使用 RPM 的情況下，
+進行一次「純淨的」 build 動作。 其步驟便是， 解開 source 檔案，
+將該目錄名稱改為 $NAME.org， 然後再次解開 source 檔案，
+我們需要使用此一 source 來進行 build 動作。
+進入此一 source 目錄， 按照指示來進行 build，
+如果您必須編輯任何東西， 您會需要一份 patch，
+一旦您完成 build 工作， 便可清除 source 目錄裡的內容。
+請確定將 <CODE>configure</CODE> script 裡， 所有產生之檔案加以清除，
+然後再 <CODE>cd</CODE> 回到 source 目錄之上層， 接著便可執行這樣的動作：
+<BLOCKQUOTE><CODE>
+<PRE>
+diff -uNr dirname.orig dirname > ../SOURCES/dirname-linux.patch
+</PRE>
+</CODE></BLOCKQUOTE>
+
+上述指令會產生一份 patch， 您在 spec 檔案可以使用到它。
+注意到上面的 ''linux'' 名稱， 它只是一個提示作用，
+或許您可以使用其他名稱， 諸如 ''config'' 或 ''bugs'' 之類的提示名稱，
+用以說明您<EM>何以</EM>製作此一 patch 檔案。
+同時， 您最好也在使用 patch 檔案之前， 先觀察裡頭的內容，
+確定是否無意間包含了其他的 binary 檔案。
+<P>
+<H3>Generating the File List</H3>
+
+<P>現在， 您已經有了一份可以拿來 build 的 source 檔案，
+而且您也知道如何完成其相關的動作， 如 build 與 install 等。
+觀察 install 時， 依序產生的結果， 我們將由此結果，
+在 spec 檔案中建立一份檔案列表。
+通常我們會在進行上述步驟的同時， 一起建立 spec 檔案，
+您可以先完成檔案的起始部分， 和幾個簡單的部分，
+然後再把其他部分的步驟加以完成。
+<P>
+<H3>Building the Package with RPM</H3>
+
+<P>一旦您有了一份 spec 檔案， 一切便已就緒， 您可以準備 build 的測試動作。
+最好的方式， 就是使用類似下列的指令：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+rpm -ba foobar-1.0.spec
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>配合 <CODE>-b</CODE> 選項， 我們還可以使用其他有用的選項：
+<UL>
+<LI><CODE>p</CODE> 指的是只執行 spec 檔案之 <CODE>prep</CODE> 部份。</LI>
+<LI><CODE>l</CODE> 針對 <CODE>%files</CODE> 進行檔案列表的比對檢查動作。</LI>
+<LI><CODE>c</CODE> 執行 prep 與 compile 的動作。 當您不確定 source
+檔案是否能夠 build 時， 此選項顯得相當有用。
+或許您會覺得它並沒有多大用處， 因為您可能想要繼續修改 source
+檔案本身， 直到 build 後再開始使用 RPM， 但一旦您熟悉 RPM 的用法後，
+會發現它的便利之處。</LI>
+<LI><CODE>i</CODE> 執行 prep、 compile、 與 install。</LI>
+<LI><CODE>b</CODE> 執行 prep、 compile、 install、 並只 build 出一份
+binary 程式套件。</LI>
+<LI><CODE>a</CODE> 執行所有的 build 動作 ( 包括  source 與 binary 的程式套件 )。</LI>
+</UL>
+
+配合 <CODE>-b</CODE> 選項， 另外還有一些細項選項可供使用， 它們分別是：
+<UL>
+<LI><CODE>--short-circuit</CODE> 會直接跳至某個特定的階段 ( 僅可配合
+c 與 i 選項來使用 )。</LI>
+<LI><CODE>--clean</CODE> 當執行完畢時， 移除相關的 build tree。</LI>
+<LI><CODE>--keep-temps</CODE> 會把所有的 temp 與 scripts 檔案，
+都保留在 /tmp 目錄， 您可以使用 <CODE>-v</CODE> 選項， 實際觀察有哪些檔案被產生。</LI>
+<LI><CODE>--test</CODE> 並不實際執行任何階段的動作， 但有執行 keep-temp 的部份。</LI>
+</UL>
+<P>
+<H2><A NAME="ss6.10">6.10 Testing It</A>
+</H2>
+
+<P>一旦有了 source 與 binary 的 rpm 檔案， 您必須進行測試工作。
+最簡單且最好的方式， 就是使用另一台機器來測試，
+也就是進行 build 動作之外的機器。 畢竟， 您剛在您的機器上，
+完成一大堆的 <CODE>make install</CODE> 動作， 若在原機器上做測試，
+當然會顯得相當順利囉。
+<P>您可以執行 <CODE>rpm -u packagename</CODE> 來進行測試，
+但這樣做還是有造假的可能， 因為在 build 的過程中，
+您做了 <CODE>make install</CODE> 的動作， 如果您在檔案列表中遺漏了某些東西，
+那麼它不會被解除安裝， 然後您再 reinstall 這份 binary 程式套件，
+便會發現整個系統還是完整而運作正常的， 但實際上的 rpm 檔案還是有問題。
+因此請特別記住， 由於您執行的是 <CODE>rpm -ba package</CODE>， 而大多數的人，
+會只以 <CODE>rpm -i package</CODE> 方式， 來安裝您的程式套件。
+當 binary 檔案獨自被安裝時， 您必須確定在 <CODE>build</CODE> 或 <CODE>install</CODE>
+的段落設定中， 並沒有相關的部份對其有影響。
+<P>
+<P>
+<H2><A NAME="ss6.11">6.11 What to do with your new RPMs</A>
+</H2>
+
+<P>一旦您作出了一份自己的 RPM 檔案 ( 假定這份檔案， 之前並未以 RPM
+方式製作過 )， 您可以將您的作品貢獻給別人 ( 此時假定您製作的 RPM
+檔案， 是可以自由傳佈的 )。 您可以考慮把它上傳至
+<A HREF="ftp://ftp.redhat.com">ftp.redhat.com</A>。
+<P>
+<P>
+<H2><A NAME="ss6.12">6.12 What Now?</A>
+</H2>
+
+<P>請回顧上述的章節， 在「Testing」和「What to do with new RPMs」裡，
+我們希望所有的 RPM 檔案都能被提供出來， 而且我們希望它們都會是好的 RPM
+檔案。 因此， 請多花一點時間好好地測試它們， 然後再花點時間將它們上傳，
+以造福普羅大眾。 同時， <EM>請</EM>確定您只上傳<EM>可供自由傳佈的軟體</EM>。
+商業軟體與共享軟體是<EM>不</EM>應該被上傳的， 除非它們有份許可聲明在上面。
+這樣的軟體， 包括有 Netscape software、 ssh、 pgp 等。
+<P>
+<HR>
+<A HREF="RPM-HOWTO-7.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="RPM-HOWTO-5.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="RPM-HOWTO.html#toc6"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

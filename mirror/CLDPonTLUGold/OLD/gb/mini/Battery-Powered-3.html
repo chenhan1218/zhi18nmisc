@@ -1,0 +1,157 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>使用电池供电的 Linux Mini-HOWTO (迷你HOWTO): 先进能源管理 APM</TITLE>
+ <LINK HREF="Battery-Powered-4.html" REL=next>
+ <LINK HREF="Battery-Powered-2.html" REL=previous>
+ <LINK HREF="Battery-Powered.html#toc3" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+<A HREF="Battery-Powered-4.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Battery-Powered-2.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Battery-Powered.html#toc3"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s3">3. 先进能源管理 APM</A></H2>
+
+<P>
+<P>大部份的可携式系统，或甚至很多桌上型电脑都有支援 APM，先进能源管理
+架构。 本章节在谈如何在你的 Linux 核心内启动 APM 的支援。 那些使用
+Linux 很有经验的人可能会觉得本章节很无聊而想要跳到下一章节。
+<P>
+<P>
+<H2><A NAME="ss3.1">3.1 APM 能为你做什麽事?</A>
+</H2>
+
+<P>
+<P>我不想在这儿详细谈这个题目，请看看在 <CODE>
+<A HREF="http://www.cs.utexas.edu/users/kharker/linux-laptop/apm.html">http://www.cs.utexas.edu/users/kharker/linux-laptop/apm.html </A></CODE> 内的 <EM>Linux APM 驱动程式网页 </EM> 有详细的资讯。你所需要知
+道的是，有了 APM 的协助，当没有啥麽事要做时 CPU 可以告诉 BIOS 来让
+BIOS 掌控它自的节省能源措施，比如说继续动作时，bios 会自己负责部份
+的能源节省－例如，降低 CPU 时脉、关闭硬碟、关掉萤幕的背光等等。
+<P>
+<P>Apm 还负责 `` 系统悬置 '' (或称 `` 睡觉 '') 模式以及 `` 悬置到磁碟
+'' (或称 `` 冬眠 '') 模式。 另一很棒的特点，虽然并不是很重要，但因
+为 apm 的协助，<CODE>shutdown -h</CODE> 并不止会停止你的系统而且还会将它给
+关机哦! 
+<P>
+<P>(题外话，  大部份的  Linux  系统将  <CODE>shutdown   -r</CODE>  放在它们的
+<CODE>/etc/inittab</CODE> 内，用做对映到按到 control-alt-delete 组合键
+时动作。 我较喜欢将 <CODE>shutdown -h</CODE> 放在这儿， 所以当我们按了这个
+CTL+ALT+DEL 组合键时，我的笔记电脑就只简单地将它自己关机。)
+<P>
+<P>并不是所有的制造商设计了正确的 apm bios， 也因此有些笔记电脑在使用
+Linux apm 驱动程式时会有些麻烦。(如果你的机器在使用 apm 时有问题，
+大部份会在 Linux 启动时或从悬置重返时会有锁住不动的情形 )。 如果你
+并不确定，请检视 Linux 笔记电脑网页中有关你的电脑型号的资料。
+<P>
+<P>
+<H2><A NAME="ss3.2">3.2 如何在 Linux 中启用 APM 支援功能?</A>
+</H2>
+
+<P>
+<P>非常简单－只需重新编译 Linux 核心程式。 如果你不知道如何做，请阅读
+Kernel-HOWTO。
+<P>
+<P>当建构手稿执行到 ``character  devices'' 这个地方时， 在核心 2.0.30
+版 (含 ) 以上对於完整的 apm bios 支援设定如下:
+<P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+Advanced Power Management BIOS support: Yes
+Ignore USER SUSPEND: No
+Enable PM at boot time: Yes
+Make CPU Idle calls when idle: Yes
+Enable console blanking using APM: Yes
+Power off on shutdown: Yes
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>请阅读建构手稿的辅助文件。□面有说到哪个选项是做啥麽用的细节，所以
+在这儿我就不再赘述了。
+<P>
+<P>如果你的系统并没有完整地支援 apm bios 的标准，选项中有些项目可能会
+让你的系统当机。 你可测试所有的 apm 特点与新的核心的配合状况，这样
+即可确定是否所有应该有的都可正常工作了。
+<P>
+<P>(
+<A NAME="sidenoteaboutconsoleblanking"></A>  * 备注 * 关於控制台变成
+空白: David Bateman 告诉我说， 在使用 XFree 3.2 版时千万不要将它打
+开:
+`` 它的症状是当 X 启动时整个萤幕会变成空白，通常只要按个键即可修理
+这个状况。 这是个很小但很讨人厌的问题。下一版的 XFree 将会对很多的
+笔记电脑的晶片有很好的 DPMS 支援， 其中应该包话关掉 LCD 的程式码。
+你可查查看在 XFree 3.2A 内有关於 <CODE>xset</CODE> 的 man 页。David 还说你
+的萤幕的背光之寿命完全取决於它被开关的次数多寡: `` 这就是电池寿命
+与萤幕背光寿命之间鱼与熊掌无法兼得的事了。'')
+<P>
+<P>(<EM> 订正:</EM> 使用 XFree 3.3 时这个问题仍在我的笔记电脑上发生。有人
+告诉我以後的核心版本就会修正这个问题了。)
+<P>
+<P>
+<H2><A NAME="ss3.3">3.3 APM 支援以及 PCMCIA 驱动程式 </A>
+</H2>
+
+<P>
+<P>在重新编译核心之後， 请勿忘记重新编译  Linux 的 pcmcia  驱动程式。
+<P>
+<P>大部份随著 Linux 供应商版本所附的编译前的  pcmcia 驱动程式都把对於
+apm 的支援给关闭，因此 bios 就无法叫你的介面卡将之关闭的。 
+<P>
+<P>另外，如果你升级了新的核心版本而你的旧核心是与模组版本资讯这项打开
+时被编译的 (这个选项可在核心建构的  ``loadable  module support( 可
+载入模组支援'' 一章中找到 )。
+<P>
+<P>请阅读 PCMCIA-HOWTO，□头有关於如何编译驱动程式的指引或是到
+<CODE>
+<A HREF="http://hyper.stanford.edu/HyperNews/get/pcmcia/home.html">http://hyper.stanford.edu/HyperNews/get/pcmcia/home.html</A></CODE> 的 <EM>Linux PCMCIA drivers homepage</EM> 网页中寻找。
+<P>
+<P>
+<H2><A NAME="ss3.4">3.4 apmd 套件</A>
+</H2>
+
+<P>
+<P>现在你已经安装了 APM 支援了，请到 <EM>Linux APM drivers page</EM> 网页
+中把 <CODE>apmd</CODE> 套件抓取下来。 你也许并不需要它，但是个好用程式的集
+结。<CODE>apmd</CODE> 精灵会记录你的电池的习性并且还会在电压低时跑出来警告
+你。<CODE>apm</CODE> 命令会使用一个 shell 命令来悬置你的系统，而 <CODE>xapm</CODE>
+会显示出你的电池的状态。
+<P>
+<P>(顺带一提， 如果你的 pcmcia 卡从悬置状态下回覆时有问题，你可以查看
+看另一个替代   <CODE>apmd</CODE>   套件的程式在  <CODE>
+<A HREF="http: //www.cut.de/bkr/linux/apmd/apmd.html">http://www.cut.de/bkr/linux/apmd/apmd.html</A></CODE>
+内。它会在系统悬置前把 pcmcia 驱动程式卸下，而在恢复时将这些模组重
+载入。)
+<P>
+<P>Grant Taylor 玩了一阵子 <CODE>apmd</CODE>  套件， 他有一些有助益的小秘诀。
+<P>
+<P>他发现他的笔记电脑的从悬置回复时，  硬碟会忘了它自已在  <CODE>hdparm
+-S</CODE> 的待命时间: `` 每次回复时我会修改 <CODE>apmd</CODE> 来重新设定这个设定
+。这也许是在特定系统上才会发生，但这麽做是很重要的......''
+<P>
+<P>(备注: 在我的笔记电脑上，bios 负责硬碟的待命以及恢复原本的数据，所
+以我无法测试是否这个小问题是系统特定的。如果这个小问题你也遇到，请
+给我个讯息吧。 )
+<P>
+<P>Grant 还有个很棒的小秘诀可使用 
+<A HREF="Battery-Powered-4.html#TheXFree86package">XFree86 套件 </A>
+以及 <CODE>apmd</CODE> 套件的协助让萤幕变空白，你可以在那儿找到。
+<P>
+<P>
+<H2><A NAME="ss3.5">3.5 如果我的笔记电脑不支援 APM 的话?</A>
+</H2>
+
+<P>
+<P>如果你的电脑的 bios 并不支援任何的节省能源的设定 (就算是很旧型且没
+有 apm 支援的至少也可以设定可让硬碟以及萤幕做待命状态 )， 你可以使
+用 <CODE>hdparm -S</CODE> 来定义你的硬碟的待命时间。这样就很有帮助了，因为
+硬碟的动作是要花费许多电力的。 你的系统应该要安装 <CODE>hdparm</CODE> ，因
+此请使用 <CODE>man hdparm</CODE> 来读一读这个命令的语法。
+<P>
+<P>
+<HR>
+<A HREF="Battery-Powered-4.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Battery-Powered-2.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Battery-Powered.html#toc3"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

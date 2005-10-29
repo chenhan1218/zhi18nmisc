@@ -1,0 +1,158 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>第一章 如何写一个简单的Makefile</TITLE>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 4, 1);</SCRIPT>
+
+<A HREF="makefile-ch2.html">第二章</A>
+<HR>
+
+<FONT FACE="华康POP1体W7" LANG="ZH-TW" SIZE=6><P ALIGN="CENTER">　</P>
+<P ALIGN="CENTER">第一章 如何写一个简单的Makefile</P>
+</FONT><FONT FACE="华康细圆体" LANG="ZH-TW" SIZE=2><P ALIGN="CENTER">                        &#9;&#9;&#9;&#9;&#9;&#9;&#9;&#9;    描述档案(Description File)</P>
+<P ALIGN="CENTER"> &#9;&#9;&#9;&#9;&#9;&#9;&#9;&#9;&#9;&#9;&#9;&#9;&#9;   检查附属档案(Dependency Checking)</P><DIR>
+<DIR>
+<P ALIGN="RIGHT">重建最小化(Minimizing Rebuilds)</P></DIR>
+</DIR>
+<P ALIGN="RIGHT">   引用make (Invoking make)</P>
+<P ALIGN="RIGHT">语法的基本规则(Basic Rules of Syntax)</P>
+
+</FONT><FONT FACE="华康细圆体" LANG="ZH-TW"><P>    </P>
+<P>    当我们在提示符号之下下一个命令:</P>
+</FONT><B><I><FONT FACE="Courier New"><P>$ make program</P>
+</B></I></FONT><FONT FACE="华康细圆体" LANG="ZH-TW"><P>就是说你要去</FONT>”<FONT FACE="华康细圆体" LANG="ZH-TW">make</FONT>”<FONT FACE="华康细圆体" LANG="ZH-TW">一个新版本</FONT>□<FONT FACE="华康细圆体" LANG="ZH-TW">而且通常是最新版本</FONT>□<FONT FACE="华康细圆体" LANG="ZH-TW">的程式. 如果这个程式是一个执行档,你所下的这个命令意思就是说你想要完成有所必须的编译(compiling)与连结(linking),然後糟出一一个执行档. 你可以使用make来使这些程序自动化,不必不断键入为数可观的</FONT><B><I><FONT FACE="Courier New">gcc</B></I></FONT><FONT FACE="华康细圆体" LANG="ZH-TW">(or </FONT><B><I><FONT FACE="Courier New">cc</B></I></FONT><FONT FACE="华康细圆体" LANG="ZH-TW">)这些编译器指令.</P>
+<P>    当我们讨论make的时候,我们把我们所要建造的程式(program)称做目标(target). 程式是由一个或一个以上的档案汇集在一起所建造出来的,这些档案的关系分为必备档案(prerequisites)与附属档案(dependents). 每一个构成程式的档案依序有他们自己的必备档案和附属档案.</P>
+<P>     例如,你藉由连结建造了可执行档. 一旦你的原始档(source file)或标头档(head file)改变了,你就必须再连结新的可执行档之前重新编译目的档(object file). 每一个原始档都是一个目的档的必备档案.</P>
+<P>Make的优点就是它对附属的阶层关系是非常敏感的,像是原始档-&gt;目的档,目的档-&gt;可执行档. 你负责在描述档(description file)中指定一些附属档案,这个描述档的档名通常为makefile 或是Makefile. 但是make也知道自己所在的执行环境,它也会自己决定许多它自己的附属档案. make会利用档案的档名,这些档案最近修改的时间,和一些内建的规则,决定编译时要使用哪些档案与如何去建立它们. 在这样的技术背景之下,之前所秀的那个简单的make指令会保证在阶层中所有建造目标时必须存在的部分都会被更新.</P>
+<P>　</P>
+</FONT><FONT FACE="华康POP1体W7" LANG="ZH-TW" SIZE=4><P ALIGN="JUSTIFY">描述档案</FONT><FONT FACE="华康POP1体W7" LANG="ZH-TW">(Description File)</P>
+</FONT><FONT FACE="华康细圆体" LANG="ZH-TW"><P>    假设你写了一个程式,程式由以下部分所组成:</P>
+<P>    *用C语言写的原始档</FONT>□<FONT FACE="华康细圆体" LANG="ZH-TW"> main.c  iodat.c  dorun.c</P>
+<P>    *用组合语言写的程式码</FONT>□<FONT FACE="华康细圆体" LANG="ZH-TW">lo.s ,此档案被C写成的原始档所呼叫</P>
+<P>    *一组位於 /usr/fred/lib/crtn.a 之中的函式库常式(library routine)</P>
+<P>如果你用手一一下指令建造这个程式,你会在提示符号下打入:</P>
+</FONT><B><I><FONT FACE="Courier New"><P>$cc □c main.c</P>
+<P>$cc □c iodat.c</P>
+<P>$cc □c dorun.c</P>
+<P>$as □0 lo.o lo.s</P>
+<P>$cc □o program main.o iodat.o dorun.o lo.o /usr/fred/lib/crtn.a</P>
+</B></I></FONT><FONT FACE="华康细圆体" LANG="ZH-TW"><P>当然你也可以在一行</FONT><B><I><FONT FACE="Courier New">cc</B></I></FONT><FONT FACE="华康细圆体" LANG="ZH-TW">命令之内就做好编译,组译,连结的工作(要下很长的一串指令),但是在实际的程式设计环境下这是很少发生的(因为指令实在是又长又复杂),因为以下原因: 首先,每一个原始档都可能被不同的人所建立或测试. 第二,一个大程式会花掉好几小时的编译工作,所以程式设计师一般都会尽可能的使用已经存在的目的档而不要再重新编译(可以节省时间).</P>
+<P>现在让我们来看看如何透过描述档下指令给make. 我们建立了一个新的档案叫做makefile,这个档案和所有的原始码放在同一个目录之下. 为了方便起见,这个描述档中的每一个指令和附属档案都明显的打出来(後面的章节会告诉你不用写的那麽详细也可以),很多对make来说都是不需要的. 这个描述档的内容如下:</P>
+<OL>
+
+</FONT><B><I><FONT FACE="Courier New"><LI>program : main.o iodat.o dorun.o lo.o /usr/fred/lib/crtn.a</LI>
+<LI>    cc □o program main.o iodat.o dorun.o lo.o /usr/fred/lib/ctrn.a</LI>
+<LI>main.o : main.c</LI>
+<LI>    cc □c main.c</LI>
+<LI>iodat.o : iodat.c</LI>
+<LI>    cc □c iodat.c</LI>
+<LI>dorun.o : dorun.c</LI>
+<LI>    cc □c dorun.c</LI>
+<LI>lo.o : lo.s</LI>
+<LI>   as □0 lo.o lo.s</LI></OL>
+
+</B></I></FONT><FONT FACE="华康细圆体" LANG="ZH-TW"><P>在每一行左边的数字并不属於描述档的一部份,只是为了待会解说方便</P>
+<P>这个描述档中包含了五个项目(或说是进入点)(entry). 每一个项目由一个含有冒号(:)(叫做附属列[dependency line]或是规则列[rules line]),和一个或一个以上以tab(4个字元空白)开头的命令列(command line). 在附属行那个冒号左边的叫做目标(target);冒号左边的就是目标的必备档案. 受tab影响的(tab-indented)命令列,告诉make如何从他们的必须档案中建造出目标.从上面的描述档来看,第1列说明了program这个目标依靠main.o,iodat.o,dorun.o,lo.o这些目的档,还有依靠函式库/usr/fred/lib/crtn.a .第2列指定了从必备档案制造program这个目标档案所必须下的编译器指令.(这些档案都是目的档与函式库,所以实际上并不用编译,只呼叫了连结器(linker)而已). 假设program这的目标档案不存在,你可以下这个指令:</P>
+</FONT><B><I><FONT FACE="Courier New"><P>$make program</P>
+</B></I></FONT><FONT FACE="华康细圆体" LANG="ZH-TW"><P>make会去执行第二行的命令. 如果其中一个目的档不在该怎麽办呢? 你能够把这个目的档当作参数传给make(例如:没有main.o ,你可以下指令</FONT><B><I><FONT FACE="Courier New">$make main.o</B></I></FONT><FONT FACE="华康细圆体" LANG="ZH-TW"> ,就可以得到main.o这个档案),但是几乎不必这样做. Make最重要的贡献就在於它有能力可以自己决定什麽东西必须被建立(例如:在建立program时,如果少了main.o,则他会根据附属列所指定的内容,自己建立main.o这个档案).</P>
+<P>　</P>
+</FONT><FONT FACE="华康POP1体W7" LANG="ZH-TW" SIZE=4><P ALIGN="JUSTIFY">检查附属档案</FONT><FONT FACE="华康POP1体W7" LANG="ZH-TW">(Dependency Checking)</P>
+</FONT><FONT FACE="华康细圆体" LANG="ZH-TW"><P>当你要求make去建造program这个目标时,make会去参考前面所列出的那一个描述档,但是,第二列的编译器指令并不会立刻就执行. make所做的动作应该如下: 首先,make先去检查目录下是否有program这个档案,如果有的话,make会去检查main.o , iodat.o , dorun.o , lo.o , 还有/usr/fred/lib/crtn.a 这些档案,看看这些档案有没有比program这个档案更新(更新的意思是说,这些档案比program这个档案建造的时间更晚). 这个动作非常容易,因为作业系统会储存每一个档案最近被修改的时间,你只要下一个指令</FONT><B><I><FONT FACE="Courier New">ls □l</B></I></FONT><FONT FACE="华康细圆体" LANG="ZH-TW">就可以看到这个讯息. 如果program的建造时间比它所有的必备档案的最近修改时间还要晚,make会决定不再重新建造program这个档案,然後不会发出认何指令就离开(跳回提示符号下). 但是在make下这个决定之前,它还会做一些检查: make会根据附属列所描述的必备档案,去检查每一个 .o档案的必备档案是否有更新的情形.</P>
+<P>例如,从第3列就可以看出main.o的建造必须依靠main.c. 因此,如果再main.o被建造之後,main.c才又被修改,则make就会去执行第4列的指令重新建造一个新的main.o. 只有在program的必备档都被检查而且更新过(这必备档的必备档也要被检查且更新过. 例如:main.o是program的必备档,main.c是main.o的必备档). make才会去执行第2列的指令建造program这个目标档案. 假设自从上一次建造program这个档案之後,iodat.c是唯一被更新过的档案,所以当我们再次执行</FONT><B><I><FONT FACE="Courier New">$make program</P>
+</B></I></FONT><FONT FACE="华康细圆体" LANG="ZH-TW"><P>之後,make所发出的编译器指令实际上只有</P>
+</FONT><B><I><FONT FACE="Courier New"><P>cc □c main.c</P>
+<P>cc □o program main.o iodat.o dorun.o lo.o /usr/fred/lib/crtn.a</P>
+</B></I></FONT><FONT FACE="华康细圆体" LANG="ZH-TW"><P>这两行指令而已.</P>
+<P>make命令执行以後,会在标准输出上印出它所发出的指令,因此当你使用make的时候,你可以从你的萤幕上看到它所发出的命令的顺序.</P>
+<P>总而言之,一个程式的建造包含了顺序正确的指令链结(chain). 一般而言,你只要要求make去建造链结中最後的那个档案即可. make会透过附属档案链结(你在描述档中所指定的那些必备档案所构成的树状结构构成附属档案链结),自己回朔追踪(traces back,也就是往树状结构的叶部方向)这个链结,然後找出哪些指令必须被执行. 最後,make会慢慢在链结中前进(moves forward,就是往数状结构的根部移动),执行每个建造目标所必须要有的指令直到目标建立完成(或被更新). 因为这种特性,make是一个使用反项□结法(backward-chaining:在人工智慧领域中,一种搜索问题答案的方法,它的搜索方向是由目标状态开始,然後向初始状态前进,最後再慢慢回来)这个技巧最有名的例子,这个技巧通常仅使用在像是Prolog语言这一类大家比较不知道的环境上.</P>
+<P>　</P>
+</FONT><FONT FACE="华康POP1体W7" LANG="ZH-TW" SIZE=4><P ALIGN="JUSTIFY">重建最小化</FONT><FONT FACE="华康POP1体W7" LANG="ZH-TW">(Minimizing Rebuilds)</P>
+</FONT><FONT FACE="华康细圆体" LANG="ZH-TW"><P>现在我们来讨论一个可以以各种不同版本形式存在的程式(通常是不同平台,或是不同作业系统,或是要分散(release)给不同层级使用者的版本),这是一个可以告诉你make如何节省你的时间,而且可以避免混淆的例子,比前的例子更复杂一点. 假设你写了一个可以绘出资料的程式,它可以在终端机(文字模式)或是图形介面(例如:X window)之下执行. 涉及到计算和档案处理的部分在两个版本之中都相同,而且你把它们都存放在basic.c这个档案中. 处理文字模式下使用者输入的程式放在prompt.c之中,而处理图形介面上使用者输入的程式放在window.c之中.</P>
+<P>因此,这个程式可以以两种不同的版本被发行(release),当你想要建立这个程式时,你可以选择要建立你觉得最适合你现在工作环境的版本. 以文字模式下的版本来说,你可以由basic.c与prompt.c这两个档案来产生plot_prompt这个执行档. 对图形介面的版本来说,你就可以使用basic.c与window.c这两个档案来产生叫做plot_win的执行档. 以下产生这两种版本所使用的眠述档:</P>
+</FONT><B><I><FONT FACE="Courier New"><P>plot_prompt : basic.o prompt.o</P>
+<P>&#9;cc □o plot_prompt basic.o prompt.o</P>
+<P>plot_win    : basic.o window.o</P>
+<P>&#9;cc □o plot_win basic.o window.o</P>
+<P>basic.o     : basic.c</P>
+<P>&#9;cc □c basic.c</P>
+<P>prompt.o    : prompt.c</P>
+<P>&#9;cc □c prompt.c</P>
+<P>window.0    : window.c</P>
+<P>&#9;cc □c window.c</P>
+</B></I></FONT><FONT FACE="华康细圆体" LANG="ZH-TW"><P>当你第一次建造其中一个执行档时,你必须编译basic.c这个档案. 但是只要你没有改变basic.c这个档案,也没有删除掉basic.o的话,下一次你想要重新产生新的图形介面执行档时,就可以不必再重新编译basic.c. 如果你修改了prompt.c,然後重新建立plot_prompt的话,make会去检查修改时间,然後就明白只要重新编译prompt.c,然後再连结就可以了. 也就是说,如果你重新下</P>
+</FONT><B><I><FONT FACE="Courier New"><P>$make plot_prompt</P>
+</B></I></FONT><FONT FACE="华康细圆体" LANG="ZH-TW"><P>这个指令,你会在萤幕上看到下面的结果:</P>
+</FONT><B><I><FONT FACE="Courier New"><P>cc □c prompt</P>
+<P>cc □o plot_prompt basic.o prompt.o</P>
+</B></I></FONT><FONT FACE="华康细圆体" LANG="ZH-TW"><P>    这这些□例之中的描述档,实际上可以被大量的简化. 因为make 有内建的规则和巨集(macro)的定义可以用来处理在档案中一再重复出现的附属物(dependencies),例如</FONT>”<FONT FACE="华康细圆体" LANG="ZH-TW">.o</FONT>”<FONT FACE="华康细圆体" LANG="ZH-TW">档案的附属档案</FONT>”<FONT FACE="华康细圆体" LANG="ZH-TW">.c</FONT>”<FONT FACE="华康细圆体" LANG="ZH-TW">档案,他们都是前面的名称相同,只有副档名不同而已. 在第二章 巨集(macro)与第三章 後置规则(suffix rule)的时候,我们会讨论这些make的特色. 在这一章里,我们只把附属(dependency)和更新(updating)的概念传达给你而已</P>
+<P>　</P>
+</FONT><FONT FACE="华康POP1体W7" LANG="ZH-TW" SIZE=4><P ALIGN="JUSTIFY">引用make</FONT><FONT FACE="华康POP1体W7" LANG="ZH-TW">(Invoking make)</P>
+</FONT><FONT FACE="华康细圆体" LANG="ZH-TW"><P>前面的几个小节的□例都有以下的假设:</P>
+<P>*专案档(project file),也就是描述档,和原始码放在同一个目录底下</P>
+<P>*描述档的档名叫做makefile或是Makefile</P>
+<P>*将你键入</FONT><B><I><FONT FACE="Courier New">make</B></I></FONT><FONT FACE="华康细圆体" LANG="ZH-TW">指令时,工作目录就是这些档案放置的目录</P>
+<P>有了这些假设,你只要下一个</P>
+</FONT><B><I><FONT FACE="Courier New"><P>$make target</P>
+</B></I></FONT><FONT FACE="华康细圆体" LANG="ZH-TW"><P>的指令,就可以建立在描述档中的任何一个目标. 建造这个目标所必须要下的指令都会被显示在终端机上,然後执行. 如果一些中间档案(intermediate file)已经存在或者已经被更新过,make会掠过建造这些中间档案的指令. make只会发出建造这个目标所必须执行的最少指令. 如果在上次建造这个目标後,没有任何必备档案被修改或是移除,make会发出一个讯息</P>
+</FONT><B><I><FONT FACE="Courier New"><P>‘target’ is up to date</P>
+</B></I></FONT><FONT FACE="华康细圆体" LANG="ZH-TW"><P>然後什麽事情也不做.</P>
+<P>如果你想要建造在描述档中没有指定,而且也不被第三章 後置规则(suffix rule)中所讨论的内定规则所涵盖的目标,例如:你下了一个指令建造一个不存在的目标</P>
+</FONT><B><I><FONT FACE="Courier New"><P>$make nottarget</P>
+</B></I></FONT><FONT FACE="华康细圆体" LANG="ZH-TW"><P>则make会回应:</P>
+</FONT><B><I><FONT FACE="Courier New"><P>‘nottarget’ is up to date</P>
+</B></I></FONT><FONT FACE="华康细圆体" LANG="ZH-TW"><P>或是</P>
+</FONT><B><I><FONT FACE="Courier New"><P>make: Don’t know ho to make nontarget. Stop.</P>
+</B></I></FONT><FONT FACE="华康细圆体" LANG="ZH-TW"><P>    如果再目前的工作目录之下真的有nontarget这个档案存在,就会发出上面的第一个讯息. 第七章 问题解决(troubleshooting)时,会解释在不同的环境下,make所发述的讯息所代表的涵义.</P>
+<P>我们可以一次要make建立好几个目标. 这个命令的效果就跟连续的发出好几个make命令相同,例如:</P>
+</FONT><B><I><FONT FACE="Courier New"><P>$make main.o target</P>
+</B></I></FONT><FONT FACE="华康细圆体" LANG="ZH-TW"><P>就相当於</P>
+</FONT><B><I><FONT FACE="Courier New"><P>$make main.o</P>
+<P>$make target</P>
+</B></I></FONT><FONT FACE="华康细圆体" LANG="ZH-TW"><P>一样</P>
+<P>  我们也可以只简单的打上</P>
+</FONT><B><I><FONT FACE="Courier New"><P>$make</P>
+</B></I></FONT><FONT FACE="华康细圆体" LANG="ZH-TW"><P>没有附上任何的目标名称. 在此情况下,在描述档中的第一个目标将会被建立(同时他的必备档也会一起被建立)</P>
+<P>    在命令列下发出make指令有许多的选择项(option,通常前面会加上</FONT>”<FONT FACE="华康细圆体" LANG="ZH-TW">-</FONT>“<FONT FACE="华康细圆体" LANG="ZH-TW">). 例如,你可以选择不要在终端机上印出make所发出的命令. 反过来说,你也可以要求印出哪些命令会被执行,而实际上并没有执行它们. 这些都会在第六章 命令列的使用与特别的目标(Command-line usage and Special targets)中讨论的更仔细.</P>
+<P>　</P>
+</FONT><FONT FACE="华康POP1体W7" LANG="ZH-TW" SIZE=4><P ALIGN="JUSTIFY">语法的基本规则</FONT><FONT FACE="华康POP1体W7" LANG="ZH-TW">(Basic Rules of Syntax)</P>
+</FONT><FONT FACE="华康细圆体" LANG="ZH-TW"><P>在你开始要□试写自己的描述档之前,你应该了解一些在make所使用的一些难懂的条件(requirement),这些条件如果单独从□例中来体会,是不够不清楚的. 完整的语法描述可以在附录A 快速参考 中找到. 这一章只是提供一些入门的技巧而已.</P>
+<P>最重要的一条规则就是</FONT>”<FONT FACE="华康细圆体" LANG="ZH-TW">每一个命令列的开头都要是一个tab字元(四个空格)</FONT>”<FONT FACE="华康细圆体" LANG="ZH-TW">. 一个常常犯的错误就是在每个命令列的开头省略了tab字元. 就算在每个命令列中按空白键插入四个空白也不行,因为make无法辨别出这就是tab字元,而且非常不幸的,在这种情况下,就算出了错误,make也无法提供有用的讯息.</P>
+<P>make是靠开头的那个tab字来辨识命令列,所以一定要注意不要在其他不是命令列的那一列之前加上tab字元. 如果你把tab当作第一个字元加在附属列,注解,或这甚至是一个空白列之前,你都会得到错误讯息. Tab字元可以用在每一列的任何地方,只有在每一列的第一个字元才有上述的限制.</P>
+<P>如果你想要检查描述档中的tab字元,你可以下指令</P>
+</FONT><B><I><FONT FACE="Courier New"><P>$cat □v □t □e makefile</P>
+</B></I></FONT><FONT FACE="华康细圆体" LANG="ZH-TW"><P>在这里 </FONT>□<FONT FACE="华康细圆体" LANG="ZH-TW">v 与 </FONT>□<FONT FACE="华康细圆体" LANG="ZH-TW">t会使得描述档中的每一个tab字元以 </FONT><FONT FACE="Bookman Old Style">^I</FONT><FONT FACE="华康细圆体" LANG="ZH-TW"> 的方式印出来,而 </FONT>□<FONT FACE="华康细圆体" LANG="ZH-TW">e 会使得每一列的最後以 </FONT><FONT FACE="Bookman Old Style">$</FONT><FONT FACE="华康细圆体" LANG="ZH-TW"> 的样子印出来,所以你可以看出在每一列的结束之前有几个空白.</P>
+<P>你可以打很长一串指令,如果已经到了文字编辑器的右边界,你可以在到达右边界之前放入一个斜线(\)符号. 你必须确定在新的一列开始之前,会有一个斜线符号在哪里.斜线符号和新的一行之间不要有空白(don</FONT>’<FONT FACE="华康细圆体" LANG="ZH-TW">t let any white space slip in between). 由斜线符号所连续的每一列都会被当作单独一列来剖析(parsing).</P>
+<P>make会忽略描述档中的空白行(blank line). 同样的,它也会忽略掉以 # 符号开头,到每一列结尾之间的字元,所以 # 符号用来当作每个注解的开头.</P>
+<P>命令列跟附属列不一定都要各自占掉一列的空间,你可以写成</P>
+</FONT><B><I><FONT FACE="Courier New"><P>plot_prompt : prompt.o ; cc □o plot_prompt prompt.o</P>
+</B></I></FONT><FONT FACE="华康细圆体" LANG="ZH-TW"><P>虽然之前有说过命令列的开头都要有一个tab字元,不过这里是唯一的例外.</P>
+<P>一个单独的目标也可以用多个附属列来表示. 当你为了要易於区分附属档的的种类时,这是一个很实用的技巧,例如</P>
+</FONT><B><I><FONT FACE="Courier New"><P>file.o : file.c </P>
+<P>&#9;cc □c file.c</P>
+<P>……</P>
+<P>file.o : global.h defs.h</P>
+</B></I></FONT><FONT FACE="华康细圆体" LANG="ZH-TW"><P>虽然实际上建造file.o的命令是第一个附属列的下面那一行,即使重新建造时,file.c并没有被修改,可是如果附属的.h档被修改过的话,file.o仍然会被重新编译.</P>
+<P>如果你使用了多个附属列的技巧,只有其中一个附属列才能有能够伴随有指令列. 但是如果你在一个附属列中使用了两个冒号(在第三章 後置规则时会讨论到,这是一个在建造函式库时很有用的技巧),则不在此限.</P>
+<P>在描述档中可以有</FONT>”<FONT FACE="华康细圆体" LANG="ZH-TW">没有附属档案的目标</FONT>”<FONT FACE="华康细圆体" LANG="ZH-TW">(但是冒号还是要打上去,不能省略),这些档案通常不全是档名. 例如,许多描述档含有下面的目标,用来帮助程式设计师在一天辛苦的测试之後移除暂存档.</P>
+</FONT><B><I><FONT FACE="Courier New"><P>clean :</P>
+<P>&#9;/bin/rm □f core *.o</P>
+</B></I></FONT><FONT FACE="华康细圆体" LANG="ZH-TW"><P>当我们下指令</P>
+</FONT><B><I><FONT FACE="Courier New"><P>$make clean</P>
+</B></I></FONT><FONT FACE="华康细圆体" LANG="ZH-TW"><P>如果工作目录下没有clean这个档案,make就会去执行claen这个项目下的命令稿(command script). 这是因为make把每一个不存在的目标当作是一个过时的目标</P>
+<P>在每个项目中的命令,就目前来说,应该要是单一一行的Bourne Shell指令.等到你读了第四章 指令(command),不要□试去使用别名(aliases),环境变数(environment variables),或是像<B><I>if</B></I>或</FONT><B><I><FONT FACE="Courier New">for</B></I></FONT><FONT FACE="华康细圆体" LANG="ZH-TW">这一类会有很多行的命令,同时要避免使用</FONT><B><I><FONT FACE="Courier New">cd</B></I></FONT><FONT FACE="华康细圆体" LANG="ZH-TW">,第四章会解释这样做的理由.</P>
+<P>现在你已经能够藉由键入你习惯在终端机前打的指令来建立你自己的描述档了. 但是很快的,你会发现非常的乏味. 往後的两章会解释很多可以让你简化(simplify)与一般化(generalize)你属於你自己的描述档的方法.</P>
+<P>　</P>
+<P>　</P>
+<P>　</P>
+<P>　</P>
+<P>　</P>
+<P>　</P>
+<P>　</P>
+<P>　</P>
+<B><P>1998/5/20 interpreted by 王森(moli)</P>
+<P>email address moli@tomail.com.tw</P>
+<P>小弟第一次做翻译的工作,如果有错误的地方,</P>
+<P>请来信与我讨论,相信会让下一章的翻译更好.</P></B></FONT>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

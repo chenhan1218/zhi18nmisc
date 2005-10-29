@@ -1,0 +1,41 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Linux 2.4 Packet Filtering HOWTO: 整合 NAT 與 Packet Filtering</TITLE>
+ <LINK HREF="Packet-Filtering-HOWTO-10.html" REL=next>
+ <LINK HREF="Packet-Filtering-HOWTO-8.html" REL=previous>
+ <LINK HREF="Packet-Filtering-HOWTO.html#toc9" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Packet-Filtering-HOWTO-10.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Packet-Filtering-HOWTO-8.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Packet-Filtering-HOWTO.html#toc9"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s9">9. 整合 NAT 與 Packet Filtering</A></H2>
+
+<P>要做 Network Address Translation (請參閱 NAT HOWTO) 以及封包過濾﹐已是很平常之事了。好消息是﹐將它們混合起來使用實是完全沒問題的。
+<P>
+<P>當你設計封包過濾的時候﹐可以完全不用理會您要做怎樣的 NAT 。於封包過濾中看到的來源與目的地﹐只會是 `真正的' 來源和目的地。舉例來說﹐如果您做 NAT ﹐要將所有連到 1.2.3.4 port 80 的連線送到 10.1.1.1 port 8080 去﹐這樣封包過濾會看那些送到 10.1.1.1 port 8080 (真正的目的地)﹐而不是 1.2.3.4 port 80。類似的﹐您也可以忽略封包偽裝﹕封包會看起來是來自真正的內部 IP 地址(比方 10.1.1.1)﹐回應也看起來送回那裡。
+<P>
+<P>您可以運用 `state' 比對延伸(match extension)而無需讓封包過濾做額外的工作﹐因為無論如何﹐ NAT 都會要求連線追蹤。為了增強在 NAT HOWTO 裡面那個簡單的封包偽裝例子﹐去擋掉來自 ppp0 界面的任何新連接﹐您可以這樣做﹕
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# Masquerade out ppp0
+iptables -t nat -A POSTROUTING -o ppp0 -j MASQUERADE
+
+# Disallow NEW and INVALID incoming or forwarded packets from ppp0.
+iptables -A INPUT -i ppp0 -m state --state NEW,INVALID -j DROP
+iptables -A FORWARD -i ppp0 0 -m state --state NEW,INVALID -j DROP
+
+# Turn on IP forwarding
+echo 1 > /proc/sys/net/ipv4/ip_forward
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<HR>
+<A HREF="Packet-Filtering-HOWTO-10.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Packet-Filtering-HOWTO-8.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Packet-Filtering-HOWTO.html#toc9"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

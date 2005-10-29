@@ -1,0 +1,183 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Linux Remote-Boot mini-HOWTO:: 简介</TITLE>
+ <LINK HREF="Remote-Boot-4.html" REL=next>
+ <LINK HREF="Remote-Boot-2.html" REL=previous>
+ <LINK HREF="Remote-Boot.html#toc3" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+<A HREF="Remote-Boot-4.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Remote-Boot-2.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Remote-Boot.html#toc3"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s3">3. 简介</A></H2>
+
+<P>这里所描述的架构是从 1996 夏季开始在 日内瓦大学, CUI 所发展的.
+这个资讯系有许多的伺服器, 及一些个人电脑, 可依用途分为两类: 
+<UL>
+<LI>学生使用</LI>
+<LI>研究与辅助教学</LI>
+</UL>
+
+以下是我们发展这种架构的目标:
+<UL>
+<LI>任何一台电脑都可以执行 Linux, DOS, Windows 3.1, Windows 95/98,
+或 Windows NT. 每次开机时可以选择所需要的作业系统. </LI>
+<LI>所有的软体, 包含作业系统, 可以放在伺服器上, 便於安装与更新. </LI>
+<LI>用户端电脑, 可以在不对伺服器做写入的状态下正常工作 (为了安全性),
+除了用户自己的 home 目录.</LI>
+<LI>尽可能减少用户端电脑的设定. 用户端电脑可以自动由伺服器取得 IP 组态设定,
+这些资讯放在一个小档案, 可供各种作业系统使用.</LI>
+<LI>大部份的电脑都各自拥有硬碟,
+用户端电脑可以靠这优点来降低网路负载与存放使用者的暂存档. </LI>
+<LI>所有的使用者都 <EM>必须</EM> 登入才能使用电脑.</LI>
+<LI>登入的资讯必须所有的作业系统都相同.
+而使用者可以存取个人的目录, 并而在各种作业系统都一至.</LI>
+<LI>学生 (以及秘书 :-) 所使用的电脑在每次启动时必须清理一次.
+也就是像刚安装完的样子. </LI>
+<LI>每台电脑可以防毒.</LI>
+</UL>
+
+这些限制条件, 使得我们把所有的组态都以 BootPROM 工具程式为基础.
+我们先是针对来自
+<A HREF="http://www.bootix.com">Bootix GmbH</A>
+的 
+<A HREF="http://www.incom.de/products_en.shtml">TCP/IP BootPROM</A> 发展. 而现在更加入对 preboot execution environments 标准的支援.
+我们让这些工具程式也可以与任何 PXE 相容的 BootPROM 一起使用.
+PXE BootPROM, 也称为 LanDesk Service Agent,
+已跟随著大部份内建网路卡的主机板一起散布.
+其他关於 PXE 及 Intel <EM>Wired for Management</EM> 的标准, 可透过
+<CODE>
+<A HREF="http://developer.intel.com/ial/wfm/tools/index.htm">http://developer.intel.com/ial/wfm/tools/index.htm</A></CODE> 取得.
+<P>
+<H2><A NAME="ss3.1">3.1 BootPROM 及 硬碟机</A>
+</H2>
+
+<P>BootPROM 已出现很长一段时间, 在此之前我们把它单独用於无磁碟机的电脑(采用网路为基础的磁碟模拟或者下载一份 ramdisk).
+从 1996 年起, 这份 How-to 提出使用 BootPROM 在自身具有硬碟机的电脑下使用,
+将更有趣. 由於这样将可得到双重得优点:
+<UL>
+<LI>BootPROM 使得此架构更加稳定, 用它可以保证每台电脑都会以同样方式开机.
+不管中了任何病毒或在分割区已毁损的状况. 就如我们已完成的,
+它可以做到在载入作业系统前清理硬碟资料.</LI>
+<LI>自身具有硬碟机, 使得此架构更有效率. 因为这样可以经由快取方式降低网路负载.
+更能获得较有效率的 swap.</LI>
+</UL>
+
+至今, 我们相当高兴见到所有的电脑制造商已朝向同样的目标.
+并把 BootPROM 列为新电脑标准的一部份.
+<P>你仍然可以照 <EM>旧</EM> 的方式, 使用下列所叙述的工具程式.
+这些工具程式对无磁碟机的电脑而言, 其实就是一个小的 Kernel/ramdisk 载入器.
+但我们不鼓励如此使用.
+<P>
+<H2><A NAME="ss3.2">3.2 网路</A>
+</H2>
+
+<P>日内瓦大学 拥有 B 级网域, 分割成许多子网路.
+CUI 共使用了四个子网路, 其中之一供学生使用.
+<P>原本,我们的个人电脑使用两种网路通讯协定: IPX 与 IP.
+IPX 这一类, 我们由一台 Novell Netware 3 的伺服器共用 DOS 与 Windows的软体.
+IP 这一类, 我们由一台 SUN 伺服器靠 NFS 共用 Linux 软体及个人的分割区.
+<P>在我们最新的架构中, 已不再使用 IPX 通讯协定. 改由一台 Unix 伺服器
+(可以是 Linux 或 SUN) 来担任, Linux 用户端可透过 NFS,
+而 DOS 与 Windows 则由 SMB (NetBIOS) over TCP/IP 共用软体及使用者的档案.
+因此, 我们对所有的作业系统都使用单一个 home 目录.
+<P>
+<H2><A NAME="ss3.3">3.3 它是如何工作</A>
+</H2>
+
+<P>
+<OL>
+<LI>用户端个人电脑开机後, 在 TCP/IP BootPROM 或 PXE Boot ROM
+获得控制权之前先做自我测试.</LI>
+<LI>BootPROM 发出 BOOTP/DHCP 要求, 以取得 IP 组态参数.</LI>
+<LI>如果伺服器收到个人电脑所送出的要求, 就会送回 BOOTP/DHCP 回应,
+内容包括用户端的 IP 位址, 预设通讯闸道, 及开机映像档.
+否则, 伺服器会忽略这个要求. </LI>
+<LI>而在 PXE Boot ROM 的环境下, 将有更多的讯息在用户端与伺服器之间作应答,
+用以决定安装参数.</LI>
+<LI>BootPROM 由 TFTP 通讯协定从伺服器下载开机映像档,
+这个映像档其实就是一个名为 <CODE>BpBatch</CODE> 的小程式,
+也就是我们的开机时期批次档案的解译器.</LI>
+<LI>启动批次档解译器之後. 几乎是只有它单独存在记忆体中.
+除了 preboot execution environment (由 Boot ROM 提供)外,
+这时作业系统尚未载入. </LI>
+<LI>这个批次档解译器会检查 BOOTP/DHCP 给命令列的所有选项,
+特别是 BpBatch 要处理的.
+BpBatch 以 DHCP 选项 155 取得命令列参数.
+如果选项 155 是空的,
+它会改由 DHCP 选项 135 取得参数 (PXE 2.0 BootPROM 只能收到 128-135 的选项).</LI>
+<LI>透过批次作业档, 我们可以做一些事如:
+<OL>
+<LI>载入多国语系键盘对应.</LI>
+<LI>透过远端伺服器 (Unix, Radius 或 Windows NT) 做使用者身份认证.</LI>
+<LI>让使用者决定使用, 哪种可用的作业系统.</LI>
+<LI>决定作业系统後, 自动重新分割硬碟并快速格式化部份分割区.</LI>
+<LI>检查其硬碟内的资料是否与其选定的作业系统的最新设定一制,
+如果不是, 它会透过 TFTP 通讯协定下载最新映像档.</LI>
+<LI>解压缩所选定的作业系统的映像档到主分割区.</LI>
+<LI>如果选择 Linux, 载入 Kernel 并启动它.</LI>
+<LI>如果选择 DOS 或 Windows, 就更新硬碟资料并启动电脑.</LI>
+</OL>
+
+对 <B>DOS and Windows 3.1</B>,
+我们使用免费的 Microsoft LanManager for DOS
+(搜寻网路上与你最近的映射站台;
+应该是有四个名为 <CODE>disk1</CODE> 到 <CODE>disk4</CODE> 的档案)
+为 SMB 用户端. Microsoft LanManager 可以透过 DHCP 动态设定组态.
+在登入後, 使用者面对的是 DOS, 且只要打 <CODE>win</CODE> 指令就可启动 Windows 3.1 了.
+有一点, 在这要特别注意 DOS 及 Windows 3.1 看起来像是安装在用户端的自身电脑.
+
+对 <B>Windows 95</B>98 及 Windows NT/,
+我们也使用 Microsoft SMB 用户端 (称为 <I>Client for the Microsoft Network</I>),
+它也支援透过 DHCP 动态设定组态. 为了降低网路负载我们采用了
+<A HREF="http://www.lancache.com">Shared LAN Cache</A>,
+这是一个强而有力的网路到硬碟之间的快取程式.</LI>
+</OL>
+
+学生所使用的电脑可以<EM>很暴力的</EM>直接关掉电源而不会有任何问题,
+因为硬碟的资料在每次开机时都会重新建立.
+<P>对於比较 "安全的" 电脑 (如 助教的电脑), 如果电脑已用上述系统开机过一次,
+则开机脚本只会改由本机硬碟开机, 而不再清理硬碟.
+这样可以允许使用者保留资料在硬碟中. 而当整个架构烂掉了,
+使用者只需从开机选单挑选所要的系统, 则又能得到一个全新的安装.
+<P>
+<H2><A NAME="ss3.4">3.4 相关的非商业文件</A>
+</H2>
+
+<P>这种组态已经成功的移殖到世界上的许多地方.
+少数人已经开始篆写一些技巧与提示来完成这份 How-To.
+如果您也曾做过, 但在本文中未被引用欢迎送一份 e-mail 给
+<CODE>mvuilleu@bpbatch.org</CODE>.
+如果您在重建这种组态中遇到问题, 请再详细看一次文件 !
+<UL>
+<LI><CODE>
+<A HREF="http://www.ph-ludwigsburg.de/nutzer/schmitt\_peter/">http://www.ph-ludwigsburg.de/nutzer/schmitt\_peter/</A></CODE>,
+由在德国, Ludwigsburg 的 Carl-Schaefer-Schule 的 Peter Schmitt 所写.
+此文是 BpBatch 的优质参考资料, 适合德语的使用者.</LI>
+<LI><CODE>
+<A HREF="http://www.br.fgov.be/RESEARCH/INFORMATICS/info/bootp.html">http://www.br.fgov.be/RESEARCH/INFORMATICS/info/bootp.html</A></CODE>,
+由在比利时国家植物园的 Alain Empain 所写.
+有许多有用的□例脚本程序,以及一个很棒的 PERL 程式用来自动产生图形化的选单并能透过高阶的叙述转成 HTML 文件.</LI>
+<LI><CODE>
+<A HREF="http://www.katedral.se/system/elevsyst">http://www.katedral.se/system/elevsyst</A></CODE>,
+由瑞典 Uppsala 教会学校的 Johan Carlstedt 所写.
+<EM>至今, 在这的组态设定还停留在旧版的远端开机工具程式.
+大致上, 只要一点点修正, 所有的东西都还可以适用</EM>.</LI>
+<LI><CODE>
+<A HREF="http://vitoria.upf.tche.br/~fred/">http://vitoria.upf.tche.br/~fred/</A></CODE>,
+葡萄牙文, 由 Brasil 的 Passo Fundo 大学的 Frederico Goldschmidt.</LI>
+<LI><CODE>
+<A HREF="http://www.etse.urv.es/~larinyo">http://www.etse.urv.es/~larinyo</A></CODE>, 西班牙文,
+由西班牙, Escola Tecnica Superio d'Enginyeria 的 Lluis Arino 所写.</LI>
+</UL>
+<P>你也可以寄给我你的 BpBatch 脚本程序档, 如果你想让它放在
+<A HREF="soft/sample-scripts">□例脚本程序精选</A>中.
+<P>
+<HR>
+<A HREF="Remote-Boot-4.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Remote-Boot-2.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Remote-Boot.html#toc3"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

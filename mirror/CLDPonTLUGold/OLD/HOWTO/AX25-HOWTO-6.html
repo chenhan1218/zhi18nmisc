@@ -1,0 +1,992 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux AX25-HOWTO, Amateur Radio.: Configuring an AX.25 port.</TITLE>
+ <LINK HREF="AX25-HOWTO-7.html" REL=next>
+ <LINK HREF="AX25-HOWTO-5.html" REL=previous>
+ <LINK HREF="AX25-HOWTO.html#toc6" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="AX25-HOWTO-7.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="AX25-HOWTO-5.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="AX25-HOWTO.html#toc6"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s6">6. Configuring an AX.25 port.</A></H2>
+
+<P>Each of the AX.25 applications read a particular configuration file to obtain
+the parameters for the various AX.25 ports configured on your Linux machine.
+For AX.25 ports the file that is read is the <CODE>/etc/ax25/axport</CODE> file.
+You must have an entry in this file for each AX.25 port you want on your
+system.
+<P>
+<H2><A NAME="ss6.1">6.1 Creating the AX.25 network device.</A>
+</H2>
+
+<P>The network device is what is listed when you use the `<EM>ifconfig</EM>'
+command. This is the object that the Linux kernel sends and receives network
+data from. Nearly always the network device has a physical port associated
+with it, but there are occasions where this isn't necessary. The network
+device does relate directly to a device driver.
+<P>In the Linux AX.25 code there are a number of device drivers. The most common
+is probably the KISS driver, but others are the SCC driver(s), the Baycom
+driver and the SoundModem driver.
+<P>Each of these device drivers will create a network device when it is started.
+<P>
+<H3>Creating a KISS device.</H3>
+
+<P><B>Kernel Compile Options</B>:
+<BLOCKQUOTE><CODE>
+<PRE>
+General setup  --->
+    [*] Networking support
+Network device support  --->
+    [*] Network device support
+    ...
+    [*] Radio network interfaces
+    [*] Serial port KISS driver for AX.25
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Probably the most common configuration will be for a KISS TNC on a serial port.
+You will need to have the TNC preconfigured and connected to your serial port.
+You can use a communications program like <EM>minicom</EM> or <EM>seyon</EM>
+to configure the TNC into kiss mode.
+<P>To create a KISS device you use the <EM>kissattach</EM> program. In it simplest
+form you can use the <EM>kissattach</EM> program as follows:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# /usr/sbin/kissattach /dev/ttyS0 radio
+# kissparms -p radio -t 100 -s 100 -r 25
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>The <EM>kissattach</EM> command will create a KISS network device. These devices
+are called `<CODE>ax[0-9]</CODE>'. The first time you use the <EM>kissattach</EM> command
+it creates `<CODE>ax0</CODE>', the second time it creates `<CODE>ax1</CODE>' etc. Each KISS
+device has an associated serial port.
+<P>The <EM>kissparms</EM> command allows you to set various KISS parameters on a KISS
+device.
+<P>Specifically the example presented would create a KISS network device using
+the serial device `<CODE>/dev/ttyS0</CODE>' and the entry from the
+<CODE>/etc/ax25/axports</CODE> with a port name of `<CODE>radio</CODE>'. It then configures
+it with a <EM>txdelay</EM> and <EM>slottime</EM> of 100 milliseconds and a <EM>ppersist</EM>
+value of 25.
+<P>Please refer to the <EM>man</EM> pages for more information.
+<P>
+<H3>Configuring for Dual Port TNC's</H3>
+
+<P>The <EM>mkiss</EM> utility included in the ax25-utils distribution allows you to
+make use of both modems on a dual port TNC. Configuration is fairly
+simple. It works by taking a single serial device connected to a single
+multiport TNC and making it look like a number of devices each connected to
+a single port TNC. You do this <B>before</B> you do any of the AX.25
+configuration. The devices that you then do the AX.25 configuration on
+are pseudo-TTY interfaces, (<CODE>/dev/ttyq*</CODE>), and not the actual
+serial device. Pseudo-TTY devices create a kind of pipe through which
+programs designed to talk to tty devices can talk to other programs designed
+to talk to tty devices. Each pipe has a master and a slave end. The master
+end is generally called `<CODE>/dev/ptyq*</CODE>' and the slave ends are called
+`<CODE>/dev/ttyq*</CODE>'. There is a one to one relationship between masters and
+slaves, so <CODE>/dev/ptyq0</CODE> is the master end of a pipe with
+<CODE>/dev/ttyq0</CODE> as its slave. You must open the master end of a pipe
+before opening the slave end. <EM>mkiss</EM> exploits this mechanism to split
+a single serial device into seperate devices.
+<P>
+<P>Example: if you have a dual port tnc and it is connected to your
+<CODE>/dev/ttyS0</CODE> serial device at 9600 bps, the command:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# /usr/sbin/mkiss -s 9600 /dev/ttyS0 /dev/ptyq0 /dev/ptyq1
+# /usr/sbin/kissattach /dev/ttyq0 port1
+# /usr/sbin/kissattach /dev/ttyq1 port2
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>would create two pseudo-tty devices that each look like a normal single port
+TNC. You would then treat <CODE>/dev/ttyq0</CODE> and <CODE>/dev/ttyq1</CODE> just as
+you would a conventional serial device with TNC connected. This means you'd
+then use the <EM>kissattach</EM> command as described above, on each of those,
+in the example for AX.25 ports called <CODE>port1</CODE> and <CODE>port2</CODE>. You shouldn't
+use <EM>kissattach</EM> on the actual serial device as the <EM>mkiss</EM> program uses
+it.
+<P>The <EM>mkiss</EM> command has a number of optional arguments that you may wish
+to use. They are summarised as follows:
+<DL>
+<DT><B>-c</B><DD><P>enables the addition of a one byte checksum to each KISS frame.
+This is not supported by most KISS implementation, it is supported by the
+G8BPG KISS rom.
+<DT><B>-s &lt;speed&gt;</B><DD><P>sets the speed of the serial port.
+<DT><B>-h</B><DD><P>enables hardware handshaking on the serial port, it is off by
+default. Most KISS implementation do not support this, but some do.
+<DT><B>-l</B><DD><P>enables logging of information to the <EM>syslog</EM> logfile.
+</DL>
+<P>
+<H3>Creating a Baycom device.</H3>
+
+<P><B>Kernel Compile Options</B>:
+<BLOCKQUOTE><CODE>
+<PRE>
+Code maturity level options  --->
+    [*] Prompt for development and/or incomplete code/drivers
+General setup  --->
+    [*] Networking support
+Network device support  --->
+    [*] Network device support
+    ...
+    [*] Radio network interfaces
+    [*] BAYCOM ser12 and par96 driver for AX.25
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Thomas Sailer, <CODE>&lt;sailer@ife.ee.ethz.ch></CODE>, despite the popularly
+held belief that it would not work very well, has developed Linux support for
+Baycom modems. His driver supports the <CODE>Ser12</CODE> serial port,
+<CODE>Par96</CODE> and the enhanced <CODE>PicPar</CODE> parallel port modems.
+Further information about the modems themselves may be obtained from the
+<A HREF="http://www.baycom.de/">Baycom Web site</A>.
+<P>Your first step should be to determine the i/o and addresses of the 
+serial or parallel port(s) you have Baycom modem(s) connected to.
+When you have these you must configure the Baycom driver with them.
+<P>The BayCom driver creates network devices called:
+<CODE>bc0</CODE>, <CODE>bc1</CODE>, <CODE>bc2</CODE> etc. when it is configured.
+<P>The <EM>sethdlc</EM> utility allows you to configure the driver with these
+parameters, or, if you have only one Baycom modem installed you may specify
+the parameters on the <EM>insmod</EM> commmand line when you load the
+Baycom module.
+<P>For example, a simple configuration.
+Disable the serial driver for COM1: then configure the Baycom driver for a
+Ser12 serial port modem on COM1: with the software DCD option enabled:
+<BLOCKQUOTE><CODE>
+<PRE>
+# setserial /dev/ttyS0 uart none
+# insmod hdlcdrv
+# insmod baycom mode="ser12*" iobase=0x3f8 irq=4
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Par96 parallel port type modem on LPT1: using hardware DCD detection:
+<BLOCKQUOTE><CODE>
+<PRE>
+# insmod hdlcdrv
+# insmod baycom mode="par96" iobase=0x378 irq=7 options=0
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>This is not really the preferred way to do it. The <EM>sethdlc</EM> utility
+works just as easily with one device as with many.
+<P>The <EM>sethdlc</EM> <EM>man</EM> page has the full details, but a couple of examples
+will illustrate the most important aspects of this configuration. The
+following examples assume you have already loaded the Baycom module
+using:
+<BLOCKQUOTE><CODE>
+<PRE>
+# insmod hdlcdrv
+# insmod baycom
+</PRE>
+</CODE></BLOCKQUOTE>
+
+or that you compiled the kernel with the driver inbuilt.
+<P>Configure the <CODE>bc0</CODE> device driver as a Parallel port Baycom modem on LPT1:
+with software DCD:
+<BLOCKQUOTE><CODE>
+<PRE>
+# sethdlc -p -i bc0 mode par96 io 0x378 irq 7
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Configure the <CODE>bc1</CODE> device driver as a Serial port Baycom modem on COM1:
+<BLOCKQUOTE><CODE>
+<PRE>
+# sethdlc -p -i bc1 mode "ser12*" io 0x3f8 irq 4
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H3>Configuring the AX.25 channel access parameters.</H3>
+
+<P>The AX.25 channel access parameters are the equivalent of the KISS ppersist,
+txdelay and slottime type parameters. Again you use the <EM>sethdlc</EM> utility
+for this.
+<P>Again the <EM>sethdlc</EM> man page is the source of the most complete information
+but another example of two won't hurt:
+<P>Configure the <CODE>bc0</CODE> device with TxDelay of 200 mS, SlotTime of 100 mS,
+PPersist of 40 and half duplex:
+<BLOCKQUOTE><CODE>
+<PRE>
+# sethdlc -i bc0 -a txd 200 slot 100 ppersist 40 half
+</PRE>
+</CODE></BLOCKQUOTE>
+
+Note that the timing values are in milliseconds.
+<P>
+<H3>Configuring the Kernel AX.25 to use the BayCom device</H3>
+
+<P>The BayCom driver creates standard network devices that the AX.25
+Kernel code can use. Configuration is much the same as that for a PI
+or PacketTwin card.
+<P>The first step is to configure the device with an AX.25 callsign. The
+<EM>ifconfig</EM> utility may be used to perform this.
+<BLOCKQUOTE><CODE>
+<PRE>
+# /sbin/ifconfig bc0 hw ax25 VK2KTJ-15 up
+</PRE>
+</CODE></BLOCKQUOTE>
+
+will assign the BayCom device <CODE>bc0</CODE> the AX.25 callsign <CODE>VK2KTJ-15</CODE>.
+Alternatively you can use the <EM>axparms</EM> command, you'll still need to
+use the <EM>ifconfig</EM> command to bring the device up though:
+<BLOCKQUOTE><CODE>
+<PRE>
+# ifconfig bc0 up
+# axparms -setcall bc0 vk2ktj-15
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>The next step is to create an entry in the <CODE>/etc/ax25/axports</CODE> file
+as you would for any other device. The entry in the <CODE>axports</CODE> file is
+associated with the network device you've configured by the callsign you
+configure. The entry in the <CODE>axports</CODE> file that has the callsign that
+you configured the BayCom device with is the one that will be used to
+refer to it.
+<P>You may then treat the new AX.25 device as you would any other. You can
+configure it for TCP/IP, add it to ax25d and run NetRom or Rose over it
+as you please.
+<P>
+<H3>Creating a SoundModem device.</H3>
+
+<P><B>Kernel Compile Options</B>:
+<BLOCKQUOTE><CODE>
+<PRE>
+Code maturity level options  --->
+    [*] Prompt for development and/or incomplete code/drivers
+General setup  --->
+    [*] Networking support
+Network device support  --->
+    [*] Network device support
+    ...
+    [*] Radio network interfaces
+    [*] Soundcard modem driver for AX.25
+    [?] Soundmodem support for Soundblaster and compatible cards
+    [?] Soundmodem support for WSS and Crystal cards
+    [?] Soundmodem support for 1200 baud AFSK modulation
+    [?] Soundmodem support for 4800 baud HAPN-1 modulation
+    [?] Soundmodem support for 9600 baud FSK G3RUH modulation
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Thomas Sailer has built a new driver for the kernel that allows you to
+use your soundcard as a modem. Connect your radio directly to your
+soundcard to play packet! Thomas recommends at least a 486DX2/66 if you
+want to use this software as all of the digital signal processing is done
+by the main CPU.
+<P>The driver currently emulates 1200 bps AFSK, 4800 HAPN and 9600 FSK (G3RUH
+compatible) modem types. The only sound cards currently supported are
+SoundBlaster and WindowsSoundSystem Compatible models. The sound cards require
+some circuitry to help them drive the Push-To-Talk circuitry, and information
+on this is available from
+<A HREF="http://www.ife.ee.ethz.ch/~sailer/pcf/ptt_circ/ptt.html">Thomas's SoundModem PTT circuit web page</A>. There are quite
+a few possible options, they are: detect the sound output from the soundcard,
+or use output from a parallel port, serial port or midi port. Circuit examples
+for each of these are on Thomas's site.
+<P>The SoundModem driver creates network devices called:
+<CODE>sm0</CODE>, <CODE>sm1</CODE>, <CODE>sm2</CODE> etc when it is configured.
+<P><B>Note</B>: the SoundModem driver competes for the same resources as the
+Linux sound driver. So if you wish to use the SoundModem driver you must
+ensure that the Linux sound driver is not installed. You can of course
+compile them both as modules and insert and remove them as you wish.
+<P>
+<H3>Configuring the sound card.</H3>
+
+<P>The SoundModem driver does not initialise the sound card. The ax25-utils
+package includes a utility to do this called `<EM>setcrystal</EM>' that may
+be used for SoundCards based on the Crystal chipset. If you have some other
+card then you will have to use some other software to initialise it.
+Its syntax is fairly straightforward:
+<BLOCKQUOTE><CODE>
+<PRE>
+setcrystal [-w wssio] [-s sbio] [-f synthio] [-i irq] [-d dma] [-c dma2]
+</PRE>
+</CODE></BLOCKQUOTE>
+
+So, for example, if you wished to configure a soundblaster card at i/o
+base address 0x388, irq 10 and DMA 1 you would use:
+<BLOCKQUOTE><CODE>
+<PRE>
+# setcrystal -s 0x388 -i 10 -d 1
+</PRE>
+</CODE></BLOCKQUOTE>
+
+To configure a WindowSoundSystem card at i/o base address 0x534, irq 5, DMA 3
+you would use:
+<BLOCKQUOTE><CODE>
+<PRE>
+# setcrystal -w 0x534 -i 5 -d 3
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>The <CODE>[-f synthio]</CODE> parameter is the set the synthesiser address, and the
+<CODE>[-c dma2]</CODE> parameter is to set the second DMA channel to allow full duplex
+operation.
+<P>
+<H3>Configuring the SoundModem driver.</H3>
+
+<P>When you have configured the soundcard you need to configure the driver
+telling it where the sound card is located and what sort of modem you wish
+it to emulate.
+<P>The <EM>sethdlc</EM> utility allows you to configure the driver with these
+parameters, or, if you have only one soundcard installed you may specify
+the parameters on the <EM>insmod</EM> commmand line when you load the
+SoundModem module.
+<P>For example, a simple configuration, with one SoundBlaster soundcard
+configured as described above emulating a 1200 bps modem:
+<BLOCKQUOTE><CODE>
+<PRE>
+# insmod hdlcdrv
+# insmod soundmodem mode="sbc:afsk1200" iobase=0x220 irq=5 dma=1
+</PRE>
+</CODE></BLOCKQUOTE>
+
+This is not really the preferred way to do it. The <EM>sethdlc</EM> utility
+works just as easily with one device as with many.
+<P>The <EM>sethdlc</EM> man page has the full details, but a couple of examples
+will illustrate the most important aspects of this configuration. The
+following examples assume you have already loaded the SoundModem modules
+using:
+<BLOCKQUOTE><CODE>
+<PRE>
+# insmod hdlcdrv
+# insmod soundmodem
+</PRE>
+</CODE></BLOCKQUOTE>
+
+or that you compiled the kernel with the driver inbuilt.
+<P>Configure the driver to support the WindowsSoundSystem card we configured
+above to emulate a G3RUH 9600 compatible modem as device <CODE>sm0</CODE> using a
+parallel port at 0x378 to key the Push-To-Talk:
+<BLOCKQUOTE><CODE>
+<PRE>
+# sethdlc -p -i sm0 mode wss:fsk9600 io 0x534 irq 5 dma 3 pario 0x378
+</PRE>
+</CODE></BLOCKQUOTE>
+
+Configure the driver to support the SoundBlaster card we configured above
+to emulate a 4800 bps HAPN modem as device <CODE>sm1</CODE> using the serial port
+located at 0x2f8 to key the Push-To-Talk:
+<BLOCKQUOTE><CODE>
+<PRE>
+# sethdlc -p -i sm1 mode sbc:hapn4800 io 0x388 irq 10 dma 1 serio 0x2f8
+</PRE>
+</CODE></BLOCKQUOTE>
+
+Configure the driver to support the SoundBlaster card we configured above
+to emulate a 1200 bps AFSK modem as device <CODE>sm1</CODE> using the serial port
+located at 0x2f8 to key the Push-To-Talk:
+<BLOCKQUOTE><CODE>
+<PRE>
+# sethdlc -p -i sm1 mode sbc:afsk1200 io 0x388 irq 10 dma 1 serio 0x2f8
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H3>Configuring the AX.25 channel access parameters.</H3>
+
+<P>The AX.25 channel access parameters are the equivalent of the KISS ppersist,
+txdelay and slottime type parameters. You use the <EM>sethdlc</EM> utility for
+this as well.
+<P>Again the <EM>sethdlc</EM> man page is the source of the most complete information
+but another example of two won't hurt:
+<P>Configure the <CODE>sm0</CODE> device with TxDelay of 100 mS, SlotTime of 50mS,
+PPersist of 128 and full duplex:
+<BLOCKQUOTE><CODE>
+<PRE>
+# sethdlc -i sm0 -a txd 100 slot 50 ppersist 128 full
+</PRE>
+</CODE></BLOCKQUOTE>
+
+Note that the timing values are in milliseconds.
+<P>
+<H3>Setting the audio levels and tuning the driver.</H3>
+
+<P>It is very important that the audio levels be set correctly for any radio
+based modem to work. This is equally true of the SoundModem.
+Thomas has developed some utility programs that make this task easier.
+They are called <EM>smdiag</EM> and <EM>smmixer</EM>.
+<P>
+<DL>
+<DT><B><EM>smdiag</EM></B><DD><P>provides two types of display, either an oscilloscope
+type display or an eye pattern type display.
+<DT><B><EM>smmixer</EM></B><DD><P>allows you to actually adjust the transmit and
+receive audio levels.
+</DL>
+
+To start the <EM>smdiag</EM> utility in 'eye' mode for the SoundModem device
+<CODE>sm0</CODE> you would use:
+<BLOCKQUOTE><CODE>
+<PRE>
+# smdiag -i sm0 -e
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>To start the <EM>smmixer</EM> utility for the SoundModem device <CODE>sm0</CODE> you would
+use:
+<BLOCKQUOTE><CODE>
+<PRE>
+# smmixer -i sm0
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H3>Configuring the Kernel AX.25 to use the SoundModem</H3>
+
+<P>The SoundModem driver creates standard network devices that the AX.25
+Kernel code can use. Configuration is much the same as that for a PI
+or PacketTwin card.
+<P>The first step is to configure the device with an AX.25 callsign.
+The <EM>ifconfig</EM> utility may be used to perform this.
+<BLOCKQUOTE><CODE>
+<PRE>
+# /sbin/ifconfig sm0 hw ax25 VK2KTJ-15 up
+</PRE>
+</CODE></BLOCKQUOTE>
+
+will assign the SoundModem device <CODE>sm0</CODE> the AX.25 callsign <CODE>VK2KTJ-15</CODE>.
+Alternatively you can use the <EM>axparms</EM> command, but you still need the
+<EM>ifconfig</EM> utility to bring the device up:
+<BLOCKQUOTE><CODE>
+<PRE>
+# ifconfig sm0 up
+# axparms -setcall sm0 vk2ktj-15
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>The next step is to create an entry in the <CODE>/etc/ax25/axports</CODE> file
+as you would for any other device. The entry in the <CODE>axports</CODE> file is
+associated with the network device you've configured by the callsign you
+configure. The entry in the <CODE>axports</CODE> file that has the callsign that
+you configured the SoundModem device with is the one that will be used to
+refer to it.
+<P>You may then treat the new AX.25 device as you would any other. You can
+configure it for TCP/IP, add it to ax25d and run NetRom or Rose over it
+as you please.
+<P>
+<H3>Creating a PI card device.</H3>
+
+<P><B>Kernel Compile Options</B>:
+<BLOCKQUOTE><CODE>
+<PRE>
+General setup  --->
+    [*] Networking support
+Network device support  --->
+    [*] Network device support
+    ...
+    [*] Radio network interfaces
+    [*] Ottawa PI and PI/2 support for AX.25
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>The PI card device driver creates devices named `<CODE>pi[0-9][ab]</CODE>'. The
+first PI card detected will be allocated `<CODE>pi0</CODE>', the second `<CODE>pi1</CODE>'
+etc. The `<CODE>a</CODE>' and `<CODE>b</CODE>' refer to the first and second physical interface
+on the PI card. If you have built your kernel to include the PI card driver,
+and the card has been properly detected then you can use the following
+command to configure the network device:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# /sbin/ifconfig pi0a hw ax25 VK2KTJ-15 up
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>This command would configure the first port on the first PI card detected
+with the callsign <CODE>VK2KTJ-15</CODE> and make it active. To use the device all
+you now need to do is to configure an entry into your <CODE>/etc/ax25/axports</CODE>
+file with a matching callsign/ssid and you will be ready to continue on.
+<P>
+<P>The PI card driver was written by
+<CODE>David Perry, &lt;dp@hydra.carleton.edu></CODE>
+<P>
+<H3>Creating a PacketTwin device.</H3>
+
+<P><B>Kernel Compile Options</B>:
+<BLOCKQUOTE><CODE>
+<PRE>
+General setup  --->
+    [*] Networking support
+Network device support  --->
+    [*] Network device support
+    ...
+    [*] Radio network interfaces
+    [*] Gracilis PackeTwin support for AX.25 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>The PacketTwin card device driver creates devices named `<CODE>pt[0-9][ab]</CODE>'.
+The first PacketTwin card detected will be allocated `<CODE>pt0</CODE>', the second
+`<CODE>pt1</CODE>' etc. The `<CODE>a</CODE>' and `<CODE>b</CODE>' refer to the first and second
+physical interface on the PacketTwin card. If you have built your kernel to
+include the PacketTwin card driver, and the card has been properly detected
+then you can use the following command to configure the network device:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# /sbin/ifconfig pt0a hw ax25 VK2KTJ-15 up
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>This command would configure the first port on the first PacketTwin card
+detected with the callsign <CODE>VK2KTJ-15</CODE> and make it active. To use the
+device all you now need to do is to configure an entry into your
+<CODE>/etc/ax25/axports</CODE> file with a matching callsign/ssid and you will
+be ready to continue on.
+<P>The PacketTwin card driver was written by
+<CODE>Craig Small VK2XLZ, &lt;csmall@triode.apana.org.au></CODE>.
+<P>
+<H3>Creating a generic SCC device.</H3>
+
+<P><B>Kernel Compile Options</B>:
+<BLOCKQUOTE><CODE>
+<PRE>
+General setup  --->
+    [*] Networking support
+Network device support  --->
+    [*] Network device support
+    ...
+    [*] Radio network interfaces
+    [*] Z8530 SCC KISS emulation driver for AX.25
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Joerg Reuter, DL1BKE, <CODE>jreuter@poboxes.com</CODE> has developed generic
+support for Z8530 SCC based cards. His driver is configurable to support a
+range of different types of cards and present an interface that looks like a
+KISS TNC so you can treat it as though it were a KISS TNC.
+<P>
+<H3>Obtaining and building the configuration tool package.</H3>
+
+<P>While the kernel driver is included in the standard kernel distribution,
+Joerg distributes more recent versions of his driver with the suite of
+configuration tools that you will need to obtain as well.
+<P>You can obtain the configuration tools package from:
+<P>
+<A HREF="http://www.rat.de/jr/">Joerg's web page</A><P>or:
+<P><B>db0bm.automation.fh-aachen.de</B>
+<BLOCKQUOTE><CODE>
+<PRE>
+/incoming/dl1bke/
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>or:
+<P><B>insl1.etec.uni-karlsruhe.de</B>
+<BLOCKQUOTE><CODE>
+<PRE>
+/pub/hamradio/linux/z8530/
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>or:
+<P><B>ftp.ucsd.edu</B>
+<BLOCKQUOTE><CODE>
+<PRE>
+/hamradio/packet/tcpip/linux
+/hamradio/packet/tcpip/incoming/
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>You will find multiple versions, choose the one that best suits the
+kernel you intend to use:
+<P>
+<PRE>
+z8530drv-2.4a.dl1bke.tar.gz   2.0.*
+z8530drv-utils-3.0.tar.gz    2.1.6 or greater
+</PRE>
+<P>
+<P>The following commands were what I used to compile and install the package
+for kernel version 2.0.30:
+<BLOCKQUOTE><CODE>
+<PRE>
+# cd /usr/src
+# gzip -dc z8530drv-2.4a.dl1bke.tar.gz | tar xvpofz -
+# cd z8530drv
+# make clean
+# make dep
+# make module         # If you want to build the driver as a module
+# make for_kernel     # If you want the driver to built into your kernel
+# make install
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>After the above is complete you should have three new programs installed
+in your <CODE>/sbin</CODE> directory: <EM>gencfg</EM>, <EM>sccinit</EM> and
+<EM>sccstat</EM>. It is these programs that you will use to configure the
+driver for your card.
+<P>You will also have a group of new special device files created in your
+<CODE>/dev</CODE> called <CODE>scc0</CODE>-<CODE>scc7</CODE>. These will be used
+later and will be the `KISS' devices you will end up using.
+<P>If you chose to 'make for_kernel' then you will need to recompile your
+kernel. To ensure that you include support for the z8530 driver you must be
+sure to answer `<CODE>Y</CODE>' to:
+`<CODE>Z8530 SCC kiss emulation driver for AX.25</CODE>' when asked during a
+kernel `<CODE>make config</CODE>'.
+<P>If you chose to 'make module' then the new <CODE>scc.o</CODE> will have been
+installed in the appropriate <CODE>/lib/modules</CODE> directory and you do
+not need to recompile your kernel. Remember to use the <EM>insmod</EM> command
+to load the module before your try and configure it.
+<P>
+<H3>Configuring the driver for your card.</H3>
+
+<P>The z8530 SCC driver has been designed to be as flexible as possible so as
+to support as many different types of cards as possible. With this flexibility
+has come some cost in configuration.
+<P>There is more comprehensive documentation in the package and you should
+read this if you have any problems. You should particularly look at
+<CODE>doc/scc_eng.doc</CODE> or <CODE>doc/scc_ger.doc</CODE> for more detailed
+information. I've paraphrased the important details, but as a result there
+is a lot of lower level detail that I have not included.
+<P>The main configuration file is read by the <EM>sccinit</EM> program and is
+called <CODE>/etc/z8530drv.conf</CODE>. This file is broken into two main stages:
+Configuration of the hardware parameters and channel configuration. After
+you have configured this file you need only add:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# sccinit
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>into the <CODE>rc</CODE> file that configures your network and the driver will
+be initialised according to the contents of the configuration file. You must
+do this before you attempt to use the driver.
+<P>
+<P>
+<H3>Configuration of the hardware parameters.</H3>
+
+<P>The first section is broken into stanzas, each stanza representing an 8530
+chip. Each stanza is a list of keywords with arguments. You may specify up
+to four SCC chips in this file by default. The <CODE>#define MAXSCC 4</CODE> in
+<CODE>scc.c</CODE> can be increased if you require support for more.
+<P>The allowable keywords and arguments are:
+<P>
+<DL>
+<DT><B>chip</B><DD><P>the <CODE>chip</CODE> keyword is used to separate stanzas. It will
+take anything as an argument. The arguments are not used.
+<DT><B>data_a</B><DD><P>this keyword is used to specify the address of the data
+port for the z8530 channel `A'. The argument is a hexadecimal number
+e.g. 0x300
+<DT><B>ctrl_a</B><DD><P>this keyword is used to specify the address of the control
+port for the z8530 channel `A'. The arguments is a hexadecimal number
+e.g. 0x304
+<DT><B>data_b</B><DD><P>this keyword is used to specify the address of the data
+port for the z8530 channel `B'. The argument is a hexadecimal number
+e.g. 0x301
+<DT><B>ctrl_b</B><DD><P>this keyword is used to specify the address of the control
+port for the z8530 channel `B'. The arguments is a hexadecimal number
+e.g. 0x305
+<DT><B>irq</B><DD><P>this keyword is used to specify the IRQ used by the 8530 SCC
+described in this stanza. The argument is an integer e.g. 5
+<DT><B>pclock</B><DD><P>this keyword is used to specify the frequency of the clock
+at the PCLK pin of the 8530. The argument is an integer frequency in Hz which
+defaults to 4915200 if the keyword is not supplied.
+<DT><B>board</B><DD><P>the type of board supporting this 8530 SCC. The argument is
+a character string. The allowed values are:
+<DL>
+<DT><B>PA0HZP</B><DD><P>the PA0HZP SCC Card
+<DT><B>EAGLE</B><DD><P>the Eagle card
+<DT><B>PC100</B><DD><P>the DRSI PC100 SCC card
+<DT><B>PRIMUS</B><DD><P>the PRIMUS-PC (DG9BL) card
+<DT><B>BAYCOM</B><DD><P>BayCom (U)SCC card
+</DL>
+<DT><B>escc</B><DD><P>this keyword is optional and is used to enable support for the
+Extended SCC chips (ESCC) such as the 8580, 85180, or the 85280. The argument
+is a character string with allowed values of `yes' or `no'. The default is
+`no'.
+<DT><B>vector</B><DD><P>this keyword is optional and specifies the address of the
+vector latch (also known as "intack port") for PA0HZP cards. There can be only
+one vector latch for all chips. The default is 0.
+<DT><B>special</B><DD><P>this keyword is optional and specifies the address of the
+special function register on several cards. The default is 0.
+<DT><B>option</B><DD><P>this keyword is optional and defaults to 0.
+</DL>
+<P>Some example configurations for the more popular cards are as follows:
+<P>
+<DL>
+<DT><B>BayCom USCC</B><DD><P>
+<BLOCKQUOTE><CODE>
+<PRE>
+chip    1
+data_a  0x300
+ctrl_a  0x304
+data_b  0x301
+ctrl_b  0x305
+irq     5
+board   BAYCOM
+#
+# SCC chip 2
+#
+chip    2
+data_a  0x302
+ctrl_a  0x306
+data_b  0x303
+ctrl_b  0x307
+board   BAYCOM
+</PRE>
+</CODE></BLOCKQUOTE>
+<DT><B>PA0HZP SCC card</B><DD><P>
+<BLOCKQUOTE><CODE>
+<PRE>
+chip 1
+data_a 0x153
+data_b 0x151
+ctrl_a 0x152
+ctrl_b 0x150
+irq 9
+pclock 4915200
+board PA0HZP
+vector 0x168
+escc no
+#
+#
+#
+chip 2
+data_a 0x157
+data_b 0x155
+ctrl_a 0x156
+ctrl_b 0x154
+irq 9
+pclock 4915200
+board PA0HZP
+vector 0x168
+escc no
+</PRE>
+</CODE></BLOCKQUOTE>
+<DT><B>DRSI SCC card</B><DD><P>
+<BLOCKQUOTE><CODE>
+<PRE>
+chip 1
+data_a 0x303
+data_b 0x301
+ctrl_a 0x302
+ctrl_b 0x300
+irq 7
+pclock 4915200
+board DRSI
+escc no
+</PRE>
+</CODE></BLOCKQUOTE>
+</DL>
+<P>If you already have a working configuration for your card under NOS, then
+you can use the <EM>gencfg</EM> command to convert the PE1CHL NOS driver
+commands into a form suitable for use in the z8530 driver configuration
+file.
+<P>To use <EM>gencfg</EM> you simply invoke it with the same parameters as you
+used for the PE1CHL driver in NET/NOS. For example:
+<BLOCKQUOTE><CODE>
+<PRE>
+# gencfg 2 0x150 4 2 0 1 0x168 9 4915200
+</PRE>
+</CODE></BLOCKQUOTE>
+
+will generate a skeleton configuration for the OptoSCC card.
+<P>
+<H3>Channel Configuration</H3>
+
+<P>The Channel Configuration section is where you specify all of the other
+parameters associated with the port you are configuring. Again this
+section is broken into stanzas. One stanza represents one logical port, and
+therefore there would be two of these for each one of the hardware parameters
+stanzas as each 8530 SCC supports two ports.
+<P>These keywords and arguments are also written to the <CODE>/etc/z8530drv.conf</CODE>
+file and must appear <B>after</B> the hardware parameters section.
+<P>Sequence is very important in this section, but if you stick with the suggested
+sequence it should work ok. The keywords and arguments are:
+<DL>
+<DT><B>device</B><DD><P>this keyword must be the first line of a port definition and
+specifies the name of the special device file that the rest of the
+configuration applies to. e.g. <CODE>/dev/scc0</CODE>
+<DT><B>speed</B><DD><P>this keyword specifies the speed in bits per second of the
+interface. The argument is an integer: e.g. <CODE>1200</CODE>
+<DT><B>clock</B><DD><P>this keyword specifies where the clock for the data will
+be sourced. Allowable values are:
+<DL>
+<DT><B>dpll</B><DD><P>normal halfduplex operation
+<DT><B>external</B><DD><P>MODEM supplies its own Rx/Tx clock
+<DT><B>divider</B><DD><P>use fullduplex divider if installed.
+</DL>
+<DT><B>mode</B><DD><P>this keyword specifies the data coding to be used. Allowable
+arguments are: <CODE>nrzi</CODE> or <CODE>nrz</CODE>
+<DT><B>rxbuffers</B><DD><P>this keyword specifies the number of receive buffers to
+allocate memory for. The argument is an integer, e.g. 8.
+<DT><B>txbuffers</B><DD><P>this keyword specifies the number of transmit buffers to
+allocate memory for. The argument is an integer, e.g. 8.
+<DT><B>bufsize</B><DD><P>this keyword specifies the size of the receive and transmit
+buffers. The arguments is in bytes and represents the total length of the
+frame, so it must also take into account the AX.25 headers and not just the
+length of the data field. This keyword is optional and default to <CODE>384</CODE>
+<DT><B>txdelay</B><DD><P>the KISS transmit delay value, the argument is an integer in mS.
+<DT><B>persist</B><DD><P>the KISS persist value, the argument is an integer.
+<DT><B>slot</B><DD><P>the KISS slot time value, the argument is an integer in mS.
+<DT><B>tail</B><DD><P>the KISS transmit tail value, the argument is an integer in mS.
+<DT><B>fulldup</B><DD><P>the KISS full duplex flag, the argument is an integer.
+<CODE>1</CODE>==Full Duplex, <CODE>0</CODE>==Half Duplex.
+<DT><B>wait</B><DD><P>the KISS wait value, the argument is an integer in mS.
+<DT><B>min</B><DD><P>the KISS min value, the argument is an integer in S.
+<DT><B>maxkey</B><DD><P>the KISS maximum keyup time, the argument is an integer in S.
+<DT><B>idle</B><DD><P>the KISS idle timer value, the argument is an integer in S.
+<DT><B>maxdef</B><DD><P>the KISS maxdef value, the argument is an integer.
+<DT><B>group</B><DD><P>the KISS group value, the argument is an integer.
+<DT><B>txoff</B><DD><P>the KISS txoff value, the argument is an integer in mS.
+<DT><B>softdcd</B><DD><P>the KISS softdcd value, the argument is an integer.
+<DT><B>slip</B><DD><P>the KISS slip flag, the argument is an integer.
+</DL>
+<P>
+<H3>Using the driver.</H3>
+
+<P>To use the driver you simply treat the <CODE>/dev/scc*</CODE> devices just as
+you would a serial tty device with a KISS TNC connected to it. For example,
+to configure Linux Kernel networking to use your SCC card you could use
+something like:
+<BLOCKQUOTE><CODE>
+<PRE>
+# kissattach -s 4800 /dev/scc0 VK2KTJ
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>You can also use NOS to attach to it in precisely the same way. From JNOS
+for example you would use something like:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+attach asy scc0 0 ax25 scc0 256 256 4800
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H3>The <EM>sccstat</EM> and <EM>sccparam</EM> tools.</H3>
+
+<P>To assist in the diagnosis of problems you can use the <EM>sccstat</EM>
+program to display the current configuration of an SCC device. To use it
+try:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# sccstat /dev/scc0
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>you will displayed a very large amount of information relating to the
+configuration and health of the <CODE>/dev/scc0</CODE> SCC port.
+<P>
+<P>The <EM>sccparam</EM> command allows you to change or modify a configuration
+after you have booted. Its syntax is very similar to the NOS <CODE>param</CODE>
+command, so to set the <CODE>txtail</CODE> setting of a device to 100mS you
+would use:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# sccparam /dev/scc0 txtail 0x8
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H3>Creating a BPQ ethernet device.</H3>
+
+<P><B>Kernel Compile Options</B>:                                                
+<BLOCKQUOTE><CODE>
+<PRE>
+                                                                 
+General setup  --->                                                         
+    [*] Networking support                                                  
+Network device support  --->                                                    
+    [*] Network device support                                              
+    ...                                                                         
+    [*] Radio network interfaces    
+    [*] BPQ Ethernet driver for AX.25
+</PRE>
+</CODE></BLOCKQUOTE>
+                                                            
+<P>Linux supports BPQ Ethernet compatibility. This enables you to run the AX.25
+protocol over your Ethernet LAN and to interwork your linux machine with
+other BPQ machines on the LAN.
+<P>The BPQ network devices are named `<CODE>bpq[0-9]</CODE>'. The `<CODE>bpq0</CODE>' device
+is associated with the `<CODE>eth0</CODE>' device, the `<CODE>bpq1</CODE>' device with the
+`<CODE>eth1</CODE>' device etc.
+<P>Configuration is quite straightforward. You firstly must have configured
+a standard Ethernet device. This means you will have compiled your kernel
+to support your Ethernet card and tested that this works. Refer to the
+<A HREF="Ethernet-HOWTO.html">Ethernet-HOWTO</A> for more information
+on how to do this.
+<P>To configure the BPQ support you need to configure the Ethernet device with
+an AX.25 callsign. The following command will do this for you:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# /sbin/ifconfig bpq0 hw ax25 vk2ktj-14 up
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Again, remember that the callsign you specify should match the entry in the
+<CODE>/etc/ax25/axports</CODE> file that you wish to use for this port.
+<P>
+<H3>Configuring the BPQ Node to talk to the Linux AX.25 support.</H3>
+
+<P>BPQ Ethernet normally uses a multicast address. The Linux implementation does
+not, and instead it uses the normal Ethernet broadcast address. The NET.CFG
+file for the BPQ ODI driver should therefore be modifified to look similar to
+this:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+LINK SUPPORT
+
+        MAX STACKS 1
+        MAX BOARDS 1
+
+LINK DRIVER E2000                    ; or other MLID to suit your card
+
+        INT 10                       ;
+        PORT 300                     ; to suit your card
+
+        FRAME ETHERNET_II
+
+        PROTOCOL BPQ 8FF ETHERNET_II ; required for BPQ - can change PID
+
+BPQPARAMS                            ; optional - only needed if you want
+                                     ; to override the default target addr
+
+        ETH_ADDR  FF:FF:FF:FF:FF:FF  ; Target address
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss6.2">6.2 Creating the <CODE>/etc/ax25/axports</CODE> file.</A>
+</H2>
+
+<P>The <CODE>/etc/ax25/axports</CODE> is a simple text file that you create with
+a text editor. The format of the <CODE>/etc/ax25/axports</CODE> file is as follows:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+portname  callsign  baudrate  paclen  window  description
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>where:
+<P>
+<DL>
+<DT><B>portname</B><DD><P>is a text name that you will refer to the port by.
+<DT><B>callsign</B><DD><P>is the AX.25 callsign you want to assign to the port.
+<DT><B>baudrate</B><DD><P>is the speed at which you wish the port to communicate with
+your TNC.
+<DT><B>paclen</B><DD><P>is the maximum packet length you want to configure the port
+to use for AX.25 connected mode connections.
+<DT><B>window</B><DD><P>is the AX.25 window (K) parameter. This is the same as the
+<CODE>MAXFRAME</CODE> setting of many tnc's.
+<DT><B>description</B><DD><P>is a textual description of the port.
+</DL>
+<P>In my case, mine looks like:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+radio    VK2KTJ-15       4800        256     2       4800bps 144.800 MHz
+ether    VK2KTJ-14       10000000    256     2       BPQ/ethernet device
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Remember, you must assign unique callsign/ssid to each AX.25 port you create.
+Create one entry for each AX.25 device you want to use, this includes KISS,
+Baycom, SCC, PI, PT and SoundModem ports. Each entry here will describe exactly
+one AX.25 network device. The entries in this file are associated with the
+network devices by the callsign/ssid. This is at least one good reason for
+requiring unique callsign/ssid.
+<P>
+<H2><A NAME="ss6.3">6.3 Configuring AX.25 routing.</A>
+</H2>
+
+<P>You may wish to configure default digipeaters paths for specific hosts.
+This is useful for both normal AX.25 connections and also IP based connections.
+The <EM>axparms</EM> command enables you to do this. Again, the <EM>man</EM> page
+offers a complete description, but a simple example might be:
+<BLOCKQUOTE><CODE>
+<PRE>
+# /usr/sbin/axparms -route add radio VK2XLZ VK2SUT
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>This command would set a digipeater entry for <CODE>VK2XLZ</CODE> via <CODE>VK2SUT</CODE> on
+the AX.25 port named <CODE>radio</CODE>.
+<P>
+<HR>
+<A HREF="AX25-HOWTO-7.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="AX25-HOWTO-5.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="AX25-HOWTO.html#toc6"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

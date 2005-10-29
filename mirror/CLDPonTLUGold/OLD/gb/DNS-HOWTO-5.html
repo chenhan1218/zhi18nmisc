@@ -1,0 +1,258 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="LinuxDoc-Tools 0.9.16">
+ <TITLE>DNS HOWTO 中译版: 真实领域的例子</TITLE>
+ <LINK HREF="DNS-HOWTO-6.html" REL=next>
+ <LINK HREF="DNS-HOWTO-4.html" REL=previous>
+ <LINK HREF="DNS-HOWTO.html#toc5" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="DNS-HOWTO-6.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="DNS-HOWTO-4.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="DNS-HOWTO.html#toc5"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<HR>
+<H2><A NAME="real-example"></A> <A NAME="s5">5.</A> <A HREF="DNS-HOWTO.html#toc5">真实领域的例子</A></H2>
+
+<P><B>这里我们列出一些<EM>真正</EM>的区域档案</B></P>
+<P>使用者建议我加上一个可以运作的真实例子，因为我对真正可运作的领域及虚拟范例之间差别解释的不够清楚．</P>
+<P>关于这个例子有件事必须声明: <EM>千万不要</EM>把它放到你的名称伺服器上!
+把它当作参考资料来阅读就好．如果你想做实验，用上面虚拟的例子．
+我经过 LAND-5 的 David Bullock 的同意才使用这个例子．这些档案的日期是 1996 年九月二十日，
+因此如果你现在查询 LAND-5 的名称伺服器可能会发现有所不同．
+还有，请记住，删去前面的空白 :-)</P>
+
+<H2><A NAME="ss5.1">5.1</A> <A HREF="DNS-HOWTO.html#toc5.1">/etc/named.boot (或 /var/named/named.boot)</A>
+</H2>
+
+<P>我们发现需要两行 <CODE>primary</CODE> 的反向区域: 一个是 <CODE>127.0.0</CODE>，另一个是 LAND-5 的子网路 <CODE>206.6.177</CODE>．
+还有一行给 <CODE>land-5.com</CODE> 的正向区域．还有一点要注意的是不像我在这篇文章里将档案放在 <CODE>pz</CODE> 目录里，
+他将它们放到叫做 <CODE>zone</CODE> 的目录．</P>
+<P>
+<HR>
+<PRE>
+;  Boot file for LAND-5 name server
+;
+directory /var/named
+;
+; type          domain                          source file or host
+cache           .                               root.cache
+primary         0.0.127.in-addr.arpa            zone/127.0.0
+primary         177.6.206.in-addr.arpa          zone/206.6.177
+primary         land-5.com                      zone/land-5.com
+</PRE>
+<HR>
+</P>
+
+<H2><A NAME="ss5.2">5.2</A> <A HREF="DNS-HOWTO.html#toc5.2">/var/named/root.cache</A>
+</H2>
+
+<P>记住这个档案是动态的，这边列出来的是旧的．你最好自己用 <CODE>dig</CODE> 产生一个新的．</P>
+<P>
+<HR>
+<PRE>
+; &lt;&lt;>> DiG 2.1 &lt;&lt;>> 
+;; res options: init recurs defnam dnsrch
+;; got answer:
+;; ->>HEADER&lt;&lt;- opcode: QUERY, status: NOERROR, id: 6
+;; flags: qr rd ra; Ques: 1, Ans: 9, Auth: 0, Addit: 9
+;; QUESTIONS:
+;;      ., type = NS, class = IN
+
+;; ANSWERS:
+ .       518357  NS      H.ROOT-SERVERS.NET.
+ .       518357  NS      B.ROOT-SERVERS.NET.
+ .       518357  NS      C.ROOT-SERVERS.NET.
+ .       518357  NS      D.ROOT-SERVERS.NET.
+ .       518357  NS      E.ROOT-SERVERS.NET.
+ .       518357  NS      I.ROOT-SERVERS.NET.
+ .       518357  NS      F.ROOT-SERVERS.NET.
+ .       518357  NS      G.ROOT-SERVERS.NET.
+ .       518357  NS      A.ROOT-SERVERS.NET.
+
+;; ADDITIONAL RECORDS:
+H.ROOT-SERVERS.NET.     165593  A       128.63.2.53
+B.ROOT-SERVERS.NET.     165593  A       128.9.0.107
+C.ROOT-SERVERS.NET.     222766  A       192.33.4.12
+D.ROOT-SERVERS.NET.     165593  A       128.8.10.90
+E.ROOT-SERVERS.NET.     165593  A       192.203.230.10
+I.ROOT-SERVERS.NET.     165593  A       192.36.148.17
+F.ROOT-SERVERS.NET.     299616  A       192.5.5.241
+G.ROOT-SERVERS.NET.     165593  A       192.112.36.4
+A.ROOT-SERVERS.NET.     165593  A       198.41.0.4
+
+;; Total query time: 250 msec
+;; FROM: land-5 to SERVER: default ---- 127.0.0.1
+;; WHEN: Fri Sep 20 10:11:22 1996
+;; MSG SIZE  sent: 17  rcvd: 312
+</PRE>
+<HR>
+</P>
+
+<H2><A NAME="ss5.3">5.3</A> <A HREF="DNS-HOWTO.html#toc5.3">/var/named/zone/127.0.0</A>
+</H2>
+
+<P>不过是基本的，不能省略的 SOA 记录，以及将 <CODE>127.0.0.1</CODE> 指向 <CODE>localhost</CODE> 的记录．
+两者都是必须的．不应有其它的东西在此档案中．这个档案可能永远不必更新，除非你的名称伺服器或管理人地址改变．</P>
+<P>
+<HR>
+<PRE>
+@               IN      SOA     land-5.com. root.land-5.com. (
+                                199609203       ; Serial
+                                28800   ; Refresh
+                                7200    ; Retry
+                                604800  ; Expire
+                                86400)  ; Minimum TTL
+                        NS      land-5.com.
+        
+1                       PTR     localhost.
+</PRE>
+<HR>
+</P>
+
+<H2><A NAME="ss5.4">5.4</A> <A HREF="DNS-HOWTO.html#toc5.4">/var/named/zone/land-5.com</A>
+</H2>
+
+<P>在这里我们看到这个必须的 SOA 记录，必要的 NS 记录．
+我们可以看到它有一个次要的名称伺服器于 <CODE>ns2.psi.net</CODE>．
+这也应该是必要的，<EM>总是</EM>保有一个次要的伺服器做为备份．
+我们还看到做为 LAND-5 负责所有不同服务的主机，它以许多的 CNAME 记录做到这点
+(另一个做法是用 A 记录)．</P>
+<P>就像你从 SOA 记录看到的一样，区域档案以 <CODE>land-5.com</CODE> 开始，管理人是 <CODE>root@land-5.com</CODE>．
+序号(serial)以 yyyymmdd 的格式加上当天的号码; 它可能是 1996 年九月二十号那天的第六个版本的区域档案．
+请记住序号<EM>必须</EM>单调地递增，这里它只用<EM>一位</EM>数字表示当天的号码，
+因此在编辑九次之后他必须等到明天才能再编辑这个档案．[<CODE>译注</CODE>]
+因此应该考虑用两位数字．
+<BLOCKQUOTE><CODE>
+<DL>
+<DT><B>[译注]</B><DD><P>读者可能会奇怪为什么不能用 1996092010 ? 这个数字也是递增的，所以当然可以．
+但到了明天第一次编档案时该用什么呢? 如果用 199609211，那么这个数字就比 1996092010 要小了．
+这样会有麻烦．因此作者建议应用两位数字，如 1996092006． </P>
+</DL>
+</CODE></BLOCKQUOTE>
+</P>
+<P>
+<HR>
+<PRE>
+@       IN      SOA     land-5.com. root.land-5.com. (
+                        199609206       ; serial, todays date + todays serial #
+                        10800           ; refresh, seconds
+                        7200            ; retry, seconds
+                        10800           ; expire, seconds
+                        86400 )         ; minimum, seconds
+                NS      land-5.com.
+                NS      ns2.psi.net.
+                MX      10 land-5.com.  ; Primary Mail Exchanger
+
+localhost       A       127.0.0.1
+
+router          A       206.6.177.1
+        
+land-5.com.     A       206.6.177.2
+ns              CNAME   land-5.com.
+ftp             CNAME   land-5.com.
+www             CNAME   land-5.com.
+mail            CNAME   land-5.com.
+news            CNAME   land-5.com.
+
+funn            A       206.6.177.3
+illusions       CNAME   funn.land-5.com.
+@               TXT     "LAND-5 Corporation"
+
+;
+;       Workstations
+;
+ws_177200       A       206.6.177.200
+                MX      10 land-5.com.   ; Primary Mail Host
+ws_177201       A       206.6.177.201
+                MX      10 land-5.com.   ; Primary Mail Host
+ws_177202       A       206.6.177.202
+                MX      10 land-5.com.   ; Primary Mail Host
+ws_177203       A       206.6.177.203
+                MX      10 land-5.com.   ; Primary Mail Host
+ws_177204       A       206.6.177.204
+                MX      10 land-5.com.   ; Primary Mail Host
+ws_177205       A       206.6.177.205
+                MX      10 land-5.com.   ; Primary Mail Host
+; {Many repetitive definitions deleted - SNIP}
+ws_177250       A       206.6.177.250
+                MX      10 land-5.com.   ; Primary Mail Host
+ws_177251       A       206.6.177.251
+                MX      10 land-5.com.   ; Primary Mail Host
+ws_177252       A       206.6.177.252
+                MX      10 land-5.com.   ; Primary Mail Host
+ws_177253       A       206.6.177.253
+                MX      10 land-5.com.   ; Primary Mail Host
+ws_177254       A       206.6.177.254
+                MX      10 land-5.com.   ; Primary Mail Host
+</PRE>
+<HR>
+</P>
+<P>另一件值得注意的事所有的工作站都没有个别的名称，而是用一开头加上最后两位的 IP 数字．
+用这样的惯例可以大量地简化维护工作，但可能有点不方便，而且，事实上可能是你的客户不满的来源．</P>
+
+<H2><A NAME="ss5.5">5.5</A> <A HREF="DNS-HOWTO.html#toc5.5">/var/named/zone/206.6.177</A>
+</H2>
+
+<P>我将在后面说明这个档案．</P>
+<P>
+<HR>
+<PRE>
+@               IN      SOA     land-5.com. root.land-5.com. (
+                                199609206       ; Serial
+                                28800   ; Refresh
+                                7200    ; Retry
+                                604800  ; Expire
+                                86400)  ; Minimum TTL
+                        NS      land-5.com.
+                        NS      ns2.psi.net.
+;
+;       Servers
+;
+1       PTR     router.land-5.com.
+2       PTR     land-5.com.
+3       PTR     funn.land-5.com.
+;
+;       Workstations
+;
+200     PTR     ws_177200.land-5.com.
+201     PTR     ws_177201.land-5.com.
+202     PTR     ws_177202.land-5.com.
+203     PTR     ws_177203.land-5.com.
+204     PTR     ws_177204.land-5.com.
+205     PTR     ws_177205.land-5.com.
+; {Many repetitive definitions deleted - SNIP}
+250     PTR     ws_177250.land-5.com.
+251     PTR     ws_177251.land-5.com.
+252     PTR     ws_177252.land-5.com.
+253     PTR     ws_177253.land-5.com.
+254     PTR     ws_177254.land-5.com.
+</PRE>
+<HR>
+</P>
+<P>反向区域似乎是整个设定中最让人头痛的部份．它是在你有机器的 IP 数字时查询机器名称用的．
+例如: 你有一部 irc 伺服器接受 irc 客户端的连线．
+但你是挪威的伺服器因此你只希望接受来自挪威及其它斯堪地那维亚国家的连线．
+当你接到来自客户端的连线时 C 程式库能够告诉你连线机器的 IP 位址，因为客户端的 IP 数字是包含在传入的网路封包中的．
+然后你可以呼叫一函式 <CODE>gethostbyaddr</CODE> 以给定的 IP 查询机器名称．
+<CODE>gethostbyaddr</CODE> 函式会向 DNS 询问，DNS 就会出去查询这台机器名称．
+假设客户端来自 <CODE>ws_177200.land-5.com</CODE>，C 程式库提供给 irc 伺服器的 IP 是 <CODE>206.6.177.200</CODE>．
+为找出机器的名称我们要查询 <CODE>200.177.6.206.in-addr.arpa</CODE>．DNS 伺服器首先找到负责 <CODE>arpa.</CODE> 的伺服器．
+然后找到 <CODE>in-addr.arpa.</CODE> 的伺服器，再来是反过来的 <CODE>206</CODE>，然后是 <CODE>6</CODE>，
+最后找到在 LAND-5 负责 <CODE>177.6.206.in-addr.arpa</CODE> 区域的伺服器．
+由此我们得到 <CODE>200.177.6.206.in-addr.arpa</CODE> 的答案是 '<CODE>PTR ws_177200.land-5.com</CODE>' 记录，
+意指拥有 IP <CODE>206.6.177.200</CODE> 的名称是 <CODE>ws_177200.land-5.com</CODE>．
+不过就像在解释 <CODE>prep.ai.mit.edu</CODE> 如何查询时所说，这过程稍微有点不对．</P>
+<P>回到 irc 伺服器的例子．irc 伺服器只接再来自斯堪地那维亚国家的连线，也就是，
+*.no, *.se, *.dk．<CODE>ws_177200.land-5.com</CODE> 这个名字显然并不符合任何这些．
+因此伺服器会拒绝连线．如果<EM>没有</EM>经由 <CODE>in-addr.arpa</CODE> 区域到 <CODE>206.2.177.200</CODE> 的反向对应，
+伺服器将无法查到机器名称而将会拿 <CODE>206.2.177.200</CODE> 来和 *.no, *.se 及 *.dk 比较，当然找不到符合的．</P>
+<P>有些人会告诉你反向对应查询只对伺服器重要，或是一点也不重要．
+当然不是: 许多 ftp, news, irc 甚至 http 伺服器将<EM>不</EM>接受无法查到名称的机器连线．
+因此事实上机器的反向名称对应是<EM>必须</EM>的．</P>
+
+<HR>
+<A HREF="DNS-HOWTO-6.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="DNS-HOWTO-4.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="DNS-HOWTO.html#toc5"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

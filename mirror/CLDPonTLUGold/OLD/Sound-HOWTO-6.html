@@ -1,0 +1,732 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>The Linux Sound HOWTO -- Linux 音效指引: 常見問題與解答</TITLE>
+ <LINK HREF="Sound-HOWTO-7.html" REL=next>
+ <LINK HREF="Sound-HOWTO-5.html" REL=previous>
+ <LINK HREF="Sound-HOWTO.html#toc6" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Sound-HOWTO-7.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Sound-HOWTO-5.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Sound-HOWTO.html#toc6"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s6">6. 常見問題與解答</A></H2>
+
+<P>
+<P>
+<P>這一節回答經常在Usenet討論區及通信論壇常被問到的問題。
+<P>
+<P>可以在OSS音效驅動程式的網站看到更多問題的解答。
+<P>
+<H2><A NAME="ss6.1">6.1 這一堆音效設備檔各代表什麼?</A>
+</H2>
+
+<P>
+<P>
+<P>以下是最標準的設備檔檔名，雖然有些 Linux 安裝套件可能用不太一樣的名稱。
+<P>
+<DL>
+<DT><B>/dev/audio</B><DD><P>一般是連到 <CODE>/dev/audio0</CODE>
+<P>
+<DT><B>/dev/audio0</B><DD><P>和Sun工作站相容的聲訊設備 (只作了部份，並不支援 Sun 的
+ioctl 介面，只有 u-law 編碼)
+<P>
+<DT><B>/dev/audio1</B><DD><P>第二個音訊設備 (如果音效卡支援，或不只有一張音效卡的話)
+<P>
+<DT><B>/dev/dsp</B><DD><P>一般連到 <CODE>/dev/dsp0</CODE>
+<P>
+<DT><B>/dev/dsp0</B><DD><P>第壹數位取樣設備
+<P>
+<DT><B>/dev/dsp1</B><DD><P>第貳數位取樣設備
+<P>
+<DT><B>/dev/mixer</B><DD><P>通常連結到 <CODE>/dev/mixer0</CODE>
+<P>
+<DT><B>/dev/mixer0</B><DD><P>第壹混音器
+<P>
+<DT><B>/dev/mixer1</B><DD><P>第貳混音器
+<P>
+<DT><B>/dev/music</B><DD><P>高階編曲器介面
+<P>
+<DT><B>/dev/sequencer</B><DD><P>低階 MIDI，FM，及 GUS 存取用
+<P>
+<DT><B>/dev/sequencer2</B><DD><P>通常連結到 <CODE>/dev/music</CODE>
+<P>
+<DT><B>/dev/midi00</B><DD><P>第壹原生(raw)MIDI埠
+<P>
+<DT><B>/dev/midi01</B><DD><P>第貳原生MIDI埠
+<P>
+<DT><B>/dev/midi02</B><DD><P>第參原生MIDI埠
+<P>
+<DT><B>/dev/midi03</B><DD><P>第肆原生MIDI埠
+<P>
+<DT><B>/dev/sndstat</B><DD><P>讀取時，顯示音效驅動程式的狀態(/proc/sound
+也是一樣的)
+<P>
+</DL>
+<P>
+<P>PC喇叭驅動程式提供以下設備:
+<P>
+<DL>
+<DT><B>/dev/pcaudio</B><DD><P>和 /dev/audio 同樣
+<DT><B>/dev/pcsp</B><DD><P>和 /dev/dsp 一樣
+<DT><B>/dev/pcmixer</B><DD><P>和 /dev/mixer 一樣
+</DL>
+<P>
+<H2><A NAME="ss6.2">6.2 怎樣播放音效檔案?</A>
+</H2>
+
+<P>
+<P>
+<P>Sun 工作站的音效檔(.au)可以丟到 /dev/audio 來放出，
+原始取樣檔可以丟到 /dev/dsp，雖然這樣一般來說會產生很差的輸出。
+使用像 <CODE>play</CODE> 這樣的程式比較好，而且還能辨別音效檔格式，
+設定正確的取樣率等。
+<P>
+<P>使用像 wavplay 或 vplay (在 snd-util 套件中)的程式播放 WAV 檔是最好的了，
+然而它們無法辨識 Microsoft ADPCM壓縮過的 WAV 檔。 同時，舊版的 play
+(在 Lsox 套件中)對 16 位元的 WAV 檔處理得並不好。
+<P>
+<P>在 snd-util 中的 splay 命令如果以手動輸入適切的參數，可以用來播放多數音效檔。
+<P>
+<H2><A NAME="ss6.3">6.3 怎樣錄製音效檔?</A>
+</H2>
+
+<P>
+<P>
+<P>可以從 /dev/audio 或 /dev/dsp 中讀取取樣過的資料，
+可以轉向到檔案去。 像 <CODE>vrec</CODE> 這樣的程式可以較簡單地控制取樣率及時間等。
+您也需要混音器，以便選擇想要的輸入來源。
+<P>
+<H2><A NAME="ss6.4">6.4 我可以有不只一片音效卡嗎?</A>
+</H2>
+
+<P>
+<P>
+<P>現在的音效驅動程式允許您裝好幾片聲霸卡，聲霸卡 Pro，聲霸卡 16，MPU-401 或 MSS 
+卡。  裝兩片聲霸卡是可能的，不過要手動編輯 local.h，
+定義SB2_BASE，SB2_IRQ，SB2_DMA 及 SB2_DMA2(有些情形下才要)。 
+也可以同時裝一片聲霸卡及一片 PAS16。
+<P>
+<P>若是您用make config來設定較新的2.0.x版核心的音效的話，您應該編輯/usr/include/linux/autoconf.h而非local.h。 您會看到幾行:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#define SBC_BASE 0x220
+#define SBC_IRQ (5)
+#define SBC_DMA (1)
+#define SB_DMA2 (5)
+#define SB_MPU_BASE 0x0
+#define SB_MPU_IRQ (-1)
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>在它們後面加入幾行(數值依照您的系統設定)
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#define SB2_BASE 0x330
+#define SB2_IRQ (7)
+#define SB2_DMA (2)
+#define SB2_DMA2 (2)
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>以下驅動程式不准您裝多片卡:
+<P>
+<UL>
+<LI>GUS (驅動程式限制)</LI>
+<LI>MAD16 (硬體限制)</LI>
+<LI>AudioTrix Pro (硬體限制)</LI>
+<LI>CS4232 (硬體限制)</LI>
+</UL>
+<P>
+<H2><A NAME="ss6.5">6.5 音效設備發生錯誤: No such file or directory</A>
+</H2>
+
+<P>
+<P>
+<P>您要先建立設備檔。 請參見前面建立設備檔的部份。 如果您確實有設備檔，
+檢查主編號及次編號是否正確。 (一些舊一點的 CD-ROM Linux 
+安裝套件可能不會在安裝時建立正確的設備檔) 
+<P>
+<H2><A NAME="ss6.6">6.6 音效設備發生錯誤: No such device</A>
+</H2>
+
+<P>
+<P>
+<P>您的核心並不支援音效驅動程式，或是I/O位址設定和硬體不一致。 檢查您是否用新造的
+核心開機，並確認其設定和硬體是一致的。
+<P>
+<H2><A NAME="ss6.7">6.7 音效設備發生錯誤: No space left on device</A>
+</H2>
+
+<P>
+<P>
+<P>如果您沒有建立必要的設備檔，就把資料丟進 /dev/audio 或
+/dev/dsp，就會發生這種情況。 這時這些"設備檔"其實只是普通檔案，
+而且把您的磁碟塞滿了。 您必須照本文件中<EM>建立設備檔</EM>
+這一小節的指引去執行那個命令稿。
+<P>
+<P>在 Linux 2.0 或之後，當設備開啟，系統卻沒有足夠的 RAM 時亦會發生。 
+對每個 DMA 通道，音效驅動程式至少需要兩頁 (8K) 連續記憶體區塊。 
+這種情型在不足 16M 的 RAM 或已經啟動很久的系統上可能發生。 
+在再開啟設備檔以前，也許可以先編譯及執行以下的 C 程式，以空出一些 RAM 出來。
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+main() {
+  int i;
+  char mem[500000];
+  for (i = 0; i &lt; 500000; i++)
+    mem[i] = 0;
+  exit(0);
+}
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss6.8">6.8 音效設備發生錯誤: Device busy</A>
+</H2>
+
+<P>
+<P>
+<P>一個音效設備一次只能給一個程序用。 在這問題中，
+最可能的情形就是有別的程序正在使用這個設備。 
+確定的方法之一是用 <CODE>fuser</CODE> 命令:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+% fuser -v /dev/dsp
+/dev/dsp:             USER       PID ACCESS COMMAND
+                      tranter    265 f....  tracker
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>在上例中，<CODE>fuser</CODE> 命令顯示 265 號程序開啟了該設備。 
+可以選擇等它完成或把它砍掉，這樣音效設備就又能使用了。
+您應該以 root 身份執行 <CODE>fuser</CODE> 命令，這樣才會列出除了您以外的使用者。
+<P>
+<H2><A NAME="ss6.9">6.9 還是逃不了'device busy'的錯誤!</A>
+</H2>
+
+<P>
+<P>
+<P>根據 Brian Gough 的說法，使用一號 DMA 通道的聲霸卡會和同樣也佔用 DMA 1 的
+QIC-02 磁帶機驅動程式相衝，造成 "device busy" 錯誤。 如果您使用FTAPE，
+您可能有加進這個磁帶的驅動程式。 根據 FTAPE-HOWTO，QIC-02 驅動程式在使用 FTAPE
+時不是必要的; 只有 QIC-117 才必要。 重造核心，使用 QIC-117 驅動程式，
+取消 QIC-02，這樣 FTAPE 及音效驅動程式就能共存了。
+<P>
+<H2><A NAME="ss6.10">6.10 音效檔放到一半就停了</A>
+</H2>
+
+<P>
+<P>
+<P>這種症狀，通常是先播放一秒左右，然後完全停止，或印出 "missing IRQ"
+或 "DMA timeout" 訊息。 八成是您的 IRQ 或 DMA 設錯了。 核對一下，您在核心中
+的設定是不是和硬體跳線的一樣，而且並沒有和別的卡相衝。
+<P>
+<P>另一種症狀是聲音一直重覆。 這通常導因於 IRQ 衝突。
+<P>
+<H2><A NAME="ss6.11">6.11 播放 MOD 檔斷斷續續</A>
+</H2>
+
+<P>
+<P>
+<P>要播放MOD檔，需要可觀的 CPU 能力。 
+您可能跑太多程式導致系統反應過慢，無法及時放音。 有下面幾種解法:
+<P>
+<UL>
+<LI>用較低的取樣率，或只放單聲道</LI>
+<LI>把其它執行中程式幹掉</LI>
+<LI>買更快的電腦</LI>
+<LI>買更強的音效卡(像 Gravis UltraSound)</LI>
+</UL>
+<P>
+<P>如果您有用 Gravis UltraSound 音效卡，您應該使用專為 GUS 設計的 MOD 播放程式
+(如 <CODE>gmod</CODE>)
+<P>
+<H2><A NAME="ss6.12">6.12 編譯音效軟體時出錯</A>
+</H2>
+
+<P>
+<P>
+<P>1.0c版以後和以前的音效驅動程式用完全不同且不相容的 <CODE>ioctl()</CODE> 方式。
+抓新版的原始碼，或做必要改變，把它移植到適合新版驅動程式用。
+詳見音效驅動程式的 <CODE>Readme</CODE> 檔。
+<P>
+<P>也請確定編譯應用程式時，您使用最新的 soundcard.h 及
+ultrasound.h。 請見本文開頭處裡的安裝指引。
+<P>
+<H2><A NAME="ss6.13">6.13 以前跑很好的軟體，卻出現 SEGV 錯誤</A>
+</H2>
+
+<P>
+<P>
+<P>這和上個問題可能是一樣的。
+<P>
+<H2><A NAME="ss6.14">6.14 音效驅動程式有何已知的限制及 bug?</A>
+</H2>
+
+<P>
+<P>
+<P>請看核心音效驅動程式裡的檔案。
+<P>
+<H2><A NAME="ss6.15">6.15 關於音效驅動程式的 ioctl 等，哪裡有記載?</A>
+</H2>
+
+<P>
+<P>目前除原始碼以外最佳的文件在 4Front Technologies 的網站
+<A HREF="http://www.opensound.com">http://www.opensound.com</A>。 另一個來源是 <EM>Linux Multimedia
+Guide</EM>，在參考文獻那一章有詳述。
+<P>
+<H2><A NAME="ss6.16">6.16 要完全平順地錄放音，需要多強的CPU才能辦到?</A>
+</H2>
+
+<P>
+<P>
+<P>這問題不好回答，它取決於:
+<P>
+<UL>
+<LI>使用 PCM 取樣還是 FM 合成</LI>
+<LI>取樣率及樣本大小</LI>
+<LI>用哪個程式錄放音</LI>
+<LI>音效卡硬體</LI>
+<LI>磁碟傳輸速率，CPU 時脈頻率，快取大小等</LI>
+</UL>
+<P>
+<P>一般來說，任何 386 以上機器應該都可以在 8 位元音效卡上播放音效，或用 FM 
+合成放音樂。
+<P>
+<P>然而，放 MOD 檔需要可觀的 CPU 資源。 一些實驗性的測量顯示，要以 44KHz 播放，
+要消耗一顆 486/50 CPU 的 40% 能力; 386/25 幾乎不可能放比 22KHz 更高的取樣率。
+(以8位元音效卡，如聲霸卡，所測得) 一些像 Gravis UltraSound
+的卡硬體提供更多功能，
+需要的CPU資源就較少。
+<P>
+<P>這些是假設電腦沒有在跑其它耗CPU能力的工作。
+<P>
+<P>如果您的電腦有數學輔助處理器 (或 CPU 內部有 FPU)，
+用像 <CODE>sox</CODE> 這樣的程式做音效轉換或增加效果會快不少。
+雖然核心驅動程式本身是沒有用到浮點運算。
+<P>
+<H2><A NAME="ss6.17">6.17 PAS16 和 Adaptec 1542 SCSI 卡的搭配問題</A>
+</H2>
+
+<P>
+<P>
+<P>(以下解釋由<CODE>seeker@indirect.com</CODE>提供)
+<P>
+<P>Linux 只能認出在 330(預設值)或 334 位址上的 1542，而 PAS 只能將 MPU-401
+模擬設在 330。 即使您用軟體消去 MPU-401 功能，如果這硬體還在這個預設位址上，
+仍然會和 1542 相衝。 把 1542 移到 334 就什麼都解決了。
+<P>
+<P>另外，1542 和 PAS-16 都有用到 16 位元 DMA，所以如果您一面以 16 位元，44KHz
+立體聲錄音，一面將檔案存到掛在 1542 上的硬碟的話，麻煩就來了。 兩組 DMA
+會吃同一塊記憶體，導致 RAM 沒有時間充電，然後就會出現致命的 
+"PARITY ERROR - SYSTEM HALTED" 的訊息，您甚至還來不及知道怎麼當的。
+更糟糕的是有些 QIC-117 磁帶的協力廠商建議設定匯流排開/關時間，
+使 1542 佔匯流排更久。 從 Adaptec 的 BBS 或 Internet 的其它地方抓
+SCSISEL.EXE 程式，減少 BUS ON 時間或增加 BUS OFF 時間，直到這問題完全消失。
+SCSISEL 會改變 EEPROM 的設定，所以比在 CONFIG.SYS 中載入的 DOS 驅動程式效力更
+持久，開機就直接進 Linux 也有效(不像 DOS 修補程式)。 又解決了一個問題。
+<P>
+<P>最後一個問題 - 舊的 Symphony 晶片組劇烈地降低 I/O 周期時間，加快匯流排存取。
+我所玩過的各種卡中，除了 PAS-16 以外，沒有一片卡在降低周期時有出現過
+<EM>任何</EM>問題。 Media Vision 的 BBS 有個 SYMPFIX.EXE 可以將 Symphony
+的匯流排控制器的診斷位元互調，治好這種症狀，但這並不能算有力的保證。 您也許要:
+<P>
+<UL>
+<LI>找主機板經銷商，換掉舊版的晶片</LI>
+<LI>換主機板，或</LI>
+<LI>買別牌的音效卡。</LI>
+</UL>
+<P>
+<P>Young Microsystems 願意以 $30(美金)的代價為他們製的板子升級; 
+如果您能講出誰製的或誰進口的板子，別的廠商也可能會這樣(祝您好運)。 
+據我所知這問題出於 ProAudio 的匯流排介面晶片; 
+<EM>沒有人</EM>會花 $120 買音效卡，然後把它插在 6MHz 的 AT 上。 
+多數人會升級到 25-40MHz 的 386/486，而如果設計正確，
+至少能承受 12MHz 以上的匯流排頻率。 講完了，下台一鞠躬。
+<P>
+<P>第一個問題和您的主機板晶片組，匯流排速率，及其它 BIOS 設定，還有月亮的圓缺有關。
+(?)
+第二個問題牽涉到您的記憶體充電方式 (隱藏式或同步式)，1542 DMA 頻率及匯流排 
+I/O 速率(可能有關)。 第三個問題，可以打電話到 Media Vision，問他們哪些
+Symphony 晶片組的慢速設計和他們的卡不相容。 在此警告一下，
+我問過的四位"工程師"中，就有三個頭殼壞去。 聽他們講別人的硬體講得啥一樣，
+其實他們甚至連自己的都搞不清楚。
+<P>
+<P>譯注: 這一段可能和原文意思差很多，有建議請不吝提供。
+<P>
+<H2><A NAME="ss6.18">6.18 可不可以同時錄放音?</A>
+</H2>
+
+<P>
+<P>
+<P>一些卡的驅動程式能支援這功能。 請看在 4Front Technologies 的網站中的文件，
+了姐如何用它。
+<P>
+<H2><A NAME="ss6.19">6.19 我的聲霸卡 16 是設 IRQ 2，可是驅動程式不准我設這個值</A>
+</H2>
+
+<P>
+<P>
+<P>在 '286 及以後的機器，IRQ2 中斷連接了第二個中斷控制器。 它等同於IRQ 9。
+<P>
+<H2><A NAME="ss6.20">6.20 我離開 Linux，起動 DOS，然後有些軟體發聲不正常</A>
+</H2>
+
+<P>
+<P>
+<P>這在暖開機進 DOS 後發生。 有時錯誤訊息會誤導您，以為是
+CONFIG.SYS 檔哪裡寫錯了。
+<P>
+<P>多數現在的音效卡有軟體設定的 IRQ 及 DMA 設定。 如果您的卡在 Linux 下及
+MSDOS/Windows 下設定值不一樣的話，可能會造成問題。 有些音效卡不准設新參數，
+除非完全 reset。 (如把電源關掉再打開，或使用硬體上的reset鈕)
+<P>
+<P>簡單對付方法就是按下reset鍵，或把開關關了再開，不要用暖開機(即 Ctrl-Alt-Del)。
+<P>
+<P>正解則是確保您在MS-DOS及Linux下都用同樣的IRQ及DMA設定 (或乾脆不要用DOS :-)。
+<P>
+<H2><A NAME="ss6.21">6.21 在 Linux 下跑 DOOM 出問題</A>
+</H2>
+
+<P>
+<P>
+<P>想玩 ID software 出的 DOOM 遊戲之 Linux 版的玩家們，
+可能對這個有興趣。
+<P>
+<P>要正確的音效輸出，您必需使用 2.90 版或以後的音效驅動程式; 它支援了即時的
+<CODE>DOOM模式</CODE>。
+<P>
+<P>音效樣本是16 bit。 如果您用8 bit音效卡，您仍然可以用一些可在
+<A HREF="ftp://metalab.unc.edu/pub/Linux/games/doom">ftp://metalab.unc.edu/pub/Linux/games/doom</A>中找到的一些程式，讓聲音
+出現。
+<P>
+<P>如果DOOM動作不流暢，把音效取消(把 <CODE>sndserver</CODE> 檔改名)會有一些改進。
+<P>
+<P>DOOM 預設不支援音樂(不像 DOS 版)。 <CODE>musserver</CODE> 程式將增加Linux下的
+音樂支援。 它可以在
+<A HREF="ftp://pandora.st.hmc.edu/pub/linux/musserver.tgz">ftp://pandora.st.hmc.edu/pub/linux/musserver.tgz</A>
+中找到。
+<P>
+<H2><A NAME="ss6.22">6.22 怎樣降低音效卡產生的雜音?</A>
+</H2>
+
+<P>
+<P>
+<P>用高品質的屏蔽電纜，換個插槽插，可能有助於減低雜音。 
+如果音效卡有音量調整鈕，您可以試試不同的設定(最大聲可能最好)。
+您可以用混音程式，將不想要的輸入(如麥克風)調成零增益。
+<P>Philipp Braunbeck 報告他的 ESS-1868 音效卡上有個跳線用來關閉內建增益器的，
+如果裝上，能幫助降低雜音。
+<P>
+<P>在一台 386 電腦上，我發現核心命令列有個選項<CODE>no-hlt</CODE>可以降低雜訊。 
+這個選項叫核心在跑閒置迴圈時不要用 HLT 指令。 您可以開機時手動試試，
+或在 LILO 設定檔中加上<CODE>append="no-hlt"</CODE>
+<P>
+<P>有些音效卡偷工減料，沒有好的遮蔽及接地，容易產生雜音
+<P>
+<H2><A NAME="ss6.23">6.23 能放音，不能錄音</A>
+</H2>
+
+<P>
+<P>
+<P>如果您能放音，卻不能錄音，試試:
+<UL>
+<LI>使用混音程式選擇適當來源(如麥克風)</LI>
+<LI>使用混音程式將該來源的增益調到最大</LI>
+<LI>可以的話，在MS-DOS下測試，看看是不是硬體方面的問題</LI>
+</UL>
+<P>
+<P>有時錄音及放音用的 DMA 通道是不同的。 這種情況下八成是錄音用 DMA 設定不對。
+<P>
+<H2><A NAME="ss6.24">6.24 必須先進 DOS 跑驅動程式，不然我的"相容卡"沒法用</A>
+</H2>
+
+<P>
+<P>
+<P>多數情況下，"聲霸卡相容" 卡在 Linux 下若捨聲霸卡驅動程式不用而改用
+別的驅動程式，會更好。 多數號稱相容(如 "16 位元 SB Pro 相容" 或 SB 相容的
+"16位元")的卡，它的聲霸卡相容模式是提供 DOS 遊戲的相容性所做的。 
+多數卡自己的 16 位元模式可能在最近的 Linux(2.0.1以後) 會支援。
+<P>
+<P>只有一些(通常很舊)的卡必須嘗試用聲霸卡模式運作。 新卡中只有一個例外，那就是用
+Mwave為主的卡。
+<P>
+<H2><A NAME="ss6.25">6.25 我的 16 位元聲霸卡相容卡在 Linux 下只能用 8 位元模式</A>
+</H2>
+
+<P>
+<P>
+<P>號稱和聲霸卡相容的 16 位元音效卡其實只和 8 位元的聲霸卡 Pro 相容而已。 
+它們有和聲霸卡 16 不相容的 16 位元模式，和 Linux 音效驅動程式不相容。
+<P>
+<P>也許改用 MAD16 或 MSS/WSS 驅動程式後，您就能用 16 位元模式了。
+<P>
+<H2><A NAME="ss6.26">6.26 在哪裡找得到 Linux 的音效應用軟體?</A>
+</H2>
+
+<P>
+<P>
+<P>這裡有一些好的檔案庫，可以搜尋 Linux 專用的音效應用軟體:
+<UL>
+<LI> 
+<A HREF="ftp://metalab.unc.edu/pub/Linux/kernel/sound/">ftp://metalab.unc.edu/pub/Linux/kernel/sound/</A></LI>
+<LI> 
+<A HREF="ftp://metalab.unc.edu/pub/Linux/apps/sound/">ftp://metalab.unc.edu/pub/Linux/apps/sound/</A></LI>
+<LI> 
+<A HREF="ftp://tsx-11.mit.edu/pub/linux/packages/sound/">ftp://tsx-11.mit.edu/pub/linux/packages/sound/</A></LI>
+<LI> 
+<A HREF="ftp://nic.funet.fi/pub/OS/Linux/util/sound/">ftp://nic.funet.fi/pub/OS/Linux/util/sound/</A></LI>
+<LI> 
+<A HREF="ftp://nic.funet.fi/pub/OS/Linux/xtra/snd-kit/">ftp://nic.funet.fi/pub/OS/Linux/xtra/snd-kit/</A></LI>
+<LI> 
+<A HREF="ftp://nic.funet.fi/pub/OS/Linux/ALPHA/sound/">ftp://nic.funet.fi/pub/OS/Linux/ALPHA/sound/</A></LI>
+</UL>
+<P>
+<H2><A NAME="ss6.27">6.27 音效驅動程式可不可以編譯成可載入模組?</A>
+</H2>
+
+<P>
+<P>
+<P>最新的核心裡的音效驅動程式可以做成可載入模組。
+<P>詳情請參考在 /usr/src/linux/Documentation/sound 裡的檔案，
+尤其是 Introduction 及 README.modules。
+<P>
+<H2><A NAME="ss6.28">6.28 我能把主控台的嗶嗶聲改用音效卡發出嗎?</A>
+</H2>
+
+<P>
+<P>
+<P>試試<CODE>oplbeep</CODE>程式，可在
+<A HREF="ftp://metalab.unc.edu/pub/Linux/apps/sound/oplbeep-2.3.tar.gz">ftp://metalab.unc.edu/pub/Linux/apps/sound/oplbeep-2.3.tar.gz</A>
+中找到。
+<P>
+<P>另一個變種，叫 <CODE>beep</CODE> 程式，可在
+<A HREF="ftp://metalab.unc.edu/pub/Linux/kernel/patches/misc/modreq_beep.tgz">ftp://metalab.unc.edu/pub/Linux/kernel/patches/misc/modreq_beep.tgz</A>
+中找到。
+<P>
+<P><CODE>modutils</CODE> 套件有個範例程式及核心修補，支援在核心要求時，
+執行外部程式，產生聲音。
+<P>
+<P>另外在一些音效卡上，您可以將PC喇叭輸出到音效卡上，這樣所有聲音就都由音效卡
+發出來了。
+<P>
+<H2><A NAME="ss6.29">6.29 VoxWare是什麼?</A>
+</H2>
+
+<P>
+<P>
+<P> 由 4Front Technologies
+出售的商業版音效驅動程式以前有像<EM>VoxWare</EM>，
+<EM>USS</EM>(Unix Sound System)，甚至<EM>TASD</EM>(暫且無名的音效驅動程式)
+之類名稱。 現在這個驅動程式的市場上叫 <EM>OSS</EM>(Open Sound
+System)。 在 Linux 核心中包含的有時叫做<EM>OSS/Free</EM>。
+<P>
+<P>要更多資訊，請上 4Front Technologies 網站
+(在
+<A HREF="http://www.opensound.com/">http://www.opensound.com/</A>)。 我在 
+<A HREF="http://www.ssc.com/lj/">Linux Journal</A> 1997 年六月號有寫一篇
+對 OSS/Linux 的評論文章。
+<P>
+<H2><A NAME="ss6.30">6.30 Sox/Play/Vplay 回報 "invalid block size 1024"</A>
+</H2>
+
+<P>
+<P>
+<P>在 1.3.67 版核心中的改變(錯誤的)使檢查 SNDCTL_DSP_GETBLKSIZE ioctl
+是否傳回大於 4096 的放音軟體失效。 最新的驅動程式已修正，避免配置小於 4096
+bytes 的碎塊，解決了舊公用程式的問題。
+<P>
+<H2><A NAME="ss6.31">6.31 我載入音效驅動程式模組後，混音設定就被重設了</A>
+</H2>
+
+<P>
+<P>
+<P>您可以將音效驅動程式做成可載入模組，並使用 <CODE>kerneld</CODE> 自動載入及除去。 
+然而這造成了一個問題 - 當模組重新載入時，混音器 設定又回歸預定的值。
+對有些音效卡來說，這會太大聲(如聲霸卡16)或太小聲。 Markus Gutschke
+(<CODE>gutschk@uni-muenster.de</CODE>)發現了這問題的解決之道，在您的
+/etc/conf.modules 檔中加入如下的一行:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+options sound dma_buffsize=65536 &amp;&amp; /usr/bin/setmixer igain 0 ogain 0 vol 75
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>這會在音效驅動程式載入後立刻執行您的混音程式(在範例中是用 <CODE>setmixer</CODE> )。 <CODE>dma_buffsize</CODE> 參數沒有意義，但是是必需的，因為這個命令
+需要一些命令列的選項。 把上面那行改成您想要的混音及增益設定值。
+<P>
+<P>如果您將音效驅動程式連進核心，而想在開機後就自動設定音量，您可以在開機自動執行
+檔<CODE>/etc/rc.d/rc.local</CODE>中將混音程式加進去。
+<P>
+<H2><A NAME="ss6.32">6.32 只有 root 能錄音</A>
+</H2>
+
+<P>
+<P>
+<P>在 Readme.linux 中的命令稿預設會將音效設備檔設成僅有 <CODE>root</CODE> 可讀，
+這是為了填補安全上的漏洞。 在網路環境裡，
+外面的使用者可以遠端連進有音效卡及麥克風的Linux系統並竊聽。
+如果您不擔心這個，您可以改變這個命令稿中的權限。
+<P>
+<P>在預設的安裝法，一般使用者仍然可以播放音效檔。 這不會造成安全上的風險，
+反而可以省掉很多麻煩。
+<P>
+<H2><A NAME="ss6.33">6.33 在IBM ThinkPad上的音效硬體可以支援嗎?</A>
+</H2>
+
+<P>
+<P>
+<P>關於如何在 Linux 下使用 IBM ThinkPad 上的 mwave 音效卡之資訊，可在
+/usr/src/linux/Documentation/sound/mwave檔中找到，
+它也是核心原始碼的一部份。
+<P>
+<H2><A NAME="ss6.34">6.34 因為我的音效卡沒有混音器，所以應用程式不讓我用</A>
+</H2>
+
+<P>
+<P>一些舊的 8 位元聲霸卡沒有混音器電路。
+有些音效應用程式要求要能開啟混音器設備，
+在這些卡上就會失效。 Jens Werner (
+<A HREF="mailto:werner@bert.emv.ing.tu-bs.de">werner@bert.emv.ing.tu-bs.de</A>
+報告了一個解法，把 /dev/mixer 連到 /dev/null後，
+一切應該都很好了。
+<P>
+<H2><A NAME="ss6.35">6.35 SB16 CT4170 的問題</A>
+</H2>
+
+<P>
+<P>以下由 Scott Manley(
+<A HREF="mailto:spm@star.arm.ac.uk">spm@star.arm.ac.uk</A>)提供:
+<P>
+<BLOCKQUOTE>
+看起來有一種新的聲霸卡 -- 它以 SB16 的名義賣給我們，該卡的型式是 CT4170。
+這玩意只有一組 DMA 通道，所以當您試著設定它時，核心存取 16 位元 DMA
+會有麻煩。 解決之道是把第二組 DMA 設成 1，這樣這張卡就和廣告上講的相符了。
+</BLOCKQUOTE>
+<P>
+<H2><A NAME="ss6.36">6.36 怎樣將 MIDI keyboard 連接到音效卡上?</A>
+</H2>
+
+<P>以下由 Kim G。 S。 OEyhus (
+<A HREF="mailto:kim@pvv.ntnu.no">kim@pvv.ntnu.no</A>)提供:
+<P>
+<BLOCKQUOTE>
+我到網際網路上以及音效卡文件到處搜尋關於如何把主 keyboard 的 MIDI output
+連接到音效卡的 MIDI input 這麼簡單的事的方法，結果我什麼都沒找到。
+問題是它們都使用同一設備，/dev/midi，至少在 OSS 音效系統上是如此。
+所以我找到了一種方法，希望和大家分享。 這樣就造出了一個簡單的合成器，並有完整
+MIDI 支援:
+</BLOCKQUOTE>
+<P>
+<BLOCKQUOTE>
+用 MIDI 直接將 MIDI 主 KEYBOARD 連接到音效卡
+</BLOCKQUOTE>
+<P>
+<BLOCKQUOTE>
+MIDI 主 keyboard 是一個沒有合成器的 keyboard，上面只有一個 MIDI out 插座。
+這可以透過適當的連接線連上音效卡上的 15 pin D-SUB 連接埠。
+</BLOCKQUOTE>
+<P>
+<BLOCKQUOTE>
+這個 keyboard 可以用來控制音效卡上的合成設備，做出了一個簡單用 keyboard
+控制的合成器。
+</BLOCKQUOTE>
+<P>
+<BLOCKQUOTE>
+之後再編譯以下程式，如用 'gcc -o prog prog.c' 並執行它:
+</BLOCKQUOTE>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#include &lt;fcntl.h&gt;
+
+main()
+{
+  int fil，a;
+  char b[256];
+
+  fil=open("/dev/midi"，O_RDWR);
+  for(;;)
+    {
+      a=read(fil，b，256);
+      write(fil，b，a);
+    }
+}
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss6.37">6.37 IRQ 15 以及 Ensoniq PCI 128 之間的問題</A>
+</H2>
+
+<P>
+<P>以下由 Matthew Inger (
+<A HREF="mailto:mattinger@mindless.com">mattinger@mindless.com</A>) 提供:
+<P>
+<BLOCKQUOTE>
+如何讓 Ensoniq PCI 128 可用的資訊。
+</BLOCKQUOTE>
+<P>
+<BLOCKQUOTE>
+這展現的問題是它預設值是用 IRQ 15。(這點 Plug and Pray 得負起責任)。
+這個中斷也是第二組 IDE 控制器用到的，而且不能和其它設備共享。 您必須強迫
+es1370 使用其它中斷(就像在 Windows 下可以用 IRQ 11 一樣)。
+</BLOCKQUOTE>
+<P>
+<BLOCKQUOTE>
+信不信由你，我自行找到了這問題的解決之道。
+</BLOCKQUOTE>
+<P>
+<BLOCKQUOTE>
+我所做的事:
+</BLOCKQUOTE>
+<P>
+<BLOCKQUOTE>
+a) 在 BIOS 中，您必須告知電腦您沒有 隨插即用 OS，我相信這在我的 BIOS 中的
+advanced options 裡。
+</BLOCKQUOTE>
+<P>
+<BLOCKQUOTE>
+b) 在 BIOS 中的 PCI 設定，要電腦保留中斷 15 給 ISA設備。 在我的 BIOS，在
+Advanced Options 中，有一部份是設定 PCI 的，在那裡可以排除一些資源不讓 PCI
+用，就在那裡設定。
+</BLOCKQUOTE>
+<P>
+<BLOCKQUOTE>
+當您重開機進 Linux 後您就能聽到聲音了。 (我不記得它是不是照常顯示開機訊息了)
+為安全起見，我再執行一遍 sndconfig，它會放出測試音效，聽起來不怎麼樣，
+但它發出聲音了。 然而我放 CD 時，聽起來真是棒極了。
+</BLOCKQUOTE>
+<P>
+<BLOCKQUOTE>
+Windows 那邊就甭擔心了，我試了兩張卡，一張是 ISA Modem，另一張是音效卡，
+兩個都運行無礙。
+</BLOCKQUOTE>
+<P>
+<BLOCKQUOTE>
+您的 BIOS 和我的可能不同，不過您只要搞清楚前面講的兩個設定在哪就好。 祝好運。
+</BLOCKQUOTE>
+<P>
+<H2><A NAME="ss6.38">6.38 我在哪兒可以抓到可自由散布的 MIDI patch，來給 SoftOSS 使用?</A>
+</H2>
+
+<P>
+<P>SoftOSS 是和 Gravis UltraSound 卡相容，
+包含在核心音效驅動程式的軟體波形表合成器(也可以說是軟體音源)。
+要使用這個驅動程式，需要 GUS 相容的 MIDI patch 檔。 文件上的說法是
+"public domain MIDIA patchset available from several ftp sites"
+(公開的 MIDIA patch 集可在幾個 ftp 站找到)
+<P>如同 4Front Technologies 網站上說的(
+<A HREF="http://www.opensound.com/softoss.html">http://www.opensound.com/softoss.html</A>)，它們可在 
+<A HREF="ftp://archive.cs.umbc.edu/pub/midia/instruments.tar.gz">ftp://archive.cs.umbc.edu/pub/midia/instruments.tar.gz</A> 下載。
+<P>
+<HR>
+<A HREF="Sound-HOWTO-7.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Sound-HOWTO-5.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Sound-HOWTO.html#toc6"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

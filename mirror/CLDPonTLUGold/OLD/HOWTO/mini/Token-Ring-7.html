@@ -1,0 +1,221 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Token-Ring mini-HOWTO: Questions and comments</TITLE>
+ <LINK HREF="Token-Ring-8.html" REL=next>
+ <LINK HREF="Token-Ring-6.html" REL=previous>
+ <LINK HREF="Token-Ring.html#toc7" REL=contents>
+<SCRIPT src="../../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(2, 8, 2);</SCRIPT>
+<A HREF="Token-Ring-8.html"><IMG SRC="../../img/next.gif" ALT="Next"></A>
+<A HREF="Token-Ring-6.html"><IMG SRC="../../img/prev.gif" ALT="Previous"></A>
+<A HREF="Token-Ring.html#toc7"><IMG SRC="../../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s7">7. Questions and comments</A></H2>
+
+<P>
+<DL>
+<DT><B>Q:</B><DD><P>Can the token ring driver be compiled as a module?
+<DT><B>A:</B><DD><P>Yes, it can be &mdash; and it works rather well.
+There is an extra parameter that you can use
+when it is compiled as a module.
+If you ever need to ``spoof'' software install programs,
+such as the redhat boot disks, into configuring your token ring card
+as an ethernet device (for NFS/FTP installs, etc),
+you can use the ``<CODE>device</CODE>'' parameter to force a device name
+other then <CODE>tr0</CODE>.
+You will probably have problems if you try this with multiple adapters.
+It is mostly there to get around a few incompatabiliites. Ex.:
+<BLOCKQUOTE><CODE>
+<PRE>
+/sbin/insmod ibmtr device=eth0
+        
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<DT><B>Q:</B><DD><P>I keep getting an error code ``0011''.  Whats up?
+<DT><B>A:</B><DD><P>Make sure that your connection to the network is good or
+that you have a loopback connector on your token ring card.
+This message just means that it could not open the ring.
+99.99% of the times, it is just not plugged into one.
+<P>
+<DT><B>C:</B><DD><P>If you have a sound card in your machine, and it sits at IO 0x220,
+you may end up with a conflict with your token ring adapter at 0xa20.
+If you notice that a supported adapter does not seem to be working
+and you have a sound card, please try to either set your token ring
+card to 0xa24 or move/remove your sound card.
+<P>Also...
+<P>Here are some email messages that I have received about Token Ring
+and Linux.  In some of the messages, I have removed parts
+that were not important to save space.
+<DL>
+<DT><B>Q:</B><DD><P>
+<BLOCKQUOTE><CODE>
+<PRE>
+From: "Mr. Chuck Rickard" &lt;chuck@gl.umbc.edu>
+Subject: Re: Token Ring Kernel patch
+
+I d/l'd the patch, applied it, and re-compiled. When booting it said,
+"tr0: Can't assign device to adapter" and again for tr1.  Any ideas?
+
+Thanks!
+
+Chuck Rickard
+(chuck@umbc8.umbc.edu)
+              
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<DT><B>A:</B><DD><P>
+<BLOCKQUOTE><CODE>
+<PRE>
+From: David Morris &lt;dwm@shell.portal.com>
+              
+</PRE>
+</CODE></BLOCKQUOTE>
+
+When this is the only message issued,
+it means that the PIO request for adapter information
+(see <CODE>segment = inb(PIOaddr)</CODE> in <CODE>ibmtr.c</CODE>)
+was so out of range that there is no TR card at that IO address.
+<P>
+<DT><B>Q:</B><DD><P>
+<BLOCKQUOTE><CODE>
+<PRE>
+From: Mike Glover &lt;glover@credit.erin.utoronto.ca>
+Subject: Token ring problems.
+
+Thanks for responding. I was starting to thing that I posted incorrectly, 
+and I was about to post again. Anyway, the following  clip is part of my
+/var/adm/messages file from when I boot up.
+
+May  2 10:03:14 linux kernel: tr0: Unable to assign adapter to device.
+May  2 10:03:14 linux kernel: tr1: Unable to assign adapter to device.
+
+The section, tr0: Unable to assign adapter device. is what kinda confuses 
+me. The documentation is slim at best so I didn't know what to do with 
+the message. I know I didn't assign any token ring information,
+and I didn't know where to do it.
+
+The hardware:
+            Its a PC clone (Dell OMNIPLEX 560 to be exact)
+            The token ring card is a Olicom 16/4 Adapter.
+
+I have DOS token ring drivers and it snaps into the network, so there is 
+nothing wrong with the card. I think, I am just missing something really 
+small in the config on the Linux side.
+              
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<DT><B>A:</B><DD><P>The Olicom 16/4 Adapter does not use the Tropic Chipset.
+Try using one of the cards that are listed at the top of
+the HOWTO.
+<P>
+<DT><B>Q:</B><DD><P>
+<BLOCKQUOTE><CODE>
+<PRE>
+From: Mike Glover &lt;glover@credit.erin.utoronto.ca>
+Subject: Found an IBM card...
+
+I found myself an IBM token ring card and I got a little further,
+but still not luck. (I did change /etc/rc.d/rc.inet1 ifconfig entry
+from eth0 to tr0)
+
+Anyway, here is part of the /var/adm/messages file:
+May  2 16:23:07 linux kernel: IPX Portions Copyright (c) 1995 Caldera, Inc.
+May  2 16:23:07 linux kernel: tr0: PIOaddr:  a20 seg/intr: b8 mmio base:
+   000dc000 intr: 0
+May  2 16:23:07 linux kernel: tr0: Channel ID string not found for PIOaddr: a20
+May  2 16:23:07 linux kernel: tr0: Expected for ISA: 5049434f3631313039393020
+May  2 16:23:07 linux kernel: tr0:            found: 000902003021111000182000
+May  2 16:23:07 linux kernel: tr0: Expected for MCA: 4d4152533633583435313820
+May  2 16:23:07 linux kernel: tr0: Unable to assign adapter to device.
+May  2 16:23:07 linux kernel: tr1: Unable to assign adapter to device.
+May  2 16:23:07 linux kernel: PPP: version 0.2.7 (4 channels) NEW_TTY_DRIVERS
+   OPTIMIZE_FLAGS
+
+
+Does this tell you anything. It tells me little.
+              
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<DT><B>A:</B><DD><P>
+<BLOCKQUOTE><CODE>
+<PRE>
+From: David Morris &lt;dwm@shell.portal.com>
+              
+</PRE>
+</CODE></BLOCKQUOTE>
+
+This message means either a memory conflict with the MMIO area
+or a TR card which is not compatible with the driver
+(at least the signature isn't known).
+<P>
+<DT><B>Q:</B><DD><P>
+<BLOCKQUOTE><CODE>
+<PRE>
+From: Mike Glover &lt;glover@credit.erin.utoronto.ca>
+Subject: Almost there...
+
+The following sample is what I'm getting on my messages file:
+
+May  3 14:50:24 linux kernel: tr0: now opening the board...
+May  3 14:50:24 linux kernel: tr0: board opened...
+May  3 15:11:47 linux kernel: tr0: Arrg. Transmitter busy for more than 50 msec.
+   Donald resets adapter, but resetting
+May  3 15:11:47 linux kernel:  the IBM tokenring adapter takes a long time.
+   It might not even help when the
+May  3 15:11:47 linux kernel:  ring is very busy, so we just wait a little longer
+   and hope for the best.
+May  3 15:11:47 linux kernel: tr0: Arrg. Transmitter busy for more than 50 msec.
+   Donald resets adapter, but resetting
+May  3 15:11:47 linux kernel:  the IBM tokenring adapter takes a long time.
+   It might not even help when the
+May  3 15:11:47 linux kernel:  ring is very busy, so we just wait a little longer
+   and hope for the best.
+May  3 15:11:47 linux kernel: tr0: Arrg. Transmitter busy for more than 50 msec.
+   Donald resets adapter, but resetting
+
+The Arrg entry only comes when I telnet, rlogin or ftp to a remote 
+machine. Once that happens, the connection hangs big time. I took out all 
+the other hardware (which was 1 SCSI card) and tried running the card all 
+by itself. Same thing, so it eliminates hardware IRQ's from getting into 
+a yelling match. The following are the DIP switches on the card:
+
+1       Up      |
+2       Down    |
+3       Down    |       According to the manual this sets the 
+4       Up      |       base address to CC000 Which is fine for
+5       Up      |       my machine.
+6       Down    |
+7       Down    +       This sets the IRQ to 2. Which is also fine      
+8       Down    +
+9       Up      X       Primary Lan adapter. Which it is.
+10      Up      =       16 KB shared RAM size. This OK? 
+11      Down    =
+12      Up      #       16 Mbps Data rate.
+
+I was wondering if it is in fact the dip switches, or the way I have 
+configured my route table and other network info.
+
+ttfn,
+Mike
+              
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<DT><B>A:</B><DD><P>The Arrg problem is pretty much taken care of in the 2.0 kernels.
+All of the patches have not been ported back to 1.2,
+and I doubt that they will be.
+If you get excessive Arrg messages, do yourself a favour
+and move to Linux 2.0.
+</DL>
+</DL>
+<HR>
+<A HREF="Token-Ring-8.html"><IMG SRC="../../img/next.gif" ALT="Next"></A>
+<A HREF="Token-Ring-6.html"><IMG SRC="../../img/prev.gif" ALT="Previous"></A>
+<A HREF="Token-Ring.html#toc7"><IMG SRC="../../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

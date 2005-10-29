@@ -1,0 +1,373 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux Italian-HOWTO: National Language Support (NLS) </TITLE>
+ <LINK HREF="Italian-HOWTO-4.html" REL=next>
+ <LINK HREF="Italian-HOWTO-2.html" REL=previous>
+ <LINK HREF="Italian-HOWTO.html#toc3" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Italian-HOWTO-4.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Italian-HOWTO-2.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Italian-HOWTO.html#toc3"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s3">3. National Language Support (NLS) </A></H2>
+
+<P>
+<P>
+<P>Di certo vi stupirà sapere che lo standard <EM>POSIX</EM>, e quindi anche Linux,
+prevede il supporto delle regole nazionali per la gestione di set di
+caratteri, modo di scrivere data, ora, numeri in generale e quindi tutto
+quello che può (informaticamente parlando) distinguere una paese dall'altro.
+<P>Dalla versione 5.2.18 delle GNU libc, <B>tutta</B> la localizzazione è
+supportata anche da Linux.
+Ma non basta avere installate delle moderne libc, occorre anche che questa sia
+stata compilata con determinate opzioni e occorre installare tutta una serie
+di file e directory che descrivono la ``locale'' Italia.
+Insomma, compito non facile se la vostra distribuzione non ha già il
+supporto per la localizzazione...
+<P>Per poter influenzare Linux di modo che reagisca secondo la locale
+scelta, occorre modificare delle variabili d'ambiente. In ordine:
+<P>
+<DL>
+<P>
+<DT><B>LANG</B><DD><P>È la variabile ``generale'' del gruppo,
+serve a definire una regola generale (il paese) con cui poi
+assegnare le variabili che vengono sotto. Una definizione
+delle variabili sottostanti annulla però quella di default
+definita da LANG.
+Inoltre LANG influenza anche il programma
+<B>
+<A HREF="#MAN">man(1)</A></B>, ci torneremo poi.
+<P>
+<DT><B>LC_COLLATE</B><DD><P>Influisce sulle regole di ordinamento alfabetico.
+<P>
+<DT><B>LC_CTYPE</B><DD><P>Definisce il set di caratteri usato dal sistema.
+<P>
+<DT><B>LC_MONETARY</B><DD><P>Definisce come devono essere scritte le valute, ovvero
+quale, tra virgola e punto, è il separatore di decimali e
+migliaia e viceversa; definisce inoltre il simbolo di valuta.
+<P>
+<DT><B>LC_NUMERIC</B><DD><P>Separatore di decimali e migliaia, formattazione dei numeri.
+<P>
+<DT><B>LC_MESSAGES</B><DD><P>Definisce i valori ``si'' e ``no''.
+<P>
+<DT><B>LC_TIME</B><DD><P>Come stampare data e ora (questo influenza date(1) e programmi
+vari).
+<P>
+<DT><B>LC_ALL</B><DD><P>Come <B>LANG</B>, solo che questa ignora i valori definiti per
+ogni singola variabile (forza tutto al suo valore).
+Come spiegherò in seguito, questa variabile <B>non</B> va usata
+a meno di non sapere perfettamente quello che si sta facendo.
+<P>
+</DL>
+<P>
+<P>
+<H2><A NAME="ss3.1">3.1 La localizzazione in una riga...       </A>
+</H2>
+
+<P>
+<P>Piú semplicemente di quello che si crede, basta mettere nel proprio
+<CODE>~/.profile</CODE> o <CODE>/etc/profile</CODE> per
+<EM>sh-type shells</EM>:
+<P>
+<HR>
+<PRE>
+        export LANG=it_IT
+</PRE>
+<HR>
+<P>Oppure se avete <EM>c-type shells</EM>:
+<P>
+<HR>
+<PRE>
+        setenv LANG it_IT
+</PRE>
+<HR>
+<P>Perché ``it_IT''?! È solo una convenzione, e il significato è
+``lingua_PAESE''. Per fare un esempio potrebbe essere it_CH (Svizzera
+italiana).
+<P>Come sempre la man page di <B>locale(7)</B> è lettura molto consigliata,
+come un giro per <CODE>/usr/share/locale</CODE> per vedere le locali disponibili.
+<P>
+<P>
+<H3>Bug delle localizzazioni        </H3>
+
+<P>
+<P>Solitamente si manifestano con errate definizioni degli alias di
+locale, quindi definizioni che dovrebbero essere equivalenti danno
+risultati completamente diversi; per rimediare a questo occorre
+prelevare le definizioni di locale aggiornate, o installarle (molte
+distribuzioni non le installano proprio).
+<P>Può anche essere che alcune distribuzioni non abbiano proprio il
+supporto per la locale, al che conviene cambiare distribuzione
+(l'alternativa è ricompilare a mano la libreria di sistema libc).
+<P>
+<P>
+<H3>Bug delle applicazioni          </H3>
+
+<P>
+<P>Anche qui, come per il problema BS/DEL, se qualcosa non funziona è
+colpa, quasi certamente, della applicazione.
+<P>C'è qui una specie di ``caverna degli orrori''... ;)))
+<P>
+<P>
+<H3>Netscape        </H3>
+
+<P>
+<P>Netscape, se vengono definite le variabili LC_NUMERIC e LC_MONETARY, si
+mette a stampare e salvare PostScript con punti al posto delle virgole
+e viceversa, con il risultato che <B>gs(1)</B> va in palla...
+<P>Se capita, ricontrollate la vostra definizione di locale, e se avete
+fretta di stampare basta che definiate le variabili seguenti:
+<P>
+<HR>
+<PRE>
+        LC_NUMERIC=posix
+        LC_MONETARY=posix
+</PRE>
+<HR>
+<P>che forzano i valori di default (e permettono di stampare).
+<P>Notare che se si è definita LC_ALL, queste due righe qui sopra vengono
+ignorate: per questo è bene <B>NON</B> definire la variabile LC_ALL.
+<P>È probabile che questo problema non sia solo di Netscape: se vi capita
+un problema simile, sapete ora come ``mettere una pezza'', ma avvisate
+l'autore del programma in questione della presenza di questo bug.
+<P>
+<H3>perl(1)         </H3>
+
+<P>
+<P>Spesso <B>perl(1)</B> si lamenta della mancanza della locale; questo è
+dovuto sia a una non completa implementazione da parte della
+distribuzione, sia in parte a perl stesso che non riesce a gestire gli
+alias delle varie locali, e quindi riesce a ``seguire'' la variabile LANG
+solo se punta a una locale con una reale directory sul disco.
+<P>Io sulla mia Debian non sono riuscito a riprodurre il problema (se non
+settando LANG a una locale inesistente ;) e quindi sospetto che tutto nasca
+da una difficile interazione tra localizzazione e perl stesso, che verrà
+risolta sicuramente dalle prossime versioni di perl.
+<P>RedHat 5.0 soffre di questo problema, che è stato corretto nella 5.1.
+<P>
+<P>
+<H2><A NAME="ss3.2">3.2 ...o quasi! </A>
+</H2>
+
+<P>
+<P>Resta il problema di far capire alle applicazioni ``cattive'' che vogliamo
+avere i caratteri accentati. Questi hanno l'interessante proprietà di
+essere lunghi 8 bit, mentre molti programmi ne considerano solo 7, perché
+è da 7 bit il codice ASCII internazionalmente riconosciuto.
+<P>Queste note che scrivo dovrebbero presto finire in soffitta, visto che
+ormai le applicazioni che non gestiscono bene gli 8 bit o che non sano
+reagire alla variabile LANG sono in via di estinzione.
+<P>
+<P>
+<H3>Editor </H3>
+
+<P>
+<P>
+<H3>Emacs 19 </H3>
+
+<P>
+<P>Come sempre emacs è molto particolare. Avvisiamolo che vogliamo i caratteri
+accentati con :
+<P>
+<HR>
+<PRE>
+        (standard-display-european t)
+        (set-input-mode (car(current-input-mode))
+        (nth 1 (current-input-mode)) 0)
+</PRE>
+<HR>
+<P>Aggiunto al nostro bravo <CODE>~/.emacs</CODE>
+<P>
+<P>
+<H3>joe(1) </H3>
+
+<P>
+<P>Basta editare il file di configurazione <CODE>/etc/joe/joerc</CODE> o nel proprio
+<CODE>~/.joerc</CODE> di modo che comprenda la riga (con il ``-''
+sulla colonna 1):
+<P>
+<HR>
+<PRE>
+        -asis           Characters 128 - 255 shown as-is
+</PRE>
+<HR>
+<P>
+<P>
+<P>
+<H3>Mail/News </H3>
+
+<P>
+<P>
+<H3>pine(1) </H3>
+
+<P>
+<P>Basta scegliere il set di caratteri ISO-8859-1 dal menu di configurazione,
+seguendo le voci ``Setup'', poi ``Configure'' e infine
+``character-set''; questo fa uscire le mail in codifica
+``quoted-printable'' se contengono caratteri accentati (il che è
+bene ;).
+<P>
+<P>
+<H3>tin(1)  </H3>
+
+<P>
+<P>Tin è perfettamente localizzato, occorre solo scegliere il charset
+ISO-8859-1 per la visualizzazione nel menú di configurazione
+(attraverso [M]).
+<P>
+<P>
+<H3>nn(1) </H3>
+
+<P>
+<P>Aggiungere la seguente riga nel file <CODE>~/.nn/init</CODE>:
+<P>
+<HR>
+<PRE>
+        set data-bits 8
+</PRE>
+<HR>
+                              
+<P>
+<P>
+<H3>readline(3) </H3>
+
+<P>
+<P>Readline, che è una libreria standard GNU per la gestione dell'input,
+nonostante sia giovane, pimpante e ben mantenuta, non arriva per
+definizione con il supporto per i caratteri accentati. Questa libreria
+è usata dalla shell di default di linux <B>bash(1)</B>, per citare una
+applicazione di larghissimo uso.
+Non è da considerare un bug (questo comportamento forse è voluto per
+garantire il funzionamento anche sui vecchi terminali a 7 bit...) ma è
+chiaro che l'uso dei caratteri accentati deve essere forzato, ad
+esempio, se si vogliono usare nomi di file con lettere accentate.
+<P>Per fortuna basta solo aggiungere nel proprio <CODE>~/.inputrc</CODE>
+<P>
+<HR>
+<PRE>
+        set meta-flag on
+        set convert-meta off
+        set output-meta on
+</PRE>
+<HR>
+<P>
+<P>
+<H2><A NAME="MAN"></A> <A NAME="ss3.3">3.3 Manpage </A>
+        </H2>
+
+<P>
+<P>Le <EM>manpage</EM> sono quelle pagine testuali che si richiamano con il comando
+<B>man(1)</B>, e che rappresentano la documentazione online di ogni buon
+sistema UNIX, non solo di Linux.
+<P>Il comando man è abbastanza intelligente da reagire se è definita
+la variabile LANG. In pratica man va a cercare le manpages
+prima in $MANPATH/$LANG e poi in $MANPATH se
+configurato correttamente, permettendo di leggere le pagine nella
+lingua preferita.
+<P>Chiaramente c'è già chi sta traducendo le pagine; se vi sentite dei
+traduttori nati non vi resta che saltare al progetto 
+<A HREF="Italian-HOWTO-9.html#ILDP">ILDP</A> per saperne di piú e collaborare.
+<P>Le pagine già tradotte possono essere tranquillamente installate
+manualmente, prelevando l'ultima versione da 
+<A HREF="ftp://ftp.pluto.linux.it/pub/pluto/ildp/man">ftp://ftp.pluto.linux.it/pub/pluto/ildp/man</A> e leggendo attentamente
+le istruzioni allegate.
+Gli utenti Debian possono trovare nella loro distribuzione il pacchetto
+<B>manpages-it</B> già pronto.
+<P>
+<P>
+<P>
+<H2><A NAME="ss3.4">3.4 Catalogue      </A>
+</H2>
+
+<P>
+<P>Oltre tutto questo, c'è una terza e importantissima funzione della NLS: i
+messaggi dei programmi nella lingua locale.
+<P>Per farsi un'idea, agli utenti Linux non tocca editare i sorgenti di un
+programma, modificare a mano tutte le stringhe e poi ricompilare perché questo
+si presenti in corretto italiano. Esiste una ``prassi'' di programmazione che
+permette di specificare un linguaggio di default ``compilato''
+nell'eseguibile (di solito inglese, per compatibilità) e invece definire delle
+<EM>catalog</EM>, ovvero dei cataloghi di messaggi in un formato particolare,
+detto <EM>portable object</EM>, o più brevemente <EM>po</EM>, che messi in una
+determinata directory vengono usati semplicemente al posto dei messaggi
+presenti nel programma.
+<P>
+<P>
+<H3><A NAME="LI"></A> Linux International         </H3>
+
+<P>
+<P>Non c'è da meravigliarsi che ci abbia pensato mamma GNU stessa a creare
+una organizzazione nonprofit, 
+<A HREF="http://www.li.org/">Linux International</A> appunto, dedicata a questo, dobbiamo ammetterlo,
+immane lavoro di traduzione e aggiornamento.
+<P>In particolare in questo sito vengono messe a disposizione della comunità UNIX
+internazionale una serie di liste in cui poter coordinarsi per la traduzione,
+una per ogni paese piú una serie di liste generiche di ``intracoordinamento''.
+<P>Visto che tradurre i messaggi (catalogues) e tradurre manpage e HOWTO sono
+compiti molto simili, per non creare fastidiose sovrapposizioni i compiti
+sono stati divisi tra due ambiti.
+Linux International in cui si definiscono le regole generali di traduzione
+e si traducono catalogues e programmi GNU ``ufficiali'', e 
+<A HREF="Italian-HOWTO-9.html#ILDP">ILDP</A> che invece è piú legata al mondo Linux e maggiormente
+dedicata alla traduzione di documentazione (HOWTO e manpage) e anche
+alla sua produzione direttamente in Italiano.
+<P>Piú avanti elenco le 
+<A HREF="Italian-HOWTO-10.html#LISTS">liste</A> a cui ti puoi
+iscrivere per collaborare.
+<P>Ti prego di <B>NON</B>, ripeto <B>NON iniziare nessuna localizzazione senza
+prima aver sentito i ``colleghi'' di queste mailing list</B>, il tuo lavoro
+potrebbe venir vanificato in un secondo per un banale doppione.
+<P>
+<P>
+<H2><A NAME="ss3.5">3.5 Per maggiori informazioni </A>
+</H2>
+
+<P>
+<P>Ulteriori informazioni possono essere recuperate nei seguenti testi:
+<P>
+<UL>
+<LI>    
+<A HREF="http://sunsite.unc.edu/LDP/HOWTO/Danish-HOWTO.html">Linux Danish/International HOWTO</A>
+        
+È stato il primo HOWTO che ha trattato il tema della nazionalizzazione
+di Linux, ed è tuttora un riferimento. A dispetto del nome è piú
+``International'' che ``Danish'' visto che è in inglese...
+</LI>
+<LI>    Un giro per 
+<A HREF="ftp://sunsite.unc.edu/pub/Linux/utils/nls">ftp://sunsite.unc.edu/pub/Linux/utils/nls</A>
+è consigliato ai programmatori. In particolare
+consiglio la lettura del file <CODE>locale-tutorial-0.8.txt.gz</CODE>.
+</LI>
+<LI>    Come già detto, il sito ufficiale GNU dove potete trovare informazioni
+sulla localizzazione GNU e le definizioni di locale più aggiornate è
+<A HREF="ftp://dkuug.dk/i18n">ftp://dkuug.dk/i18n</A>.
+
+In particolare se volete tentare l'installazione manuale delle
+definizioni di locale potete prendere il materiale che trovate a
+<A HREF="ftp://dkuug.dk/i18n/WG15-collection">ftp://dkuug.dk/i18n/WG15-collection</A> e, ovviamente,
+leggere attentamente la documentazione allegata o i succitati testi.
+</LI>
+<LI>    Maggiori informazioni sul formato dei Portable Object e sullo
+stato delle traduzioni possono essere trovate al sito
+<A HREF="ftp://alpha.gnu.ai.mit.edu/gnu/po/">ftp://alpha.gnu.ai.mit.edu/gnu/po/</A> oppure 
+<A HREF="ftp://svpop.com.dist.unige.it:/pub/Linux/gnu/po">ftp://svpop.com.dist.unige.it:/pub/Linux/gnu/po</A> che ne è
+un mirror.
+</LI>
+<LI>    Un URL mitico al riguardo, ottimo punto di partenza per
+ricerche sulla internazionalizzazione, è 
+<A HREF="http://www.vlsivie.tuwien.ac.at/mike/i18n.html">http://www.vlsivie.tuwien.ac.at/mike/i18n.html</A>. Le
+pagine sono curate da Michael Gschwind, e sono una miniera di
+link per approfondire.
+        </LI>
+</UL>
+<P>
+<P>
+<P>
+<HR>
+<A HREF="Italian-HOWTO-4.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Italian-HOWTO-2.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Italian-HOWTO.html#toc3"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

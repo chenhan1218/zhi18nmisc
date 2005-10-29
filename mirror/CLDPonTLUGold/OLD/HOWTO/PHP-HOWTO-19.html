@@ -1,0 +1,457 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>PHP HOW-TO: Appendix F PostgreSQL Database Wrapper Examples </TITLE>
+ <LINK HREF="PHP-HOWTO-20.html" REL=next>
+ <LINK HREF="PHP-HOWTO-18.html" REL=previous>
+ <LINK HREF="PHP-HOWTO.html#toc19" REL=contents>
+<A HREF="PHP-HOWTO-20.html"><IMG SRC="../img/../img/../img/../img/../img/next.gif" ALT="Next"></A>
+<A HREF="PHP-HOWTO-18.html"><IMG SRC="../img/../img/../img/../img/../img/prev.gif" ALT="Previous"></A>
+<A HREF="PHP-HOWTO.html#toc19"><IMG SRC="../img/../img/../img/../img/../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="Appendix F"></A> <A NAME="s19">19. Appendix F PostgreSQL Database Wrapper Examples </A></H2>
+
+<P>Submitted by: Joe Thong
+<A HREF="mailto:      darkjoe@softhome.net    ">      darkjoe@softhome.net   </A>
+Site URL: 
+<A HREF="http://phpdb.linuxbox.com">http://phpdb.linuxbox.com</A><P><B>Description: </B> A PHP database wrapper for various database 
+servers with a powerful
+Recordset for result data manipulation.  Database results 
+are flushed automatically by phpDB.
+<P>To get this file, in the web-browser, save this file as 'Text' type
+as phpDB-postgresql.lib
+<HR>
+<PRE>
+&lt;?php
+/*
+Name: phpDB PostgreSQL module
+Version: 1.02bR6
+Description: A PHP database wrapper for various database 
+        servers with a powerful recordset for result data 
+        manipulation.  Database results are flushed 
+        automatically by phpDB.  
+*/
+
+/* define this module, to prevent double class declaration.     */
+if (!defined("_PHPDB_ABSTRACT_LAYER")) {
+        define("_PHPDB_ABSTRACT_LAYER", 1 );
+}
+else
+        return;
+
+//---------------------------------------
+         Class Name: phpDB
+//---------------------------------------
+class phpDB 
+{
+        /*      public variables        */
+        var $version = '1.02bR6'; // Version number of phpDB
+        // This variable keeps what database type is going to 
+        // be used.  Current supported database server are 
+        // MySQL, MSQL, SQL Server, and Sybase
+        var $databaseType = '';
+        // Specifies which database is going to be used
+        var $databaseName = ''; 
+        // The hostname of the database server, port 
+        // number is optional.  e.g: "db.devNation.com"
+        var $hostname = '';     
+        var $username = ''; // used to connect to the database server
+        var $password = ''; // Password for the username
+
+        // Private variables ------ starts with underscore
+        // An array of executed querys. For results cleanup purposes.
+        var $_queryIDList = array();
+        // The returned link identifier whenever a 
+        // successful database connection is made
+        var $_connectionID      = -1;   
+        // A variable which was used to keep the returned 
+        // last error message.  The value will then returned 
+        // by the errorMsg() function
+        var $_errorMsg = '';
+                                                
+        // This variable keeps the last created result 
+        // link identifier
+        var $_queryID = -1;     
+        // A boolean variable to state whether its a persistent
+        // connection or normal connection
+        var     $_isPersistentConnection = false;
+        // Holds the newly created result object, 
+        // returned via the execute() method
+        var $_tempResultObj = '';       
+
+        // A constructor function for the phpDB object.  
+        // When initializing, specify the dbType i.e: "mysql",
+        // "msql", "postgresql", "mssql", and "sybase"
+        function phpDB($dbType = "postgresql") 
+        {
+                switch ($dbType) {
+                        case "mysql":
+                        case "msql":
+                        case "postgresql":
+                        case "mssql":
+                        case "sybase":                                          
+                        case "informix":                                                
+                                $this->databaseType = $dbType;
+                                break;
+                        default:
+                                return false;
+                }                       
+        }
+        
+        // Returns: A positive link identifier on success, or 
+        // false on error.      Connect to the server with the provided 
+        // arguments. The connection to the server will be closed 
+        // when the script terminates, unless close() function is 
+        // called beforehand
+        function connect($argHostname = "", $argUsername = "", 
+                $argPassword = "", $argDatabaseName = "") 
+        {
+                $connString = "";
+                $hostPieces = array();
+                /*      Must specify the database argument      */
+                if (!$argDatabaseName) {        
+                        return false;
+                }
+                if ($argHostname != "") {
+                        $this->hostname = $argHostname;
+                }
+                if ($argUsername != "") {
+                        $this->username = $argUsername;
+                }
+                if ($argPassword != "") {
+                        $this->password = $argPassword;
+                }
+                if ($argDatabaseName != "") {
+                        $this->databaseName = $argDatabaseName;
+                }                               
+                $hostPieces = split(":", $this->hostname);
+                if ($hostPieces[0]) {
+                        $connString .= "host=$hostPieces[0]";
+                        if (isset($hostPieces[1])) {
+                                $connString .= " port=$hostPieces[1]";
+                        }                       
+                }
+            if ($this->username) {
+                        $connString .= " user=$this->username";
+                }
+            if ($this->password) {
+                        $connString .= " password=$this->password";
+                }
+                $connString .= " dbname=$this->databaseName";
+                        
+                $this->_connectionID = @pg_Connect($connString);
+                return $this->_connectionID;
+        }
+
+        // Returns: A positive link identifier on success, or
+        // false on error.  Connect to the server with the 
+        // provided arguments. The connection to the server will 
+        // not be closed when the script terminates. Instead it 
+        // will be kept for later future use
+        function pconnect($argHostname = "", $argUsername = "", 
+                $argPassword = "", $argDatabaseName = "") 
+        {
+                $connString = "";
+                $hostPieces = array();          
+                /*      Must specify the database argument      */
+                if (!$argDatabaseName) {
+                        return false;
+                }
+                if ($argHostname != "") {
+                        $this->hostname = $argHostname;
+                }
+                if ($argUsername != "") {
+                        $this->username = $argUsername;
+                }
+                if ($argPassword != "") {
+                        $this->password = $argPassword;
+                }
+                if ($argDatabaseName != "") {
+                        $this->databaseName = $argDatabaseName;
+                }                               
+                $hostPieces = split(":", $this->hostname);
+                if ($hostPieces[0]) {
+                        $connString .= "host=$hostPieces[0]";
+                        if (isset($hostPieces[1])) {
+                                $connString .= " port=$hostPieces[1]";
+                        }                       
+                }
+            if ($this->username) {
+                        $connString .= " user=$this->username";
+                }
+            if ($this->password) {
+                        $connString .= " password=$this->password";
+                }
+                $connString .= " dbname=$this->databaseName";
+                        
+                $this->_connectionID = @pg_pConnect($connString);
+                if ($this->_connectionID) {
+                        $this->_isPersistentConnection = true;                          
+                }
+                return $this->_connectionID;
+        }               
+        
+        // Returns: true on success, false on error Select 
+        // the database name to be used PostgreSQL 
+        // Note:        function Not available
+        function selectDB($dbName) {
+                        return false;
+        }
+
+        // Returns: the Recordset object disregard success 
+        // or failure Send the sql statement to the database server
+        function execute($sql = "") {
+                // Instantiate an object without considering whether 
+                // the query return any results or not
+                $this->_queryID = @pg_Exec($this->_connectionID, $sql);
+                $this->_tempResultObj = new Recordset($this->_queryID);
+                $this->_insertQuery($this->_queryID);
+                return $this->_tempResultObj;
+        }
+        
+        // Returns: the last error message from previous 
+        // database operation
+        function errorMsg() {
+                $this->_errorMsg = @pg_errormessage($this->_connectionID);
+            return $this->_errorMsg;
+        }
+
+        // Returns: true on success, false on failure 
+        // Close the database connection
+        function close() {
+                if ($this->_queryIDList &amp;&amp; sizeof($this->_queryIDList > 0)) {
+                        while(list($_key, $_resultID) = each($this->_queryIDList)) {
+                                @pg_freeresult($_resultID);
+                        }
+                }
+                // If its not a persistent connection, then 
+                // only the connection needs to be closed
+                if ($this->_isPersistentConnection != true) {   
+                        return @pg_close($this->_connectionID);
+                }
+                else {
+                        return true;
+                }
+        }
+        
+        // A PRIVATE function used by the constructor function 
+        // of the query object.  insert the successful returned
+        // query id to the query id list.  Used for later results 
+        // cleanup.  A private function that's never meant to 
+        // be used directly
+        function _insertQuery($query_id) {
+                $this->_queryIDList[] = $query_id;
+        }               
+}
+        
+//------------------------------
+         Class Name: Recordset
+//------------------------------
+class Recordset 
+{
+        /*      public variables        */
+        var $fields;
+        // indicates that the current record position is before 
+        // the first record in a Recordset object
+        var $BOF = null;
+
+        // indicates that the current record position is after
+        // the last record in a Recordset object
+        var $EOF = null;        
+        
+        /*      private variables       */
+        var $_numOfRows = -1; // NEVER change the value! READ-ONLY!
+        var $_numOfFields = -1; // NEVER change the value! READ-ONLY!
+        // Holds anything that was returned from the database specific functions
+        var $_tempResult = ''; 
+        // This variable keeps the result link identifier
+        var $_queryID = -1;     
+        // This variable keeps the current row in the Recordset
+        var $_currentRow = -1;
+
+        // Returns: query id on success and false if 
+        // failed Constructor function
+        function Recordset($queryID) 
+        {
+                $this->_queryID = $queryID;
+                if ($queryID) {
+                        $this->_numOfRows = @pg_numrows($this->_queryID);
+                        /*      pg_numrows() returns -1 on error        */
+                        if ($this->_numOfRows == -1) {
+                                $this->_numOfRows = 0;
+                        }
+                        $this->_numOfFields = @pg_numfields($this->_queryID);
+                        /*      pg_numfields() returns -1 on error      */
+                        if ($this->_numOfFields == -1) {
+                                $this->_numOfFields = 0;
+                        }
+                }
+                else {
+                        $this->_numOfRows = 0;
+                        $this->_numOfFields = 0;
+                }
+                /*      If result set contains rows     */
+                if ($this->_numOfRows > 0 &amp;&amp; $this->_currentRow == -1) {
+                        $this->_currentRow = 0;
+                        $this->fields = @pg_fetch_array($this->_queryID, $this->_currentRow);                   
+                        $this->EOF = false;
+                        $this->BOF = false;
+                }
+                return $this->_queryID;
+        }
+                
+        // Returns: true if successful, false if fail Set the Recordset 
+        // pointer to a specified field offset. If the next call to 
+        // fetchField() won't include a field offset, this field would 
+        // be returned.  PostgreSQL Note:       function Not available
+        function fieldSeek($fieldOffset = -1) {
+                $this->_tempResult = false;
+                return $this->_tempResult;
+        }
+
+        // Returns: an object containing field information.  Get column 
+        // information in the Recordset object. fetchField() can be used 
+        // in order to obtain information about fields in a certain query 
+        // result. If the field offset isn't specified, the next field 
+        // that wasn't yet retrieved by fetchField() is retrieved. 
+        // PostgreSQL Note:     function Not available
+        function fetchField($fieldOffset = -1) {
+                $this->_tempResult = false;             
+                return $this->_tempResult;
+        }                               
+
+        // Returns: true if there still rows available, or false if there 
+        // are no more rows.  Moves to the next row in a specified Recordset 
+        // object and makes that record the current row and the data 
+        // corresponding to the row will be retrieved into the fields 
+        // collection.  Note: Unlike the moveRow() method, when _currentRow
+        // is getNumOfRows() - 1, EOF will immediately be true.  If row number
+        // is not provided, the function will point to the 
+        // first row automatically
+        function nextRow() {
+                if ($this->getNumOfRows() > 0) {                        
+                        $this->fields = array();
+                        $this->_currentRow++;
+                        $this->fields = @pg_fetch_array($this->_queryID, $this->_currentRow);
+                        /*      This is not working.  True all the time */
+                        if ($this->fields) {
+                                $this->_checkAndChangeEOF($this->_currentRow - 1);
+                                return true;
+                        }
+                }
+                $this->EOF = true;
+                return false;
+        }       
+                        
+        // Returns: true on success, false on failure moveRow() moves 
+        // the internal row pointer of the Recordset object to point 
+        // to the specified row number and the data corresponding to
+        // the row will be retrieved into the fields collection.  If 
+        // row number is not provided, the function will point to 
+        // the first row automatically
+        function moveRow($rowNumber = 0) {
+                if ($rowNumber == 0) {
+                        return $this->firstRow();
+                }
+                else if ($rowNumber == ($this->getNumOfRows() - 1)) {
+                        return $this->lastRow();
+                }
+                if ($this->getNumOfRows() > 0 &amp;&amp; $rowNumber &lt; $this->getNumOfRows()) {       
+                        $this->fields = null;
+                        $this->_currentRow = $rowNumber;
+                        $this->fields = @pg_fetch_array($this->_queryID, $this->_currentRow);
+                        /*      This is not working.  True all the time */
+                        if ($this->fields) {
+                                // No need to call _checkAndChangeEOF() because 
+                                // the possibility of moving to the last row 
+                                // has been handled by the above code
+                                $this->EOF = false;
+                                return true;
+                        }
+                }
+                $this->EOF = true;
+                return false;
+        }
+
+        // Returns: true on success, false on failure firstRow() 
+        // moves the internal row pointer of the Recordset object
+        // to the first row and the data corresponding to the row 
+        // will be retrieved into the fields collection
+        function firstRow() {
+                if ($this->getNumOfRows() > 0) {
+                        $this->fields = array();
+                        $this->_currentRow = 0;
+                        $this->fields = @pg_fetch_array($this->_queryID, $this->_currentRow);
+                        $this->EOF = true;
+                        /*      This is not working.  True all the time */
+                        if ($this->fields) {
+                                return true;    
+                        }
+                }
+                $this->EOF = true;
+                return false;           
+        }
+
+        // Returns: true on success, false on failure lastRow() 
+        // moves the internal row pointer of the Recordset object 
+        // to the last row and the data corresponding to the row 
+        // will be retrieved into the fields collection
+        function lastRow() {
+                if ($this->getNumOfRows() > 0) {        
+                        $this->fields = array();        
+                        $num_of_rows = $this->getNumOfRows();
+                        /*      $num_of_rows decremented at above       */
+                        $this->_currentRow = --$num_of_rows;    
+                        $this->fields = @pg_fetch_array($this->_queryID, $this->_currentRow);
+                        /*      This is not working.  True all the time */
+                        if ($this->fields) {
+                                /*      Special case for making EOF false.      */
+                                $this->EOF = false;     
+                                return true;
+                        }
+                }
+                $this->EOF = true;
+                return false;
+        }
+
+        // close() only needs to be called if you are worried about 
+        // using too much memory while your script is running. All 
+        // associated result memory for the specified result identifier 
+        // will automatically be freed
+        function close() {
+                $this->_tempResult = @pg_freeresult($this->_queryID);           
+                return $this->_tempResult;
+        }
+
+        // Returns: the number of rows in a result set.  
+        // Get number of rows in result
+        function getNumOfRows() {
+                return $this->_numOfRows;
+        }
+
+        // Returns: the number of fields in a result set.
+        // Get number of fields in result
+        function getNumOfFields() {
+                return $this->_numOfFields;
+        }       
+
+        /*      Check and change the status of EOF.     */              
+        function _checkAndChangeEOF($currentRow) {
+                if ($currentRow >= ($this->_numOfRows - 1)) {
+                        $this->EOF = true;
+                }               
+                else {
+                        $this->EOF = false;             
+                }
+        }
+}
+?>
+</PRE>
+<HR>
+<HR>
+<A HREF="PHP-HOWTO-20.html"><IMG SRC="../img/../img/../img/../img/../img/next.gif" ALT="Next"></A>
+<A HREF="PHP-HOWTO-18.html"><IMG SRC="../img/../img/../img/../img/../img/prev.gif" ALT="Previous"></A>
+<A HREF="PHP-HOWTO.html#toc19"><IMG SRC="../img/../img/../img/../img/../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  <SCRIPT>EndPage();</SCRIPT>  <SCRIPT>EndPage();</SCRIPT>  <SCRIPT>EndPage();</SCRIPT>  <SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

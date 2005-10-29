@@ -1,0 +1,181 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Oracle Database HOWTO: 在伺服器上设定 SQL*Net</TITLE>
+ <LINK HREF="Oracle-HOWTO-5.html" REL=next>
+ <LINK HREF="Oracle-HOWTO-3.html" REL=previous>
+ <LINK HREF="Oracle-HOWTO.html#toc4" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Oracle-HOWTO-5.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Oracle-HOWTO-3.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Oracle-HOWTO.html#toc4"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s4">4. 在伺服器上设定 SQL*Net</A></H2>
+
+<P>所有这些档案都会用於设定 Oracle 的网络软件（SQL*Net，和 Oracle8 的 Net8 差不多）。这些档案应该都建立在伺服器中的
+<CODE>$ORACLE_HOME/network/admin</CODE> 目录。
+<H2><A NAME="ss4.1">4.1 <CODE>tnsnames.ora</CODE></A>
+</H2>
+
+<P><CODE>TNSNAMES.ORA</CODE> 档设定所有这电脑提供的服务。现在我们描述所有挂上了伺服器的资料库。对伺服器上所有资料库你要加上类似以下的一段：
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+orcl.world =
+  (DESCRIPTION =
+    (ADDRESS_LIST =
+        (ADDRESS =
+          (COMMUNITY = tcp.world)
+          (PROTOCOL = TCP)
+          (Host = &lt;INSERT HOST NAME OF SERVER HERE> )
+          (Port = 1521)
+        )
+        (ADDRESS =
+          (COMMUNITY = tcp.world)
+          (PROTOCOL = TCP)
+          (Host = &lt;INSERT HOST NAME OF SERVER HERE> )
+          (Port = 1526)
+        )
+    )
+   (CONNECT_DATA = (SID = ORCL)
+    )
+  )
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+<H2><A NAME="ss4.2">4.2 <CODE>listener.ora</CODE></A>
+</H2>
+
+<P><CODE>listener.ora</CODE> 档描述所有其他电脑可得到的服务及伺服器的监听程式
+(listener) 所需的所有设定。
+<P>它有一段包括监听程式名称、监听程式地址、监听程式提供服务的资料库及参数设定 (listener name, listener address, databases served by the listener and configuration parameters)。
+<P>这里有一个例子：
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# 监听程式名称及所收听的地址
+LISTENER =
+        ( ADDRESS_LIST =
+                (ADDRESS =
+                        (PROTOCOL=tcp)
+                        (HOST=&lt;INSERT HOST>)
+                        (PORT=1521)
+                        (COMMUNITY=UK_SUP_TCPIP)
+                )
+                (ADDRESS =
+                        (PROTOCOL=ipc)
+                        (KEY=700)
+                        (COMMUNITY=UK_SUP_TCPIP)
+                )
+        )
+
+# 列出监听程式提供的服务
+SID_LIST_LISTENER=
+        (SID_LIST=
+                (SID_DESC=
+                        (SID_NAME=orcl)
+                        (ORACLE_HOME=/home/oracle/7.3.3.0.0)
+                )
+        )
+
+# 开始参数设定
+TRACE_LEVEL_LISTENER=OFF
+TRACE_FILE_LISTENER = "listener"
+LOG_FILE_LISTENER = "listener"
+CONNECT_TIMEOUT_LISTENER = 10
+STOP_LISTENER = YES
+DBA_GROUP = dba
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+<H2><A NAME="ss4.3">4.3 <CODE>sqlnet.ora</CODE></A>
+</H2>
+
+<P><CODE>sqlnet.ora</CODE> 档包括对网络上一个特定节点 (node) 的设定。这些资料和资料库的数目及监听程式的数目无关。这个档案中最重要的东西是 <CODE>Dead Connection Timeout</CODE> 变数的设定。
+<P>Dead connection timeout 检查每一个接到该资料库的行程及确保用户端仍有反应。如果那用户（类型不拘）并无反应，对应的 Oracle 伺服器影子行程 (shadow process) 便会被杀。
+<P>如果你有很多用户存取那资料库，这点非常有用。尤其是当你仍在程式开发阶段，用户多数不能正确地结□的时候。
+<P>以下是我的 <CODE>sqlnet.ora</CODE> 档，供各读者参考：
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+TRACE_LEVEL_CLIENT = OFF
+sqlnet.expire_time = 30         # 两次检查客户相差的秒数
+names.default_domain = world
+name.default_zone = world
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss4.4">4.4 开始及结□监听程式</A>
+</H2>
+
+<P>现在有关监听程式及 SQL*Net 的设定已经完成，我们可以试用网络软件来驳到资料库。（之前我们只是直接连接到资料库，现在则是在模拟使用远程 (remote) 用户。）
+<P>使用以上的设定来启动监听程式：
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+$ lsnrctl
+
+LSNRCTL for SCO System V/386: Version 2.3.3.0.0 - Production on 23-FEB-98 20:38:25
+
+Copyright (c) Oracle Corporation 1994.  All rights reserved.
+
+Welcome to LSNRCTL, type "help" for information.
+
+LSNRCTL> start
+Starting /home/oracle/7.3.3.0.0/bin/tnslsnr: please wait...
+
+TNSLSNR for SCO System V/386: Version 2.3.3.0.0 - Production
+System parameter file is /home/oracle/7.3.3.0.0/network/admin/listener.ora
+Log messages written to /home/oracle/7.3.3.0.0/network/log/listener.log
+Listening on: (ADDRESS=(PROTOCOL=tcp)(DEV=6)(HOST=192.168.1.1)(PORT=1521))
+Listening on: (ADDRESS=(PROTOCOL=ipc)(DEV=10)(KEY=700))
+
+Connecting to (ADDRESS=(PROTOCOL=tcp)(HOST=magic.com)(PORT=1521)(COMMUNITY=UK_SUP_TCPIP))
+STATUS of the LISTENER
+------------------------
+Alias                     LISTENER
+Version                   TNSLSNR for SCO System V/386: Version 2.3.3.0.0 - Production
+Start Date                23-FEB-98 20:38:50
+Uptime                    0 days 0 hr. 0 min. 0 sec
+Trace Level               off
+Security                  OFF
+SNMP                      ON
+Listener Parameter File   /home/oracle/7.3.3.0.0/network/admin/listener.ora
+Listener Log File         /home/oracle/7.3.3.0.0/network/log/listener.log
+Services Summary...
+  orcl          has 1 service handler(s)
+The command completed successfully
+LSNRCTL> exit
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+<P>要停止监听程式：
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+$ lsnrctl
+
+LSNRCTL for SCO System V/386: Version 2.3.3.0.0 - Production on 23-FEB-98 20:43:20
+
+Copyright (c) Oracle Corporation 1994.  All rights reserved.
+
+Welcome to LSNRCTL, type "help" for information.
+
+LSNRCTL> stop
+Connecting to (ADDRESS=(PROTOCOL=tcp)(HOST=magic.com)(PORT=1521)(COMMUNITY=UK_SUP_TCPIP))
+The command completed successfully
+LSNRCTL> exit
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+<P>如果你的 DNS 并不传回指定的主机的 IP 地址，启动及结□监听程式会花一点时间（依据 DNS 2-3 的逾时变数 (timeout variable)，大致在 2-3 分钟之间）。如果真的发生这情况，请耐心等待，不必担心。
+<P>
+<P>
+<HR>
+<A HREF="Oracle-HOWTO-5.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Oracle-HOWTO-3.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Oracle-HOWTO.html#toc4"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

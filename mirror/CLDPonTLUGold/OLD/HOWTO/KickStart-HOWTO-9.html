@@ -1,0 +1,116 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>RedHat Linux KickStart HOWTO: Modifying the RedHat installer</TITLE>
+ <LINK HREF="KickStart-HOWTO-10.html" REL=next>
+ <LINK HREF="KickStart-HOWTO-8.html" REL=previous>
+ <LINK HREF="KickStart-HOWTO.html#toc9" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="KickStart-HOWTO-10.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="KickStart-HOWTO-8.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="KickStart-HOWTO.html#toc9"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s9">9. Modifying the RedHat installer</A></H2>
+
+<P>
+<P>If you want to mess around with the installation procedure itself, the
+source code can be found on the RedHat CD-ROM or your local RedHat
+mirror site.  It's in <EM>misc/src/install</EM> under the
+<EM>i386</EM> distribution top level directory.
+<P>
+<P>If you examine the RedHat boot disk you'll see that, in addition to
+the Linux kernel <EM>vmlinuz</EM>, there's a large file
+<EM>initrd.img</EM>:
+<P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+- -rwxr-xr-x   1 root     root          559 May 11 15:48 boot.msg
+- -rwxr-xr-x   1 root     root          668 May 11 15:48 expert.msg
+- -rwxr-xr-x   1 root     root          986 May 11 15:48 general.msg
+- -rwxr-xr-x   1 root     root       968842 May 11 15:48 initrd.img
+- -rwxr-xr-x   1 root     root         1120 May 11 15:48 kickit.msg
+- -r-xr-xr-x   1 root     root         5352 May 11 15:48 ldlinux.sys
+- -rwxr-xr-x   1 root     root          875 May 11 15:48 param.msg
+- -rwxr-xr-x   1 root     root         1239 May 11 15:48 rescue.msg
+- -rwxr-xr-x   1 root     root          402 May 11 15:48 syslinux.cfg
+- -rwxr-xr-x   1 root     root       444602 May 11 15:48 vmlinuz
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>You guessed it, this is another <CODE>ext2</CODE> filesystem saved as a file
+- - but with a twist.  It's actually compressed as well.  You can uncompress
+it and then mount the result, e.g.
+<P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# gzip -dc /mnt/boot/initrd.img >/tmp/initrd.ext2
+# mkdir /mnt/initrd
+# mount -o loop /tmp/initrd.ext2 /mnt/initrd
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>Probably the most important part of this filesystem is the collection
+of loadable kernel modules which are included with the boot disk.  If
+you need to merge in a new version of a driver, you'll need to either
+replace <EM>vmlinuz</EM> with a new kernel which has this statically
+linked, or replace it in the modules collection.  What's more, you may
+need to throw other modules away to make room.
+<P>
+<P>The modules collection is the file <EM>modules/modules.cgz</EM>.
+Wondering what that might be ?  It's actually a compressed
+<CODE>cpio</CODE> archive, believe it or not!  And you thought nobody used
+<CODE>cpio</CODE> any more...  Actually RPM itself uses <CODE>cpio</CODE>
+internally, too.  Here's how to hack around with it:
+<P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# gzip -dc /mnt/initrd/modules/modules.cgz >/tmp/modules.cpio
+# cpio -itv &lt;modules.cpio >modules.listing
+# mkdir modules
+# cpio -idumv &lt;../modules.cpio
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>I don't believe that there is currently a way under Linux (at least in
+mainstream distributions) to transparently access compressed
+filesystems.  Let me know if you know better!
+<P>
+<P>If you change anything, remember to:
+<P>
+<P>
+<OL>
+<LI> Use <CODE>cpio</CODE> to recreate the archive.  How to do this is
+left as an exercise for the reader...</LI>
+<LI> Use <CODE>gzip</CODE> to compress the resulting archive.</LI>
+<LI> Copy it to <EM>/mnt/initrd</EM>, or wherever you put the
+uncompressed <EM>initrd.img</EM> archive.</LI>
+<LI> Unmount <EM>/mnt/initrd</EM> (or whatever you called it).</LI>
+<LI> Compress the new <EM>initrd.img</EM> using <CODE>gzip</CODE>
+again.</LI>
+<LI> Copy the resulting archive onto the boot disk image -
+<EM>/mnt/boot/initrd.img</EM> in our example.</LI>
+<LI> Unmount the boot disk image, e.g. <EM>/mnt/boot</EM>.  </LI>
+</OL>
+<P>
+<P>Finally, you can now create new boot floppies using this modified boot
+disk setup, e.g.
+<P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# cat boot.img >/dev/fd0
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>
+<P>
+<HR>
+<A HREF="KickStart-HOWTO-10.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="KickStart-HOWTO-8.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="KickStart-HOWTO.html#toc9"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

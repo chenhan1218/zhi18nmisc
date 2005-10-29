@@ -1,0 +1,126 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Font HOWTO: Making Fonts Available To Ghostscript</TITLE>
+ <LINK HREF="Font-HOWTO-6.html" REL=next>
+ <LINK HREF="Font-HOWTO-4.html" REL=previous>
+ <LINK HREF="Font-HOWTO.html#toc5" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Font-HOWTO-6.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Font-HOWTO-4.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Font-HOWTO.html#toc5"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s5">5. Making Fonts Available To Ghostscript</A></H2>
+
+<P>To make fonts available to ghostscript, it suffices to tell ghostscript
+where the files corresponding to a given font are located. The
+file that needs to be edited is 
+<CODE>/usr/share/ghostscript/version/Fontmap</CODE>.
+The format is very simple, almost immediately self evident on 
+perusing it.
+<H2><A NAME="ghostscript"></A> <A NAME="ss5.1">5.1 Type1</A>
+        </H2>
+
+<P>Adding Type1 fonts is straightforward. Run <CODE>type1inst</CODE> on the directory
+containing the font. <CODE>type1inst</CODE> will output a file called 
+<CODE>Fontmap</CODE>. Append this file to the ghostscript
+<CODE>Fontmap</CODE> file.
+<H2><A NAME="ss5.2">5.2 True Type</A>
+        </H2>
+
+<P>Adding truetype fonts is a little trickier, because we have to get the
+name of the TrueType font. One way (brute force, alas) to do this is using 
+the <CODE>ttf2pt1</CODE> TrueType to Type1 converter, and grabbing the font
+name from the <CODE>afm</CODE> ( there's got to be a more efficient way ! 
+but this works, ugly as it is ). You do it like this:
+<PRE>
+                ttf2pt1 -A fontname - 2 &gt; /dev/null  |grep FontName
+        
+</PRE>
+
+Then you add an entry to the ghostscript <CODE>Fontmap</CODE> file
+in the correct format, eg
+<PRE>
+        some-font       (/usr/share/fonts/subdirectory/somefont.pbf);
+        
+</PRE>
+
+Well, that works fine, but try doing it with 500 or so fonts.
+This is the kind of thing that calls for a short perlscript:
+<PRE>
+#!/usr/bin/perl
+# ttfontmap -- generate fontmap file for TrueType fonts
+my $directory=shift || print STDERR "Usage: ttfontmap {directory}\n";
+
+$directory=~s/\/$//;
+
+for my $fontname ( glob ( "$directory/*.ttf" ) )
+{
+    open ( R, "sh -c \"ttf2pt1 -A $fontname - 2&gt;/dev/null\" |" );
+    while ( &lt;R> )
+    {
+        if ( $_ =~ /^FontName/ )
+        {
+            s/^FontName\s*//;
+            chomp;
+            print "/" .  $_ . "    ($fontname);\n" ;
+        }
+    }
+    close R;
+}           
+        
+</PRE>
+
+<EM>You can 
+<A HREF="http://pegasus.rutgers.edu/~elflord/font_howto/ttfontmap">download this script</A></EM>   
+<P>To set this script up, all you need to do is cut and paste it into
+a file called <CODE>ttfontmap</CODE>, and place the file somewhere
+in your <CODE>PATH</CODE> ( such as <CODE>/usr/bin</CODE> ).
+You run this script like this: 
+<PRE>
+        ttfontmap directory &gt; output_file
+        
+</PRE>
+
+where <CODE>directory</CODE> is the directory containing the 
+fonts. You are left with the file <CODE>output_file</CODE> which you can append
+to your ghostscript fontmap. Note: some will observe that you could 
+just use 
+<PRE>
+        ttfontmap directory &gt;&gt; /usr/share/ghostscript/version/Fontmap
+        
+</PRE>
+
+However, I advise against this ( what would happen if you typed ``&gt;'' instead of 
+``&gt;&gt;''
+? )
+<H2><A NAME="ss5.3">5.3 Using Ghostscript To Preview Fonts</A>
+</H2>
+
+<P>Once you've made fonts available to ghostscript, you can preview them.
+Do this by running the ghostscript interpreter on the file <CODE>prfont.ps</CODE>
+in your ghostscript installation, and after you start it, type:
+<PRE>
+        /Fontname DoFont
+        
+</PRE>
+
+at the ghostscript font ( where <CODE>FontName</CODE> is the ghostscript
+name of the font you wish to preview ).
+There are several other ways you can invoke <CODE>gs</CODE>. For example,
+if you want to create a postscript file that you can look at in 
+a nicer postscript viewer such as <CODE>gv</CODE>, you can use
+<PRE>
+        gs -sDEVICE=pswrite -sOutputFile=somefile.ps  prfont.ps
+        
+</PRE>
+
+Having done this, you can also print your output file.
+<P>
+<HR>
+<A HREF="Font-HOWTO-6.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Font-HOWTO-4.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Font-HOWTO.html#toc5"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

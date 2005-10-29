@@ -1,0 +1,57 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Linux 2.4 Packet Filtering HOWTO: 封包如何穿越(traverse)过滤</TITLE>
+ <LINK HREF="Packet-Filtering-HOWTO-7.html" REL=next>
+ <LINK HREF="Packet-Filtering-HOWTO-5.html" REL=previous>
+ <LINK HREF="Packet-Filtering-HOWTO.html#toc6" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Packet-Filtering-HOWTO-7.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Packet-Filtering-HOWTO-5.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Packet-Filtering-HOWTO.html#toc6"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s6">6. 封包如何穿越(traverse)过滤</A></H2>
+
+<P>核心从 'filter' 表格的三个列表(lists) 开始；这三个列表叫做 <B>firewall chains(防火墙链)</B> 或就叫
+<B>chains(链)</B>。 这三个链分别为<B>INPUT</B>、<B>OUTPUT</B> 、和 <B>FORWARD</B> 。
+<P>
+<P><B>这跟 2.0 和 2.2 核心有很大差别哦！</B>
+<P>
+<P>对於 ASCII 艺术迷来说，各链(chains)的布置如下：
+<PRE>
+                          _____
+Incoming                 /     \         Outgoing
+       -->[Routing ]--->|FORWARD|------->
+          [Decision]     \_____/        ^
+               |                        |
+               v                      ____
+              ___                    /    \
+             /   \                  |OUTPUT|
+            |INPUT|                  \____/
+             \___/                      ^
+               |                        |
+                ----> Local Process ----
+</PRE>
+<P>
+<P>其中三个圈代表著前述的三个链，当一个封包抵达上图中的其中一个圈，相应的链就会接受检验(examined)，以决定那个封包的命运。如果链说 DROP 掉这个封包，那麽它就会就地正法，但如果链说 ACCEPT 这个封包，那麽它就继续在图示中穿越。
+<P>
+<P>一个链(chain)其实就是众多规则(rules)中的一个检查清单(checklist)。每一条规则都会说“如果封包表头看起来像这样，就如此这般处置这个封包”。如果规则的设定和封包并不符合(match)，那麽就交由链中的下一个规则继续处理。而最终，如果再没有规则可以参考，那麽核心就会看链的<B>policy(原则)</B> 以决定怎麽做。在一个安全至上的系统里，原则(policy)通常都会告诉核心 DROP 掉该封包。
+<P>
+<P>
+<OL>
+<LI>当一个封包进入的时候(假设，通过 Ethernet 网路卡)，核心首先看看封包的目的地(destination)：这称之为 ' rouging (路由)'。
+</LI>
+<LI>如果目的地址为本机，这个封包就按图示下行至 INPUT 链。如果它能够通过，那麽等待这个封包的行程(processes)就将之接管下来。
+</LI>
+<LI>否则，如果核心并没启动转递功能(forwarding)，或是它不知道如何转递这个封包，那麽这个封包就会被丢弃(dropped)。如果转递功能已经启动，同时封包指向另一个网路界面(如果您还有另外一张)，然後这个封包就按图示右行至 FORWARD 链。如果它被接受(ACCEPT)，那麽它就会被送出去。
+</LI>
+<LI>最後一种情形，一个在本机运行的程式会送出网路封包。封包就直接交给 OUTPUT 链：如果是 ACCEPT，然後这个封包会继续送出至它所指向的界面。</LI>
+</OL>
+<P>
+<HR>
+<A HREF="Packet-Filtering-HOWTO-7.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Packet-Filtering-HOWTO-5.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Packet-Filtering-HOWTO.html#toc6"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

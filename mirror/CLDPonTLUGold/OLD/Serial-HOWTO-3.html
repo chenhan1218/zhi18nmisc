@@ -1,0 +1,123 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Linux Serial HOWTO 中譯版: 串列埠的名稱是什麼?</TITLE>
+ <LINK HREF="Serial-HOWTO-4.html" REL=next>
+ <LINK HREF="Serial-HOWTO-2.html" REL=previous>
+ <LINK HREF="Serial-HOWTO.html#toc3" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Serial-HOWTO-4.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Serial-HOWTO-2.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Serial-HOWTO.html#toc3"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s3">3. 串列埠的名稱是什麼?</A></H2>
+
+<P>一個輸出/入(I/O)埠是用來將資料送入電腦及從電腦取出的通路．
+有許多種類的輸出/入埠，例如串列埠，平行埠，磁碟控制器，乙太網路卡等等．
+我們要處理的是串列埠，因為數據機及終端機是串列裝置．
+每一個串列埠必須有一個輸出/入位址，以及一個插斷號碼(IRQ)．
+有四個串列設備對應到 COM1 - COM4:
+<BLOCKQUOTE><CODE>
+<PRE>
+ttyS0 (COM1) address 0x3f8 IRQ 4
+ttyS1 (COM2) address 0x2f8 IRQ 3
+ttyS2 (COM3) address 0x3e8 IRQ 4
+ttyS3 (COM4) address 0x2e8 IRQ 3
+</PRE>
+</CODE></BLOCKQUOTE>
+
+如果 Linux 啟動時沒有偵測到任何串列裝置，請確定在編譯核心時有加入串列支援．
+在這份文件中，我是以 <CODE>ttyS0</CODE> 參照 COM1，<CODE>ttyS1</CODE> 參照 COM2，以 <CODE>ttyS2</CODE> 參照 COM3 ，而以 <CODE>ttyS3</CODE> 參照 COM4．
+注意這些裝置預設的 IRQ 是重疊的．你無法由這些預設值使用所有的串列埠，你必須重新指定不同的 IRQ．
+參見 
+<A HREF="Serial-HOWTO-8.html#irqaddr">我能使用超過兩個的串列裝置嗎?</A> 一節說明如何設定 IRQ．
+<P>某些安裝方式會建立兩個額外的設備，給你數據機使用的 <CODE>/dev/modem</CODE> 以及給你滑鼠使用的 <CODE>/dev/mouse</CODE>．
+它們都是鏈結到你在安裝時所指定適當 <CODE>/dev</CODE> 裡的設備的符號鏈結（除非你用的是匯流排滑鼠(bus mouse) ，那麼 <CODE>/dev/mouse</CODE> 將會指到匯流排滑鼠這個設備）．
+<P>已經有些關於使用 <CODE>/dev/mouse</CODE> 以及 <CODE>/dev/modem</CODE> 優缺點的討論．
+我<EM>強烈地</EM>反對使用這些鏈結，如果你打算用你的數據機接受撥接的話，要是你使用了 <CODE>/dev/modem</CODE> 那麼你將會因為鎖定檔案(lock files)無法正確運作而遭遇到困難．
+如果你喜歡它們的話就用吧，但是<EM>要確定它們指向正確的設備</EM>．
+然而，如果你改變或除去這個連結，某些應用程式(例如 <CODE>minicom</CODE>)可能要重新設定．
+<P>
+<H2><A NAME="ss3.1">3.1 在 <CODE>/dev</CODE> 裡的串列設備及主要和次要號碼</A>
+</H2>
+
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+/dev/ttyS0 major 4, minor 64    /dev/cua0 major 5, minor 64
+/dev/ttyS1 major 4, minor 65    /dev/cua1 major 5, minor 65
+/dev/ttyS2 major 4, minor 66    /dev/cua2 major 5, minor 66
+/dev/ttyS3 major 4, minor 67    /dev/cua3 major 5, minor 67
+</PRE>
+</CODE></BLOCKQUOTE>
+
+要注意到所有的發行套件都應該已經正確地建立了這些設備．
+你可以用下法檢查:
+<BLOCKQUOTE><CODE>
+<PRE>
+linux% ls -l /dev/cua*
+linux% ls -l /dev/ttyS*
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H3><A NAME="dev"></A> 在 <CODE>/dev</CODE> 中建立設備</H3>
+
+<P>如果你沒有其中的一個設備，你必須自己用 <CODE>mknod</CODE> 指令建立它．
+例如，假定你需要建立 <CODE>ttyS0</CODE> 設備：
+<BLOCKQUOTE><CODE>
+<PRE>
+linux# mknod -m 666 /dev/cua0 c 5 64
+linux# mknod -m 666 /dev/ttyS0 c 4 64
+</PRE>
+</CODE></BLOCKQUOTE>
+
+你也可以使用 <CODE>MAKEDEV</CODE> 這個指令稿，在 <CODE>/dev</CODE> 下應該會有．
+這簡化了設備的建立．例如，如果你需要建立 <CODE>ttyS0</CODE> 設備則應該輸入：
+<BLOCKQUOTE><CODE>
+<PRE>
+linux# cd /dev
+linux# ./MAKEDEV ttyS0
+</PRE>
+</CODE></BLOCKQUOTE>
+
+這將會處理關於連線進來以及連線出去的設備之建立，並設定正確的權限．
+<P>
+<H2><A NAME="ss3.2">3.2 一般多埠板的注意事項</A>
+</H2>
+
+<P>你的多埠板所使用的設備視你使用那一種多埠板而定．
+這些細節詳細列在隨附於 <CODE>setserial</CODE> 程式的 <CODE>rc.serial</CODE> 裡面．
+如果你嘗試使用多埠板的話我強烈建議你取得最新版本的 <CODE>setserial</CODE>．
+你可能會需要建立這些設備．無論是用 <CODE>mknod</CODE> 指令或是 <CODE>MAKEDEV</CODE> 指令稿都可以．
+多埠板所用設備是以加上 ``64 + 埠號'' 來建立的．所以，如果你想為 <CODE>ttyS17</CODE> 建立設備，你應該輸入：
+<BLOCKQUOTE><CODE>
+<PRE>
+linux# mknod -m 666 /dev/cua17 c 5 81
+linux# mknod -m 666 /dev/ttyS17 c 4 81
+</PRE>
+</CODE></BLOCKQUOTE>
+
+要注意到 ''64 + 17 = 81''．使用 <CODE>MAKEDEV</CODE> 指令稿的話，你應該輸入：
+<BLOCKQUOTE><CODE>
+<PRE>
+linux# cd /dev
+linux# ./MAKEDEV ttyS17
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>注意: SIIG 的 IO1812 手冊上列出的 COM5-COM8 是錯的．它們應該是 COM5=0x250, COM6=0x258, COM7=0x260, 以及  COM8=0x268．
+<P>注意: Digi PC/8 Interrupt Status Register 是 0x140．
+<P>注意: 對於 AST Fourport，你必須在 <CODE>rc.serial</CODE> 中指定 <CODE>skip_test</CODE>．
+<P>
+<H2><A NAME="ss3.3">3.3 智慧型多埠板的注意事項</A>
+</H2>
+
+<P>閱讀隨附驅動程式而來的資訊．
+這些板使用了特殊的裝置，而非標準的．這些資訊視你的硬體而定．
+<P>
+<HR>
+<A HREF="Serial-HOWTO-4.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Serial-HOWTO-2.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Serial-HOWTO.html#toc3"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

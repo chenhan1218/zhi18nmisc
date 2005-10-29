@@ -1,0 +1,421 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<!-- saved from url=(0041)ftp://ftp.fni.com/pub/wu-ftpd/guest-howto -->
+<HTML><HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+<META content="MSHTML 5.00.2614.3500" name=GENERATOR>
+<Title>Guest HOWTO</Title>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 4, 1);</SCRIPT>
+<XMP>  Copyright (c) 1999,2000 WU-FTPD Development Group.  
+  All rights reserved.
+  
+  Portions Copyright (c) 1980, 1985, 1988, 1989, 1990, 1991, 1993, 1994
+    The Regents of the University of California.
+  Portions Copyright (c) 1993, 1994 Washington University in Saint Louis.
+  Portions Copyright (c) 1996, 1998 Berkeley Software Design, Inc.
+  Portions Copyright (c) 1989 Massachusetts Institute of Technology.
+  Portions Copyright (c) 1998 Sendmail, Inc.
+  Portions Copyright (c) 1983, 1995, 1996, 1997 Eric P.  Allman.
+  Portions Copyright (c) 1997 Stan Barber.
+  Portions Copyright (c) 1997 Kent Landfield.
+  Portions Copyright (c) 1991, 1992, 1993, 1994, 1995, 1996, 1997
+    Free Software Foundation, Inc.  
+ 
+  Use and distribution of this software and its source code are governed 
+  by the terms and conditions of the WU-FTPD Software License ("LICENSE").
+ 
+  If you did not receive a copy of the license, it may be obtained online
+  at http://www.wu-ftpd.org/license.html.
+ 
+  $Id: guest.HOWTO,v 1.1 2000/07/28 18:18:13 wuftpd Exp $
+***********************************************************************
+
+Guest HOWTO  (v 1.1)
+
+本文发表于1995年9曰15日，并于2000年7曰28日由原著者Michael Brennen提供给
+WU-FTPD发展小组
+
+***********************************************************************
+
+作者∶Michael Brennen <mbrennen@fni.com>
+标题∶wu-ftpd guest accounts （wu-ftpd的访客用户帐户）
+译者∶赵平望  tchao@worldnet.att.net
+(译注∶本文原件载于 ftp://ftp.fni.com/pub/wu-ftpd/guest-howto
+现存放于 http://www.wu-ftpd.org/HOWTO/guest.HOWTO)
+
+
+wu-ftpd提供三种登录方式，分别为∶ 
+
+  1: anonymous FTP （匿名FTP）
+  2: real FTP （真正FTP）
+  3: guest FTP （访客FTP）
+
+大家对匿名FTP的用法知之甚详；利用“anonymous”作为用户名，附加电子邮件式的
+密码就可登录FTP网站。
+
+真正FTP利用真正的用户名和密码登录，用户能够访问整个网站系统。这种访问会
+对网站系统的安全构成严重威胁，除非绝对必要，并在严格控制之下，否则应该绝
+对避免。
+
+访客FTP是一种特定形式的真正FTP；利用真正的用户名和密码登录，但经过chroot
+后，用户只能进入指定给他的主目录（home directory），并且无法越出这个主目
+录的范围。这种设定大大提高网站系统的安全，同时提供了远端用户维护帐户的方便。
+
+如要进一步了解“chroot（）”功能，请参看下面指令，同时也可参考Unix使用说明。
+
+man chroot
+
+根据操作系统的不同，“chroot()”可能在1、2和8节（或可能在其他节）有不同内
+容的手册页。（man # chroot ）
+
+这份HOWTO文件对设定访客FTP帐户的必要步骤作了详细说明。文内并没有提到匿名
+FTP和真正FTP两种帐户的设定，不过，由于chroot的性质，设定‘ls’指令的程序
+也适用于匿名FTP。
+
+***********************************************************************
+
+作为示范，此处假定在 /home/web 目录下有一个用户帐号。这个帐户通过FTP在远
+端维护。远端使用者的用户名为Mortimer 。Mortimer 的帐号名为“mort”，属于
+组名为“client”的群组。
+
+(Yes, there is some droll humor here for the French speakers...)
+
+
+1. 在 /etc/passwd和 /etc/group中分别设定mort帐户。这可用手工设定，或使用
+adduser，或任何Unix的编辑工具。如用adduser设定，必须手工作出修改，在用户
+主目录路径中添加‘/./’。 
+   
+   在 /etc/ftpaccess 中也需作出设定。
+
+/etc/passwd:
+mort:*:403:400:Mortimer Snerd:/home/web/mort/./:/etc/ftponly
+                                            ^^^
+   帐户设定中的 /./ 部分规定了chroot() 的范围。如果chroot()的目标改为
+/home/web，而chdir()指向mort，则此行内容应改为∶ 
+
+mort:*:403:400:Mortimer Snerd:/home/web/./mort/:/etc/ftponly
+                                       ^^^
+
+   --------> （注意∶ 在 /etc/shells中应该已有“/etc/ftponly”的设定）
+
+/etc/group:
+client::400:mort
+
+   设定mort的密码，或不妨使用S/KEY。
+
+在目前几版wu-ftpd中，都已默认使用 /etc/ftpaccess文档。如果由于某种原因，你
+使用的wu-ftpd不默认使用 /etc/ftpaccess， 则应至少采用下列方法之一，使
+ /etc/ftpaccess 得到适当使用∶ 
+
+1)  编辑原码默认使用 /etc/ftpaccess；
+    修改原码，设定 use_accessfile = 1；
+
+或
+
+2)  利用 -a选项运行驻留程序。
+
+
+/etc/ftpaccess:
+class   local   real,guest,anonymous ...... （译注∶在class指令中设定guest）
+...                  ^^^^^
+...                    +----------- 在适当类（class）中设定‘guest’；
+...                                 这项设定取决于网址。
+...
+...
+delete     no   anonymous,guest               # delete 权限?
+overwrite  no   anonymous,guest               # overwrite 权限?
+rename     no   anonymous,guest               # rename 权限?
+chmod      no   anonymous,guest               # chmod 权限?
+umask      no   anonymous,guest               # umask 权限?
+...                       ^^^^^
+...                         +------ 决定guest是否应拥有这一权限； 
+...                                 这项设定取决于网址。
+...
+...
+path-filter  guest      /etc/pathmsg  ^[-A-Za-z0-9_\.]*$  ^\.  ^-
+...
+guestgroup client
+...
+
+
+2. 建立mort的主目录，并设定其拥有权和各种保护。
+
+mkdir /home/web/mort
+
+chown mort.client /home/web/mort
+
+chmod 755 /home/web/mort
+
+
+3. 在mort帐户内建立目录结构。
+   建立 /etc、/lib和任何其他chdir()可以进入的必要目录。
+
+cd /home/web/mort
+
+mkdir etc bin [dev lib]   (不一定需要dev 和 lib，视操作系统而定)
+
+chown root.daemon etc bin
+
+chmod 111 etc bin
+
+
+4. 添加 ~/bin目录内的内容。
+
+
+注意∶以guest身份登录FTP网站后，如果无法看到目录内容，必然是安装的‘ls’
+出了问题。如果使用的‘ls’链接到动态函数库，并且在guest用户所属目录内没
+有装对必要的函数库，‘ls’就不会运作，也就看不到guest用户目录内的内容。
+
+这是在wu-ftpd问题单上问得最多的问题。我再重复一次∶如果看不到目录的内容，
+那就是‘ls’安装不对。安装‘ls’的正确步骤随操作系统而异。这份HOWTO的后
+面内容列举了一些与具体操作系统有关的步骤，不妨加以参考。
+
+也有人指出另一项问题∶/etc/passwd 内为guest帐户设定的chroot()目录必须是
+~/bin 所在的目录。换言之，如果chroot()目录是 /u01/ftp/ftptest/，而
+ /etc/passwd 帐户的设定为∶
+
+yourftp:x:42:42:guest ftp account:/u01/ftp/./ftptest:/etc/ftponly
+
+   这样的设定有错，因为 ~/bin目录不在chroot()的目录下。必须按照如下的设定∶ 
+
+yourftp:x:42:42:guest ftp account:/u01/ftp/ftptest/./:/etc/ftponly
+
+如果登录FTP后仍然看不到文档，不妨查找其他文献协助。在http://www.wuftpd.org/ 
+的FAQ和资料中心内还有更多这方面的资料。
+
+尽可能使用固定链接的应用软件
+
+不妨从ftp://ftp.gnu.org/pub/gnu/下载GNU原码编辑你自己的‘ls’。
+
+
+cp /.../bin/ls bin
+chown root.bin bin/ls
+chmod 111 bin/ls
+
+在传送之时可同时加压∶
+
+cp /.../bin/gzip bin
+cp /.../bin/tar  bin
+chown root.bin bin/gzip
+chown root.bin bin/tar
+chmod 111 bin/gzip
+chmod 111 bin/tar
+
+如果应用软件不是固定的，在~/dev 内可建立必要的设备目录，并将必要的函数库
+拷贝到~/lib。查阅随操作系统安装的ftpd的手册页。
+
+关于硬和软符号联接∶
+
+在这种情况下，chroot()排除了使用软联接。不过，有可能将硬联接与应用软件链
+接，而不需复制这些应用软件的备份。如果硬盘的空间不大，这能节省一些硬盘空间。
+
+
+5. 建立~/etc目录的内容。
+
+编辑“passwd”如下∶
+
+root:*:0:0::/:/etc/ftponly
+mort:*:403:400::/home/web/mort/./:/etc/ftponly
+
+
+编辑“group”如下∶
+ 
+root::0:root
+client::400:mort
+
+
+chown root.daemon passwd group
+
+chmod 444 passwd group
+
+
+6. 增加一些安全上的设定∶
+ 
+cd /home/web/mort
+touch .rhosts .forward
+chown root.root .rhosts .forward
+chmod 400 .rhosts .forward
+
+至此设定完毕，网站上应该有一个可用的FTP访客组（guest group）。通过FTP，
+利用“mort”用户登录，此时应该进入mort的帐户，并且显示当前的目录为“/”。
+
+如果没有看到“/”，仔细核查各项设定，无可否认，设定中有许多步骤，一步都
+不能有错。如果还是不行，不妨写信到wu-ftpd@wugate.wustl.edu 要求协助。
+
+**************************************************************************
+
+各种操作系统的相应设定
+
+LINUX∶
+
+  Linux 不需要 ~/dev目录。不过如果~/bin内的应用软件是动态链接的，则需要
+~/lib目录。 
+
+  利用‘ldd’指令查找动态链接的应用软件需要何种函数库。 
+
+
+LINUX REDHAT 6.1∶   （Steven Schramm sws@lacasa.com）
+
+由于下列lib目录的设定，我的安装才顺利成功∶
+
+   - 建立lib目录，改变mode为 111
+   - cd lib
+   - cp /lib/ld-2.1.1.so .
+   - cp /lib/libc-2.1.1.so .
+   - ln -s ld-2.1.1.so ld-linux.so.2
+   - ln -s libc-2.1.1.so libc.so.6
+   - chmod 111 ld-2.1.1.so
+   - chmod 555 libc-2.1.1.so
+
+
+SOLARIS∶ 
+
+  Solaris不能处理SETPROCTITLE，因此取消编辑时间选项。
+
+  (The following was culled from a post by Tom Leach to the wu-ftpd list.)
+
+  >如在solaris 2.x 系统上无法使用ls -al和dir，可用下列方法找出原因... 
+
+  >truss -f chroot ~ftp /bin/ls
+
+  >ls指令会在匿名FTP运行的相同chroot环境中运行。truss会显示访问了何种
+  >files/libraries/devices，和ls在何处需要这些devices。 
+
+  >Tom Leach
+  >leach@oce.orst.edu
+
+SOLARIS 2.6∶
+
+  ~ftp/usr/lib目录的内容
+
+  Solaris利用~ftp/usr/lib内的函数库，而不是~ftp/lib内的函数库
+  将下列函数库从/usr/lib拷贝到~ftp/usr/lib
+  同时，并不确知intl和w是否必要
+  ld.so
+  ld.so.1
+  libc.so.1
+  libdl.so.1
+  libintl.so (can be a symlink to libintl.so.1)
+  libintl.so.1
+  libw.so.1
+
+
+  ~ftp/dev目录的内容∶
+  
+  建立“zero”和“tcp”的entries。检查现有 /dev/zero 和 /dev/tcp 目录，
+确定 major       和 minor 数都正确无误，然后利用“mknod”在 ~ftp/dev目
+录内建立device 文档。
+
+  mknod zero c 11 42
+  mknod tcp c 13 12
+
+  上文由Gregor Mosheh gregor@novoironlight.com提供，深表感谢。
+
+
+SUN 4.1.x∶
+
+  为FTP目录建立 ~dev/zero和 ~dev/tcp设备如下∶
+  运行下列‘ls’指令，然后在 ~/dev目录中用‘mknod’指令以‘ls’取得的大
+节点数和小节点数建立设备(Jim Davis jdavis@cs.arizona.edu）。
+
+  ls -lL /dev/zero /dev/tcp
+  cd dev
+  mknod zero c <major> <minor>
+  mknod tcp  c <major> <minor>
+  cd ..
+  chmod 555 dev
+
+  也可用下列方法建立设备（Ian Willis <ianw.sco.com>）；对每项设备
+（zero, tcp等）重复使用这项指令。
+
+  find /dev/zero -print | cpio -pd ~ftp
+
+  此处可能需要下列共享的函数库∶
+  ~lib/ld.so
+  ~lib/libc.so
+  ~lib/libdl.so
+
+
+BSDI:
+
+  如果使用共享函数库，将~ftp/shlib 及其内容使用555保护。
+
+ Darci Chapman (dchapmax@preview.jf.intel.com)指出∶
+
+  在chroot()的各个目录内需要创建下列目录和文档（匿名FTP下的~ftp目录或访
+客用户chroot()的目录）∶
+
+  dr-xr-xr-x root/wheel        0 Nov  3 01:43 1995 bin/
+  -r-xr-xr-x root/wheel    12288 Nov  3 01:43 1995 bin/compress
+  -r-xr-xr-x root/wheel    45056 Nov  3 01:43 1995 bin/gzip
+  -r-xr-xr-x root/wheel    12288 Nov  3 01:43 1995 bin/ls
+  -r-xr-xr-x root/wheel    65536 Nov  3 01:43 1995 bin/pax
+  dr-xr-xr-x root/wheel        0 Nov  3 01:43 1995 etc/
+  -r--r--r-- root/wheel      793 Nov  3 01:43 1995 etc/group
+  -r--r--r-- root/wheel      817 Nov  3 01:43 1995 etc/localtime
+  -r--r--r-- root/wheel    40960 Nov  3 01:43 1995 etc/pwd.db
+  dr-xr-xr-x root/wheel        0 Feb  3 12:34 1995 pub/
+  dr-xr-xr-x root/wheel        0 Nov  3 01:43 1995 shlib/
+  -r-xr-xr-x root/wheel   298407 Nov  3 01:43 1995 shlib/libc_s.2.0
+
+
+IRIX (5.3, 6.x)
+
+ frans stekelenburg gjs@knmi.nl指出∶
+
+ (与SUN 4.1.x类似，但没有/dev/tcp目录)
+
+为FTP目录建立~dev/zero设备如下。（诀窍∶查找IRIX系统联机文献内的dev/zero）。
+运行下列‘ls’指令，然后在~/dev目录内用‘mknod’指令根据‘ls’找到的大节点
+数和小节点数创建设备目录(感谢Jim Davis <jdavis@cs.arizona.edu>)。
+
+ ls -lL /dev/zero
+ cd dev
+ mknod zero c <major> <minor>
+ cd ..
+ chmod 555 dev
+
+ 也可用下列方法创建设备目录（Ian Willis <ianw.sco.com>）；为每种设备(zero, 
+tcp等)重复下列指令∶
+
+ find /dev/zero -print | cpio -pd ~ftp
+
+ 此时可能需要下列共享函数库∶
+ ~lib/rld
+ ~lib/libc.so.1
+ (在 /lib内的函数库)
+
+ 查阅有关FTPD的手册页，或在IRIX系统的联机文献“IRIX Insight Library”内的
+“IRIX Admin: Networking and Mail ”章节查找
+“How to Set Up a Proper Anonymous FTP Account ”。
+
+
+AIX:
+
+ Chuque Berry chuque@ns2.tiba.net 和 Joseph Matusiewicz
+ Joseph.Matusiewicz@noaa.gov 指出，AIX 需要下列文档才能使外部ls运作∶
+
+ ~lib/libc.a
+ ~lib/libcurses.a  (???)
+ 
+也可能需要下列文档∶
+ 
+ ~lib/libcrypt.a
+
+**************************************************************************
+
+关于安全方面的其他考虑，请参阅 Klaus的FAQ:
+
+http://www.iss.net/iss/faq.html
+
+**************************************************************************
+
+如果您知道一些特别诀窍，使guest能在您的系统上顺利运行，或您知道一些安全上
+的要诀，请通知我，我会把它增订到这份文件内。
+
+如需协助，请使用wu-ftpd的邮件名单，我会查看贴在上面的问题，请别单独写信给我。
+
+Michael Brennen
+mbrennen@fni.com
+</XMP>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

@@ -1,0 +1,560 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>German HOWTO: Anwendungssoftware</TITLE>
+ <LINK HREF="German-HOWTO-7.html" REL=next>
+ <LINK HREF="German-HOWTO-5.html" REL=previous>
+ <LINK HREF="German-HOWTO.html#toc6" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="German-HOWTO-7.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="German-HOWTO-5.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="German-HOWTO.html#toc6"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s6">6. Anwendungssoftware</A></H2>
+
+<P>Mittlerweile sind viele Programme hinsichtlich der Unterstützung von
+landesspezifischen Einstellungen so weit genormt, man einen Großteil
+der Konfiguration durch Setzen der Umgebungsvariable <CODE>LANG</CODE> auf den
+Wert <CODE>de_DE</CODE> erledigen kann. Dies ist ein Standard, der in einem
+der vielen POSIX-Standards festgelegt wird, der aber nicht alle
+Bereiche abdeckt. So fehlen z.B. Papiergröße und Zeitzone; allerdings
+wären beide bei größeren Ländern schlecht mit einer Variable zu
+erfassen, so daß man sie außen vorgelassen hat.
+<P>Der richtige Ort für das Setzen von Umgebungsvariablen sind die
+Dateien <CODE>/etc/profile</CODE> oder <CODE>~/.bash_profile</CODE>:
+<BLOCKQUOTE><CODE>
+<PRE>
+#LANG=de_AT  # in Österreich
+#LANG=de_CH  # in der deutschsprachigen Schweiz
+LANG=de_DE   # in Deutschland
+export LANG
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Soweit die Theorie. In der Tat ist es etwas nervig, wenn sich deutsche und
+engliche Fehlermeldungen, Datumsangaben, usw. aufgrund von unvollständiger
+Internationalisierung mischen:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+tar: Kann Archiv 'foo.tgz' nicht öffnen: Permission denied
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>In einem solchen Fall überschreibt man lieber diesen Aspekt der
+LANG-Variable:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+LC_MESSAGES=C
+export LC_MESSAGES
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Dabei gehe ich davon aus, daß die eigene Linux-Distribution den
+POSIX-Standard durch die <EM>Locale</EM>-Dateien bereitstellt. Leider sind noch
+nicht alle Linux-Distributionen auf diesem Stand, so daß die obige
+Einstellung evtl. zu nervigen Fehlermeldungen führt. Beispiel:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+Warning: locale not supported by C library, locale unchanged
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>In einem solchen Fall sollte man sich beim Hersteller des Distribution
+beschweren. Oder auf eigene Faust die locale-Dateien installieren,
+inkl. Kompilation der libc.
+<P>Details zu den <EM>Lokalen</EM> findet man im Linux Locale mini-HOWTO oder in
+der man-page zu locale. Der Rest dieses Kapitels behandelt die
+&quot;Ausreißer&quot;, die die Umgebungsvariable LANG nicht auswerten.
+<P>
+<P>
+<H2><A NAME="ss6.1">6.1 Außer Konkurenz ...</A>
+</H2>
+
+<P>
+<H3>Zeichensätze ohne Umlaute</H3>
+
+<P>Sowohl für die Textkonsole als auch für X11 existieren Zeichensätze
+(engl. `fonts'), die nicht alle Zeichen aus <EM>ISO-latin1</EM>
+enthalten. D.h. die fehlenden Zeichen (z.B. Umlaute) werden als
+Leerzeichen oder gar nicht auf dem Bildschirm dargestellt.  In diesem
+Fall hilft natürlich die Konfiguration der Programme nicht weiter,
+sondern es muß ein anderer (vollständiger) Zeichensatz gewählt werden.
+<P>
+<P>
+<H3>Eigene Süppchen</H3>
+
+<P>Konfigurationsdateien: <CODE>~/.Xresources</CODE> und <CODE>/etc/X11/Xresources</CODE>
+<P>Das  X-Window-System wartet mit einer eigenen Konfigurationsmöglichkeit
+für Locale auf. Diese muß man aber nur nutzen, wenn man für einzelne
+X-Programme die Locale anders setzen will, d.h. wenn man die Einstellungen
+in den Umgebungsvariablen überschreiben will.
+<P>Anders ausgedrückt: durch Setzen der Locale über die X-Resourcen
+verkompliziert man in den meisten Fällen das Setup der eigenen
+Linux-Machine (und wer will das schon). Andererseits gibt es natürlich
+Fälle, in denen das evtl. notwendig ist (aber wer hat die schon).
+<P>Gerüchten zufolge bestimmen folgende Resourcen die Locale von X11:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+!*displayLang:   de_DE
+!*timeFormat:    de_DE
+!*inputLang:     de_DE
+!*basicLocale:   de_DE
+!*numeric:       de_DE
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Achtung: das Kommentarzeichen ist `!', nicht `#'.
+<P>
+<P>
+<H2><A NAME="ss6.2">6.2 Die Ausreißer</A>
+</H2>
+
+<P>Solange nicht ausdrücklich erwähnt, betreffen die Einstellungen alle
+Versionen eines Programms. Die vorzunehmenden Einstellungen sind durch
+Einrückung markiert.
+<P>
+<H3>readline und Verwandte (z.B. <CODE>bash</CODE>)</H3>
+
+<P>Konfigurationsdatei: <CODE>~/.inputrc</CODE>
+Versionen: ab bash 1.14.1
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+set meta-flag on
+set convert-meta off
+set output-meta on
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Kopiert man die Datei außerdem noch nach `/etc/skel/', so erhält sie
+jeder neu angelegte Benutzer automatisch. Eine globale
+Konfigurationsdatei gibt es leider noch nicht.
+<P>Vorsicht: Kommentare und Leerzeilen in dieser Datei können zu
+Problemen füren.
+<P>
+<P>
+<H3>telnet</H3>
+
+<P>Konfigurationsdatei: <CODE>~/.telnetrc</CODE>
+<P>Erscheinen beim <CODE>telnet</CODE> statt `äöü' die Zeichen `dv|', so muß
+man für jede Maschine einen Eintrag der Form:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+localhost
+     set binary true
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>anlegen. Denselben Effekt erreicht man mit der Option "-8". Eine
+globale Konfigurationsdatei für <CODE>telnet</CODE> existiert nicht.
+<P>
+<P>
+<H3>ytalk</H3>
+
+<P>Konfigurationsdateien: <CODE>~/.</CODE> und <CODE>/etc/</CODE>
+<P>
+<P>
+<H3>selection</H3>
+
+<P>
+<P>Das Programm selection muß neu compiliert werden, damit es Umlaute korrekt
+per Cut&amp;Paste transportiert. Die notwendigen Modifikationen (Patch)
+stammen von Andries Brouwer und liegen unter der URL
+ftp://ftp.win.tue.nl/pub/linux/util
+<P>Gegenüber <CODE>gpm</CODE> verbraucht <CODE>selection</CODE> deutlich weniger virtuellen
+Speicher, daher ist es auch heute noch von Interesse.
+<P>
+<P>
+<H3>dosemu</H3>
+
+<P>Konfigurationsdateien: <CODE>~/.dosrc</CODE> und <CODE>/etc/dosemu.conf</CODE>
+<P>Versionen: ab 0.52pl16
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+keyboard {  layout de-latin1  keybint on  rawkeyboard on  }
+
+X { updatefreq 8 title `DOS in a BOX' icon_name `xdos' keycode }
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Hinweis: die Einstellung `keycode' funktioniert nur einwandfrei
+mit XFree86, nicht dagegen mit Xterminals o.ä.
+<P>
+<P>
+<H3>emacs</H3>
+
+<P>Versionen: ab 19.22 (GNU)
+<P>Hinweis: einige Versionen des emacs haben Probleme mit der
+Aktivierung der Umlaute. Ab Version 19.29 sollten damit keinerlei
+Schwierigkeiten mehr auftreten.
+<P>
+<A NAME="emacsrc"></A> 
+Die Haupt-Konfigurationsdateien für den `emacs' sind:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+/usr/lib/emacs/site-lisp/site-start.el       (global),
+~/.emacs                                 (persönlich),
+/usr/lib/emacs/site-lisp/default.el          (global),
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>und werden in dieser Reihenfolge abgearbeitet. Insbesondere
+überschreiben also die Einstellungen in der `default.el' die
+Einstellungen aus `&nbsp;/.emacs' und `site-start.el'. Diese Einträge
+erlauben das Arbeiten mit Umlauten:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+(set-input-mode (car (current-input-mode))
+              (nth 1 (current-input-mode))
+                                        0)
+
+(standard-display-european t)
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Speziellere Informationen findet man in der FAQ zum Thema `emacs und
+Umlaute' von Karl Brodowsky, erhältlich unter der URL:
+<BLOCKQUOTE>
+<A HREF="ftp://ftp.uni-erlangen.de/pub/doc/ISO/deutsch/emacs-umlaute-faq.gz">ftp://ftp.uni-erlangen.de/pub/doc/ISO/deutsch/emacs-umlaute-faq.gz</A></BLOCKQUOTE>
+<P>
+<H3>less</H3>
+
+<P>Konfigurationsdateien: <CODE>~/.bash_profile</CODE> und <CODE>/etc/profile</CODE>
+Versionen: nur ältere Versionen sind betroffen
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+export LESSCHARSET=latin1
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>
+<H3>pine</H3>
+
+<P>Konfigurationsdateien: <CODE>~/.pinerc</CODE> und <CODE>/etc/pine.conf</CODE>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# character-set should reflect the capabilities of the display
+# you have. Normal default is US-ASCII.  Typical alternatives
+# include ISO-8859-x, where x is a number between 1 and 9.
+character-set=ISO-8859-1
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>
+<H3>joe</H3>
+
+<P>Konfigurationsdateien: <CODE>~/.joerc</CODE> und <CODE>/etc/joe/joerc</CODE>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+-asis
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Achtung, das Minus muß in der 1. Spalte stehen.
+<P>
+<P>
+<H3>elm</H3>
+
+<P>Konfigurationsdatei: <CODE>~/.elm/elmrc</CODE>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+charset = iso-8859-1
+displaycharset = iso-8859-1
+textencoding = 8bit
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>
+<H3>nn</H3>
+
+<P>Konfigurationsdatei: <CODE>~/.nn/init</CODE>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+set data-bits 8
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Eine globale Konfigurationsdatei existiert nicht.
+<P>
+<P>
+<H3>lynx</H3>
+
+<P>Konfigurationsdateien: <CODE>~/.lynxrc</CODE> und <CODE>/etc/lynx.cfg</CODE>
+Versionen: ab 2.4
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+CHARACTER_SET:ISO Latin 1
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>
+<H3>gslp</H3>
+
+<P>Kann von Hause aus keine Umlaute. Es ist ein patch erforderlich, dessen
+Beschreibung die Zielsetzung dieses HOWTO sprengt.
+<P>
+<H3>xfig</H3>
+
+<P>Kommandozeilenoption:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+-metric
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>
+<H2><A NAME="ss6.3">6.3 Weiterführende Tips</A>
+</H2>
+
+<P>
+<P>
+<H3>emacs</H3>
+
+<P>Der emacs kann in seinen Fähigkeiten durch Lisp-Module erheblich
+erweitert werden. Er ist dadurch das Schweizer Taschenmesser unter den
+Texteditoren. &quot;Nur Kaffeekochen kann er nicht&quot;.
+<P>Die Lisp-Module tragen die Dateiendung <CODE>.el</CODE> oder <CODE>.elc</CODE>;
+letztere ist die compilierte Form einer <CODE>.el</CODE>-Datei. <CODE>emacs</CODE>
+sucht z.B. im Verzeichnis <CODE>/usr/lib/emacs/site-lisp</CODE> nach
+solchen Modulen.
+<P>Die Laden der Module kann im emacs per Hand mit dem Kommando
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+&lt;Alt x&gt; load-library &lt;return&gt; pc-mode &lt;return&gt;
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>vorgenommen werden. Alternativ kann man durch die Anweisung
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+(load &quot;pc-mode&quot;)
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>in einer der Konfigurationsdateien das Modul dauerhaft laden. Nachfolgend
+die Beschreibung einiger nützlicher Module:
+<P>
+<DL>
+<DT><B>pc-mode</B><DD><P>Konfiguriert die Tastaturbelegung so, wie PC-Benutzer es gewohnt sind.
+Keine Landesspezifischen Abhängigkeiten, aber oft gefragt. In der
+Konfigurationsdatei eintragen:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+;;; pc-mode.el --- emulate certain key bindings used on PCs.
+(load "pc-mode")
+(pc-bindings-mode)
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<DT><B>pc-select</B><DD><P>Stellt Cut&amp;Paste wie unter MacOS oder Win ein.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+;;; pc-select.el ---  emulate cut&amp;paste like on PC or Mac
+(load "pc-select")
+(pc-selection-mode)
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<DT><B>iso-tex  und  iso-cvt</B><DD><P>Zeigen die Umlaute unverändert an, speichern sie aber in dem TeX-Format
+ab.
+<P>
+<DT><B>konvers</B><DD><P>Wie `iso-tex', kann aber nicht nur in beide Richtungen konvertieren,
+sondern beherrscht auch noch andere Formate wie etwa <EM>MIME</EM>.
+<P>
+<DT><B>iso-acc (iso-accent-mode)  und  alt-symbol</B><DD><P>Erlauben die Eingabe von Umlauten und Akzenten durch vorangestellte
+Zeichen, d.h. ~a wird schon während der Eingabe der Zeichen zu einem a
+mit der Schlange darüber (und auch als solches abgespeichert).
+<P>
+<DT><B>AUCTeX</B><DD><P>AUCTeX ist eine leistungsfähige Umgebung zum Verfassen von TeX- und
+LaTeX-Dokumenten. Die automatische Erkennung von landesspezifischen
+Besonderheiten wird mit dem Eintrag
+<BLOCKQUOTE><CODE>
+<PRE>
+(setq TeX-parse-self t)
+</PRE>
+</CODE></BLOCKQUOTE>
+
+in einer der Konfigurationsdateien aktiviert. `\usepackage{german}'
+wird daraufhin von AUCTeX als Indikator verwendet.
+<P>
+</DL>
+<P>Die erwähnten Pakete sind erhältlich unter der URL:
+<DL>
+<DT><B>AUC TeX</B><DD><P>
+<A HREF="ftp://sunsite.auc.dk/packages/auctex/auctex.tar.gz">ftp://sunsite.auc.dk/packages/auctex/auctex.tar.gz</A><DT><B>alt-symbol.el</B><DD><P>
+<A HREF="ftp://ftp.vlsivie.tuwien.ac.at/pub/8bit">ftp://ftp.vlsivie.tuwien.ac.at/pub/8bit</A><DT><B>iso-tex.el</B><DD><P>
+<A HREF="ftp://ftp.dante.de/pub/tex/support/iso-tex">ftp://ftp.dante.de/pub/tex/support/iso-tex</A><DT><B>konvers.el</B><DD><P>
+<A HREF="ftp://ftp.uni-erlangen.de/pub/doc/ISO/charsets/konvers-862.tar.gz">ftp://ftp.uni-erlangen.de/pub/doc/ISO/charsets/konvers-862.tar.gz</A></DL>
+<P>
+<H3>TeX/LaTeX</H3>
+
+<P>TeX ist ein professionelles Satzsystem. LaTeX ist eine Sammlung von
+Macros zum effektiven Einsatz von TeX.
+<P>
+<H3>Verarbeitung von Umlauten</H3>
+
+<P>
+<H3>LaTeX 2e und höher</H3>
+
+<P>Das Paket zur Verwendung des latin1-Zeichensatzes ist mittlerweile
+fester Bestandteil von LaTeX. Es wird aktiviert mit der Anweisung
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+\usepackage[latin1]{inputenc}
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>im Kopfteil des Dokuments.
+<P>
+<H3>plain-TeX, LaTeX2.09</H3>
+
+<P>Für diese Formate gibt es entweder keine Pakete oder nur veraltete
+Style-Dateien. Daher kann man Dokumente, die solche veralteten Pakete
+enthalten, i.a. nicht an andere versenden. Eine Verwendung der alten
+Makros wie <CODE>iso.sty</CODE>, <CODE>xlatin1.sty</CODE> und <CODE>umlaute.sty</CODE> (für den
+Atari) wird daher nicht empfohlen.
+<P>
+<H3>Layout</H3>
+
+<P>Folgendes Beispiel kann als simples Grundgerüst für deutsche Texte
+(hier: Artikel) verwendet werden:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+\documentclass[a4paper]{article}
+    %  Die Option &quot;a4paper&quot; stellt als Papiergröße
+    %  DinA4 ein. Alle anderen LaTeX-Pakete verlassen sich auf
+    %  diese Einstellung.
+
+\usepackage{german}
+    %  stellt Abkürzungen für typische deutsche Besonderheiten
+    %  bereit. Die Dokumentation befindet sich auf den
+    %  CTAN-Serven unter /pub/tex/language/german/germdoc.tex
+
+%\usepackage[T1]{fontenc}
+%    % Erlaubt die Trennung von Wörtern mit Umlauten
+
+\usepackage[latin1]{inputenc}
+    % gibt den Zeichensatz des Dokuments an und macht somit die
+    % Eingabe von latin1-Zeichen möglich.
+
+\usepackage{a4}
+    % stellt den bedruckten Bereich einer Seite, den sogenannten
+    % &lt;em/Satzspiegel/, ein. Er wird so berechnet, daß
+    % durchschnittlich circa 60 bis 70 Buchstaben in einer Zeile
+    % vorkommen, da man sonst beim Lesen die Zeilen verliert.
+
+%\usepackage[german]{babel}
+    % Aktiviert die Unterstutzung mehrerer Sprachen gleichzeitig.
+
+\begin{document}
+...
+\end{document}
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Weitere Informationen findet man unter der URL 
+<A HREF="http://www.dante.de/dante/dante-faq.html">http://www.dante.de/dante/dante-faq.html</A><P>Eine bessere Alternative zur Satzspiegeleinstellung bietet das Paket
+&quot;typearea.sty&quot;. Dieses Paket findet man bei den
+Koma-Script-Klassen von Markus Kohm unter 
+<A HREF="ftp://ftp.dante.de/pub/tex/macros/latex/contrib/supported/koma-script/">ftp://[CTAN]/pub/tex/macros/latex/contrib/supported/koma-script/</A>,
+die das &quot;typearea.sty&quot;-Paket intern verwenden. Es ist aber auch
+zusammen mit den Standardklassen (z.B. article) verwendbar.
+<P>Die Koma-Script-Klassen beachten auch andere deutsche Typographieregeln und
+sind daher sehr empfehlenswert. Dokumentation zu den Koma-Script-Klassen
+und dem &quot;typearea.sty&quot;-Paket befinden sich unter 
+<A HREF="ftp://ftp.dante.de/pub/tex/macros/latex/contrib/supported/koma-script/scrg uide.ps">ftp://[CTAN]/pub/tex/macros/latex/contrib/supported/koma-script/scrguide. ps</A>.
+<P>
+<DL>
+<DT><B>CTAN</B><DD><P>Comprehensive TeX Archive Network, bestehend aus (bald wieder)
+drei Rechnern in Amerika, Großbritannien und Deutschland. Der
+amerikanische und der deutsche Rechner sind von DANTE e.V (
+Deutschsprachige Anwendervereinigung TeX) angeschafft und
+finanziert worden. Der deutsche Rechner hat den Namen <CODE>ftp.dante.de</CODE>.)
+</DL>
+<P>
+<H3>Deutsche Wortrennung</H3>
+
+<P>Alle modernen TeX-Distributionen bieten die Möglichkeit, in der
+zugehörigen Konfigurationsdatei das Kommentarzeichen % vor der Zeile
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+german          ghyph31.tex
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>zu entfernen. Es werden dann Formate mit den deutschen Trennregeln
+erzeugt.
+<P>Mit der Rechtschreibreform ab 1. August 1998 werden andere Trennregeln
+gültig. Vermutlich werden dann rechtzeitig neue Trenntabellen zur
+Verfügung stehen.
+<P>
+<P>
+<H3>Rechtschreibprüfung mit deutschem Wörterbuch</H3>
+
+<P>Zur Prüfung von Rechtschreibfehlern steht unter Linux das Programm
+<CODE>ispell</CODE> zur Verfügung. Die meisten Distributionen bieten dieses
+zur Installation an, die zugehörige deutsche Wortliste liegt seltener
+bei.
+<P>
+<H3>Die Wortlisten</H3>
+
+<P>
+<P>Einen recht brauchbaren Grundstock für eine eigene Wortliste enthält
+das Paket "hk-deutsch2" von H. Knutzen. Es umfaßt 22 Dateien, die
+individuell zu einer eigenen Wortliste zusammengefaßt werden
+können. Die dazu notwendigen Schritte werden in dem beiliegendem
+README genau erklärt.
+<P>
+<P>Durch die individuelle Zusammenstellung werden die Wortlisten kleiner
+und somit die Rechtschreibprüfung beschleunigt.
+<P>Es soll aber nicht verschwiegen werden, daß man diesen Listen in der
+Regel noch eine &quot;eigene&quot; Wörter hinzufügen muß (dies ist mit
+<CODE>ispell</CODE> automatisch möglich).
+<P>Das Paket ist erhältlich unter der URL:
+<BLOCKQUOTE>
+<A HREF="ftp://ftp.informatik.uni-kiel.de/pub/kiel/dicts/hk2-deutsch.tar.gz">ftp://ftp.informatik.uni-kiel.de/pub/kiel/dicts/hk2-deutsch.tar.gz</A></BLOCKQUOTE>
+<P>
+<P>
+<H3>Das Rechtschreibprogramm <CODE>ispell</CODE></H3>
+
+<P>Da <CODE>ispell</CODE> nicht jedes Textformat automatisch erkennt,
+muß man die Optionen <CODE>-T latin1</CODE> und <CODE>-w &quot;äöüÄÖÜß&quot;</CODE>
+verwenden. Kommen weitere nicht-ascii Zeichen im Text vor, so sollte
+man diese ebenfalls mit der '-w'-Option zulassen.
+<P>Ein anderes als das englische Wörterbuch wird mit der Option '-d'
+ausgewählt, also z.B.
+<P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ispell -d german -T latin1 -w &quot;äöüÄÖÜß&quot; German-HOWTO.txt
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>für das Deutsche Wörterbuch in der Datei
+<CODE>/usr/dict/german.hash</CODE> (Binärformat).
+<P>Ruft man <CODE>ispell</CODE> aus dem Editor <CODE>emacs</CODE> heraus auf, so kann man
+obige Parameter automatisch übergeben, indem man folgenden Eintrag in
+einer der Konfigurationsdateien des emacs vornimmt:
+<P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+(setq ispell-extra-args '(&quot;-Tlatin1&quot;
+                          &quot;-d&quot; &quot;/usr/lib/german&quot;
+                          &quot;-w&quot; &quot;äöüÄÖÜß&quot;))
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>
+<HR>
+<A HREF="German-HOWTO-7.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="German-HOWTO-5.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="German-HOWTO.html#toc6"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

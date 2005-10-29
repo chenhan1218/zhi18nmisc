@@ -1,0 +1,197 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>ADSL HOWTO for Linux Systems: Configuring Linux</TITLE>
+ <LINK HREF="ADSL-8.html" REL=next>
+ <LINK HREF="ADSL-6.html" REL=previous>
+ <LINK HREF="ADSL.html#toc7" REL=contents>
+<SCRIPT src="../../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(2, 8, 2);</SCRIPT>
+<A HREF="ADSL-8.html"><IMG SRC="../../img/next.gif" ALT="Next"></A>
+<A HREF="ADSL-6.html"><IMG SRC="../../img/prev.gif" ALT="Previous"></A>
+<A HREF="ADSL.html#toc7"><IMG SRC="../../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s7">7. Configuring Linux</A></H2>
+
+<P>After you have wired up the  ANT and you're getting
+the sync signal, then you're ready to configure your
+Linux System and verify your connection to your ISP. 
+Although I will refer to a Linux System, you can connect
+any type of 10baseT device to the ANT. This includes
+a router, hub, PC, or any other system that you wish to 
+use. 
+<P><B> Caution!</B> <EM>Before you connect to your ISP</EM>, make sure 
+you understand all security issues of having a direct connection
+to the Internet via ADSL. Depending on your ISP, most outside uses
+can access your systems, and you should setup any firewalls,
+deactivate ports/services, and setup any passwords prior to 
+connecting your machine to the world.  Read the 
+<EM>Security-HOWTO</EM> if you need a good overview
+on this subject. 
+<P>
+<H2><A NAME="ss7.1">7.1 Install and Connect the NIC card</A>
+</H2>
+
+<P>Install your NIC card in your Linux machine, 
+configure the kernel, etc., etc.  See the various
+Linux references for doing this. See the <EM>Ethernet-HOWTO</EM>
+for more information.
+<P>Connect the RJ45 cable between the NIC and the 
+ANT. <B>Note</B> A gotcha here is that some ANTs
+are already wired as a 10baseT crossover, and  require a
+direct Category 5 cable for a direct connection to
+a NIC, rather than a crossover cable.  I lost 
+around 12 hours figuring this one out, so don't
+make the same mistake -  make sure you read the 
+instructions first.
+<P>
+<H2><A NAME="ss7.2">7.2 Configure the Ethernet Interface</A>
+</H2>
+
+<P>Configure the IP address, Subnet Mask, Default Gateway, and DNS server
+information.  Each Linux Distribution (RH, debian, Slackware, S.U.S.E.) 
+has a different way of doing this, so check on your particulars.
+You can also do this manually using the <CODE>ifconfig</CODE>
+and <CODE>route</CODE> commands. See the <EM>NET3-HOWTO</EM> for information
+for more information.   
+<P>Once your system is configured, see if you can ping to the 
+your default gateway address provided by the ISP.  If
+the ping is  successful, the you should see around
+20 ms roundtrip delay for this connection.  Congratulations,
+you're connected to the Net! 
+<P>
+<H2><A NAME="ss7.3">7.3 Setting up a Router</A>
+</H2>
+
+<P>Depending on your local setup, you should consider some other issues.
+These include a firewall setup, and any associated configurations.
+For my setup, shown in Figure 3, 
+I use an old i486 machine configured as a firewall/router
+between the ADSL connection and the rest of my machines. 
+I use private IP addresses on my Private LAN subnet, and have configured
+my router to provide IP Masquerading and Firewalling between the LAN
+and Internet connection. See the <EM>IP_Masquerading-HOWTO</EM>, and <EM>Firewall-HOWTO</EM> for
+more information. My experience is that Linux provides superior 
+routing/firewalling performance , and is much cheap than a commercial router,
+if you find an old 386/486 machine that you may be using as a doorstop
+somewhere.
+<P>
+<P>
+<PRE>
+Figure 3: My  SOHO Network Setup
+
+          
+&lt;-Private Subnet-->         &lt;-Public Subnet->    &lt;-ADSL Line--------->
+                                     |
+                                X----|      
+                                     |      
+     X------|                   X----|     |----|            
+            |      |--------|        |     |ADSL|            Internet
+            |      | Linux  |        |-----|ANT |----------> Service 
+     X------|------| System |--------|     |    |            Provider
+            |    E1|(Router)|E0      |     |----|            Router
+            |      |--------|        |                       
+     X------|        IP_Masq      10baseT
+                   IP_Firewall     Hub 
+</PRE>
+<P>
+<P>What I did is setup a router (Linux RH 5.0  on a i486) with two Ethernet
+interfaces.
+One interface routes to the ISP subnet/gateway, and the other interface
+supports a class private network  address (i.e. 192.168.2.x).   Using the
+private
+network address behind your router allows some additional security because
+it is not
+directly addressable from outside your ISP.   You have to explicitly
+masquerade your private  addresses in order to
+connect to the Internet.
+<P><B>Caution</B> Make sure your kernel is complied with IP forwarding
+and the IP forwarding is turned on. You can check this by 
+<PRE>
+cat /proc/sys/net/ipv4/ip_forward
+</PRE>
+
+The value is "1" for on, and "0" for off.
+You can change this value by echoing the desired value
+into this file.
+<PRE>
+(e.g.) echo 1 > /proc/sys/net/ipv4/ip_forward
+</PRE>
+
+Will turn forwarding on.
+<P>
+<H2><A NAME="ss7.4">7.4 Setting up a Firewall/Masquerading</A>
+</H2>
+
+<P>If you have a direct connection to the Internet,
+then you want to also turn on Firewall Administration
+and Masquerading. Figure 4 shows a picture of this.
+<P><B>Caution!</B>&nbsp;&nbsp;I also need to stress that this configuration is only
+part of the things that need to be performed to 
+create a secure environment. Other considerations include
+turning off ftp, telnet, and other services on
+the Router, and ensuring all password, login, etc. 
+configurations are correctly setup for your environment.
+Make sure you read the <EM>Security-HOWTO</EM>.
+<PRE>
+Figure 4: Firewall/Masquerading for ADSL
+
+       |-------|       |-------|     |-X
+======X| ADSL  |=------| Linux |-----|
+ADSL   |  ANT  |     E0|       |E1   |-X   Private Network
+Line   |-------|       |-------|     |     (e.g. 192.168.2.x)
+               &lt;------->             |...
+             ISP Subnet or host
+            (Public Net Address)
+</PRE>
+<P>The kernel for the Linux  router is complied for IP forwarding/masquerading,
+and has the "ipfwadm" (IP firewall software) installed 
+with the following options:
+<P>file: /etc/rc.d/rc.firewall  (called by rc.sysinit in RH5.0)
+<PRE>
+echo "Setting up the firewall"
+#
+# From the "Firewall-HOWTO"
+#
+# flushes all setting
+#
+ipfwadm -F -f
+#
+# set the firewall
+#
+ipfwadm -F -p deny
+#
+# allow any machine with address 192.168.2.x to masquerade.
+#
+ipfwadm -F -a accept -m -S 192.168.2.0/24 -D 0.0.0.0/0
+#
+# allow the domain name server to work (udp 53)
+#
+ipfwadm -F -a accept -b -P udp -S 0.0.0.0/0 53 -D 192.168.2.0/24
+ipfwadm -F -p masquerade
+#
+# the rest just list out the options for your enjoyment
+#
+ipfwadm -F -l
+ipfwadm -O -l
+ipfwadm -I -l
+</PRE>
+<P>You need to be careful, as some application will still not work without
+special modules (namely ftp, real audio, and some others). Check
+the ipfwadm documentation for more information.  I found this pretty easy to
+set up.
+<P>Additionally, using the private network addressing scheme is cheap, and
+gives
+an administrator complete flexibility in setting up their local LAN.
+The drawback is that Masquerading has a limit on the number of private hosts
+that
+it can reasonably support, and that some IP applications that pass the host
+address
+in their data fields will not work, but this tends to be a limited number.
+<P>
+<HR>
+<A HREF="ADSL-8.html"><IMG SRC="../../img/next.gif" ALT="Next"></A>
+<A HREF="ADSL-6.html"><IMG SRC="../../img/prev.gif" ALT="Previous"></A>
+<A HREF="ADSL.html#toc7"><IMG SRC="../../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

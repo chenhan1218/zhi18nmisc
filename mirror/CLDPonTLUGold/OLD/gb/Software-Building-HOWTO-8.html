@@ -1,0 +1,101 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>在 Linux 下建立软体套件: 第三个例子: Fortune</TITLE>
+ <LINK HREF="Software-Building-HOWTO-9.html" REL=next>
+ <LINK HREF="Software-Building-HOWTO-7.html" REL=previous>
+ <LINK HREF="Software-Building-HOWTO.html#toc8" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Software-Building-HOWTO-9.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Software-Building-HOWTO-7.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Software-Building-HOWTO.html#toc8"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s8">8. 第三个例子: Fortune</A></H2>
+
+<P>最後例子需要某些 C 程式设计知识. 大部分的 Linux 软体是用 C 写的,
+而且至少学点 C 明显的对任何想软体安装的人会有助益.
+<P>恶名昭彰的(notorious) <EM>fortune</EM> 程式在每次 Linux 
+开机起来时秀出幽默的谚语 "fortune cookie".
+不幸地 (有双关意思的), 设法在 Red Hat 发行套件 2.0.30 的核心下建立,出现了
+一堆严重的错误. 
+<P>
+<HR>
+<PRE>
+~/fortune# make all
+
+
+gcc -O2 -Wall -fomit-frame-pointer -pipe   -c fortune.c -o
+fortune.o
+fortune.c: In function `add_dir':
+fortune.c:551: structure has no member named `d_namlen'
+fortune.c:553: structure has no member named `d_namlen'
+make[1]: *** [fortune.o] Error 1
+make[1]: Leaving directory `/home/thegrendel/for/fortune/fortune'
+make: *** [fortune-bin] Error 2
+</PRE>
+<HR>
+<P>
+<P>
+<P>
+<P>看一下 <CODE>fortune.c</CODE>, 有关联的几行在这.
+<P>
+<HR>
+<PRE>
+   if (dirent->d_namlen == 0)
+            continue;
+        name = copy(dirent->d_name, dirent->d_namlen);
+</PRE>
+<HR>
+<P>我们需要找出 <CODE>dirent</CODE> 的 structure, 但它没有宣告(declared)在 
+<EM>fortune.c</EM> 档案中, 想用 <B>grep dirent</B> 
+来秀出是否在其它原始码的档案中, 但也没有. 然而, 在 <EM>fortune.c</EM>
+档的最上方有下列这行.
+<P>
+<HR>
+<PRE>
+#include &lt;dirent.h>
+</PRE>
+<HR>
+<P>这似乎是系统函式库的 include 档案, 所以要找 <EM>dirent.h</EM> 的合理位置是在
+<EM>/usr/include</EM>. 事实上, <EM>dirent.h</EM> 的确有在 <EM>/usr/include</EM>
+中, 但该档没有包含 <CODE>dirent</CODE> 的 structure. 然而, 参考另一个
+<EM>dirent.h</EM> 档.
+<P>
+<HR>
+<PRE>
+#include &lt;linux/dirent.h>
+</PRE>
+<HR>
+<P>
+<P>最後, 去 <EM>/usr/include/linux/dirent.h</EM>, 我们可找到我们所需要宣告的
+structure.
+<P>
+<HR>
+<PRE>
+struct dirent {
+        long            d_ino;
+        __kernel_off_t  d_off;
+        unsigned short  d_reclen;
+        char            d_name[256]; /* We must not include
+limits.h! */
+};
+</PRE>
+<HR>
+
+足够地确定, 这个 structure 宣告没有包含 <EM>d_namelen</EM>,
+但有一对与其相当的选择. 其中最可能的是 <EM>d_reclen</EM>, 因为
+这个 structure member 表示某样东西的 length 而且它是 short integer.
+其他大略, <EM>d_ino</EM>, 可能是 inode number, 判断它的 name 和 type.
+事实上, 我们大概是处理 "directory entry" structure, 而元素表示档案属性,
+它的名称, inode, 和 length (以 blocks 作单位). 这似乎对我们的猜想很合理.
+<P>我们编辑档案 <EM>fortune.c</EM>, 而且改变在551行和553行的 <CODE>d_namelen</CODE>
+变成 <CODE>d_reclen</CODE>. 再试试 <CODE>make all</CODE>. <B>Success.</B> 
+这次建立没有错误. 我们现在能够从 <EM>fortune</EM> 获得 "cheap thrills"
+<P>
+<HR>
+<A HREF="Software-Building-HOWTO-9.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Software-Building-HOWTO-7.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Software-Building-HOWTO.html#toc8"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

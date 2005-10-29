@@ -1,0 +1,177 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="LinuxDoc-Tools 0.9.16">
+ <TITLE>系统设置-HOWTO: 管理员的一般工作</TITLE>
+ <LINK HREF="Config-HOWTO-4.html" REL=next>
+ <LINK HREF="Config-HOWTO-2.html" REL=previous>
+ <LINK HREF="Config-HOWTO.html#toc3" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Config-HOWTO-4.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="Config-HOWTO-2.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="Config-HOWTO.html#toc3"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s3">3.</A> <A HREF="Config-HOWTO.html#toc3">管理员的一般工作</A></H2>
+
+
+<P>要做的工作那么多，时间又那么少！尽管有许多工作要完成，但我们还是先从这一节开始。
+这一节主要与网路有关。
+网路联网涉及的问题□多，无法在此全部概括。首先应参考NET-3 HOWTO，此外，多数 Linux 版本也提供了如何设定网路功能的资料。此处只预备讨论其中几项要点。</P>
+
+<P>假设在 Linux 上预备安装calendar或reminder、Http、Samba、telnet/ssh登录、匿名
+ftp（anonymous ftp）、POP/IMAP服务器和NFS等功能。</P>
+
+<H2><A NAME="ss3.1">3.1</A> <A HREF="Config-HOWTO.html#toc3.1">网路设置</A>
+</H2>
+
+<P>设定 Linux 各种版本网路功能的方法可能相当复杂，但下述脚本足够启动网路：</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#!/bin/sh
+
+# net-up.sh: set up network access --设定联网
+
+DEVICE=eth0      #-- 网卡
+IPADDR=192.168.1.100
+NETMASK=255.255.255.0
+NETWORK=192.168.1.0
+GATEWAY=192.168.1.1
+
+ifconfig $DEVICE $IPADDR netmask $NETMASK up
+route add -net $NETWORK netmask $NETMASK $DEVICE
+route add default gw $GATEWAY
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>这个脚本在使用解救磁片连接网路时非常有用。当然，它只能使机器通过 ping，ftp 和
+telnet 与外界联络。</P>
+
+<H2><A NAME="ss3.2">3.2</A> <A HREF="Config-HOWTO.html#toc3.2">分享网际网路</A>
+</H2>
+
+
+<P>Linux 服务器的一项最有用的功能就是分享网际网路。目前，大多数现成可用的内核都已附有 IP firewalling、masquerading 和 forwarding 的功能。如要知道详细功能，可参看 IP-Masquerade mini-HOWTO。然后安装 ipfwadm（内核 2.0.x；
+<A HREF="http://www.xos.nl/ Linux /ipfwadm/">http://www.xos.nl/ Linux /ipfwadm/</A>）或 ipchains（内核2.2.x；
+<A HREF="http://www.adelaide.net.au/">http://www.adelaide.net.au/</A>）。</P>
+<P>注意：对需要的功能，启动相应的内核模组。例如，如需要ftp，则应将下行加入
+/etc/rc.d/rc.sysconfig：</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+/sbin/modprobe ip_masq_ftp
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>其他模组通常都放在/lib/modules/KERNEL-VERSION/ipv4档中。</P>
+<P>为本地网路的其他机器启动IP masquerading功能的程序非常简单。首先检查网路初始化脚本/etc/sysconfig/network
+（应在应该放置的位置）是否有内容为<CODE>FORWARD_IPV4=true</CODE>的一行。通常在网路启动时
+/proc/sys/net/ipv4/ip_forward均设为 1。</P>
+<P>在/etc/rc.d/rc.sysinit中增加以下数行：</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# default: packets cannot go reach the outside 
+# 预设为数据包无法发送到网际网路
+/sbin/ipfwadm -F -p deny
+# allow all machines on the local network to reach the Internet
+# 使本地网路上的所有机器均可连接网际网路
+/sbin/ipfwadm -F -a m -S 192.168.1.0/24 -D 0.0.0.0/0
+# alternatively, allow only these two machines
+# 或只让下面两台电脑连到网际网路
+# /sbin/ipfwadm -F -a m -S 192.168.1.100/24 -D 0.0.0.0/0
+# /sbin/ipfwadm -F -a m -S 192.168.1.101/24 -D 0.0.0.0/0
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>如 Linux 已使用 2.2.x 系列内核，以<CODE>ipfwadm-wrapper</CODE>代替<CODE>ipfwadm</CODE>可加快启动速度。</P>
+
+<P>现在应使用户端机器拨接ISP；可试用Mserver（
+<A HREF="http://cpwright.villagenet.com/mserver/">http://cpwright.villagenet.com/mserver/</A>）。修改etc/mserver.conf；
+只需改动“checkhost”、“shadow”和“cname”三项。然后设定联网参数。</P>
+
+
+<H2><A NAME="Restricting"></A> <A NAME="ss3.3">3.3</A> <A HREF="Config-HOWTO.html#toc3.3">限制网路连接</A>
+</H2>
+
+<P>假定电脑通过PPP连到网际网路。任何机器连到网际网路就有可能遭到外界的入侵。在
+/etc/hosts.allow中列入以下内容：</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# only allow access to localhost
+# 只允许连到localhost
+ALL: 127.
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>并在/etc/hosts.deny中列入:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# deny access to everyone
+# 不让任何人进入
+ALL: ALL
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>如果电脑所属的网路直接与网际网路连接，由于安全的理由，最好取消finger、telnet等功能；
+利用<CODE>ssh</CODE>替代telnet。此处只要修改/etc/inet.conf档即可。同时，
+也可在/etc/hosts.allow中增加下列内容限制网路连接：</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+in.telnetd: 192.168.1., .另一个.可信的.网路地址
+in.ftpd: 192.168.1., .另一个.可信的.网路地址
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>并在/etc/hosts.deny中增加下列内容:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+in.telnetd: ALL
+in.ftpd: ALL
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+
+<H2><A NAME="ss3.4">3.4</A> <A HREF="Config-HOWTO.html#toc3.4">NFS输出</A>
+</H2>
+
+<P>这种方式用于服务器用户目录的输出；但如果用户的 UID 和 GID 在各台机器上各不相同，就会发生问题。如果用户 guido 在<CODE>server</CODE>上的 UID/GID 为 500，在<CODE>client</CODE>上的 UID/GID 为 512，则可设置如下：</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# /etc/exports
+/tmp            my.client.machine(rw)
+/home/guido     my.client.machine(rw,map_static=/etc/nfs/client.map)
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>在/etc/nfs/client.map档中填入：</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# /etc/nfs/client.map
+# NFS mapping for client
+#       remote          local
+uid     512             500
+gid     512             500
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+
+
+<H2><A NAME="ss3.5">3.5</A> <A HREF="Config-HOWTO.html#toc3.5">域名服务器</A>
+</H2>
+
+
+<P>有待编写 （译注：作者显然忘了编写这部分内容）</P>
+
+<HR>
+<A HREF="Config-HOWTO-4.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="Config-HOWTO-2.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="Config-HOWTO.html#toc3"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

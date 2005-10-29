@@ -1,0 +1,122 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Process Monitor HOW-TO for Linux: Makefile</TITLE>
+ <LINK HREF="Process-Monitor-HOWTO-7.html" REL=next>
+ <LINK HREF="Process-Monitor-HOWTO-5.html" REL=previous>
+ <LINK HREF="Process-Monitor-HOWTO.html#toc6" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Process-Monitor-HOWTO-7.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Process-Monitor-HOWTO-5.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Process-Monitor-HOWTO.html#toc6"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s6">6. Makefile</A></H2>
+
+<P># From your browser save this file as <B>text-file</B> named as 'Makefile'.
+<P>
+<HR>
+<PRE>
+#//*****************************************************************
+#// Copyright policy is GNU/GPL and it is requested that
+#// you include author's name and email on all copies
+#// Author : Al Dev Email: alavoor@yahoo.com
+#//*****************************************************************
+
+.SUFFIXES: .pc .cpp .c .o
+
+HOSTFLAG=-DLinux
+#HOSTFLAG=-DSunOS
+
+CC=gcc
+CXX=g++
+
+MAKEMAKE=mm
+#LIBRARY=libString.a
+DEST=/home/myname/lib
+
+# Note: You should set only ONE value of MYCFLAGS below, that is only
+# one line is uncommented and others are commented.
+# Use options -Wall (all warning msgs) -O3 (optimization)
+MYCFLAGS=-DDEBUG_PRT -g3 -Wall
+#MYCFLAGS=-O3 -Wall
+
+#PURIFY=purify -best-effort
+
+SRCS=procautostart.cpp debug.cpp 
+#HDR=my_malloc.h  String.h StringTokenizer.h File.h debug.h string_multi.h
+#LIBOBJS=my_malloc.o String.o StringTokenizer.o File.o debug.o
+OBJS=procautostart.o  debug.o
+EXE=procautostart
+
+# For generating makefile dependencies..
+SHELL=/bin/sh
+
+CPPFLAGS=$(MYCFLAGS) $(OS_DEFINES)
+CFLAGS=$(MYCFLAGS) $(OS_DEFINES)
+
+#
+# If the libString.a is in the current 
+# directory then use -L. (dash L dot)
+MYLIBDIR=-L$(MY_DIR)/libmy -L.
+
+ALLLDFLAGS= $(LDFLAGS)  $(MYLIBDIR)
+
+COMMONLIBS=-lstdc++ -lm
+MYLIBS=-lString
+LIBS=$(COMMONLIBS)  $(MYLIBS)
+
+all: $(LIBRARY) $(EXE)
+
+$(MAKEMAKE):
+        @rm -f $(MAKEMAKE)
+        $(PURIFY) $(CXX) -M  $(INCLUDE) $(CPPFLAGS) *.cpp > $(MAKEMAKE)
+
+$(EXE): $(OBJS) $(LIBRARY)
+        @echo "Creating a executable "
+        $(PURIFY) $(CC) -o $(EXE) $(OBJS) $(ALLLDFLAGS) $(LIBS)
+
+#$(LIBRARY): $(LIBOBJS)
+#       @echo "\n***********************************************"
+#       @echo "   Loading $(LIBRARY) ... to $(DEST)"
+#       @echo "***********************************************"
+#       @ar cru $(LIBRARY) $(LIBOBJS)
+#       @echo "\n "
+
+.cpp.o: $(SRCS) $(HDR)
+#       @echo "Creating a object files from " $*.cpp " files "
+        $(PURIFY) $(CXX) -c  $(INCLUDE) $(HOSTFLAG) $(CPPFLAGS) $*.cpp
+
+.c.o: $(SRCS) $(HDR)
+#       @echo "Creating a object files from " $*.c " files "
+        $(PURIFY) $(CC) -c $(INCLUDE) $(HOSTFLAG) $(CFLAGS) $*.c
+
+clean:
+        rm -f *.o *.log *~ *.log.old *.pid core err a.out lib*.a afiedt.buf  *.class tags
+        rm -f $(EXE)
+        rm -f $(MAKEMAKE)
+        ln -s ../cpphowto/libString.a .
+
+#%.d: %.c
+#       @echo "Generating the dependency file *.d from *.c"
+#       $(SHELL) -ec '$(CC) -M $(CPPFLAGS) $&lt; | sed '\''s/$*.o/&amp; $@/g'\'' > $@'
+#%.d: %.cpp
+#       @echo "Generating the dependency file *.d from *.cpp"
+#       $(SHELL) -ec '$(CC) -M $(CPPFLAGS) $&lt; | sed '\''s/$*.o/&amp; $@/g'\'' > $@'
+
+# Must include all the c flags for -M option
+#$(MAKEMAKE):
+#       @echo "Generating the dependency file *.d from *.cpp"
+#       $(CXX) -M  $(INCLUDE) $(CPPFLAGS) *.cpp > $(MAKEMAKE)
+
+include $(MAKEMAKE)
+#include $(SRCS:.cpp=.d)
+#include $(SRCS:.c=.d)
+</PRE>
+<HR>
+<HR>
+<A HREF="Process-Monitor-HOWTO-7.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Process-Monitor-HOWTO-5.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Process-Monitor-HOWTO.html#toc6"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

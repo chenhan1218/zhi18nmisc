@@ -1,0 +1,149 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Antares-RAID-sparcLinux-HOWTO: Maintenance</TITLE>
+ <LINK HREF="Antares-RAID-sparcLinux-HOWTO-10.html" REL=next>
+ <LINK HREF="Antares-RAID-sparcLinux-HOWTO-8.html" REL=previous>
+ <LINK HREF="Antares-RAID-sparcLinux-HOWTO.html#toc9" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Antares-RAID-sparcLinux-HOWTO-10.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Antares-RAID-sparcLinux-HOWTO-8.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Antares-RAID-sparcLinux-HOWTO.html#toc9"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s9">9. Maintenance</A></H2>
+
+<P>
+<H2><A NAME="ss9.1">9.1 Activating a spare</A>
+</H2>
+
+<P>
+<P>When running a RAID 3 or 5 (if you configured one or more drives to be
+spares) the 5070 will detect when a drive goes offline and automatically select
+a spare from the spares pool to replace it. The data will be rebuilt on-the-fly.
+The RAID will continue operating normally during the re-construction process
+(i.e. it can be read from and written to just is if nothing has happened).
+When a backend fails you will see messages similar to the following displayed
+on the 5070 console:
+<PRE>
+930 secs: Redo:1:1 Retry:1 (DIO_cim_homes_D1.1.0_q1) CDB=28(Read_10)Re-/Selection
+ Time-out @682400+16
+</PRE>
+
+<PRE>
+932 secs: Redo:1:1 Retry:2 (DIO_cim_homes_D1.1.0_q1) CDB=28(Read_10)Re-/Selection
+ Time-out @682400+16
+</PRE>
+
+<PRE>
+933 secs: Redo:1:1 Retry:3 (DIO_cim_homes_D1.1.0_q1) CDB=28(Read_10)Re-/Selection
+ Time-out @682400+16
+</PRE>
+
+<PRE>
+934 secs: CIO_cim_homes_q3 R5_W(3412000, 16): Pre-Read drive 4 (D1.1.0)
+ fails with result &quot;Re-/Selection Time-out&quot;
+</PRE>
+
+<PRE>
+934 secs: CIO_cim_homes_q2 R5: Drained alternate jobs for drive 4 (D1.1.0)
+</PRE>
+
+<PRE>
+934 secs: CIO_cim_homes_q2 R5: Drained alternate jobs for drive 4 (D1.1.0)
+ RPT 1/0
+</PRE>
+
+<PRE>
+934 secs: CIO_cim_homes_q2 R5_W(524288, 16): Initial Pre-Read drive 4 (D1.1.0)
+ fails with result &quot;Re-/Selection Time-out&quot;
+</PRE>
+
+<PRE>
+935 secs: Redo:1:0 Retry:1 (DIO_cim_homes_D1.0.0_q1) CDB=28(Read_10)SCSI
+ Bus ~Reset detected @210544+16
+</PRE>
+
+<PRE>
+936 secs: Failed:1:1 Retry:0 (rconf) CDB=2A(Write_10)Re-/Selection Time-out
+ @4194866+128
+</PRE>
+<P>Then you will see the spare being pulled from the spares pool, spun up,
+tested, engaged, and the data reconstructed.
+<PRE>
+937 secs: autorepair pid=1149 /raid/cim_homes: Spinning up spare device
+</PRE>
+
+<PRE>
+938 secs: autorepair pid=1149 /raid/cim_homes: Testing spare device/dev/hd/1.5.0/data
+</PRE>
+
+<PRE>
+939 secs: autorepair pid=1149 /raid/cim_homes: engaging hot spare ...
+</PRE>
+
+<PRE>
+939 secs: autorepair pid=1149 /raid/cim_homes: reconstructing drive 4 ...
+</PRE>
+
+<PRE>
+939 secs: 1054
+</PRE>
+
+<PRE>
+939 secs: Rebuild on /raid/cim_homes/repair: Max buffer 2800 in 7491 reads,
+ priority 6 sleep 500
+</PRE>
+<P>The rebuild script will printout its progress every 10% of the job
+completed
+<PRE>
+939 secs: Rebuild on /raid/cim_homes/repair @ 0/7491
+</PRE>
+
+<PRE>
+1920 secs: Rebuild on /raid/cim_homes/repair @ 1498/7491
+</PRE>
+
+<PRE>
+2414 secs: Rebuild on /raid/cim_homes/repair @ 2247/7491
+</PRE>
+
+<PRE>
+2906 secs: Rebuild on /raid/cim_homes/repair @ 2996/7491
+</PRE>
+<H2><A NAME="ss9.2">9.2 Re-integrating a repaired drive into the RAID (levels 3 and 5)</A>
+</H2>
+
+<P>
+<P>After you have replaced the bad drive you must re-integrate it into the
+RAID set using the following procedure.
+<OL>
+<LI>Start the text GUI</LI>
+<LI>Look the list of backends for the RAID set(s).</LI>
+<LI>Backends that have been marked faulty will have a (-) to the right of their
+ID ( e.g. D1.1.0- ). </LI>
+<LI>If you set up spares the ID of the faulty backend will be followed by the
+ID of the spare that has replaced it ( e.g. D1.1.0-D1.5.0 ) .</LI>
+<LI>Write down the ID(s) of the faulty backend(s) (NOT the spares).</LI>
+<LI>Press Q to exit agui</LI>
+<LI>At the husky prompt type:
+<BLOCKQUOTE><CODE>
+<PRE>
+replace &lt;name&gt; &lt;backend&gt; 
+</PRE>
+</CODE></BLOCKQUOTE>
+</LI>
+</OL>
+<P>Where &lt;name&gt; is whatever you named the raid set and &lt;backend&gt;
+is the ID of the backend that is being re-integrated into the RAID. If a spare
+was in use it will be automatically returned to the spares pool. Be patient,
+reconstruction can take a few minutes minutes to several hours depending on
+the RAID level and the size. Fortunately, you can use the RAID as you normally
+would during this process. 
+
+<HR>
+<A HREF="Antares-RAID-sparcLinux-HOWTO-10.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Antares-RAID-sparcLinux-HOWTO-8.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Antares-RAID-sparcLinux-HOWTO.html#toc9"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

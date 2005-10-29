@@ -1,0 +1,244 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Token-Ring mini-HOWTO: 问题与回答</TITLE>
+ <LINK HREF="Token-Ring-8.html" REL=next>
+ <LINK HREF="Token-Ring-6.html" REL=previous>
+ <LINK HREF="Token-Ring.html#toc7" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+<A HREF="Token-Ring-8.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Token-Ring-6.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Token-Ring.html#toc7"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s7">7. 问题与回答</A></H2>
+
+<P>
+<DL>
+<DT><B>Q:</B><DD><P>Token Ring 驱动程式能编译成 module(模组) 吗?
+<DT><B>A:</B><DD><P>可以, 它工作地相当好.在编译成 module 时有个额外的参数可用.
+如果你有 "spoof(欺骗)" 软体安装程式的需要,例如 redhat boot disks 把
+token ring 网路卡看成 ethernet(乙太网路) 装置 (用 NFS/FTP 安装等等),你可以用
+"<CODE>device</CODE>" 这个参数强行指定设备不用 <CODE>tr0</CODE> 这个名称.
+但当你有多张网路卡时这个方法可能会出错.
+大多时候就是这里有些不相容性要克服.例:
+<BLOCKQUOTE><CODE>
+<PRE>
+/sbin/insmod ibmtr device=eth0
+        
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<DT><B>Q:</B><DD><P>我一直遇到错误讯息 "0011". 这是甚麽意思?
+<DT><B>A:</B><DD><P>确定你的网路连接没有问题或是你的 token ring 网路卡有 loopback
+connector.这个错误讯息是指它无法开启 token ring.
+这种情形;有 99.99% 是因为它没有被插入.
+<DT><B>C:</B><DD><P>如果你有装音效卡且它的 IO 0x220,那很有可能 token ring 网路卡会和
+0xa20 的 IO 有冲突.
+<P>如果你发现有被支援的网路卡无法工作而你又有音效卡,请试著把你的网路卡设定成
+0xa24 或是 更改/移除 音效卡.
+<P>除此之外...
+<P>这里有一些我收到关於 Token Ring 和 Linux 的 email.
+为了不占空间,我把其中一些 email 不重要的内容删去.
+<DL>
+<DT><B>Q:</B><DD><P>
+<BLOCKQUOTE><CODE>
+<PRE>
+From: "Mr. Chuck Rickard" &lt;chuck@gl.umbc.edu>
+Subject: Re: Token Ring Kernel patch.
+
+我已加入核心并重新编译.当开机时它说,"tr0: Can't assign device to adapter"
+and again for tr1".您有何看法呢?
+(以下为原文...)
+
+I d/l'd the patch, applied it, and re-compiled. When booting it said,
+"tr0: Can't assign device to adapter" and again for tr1.  Any ideas?
+
+Thanks!
+
+Chuck Rickard
+(chuck@umbc8.umbc.edu)
+              
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<DT><B>A:</B><DD><P>
+<BLOCKQUOTE><CODE>
+<PRE>
+From: David Morris &lt;dwm@shell.portal.com>
+              
+</PRE>
+</CODE></BLOCKQUOTE>
+
+如果只有这个讯息,它表示有关网路卡资讯的 PIO request (参考
+<CODE>segment = inb(PIOaddr)</CODE> in <CODE>ibmtr.c</CODE>) 已超出 Token Ring
+网路卡所在的 IO address 的□围了.
+(以下为原文...)
+<P>When this is the only message issued,
+it means that the PIO request for adapter information
+(see <CODE>segment = inb(PIOaddr)</CODE> in <CODE>ibmtr.c</CODE>)
+was so out of range that there is no TR card at that IO address.
+<P>
+<DT><B>Q:</B><DD><P>
+<BLOCKQUOTE><CODE>
+<PRE>
+From: Mike Glover &lt;glover@credit.erin.utoronto.ca>
+Subject: Token ring problems.
+感谢您的回答.我想我之前问的不对题,现在重新说明一遍.不论如何,以下剪辑是开机後从
+/var/adm/messages 抄出来的.
+(以下原文未删...)
+
+Thanks for responding. I was starting to thing that I posted incorrectly, 
+and I was about to post again. Anyway, the following  clip is part of my
+/var/adm/messages file from when I boot up.
+
+May  2 10:03:14 linux kernel: tr0: Unable to assign adapter to device.
+May  2 10:03:14 linux kernel: tr1: Unable to assign adapter to device.
+
+这段中, tr0: Unable to assign adapter device.著实困扰著我.这讯息简短至极使的我
+不知如何处理.我只知道我没有指定任何 token ring 的资讯,但我不知如何下手.
+The section, tr0: Unable to assign adapter device. is what kinda confuses 
+me. The documentation is slim at best so I didn't know what to do with 
+the message. I know I didn't assign any token ring information,
+and I didn't know where to do it.
+
+The hardware(硬体):
+            Its a PC clone (Dell OMNIPLEX 560 to be exact)
+            The token ring card is a Olicom 16/4 Adapter.
+
+我有 DOS 环境的 token ring 驱动程式而且它马上连上网路,所以不是这张网路卡的问题.
+我想可能是我在 Linux 下设定时忽略了甚麽小东西.
+I have DOS token ring drivers and it snaps into the network, so there is 
+nothing wrong with the card. I think, I am just missing something really 
+small in the config on the Linux side.
+              
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<DT><B>A:</B><DD><P>Olicom 16/4 网路卡并不使用 Tropic 晶片.试著去用上面 HOWTO 所列的网路卡.
+(以下为原文...)              
+<P>The Olicom 16/4 Adapter does not use the Tropic Chipset.
+Try using one of the cards that are listed at the top of
+the HOWTO.
+<P>
+<DT><B>Q:</B><DD><P>
+<BLOCKQUOTE><CODE>
+<PRE>
+From: Mike Glover &lt;glover@credit.erin.utoronto.ca>
+Subject: Found an IBM card...
+
+我发现一张 IBM token ring 网路卡并且更进一步,但似乎不怎麽好运.(在
+/etc/rc.d/rc.inet1 中 ifconfig 项目我有把 eth0 改成 tr0)
+(原文...)
+I found myself an IBM token ring card and I got a little further,
+but still not luck. (I did change /etc/rc.d/rc.inet1 ifconfig entry
+from eth0 to tr0)
+
+不管怎样,以下是 /var/adm/messages 的内容:
+Anyway, here is part of the /var/adm/messages file:
+May  2 16:23:07 linux kernel: IPX Portions Copyright (c) 1995 Caldera, Inc.
+May  2 16:23:07 linux kernel: tr0: PIOaddr:  a20 seg/intr: b8 mmio base:
+   000dc000 intr: 0
+May  2 16:23:07 linux kernel: tr0: Channel ID string not found for PIOaddr: a20
+May  2 16:23:07 linux kernel: tr0: Expected for ISA: 5049434f3631313039393020
+May  2 16:23:07 linux kernel: tr0:            found: 000902003021111000182000
+May  2 16:23:07 linux kernel: tr0: Expected for MCA: 4d4152533633583435313820
+May  2 16:23:07 linux kernel: tr0: Unable to assign adapter to device.
+May  2 16:23:07 linux kernel: tr1: Unable to assign adapter to device.
+May  2 16:23:07 linux kernel: PPP: version 0.2.7 (4 channels) NEW_TTY_DRIVERS
+   OPTIMIZE_FLAGS
+
+
+这有说甚麽吗?我看不出来.
+Does this tell you anything. It tells me little.
+              
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<DT><B>A:</B><DD><P>
+<BLOCKQUOTE><CODE>
+<PRE>
+From: David Morris &lt;dwm@shell.portal.com>
+              
+</PRE>
+</CODE></BLOCKQUOTE>
+
+这讯息代表 MMTO area 或是 TR 网路卡有记忆体冲突造成和网路卡的不相容
+(至少这讯号未知).
+<P>This message means either a memory conflict with the MMIO area
+or a TR card which is not compatible with the driver
+(at least the signature isn't known).
+<P>
+<DT><B>Q:</B><DD><P>
+<BLOCKQUOTE><CODE>
+<PRE>
+From: Mike Glover &lt;glover@credit.erin.utoronto.ca>
+Subject: Almost there...
+
+The following sample is what I'm getting on my messages file:
+
+May  3 14:50:24 linux kernel: tr0: now opening the board...
+May  3 14:50:24 linux kernel: tr0: board opened...
+May  3 15:11:47 linux kernel: tr0: Arrg. Transmitter busy for more than 50 msec.
+   Donald resets adapter, but resetting
+May  3 15:11:47 linux kernel:  the IBM tokenring adapter takes a long time.
+   It might not even help when the
+May  3 15:11:47 linux kernel:  ring is very busy, so we just wait a little longer
+   and hope for the best.
+May  3 15:11:47 linux kernel: tr0: Arrg. Transmitter busy for more than 50 msec.
+   Donald resets adapter, but resetting
+May  3 15:11:47 linux kernel:  the IBM tokenring adapter takes a long time.
+   It might not even help when the
+May  3 15:11:47 linux kernel:  ring is very busy, so we just wait a little longer
+   and hope for the best.
+May  3 15:11:47 linux kernel: tr0: Arrg. Transmitter busy for more than 50 msec.
+   Donald resets adapter, but resetting
+
+Arrg 项目只有当我 telnet ,rlogin 或 ftp 到远端机器时才会产生.当有上述情形时,网路会当掉一阵子.
+我移除其他硬体装置(我的 SCSI 卡)让网路卡单独工作.一样有问题,这排除了硬体间 IRQ 冲突的情形.
+以下是此卡的 DIP switches:
+The Arrg entry only comes when I telnet, rlogin or ftp to a remote 
+machine. Once that happens, the connection hangs big time. I took out all 
+the other hardware (which was 1 SCSI card) and tried running the card all 
+by itself. Same thing, so it eliminates hardware IRQ's from getting into 
+a yelling match. The following are the DIP switches on the card:
+
+1       Up      |
+2       Down    |
+3       Down    |       According to the manual this sets the 
+4       Up      |       base address to CC000 Which is fine for
+5       Up      |       my machine.
+6       Down    |
+7       Down    +       This sets the IRQ to 2. Which is also fine      
+8       Down    +
+9       Up      X       Primary Lan adapter. Which it is.
+10      Up      =       16 KB shared RAM size. This OK? 
+11      Down    =
+12      Up      #       16 Mbps Data rate.
+
+我怀疑这是否真的是 dip switches,或是我设定网路时的 route table 有问题.
+I was wondering if it is in fact the dip switches, or the way I have 
+configured my route table and other network info.
+
+ttfn,
+Mike
+              
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<DT><B>A:</B><DD><P>在 2.0 版核心中 Arrg 的问题值得留意.所有的修补程式都没有回朔到
+1.2 版,现在我在想这必要性了.如果你有过多 Arrg 讯息的问题,你愿意升级到 2.0
+版的核心吗?
+The Arrg problem is pretty much taken care of in the 2.0 kernels.
+All of the patches have not been ported back to 1.2,
+and I doubt that they will be.
+If you get excessive Arrg messages, do yourself a favour
+and move to Linux 2.0.
+</DL>
+</DL>
+<HR>
+<A HREF="Token-Ring-8.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Token-Ring-6.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Token-Ring.html#toc7"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

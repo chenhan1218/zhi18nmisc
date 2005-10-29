@@ -1,0 +1,504 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Linux以太網-HOWTO: 常見問題</TITLE>
+ <LINK HREF="Ethernet-HOWTO-3.html" REL=next>
+ <LINK HREF="Ethernet-HOWTO-1.html" REL=previous>
+ <LINK HREF="Ethernet-HOWTO.html#toc2" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Ethernet-HOWTO-3.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Ethernet-HOWTO-1.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Ethernet-HOWTO.html#toc2"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="faq"></A> <A NAME="s2">2. 常見問題</A></H2>
+
+<P>
+<P>這里是一些有關使用Linux進行以太網連接的常見問題。某些特定問題按照制造商進行分類。可能你想問的問題別人已經問過（而且被回答了！），所以即使沒有在這里找到你的答案，還可能在諸如
+<A HREF="http://www.dejanews.com">Dejanews</A>之類的新聞檔案中找到你所要的。
+<P>
+<H2><A NAME="what-card"></A> <A NAME="ss2.1">2.1 該為Linux買什么網卡？</A>
+</H2>
+
+<P>
+<P>這個問題的答案很大程度取決于你希望用網絡連接干些什么，以及會遇到多大的數據流量。
+<P>如果你只想作為一個用戶偶爾使用一下FTP或WWW，那么即使是8比特的老ISA網卡都能滿足你的需要。
+<P>如果你想建立一個服務器，并要求接收或發送網絡數據給CPU帶來的負載最小，那么你可能需要看一下使用具有總線控制能力的芯片的PCI網卡，比如DEC tulip (21xxx)芯片，或者AMD PCnet-PCI芯片。
+<P>如果你的需求在這二者之間，那么使用有穩定的驅動程序的便宜的PCI網卡或16比特的ISA網卡就可以了。
+<P>
+<H2><A NAME="alfa"></A> <A NAME="ss2.2">2.2 Alpha驅動程序──獲取與使用</A>
+</H2>
+
+<P>
+<P>我聽說我的網卡有一個更新的或初步的/alpha驅動程序。從哪兒得到它呢？
+<P>最新的“新”驅動程序可以在Donald的FTP站點：<CODE>cesdis.gsfc.nasa.gov</CODE>里面的<CODE>/pub/linux/</CODE>下找到。因為事情變化很頻繁，可能需要四處找一找。或者使用WWW瀏覽器去：
+<P>
+<A HREF="http://cesdis.gsfc.nasa.gov/linux/">Don's Linux Home Page</A><P>查找你想要的驅動程序更簡單一些。（留神WWW瀏覽器會悄悄地把源碼中的TABs替換為空格，等等──如果無法確定的話，使用FTP下載，至少也得用WWW瀏覽器的FTP URL。）
+<P>如果驅動程序確實是alpha版本，或pre-alpha版本，那么請恰當地對待它。換句話說，不要抱怨，因為你無法弄清用它能做些什么。如果弄不清如何安裝，最好不要去試。同樣，如果它使你的機器宕機了，不要抱怨。相反，你應該發給我們一份材料組織很好的Bug報告，如果是一個補丁，那就更好！
+<P>注意，某些“可用”的實驗性/alpha驅動程序已經包含在標准的內核源碼樹中。在運行<CODE>make config</CODE>時你首先要回答的一個問題就是“Prompt for development and/or incomplete code/drivers”。在此你要回答“Y”以包括任何alpha/實驗性驅動程序。
+<P>
+<H2><A NAME="two-card"></A> <A NAME="ss2.3">2.3 一台機器使用多個以太網卡</A>
+</H2>
+
+<P>
+<P>做些什么才能讓Linux運行兩塊以太網卡？
+<P>這個問題的答案取決于驅動程序是否被用做可載入的模塊或者直接編譯進了內核。大多數Linux發行版本現在都使用模塊化的驅動程序。這樣就不用發行許多內核，每種內核設置一個不同的內建驅動程序。使用一個單一的基本內核，如果特定用戶系統需要，一旦系統啟動，就可以從驅動程序模塊文件（通常存放在<CODE>/lib/modules/</CODE>）中載入個別的驅動程序。
+<P><EM>把驅動程序作為模塊使用：</EM>對于PCI驅動程序，模塊通常會自動檢測該品牌類型所有安裝的網卡。但對于ISA網卡，探尋一個網卡是不安全的操作，因此你需要提供網卡的I/O地址以便模塊知道去哪里查找。這一信息存儲在文件<CODE>/etc/conf.modules</CODE>中。
+<P>例如，如果一個用戶有兩塊ISA NE2000網卡，一塊在<CODE>0x300</CODE>，一塊在<CODE>0x240</CODE>，它們在<CODE>/etc/conf.modules</CODE>文件中顯示如下：
+<P>
+<PRE>
+        alias eth0 ne
+        alias eth1 ne
+        options ne io=0x240,0x300
+</PRE>
+<P>這几行的意義：就是說如果管理員（或內核）進行<CODE>modprobe eth0</CODE>或者<CODE>modprobe eth1</CODE>，那么為<CODE>eth0</CODE>或者<CODE>eth1</CODE>載入<CODE>ne.o</CODE>驅動程序。此外，在載入<CODE>ne.o</CODE>模塊時，使用選項<CODE>io=0x240,0x300</CODE>，這樣驅動程序就知道去哪里尋找網卡。注意<CODE>0x</CODE>很重要──DOS里常用的<CODE>300h</CODE>在這里沒有用。改變<CODE>0x240</CODE>和<CODE>0x300</CODE>的順序會使哪一塊物理網卡以<CODE>eth0</CODE>和<CODE>eth1</CODE>結尾發生改變。
+<P>同這個例子一樣，大多數ISA模塊驅動程序可以接受多個以逗號分隔的I/O值以處理多塊網卡。但是，某些（老的？）驅動程序，比如3c501.o模塊，目前載入一個模塊只能處理一塊網卡。這樣，要檢測兩塊網卡就必須載入兩次該模塊。此時，文件<CODE>/etc/conf.modules</CODE>將如下所示：
+<P>
+<PRE>
+        alias eth0 3c501
+        alias eth1 3c501
+        options eth0 -o 3c501-0 io=0x280 irq=5
+        options eth1 -o 3c501-1 io=0x300 irq=7
+</PRE>
+<P>在此例中，選項<CODE>-o</CODE>用來給每個模塊實例一個唯一的名字，因為不能用同一個名字載入兩個模塊。選項<CODE>irq=</CODE>也是用來指定網卡設置的硬件IRQ。（此方法也能用于可接受多個以逗號分隔的I/O值的模塊，但這樣會使模塊被不必要地載入兩次，降低了效率。）
+<P>最后一個例子，假設用戶有一塊在<CODE>0x350</CODE>的3c503網卡和一塊在<CODE>0x280</CODE>的SMC Elite16 (wd8013)網卡。則應該這樣：
+<P>
+<PRE>
+        alias eth0 wd
+        alias eth1 3c503
+        options wd io=0x280
+        options 3c503 io=0x350
+</PRE>
+<P>對于PCI網卡，只要用<CODE>alias</CODE>語句把<CODE>ethN</CODE>接口和相應的驅動程序名聯系起來就行了，因為PCI網卡的I/O地址可以被安全地檢測到。
+<P>可用的模塊一般存放在<CODE>/lib/modules/`uname -r`/net</CODE>下，這里<CODE>uname -r</CODE>命令可以得到內核的版本（比如2.0.34）。你可以在這里看看哪一個驅動程序適合你的網卡。一旦你在<CODE>conf.modules</CODE>文件里進行了正確的設置，就可以用下面的方法檢查一下：
+<P>
+<PRE>
+        modprobe ethN
+        dmesg | tail
+</PRE>
+<P>這里“N”是你要檢測的以太網卡的接口號。
+<P>
+<P><EM>使用編譯進內核的驅動程序：</EM>如果你需要的驅動程序編譯進了內核，那么處理多塊以太網卡的接口已經存在了。但缺省情況下只自動檢測<EM>一塊</EM>以太網卡。這樣就避免了啟動時檢測敏感網卡可能引起的麻煩。
+<P>（注意：在2.1.x之后的內核中，啟動檢測被分為安全和不安全的兩類，所有安全的檢測（如對PCI和EISA網卡）可以自動找到所有相關的網卡。在至少有一塊ISA網卡的多網卡系統中還需要進行以下的處理。）
+<P>有兩種方法可以啟動對第二塊（或第三塊等等）網卡的自動檢測。最簡單的方法是向內核傳遞啟動參數，由LILO完成。使用<CODE>ether=0,0,eth1</CODE>這樣簡單的啟動參數就可以完成對第二塊網卡的檢測。此時按照啟動時找到的網卡順序分配<CODE>eth0</CODE>和<CODE>eth1</CODE>。假如你想讓<CODE>0x300</CODE>處的網卡為<CODE>eth0</CODE>，而<CODE>0x280</CODE>處的網卡為<CODE>eth1</CODE>，那么可以使用
+<P>
+<BLOCKQUOTE><CODE>
+LILO: linux ether=5,0x300,eth0 ether=15,0x280,eth1
+</CODE></BLOCKQUOTE>
+<P>命令<CODE>ether=</CODE>可以接受的參數并不僅限于如上所示的IRQ + I/O + name。請參看
+<A HREF="Ethernet-HOWTO-9.html#lilo">傳遞以太網參數......</A>以了解全部的句法、網卡特定參數和LILO使用技巧。
+<P>這些啟動參數可以固定，這樣就不用每次都必須重新敲一遍。參看LILO手冊中有關LILO的配置選項“<CODE>append</CODE>”。
+<P>第二種方法（不建議使用）是編輯文件<CODE>Space.c</CODE>并用零替換I/O地址中的<CODE>0xffe0</CODE>入口。<CODE>0xffe0</CODE>入口是用來告訴內核不要檢測該設備──把它替換為零就啟動了對該設備的自動檢測。
+<P>
+<H2><A NAME="ss2.4">2.4 這個<CODE>以太</CODE>東東不干活。為什么？</A>
+</H2>
+
+<P>
+<P>如上所述，<CODE>ether=</CODE>命令<EM>只</EM>對編譯進了內核的驅動程序起作用。現在大多數的發行版本都用模塊的方式使用驅動程序，所以很少再使用<CODE>ether=</CODE>命令了。（某些早期文檔需要更新以反映這一變化。）如果你想使用模塊化的以太網驅動程序的選項，<EM>必須</EM>修改<CODE>/etc/conf.modules</CODE>文件。
+<P>如果你<EM>是</EM>使用編譯的驅動程序，而且已經把<CODE>ether=</CODE>加進了LILO配置文件，需要重新運行<CODE>lilo</CODE>使更新后的配置文件生效。
+<P>
+<H2><A NAME="ne2k-probs"></A> <A NAME="ss2.5">2.5 NE1000/NE2000網卡（及其兼容卡）的問題</A>
+</H2>
+
+<P>
+<P><B>問題：</B>
+在用v2.0.x啟動時沒有檢測到PCI NE2000兼容網卡。
+<P><B>原因：</B>
+在v2.0.30之前的<CODE>ne.c</CODE>驅動程序只知道基于RealTek 8029的兼容網卡的PCI ID號。在此只后才出現了使用其它PCI ID號的PCI NE2000兼容網卡，所以驅動程序無法檢測這些網卡。
+<P><B>解決方案：</B>
+最簡單的方法是把Linux內核升級到v2.0.31以上版本。它可以識別五種不同的NE2000-PCI芯片的ID號，在啟動或載入模塊時自動檢測到它們。如果你升級到了2.0.34以上版本，會有一個比原先的ISA/PCI驅動程序稍小但更高效的PCI專用NE2000驅動程序。
+<P><B>問題：</B>
+啟動時PCI NE2000兼容網卡被報告為ne1000（8比特網卡！）或者在v2.0.x下載入ne.o模塊不起作用。
+<P><B>原因：</B>
+某些PCI兼容網卡不支持字節存取（因此不是百分之百兼容的NE2000）。這使它在檢測時被誤認為NE1000網卡。
+<P><B>解決方案：</B>
+你需要升級到v2.0.31以上版本。現在的驅動程序會檢測到這種硬件Bug。
+<P><B>問題：</B>
+PCI NE2000網卡的性能很差，即使按照性能技巧章節所說的減小了窗口大小。
+<P><B>原因：</B>
+十多年前設計和出售的初始8390芯片的技術數據手冊上提到，為了得到最高的可靠性，在每次寫操作之前需要一個讀操作。驅動程序能夠輕易地做到這一點，但從v1.2內核時代起，缺省情況下取消了這一操作。有一個用戶報告說重新啟用這一“錯誤的特性”就可以改善廉價的PCI NE2000兼容網卡的性能。
+<P><B>解決方案：</B>
+由于只有一個用戶提出報告把它作為解決方案，不要對此寄予太大的希望。重新使用寫之前的讀操作可以簡單地編輯<CODE>linux/drivers/net/</CODE>下的驅動程序文件，取消包含<CODE>NE_RW_BUGFIX</CODE>的那一行的注釋，然后重建內核或載入相應的模塊。如果這樣確實有效，請給我發一封e-mail，描述性能上的差異和你所使用的網卡/芯片類型。（對<CODE>ne2k-pci.c</CODE>驅動程序也可以如法炮制。）
+<P><B>問題：</B>
+<CODE>ne2k-pci.c</CODE>驅動程序對PCI NE2000網卡報告諸如<CODE>timeout waiting for Tx RDC</CODE>錯誤信息，無法正常工作。
+<P><B>原因：</B>
+你的網卡或網卡到PCI總線的連接無法處理該驅動程序使用的長字I/O優化。
+<P><B>解決方案：</B>
+首先，檢查BIOS/CMOS設置，看看與PCI總線相關的計時對于可靠的操作是否過于嚴格了。否則，使用ISA/PCI的<CODE>ne.c</CODE>驅動程序（或者刪除<CODE>ne2k-pci.c</CODE>中的<CODE>#define USE_LONGIO</CODE>），使你的網卡可用。
+<P><B>問題：</B>
+沒檢測到ISA的即插即用NE2000網卡（如RealTek 8019）。
+<P><B>原因：</B>
+初始的NE2000特性不支持即插即用，因此Linux的NE2000驅動程序也不支持即插即用。
+<P><B>解決方案：</B>
+使用網卡所附的DOS配置盤取消PnP，并為該網卡設置一個指定的I/O地址和IRQ。在<CODE>/etc/conf.modules</CODE>里增加這樣的一行<CODE>options ne io=0xNNN</CODE>，其中<CODE>0xNNN</CODE>是你為網卡設置的16進制I/O地址。（假設你使用的是模塊化驅動程序﹔否則，在啟動時使用一個<CODE>ether=0,0xNNN,eth0</CODE>參數）。你也可以進入BIOS/CMOS設置，把IRQ從PnP改為Legacy-ISA。如果你需要為兼容其它的操作系統而保留PnP設置，那么你可以看一下<EM>isapnptools</EM>軟件包。使用<CODE>man isapnp</CODE>看看它是否已經安裝在你的系統上了。如果沒有，瀏覽一下下面的連接：
+<P>
+<A HREF="http://www.roestock.demon.co.uk/isapnptools/">ISA PNP Tools</A><P><B>問題：</B>
+在啟動檢測時NE*000驅動程序報告“not found (no reset ack)”。
+<P><B>原因：</B>
+這跟上面所說的改動有關。在証實8390處于所檢測的I/O地址之后，進行重新設置。在網卡完成重新設置后，應當通知重新設置完成。你的網卡沒有通知，所以驅動程序認為不存在NE網卡。
+<P><B>解決方案：</B>
+你可以在啟動時使用一個未被使用的<CODE>mem_end</CODE>的16進制值<CODE>0xbad</CODE>，告訴驅動程序你有一個壞網卡。在使用<CODE>0xbad</CODE>覆蓋時你<EM>必須</EM>為網卡提供一個非零的I/O地址。例如，在<CODE>0x340</CODE>的網卡不響應重新設置時，則使用如下方法：
+<P>
+<BLOCKQUOTE><CODE>
+LILO: linux ether=0,0x340,0,0xbad,eth0
+</CODE></BLOCKQUOTE>
+<P>
+<P>這樣，即使你的網卡不響應重新設置，網卡檢測還能繼續下去。如果你是以模塊方式使用驅動程序，那么可以象提供I/O地址一樣提供選項<CODE>bad=0xbad</CODE>。
+<P><B>問題：</B>
+NE*000網卡使機器在第一次網絡訪問時死機。
+<P><B>原因：</B>
+這個問題從早期的1.1.57內核到現在都出現過，而且只在有限的几種軟件配置的兼容網卡上出現。看來是需要用某些特殊的方法來初始化它們。
+<P><B>解決方案：</B>
+有几個人報告在熱啟動（即loadlin或Ctrl-Alt-Del）Linux之前，運行提供的DOS軟件配置程序或提供的DOS驅動程序可以使網卡工作。這表明這些卡需要以某種特殊的方式初始化，與當前的Linux驅動程序稍有區別。
+<P><B>問題：</B>
+在<CODE>0x360</CODE>的NE*000以太網卡沒有檢測到。
+<P><B>原因：</B>
+你的NE2000網卡在I/O空間占據了<CODE>0x20</CODE>個字節，使它與<CODE>0x378</CODE>處的并口發生沖突。其它可能的設備是<CODE>0x370</CODE>處的第二個軟盤控制器（如果有的話），以及<CODE>0x376--0x377</CODE>處的第二個IDE控制器。如果該口已被其它驅動程序注冊，內核將不再進行檢測。
+<P><B>解決方案：</B>
+或者把你的網卡移到<CODE>0x280, 0x340, 0x320</CODE>一類的地址，或者在編譯時不支持并行打印機。
+<P><B>問題：</B>
+每次打印時網絡都斷開（NE2000）。
+<P><B>原因：</B>
+與上一個問題相同，但你的內核比較老，不支持對重疊I/O區域的檢查。使用如上的解決方案，有空時獲取一個新的內核。
+<P><B>問題：</B>
+沒檢測到0xNNN: 00 00 C5 ... 處的NE*000以太網卡。（非法標識yy zz）
+<P><B>原因：</B>
+首先，你是否在地址0xNNN處有一個NE1000或NE2000網卡？如果有，報告的硬件地址是否象一個合法地址？如果是的話，那么你的NE*000兼容網卡很差勁。所有的NE*000兼容網卡都假定網卡上的SA PROM的第14和15字節為<CODE>0x57</CODE>。而你的網卡不是這樣──它的值為“yy zz”。
+<P><B>解決方案：</B>
+有兩種解決方法。最簡單的方法就是如上所述的“no reset ack”解決方案，使用一個<CODE>0xbad</CODE>的mem_end值。這樣在提供一個非零的I/O地址時就可以忽略標識檢查。此方法無需重新編譯內核。
+<P>第二種方法（對黑客）需要修改驅動程序，并重新編譯內核（或模塊）。在驅動程序（/usr/src/linux/drivers/net/ne.c）的42行有一個“Hall of Shame”列表。這個表是用來檢測那些差勁的兼容網卡的。例如，DFI網卡在PROM的前三個字節使用“DFI”，而不是象要求的那樣在第14和15字節使用<CODE>0x57</CODE>。
+<P><B>問題：</B>
+機器在啟動時出現“8390...”或“WD....”信息后死機。拔掉NE2000就好了。
+<P><B>原因：</B>
+你的NE2000兼容網卡兼容性不好。一個激活的NE2000是個無底洞，會使其它的驅動程序陷在其空間內進行自動檢測。把NE2000改到一個不常用的地址就可以從其它的自動檢測中消除這一陷阱，機器也就可以啟動了。
+<P><B>解決方案：</B>
+把你的NE2000地址改為<CODE>0x340</CODE>一類的地址。此外，你可以在和“ether=”參數一起使用“reserve=”啟動參數，保護網卡不受其它設備驅動程序檢測的影響。
+<P><B>問題：</B>
+機器啟動時在進行SCSI檢測時死機。
+<P><B>原因：</B>
+這個問題跟上面的一樣，改變以太網卡的地址，或使用reserve/ether啟動參數。
+<P><B>問題：</B>
+機器啟動時在進行聲卡檢測時死機。
+<P><B>原因：</B>
+不對，實際上是發生在靜默方式的SCSI檢測過程中，與上面的問題一樣。
+<P><B>問題：</B>
+啟動時檢測不到NE2000 -- 根本就沒有啟動信息。
+<P><B>解決方案：</B>
+因為造成檢測不到的原因很多，所以沒有“神奇的解決方案”。下面列出了可能有所幫助的一些措施。
+<P>1) 構建一個只包含需要的設備驅動程序的內核。証實你確實是從新內核啟動的。忘記運行lilo等會使你從老的內核啟動。（仔細觀察啟動時報告的構建時間/日期。）聽起來很明顯，但我們以前都犯過這個錯。通過檢查<CODE>System.map</CODE>文件里<CODE>ne_probe</CODE>一類的名稱，確定驅動程序已包含在新的內核里。
+<P>2) 仔細觀察啟動信息。看看它是否提及正在進行諸如“NE*000 probe at 0xNNN: not found (blah blah)”一類的ne2k檢測，或者就是靜悄悄地失敗了。這里的區別很大。使用<CODE>dmesg|more</CODE>在登錄后瀏覽啟動信息，或者在啟動完成顯示登錄提示符時使用Shift-PgUp卷回屏幕。
+<P>3) 啟動后，執行<CODE>cat /proc/ioports</CODE>，証實網卡要求的全部I/O空間是空的。如果網卡在<CODE>0x300</CODE>，那么ne2k驅動程序要求的空間為<CODE>0x300-0x31f</CODE>。如果其它設備的驅動程序注冊了其中的一個口，就不會對該地址進行檢測，而是靜悄悄地檢測下一個要檢測的地址。常見的情況是lp驅動程序保留了
+<HR>
+<PRE>
+0x378
+</PRE>
+<HR>
+，或者第二個IDE通道保留了<CODE>0x376</CODE>，這就使ne驅動程序停止檢測<CODE>0x360-0x380</CODE>。
+<P>4) 與上面一樣執行<CODE>cat /proc/interrupts</CODE>。確定沒有其它設備注冊了你為以太網卡設置的中斷。這種情況下，檢測可以進行，以太網卡驅動程序會在啟動時大聲抱怨無法得到所要求的IRQ中斷線。
+<P>5) 如果你還為驅動程序靜悄悄地失敗而苦惱，那么編輯并給檢測增加一些printk()。比如，對于ne2k，你可以在<CODE>linux/drivers/net/ne.c</CODE>中增加/刪除某些行（用“+”或“-”表示），如下所示：
+<P>
+<HR>
+<PRE>
+    int reg0 = inb_p(ioaddr);
+
++    printk("NE2k probe - now checking %x\n",ioaddr);
+-    if (reg0 == 0xFF)
++    if (reg0 == 0xFF) {
++       printk("NE2k probe - got 0xFF (vacant I/O port)\n");
+        return ENODEV;
++    }
+</PRE>
+<HR>
+<P>那么它就會輸出檢查的每一個口地址信息，你可以看到你的網卡地址是否被檢測了。
+<P>6) 你還可以從Don的ftp站點（在howto中也提及了）獲取ne2k的診斷程序，看看你在啟動進入Linux后能否用它檢測你的網卡。使用“<CODE>-p 0xNNN</CODE>”選項告訴它在哪里尋找你的網卡。（缺省情況下只檢測<CODE>0x300</CODE>，與啟動時的探測不同，不會檢測其它的地址。）在找到網卡時的輸出如下：
+<P>
+<HR>
+<PRE>
+Checking the ethercard at 0x300.
+  Register 0x0d (0x30d) is 00
+  Passed initial NE2000 probe, value 00.
+8390 registers: 0a 00 00 00 63 00 00 00 01 00 30 01 00 00 00 00
+SA PROM  0: 00 00 00 00 c0 c0 b0 b0 05 05 65 65 05 05 20 20
+SA PROM 0x10: 00 00 07 07 0d 0d 01 01 14 14 02 02 57 57 57 57
+
+        NE2000 found at 0x300, using start page 0x40 and end page 0x80.
+</PRE>
+<HR>
+<P>你的注冊值和PROM值可能會不一樣。注意，對16比特網卡，所有PROM值都增加一倍，以太網卡地址（00:00:c0:b0:05:65）出現在第一行，加倍后的<CODE>0x57</CODE>標識出現在PROM的結尾。
+<P>在<CODE>0x300</CODE>處沒有安裝網卡時的輸出如下：
+<P>
+<HR>
+<PRE>
+Checking the ethercard at 0x300.
+  Register 0x0d (0x30d) is ff
+  Failed initial NE2000 probe, value ff.
+8390 registers: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+SA PROM        0: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+SA PROM 0x10: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+
+ Invalid signature found, wordlength 2.
+</PRE>
+<HR>
+<P>出現值<CODE>0xff</CODE>的原因是在讀取空I/O口時返回的就是該值。如果在檢測的區域內有其它硬件，你可以看到一些非<CODE>0xff</CODE>的值。
+<P>7) 嘗試在運行提供的DOS驅動程序或配置程序之后，從DOS啟動軟盤（通過loadlin）熱啟動進入Linux。這可能會進行一些額外的（即非標准的）“魔法”來初始化網卡。
+<P>8) 試一下Russ Nelson的ne2000.com包驅動程序，看它能否看見你的網卡──如果還不行，事情就不大妙了。例如：
+<P>
+<BLOCKQUOTE><CODE>
+A:> ne2000 0x60 10 0x300
+</CODE></BLOCKQUOTE>
+<P>所用參數為軟件中斷向量、硬件IRQ和I/O地址。你可以從任意的msdos檔案文件中的pktdrv11.zip里找到它──現在的版本大概是11以上了。
+<P>
+<P>
+<H2><A NAME="8013-probs"></A> <A NAME="ss2.6">2.6 SMC Ultra/EtherEZ和WD80*3網卡的問題</A>
+</H2>
+
+<P>
+<P><B>問題：</B>
+你得到了如下信息：
+<P>
+<PRE>
+        eth0: bogus packet size: 65531, status=0xff, nxpg=0xff
+</PRE>
+<P><B>原因：</B>
+是共享內存的問題。
+<P><B>解決方案：</B>
+最普遍的原因是配置的PCI機器沒有映射到ISA內存設備里。因此你讀到的是PC的RAM（全都是<CODE>0xff</CODE>值），而不是存放接收數據包數據的網卡上的RAM。
+<P>另一個容易解決的典型問題是板卡沖突，在此區域有緩存或“shadow ROM”，或者你的ISA總線運行速度高于8Mhz。以太網卡上的內存失效的數目也令人驚奇，所以如果你的以太網卡有診斷程序的話，運行一下。
+<P><B>問題：</B>
+SMC EtherEZ在非共享內存（PIO）模式下不工作。
+<P><B>原因：</B>
+老版本的Ultra驅動程序只支持共享內存模式下的操作。
+<P><B>解決方案：</B>
+版本2.0以上的內核所附驅動程序就支持可編程I/O模式的操作。升級到v2.0以上版本。
+<P><B>問題：</B>
+老的wd8003或可跳線的wd8013總是得到錯誤的IRQ。
+<P><B>原因：</B>
+老的wd8003網卡或可跳線的wd8013兼容卡沒有驅動程序可以從中讀取設置的IRQ的EEPROM。如果驅動程序無法讀到IRQ，就嘗試用auto-IRQ發現它。若auto-IRQ返回0，那么驅動程序就給8比特網卡分配IRQ 5，或者為16比特網卡分配IRQ 16。
+<P><B>解決方案：</B>
+使auto-IRQ代碼無效，并在你的模塊配置文件（對于內建的驅動程序則通過啟動參數）告訴內核你把網卡跳成了什么IRQ。
+<P><B>問題：</B>
+SMC Ultra網卡被檢測成了wd8013，但IRQ和共享內存地址是錯的。
+<P><B>原因：</B>
+Ultra網卡看起來跟wd8013很相象，如果內核里沒有Ultra驅動程序，wd驅動程序就會把ultra誤認為wd8013。ultra檢測在wd之前，所以一般不會出問題。ultra在EEPROM保存的IRQ和內存地址與wd8013保存的位置不同，所以報告的值是假的。
+<P><B>解決方案：</B>
+只保留需要的驅動程序重新編譯內核。如果你在同一台機器上同時使用wd和ultra網卡，并使用模塊，那么首先載入ultra模塊就行了。
+<P>
+<H2><A NAME="3com-probs"></A> <A NAME="ss2.7">2.7 3Com網卡的問題</A>
+</H2>
+
+<P><B>問題：</B>
+3c503選擇了IRQ N，但其它設備也需要IRQ N。（比如CD ROM驅動程序、modem等。）可以不編譯進內核就解決這個問題嗎？
+<P><B>解決方案：</B>
+3c503驅動程序按照順序{5, 9/2, 3, 4}檢測空閑的IRQ線，從中找到一個未被使用的IRQ。在網卡被<CODE>ifconfig</CODE>操作配置時選擇中斷IRQ。
+<P>如果你使用的是模塊化的驅動程序，可以用模塊參數設置各種情況，包括中斷IRQ的值。
+<P>下面的語句選擇IRQ9、基址<CODE>0x300</CODE>、&lt;ignored value&gt;和if_port #1（外部收發器）。
+<P>
+<P>
+<BLOCKQUOTE><CODE>
+io=0x300 irq=9 xcvr=1
+</CODE></BLOCKQUOTE>
+<P>另外，如果驅動程序被編譯進了內核，你還可以通過LILO在啟動時傳遞參數來設置同樣的值。
+<P>
+<BLOCKQUOTE><CODE>
+LILO: linux ether=9,0x300,0,1,eth0
+</CODE></BLOCKQUOTE>
+<P>下面的語句選擇IRQ3、檢測基址、&lt;ignored value&gt;和缺省if_port #0（外部收發器）。
+<P>
+<BLOCKQUOTE><CODE>
+LILO: linux ether=3,0,0,0,eth0
+</CODE></BLOCKQUOTE>
+<P><B>問題：</B>
+3c503: configured interrupt X invalid, will use autoIRQ.
+<P><B>原因：</B>
+3c503網卡只能使用中斷IRQ{5, 2/9, 3, 4}中的一個（這些是網卡所能連接的中斷線。）如果你使用一個不在其中的IRQ值，就會得到如上的提示。一般情況下，沒必要為3c503指定中斷值。3c503會在ifconfig配置時使用autoIRQ，并從IRQ{5, 2/9, 3, 4}中選擇一個。
+<P><B>解決方案：</B>
+使用上述的合法IRQ值，或者不指定IRQ以啟用autoIRQ。
+<P><B>問題：</B>
+提供的3c503驅動程序無法使用AUI（粗纜以太網）端口。怎樣才能不使用缺省的細纜以太網端口而選擇AUI端口？
+<P><B>解決方案：</B>
+3c503的AUI端口對于內建驅動程序可以在啟動時選擇，對于模塊化驅動程序可以在插入模塊時選擇。這一選擇會覆蓋未使用的dev-&gt;rmem_start變量的低比特位，所以啟動參數：
+<P>
+<BLOCKQUOTE><CODE>
+LILO: linux ether=0,0,0,1,eth0
+</CODE></BLOCKQUOTE>
+<P>可以對內建在內核的驅動程序起作用。
+<P>要在載入模塊時指定AUI端口，只需把<CODE>xcvr=1</CODE>附加在模塊選項包含你的I/O和IRQ值的那一行就行了。
+<P>
+<H2><A NAME="ss2.8">2.8 非特定網卡的FAQ。</A>
+</H2>
+
+<P>
+<P>
+<H3>Linux與ISA的即插即用以太網卡。</H3>
+
+<P>
+<P>要獲得最佳效果（問題最少），推荐使用隨網卡附的程序（通常是DOS程序）取消PnP機制，并給網卡設置一個固定的I/O地址和IRQ。確定使用的I/O地址在啟動時被驅動程序檢測到，如果使用模塊，則在<CODE>/etc/conf.modules</CODE>中使用<CODE>io=</CODE>選項提供地址。也可以進入BIOS/CMOS設置，把IRQ從PnP改為Legacy-ISA（如果計算機有此選項的話）。
+<P>注意，運行基于DOS的配置程序一般并不需要安裝DOS。可以用DOS軟盤啟動，然后從提供的軟盤上運行它們就可以了。同樣可以自由地下載OpenDOS和FreeDOS。
+<P>如果需要使用PnP以與其它操作系統兼容，就得每次啟動時都使用Linux的isapnptools包配置網卡。還需要確定為網卡選擇的I/O地址被驅動程序檢測到，或用<CODE>io=</CODE>選項提供I/O地址。
+<P>有些系統在BIOS/CMOS設置菜單中有“enable PnP OS”（或類似的名稱）選項，几乎在所有情況下或網卡無法正常工作甚至檢測不到的情況下都需要禁用此選項。一個用戶對此描述得很好“我不知道它在屏幕后干了些什么，但看起來是在搗亂。”
+<P>
+<H3>啟動時沒有檢測到以太網卡。</H3>
+
+<P>
+<P>出現這個問題的常見原因是人們使用的內核不支持特定的網卡。對于模塊化的內核，這一般說明要求的模塊尚未被載入，或者需要用模塊選項指定其I/O地址。
+<P>如果使用的是模塊化的內核，就象大多數用Linux發行版安裝的那樣，試著用一下該發行版的配置工具來選擇網卡所用模塊。對于ISA網卡一個較好的主意是，確定網卡的I/O地址，如果配置工具要求選項則把它作為一個選項（如<CODE>io=0x340</CODE>）加進去。如果沒有配置工具，那么需要在<CODE>/etc/conf.modules</CODE>里添加正確的模塊名稱（及選項）──閱讀<CODE>man modprobe</CODE>以了解更多的細節。
+<P>如果使用的是發行版套件里的預編譯內核，那么需要查看文檔以確定安裝的是哪一種內核，以及是否支持所用的網卡。如果不支持的話，要么試著找一個支持所用網卡的內核，要么自己生成一個內核。
+<P>只保留所需的驅動程序生成自己的內核是個聰明的主意，因為這會減小內核大小（為應用程序保留寶貴的RAM！），減少打擾敏感硬件的設備檢測數目。生成內核并不象聽起來那么復雜。你只需要對一些有關想要哪些驅動程序的問題回答是或不是，其它的事都由程序完成。
+<P>另一個主要原因是其它的設備占用了網卡所需的部分I/O空間。大多數網卡在I/O空間里占用了16或32個字節。如果你的網卡設在<CODE>0x300</CODE>并需要32個字節，那么驅動程序就要求<CODE>0x300-0x31f</CODE>。如果某個其它設備驅動程序注冊了哪怕其中一個端口，驅動程序就不會對該地址進行檢測，而是靜悄悄地進入下一個檢測地址。所以，在啟動之后，運行一下<CODE>cat /proc/ioports</CODE>以確定網卡要求的全部I/O空間都是空的。
+<P>還有一個問題就是網卡跳到的I/O地址不是缺省檢測的地址。每個驅動程序的檢測地址列表可以很容易地在驅動程序源碼中的文本注釋里找到。即使網卡設定的I/O地址不在檢測地址列表上，你也可以在啟動時用<CODE>ether=</CODE>命令提供（對內建驅動程序），參見
+<A HREF="Ethernet-HOWTO-9.html#lilo">傳遞以太網參數...</A>。模塊化的驅動程序可以在<CODE>/etc/conf.modules</CODE>里使用<CODE>io=</CODE>選項指定一個非缺省檢測的地址。
+<P>
+<P>
+<H3><CODE>ifconfig</CODE>報告了錯誤的網卡I/O地址。</H3>
+
+<P>
+<P>這不可能。你只是理解錯誤。這<EM>不</EM>是一個Bug，而且報告的數字是正確的。這只出現在某些基于8390的網卡上（如wd80x3、smc-ultra等），實際的8390芯片位于第一個給定I/O端口加上一個偏移量處。此偏移量保存在<CODE>dev->base_addr</CODE>里，也就是<CODE>ifconfig</CODE>報告的值。如果你想看到網卡使用的全部端口，試一下<CODE>cat /proc/ioports</CODE>以得到想要的數字。
+<P>
+<H3>PCI機器探測到了網卡，但驅動程序檢測失敗。</H3>
+
+<P>
+<P>某些PCI的BIOS在上電時沒有啟用所有的PCI卡，特別是在使用了“PNP OS”的BIOS選項情況下。這一特性是為了支持當前依然使用某些實模式驅動程序的Windows版本。或者禁用該選項，或者升級到一個可以啟用被禁用網卡的新驅動程序。
+<P>
+<H3>PCI機器里的共享內存ISA網卡不工作（<CODE>0xffff</CODE>）</H3>
+
+<P>
+<P>這常表現為顯示讀出大量<CODE>0xffff</CODE>值。除非你正確地設置了PCI ROM BIOS/CMOS SETUP配置，任何類型的共享內存網卡都不會在PCI機器上工作。你必須把網卡所用內存區域設置為可以從ISA總線訪問共享內存。如果你不知道哪些設置有用，那么詢問你的供應商或者當地的計算機大拿。對于AMI BIOS，在“Plug and Play”部分有一個“ISA Shared Memory Size”和“ISA Shared Memory Base”的設置。對于類似wd8013和SMC Ultra的網卡，把共享內存的大小從缺省的禁用改為16kB，并把基址改為網卡的共享內存地址。
+<P>
+<P>
+<H3>網卡看來在發送數據，但沒有收到過數據。</H3>
+
+<P>
+<P>執行<CODE>cat /proc/interrupts</CODE>。這樣產生的列表會顯示網卡產生的所有中斷事件的實時數目。如果為0或在試圖使用網卡時沒有增加，那么可能是與計算機安裝的其它設備發生物理中斷沖突（無論其它的設備是否安裝/提供了驅動程序）。把其中一個設備的IRQ改成未使用的IRQ。
+<P>
+<P>
+<H3>異步傳輸模式(ATM)支持</H3>
+
+<P>
+<P>Werner Almesberger在進行Linux的ATM的支持工作。他使用的是Efficient Networks的ENI155p板（
+<A HREF="http://www.efficient.com/">Efficient Networks</A>）和Zeitnet的ZN1221板（
+<A HREF="http://www.zeitnet.com/">Zeitnet</A>）。
+<P>Werner說ENI155p的驅動程序已經很穩定了，而ZN1221的驅動程序目前還沒有完成。
+<P>去下面的連接查看一下最新的進展：
+<P>
+<A HREF="http://lrcwww.epfl.ch/linux-atm/">Linux ATM Support</A><P>
+<H3>吉比特以太網支持</H3>
+
+<P>
+<P>Linux支持吉比特以太網嗎？
+<P>是的，目前至少已經有了兩個驅動程序。在v2.0和v2.2內核里有一個Packet Engines G-NIC PCI吉比特以太網適配器的驅動程序。驅動程序的更多細節、支持和更新可訪問：
+<P><CODE>http://www.scyld.com/linux/drivers/yellowfin.html</CODE>
+<P>v2.2內核提供的<CODE>acenic.c</CODE>驅動程序可用于Alteon的AceNIC吉比特以太網卡和其它如3Com的3c985一類的基于Tigon的網卡。這個驅動程序還可以用于NetGear的GA620，但還需要証實。
+<P>
+<H3>FDDI支持</H3>
+
+<P>Linux支持FDDI嗎？
+<P>是的。Larry Stefani為v2.0編寫了Digital的DEFEA（FDDI EISA）和DEFPA（FDDI PCI）網卡驅動程序。它被包含進v2.0.24內核。目前還沒有其它的網卡被支持。
+<P>
+<H3>全雙工支持</H3>
+
+<P>
+<P>全雙工能達到20MBps嗎？Linux支持嗎？
+<P>Cameron Spitzer對全雙工10Base-T網卡有如下論斷：“如果你連在全雙工交換HUB上，你的系統足夠快而且不做太多其它的工作，它會使你的網絡在兩個方向上都保持忙碌。不存在什么全雙工的10BASE-2或10BASE-5（細纜和粗纜）。全雙工是通過取消適配器的碰撞檢測來達到的。這就是為什么用同軸電纜實現不了全雙工﹔LAN無法以全雙工方式運轉。10BASE-T（RJ45接口）使用不同的線進行發送和接收，所以二者可能同時進行。交換HUB處理碰撞問題。信號速率是10Mbps。”
+<P>所以，你只能以10Mbps速率接收或發送數據，無法期望得到兩倍的性能提高。對于是否支持，取決于網卡和可能的驅動程序。有些網卡可以自動協商，有些需要驅動程序支持，還有的需要用戶在網卡的EEPROM配置中設置選項。只有那些認真的用戶會注意到全雙工與半雙工模式間的差別。
+<P>
+<H3>SMP機器上的Linux以太網卡</H3>
+
+<P>
+<P>如果有錢買多處理器（MP）的計算機，那么最好買一個好點兒的以太網卡。對v2.0內核這還不是個問題，但對v2.2就成問題了。大多數老式的非智能（如ISA總線的PIO和共享內存設計）網卡在設計時根本沒考慮多處理器應用。簡單地說就是買一個現代設計的智能網卡，并確定有能夠處理多處理器操作的驅動程序。（注意這里的“現代設計” - PCI-NE2000就是在現代總線上有10多年歷史的老式設計。）在驅動程序的源碼里查找<CODE>spin_lock</CODE>可以很好地說明該驅動程序是否能夠處理多處理器操作。下面詳細解釋了為何要為多處理器應用購買好的網卡（以及不買會出現什么問題）。
+<P>在v2.0內核，在任意時刻只有一個處理器允許進入“內核態”（即改變內核數據或運行設備驅動程序）。所以從網卡（及相關驅動程序）的角度來看，這與單處理器操作沒有什么不同，所以不會出問題。(這也是得到一個可以工作的Linux多處理器版本的最簡單的辦法──使用一個大鎖使得一次只有一個處理器處于內核狀態。這樣你就知道不可能有兩個處理器同時要修改同一數據！）
+<P>在任意時刻只有一個處理器允許進入內核態的不利之處在于只有運行自我控制和密集計算的程序時才會獲得多處理器的優越性。如果程序進行了大量諸如向磁盤或網絡讀/寫數據的I/O操作，在處于內核的那個處理器努力運行所有的設備驅動程序以滿足I/O請求的同時，其它的處理器都必須等待自己的I/O請求被處理完成。這樣內核就成為了瓶頸，由于只有一個處理器運行在內核態，多處理器機器的性能在I/O任務重、單鎖的情況下迅速降級到接近單處理器的水平。
+<P>很明顯這與理想情況相差太遠（尤其是對于文件/WWW服務器、路由器等），v2.2的內核就使用了粒度更小的鎖──也就是說同時可以有多個處理器進入內核。不再是對整個內核使用一個大鎖，而是使用許多較小的鎖保護關鍵數據，防止同時被多個處理器控制──例如，一個處理器可以運行網卡驅動程序，同時另一個處理器可以運行磁盤驅動器的驅動程序。
+<P>好的，這樣就有問題了：更小的鎖定就意味著可以有一個處理器試圖通過以太網驅動程序發送數據，同時另一個處理器試圖訪問同一個驅動程序/網卡來做別的事情（比如通過<CODE>cat /proc/net/dev</CODE>得到網卡統計數據）。哎呦──你的網卡正在通過網線發數據，你又要用它來收數據。網卡被同時要求做兩件事（或更多），會弄糊涂的，所以有可能在處理過程中網卡使你的機器死機。
+<P>因此，為單處理器寫的驅動程序不再適用──它需要更新控制對網卡訪問的鎖，使得網卡的接收、發送和操作配置數據這三種任務以網卡穩定操作所要求的程度串行化起來。沒有更新為使用穩定多處理器操作的鎖的驅動程序在輕的網絡負載下可能看起來會正常工作，但在兩個（或更多）處理器試圖同時進行多個任務時就會造成死機，或至少表現出奇怪的行為，這就是問題。
+<P>更新后的意識到多處理器的以太網驅動程序將要求一個驅動程序范圍的鎖，使得內核進入驅動程序的訪問入口被限制為一次一個。這樣，任務就被串行化，而對硬件的處理就如同在單處理器下一樣，也就一定應當穩定。使用驅動程序范圍的鎖的不利之處在于它類似于對整個內核加鎖（但規模較小）對性能的影響──也就是說，一次只可以有一個處理器處理網卡。
+[技術提示：如果增加的鎖是<CODE>irqsave</CODE>類型的而且被持有較長時間，對性能的影響還包括增加了中斷延遲。]
+<P>這里可以進行的改進有兩處。可以嘗試減少獲得與釋放鎖之間所用的時間，或者在驅動程序內部實現更為細化的鎖（比如滿足網卡需求的前提下，把整個驅動程序的鎖替換為若干保護同時訪問若干敏感寄存器或設置的鎖）。
+<P>但是，對于老式的非智能網卡而言，在設計時根本就沒有考慮過多處理器的應用，這樣的改進可能無法實現。更糟的是非智能網卡一般要求處理器在網卡和內存之間傳送數據，所以在最壞的情況下，每當在ISA總線傳送1.5kB數據包時，鎖都被一直保持著。
+<P>現代的智能網卡一般無需處理器的幫助就可以直接在網卡和內存之間傳遞網絡數據。這是個很大的改進，因為只需要在處理器通知網卡使用哪一塊內存保存下一個網絡數據包的那一小段時間持有鎖。現代的網卡在設計時同樣也不要求對整個驅動程序使用一個大鎖。
+<P>
+<P>
+<H3>Alpha/AXP PCI板上的Linux以太網卡</H3>
+
+<P>
+<P>對于v2.0，只有3c509、depca、de4x5、pcnet32和所有8390驅動程序（wd、smc-ultra、ne、3c503等等）是編寫成“結構無關”的，所以它們可以運行在基于DEC的Alpha CPU系統上。其它一些從Donald的WWW主頁上下載的更新過的PCI驅動程序也可以工作，因為它們也是按照結構無關的思想編寫的。
+<P>注意，使驅動程序與結構無關所需要進行的改動并不很復雜。只需要如下進行：
+<P>──把所有與<CODE>jiffies</CODE>有關的值都乘以HZ/100，得到Alpha使用的不同的HZ值。（即<CODE>timeout=2;</CODE>變成<CODE>timeout=2*HZ/100;</CODE>）
+<P>──把所有I/O內存（從640k到1MB）的指針引用替換為相應的readb() writeb() readl() writel()調用，如下例所示。
+<P>
+<HR>
+<PRE>
+-       int *mem_base = (int *)dev->mem_start;
+-       mem_base[0] = 0xba5eba5e;
++       unsigned long mem_base = dev->mem_start;
++       writel(0xba5eba5e, mem_base);
+</PRE>
+<HR>
+<P>──把所有使用I/O內存作為源或目的地址的memcpy()調用替換為相應的<CODE>memcpy_fromio()</CODE>或者<CODE>memcpy_toio()</CODE>調用。
+<P>以結構無關的方式處理內存訪問的細節在近期的內核所附的文件<CODE>linux/Documentation/IO-mapping.txt</CODE>中進行了說明。
+<P>
+<H3>SUN/Sparc硬件上的Linux以太網卡。</H3>
+
+<P>要得到最新的Sparc信息，可以訪問以下URL：
+<P>
+<A HREF="http://www.geog.ubc.ca/sparc">Linux Sparc</A><P>注意，有些Sparc的以太網硬件從主機獲得其MAC地址，因此可能會有多個接口具有相同的MAC地址。如果想在同一個網絡上使用多個接口，可以使用<CODE>ifconfig</CODE>的<CODE>hw</CODE>選項以分配唯一的MAC地址。
+<P>把PCI驅動程序移植到Sparc平台上與上面提到的AXP平台相似。可能的差異出在endian上，因為Sparc是big endian，而AXP和ix86是little endian。
+<P>
+<H3>其它硬件上的Linux以太網卡。</H3>
+
+<P>還有一些其它硬件平台可以運行Linux，比如Atari/Amiga（m68k）。就象Sparc一樣，最好是訪問每個Linux支持的平台主頁，以了解當前都支持哪些硬件。（歡迎提供這樣的站點連接──把它們發給我！）
+<P>
+<H3>不使用Hub連接10/100BaseT</H3>
+
+<P>可以不使用Hub連接基于10/100BaseT（RJ45）的系統嗎？
+<P>如果不使用額外的設備或機械裝置，可以很容易地連接兩台這樣的機器， 但不可能再多。參閱
+<A HREF="Ethernet-HOWTO-5.html#utp">雙絞線</A> ──解釋了如何做到這一點。而且你不可能簡單地交叉几根線或其它什么 就弄出一個Hub，不復制Hub也無法正確完成沖突信號。
+<P>
+<H3>SIOCSIFxxx: No such device</H3>
+
+<P>在啟動時出現了一大堆“SIOCSIFxxx: No such device”信息，后面還有一條“SIOCADDRT: Network is unreachable”，怎么回事？
+<P>你的以太網設備在啟動/插入模塊時沒有被檢測到，當<CODE>ifconfig</CODE>和<CODE>route</CODE>運行時，它們沒有可用的設備。使用<CODE>dmesg | more</CODE>來瀏覽啟動信息，看看有沒有檢測以太網卡的信息。
+<P>
+<H3>SIOCSFFLAGS: Try again</H3>
+
+<P>在運行“ifconfig”時出現“SIOCSFFLAGS: Try again”──怎么回事？
+<P>某些其它的設備使用了以太網卡想用的IRQ，所以以太網卡無法使用該IRQ。你不必重新啟動來解決這個問題，因為某些設備只是在需要時才獲取IRQ，在完成后就釋放了。例如某些聲卡、串口、軟盤驅動器等。你可以鍵入<CODE>cat /proc/interrupts</CODE>來看看哪些中斷正在 <EM>被使用</EM>。絕大多數Linux以太網卡驅動程序只有在用“ifconfig”打開時才獲取IRQ。如果你能讓其它設備“放開”所需的IRQ中斷線，那么你就可以用ifconfig來“Try again”了。
+<P>
+<H3>使用“ifconfig”得到的連接為UNSPEC，而硬件地址是00:00:00:00:00:00</H3>
+
+<P>在不帶參數運行ifconfig時，報告說連接為UNSPEC（而不是10Mbs以太網），而且硬件地址都是零。
+<P>這是因為運行的“ifconfig”程序版本比內核的版本高。在與老版本的內核一起運行時，新版本的ifconfig無法報告這些特性。你可以升級內核，或者“降級”ifconfig，或者干脆不理會這個錯誤。內核知道硬件地址，所以即使ifconfig無法讀出它也沒有關系。
+<P>如果使用的<CODE>ifconfig</CODE>程序比使用的內核舊很多的話，也會出現一些奇怪的信息。
+<P>
+<H3>大量的RX和TX錯誤</H3>
+
+<P>在不帶參數運行ifconfig時，報告大量的接收和發送數據包錯誤。但看起來工作正常──怎么回事？
+<P>再看一遍。報告是說<CODE>RX packets</CODE> <EM>big number</EM> <B>停頓</B><CODE>errors 0</CODE> <B>停頓</B> <CODE>dropped 0</CODE> <B>停頓</B> <CODE>overrun 0</CODE>。所以你看到的那個大數字是機器接收和發送的數據包總數。如果還覺得不可思議，鍵入<CODE>cat /proc/net/dev</CODE>看看。
+<P>
+<H3><CODE>/dev/</CODE>下的以太網卡入口</H3>
+
+<P>/dev/eth0像是個到/dev/xxx的連接。這樣對嗎？
+<P>與你聽過的正好相反，/dev/*下的文件沒被使用。你可以刪除掉任何 <CODE>/dev/wd0、/dev/ne0</CODE>以及類似的入口。
+<P>
+<H3>Linux與“trailers”</H3>
+
+<P>在“ifconfig”網卡時，需要禁止trailers嗎？
+<P>不能禁止trailers，而且也沒必要。“trailers”是避免在網絡層復制數據的工具。其想法是使用一個大小為“H”的固定大小的頭，把可變大小的頭信息放在包的尾部，并把所有包定位在頁開始之前的“H”字節。這只是個好想法，在實際中工作得并不好。如果有人建議使用“-trailers”，那不過是找個替罪羊罷了。這對解決問題沒有任何意義，但如果問題真的自行解決了，那么他就可以吹噓自己的神奇本領了。
+<P>
+<P>
+<H3>訪問原始以太網設備</H3>
+
+<P>在Linux下怎樣不通過TCP/IP之類的東西訪問原始的以太網設備？
+<P>
+<HR>
+<PRE>
+        int s=socket(AF_INET,SOCK_PACKET,htons(ETH_P_ALL));
+</PRE>
+<HR>
+<P>這樣就可以得到一個接收所有協議類型的socket。對它執行<CODE>recvfrom()</CODE>調用，它就會用sa_family里的設備類型和sa_data數組里的設備名來填充sockaddr。我不知道是誰最早在Linux里使用SOCK_PACKET，但它確實是個非常好的東西。你也可以通過<CODE>sendto()</CODE>調用發送原始數據包。當然，在這樣做時你必須擁有root的權限。
+<P>
+<HR>
+<A HREF="Ethernet-HOWTO-3.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Ethernet-HOWTO-1.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Ethernet-HOWTO.html#toc2"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

@@ -1,0 +1,117 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="LinuxDoc-Tools 0.9.16">
+ <TITLE>DNS HOWTO 中譯版: 撥接連線的自動設定</TITLE>
+ <LINK HREF="DNS-HOWTO-9.html" REL=next>
+ <LINK HREF="DNS-HOWTO-7.html" REL=previous>
+ <LINK HREF="DNS-HOWTO.html#toc8" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="DNS-HOWTO-9.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="DNS-HOWTO-7.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="DNS-HOWTO.html#toc8"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<HR>
+<H2><A NAME="auto"></A> <A NAME="s8">8.</A> <A HREF="DNS-HOWTO.html#toc8">撥接連線的自動設定</A></H2>
+
+<P>這一節解釋我如何設定以便讓每個過程自動化．
+我的方法可能一點都不適合你，但是你可能從我所作的一些事情裡得到一些點子．
+同時，我使用 PPP 撥接，然而有許多人使用 slip 或是 cslip 連線方式，
+所以你的設定裡幾乎每個地方都可能跟我的不同．
+但是 slip 使用的 <CODE>dip</CODE> 程式應該能夠完成我所作的許多事情．</P>
+<P>一般來說，當我沒有連上網路時我的 <CODE>resolv.conf</CODE> 檔案單純地包含這一行
+<BLOCKQUOTE><CODE>
+<PRE>
+domain uio.no
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>這確保我不必等待主機名稱解析函式庫去嘗試聯繫某台不可能幫助我的名稱伺服器．
+但是當我連上線的時候我想要起始我的 <CODE>named</CODE> 並且擁有一個看起來像前面所描述的 <CODE>resolv.conf</CODE> 檔案．
+我藉由保持兩份 <CODE>resolv.conf</CODE> 的‘樣板’檔案，<CODE>resolv.conf.local</CODE> 以及 <CODE>resolv.conf.connected</CODE> 來解決問題．
+後面這一個看起來像前面所描述過的 <CODE>resolv.conf</CODE> 檔案．</P>
+<P>要自動化連線到網路的過程我執行一個稱為 `ppp-on' 的指令稿:
+<HR>
+<PRE>
+#!/bin/sh
+echo calling...
+pppd
+</PRE>
+<HR>
+</P>
+<P>pppd 有個稱為 <CODE>options</CODE> 的檔案，它告訴 pppd 如何取得連線的一些特殊事項．
+一旦我的 ppp 連線完成後 pppd 起始一個稱為 <CODE>ip-up</CODE> 的指令(這在 pppd 的線上使用手冊裡有描述)．
+這裡是該指令稿裡面的一部份:</P>
+<P>
+<HR>
+<PRE>
+#!/bin/sh
+interface="$1"
+device="$2"
+speed="$3"
+myip="$4"
+upip="$5"
+ ...
+cp -v /etc/resolv.conf.connected /etc/resolv.conf
+ ...
+/usr/sbin/named
+</PRE>
+<HR>
+</P>
+<P>換句話說，我在這裡起始我的 <CODE>named</CODE> 程式．當 ppp 離線時 pppd 執行一個稱為 <CODE>ip-down</CODE> 的指令稿:</P>
+<P>
+<HR>
+<PRE>
+#!/bin/sh
+cp /etc/resolv.conf.local /etc/resolv.conf
+read namedpid &lt; /var/run/named.pid
+kill $namedpid
+</PRE>
+<HR>
+</P>
+<P>所以這在連線時配置並設定相關事宜並且在離線時解除該配置並結束相關程式．</P>
+<P>某些程式，例如我想起 irc 與 talk，做了過多的假定，為了讓其工作正常你必須修改你的 <CODE>hosts</CODE> 檔案．
+我在 <CODE>ip-up</CODE> 上加入</P>
+<P>
+<HR>
+<PRE>
+cp /etc/hosts.ppp /etc/hosts
+echo $myip      roke >>/etc/hosts
+</PRE>
+<HR>
+</P>
+<P><CODE>hosts.ppp</CODE> 是簡單地包含了</P>
+<P>
+<HR>
+<PRE>
+127.0.0.1       localhost
+</PRE>
+<HR>
+</P>
+<P>而 <CODE>echo</CODE> 指令插入了我收到的 IP 號碼做為我機器的名稱(roke)．
+你應該改用你自己機器的名稱，可以用 <CODE>hostname</CODE> 指令查出．</P>
+<P>當你沒有連線到網路上時執行 <CODE>named</CODE> 可能並不聰明，
+這是因為 <CODE>named</CODE> 將會嘗試送出查詢到網路上而且其終止時限(timeout)很長，
+而每次有某些個程式嘗試解析一個名稱的時候你就得等待到這個終止時限．
+如果你使用撥接的話你應該在連上網時起始 <CODE>named</CODE> 並且在離線時殺掉它．
+不過請參考 
+<A HREF="DNS-HOWTO-9.html#qanda">FAQ</A> 一節的提示．</P>
+<P>某些人喜歡在慢速的連線上使用 <CODE>forwarders</CODE> 指令．
+如果你的網際網路提供者在 <CODE>1.2.3.4</CODE>  以及 <CODE>1.2.3.5</CODE>  設有 DNS 伺服器那麼你可以插入這麼一行</P>
+<P>
+<HR>
+<PRE>
+forwarders 1.2.3.4 1.2.3.5
+</PRE>
+<HR>
+</P>
+<P>到 <CODE>named.boot</CODE> 檔案裡去．
+這將會減低源自你主機的 IP 流量，可能稍微提昇速度．如果你是依線路的資料量付費的話這點特別重要．
+這還有個附加價值，讓你脫離作為一個暫存的 <CODE>named</CODE> 維護者所應負起的責任: 
+你不需要去更新一個空的 <CODE>root.cache</CODE> 檔案．</P>
+
+<HR>
+<A HREF="DNS-HOWTO-9.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="DNS-HOWTO-7.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="DNS-HOWTO.html#toc8"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

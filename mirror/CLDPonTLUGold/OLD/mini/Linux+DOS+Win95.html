@@ -1,0 +1,92 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" content="text/html; charset=big5">
+<TITLE>The Linux+DOS+Win95 mini-HOWTO 中譯版</TITLE>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+The Linux+DOS+Win95 mini-HOWTO<br>
+by Alan L. Wendt, <a href="mailto:alan@ez0.ezlink.com">alan@ez0.ezlink.com</a><br>
+v1.0, 10 September 1996<p>
+
+The Linux+DOS+Win95 mini-HOWTO 中譯版<br>
+by <a href="http://www.linuxfan.com/">ymhuang</a>, <a href="mailto:ymhuang@linuxfan.com">ymhuang@linuxfan.com</a><br>
+v1.1, 1999/12/7<p>
+<ul>
+
+這是一篇有關於在同一顆硬碟內有 Linux、DOS、Windows 95等三種作業系統，使<br>
+用 Lilo 作為其開機的管理選擇程式。<p>
+
+本文件假設您已經知道安裝 Linux 的步驟。<p>
+
+<li>問題描述：<p>
+
+在同一顆硬碟裡，若將 DOS 與 Windows 95 分別安裝在不同的 primary prtition<br>
+，將兩者同時設為可開機時，會使得 Windows 95 及 DOS 感到「困惑」，而導致<br>
+系統的不正常，所以需要有一個開機管理程式 (Boot Manager)，以作為啟動作業<br>
+系統的選擇，並且讓其中一個作業系統在執行時，能夠看不到另一個作業系統所在<br>
+磁區，達到解決問題的目的。<p>
+
+這個「困惑」的主要來源乃是因為 DOS 與 Windows 95 所在的磁區必須是 C:（第<br>
+一個 FAT 格式的 primary prtition），所以即使您將 DOS 安裝在 D: 或其他非C:<br>
+ primary prtition 時，當 DOS 開機完成時，DOS 依然會把所在磁區顯示為 C:，<br>
+這是由於 DOS 本身設計的原因，詳細情形請見 Microsoft 官方文件。<p>
+
+要解決這個問題唯一的方法就是使用開機管理程式，以下將使用 Linux 的 Lilo 作<br>
+為開機管理程式。<p>
+</li>
+
+<li>步驟：<p>
+<ul>
+<li>使用 Linux 的 fdisk 在您的硬碟分割出三個主磁區，接著先安裝 Win95 在其<br>
+中一個主磁區，再將另一個主磁區安裝 DOS，接著安裝 Linux 在第三個磁區。<p>
+
+假如您只有一個主磁區在您的硬碟時，您可以使用 FIPS 這個軟體來重新分割您<br>
+的硬碟，並且不會損壞您的資料，但使用 FIPS 這個軟體時需要一點技巧，請見<br>
+Linux 安裝步驟。<p>
+
+FIPS 是一個免費的軟體，您可以在各大有關 Linux 的 FTP 站台找到。<p>
+</li>
+
+<li>從各大 FTP 站台取得 lilo.17.tar.gz 或更新的版本，lilo.17.tar.gz 這個版<br>
+本已經有能力在開機時更新 active flag，將其安裝在您的系統中。<p>
+
+[譯註：如果您使用的是 1996 年後的 Linux，那您可以忽略此步驟。]<p>
+</li>
+<li>在 /etc 中您可以找到 lilo.conf 這個檔案，將其內容更改如下：<p>
+<pre>
+    boot = /dev/hda
+    compact
+    delay = 5           # 5秒後，進入到 Linux 作業系統。
+    vga = normal　　　　# 指定一般 VGA 文字顯示模式 (80X25)
+    ramdisk = 0         # 指定 ramdisk 大小，一般不需要，所以設 0
+    root = current
+
+    image = /vmlinuz.1.3.97           # 指定 Linux 的核心 (Kernel) 檔案
+      append = "aha1542=0x230 ro"
+      label = linux                   # 啟動 Lilo 時，作業系統的代表名稱
+　　　　　　　　　　　　　　　　　　　# 此處是用 Linux 作為代表名稱。
+
+    other = /dev/hda1                 # 指定其他作業系統所在的磁區
+      table = /dev/hda                # 表示有包含 partition table 的硬
+                                      # 碟為 /dev/hda
+      rewrite-table
+      label = dos                     # 此處用 DOS 作為 DOS 作業系統的
+                                      # 代表名稱。
+
+    other = /dev/hda2
+      table = /dev/hda
+      rewrite-table
+      label = w95
+</pre>
+</li>
+<li>執行 /sbin/lilo，更新在 MBR 的資料。<p>
+</li>
+</ul>
+<li>使用方法：<p>
+
+在出現 LILO 提示時，按下 TAB，輸入您想要使用的作業系統。<p>
+
+以我的設定為例，輸入 w95 就可以啟動 Windows 95，並且徹底解決上述問題。<p>
+</li>
+</ul>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

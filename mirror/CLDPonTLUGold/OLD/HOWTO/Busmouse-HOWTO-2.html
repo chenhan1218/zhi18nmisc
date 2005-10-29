@@ -1,0 +1,135 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>The Linux Busmouse HOWTO: Determining your mouse type.</TITLE>
+ <LINK HREF="Busmouse-HOWTO-3.html" REL=next>
+ <LINK HREF="Busmouse-HOWTO-1.html" REL=previous>
+ <LINK HREF="Busmouse-HOWTO.html#toc2" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Busmouse-HOWTO-3.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Busmouse-HOWTO-1.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Busmouse-HOWTO.html#toc2"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s2">2. Determining your mouse type.</A></H2>
+
+<P>There are two separate but important characteristics you will need
+to know about your mouse before you go on: what hardware interface
+it uses and what mouse protocol it uses.  
+<P>
+<P>The hardware interface is the 
+hardware aspect of the mouse, taking into account things like which i/o 
+ports it uses and how to check if it is installed.  This is the part which
+the kernel is concerned with so that it knows how to read data
+from the mouse.  For serial mice users, this part of the story is easy since
+their interface is always the serial port device drivers.
+<P>The mouse protocol is the software aspect of the mouse.
+Applications need to know the protocol to interpret the raw mouse
+data they receive from the kernel device driver.
+<P>
+<H2><A NAME="ss2.1">2.1 Hardware interfaces.</A>
+</H2>
+
+<P>The Linux kernel up to the 2.2 series supports four different kinds of busmouse
+hardware interface : Inport (Microsoft), Logitech, PS/2 and ATI-XL.
+<P>The 2.4 series of kernel also includes support for several new busmice including
+an IBM PC110 digitizer pad and Apple Desktop mouse.  It also contains drivers
+for USB mice which are sometimes discussed with busmice since they
+fall outside the more common serial driver interface.
+<P>There is no sure-fire way of determining your hardware interface.  For
+those that have Windows 9x install, it sometimes helps to go to the 
+Systems screen under the control panel and look for devices controlling
+your mouse.  This screen will often tell you the interface type and 
+what I/O ports and interrupts this hardware uses.
+<P>
+<H3>Inport mice.</H3>
+
+<P>Inport mice include most of the old style Microsoft mice 
+which are shaped like a bar of dove soap.  Inport mice
+generally connect to an interface card which plugs into the bus
+on your motherboard.  If the plug which connects your mouse cord
+to the interface card is round, has 9 pins, and a notch in one
+side you likely have an Inport mouse.
+<P>ATI currently claims that all ATI VGA + Busmouse combo cards used the
+Microsoft Inport hardware and thus owners of these cards should first
+attempt using the Microsoft Busmouse driver.  
+<P>The ATI-XL VGA+Busmouse
+card technically is compatible with the Microsoft Inport mouse driver
+but has slightly different provisioning for interrupts and therefore has
+a specific driver for it.  Avoid this driver if possible since its not
+supported very well.
+<P>
+<H3>Logitech mice.</H3>
+
+<P>Logitech mice in general appear almost exactly the same as Inport
+mice.  They too connect to an interface card via a 9 pin mini-din
+connector.  Hopefully, it will have come in a Logitech box or
+have ``Logitech'' printed on the connector card so that you can
+tell it actually is a Logitech mouse.
+<P>
+<H3>PS/2 mice.</H3>
+
+<P>The PS/2 mouse interface is not on an expansion card, the mouse is connected
+to the PS/2 port on the keyboard controller.  This is sometimes located on
+the keyboard or more often as a extra port somehow connected directly
+to the computer case.
+<P>A PS/2 port uses a 6-pin mini DIN connector, similar to
+the keyboard connector.  Many laptops also use this kind of
+interface to their trackballs or touchpads; in this case the mouse is
+internally connected to the PS/2 port and needs no connector.
+<P>
+<H3>ATI combo video/mice.</H3>
+
+<P>ATI-XL mice are a variant of Inport mice, with some slight
+differences in interrupt setup.  They come on the ATI-XL combined 
+video adaptor/mouse
+card.  Unless you know you have an ATI-XL card (and thus an ATI-XL
+mouse), you probably don't have one of these. It is possible for
+ATI-XL mice to use either the ATI-XL or Inport kernel drivers,
+although the ATI-XL driver should give better results.
+<P>There is also an older ATI video adaptor/mouse card called either ATI
+VGA1024 or ATI VGA Wonder.  These cards are setup the same as the
+ATI-XL but use the Logitech mouse protocol.  For these mice the hardware
+drivers are setup the same as for the ATI-XL but you setup the software 
+the same as the Logitech mice.
+<P>
+<H3>IBM PC110 palmtop digitizer.</H3>
+
+<P>The IBM PC110 palmtop contains a digitizer pad that can be used to emulate
+a mouse using the PS/2 mouse protocol.  In this case, you set up the hardware
+interface using the IBM PC110 device driver and setup software as you would
+a PS/2 mouse.
+<P>
+<H3>Apple Desktop Mouse</H3>
+
+<P>This bus mouse is common on Macintoshes and uses a 4 pin connector.
+The hardware is controled by the kernel but application software will need
+to be aware of its unique mouse protocol.  I am currently unaware of
+what protocols this mouse uses.
+<P>
+<H3>Hybrid Mice</H3>
+
+<P>The period of time that busmouse were popular, the hardware companies were
+experementing alot and cross-licensing each others designs.  Therefore, you
+could have a ATI mouse that uses the Logitech hardware interface or a Logitech
+that uses the Inport interface.  If you know you have a busmouse but can't
+get it working with the standard interface/protocol setups, try experementing
+by using different interface device drivers with different mouse protocols.
+<P>
+<H2><A NAME="ss2.2">2.2 Mouse protocols.</A>
+</H2>
+
+<P>The PC world is full of different and conflicting mouse protocols.
+Fortunately, the choice for bus mice is considerable smaller than
+that for serial mice.  Most Inport, Logitech and ATI-XL mice use
+the ``BusMouse'' protocol, although there are some ancient 
+Logitech mice which use the ``MouseSystems'' protocol, and 
+some even older Microsoft mice which use the ''Logitech'' protocol. 
+PS/2 mice will always use the ``PS/2'' protocol.
+<P>
+<HR>
+<A HREF="Busmouse-HOWTO-3.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Busmouse-HOWTO-1.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Busmouse-HOWTO.html#toc2"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

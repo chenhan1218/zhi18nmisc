@@ -1,0 +1,230 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>中文 Linux WWW HOWTO : 設定區域網路</TITLE>
+ <LINK HREF="WWW-HOWTO-14.html" REL=next>
+ <LINK HREF="WWW-HOWTO-12.html" REL=previous>
+ <LINK HREF="WWW-HOWTO.html#toc13" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="WWW-HOWTO-14.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="WWW-HOWTO-12.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="WWW-HOWTO.html#toc13"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s13">13. 設定區域網路</A></H2>
+
+<P>如果在不同的平台上無法共用資源，區域網路就不算完整。區域網路必須能支援各種檔案系統，我們才能
+存取在他所連接的系統上的資料。本文件說明如何將Linux連到下列的檔案系統：
+<UL>
+<LI>
+<A HREF="#NCPFS">NCP filesystem for Netware</A></LI>
+<LI>
+<A HREF="#SMBFS">SMB filesystem for Windows</A></LI>
+<LI>
+<A HREF="#NFS">NFS filesystem for Unix</A></LI>
+</UL>
+<P>
+<P>這些檔案系統可以編譯到Linux核心系統中，也可以模組的方式加入，全視的Linux版本而定。如果不清
+楚如何編譯核心系統，參考Kernel HOWTO
+<A HREF="http://sunsite.unc.edu/mdw/HOWTO/Kernel-HOWTO.html">http://sunsite.unc.edu/mdw/HOWTO/Kernel-HOWTO.html</A>。
+有關以模組方式加入核心系統，參考Module HOWTO 
+<A HREF="http://sunsite.unc.edu/mdw/HOWTO/Module-HOWTO.html">http://sunsite.unc.edu/mdw/HOWTO/Module-HOWTO.html</A>。
+<P>
+<P>
+<H2><A NAME="NCPFS"></A> <A NAME="ss13.1">13.1 NCPFS</A>
+</H2>
+
+<P>若要在Netware伺服器上共用檔案，區域網路就必須能支援NCP﹝ncpfs﹞。1.2.x及1.3.71以上版本
+的核心系統可支援NCPFS。雖然無法存取Netware 4.x中的資料庫，但可以使用bindery。如果使用的
+版本為Netware 4.x，可以在命令列中以<CODE>set Bindery Context</CODE>命令，啟動特定
+container的bindery支援：
+<BLOCKQUOTE><CODE>
+<PRE>
+
+  set Bindery Context = CORP.MYDOM;WEBUSER.MYDOM
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>上面這個例子中，有兩個container啟動了bindery支援。
+<P>
+<P>首先從陽昇的網站
+<A HREF="ftp://sunsite.unc.edu/pub/Linux/system/filesystems/ncpfs/ncpfs.tgz">ftp://sunsite.unc.edu/pub/Linux/system/filesystems/ncpfs/ncpfs.tgz</A>
+下載NCP檔案系統工具(現為ncpfs-2.0.10)。
+<P>
+<P>
+<H3>安裝</H3>
+
+<P>要安裝ncpfs工具，敲入
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+   zcat ncpfs.tgz | tar xvf -
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>則會將相關檔案打開，放入預設的目錄中。這個目錄即為<CODE>ncpfs-2.0.10</CODE>。要進行安裝，先
+跳到這個目錄中，先讀一下其中的README文件。如有必要依其中內容修改一下Makefile檔。
+<P>
+<P>ncpfs的安裝步驟，視核心系統的版本而定。如果是1.2版，只要敲入'make'，再敲'make install'，
+就可安裝可執行檔及man page。
+<P>如果核心系統是1.3.71版或更新的版本，可能就要重新編譯核心系統。這些版本中有的可能在
+main source tree中已包括了ncpfs。要檢查是否有必要重新編譯，敲入
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+   cat /proc/filesystems
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>回答的其中一行可能說ncpfs已經支援了。
+<P>
+<P>如果ncpfs不被支援，可以考慮重新編譯核心系統或以模組方式加入ncpfs。要重新編譯核心系統，
+敲入'make config'，然後當它問你
+<P>
+<P><CODE>The IPX protocol (CONFIG_IPX) [N/y/?]</CODE>
+<P>
+<P>時，回答'y'。接下來會問你是否要full internal net。一旦核心系統成功安裝後，
+重新開機，檢查<CODE>/proc/filesystems</CODE>，如果一切順利，就可開始安裝ncpfs工具。跳回原
+來放置下載的ncpfs工具檔案的目錄，敲入'make'。編譯完成後，再敲入'make install'來安裝各
+種工具及man page。
+<P>
+<P>
+<H3>掛上NCPFS檔案系統</H3>
+
+<P>先用下面命令檢查檔案系統是否已安裝好
+<BLOCKQUOTE><CODE>
+<PRE>
+   ipx_configure --auto_interface=on --auto_primary=on
+
+....等10秒再鍵入
+
+   slist
+</PRE>
+</CODE></BLOCKQUOTE>
+
+此時應可看到一串Netware伺服器列了出來。那麼就可以開始在Netware伺服器上共用檔案了。
+<P>
+<P>假設從MYDOM_NW伺服器的VOL1：卷中的<CODE>\home\htmldocs</CODE>目錄上存取
+HTML檔案，建議你先在伺服器上建立一個使用者帳號﹝例如﹞'EXPORT'給它一個密碼'EXP123'，
+並設定他存取該目錄的權限為SYSCON或NWADMIN。
+<P>
+<P>首先在Linux的機器上建立一目錄<CODE>/mnt/MYDOM_NW</CODE>。要掛上該檔案系統，敲入
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+   ncpmount -S MYDOM_NW -U EXPORT -P EXP123 /mnt/MYDOM_NW
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>要檢查目錄<CODE>MYDOM_NW/VOL1:\HOME\HTMLDOCS</CODE>中的檔案，敲入
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+   ls /mnt/MYDOM_NW/vol1/home/htmldocs
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>如有任何困難，讀一下IPX HOWTO
+<A HREF="http://sunsite.unc.edu/mdw/HOWTO/IPX-HOWTO.html">http://sunsite.unc.edu/mdw/HOWTO/IPX-HOWTO.html</A> 
+﹝使用Netware檔案符號﹞，可對IPX系統有更深入的理解。
+<P>
+<H2><A NAME="SMBFS"></A> <A NAME="ss13.2">13.2 SMBFS</A>
+</H2>
+
+<P>若要在Windows伺服器上共用檔案，區域網路就必須能支援SMB﹝smbfs﹞檔案系統。
+<P>
+<P>首先從陽昇的網站
+<A HREF="ftp://sunsite.unc.edu/pub/Linux/system/filesystems/smbfs/smbfs.tgz">ftp://sunsite.unc.edu/pub/Linux/system/filesystems/smbfs/smbfs.tgz</A>
+下載NCP檔案系統工具(現為smbfs-2.0.1)。
+<P>
+<P>
+<H3>安裝</H3>
+
+<P>要安裝smbfs工具，敲入
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+   zcat smbfs.tgz | tar xvf -
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>則會將相關檔案打開，放入預設的目錄中。這個目錄即為<CODE>smbfs-2.0.1</CODE>。要進行安裝，先
+跳到這個目錄中，先讀一下其中的README文件。如有必要依其中內容修改一下Makefile檔。
+<P>
+<P>smbfs的安裝步驟，視核心系統的版本而定。如果是1.2版，只要敲入'make'再敲'make install'就可
+安裝可執行檔及man page。
+<P>
+<P>如果核心系統是2.0版或更新的版本，可能就要重新編譯核心系統。這些版本中有的可能在
+main source tree中已包括了smbfs。要檢查是否有必要重新編譯，敲入
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+   cat /proc/filesystems
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>回答的其中一行可能說smbfs已經支援了。
+<P>
+<P>如果smbfs不被支援，可以考慮重新編譯核心系統或以模組方式加入smbfs。要重新編譯核心系統，
+敲入'make config'，然後當它問你是否要加入SMB檔案系統時
+，回答'y'。一旦核心系統成功安裝後，重新開機，檢查<CODE>/proc/filesystems</CODE>目錄，
+如果一切順利，就可繼續安裝smbfs工具。跳回原來放置下載的smbfs工具檔案的目錄，敲入'make'。
+編譯完成後，再敲入'make install'來安裝各種工具及man page。
+<P>
+<P>
+<H3>掛上SMBFS檔案系統</H3>
+
+<P>
+<P>先假設WinNT伺服器叫'MYDOM_NT'而共用的目錄為<CODE>C:\PUB\HTMLDOCS</CODE>，
+共用帳號為'HTMLDOS'，沒有密碼。首先在Linux的機器上建立一目錄<CODE>/mnt/MYDOM_NT</CODE>。
+要掛上該檔案系統，敲入
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+   smbmount //MYDOM_NT/HTMLDOCS /mnt/MYDOM_NT -n
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>如果無效，則敲入
+<BLOCKQUOTE><CODE>
+<PRE>
+   smbmount //MYDOM_NT/COMMON /mnt/MYDOM_NT -n -I 172.16.0.3
+</PRE>
+</CODE></BLOCKQUOTE>
+
+要檢查目錄<CODE>bsol;bsol;MYDOM_NT\PUB\HTMLDOCS</CODE>中的檔案，敲入
+<BLOCKQUOTE><CODE>
+<PRE>
+   ls /mnt/MYDOM_NT
+</PRE>
+</CODE></BLOCKQUOTE>
+
+﹝使用Windows檔案符號﹞
+<P>
+<P>
+<H2><A NAME="NFS"></A> <A NAME="ss13.3">13.3 NFS</A>
+</H2>
+
+<P>首先要有個能支援NFS檔案系統的核心系統。它可以是重新編譯後支援，或以模組方式加入而支援的。
+<P>先假設有個支援NFS的Unix主機叫'MYDOM-UNIX'，它的IP地址為172.16.0.4。可以用下面的指令
+檢查它的那些目錄是輸出的﹝共用的﹞。
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+
+   showmount -e 172.16.0.4
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>一旦知道那些目錄是輸出的，即可以上掛指令把他們掛上你的系統。建議你在'/mnt'下建立一個目錄
+'MYDOM_UNIX'﹝例﹞，令它為你的上掛點
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+
+   mount -o rsize=1024,wsize=1024 172.16.0.4:/pub/htmldocs /mnt/MYDOM_UNIX
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>其中的rsize及wsize視你的環境調整。
+<P>如果有困難，讀一下NFS HOWTO 
+<A HREF="http://sunsite.unc.edu/mdw/HOWTO/NFS-HOWTO.html">http://sunsite.unc.edu/mdw/HOWTO/NFS-HOWTO.html</A> 
+，可對NFS系統有更深入的理解。
+<P>
+<P>
+<HR>
+<A HREF="WWW-HOWTO-14.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="WWW-HOWTO-12.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="WWW-HOWTO.html#toc13"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

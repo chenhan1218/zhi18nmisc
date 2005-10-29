@@ -1,0 +1,210 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>如何设定与维持准确的电脑时钟: 使用``clock''程式</TITLE>
+ <LINK HREF="Clock-3.html" REL=next>
+ <LINK HREF="Clock-1.html" REL=previous>
+ <LINK HREF="Clock.html#toc2" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+<A HREF="Clock-3.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Clock-1.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Clock.html#toc2"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s2">2. 使用``<CODE>clock</CODE>''程式</A></H2>
+
+<P>所有你须要知道的内容都在 <CODE>clock(8)</CODE> 的说明中,
+而本文将带领各位完成整个设定程序.
+<P>
+<DL>
+<DT><B>注意</B><DD><P>要执行``<CODE>clock</CODE>''或是其它会影响到系统时间和 CMOS 时钟的程式,
+你必须拥有 <B>root</B> 的权限.
+</DL>
+<H2><A NAME="ss2.1">2.1 检查你的作业系统</A>
+</H2>
+
+<P>检查你作业系统的开机执行档中是否有类似``<CODE>clock -a</CODE>''或
+``<CODE>clock -ua</CODE>''的命令.
+这个命令可能放在 <CODE>/etc/rc.local</CODE> ,或 <CODE>/etc/rc.d/rc.sysinit</CODE> ,
+或其它类似的地方, 这要看你安装的是那一套 Linux 作业系统.
+<P>如果找到的命令是 ``<CODE>clock -s</CODE>'' 或 ``<CODE>clock -us</CODE>'' ,
+请将 ``<CODE>s</CODE>'' 更改成 ``<CODE>a</CODE>'' ,
+接著检查看看是否有 <CODE>/etc/adjtime</CODE> 这个档案,
+该档案的内容只有一行看起来像是这样:
+<BLOCKQUOTE><CODE>
+<PRE>
+0.000000 842214901 0.000000
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>这些数字依序是校正因子 (每天偏差的秒数),
+上一次校正时钟的时间 (由 Jan 1, 1970 开始起算的秒数),
+上一次校正所扣除的秒数.
+如果你找不到这个档案, 请以 <B>root</B> 的身份产生此档案,
+其内容只有一行看起来像是这样 (全部是零):
+<BLOCKQUOTE><CODE>
+<PRE>
+0.0 0 0.0
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>然後透过 shell 手动执行 ``<CODE>clock -a</CODE>'' 或 ``<CODE>clock -ua</CODE>''
+以便更新第二个数字
+(如果你的时钟被设定成协调国际时间而不是本地时间
+你得使用 ``<CODE>u</CODE>''这个参数).
+<H2><A NAME="ss2.2">2.2 量测时钟的偏差率</A>
+</H2>
+
+<P>首先你得知道现在到底是几点钟 <CODE>:-)</CODE>.
+你机器的本地时间可能是不准确的.
+我最喜欢的方法是拨电话到 WWV 的 (303)499-7111 电话报时台
+(这是个付费电话).
+如果你能够与网路校时伺服器连上线,
+你也可以使用 <CODE>xntpd</CODE> 程式集所提供的 <CODE>ntpdate</CODE> 程式来校时
+(使用 <CODE>-b</CODE> 选项以避免系统弄乱 CMOS 时钟).
+或者使用 ``<CODE>date -s hh:mm:ss</CODE>'' 以手动方式设定系统时钟,
+不论那一种方法最後都得使用 ``<CODE>clock -w</CODE>'' 将系统时间写入 CMOS 时钟.
+你必须记得最後一次设定时钟的日期,
+所以你得将该日期写下来放在不会遗失的地方.
+如果你使用的是 <CODE>ntpdate</CODE> 程式, 执行 ``<CODE>date +%s</CODE>''
+然後写下自从 Jan 1,1970 算起到该程式执行的秒数.
+<P>然後等待几天或几个星期後之後再回来看看时钟到底偏差了多少时间.
+如果你以手动的方式设定时钟, 建议至少得等待二个星期之後,
+再来计算时钟偏差率将可得到趋近 .1 sec/day 的结果.
+几个月之後偏差率应该会趋近  .01 sec/day
+(有些人宣称应该更准确, 但是我个人持保留的态度).
+如果你使用 <CODE>ntpdate</CODE> 程式来设定时钟你可能不必等待太久的时间,
+然而不论使用那种方式之後都得做些微调的工作.
+<P>你可以使用 cron 在一定的时间周期内执行 ``<CODE>clock -a</CODE>''
+以便系统时间能够与 (校正过的) CMOS时间维持一致性.
+其实在你每次开机的时候都会从开机执行档来执行这个命令,
+然而只要常常做上面这个动作就可以达到你准确机器时间的目的. 
+<P>注意如果系统时间的修正一次超过一秒或是时间往回修正,
+有些系统的 clock 程式可能会无法执行.
+如果你有这方面的问题, 则可以使用 <CODE>xntpd</CODE> 或 <CODE>ntpdate</CODE> 程式
+来逐步地修正时间. 
+<H2><A NAME="ss2.3">2.3 实例</A>
+</H2>
+
+<H3>设定时间</H3>
+
+<P>签入系统并成为 <B>root</B>.
+拨电话至 (303)499-7111 (语音), 来聆听报时的内容.
+然後使用键盘打出下面几个字:
+<BLOCKQUOTE><CODE>
+<PRE>
+date -s hh:mm:ss
+</PRE>
+</CODE></BLOCKQUOTE>
+
+一直等到哔的一声□按下 enter 键.
+(如果在此处使用 ``<CODE>ntpdate</CODE>'' 程式, 则你可以省略拨电话的动作)
+这个步骤在设定 ``系统时间''.
+接著执行:
+<BLOCKQUOTE><CODE>
+<PRE>
+clock -w
+</PRE>
+</CODE></BLOCKQUOTE>
+
+这个步骤将系统时间写回 CMOS 时钟让二者时间一致.
+接著执行:
+<BLOCKQUOTE><CODE>
+<PRE>
+date +%j
+</PRE>
+</CODE></BLOCKQUOTE>
+
+(如果在前面使用 ``<CODE>ntpdate</CODE>'' 程式你得执行 ``<CODE>date +%s</CODE>'')
+将其执行的结果记录下来.
+<H3>重新设定时间与检查偏差率</H3>
+
+<P>找出你上次写下来日期.
+签入系统并成为 <B>root</B>.
+然後执行:
+<BLOCKQUOTE><CODE>
+<PRE>
+clock -a
+</PRE>
+</CODE></BLOCKQUOTE>
+
+这个步骤将 CMOS 时间写入系统时钟让二者时间一致.
+拨电话至 (303)499-7111 (语音), 来聆听报时的内容.
+接著使用键盘打出下面几个字:
+<BLOCKQUOTE><CODE>
+<PRE>
+date
+</PRE>
+</CODE></BLOCKQUOTE>
+
+一直等到哔的一声□按下 enter 键, 但是当你等待的时候, 写下报时的内容,
+并且还不要挂上电话.
+这个动作是让你知道目前真正的时间是几点,
+而此时相对你的机器上的时间是几点.
+现在使用键盘打出下面几个字:
+<BLOCKQUOTE><CODE>
+<PRE>
+date -s hh:mm:00
+</PRE>
+</CODE></BLOCKQUOTE>
+
+其中分针部分所设定的数字就是目前报时内容 *<B>之後的</B>* 下一分钟,
+一直等到哔的一声□按下 enter 键 (现在可以挂上电话了).
+而 <CODE>hh</CODE> 的部分则使用机器本地的时针数字即可.
+这个步骤在设定 ``系统时间''.
+然後执行:
+<BLOCKQUOTE><CODE>
+<PRE>
+clock -w
+</PRE>
+</CODE></BLOCKQUOTE>
+
+将新的 (校正过的) 系统时间写回 CMOS 时钟. 
+然後执行:
+<BLOCKQUOTE><CODE>
+<PRE>
+date +%j
+</PRE>
+</CODE></BLOCKQUOTE>
+
+(或是执行 ``<CODE>date +%s</CODE>'' )
+<P>你现在手上有三个数字 (二个校正日期及一个正确时间)
+於是你可以开始计算偏差率了.
+<H3>计算校正因子</H3>
+
+<P>当你在某一分钟执行 ``<CODE>date</CODE>'' 程式时, 你机器的本地时间是慢还是快呢?
+如果是快了, 你必须将之减去一些秒数以符合正确时间,
+所以你应该写下一个负的偏差数值.
+如果是慢了,你必须将之加上一些秒数以符合正确时间, 所以你应该写下一个正的偏差数值.
+<P>现在将二个校正日期相减.
+如果之前你使用的是 ``<CODE>date +%j</CODE>'',
+则数值所代表意义为一年的第几天 (1-365, 或 1-366 如果是闰年).
+如果自从你上一次设定时钟到现在经过1 月1 日你还须要将第二个校正日期加 365 (或 366)
+如果之前你使用的是 ``<CODE>date +%s</CODE>'' 则数值的单位为秒数,
+你必须将之除以 86400 以便取得日数.
+<P>如果你的档案 <CODE>/etc/adjtime</CODE> 中已经有校正因子,
+你必须将先前已校正过的秒数考虑进来,
+如果你校正过度, 这个校正因子的正负号将与你量测到偏差数值相反; 
+如果你校正不足则二者正负号相同.
+将旧的校正因子乘以日数,
+然後加上新获得的偏差秒数
+(附注--
+如果二者正负号相同, 你将取得一个较大的偏差数值,
+如果二者正负号相反, 你将取得一个较小的偏差数值).
+<P>接著将这个总偏差秒数除以日数以便取得新的校正因子,
+然後将档案 <CODE>/etc/adjtime</CODE> 中旧的校正因子代换成新的.
+最後写下新的校正日期 (以秒数或日数为单位) 以便下次使用. 
+<P>这里是我的 <CODE>/etc/adjtime</CODE> 档案内容:
+<BLOCKQUOTE><CODE>
+<PRE>
+-9.600000 845082716 -0.250655
+</PRE>
+</CODE></BLOCKQUOTE>
+
+(注意每天 9.6 秒则一个月将近有 5 分钟的偏差!)
+<P>
+<P>
+<HR>
+<A HREF="Clock-3.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Clock-1.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Clock.html#toc2"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

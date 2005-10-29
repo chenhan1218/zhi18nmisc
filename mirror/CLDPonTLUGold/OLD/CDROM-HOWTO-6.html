@@ -1,0 +1,351 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="LinuxDoc-Tools 0.9.16">
+ <TITLE>The Linux CD-ROM HOWTO -- 如何在 Linux 下安裝及使用 CD-ROM: 常見問題與解答</TITLE>
+ <LINK HREF="CDROM-HOWTO-7.html" REL=next>
+ <LINK HREF="CDROM-HOWTO-5.html" REL=previous>
+ <LINK HREF="CDROM-HOWTO.html#toc6" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="CDROM-HOWTO-7.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="CDROM-HOWTO-5.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="CDROM-HOWTO.html#toc6"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s6">6.</A> <A HREF="CDROM-HOWTO.html#toc6">常見問題與解答</A></H2>
+
+
+
+<H2><A NAME="ss6.1">6.1</A> <A HREF="CDROM-HOWTO.html#toc6.1">沒有 root 身份的人，如何掛上及卸下光碟片</A>
+</H2>
+
+
+<P>多數 <CODE>mount</CODE> 命令支援<EM>user</EM>選項。 假設您在
+/etc/fstab 裡加入了這樣一行:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+/dev/sbpcd  /mnt/cdrom   iso9660     user,noauto,ro
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>那麼普通使用者就可以像下面這樣掛上或卸下這台機器的資料:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+% mount /mnt/cdrom
+% umount /mnt/cdrom
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>掛上程序將會加上一些額外選項以確保系統安全(例如: 程式不准執行，片子上的設備檔
+將失效(不予理會)); 如果這些限制過嚴了，您可以加入額外的選項(如 "exec"
+選項可以讓上面的程式可執行)。 請看 mount(8) 說明頁得知詳情。</P>
+<P>另一個辦法就是抓 <CODE>usermount</CODE>軟體，它允許非 root 
+之使用者掛上/卸下可移除設備，如軟碟及 CD-ROM 等，但限制對其它設備的動作
+(如硬碟分割區)。 它在主要的檔案庫都有。</P>
+<P>在 <CODE>ftp.cdrom.com</CODE> 裡有 <CODE>mount.c</CODE> 的原始碼，
+它允許一般使用者掛上/卸下 CD-ROM。 它必須 setuid 後才能這麼做。</P>
+<P>(譯注 : setuid 是指，將執行檔執行時的權限變成和執行檔所有人相同。 普通執行檔執
+行時，權限是執行者的權限，這樣的話很多程式都不能跑(如:
+您不能修改/etc/passwd，
+所以不能變更密碼。)。 而如果setuid，該檔又是root所有，這種執行檔就有root權限了。
+(像passwd程式就是靠這個改密碼的)。 不過 setuid 反過來也可能是系統安全的主要漏
+洞。)</P>
+
+<H2><A NAME="ss6.2">6.2</A> <A HREF="CDROM-HOWTO.html#toc6.2">為何我要卸下光碟時，卻得到 "device busy" 訊息?</A>
+</H2>
+
+
+<P>如果有任何程序正在存取這機器，包括它們的現行目錄正在它上面，那就不能卸下。 如果
+您實在不曉得那個程序正在使用這片光碟，您可以像下例一樣的用 <CODE>fuser</CODE> 命令:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+% umount /mnt/cdrom
+umount: /dev/hdd: device is busy
+% fuser -v /mnt/cdrom
+                      USER       PID ACCESS COMMAND
+/mnt/cdrom            tranter    133 ..c.。  bash
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>在有些系統您可能要以 root 身份執行 <CODE>fuser</CODE>
+指令才能看到其它人的程序資訊。</P>
+
+<H2><A NAME="ss6.3">6.3</A> <A HREF="CDROM-HOWTO.html#toc6.3">我如何將 CD-ROM 用 NFS 與其它電腦共享?</A>
+</H2>
+
+
+<P>您需要在/etc/exports檔中加入一個項目; 
+這樣別的機器的使用者就可以掛上它了。 請看
+<CODE>exports(5)</CODE> 這份說明頁。</P>
+
+<H2><A NAME="ss6.4">6.4</A> <A HREF="CDROM-HOWTO.html#toc6.4">我能用 CD-ROM 起動 Linux 嗎?</A>
+</H2>
+
+
+<P>當安裝 Linux 時最常用的方法是用軟碟開機片，有些 Linux 組件可以直接由 DOS 起動
+光碟上的 Linux 核心。</P>
+<P>若有正確的 CD-ROM 片子，ROM BIOS 及
+ATAPI CD-ROM 機器，從 CD 直接開機是可能的。 最新版的 <CODE>mkisofs</CODE>
+也支援製作這種使用 El Torito 標準的開機光碟片。</P>
+<P>(譯注: 在 SCSI BIOS 支援的情況下，SCSI CDROM 也是可能開機的)</P>
+
+<H2><A NAME="ss6.5">6.5</A> <A HREF="CDROM-HOWTO.html#toc6.5">如何從 CD 唱片直接抓取數位音軌?</A>
+</H2>
+
+
+<P>Heiko Eissfeldt(
+<A HREF="mailto:heiko@colossus.escape.de">heiko@colossus.escape.de</A>
+)和 Olaf Kindel 寫了一個公用程式可以讀取音訊資料，並將它存成 <CODE>.wav</CODE>
+格式的聲音檔。 這個程式叫 <CODE>cdda2wav.tar.gz</CODE>，可以在
+<CODE>metalab.unc.edu</CODE> 找到。 </P>
+<P>還有一個抓取數位音軌的程式是 <CODE>ccdparanoia</CODE>，可在 
+<A HREF="http://www.mit.edu/afs/sipb/user/xiphmont/cdparanoia">http://www.mit.edu/afs/sipb/user/xiphmont/cdparanoia</A> 抓到。</P>
+<P>因為 CD-ROM 世代交替太快了，很難列出哪些 CD-ROM
+可讀取數位音樂資料。 您最好的賭注是抓最新版的 <CODE>cdda2wav</CODE>
+或 <CODE>cdparanoia</CODE> 套件，並讀它的文件。</P>
+<P>若想要更進一步的資訊，請上
+<A HREF="http://www.tardis.ed.ac.uk/~psyche/pc/cdrom/CDDA.html">http://www.tardis.ed.ac.uk/~psyche/pc/cdrom/CDDA.html</A>
+這個站台看看，還有參閱參考文獻中列舉的 alt.cdrom FAQ。</P>
+
+<H2><A NAME="ss6.6">6.6</A> <A HREF="CDROM-HOWTO.html#toc6.6">為什麼 find 命令不太正常?</A>
+</H2>
+
+
+<P>在沒有 Rock Ridge Extension 的 ISO-9660 光碟上，您需要在 <CODE>find</CODE> 後加上
+<CODE>-noleaf</CODE>這選項。 請參考 find(1) 說明頁。 </P>
+<P>(在我的經驗中幾乎所有 Linux CD-ROM 都用 Rock Ridge Extension，這問題的發生率應
+該極低。)</P>
+
+<H2><A NAME="ss6.7">6.7</A> <A HREF="CDROM-HOWTO.html#toc6.7">Linux 是否支援任何 CD-ROM 的燒錄設備?</A>
+</H2>
+
+
+<P>X-CD-Roast 套件(Linux 版)是使用 CD 燒錄機的圖形化前端介面。 此套件可在 
+metalab.unc.edu 裡的 /pub/Linux/utls/disk-management/xcdroast-0.95.tar.gz 找著。</P>
+<P>也請參考 Linux CD-Writer HOWTO 文件，在
+<A HREF="ftp://metalab.unc.edu/pub/Linux/docs/HOWTO/CD-Writing-HOWTO">ftp://metalab.unc.edu/pub/Linux/docs/HOWTO/CD-Writing-HOWTO</A>
+或 
+<A HREF="http://metalab.unc.edu/LDP/HOWTO/CD-Writing-HOWTO.html">http://metalab.unc.edu/LDP/HOWTO/CD-Writing-HOWTO.html</A>。</P>
+<P>(譯注: 本文件的中文版還在翻譯中)</P>
+
+<H2><A NAME="ss6.8">6.8</A> <A HREF="CDROM-HOWTO.html#toc6.8">我掛載 CD-ROM 時得到: Read-Only file system 訊息?</A>
+</H2>
+
+
+<P>CD-ROM 是只能讀取的媒體。 舊版的核心您能用可讀寫方法掛上 CD-ROM，嘗試寫資料
+進去的動作只會被忽略掉。 在 1.1.33 版後，這被修正為 CD-ROM 必須以唯讀方式掛上(
+就是說 mount 要有 -r 選項 )。</P>
+
+<H2><A NAME="ss6.9">6.9</A> <A HREF="CDROM-HOWTO.html#toc6.9">我關機時，為什麼托盤自動退出來?</A>
+</H2>
+
+
+<P>sbpcd 驅動程式支援在卸下片子時自動退片的功能。 在舊版核心中這也是預設值。
+如果您下了關機指令，那麼掛上的 CD 就會被卸下，然後就會退片。</P>
+<P>這樣子在換片時很方便。 如果托盤打開狀態下您掛上或讀取CD，那麼它也會自動進片。</P>
+<P>我發現有時這功能會造成問題(如 cdplay 及 workbone)。 在 1.1.60 版核心您可以用軟
+體決定要不要用這功能。 有個範例程式包含在 sbpcd 的文件裡。 (或者用
+<A HREF="http://www.pobox.com/~tranter/eject.html">eject</A>
+程式)。 您也可以經由修改核心原始碼sbpcd.h檔，改變預設的行為。</P>
+
+<H2><A NAME="ss6.10">6.10</A> <A HREF="CDROM-HOWTO.html#toc6.10">我有一片無法掛上的``特殊''片子</A>
+</H2>
+
+
+<P>這片``特殊''片子看來像是 XA 碟片(就像相片光碟或用
+CD-R 燒的 ``一次寫入'' (one-offs) 片子)多數 Linux 核心 CD-ROM 驅動程
+式並不支援 XA 格式，雖然您也許能在一些檔案庫找到一些修補。</P>
+<P>sbpcd 驅動程式是支援 XA 的。 如果您用這驅動程式，您可以依以下方法確定片子是不是
+XA 的格式: 修改 sbpcd.c，允許顯示"主目錄"(TOC)資訊(DBG_TOC)。 然後
+做新核心，起動它，則每次掛上時都會顯示 TOC(由主控台或記錄檔)。
+看第一個數字，
+如果是 20，那就是 XA 片子，如果是 00，那就是普通片子。 如果 TOC 顯示不同的軌，
+那也是 XA 片子的信號。</P>
+<P>(感謝 Eberhard Moenkeberg 提供以上資訊)</P>
+<P>其它的無法讀取 CD 可能原因:
+<OL>
+<LI>它不是用 ISO-9660 檔案系統(如 : 有的用 SunOS 或 HFS)</LI>
+<LI>它是 CD 唱片</LI>
+<LI>CD 有損壞或毀傷</LI>
+<LI>您把光碟片放反了 :-)</LI>
+</OL>
+</P>
+
+<H2><A NAME="ss6.11">6.11</A> <A HREF="CDROM-HOWTO.html#toc6.11">多片裝 CD-ROM 在 Linux 下能用嗎 ?</A>
+</H2>
+
+
+<P>好幾位使用者已報告 SCSI CD-ROM 多片機種運作順利。 您也許要打開``
+Probe all LUNs on each SCSI device'' 的核心選項。 (如果您的 SCSI CD
+驅動程式已知它是多片式 CD-ROM，這步就可以省了。 詳見
+/usr/src/linux/drivers/scsi.c)</P>
+<P>至少有一位使用者發現他也要加大驅動程式中的 SCSI 超時等待值(timeout value)。
+這情況的症狀是在第一次掛上 CD-ROM 時出現像
+"wrong fs type，bad option，bad superblock on /dev/sr5，or too many mounted
+file systems"
+這樣的訊息，而第二次馬上就成功。 要這麼作的話，修改
+/usr/src/linux/drivers/scsi/sr_ioctl.c 的開頭處 IOCTL_TIMEOUT
+值，並重新編譯核心。 據傳在 NEC Multispin 4Xc 上把預設值由 3000 改成 10000
+就能工作得很好。</P>
+<P>為了讓所有的片槽都能存取，可能需要建立額外的區塊設備檔。
+對每一個邏輯設備(LUN)都要有一個設備檔，所以一個七片換片機需要
+<CODE>/dev/sr0</CODE> 到 <CODE>/dev/sr6</CODE>(如果您還有別的 SCSI CDROM，
+那還要更多)。 要建立區塊設備檔，以 root 身份執行 <CODE>mknod /dev/sr? b 11
+?</CODE>，其中把 ? 以設備號碼取代。</P>
+<P>Nakamichi MBR-7 的七片裝，NEC Multispin 4Xc 及先鋒牌的 12 片裝已確定能用。</P>
+<P>EIDE/ATAPI 的多片機種也能使用。 
+核心已對一些機器提供了 CDROM_SELECT_DISC 這個 ioctl 的支援。
+IDECD 驅動程式的文件檔包含了一個原始碼可做寫換片的程式之參考。
+或者您也可以找像早先提到最新版的 <CODE>eject</CODE> 程式。</P>
+
+<H2><A NAME="ss6.12">6.12</A> <A HREF="CDROM-HOWTO.html#toc6.12">我收到 ``/cdrom: Permission denied'' 錯誤</A>
+</H2>
+
+
+<P>有些 CD 有檔案權限，僅允許 root 讀取它。 這是 CD-ROM 業者犯的錯誤，
+而且真的造成不方便。 更常見發生的是有些檔案或目錄被設成並非任何人可讀。
+有人已經對核心做了修補，解決這樣的問題。</P>
+<P>也請參考本篇後面提到的隱藏檔的相關問題。</P>
+
+<H2><A NAME="ss6.13">6.13</A> <A HREF="CDROM-HOWTO.html#toc6.13">我如何讀懂 IDE CD 的核心錯誤訊息?</A>
+</H2>
+
+
+<P>核心送給我的 IDE CD-ROM 驅動程式訊息像:
+"hdxx: code: xx key: x asc: xx ascq: x"，這是什麼意思?</P>
+<P>這是 IDE CD-ROM 的狀態/錯誤報告。 預設狀況下，IDECD 印出最原始的資訊，而不浪費
+核心空間給錯誤訊息。 您可以改變它，讓它顯示真正的錯誤訊息。 修改 
+/usr/src/linux/drivers/block/ide-cd.c
+，將 VERBOSE_IDE_CD_ERRORS 改成 1，並重編譯核心。</P>
+
+<H2><A NAME="ss6.14">6.14</A> <A HREF="CDROM-HOWTO.html#toc6.14">我如何測試我的 CD-ROM 是幾倍速的呢?</A>
+</H2>
+
+
+<P>有一個辦法。 底下測試它要花多久時間來讀取 1500K 的資料:
+<BLOCKQUOTE><CODE>
+<PRE>
+% time -p dd if=/dev/cdrom of=/dev/null bs=1k count=1500
+1500+0 records in
+1500+0 records out
+real 5.24
+user 0.03
+sys 5.07
+</PRE>
+</CODE></BLOCKQUOTE>
+
+正常的單倍速 CD-ROM 每秒傳輸率為 150KB，所以約要 10 秒鐘。 
+二倍速約要 5 秒鐘，四倍速的約 2.5 秒鐘等等...</P>
+<P>上面裡 "real" 時間也許是最好的值 -- 
+在上面情形指出它是二倍速機器。 您可以增加資料量得出更準確的值。
+(如果您擔心受快取影響的話。)您也許應該多測幾次，求平均值。</P>
+<P>我也寫了小的 C 程式可以測定並回報 CD-ROM 的資料傳輸率;
+如果您要的話我可以給您。</P>
+
+<H2><A NAME="ss6.15">6.15</A> <A HREF="CDROM-HOWTO.html#toc6.15">裝好 Linux 後，我的 CD-ROM 不能用了</A>
+</H2>
+
+
+<P>最常見的症狀是先用 Linux 安裝時，Linux 承認您的 CD-ROM。 但裝完後，從軟碟或硬碟
+開機卻又不能用它了。</P>
+<P>最大的可能就是多數 Linux 套件中，裝在硬碟的核心不一定就是和安裝片用的一樣。 您
+選了支援您設備的安裝片，它卻給您在硬碟上裝一個沒有支援 CD-ROM 的
+"通用版"核心。 您可以照第四章所說的 "問題與解決" 去做。
+(從檢查 /proc/devices 開始)</P>
+<P>解法是重編譯核心，確定您需要的 CD-ROM 驅動程式及其它需要的部份(如 SCSI 卡，
+ISO-9660 檔案系統)都編進去了。 如果您不知道怎麼做，看
+<A HREF="http://metalab.unc.edu/LDP/HOWTO/Kernel-HOWTO.html">Kernel HOWTO</A></P>
+<P>如果您安裝時用了命令列參數(如"hdc=cdrom")您要把它加進開機載入程式
+的設定檔中(通常是 /etc/lilo.conf)</P>
+
+<H2><A NAME="ss6.16">6.16</A> <A HREF="CDROM-HOWTO.html#toc6.16">在 CD 上有隱藏檔，我沒辦法讀...</A>
+</H2>
+
+
+<P>有些 CD 的一些檔案有設定隱藏位元。 這些檔案正常狀態是看不到的。 不過如果您掛上時
+用了 "unhide" 選項，那麼應該就可以讀取了。(這個選項似乎沒有文件記載過)</P>
+
+<H2><A NAME="ss6.17">6.17</A> <A HREF="CDROM-HOWTO.html#toc6.17">哪兒找得到CD-ROM API的文件資料?</A>
+</H2>
+
+
+<P>如果您想寫自己的應用程式，諸如CD唱片播放程式等，您必須懂得Linux提供的
+應用程式介面(application programming interface，API)</P>
+<P>原本CD-ROM核心驅動程式都是用自定的ioctl以支援這類機器的功能。 像
+/usr/include/linux/sbpcd.h 這樣的標頭檔就描述了這些。 
+由於很多驅動程式都是由別的驅動程式發展而來，介面雖不完全相同，但類似之處頗多。</P>
+<P>近來，由 David van Leeuwen(
+<A HREF="mailto:david@tm.tno.nl">david@tm.tno.nl</A>)
+發起，建立一組標準化的CD-ROM 共通 API，將共通程式碼放一起，
+確保所有驅動程式都同樣的運作。
+。 這文件在
+/usr/src/linux/Documentation/cdrom/cdrom-standard.tex。
+已有幾個核心驅動程式支援它了。 到了 2.0 版核心，所有 CD-ROM
+驅動程式都合乎這組 API。</P>
+<P>我的書，<EM>Linux Multimedia Guide</EM>，也深入提到了如何寫 CD-ROM 程式，
+特別是放音方面的。 請看"參考文獻"那節。</P>
+
+<H2><A NAME="ss6.18">6.18</A> <A HREF="CDROM-HOWTO.html#toc6.18">為什麼我不能看到Windows CD-ROM的長檔名?</A>
+</H2>
+
+
+<P>如果您有一片 CD-ROM，上面有 Windows 可看到，但 Linux
+看不到的長檔名，
+那麼這片光碟可能是使用 Microsoft 專屬的 Joliet 檔案系統格式。 請看下一個問題。</P>
+
+<H2><A NAME="ss6.19">6.19</A> <A HREF="CDROM-HOWTO.html#toc6.19">Linux支援Microsoft的Joliet檔案系統嗎?</A>
+</H2>
+
+
+<P>Microsoft 制定了一種叫 Joliet 的ISO CD-ROM檔案系統延伸格式。 
+它允許使用 16-bit UNICODE 編碼的長檔名。</P>
+<P>從 2.0.34 版核心起，Linux 核心已支援 Microsoft Joliet 檔案系統格式。
+您必須在核心中啟用它。</P>
+<P>如果您要用您使用的語言(native language)正確地顯示在 Joliet CD-ROM 上的檔名，
+您也需要在核心中支援相應的 NLS ISO8859 字元集。</P>
+<P>(譯注: 中文的 cp950 還沒放進核心中; 請到 
+<A HREF="http://www.cis.nctu.edu.tw/~is84086/Project/kernel_cp950/">http://www.cis.nctu.edu.tw/~is84086/Project/kernel_cp950/</A>
+去抓取修補檔)</P>
+
+<H2><A NAME="ss6.20">6.20</A> <A HREF="CDROM-HOWTO.html#toc6.20">Linux 支援 "加強" 的 CD 嗎?</A>
+</H2>
+
+
+<P>有些音樂片增加了一些資料"強化"。 一般說來您可發現這些 CD 有普通唱片的音軌，
+以及可用 ISO-9660 檔案系統掛上的資料軌。</P>
+<P>我試了一片"加強版" CD，上面有 Microsoft Windows 及 Apple Macintosh
+的應用程式(當然它們無法在 Linux 上執行，雖然我用了 WINE Windows
+模擬器獲得部份的成功)。 上面有些 GIF 影像，可用標準的看圖程式像 <CODE>xv</CODE>
+來看; 或者一些可用 <CODE>xanim</CODE> 播放的 Apple QuickTime 格式影片。
+它是多次錄製過的，有些很舊的 CD-ROM 無法讀取。 在片子裡有個
+<CODE>readme.txt</CODE>檔內有一 Enhanced CD FAQ。</P>
+
+<H2><A NAME="ss6.21">6.21</A> <A HREF="CDROM-HOWTO.html#toc6.21">Linux 有沒有支援 DVD-ROM?</A>
+</H2>
+
+<P>SCSI 或 ATAPI 相容的 DVD-ROM 應該可以在 Linux 上讀取 ISO-9660 格式的片子。
+也就是說它可以當做(可能是更大容量的) CD-ROM 來用。</P>
+<P>很多 DVD-ROM 片子使用 UDF 檔案系統，在本文撰寫時還在發展階段。 可以在
+<A HREF="http://trylinux.com/projects/udf/">http://trylinux.com/projects/udf/</A> 取得核心修補。</P>
+<P>然而，我還沒聽說用軟體或配合 DVD 硬體解碼器來播放 MPEG-2 格式 DVD
+影片的支援。 顯然這個編碼格式文件只能花大錢並簽下不公開合約(NDA)才能取得。
+另外一個因素是 MPEG 解碼常需要專屬的解碼硬體，而廠商不願提供程式驅動資訊。
+以上因素可能對在 Linux 下任何可自由傳播的 DVD 視訊軟體構成障礙。</P>
+
+<H2><A NAME="ss6.22">6.22</A> <A HREF="CDROM-HOWTO.html#toc6.22">那 Linux 支援 CD-RW 嗎?</A>
+</H2>
+
+
+<P>SCSI 及 ATAPI 相容的 CD-RW 機器在 Linux 下應可以存取 ISO-9660 格式的片子，
+包括寫入資料。</P>
+<P>很多 CD-RW 片使用 UDF 檔案系統，在本文撰寫時還在發展中，可以在
+<A HREF="http://trylinux.com/projects/udf/">http://trylinux.com/projects/udf/</A> 取得核心修補。</P>
+
+<HR>
+<A HREF="CDROM-HOWTO-7.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="CDROM-HOWTO-5.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="CDROM-HOWTO.html#toc6"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

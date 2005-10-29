@@ -1,0 +1,173 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>PPP HOWTO 中譯版: 建立 PPP 伺服器</TITLE>
+ <LINK HREF="PPP-HOWTO-27.html" REL=next>
+ <LINK HREF="PPP-HOWTO-25.html" REL=previous>
+ <LINK HREF="PPP-HOWTO.html#toc26" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="PPP-HOWTO-27.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="PPP-HOWTO-25.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="PPP-HOWTO.html#toc26"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="ppp-server"></A> <A NAME="s26">26. 建立 PPP 伺服器</A></H2>
+
+<P>如同前面提過的，這件工作有許多方法可以可以達成．
+我在這裡所介紹的是我怎麼做的方法（使用 Cyclades 多埠串列卡）以及一組自動轉接的電話線路．
+<P>
+<P>如果你不喜歡我在這裡介紹的方法，請自由地使用你自己的方法．
+不過，我很樂意在這份使用說明未來的版本中包含額外的方式．所以，請把你的評論跟方法寄給我!
+<P>
+<P>請注意，這一節只跟如何設定 Linux  作為 PPP 伺服器有關．我不想（不曾）包含有關設定特殊終端機伺服器及這一類的資訊．
+<P>
+<P>而且，我尚未實驗過配合 shadow 密碼使用（但應該會做）．因此目前介紹的資訊並不包含任何 shadow 需要的設定．
+<P>
+<H2><A NAME="ss26.1">26.1 編譯核心</A>
+</H2>
+
+<P>所有早先提過關於編譯核心以及核心與 pppd 版本的說明都適用．這節假設你已經讀過這份文件前面的章節!
+<P>
+<P>對於 PPP  伺服器，你必須在你的核心中包含 IP forwarding 的功能．
+你也可能會希望包含其它的功能（像是 IP firewalls, accounting 等等）．
+<P>
+<P>如果你使用多埠串列卡，那麼你也必須明確地在你的核心中包含必要的驅動程式!
+<P>
+<H2><A NAME="ss26.2">26.2 伺服器系統的概觀</A>
+</H2>
+
+<P>我們使用相同的使用者名稱／密碼配對提供撥接 PPP (and SLIP) 帳號以及 shell 帳號．
+這樣做的好處（對我們而言）是使用者只需要一個帳號就可以使用所有種類的連線．
+<P>
+<P>因為我們是教育組織，我們並不對職員以及學生的使用收費，所以不必擔心計算與收費的問題．
+<P>
+<P>在我們的節點與網際網路之間我們設置有一台防火牆，而這會限制某些使用者的存取，因為撥接線路是在我們的（網際網路）防火牆內（理由很明顯，其他網際網路防火牆的細節也不會在此出現而且在任何情況下都沒有關係）．
+<P>
+<P>使用者建立連往我們節點之 PPP 連結的程序（當然是在他們擁有有效的帳號後）是:
+<UL>
+<LI>撥入我們的自動轉接撥號器（這是連結一堆數據機的單一電話號碼 － 第一台空閒的數據機會接起撥入的電話）．</LI>
+<LI>使用一對有效的使用者名稱以及密碼簽入．</LI>
+<LI>在 shell 提示符號下，發出 <CODE>ppp</CODE> 指令以啟動伺服器上的 PPP 程序．</LI>
+<LI>啟動他們機器上的 PPP（可以是執行 Windows, DOS, Linux, MAC OS 或任何作業系統的機器 － 這是他們的問題）．</LI>
+</UL>
+<P>
+<P>這台伺服器為每個撥入的埠使用個別的 <CODE>/etc/ppp/options.ttyXX</CODE> 檔案，而這為動態的 IP 分配設定遠端的 IP 號碼．
+伺服器為遠地的客戶端使用代理位址解析協定(proxyarp)來遞送封包（經由適當的 pppd 選項加以設定）．
+這避免了使用 routed 或是 gated 的需求．
+<P>
+<P>當使用者從他們那端掛斷時，pppd 會偵測出來並告訴數據機要它掛斷，同時停掉 PPP 連結．
+<P>
+<H2><A NAME="ss26.3">26.3 所需的全部軟體</A>
+</H2>
+
+<P>你將會需要下列的軟體:-
+<UL>
+<LI>Linux，適當地編譯以包含必要的選項．</LI>
+<LI>適合於你核心的 pppd 版本．</LI>
+<LI>一套能夠聰明地處理數據機通訊的 'getty' 程式．<BR>
+在這裡我們使用的是 getty_ps2.0.7h ，但積極考慮 mgetty．
+我了解 mgetty 可以偵測出使用 pap/chap 的呼叫（ pap 是 Windows 95 使用的標準）並自動地起動 pppd，但是我尚未研究過它．</LI>
+<LI>你的撥接使用者能夠存取的一台領域名稱伺服器 (DNS)．<BR>
+如果有可能的話你真的應該執行你自己的領域名稱伺服器...</LI>
+</UL>
+<P>
+<H2><A NAME="ss26.4">26.4 設定標準的撥接(shell access)</A>
+</H2>
+
+<P>在你可以設立你的 PPP  伺服器之前，你的 Linux 機器必須能夠處理標準的撥接存取．
+<P>
+<P><B>這份使用說明並不涵蓋這項設定方法．請參閱你選擇之 getty 的文件以及 
+<A HREF="Serial-HOWTO.html">Serial HOWTO</A> 裡有關這項設定的資訊．</B>
+<P>
+<H2><A NAME="ss26.5">26.5 設立 PPP 選項檔案</A>
+</H2>
+
+<P>你將得為所有撥接埠設立一個全體的 <CODE>/etc/ppp/options</CODE> 檔案，其中是通用的選項．
+我們使用的選項是:
+<P>
+<HR>
+<PRE>
+asyncmap 0
+netmask 255.255.254.0
+proxyarp
+lock
+crtscts
+modem
+</PRE>
+<HR>
+<P>
+<P>注意 - 我們沒有使用任何(明顯的)遞送設定 - 特別是這裡沒有 <CODE>defaultroute</CODE> 選項．
+這理由是因為所有你(做為 PPP 伺服器)所要做的就是將封包<B>從</B> PPP 客戶端遞送到你的區域網路或網際網路並且將封包由你的區域網路遞送<B>到</B>你的客戶端．
+<P>
+<P>全部所需的只是到客戶機器的主機遞送，而使用 pppd 的 '<CODE>proxyarp</CODE>' 選項達成．
+<P>
+<P>這個 '<CODE>proxyarp</CODE>' 選項設立一個代理位址解析協定的項目於 PPP 伺服器的位址解析協定(ARP)表格中，那基本上就是說 '將所有要給 PPP 客戶端的封包送給我'．
+這是建立單一 PPP 客戶端的遞送路徑最簡單的一個方式 - 但你不能用這種方式在兩個區域網路之間遞送封包 - 你必須加入適當的網路遞送而不能使用代理位址解析協定．
+<P>
+<P>你幾乎一定會希望提供動態分配的 IP 號碼給你的撥接使用者．你可以藉由分配 IP 號碼給每個撥接埠來達成目的．
+現在，為你的每個撥接埠建立一個 <CODE>/etc/ppp/options.ttyXX</CODE> 檔案．
+<P>
+<P>在這裡面，只要簡單地放入本地（伺服器）的 IP 號碼及該埠所要使用的 IP 號碼．例如
+<P>
+<HR>
+<PRE>
+kepler:slip01
+</PRE>
+<HR>
+<P>特別注意，在這個檔案裡你可以使用合法的主機名稱（我發現我只記得在我網路上重要機器與設備的 IP 號碼 － 名稱會更有意義才對）!
+<P>
+<H2><A NAME="ss26.6">26.6 設定 pppd 以便讓使用者（成功地）執行它</A>
+</H2>
+
+<P>因為起動 ppp 連結隱含著配置核心設備（網路界面）及操控核心遞送表格的動作，所以需要特別的權限 － 事實上需要完整的 root 權限．
+<P>
+<P>幸運的是， pppd 已經設計成可以安全地設定為以 root 的身分執行．所以你必須
+<HR>
+<PRE>
+chmod u+s /usr/sbin/pppd
+</PRE>
+<HR>
+<P>
+<P>當你列出這個檔案時，它應該會如同這樣
+<HR>
+<PRE>
+-rwsr-xr-x   1 root     root        74224 Apr 28 07:17 /usr/sbin/pppd
+</PRE>
+<HR>
+<P>
+<P>如果你沒有這樣做，使用者將不能設立他們的 PPP 連結．
+<P>
+<H2><A NAME="ss26.7">26.7 為 pppd 設定一個全域的別名(alias)</A>
+</H2>
+
+<P>為了簡化我們撥接 PPP 使用者的連線程序，我們建立一個全域的別名(放在 <CODE>/etc/bashrc</CODE>)如此一旦他們簽入之後只要一個簡單的指令就能起動伺服端的 ppp．
+<P>
+<P>這看起來像
+<HR>
+<PRE>
+alias ppp="exec /usr/sbin/pppd -detach"
+</PRE>
+<HR>
+<P>
+<P>它所作的是
+<UL>
+<LI>exec : 意指以這個指令所執行的程式替換正在執行的程式（在這個例子中是 shell）．</LI>
+<LI>pppd -detach : 起動 pppd 並且不要把產生的程序放入背景執行．這確保當 pppd 結束時不會留下任何程序．</LI>
+</UL>
+<P>當一個使用者像這樣簽入時，他們在 'w' 的輸出中看起來會像這樣
+<HR>
+<PRE>
+  6:24pm  up 3 days,  7:00,  4 users,  load average: 0.05, 0.03, 0.00
+User     tty       login@  idle   JCPU   PCPU  what
+hartr    ttyC0     3:05am  9:14                -
+</PRE>
+<HR>
+<P>
+<P>就這樣... 我告訴過你這是一個很簡單的，基本的 PPP 伺服系統!
+<P>
+<HR>
+<A HREF="PPP-HOWTO-27.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="PPP-HOWTO-25.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="PPP-HOWTO.html#toc26"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

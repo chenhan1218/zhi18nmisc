@@ -1,0 +1,100 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>防火牆和代理伺服器 - HOWTO: 高級設置</TITLE>
+ <LINK HREF="Firewall-HOWTO-8.html" REL=previous>
+ <LINK HREF="Firewall-HOWTO.html#toc9" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<IMG SRC="img/next.gif" ALT="Next">
+<A HREF="Firewall-HOWTO-8.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Firewall-HOWTO.html#toc9"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s9">9. 高級設置</A></H2>
+
+<P>在結束此文時，不妨再舉一個例子，來說明設置的方法。前面的例子適合多數使用情況。下面再以一個高級設置為例，以便能說明一些問題。如果前面的例子不能解答你的問題，或者還想了解代理伺服器和防火牆的其他特性，請注意下面的例子。
+<P>
+<H2><A NAME="ss9.1">9.1 注重安全的大型網路</A>
+</H2>
+
+<P>假設一個民團首腦要設置網路，其中共有50台電腦和有一個32個IP地址的次級網。由于隨從的級別不同，民團首腦想在網路上設置不同級別的使用權。因此，網路的一部分不能與另一部分互通。
+各種級別有︰
+<P>
+<OL>
+<LI>外圍。這是人人都可到達的層面。這是吸引新成員的層面。</LI>
+<LI><B>部隊人員</B>這一層面的人物已經超過外圍。這個層面的人可以知道一些計謀和製造武器的方法。</LI>
+<LI><B>外籍軍團</B>這是<EM>真正</EM>完成計劃之處。</LI>
+</OL>
+<P>
+<H3>網路的設定</H3>
+
+<P>IP號碼的設定方法如下︰
+<P>
+<P>
+<UL>
+<LI>一個地址為192.168.2.255，這是broadcast的地址，不可使用。
+</LI>
+<LI>32 IP地址中23個地址分配給23台機器，這些機器可同網際網路聯結。</LI>
+<LI>一個IP地址用于網路上的linux機。</LI>
+<LI>一個IP地址用于網路上的另一個linux機。</LI>
+<LI>兩個IP #'s用于router</LI>
+<LI>剩下的四個地址隨便定四個名字，使人捉摸不定真正的用戶。</LI>
+<LI>保護網路的地址為192.168.2.xxx</LI>
+</UL>
+
+這樣就建立了兩個不同的網路。這兩個網路通過紅外線Ethernet聯網，外界完全看不到它們的存在。紅外線Ethernet的作用和一般Ethernet的作用相同。
+這兩個網路各自連到有IP地址運行linux的電腦。
+同時有一個文檔伺服器接連到這兩個保護網路，因為征服世界的計劃中需要一些訓練精良的部隊。文檔伺服器中有部隊網路的IP地址192.168.2.17和外籍軍團網路的IP地址192.168.2.23。有不同IP地址的原因是因為有不同Ethernet卡的緣故。網路上IP Forwarding的功能關閉停用。
+兩台Linux機上IP Forwarding的功能也都停用。除非有明確規定，否則router不會轉送送往192.168.2.xxx的數據包，因此網路無由進入。關閉IP Forwarding功能的原因是部隊網路發出的數據包不讓到達外籍軍團網路，外籍軍團網路的數據包也不讓到達部隊網路。
+可以設定NFS伺服器的設置，使其把不同文檔送往不同網路。這種方法頗為好用，在symblic links上做番手腳可使文檔讓大家共享。利用這種設置和加一張ethernet卡可使一台文檔伺服器用于所有三個網路。
+<H3>代理伺服器的設置</H3>
+
+<P>由于三批人馬都需要了解網上的情況，因此他們都需要上網。外部網路直接連到網際網路，因此在代理伺服器上不需要作出任何更動。外籍軍團網路和部隊網路在防火牆之後，因此需要在代理伺服器上作出一些設置。
+兩個網路的設置非常類似。它們仍舊使用分配給它們的IP地址。不過在這裡得設定一些參數。
+<OL>
+<LI>任何人都不得使用文檔伺服器上網，否則文檔伺服器可能會遭到病毒或其他壞東西得入侵。這種問題至為嚴重，因此不得使用文檔伺服器。</LI>
+<LI>不讓部隊人員上網。他們正在接受訓練，如果讓他們擁有這種檢索資訊的能力可能對他們有害。</LI>
+</OL>
+
+因此，在部隊網路的linux機上sockd.conf檔內應有下列一行︰ 
+<PRE>
+    deny 192.168.2.17  255.255.255.255
+</PRE>
+
+並且在外籍軍團機內的設定是︰
+<PRE>
+    deny 192.168.2.23  255.255.255.255
+</PRE>
+
+同時，部隊網路的linux機內設定︰
+<PRE>
+    deny 0.0.0.0  0.0.0.0 eq 80
+</PRE>
+<P>這行的意義是不讓任何機器使用埠號80，既http埠。不過這些機器仍然可用所有其他功能，只是不讓上網。
+然後在兩台機器的sockd.conf檔內都添加︰
+<PRE>
+    permit 192.168.2.0  255.255.255.0
+</PRE>
+
+使所有在192.168.2.xxx網上的電腦都使用這台代理伺服器，但不讓使用的電腦除外（既從部隊網路進入文檔伺服器和網際網路）。
+<P>部隊網路的sockd.conf檔的內容如下︰
+<PRE>
+    deny 192.168.2.17  255.255.255.255
+    deny 0.0.0.0  0.0.0.0 eq 80
+    permit 192.168.2.0  255.255.255.0
+</PRE>
+
+外籍軍團網路的sockd.conf檔的內容如下︰
+<PRE>
+    deny 192.168.2.23  255.255.255.255
+    permit 192.168.2.0  255.255.255.0
+</PRE>
+<P>這樣的配置應該沒有問題。每一個網路都能單獨作業，並有適當的相互關系。人人都應該心滿意足才對。
+現在就可征服世界了﹗
+<P>
+<HR>
+<IMG SRC="img/next.gif" ALT="Next">
+<A HREF="Firewall-HOWTO-8.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Firewall-HOWTO.html#toc9"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

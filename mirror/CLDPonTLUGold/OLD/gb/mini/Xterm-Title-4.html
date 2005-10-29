@@ -1,0 +1,261 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>如何变更 xterm 的主题: 各种命令解译器的□例</TITLE>
+ <LINK HREF="Xterm-Title-5.html" REL=next>
+ <LINK HREF="Xterm-Title-3.html" REL=previous>
+ <LINK HREF="Xterm-Title.html#toc4" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+<A HREF="Xterm-Title-5.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Xterm-Title-3.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Xterm-Title.html#toc4"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s4">4. 各种命令解译器的□例</A></H2>
+
+<P>以下我们提功一些□例给常见的命令解译器使用.
+我们先从 <CODE>zsh</CODE> 开始,
+他可以提供许多灵巧的机制使得我们很容易地完成我们所要的工作.
+然後我们再进展到难度较高的□例.
+<P>
+<P>在所有的□例中我们都测试了 <CODE>$TERM</CODE> 环境变数.
+以确定我们只需把这个溢位资讯送到 xterm. 我们对
+<CODE>$TERM=xterm*</CODE> 做测试; 万用字元是因为些许的差异性
+(比如 rxvt) 会设定 <CODE>$TERM=xterm-color</CODE>.
+<P>
+<P>我们要对 C 命令解译器 (C Shell) 族系作特别的注解, 比如
+<CODE>tcsh</CODE> 及 <CODE>csh</CODE>.
+在 C 命令解译器, 使用到未定义的变数就算是致命性的错误.
+因此, 在测试变数 <CODE>$TERM</CODE> 之前,
+先确定其是否存在否则会使在非交谈模式下工作的命令解译器停摆.
+要达到这个目的你必须把部份东西用下面这种样式包起来:
+<BLOCKQUOTE><CODE>
+<PRE>
+  if ($?TERM) then
+      ...
+  endif
+</PRE>
+</CODE></BLOCKQUOTE>
+
+(我们是不主张用 C 命令解译器 的理由之一. 参考
+<I>
+<A HREF="http://language.perl.com/versus/csh.whynot">Csh Programming Considered Harmful</A></I> 有很多有用的讨论文章).
+<P>
+<P>以下的□例可以被用来插入到合适的命令解译器的初始启动档;
+即 那个在交谈式命令解译器启动时会去读的那个档.
+在大部份的情况它被称为
+<CODE>.<I>命令解译器名</I>rc</CODE> (如 <CODE>.zshrc</CODE>, <CODE>.tcshrc</CODE>, 等).
+<P>
+<P>
+<P>
+<H2><A NAME="ss4.1">4.1 zsh</A>
+</H2>
+
+<P><CODE>zsh</CODE> 提供部份功能与延伸功能, 而我们将用到:
+<BLOCKQUOTE><CODE>
+<PRE>
+precmd ()   一个在提示命令前必执行的功能含式
+chpwd ()    一个在目录有所变化时会执行的功能含式
+\e          溢位字元 (ESC)
+\a          bell 的溢位字元 (BEL)
+%n          被解释为 $USERNAME
+%m          被解释为主机名称在第一个 '.' 之前的部份
+%~          被解释为目录, 以 '~' 取代 $HOME
+</PRE>
+</CODE></BLOCKQUOTE>
+
+更多的延伸功能: 参考 <CODE>zshmisc</CODE> 使用手册.
+<P>
+<P>因此, 以下将设定 xterm 的主题为
+"<CODE><I>username</I>@<I>hostname</I>: <I>directory</I></CODE>":
+<BLOCKQUOTE><CODE>
+<PRE>
+case $TERM in
+    xterm*)
+        precmd () {print -Pn "\e]0;%n@%m: %~\a"}
+        ;;
+esac
+</PRE>
+</CODE></BLOCKQUOTE>
+
+这也可以用 <CODE>chpwd()</CODE> 取代
+<CODE>precmd()</CODE> 来达成. <CODE>print</CODE> 内建的工作是跟
+<CODE>echo</CODE> 一样, 但可以让我们去存取 <CODE>%</CODE> 命令提示溢位资讯.
+<P>
+<P>
+<H2><A NAME="ss4.2">4.2 tcsh</A>
+</H2>
+
+<P><CODE>tcsh</CODE> 的部份功能含式与延伸功能与 <CODE>zsh</CODE> 相同:
+<BLOCKQUOTE><CODE>
+<PRE>
+precmd ()   一个在提示命令前必执行的功能含式
+cwdcmd ()   一个在目录有所变化时会执行的功能含式
+%n          被解释为 $USERNAME
+%m          被解释为主机名称
+%~          被解释为目录, 以 '~' 取代 $HOME
+%#          对正常的使用者解释为 '>', 而超级使用者则为 '#'
+%{...%}     引入一个字串为连续的溢位序列
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>不幸的, 并没有与 <CODE>zsh</CODE> 的 <CODE>print</CODE> 相同功能的指令,
+能让我们在主题字串中使用提示溢位资讯,
+因此我们唯一能使用的命令解译器变数 (在 <CODE>~/.tcshrc</CODE>):
+<BLOCKQUOTE><CODE>
+<PRE>
+switch ($TERM)
+    case "xterm*":
+        alias precmd 'echo -n "\033]0;${HOST}:$cwd\007"'
+        breaksw
+endsw
+</PRE>
+</CODE></BLOCKQUOTE>
+
+然而, 这会用目录完整的路径取代使用 <CODE>~</CODE>.
+改把这些字串插入题示字元:
+<BLOCKQUOTE><CODE>
+<PRE>
+switch ($TERM)
+    case "xterm*":
+        set prompt="%{\033]0;%n@%m:%~\007%}tcsh%# "
+        breaksw
+    default:
+        set prompt="tcsh%# "
+        breaksw
+endsw
+</PRE>
+</CODE></BLOCKQUOTE>
+
+这会设定 "<CODE>tcsh% </CODE>" 的提示字元, 而 xterm 的主题及图示为
+"<CODE><I>username</I>@<I>hostname</I>: <I>directory</I></CODE>". 要注意
+"<CODE>%{...%}</CODE>" 必须环绕在溢位序列外
+(且不能被放在 提示的最後一项: 参考 <CODE>tcsh</CODE> 使用手册说明会更详细).
+<P>
+<P>
+<H2><A NAME="ss4.3">4.3 bash</A>
+</H2>
+
+<P><CODE>bash</CODE> 支援变数 <CODE>$PROMPT_COMMAND</CODE>
+内含一个指令在提示字元之前执行. 这个□例将设定主题为
+<CODE>username@hostname: directory</CODE>:
+<BLOCKQUOTE><CODE>
+<PRE>
+PROMPT_COMMAND='echo -ne "\033]0;${USER}@${HOSTNAME}: ${PWD}\007"'
+</PRE>
+</CODE></BLOCKQUOTE>
+
+在这的 <CODE>\033</CODE> 是代表字元 <CODE>ESC</CODE>,
+而 <CODE>\007</CODE> 则是 <CODE>BEL</CODE>.
+<P>
+<P>记住引号在这相当重要: 会被解释的变数是放在
+<CODE>"..."</CODE>, 而不是 <CODE>'...'</CODE>. 因此
+<CODE>$PROMPT_COMMAND</CODE> 是被设定为一个不被解释的值,
+但变数在 <CODE>"..."</CODE> □如果有用到 <CODE>$PROMPT_COMMAND</CODE> 则会被解释.
+<P>
+<P>然而, <CODE>$PWD</CODE> 产生完整的路径.
+如果我们要使用 <CODE>~</CODE> 这种速记, 则我们要把溢位字串嵌入到提示字元,
+这会让我们可以利用命令解译器所提供的命令列延伸功能:
+<BLOCKQUOTE><CODE>
+<PRE>
+\u          被解释为 $USERNAME
+\h          被解释为主机名称在第一个 '.' 之前的部份
+\w          被解释为目录, 以 '~' 取代 $HOME
+\$          对正常的使用者解释为 '>', 而超级使用者则为 '#'
+\[...\]     嵌入非列印字元溢位序列
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>因此, 以下将产生 <CODE>bash$</CODE> 的提示字元,
+并设定 xterm 的主题为 <CODE>username@hostname: directory</CODE>:
+<BLOCKQUOTE><CODE>
+<PRE>
+case $TERM in
+    xterm*)
+        PS1="\[\033]0;\u@\h: \w\007\]bash\\$ "
+        ;;
+    *)
+        PS1="bash\\$ "
+        ;;
+esac
+</PRE>
+</CODE></BLOCKQUOTE>
+
+记住 <CODE>\[...\]</CODE> 的使用, 在计算题示长度时,
+将告诉 <CODE>bash</CODE> 忽略掉非列印的控制字元.
+否则行编辑指令将会在移动游标时搞乱掉.
+<P>
+<P>
+<H2><A NAME="ss4.4">4.4 ksh</A>
+</H2>
+
+<P><CODE>ksh</CODE> 几乎不提供这种方式的功能函式与延伸功能,
+因此我们必须插入溢位字串到提示字元中, 使他能动态更新
+这个□例将产生主题为
+<CODE>username@hostname: directory</CODE> 而and a prompt of <CODE>ksh$ </CODE>.
+<BLOCKQUOTE><CODE>
+<PRE>
+case $TERM in
+    xterm*)
+        HOST=`hostname`
+        PS1='^[]0;${USER}@${HOST}: ${PWD}^Gksh$ '
+        ;;
+    *)
+        PS1='ksh$ '
+        ;;
+esac
+</PRE>
+</CODE></BLOCKQUOTE>
+
+而, <CODE>$PWD</CODE> 会产生完整的目录路径. 我们可以
+用 <CODE>${...##...}</CODE> 的方式移去 <CODE>$HOME/</CODE> 的字首.
+我们也可以用 <CODE>${...%%...}</CODE> 的方法来截去部份的 hostname:
+<BLOCKQUOTE><CODE>
+<PRE>
+HOST=`hostname`
+HOST=${HOST%%.*}
+PS1='^[]0;${USER}@${HOST}: ${PWD##${HOME}/}^Gksh$ '
+</PRE>
+</CODE></BLOCKQUOTE>
+
+记住 <CODE>^[</CODE> 及 <CODE>^G</CODE> 在命令列字串是单一字元
+的 <CODE>ESC</CODE> 及 <CODE>BEL</CODE> (在 emacs 的环境下可以用
+<CODE>C-q ESC</CODE> 及 <CODE>C-q C-g</CODE> 输入).
+<P>
+<P>
+<H2><A NAME="ss4.5">4.5 csh</A>
+</H2>
+
+<P>要在 <CODE>csh</CODE> 完成同样的事真的有点困难, 而我们用下面的方式来解决问题:
+<BLOCKQUOTE><CODE>
+<PRE>
+switch ($TERM)
+    case "xterm*":
+        set host=`hostname`
+        alias cd 'cd \!*; echo -n "^[]0;${user}@${host}: ${cwd}^Gcsh% "'
+        breaksw
+    default:
+        set prompt='csh% '
+        breaksw
+endsw
+</PRE>
+</CODE></BLOCKQUOTE>
+
+麻烦的地方是我们要把 <CODE>cd</CODE> 这个指令化身成可送出溢位字串的功能.
+记住 <CODE>^[</CODE> 及 <CODE>^G</CODE> 在命令列字串是单一字元的
+<CODE>ESC</CODE> 及 <CODE>BEL</CODE> (在 emacs 的环境下可以用
+<CODE>C-q ESC</CODE> 及 <CODE>C-q C-g</CODE> 输入).
+<P>
+<P>记住: 在部份的系统 <CODE>hostname -s</CODE> 可能会取得较短的
+hostname 而不是完整的全名. 部份使用者在有符号连结的目录应该会发现
+<CODE>`pwd`</CODE> (括起来以确定执行的是 <CODE>pwd</CODE> 指令)
+可以得到比 <CODE>$cwd</CODE> 更精确的路径名.
+<P>
+<P>
+<P>
+<HR>
+<A HREF="Xterm-Title-5.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Xterm-Title-3.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Xterm-Title.html#toc4"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

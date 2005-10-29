@@ -1,0 +1,480 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Linux 2.4 Advanced Routing HOWTO: 食譜 (Cookbook)</TITLE>
+ <LINK HREF="Adv-Routing-HOWTO-17.html" REL=next>
+ <LINK HREF="Adv-Routing-HOWTO-15.html" REL=previous>
+ <LINK HREF="Adv-Routing-HOWTO.html#toc16" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Adv-Routing-HOWTO-17.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Adv-Routing-HOWTO-15.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Adv-Routing-HOWTO.html#toc16"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s16">16. 食譜 (Cookbook)</A></H2>
+
+<P>本章所包含的 'cookbook' 單元﹐應可幫您解決一些問題。然而﹐離開了原理的理解﹐縱有 cookbook 也枉然﹐所以﹐請先溫故而知新。
+<P>
+<P>
+<H2><A NAME="ss16.1">16.1 以不同的 SLA 來跑多個站點 (Running multiple sites with different SLAs)</A>
+</H2>
+
+<P>您可以用好多方法來做啦。Apache 就可以透過模組來達到某些支援﹐不過我們這裡要教您用 Linux 怎樣做﹐並且舉一反三﹐將其它服務也一併搞定。這些命令都偷師自下面提到的 Jamal Hadi 的演講 。
+<P>假設我們有兩個客戶﹐要提供 http﹑ftp﹑還有 streaming audio 服務﹐我們只打算賣給他們一定數量的頻寬而已。那我們可以在伺服器上面做手腳。
+<P>客戶 A 最多只有 2 megabits﹐而客戶 B 已經支付 5 megabits 的錢了。那我們在伺服器上建立虛擬 IP 位址﹐來將客戶分開來。
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# ip address add 188.177.166.1 dev eth0
+# ip address add 188.177.166.2 dev eth0
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>以哪些適合的位址來分配給不同的伺服器﹐則悉從尊便了。所有常用 daemon 都支援這玩意。
+<P>接著﹐我們首先將 CBQ adisc 指派給 eth0﹕
+<BLOCKQUOTE><CODE>
+<PRE>
+# tc qdisc add dev eth0 root handle 1: cbq bandwidth 10Mbit cell 8 avpkt 1000 \
+  mpu 64
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>然後﹐為我們的客戶建立類別(classes)﹕
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# tc class add dev eth0 parent 1:0 classid 1:1 cbq bandwidth 10Mbit rate \
+  2MBit avpkt 1000 prio 5 bounded isolated allot 1514 weight 1 maxburst 21
+# tc class add dev eth0 parent 1:0 classid 1:2 cbq bandwidth 10Mbit rate \
+  5Mbit avpkt 1000 prio 5 bounded isolated allot 1514 weight 1 maxburst 21
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>再來﹐我們為這兩個類別增加過濾器﹕
+<BLOCKQUOTE><CODE>
+<PRE>
+##FIXME: Why this line, what does it do?, what is a divisor?:
+##FIXME: A divisor has something to do with a hash table, and the number of
+##       buckets - ahu
+# tc filter add dev eth0 parent 1:0 protocol ip prio 5 handle 1: u32 divisor 1
+# tc filter add dev eth0 parent 1:0 prio 5 u32 match ip src 188.177.166.1
+  flowid 1:1
+# tc filter add dev eth0 parent 1:0 prio 5 u32 match ip src 188.177.166.2
+  flowid 1:2
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>這樣﹐就大功告成了啦。
+<P>FIXME: 為何不用 token bucket 過濾器﹖還是預設的 pfifo_fast 撤出了﹖
+<P>
+<A NAME="SYN"></A> <H2><A NAME="ss16.2">16.2 幫貴主機抵禦 SYN floods (Protecting your host from SYN floods)</A>
+</H2>
+
+<P>根據 Alexey 的 iproute 文件﹐已可以和 netfiler 搭配了﹐且有好些看來不錯的途經。如果您要使用這個﹐請小心調整那些數字﹐針對您的系統給予合理的數值。
+<P>假如您想要保護整個網路﹐可以跳過這裡﹐這裡是針對單一主機而已的。
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#! /bin/sh -x
+#
+# sample script on using the ingress capabilities
+# this script shows how one can rate limit incoming SYNs
+# Useful for TCP-SYN attack protection. You can use
+# IPchains to have more powerful additions to the SYN (eg 
+# in addition the subnet)
+#
+#path to various utilities;
+#change to reflect yours.
+#
+TC=/sbin/tc
+IP=/sbin/ip
+IPTABLES=/sbin/iptables
+INDEV=eth2
+#
+# tag all incoming SYN packets through $INDEV as mark value 1
+############################################################ 
+$iptables -A PREROUTING -i $INDEV -t mangle -p tcp --syn \
+  -j MARK --set-mark 1
+############################################################ 
+#
+# install the ingress qdisc on the ingress interface
+############################################################ 
+$TC qdisc add dev $INDEV handle ffff: ingress
+############################################################ 
+
+#
+# 
+# SYN packets are 40 bytes (320 bits) so three SYNs equals
+# 960 bits (approximately 1kbit); so we rate limit below
+# the incoming SYNs to 3/sec (not very useful really; but
+#serves to show the point - JHS
+############################################################ 
+$TC filter add dev $INDEV parent ffff: protocol ip prio 50 handle 1 fw \
+police rate 1kbit burst 40 mtu 9k drop flowid :1
+############################################################ 
+
+
+#
+echo "---- qdisc parameters Ingress  ----------"
+$TC qdisc ls dev $INDEV
+echo "---- Class parameters Ingress  ----------"
+$TC class ls dev $INDEV
+echo "---- filter parameters Ingress ----------"
+$TC filter ls dev $INDEV parent ffff:
+
+#deleting the ingress qdisc
+#$TC qdisc del $INDEV ingress
+</PRE>
+</CODE></BLOCKQUOTE>
+<H2><A NAME="ss16.3">16.3 以 ICMP 速率限制抵擋 dDoS (Ratelimit ICMP to prevent dDoS)</A>
+</H2>
+
+<P>目前來說﹐分散式服務癱瘓(distributed denial of service)攻擊已經成為 Internet 上頭號騷擾行為。對貴網路使用適當的過濾和速率限制﹐可讓您既避免成為砲灰﹐也避免成為砲手﹐一箭雙雕。
+<P>如果您要對網路做過濾﹐那您或許會不讓非本地 IP 來源位址的封包離開貴網路。這可以制止別人以匿名身份對 internet 發送垃圾。
+<P>
+<P>
+<P>如前面介紹的﹐速率限制考慮得更是週長。再看看下面的 ASCII 圖例﹐幫您重溫一下﹕
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+[The Internet] ---&lt;E3, T3, whatever>--- [Linux router] --- [Office+ISP]
+                                      eth1          eth0
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>讓我們先將前提部份設定起來吧﹕
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# tc qdisc add dev eth0 root handle 10: cbq bandwidth 10Mbit avpkt 1000
+# tc class add dev eth0 parent 10:0 classid 10:1 cbq bandwidth 10Mbit rate \
+  10Mbit allot 1514 prio 5 maxburst 20 avpkt 1000
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>假如您有 100Mbit﹐或是更快的界面﹐請調整這些數字。現在您需要判定要允許多大的 ICMP 流量。您可以用 tcpdump 進行測量﹐將結果寫進一個檔案﹐然後過一會看看有多少 ICMP 封包通過網路。請不要忘記將測量時間拉長一點。
+<P>如果測量結果看起來不切實際﹐那您可以以可用頻寬的 5% 來計算。那就讓我們把類別設好吧﹕
+<BLOCKQUOTE><CODE>
+<PRE>
+# tc class add dev eth0 parent 10:1 classid 10:100 cbq bandwidth 10Mbit rate \
+  100Kbit allot 1514 weight 800Kbit prio 5 maxburst 20 avpkt 250 \
+  bounded
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>目前的限制為 100Kbit。接下來我們需要一個過濾器﹐將 ICMP 流量撥給這個類別﹕
+<BLOCKQUOTE><CODE>
+<PRE>
+# tc filter add dev eth0 parent 10:0 protocol ip prio 100 u32 match ip
+  protocol 1 0xFF flowid 10:100
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss16.4">16.4 為互動流量排優先次序 (Prioritizing interactive traffic)</A>
+</H2>
+
+<P>如果有大量的數據傳入您的線路﹐或是反向傳出﹐而您需要用 telnet 或 ssh 進行某些維護工作﹐這或許不十分理想﹐因為其它封包或會打斷您的鍵盤操作。假如有辦法讓這些互動封包從這些大塊的流量底下暗渡陳倉﹐就最好不過了。Linux 可以幫您做到哦﹗
+<P>如前﹐我們需要操縱雙向的流量。顯然﹐如果線路兩端都有 Linux 機器就最理想了﹐當然其它 UNIX's 也可以做得到啦。這點﹐就請教您身邊的 Solaris/BSD 高手囉。
+<P>標準的 pfifo_fast 排程方法帶有 3 個不同的 'bands'。當 band1 和 band2 都流量獲得之後﹐在 band0 的流量會先傳送。至為關鍵的是﹐我們的互動流量一定要在 band0 裡面﹗
+<P>我們乾脆明目張膽的改編(即將淘汰的) ipchains HOWTO 好了﹕
+<P>在 IP 標頭中﹐有 4 個位元並不常用的﹐稱為 Type of Service (TOS) 位元。它們會影響封包被處理的程序﹔這 4 個位元分別是﹕"Minimum Delay"﹑"Maximum Throughput"﹑"Maximum Reliability"﹑和 "Minimum"。它們四者﹐只能設定其一。Ipchains 之 TOS-mangling 作者﹐Rob van Nieuwkerk﹐曾作如下述﹕
+<P>
+<BLOCKQUOTE><CODE>
+對我而言﹐"Minimum Delay" 猶為重要。我為了那些“互動”封包
+在我的上傳(Linux) router 上將之打開。我只用一條 33k6 的 modem 
+線路而已。Linux 將封包的優先順序排進 3 個佇列中。這樣﹐
+在我進行大量下載的時候﹐還可以獲得一個可接受的互動效能。
+</CODE></BLOCKQUOTE>
+<P>最常見的做法是將 telnet 和 ftp control 連線設為 "Minimum Delay" ﹐而 FTP data 設為 "Maximum Throughput"。在您的上傳 router 上﹐可以如下那樣動作﹕
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# iptables -A PREROUTING -t mangle -p tcp --sport telnet \
+  -j TOS --set-tos Minimize-Delay
+# iptables -A PREROUTING -t mangle -p tcp --sport ftp \
+  -j TOS --set-tos Minimize-Delay
+# iptables -A PREROUTING -t mangle -p tcp --sport ftp-data \
+  -j TOS --set-tos Maximize-Throughput
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>好了﹐這只對那些 telnet 及從外面送來本地主機的數據有效而已。其它您也要一一設好﹐例如 telnet﹑ssh﹑朋友的﹐所有外送封包的 TOS 欄位全自動設好。
+<P>如果客戶端並非設定如此﹐那您可以用 netfilter 來做。於您的本機上﹕
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# iptables -A OUTPUT -t mangle -p tcp --dport telnet \
+  -j TOS --set-tos Minimize-Delay
+# iptables -A OUTPUT -t mangle -p tcp --dport ftp \
+  -j TOS --set-tos Minimize-Delay
+# iptables -A OUTPUT -t mangle -p tcp --dport ftp-data \
+  -j TOS --set-tos Maximize-Throughput
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss16.5">16.5 用 netfilter﹑iproute2﹑ipchains﹑及 squid 做通透性 web-caching (Transparent web-caching using netfilter, iproute2, ipchains and squid)</A>
+</H2>
+
+<P>
+<A NAME="SQUID"></A> 
+本章節由 Internet for Education (泰國) 的讀者 Ram Narula 提供。
+<P>以 Linux 來做的話﹐常規技巧上或會採用 ipchains﹐﹐將 "外送" 的 port 80(web) 流量送往伺服器所跑的 squid 服務程式。
+<P>有 3 種常見辦法可確定 "外送" 的 port 80(web) 流量會送往伺服器所跑的 squid 服務程式﹐而第 4 種將是這裡的重頭戲。
+<P>
+<DL>
+<DT><B>用網關 router 來做</B><DD><P>告訴網關 router 將外送目的端埠口為 80 的封包﹐送到 squid 伺服器的 IP 位址上。
+<P>但是
+<P>這會額外增加 router 的負載﹐而且有些商業 routers 未必支援這種做法。
+<P>
+<DT><B>用 Layer 4 switch 來做</B><DD><P>Layer 4 switch 絕對能勝任此項工作。
+<P>但是
+<P>此類設備的成本非常高。一般而言﹐Layer 4 switch 的成本甚至比 router 加一台好的 Linux 伺服器還要高。
+<P>
+<DT><B>用 cache 伺服器來做網關</B><DD><P>您可以強迫所有流量都經過 cache 伺服器。
+<P>但是
+<P>這有點冒險﹐因為 Squid 會耗掉相當的 cpu 資源﹐或會造成整體的網路效能降低﹐或是伺服器當掉而誰也連不上 internet。
+<P>
+<DT><B>Linux+NetFilter router</B><DD><P>NetFilter 可以提供另一可行手段﹐就是用 NetFilter 來將那些目的端埠口為 80 的封包 "標識" 起來﹐同時用 iproute2 將已 "標識" 的封包送到 Squid 伺服器那裡。
+</DL>
+
+<BLOCKQUOTE><CODE>
+<PRE>
+|----------------|
+| Implementation |
+|----------------|
+
+ Addresses used
+ 10.0.0.1 naret (NetFilter server)
+ 10.0.0.2 silom (Squid server)
+ 10.0.0.3 donmuang (Router connected to the internet)
+ 10.0.0.4 kaosarn (other server on network)
+ 10.0.0.5 RAS
+ 10.0.0.0/24 main network
+ 10.0.0.0/19 total network
+
+|---------------|
+|Network diagram|
+|---------------|
+
+Internet
+|
+donmuang
+|
+------------hub/switch----------
+|        |             |       |
+naret   silom        kaosarn  RAS etc.
+</PRE>
+</CODE></BLOCKQUOTE>
+
+首先﹐確定 naret 為預設網關(除 silom 外)﹐讓所有流量均通過它。而 silom 的預設網關必須是 donmuang(10.0.0.3)﹐要不然會產生流量迴圈(loop)。
+<P>
+<P>(網路中的所有伺服器都以 10.0.0.1 為預設網關﹐也就是 donmuang router 的舊 IP 位址﹐所以我將 donmuang 的 IP 設為 10.0.0.3﹐而將 10.0.0.1 給 naret 用。)
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+Silom
+-----
+-setup squid and ipchains 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>在 silom 上面設定 Squid 伺服器﹐要確定它能支援通透性 caching/proxying﹐其預設埠口通常為 3128﹐然後﹐所有給 port 80 的流量都會被轉送到本機埠口 3128。用 ipchains 的話﹐可以這樣做﹕
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+silom# ipchains -N allow1
+silom# ipchains -A allow1 -p TCP -s 10.0.0.0/19 -d 0/0 80 -j REDIRECT 3128
+silom# ipchains -I input -j allow1
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P> 
+<P>或是﹐netfilter 來做﹕
+<BLOCKQUOTE><CODE>
+<PRE>
+silom# iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 80 -j REDIRECT --to-port 3128
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>(注意﹕您或許還有其它項目的設定)
+<P>
+<P>關於 Squid 伺服器的更多設定資料﹐請參考 Squid 的 faq ﹕
+<A HREF="http://squid.nlanr.net">http://squid.nlanr.net</A>)。
+<P>
+<P>請確定在這台伺服器上面將 ip forwarding 功能打開﹐還有﹐這個伺服器的預設網關是 donmuang (而不是 naret)。
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+Naret
+-----
+-setup iptables and iproute2
+-disable icmp REDIRECT messages (if needed)
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<OL>
+<LI>將目的埠口為 80 的封包 "標識" 為數值 2
+<BLOCKQUOTE><CODE>
+<PRE>
+ 
+naret# iptables -A PREROUTING -i eth0 -t mangle -p tcp --dport 80 \
+ -j MARK --set-mark 2
+</PRE>
+</CODE></BLOCKQUOTE>
+</LI>
+<LI>設定好 iproute2﹐將 "標識" 為 2 的封包送到 silom 那邊
+<BLOCKQUOTE><CODE>
+<PRE>
+naret# echo 202 www.out >> /etc/iproute2/rt_tables
+naret# ip rule add fwmark 2 table www.out
+naret# ip route add default via 10.0.0.2 dev eth0 table www.out
+naret# ip route flush cache
+</PRE>
+</CODE></BLOCKQUOTE>
+
+<P>如果 donmuang 和 naret 都在同一 subnet 上的話﹐那 naret 就不要送出 REDIRECT 的 icmp 訊息了。這時候﹐按如下方法將 icmp REDIRECT 關閉﹕
+<BLOCKQUOTE><CODE>
+<PRE>
+naret# echo 0 > /proc/sys/net/ipv4/conf/all/send_redirects
+naret# echo 0 > /proc/sys/net/ipv4/conf/default/send_redirects
+naret# echo 0 > /proc/sys/net/ipv4/conf/eth0/send_redirects
+</PRE>
+</CODE></BLOCKQUOTE>
+</LI>
+</OL>
+<P>如此﹐所有設定都完成了﹐請回去檢查一下﹕
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+On naret:
+
+naret# iptables -t mangle -L
+Chain PREROUTING (policy ACCEPT)
+target     prot opt source               destination         
+MARK       tcp  --  anywhere             anywhere           tcp dpt:www MARK set 0x2 
+
+Chain OUTPUT (policy ACCEPT)
+target     prot opt source               destination         
+
+naret# ip rule ls
+0:      from all lookup local 
+32765:  from all fwmark        2 lookup www.out 
+32766:  from all lookup main 
+32767:  from all lookup default 
+
+naret# ip route list table www.out
+default via 203.114.224.8 dev eth0 
+
+naret# ip route   
+10.0.0.1 dev eth0  scope link 
+10.0.0.0/24 dev eth0  proto kernel  scope link  src 10.0.0.1
+127.0.0.0/8 dev lo  scope link 
+default via 10.0.0.3 dev eth0 
+
+(make sure silom belongs to one of the above lines, in this case
+it's the line with 10.0.0.0/24)
+
+|------|
+|-DONE-|
+|------|
+</PRE>
+</CODE></BLOCKQUOTE>
+<H3>實作之後的流量流程圖 (Traffic flow diagram after implementation)</H3>
+
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+
+|-----------------------------------------|
+|Traffic flow diagram after implementation|
+|-----------------------------------------|
+
+INTERNET
+/\
+||
+\/
+-----------------donmuang router---------------------
+/\                                      /\         ||
+||                                      ||         ||
+||                                      \/         ||
+naret                                  silom       ||
+*destination port 80 traffic=========>(cache)      ||
+/\                                      ||         ||
+||                                      \/         \/
+\\===================================kaosarn, RAS, etc.
+
+
+注意﹕   因為在正常外送路徑上﹐多了一個額外的跳站(hop)﹐
+        所以此網路為非對稱的。
+
+這樣﹐在 kaosarn 和 internet 之間的封包﹐到這裡都會受到管制。
+
+對於 web/http 流量﹕
+kaosarn http request->naret->silom->donmuang->internet
+http replies from internet->donmuang->silom->kaosarn
+
+對於 非 web/http 請求(如﹐telnet)﹕
+kaosarn outgoing data->naret->donmuang->internet
+incoming data from internet->donmuang->kaosarn
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>
+<H2><A NAME="ss16.6">16.6 以每個路由 MTU 設定來防範 Path MTU Discovery 問題 (Circumventing Path MTU Discovery issues with per route MTU settings)</A>
+</H2>
+
+<P>為了傳送 bulk 數據﹐internet 通常會使用大型封包以獲得更好的效果。每一個封包都必須進行路由判斷﹐假如傳送一份 1 magabyte 的文件﹐如果僅可能的使用最大封包進行傳送﹐那大概需要 700 個封包﹔如果預設使用最小封包﹐則近 4000 個。
+<P>然而﹐internet 上並非所有部份都支援完整的每個封包 1460 bytes 的過載。因此﹐必須找出 '合身' 的最大封包體積﹐以進行連線最佳化。
+<P>這個處理稱為 '路徑 MTU 發現(Path MTU Discovery)'﹐MTU 就是 'Maximum Transfer Unit' 的意思。
+<P>當路由器收到一個封包﹐因為太大而不能一次送出﹐但同時它的 "Don't Fragment" 位元又被設定起來﹐則會回送一個 ICMP 信息﹐說明它因此被迫丟棄這個封包。發送端主機收到這條提示之候﹐會改送較小的封包﹐並且﹐透過如此反復﹐就能於特定路徑上找出最佳的封包體積。
+<P>這原本工作得非常順利﹐不過﹐當 internet 上充斥眾多無所不用其極進行連線破壞的不肖之徒之後﹐情況就一落千丈了。許多管理員透過封鎖或引導錯誤導入的 ICMP 流量﹐來改善安全或增強他們的 internet 服務。
+<P>這樣的結局是﹐Path MTU Discovery 在某些路由器上每下愈況﹐而導致奇怪的 TCP/IP 連線過一會就掛掉了。
+<P>儘管我還沒有直接的證據來證明這點﹐我過去接觸過兩個站台﹐在受影響系統之前執行 Alteon Acedirectors 都有這樣的問題 --- 或許對此更了解的朋友可以為我們畫龍點睛。
+<P>
+<H3>解決方案 (Solution)</H3>
+
+<P>當您碰到站台受此問題困擾的時候﹐您可以手工的關閉 Path MTU discovery 功能。Koos van den Hout 曾如此寫過(稍作修改)﹕
+<P>
+<BLOCKQUOTE><CODE>
+<P>下列問題﹕我把 ppp 專線之 mtu/mrg 設定為 296﹐因為它只有 33k6 而已﹐而且我也不能影響另一端的佇列。在 296 的水平﹐鍵擊回應尚能保持在合理的時間之內。
+<P>同時﹐在我這邊﹐我用 Linux (當然啦)﹐進行偽裝。
+<P>我目前將 '伺服器' 和 '路由器' 分開﹐所以大部份的應用程式都在另外的機器上面跑﹐而路由則依舊進行。
+<P>然後﹐當我要連上 irc 的時候卻碰到問題。超麻煩的就是了﹗透過探查﹐發現我可以連接上 irc﹐而且在 irc 上也顯示為 'connected' ﹐但就是收不到 irc 的信息。我開始檢查是什麼地方出槌了﹐而且也注意到在以前連接某些和 MTU 相關的網站也有問題﹐因為當 MTU 是 1500 的時候並沒有問題﹐而 MTU 為 296 的時候就會出狀況。因為 irc 伺服器會封鎖所有即時作業不需要的流量﹐而且也擋掉 icmp。
+<P>我曾說服過某個有此問題的網站管理員﹐但 irc 伺服器的管理員卻不大願意修正它。
+<P>因此﹐我必須確定外送的偽裝流量走外部線路要從低 mtu 開始。但是我要本地的 ethernet 流量可以獲得正常的 mtu (諸如 nfs 流量)。
+<P>解決辦法﹕
+<BLOCKQUOTE><CODE>
+<PRE>
+ip route add default via 10.0.0.1 mtu 296
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>(10.0.0.1 為預設網關﹐是偽裝路由器的內部位址)
+</CODE></BLOCKQUOTE>
+<P>通常﹐對特定路由進行修改﹐可以來蓋寫 PMTU Discovery 的值。比方說﹐假如只有某一特定 subnet 會有問題﹐那下面的辦法或許有助﹕
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ip route add 195.96.96.0/24 via 10.0.0.1 mtu 1000
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss16.7">16.7 以 MMS 鉗制來防範 Path MTU Discovery 問題 (Circumventing Path MTU Discovery issues with MSS Clamping) (for ADSL, cable, PPPoE &amp; PPtP users)</A>
+</H2>
+
+<P>如前面所述﹐Path MTU Discovery 已經不再隨心所欲了。如果您知道事實上網路中某個跳站(hop)有限制 MTU(&lt;1500)﹐您是不能依靠 PMTU Discovery 來發現它的。
+<P>在 MTU 之外﹐還有另外的方法設定封包的最大體積﹐這個就是傳說中的 Maximum Segment Size。這是屬於 SYN 封包的 TCP 選項中的欄位。
+<P>目前的 Linux 核心﹐以及少部份 pppoe 驅動程式﹐都提供 'MSS 鉗制' 功能。
+<P>設定 MSS 數值所帶來的好處是﹐您可以明確的告訴遠端﹕'送來的封包不要超過這個數值'﹐而無須倚重 ICMP 流量。
+<P>其壞處是﹐他是一個非常明顯的破解(hack) --- 透過修改封包而打斷 '端對端(end to end)' 狀態。必須指出﹐我們在許多場合中使用這個技巧﹐而它就如孫悟空頭上的緊箍咒。
+<P>為了讓它工作﹐您起碼需要 iptables-1.2.1a 和 Linux 2.4.3 或更新版本。基本命令如下﹕
+<BLOCKQUOTE><CODE>
+<PRE>
+# iptables -A FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS  --clamp-mss-to-pmtu
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>這會為您的線路計算適合的 MSS。如果您有冒險精神﹐或自認藝高膽大﹐您也可以再做這樣的動作﹕
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# iptables -A FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --set-mss 128
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>這樣會將所通過的 SYN 封包之 MMS 設為 128。如果您要用微型封包攜載 VoIP﹐同時﹐龐大的 httpd 封包會削減您的語音通訊﹐那您就可以使用它了。
+<P>
+<HR>
+<A HREF="Adv-Routing-HOWTO-17.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Adv-Routing-HOWTO-15.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Adv-Routing-HOWTO.html#toc16"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

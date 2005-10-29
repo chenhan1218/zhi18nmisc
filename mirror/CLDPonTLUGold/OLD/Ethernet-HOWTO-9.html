@@ -1,0 +1,175 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Linux以太網-HOWTO: 雜項</TITLE>
+ <LINK HREF="Ethernet-HOWTO-8.html" REL=previous>
+ <LINK HREF="Ethernet-HOWTO.html#toc9" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<IMG SRC="img/next.gif" ALT="Next">
+<A HREF="Ethernet-HOWTO-8.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Ethernet-HOWTO.html#toc9"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="misc"></A> <A NAME="s9">9. 雜項</A></H2>
+
+<P>
+<P>所有不適合放在別處的相關信息都堆在這里。可能不相干，也可能大家不感興趣，但還是放在這兒了。
+<P>
+<H2><A NAME="lilo"></A> <A NAME="ss9.1">9.1 向內核傳遞以太網參數</A>
+</H2>
+
+<P>
+<P>有兩個通用的內核命令可以在啟動時向內核傳遞以太網參數（<CODE>ether</CODE>      和<CODE>reserve</CODE>）。可以用LILO、loadlin或其它接受可選參數的啟動工具完成該操作。
+<P>例如，如果命令為“blah”，希望接收3個參數（假定為123、456和789），那么在使用LILO時就應該如下：
+<P><CODE>LILO: linux blah=123,456,789</CODE>
+<P>要了解啟動時參數的更多信息（和完全的列表），請參見
+<A HREF="http://metalab.unc.edu/mdw/HOWTO/BootPrompt-HOWTO.html">BootPrompt-HOWTO</A><P>
+<H3><A NAME="ether"></A> <CODE>ether</CODE>命令</H3>
+
+<P>
+<P><CODE>ether=</CODE>參數與直接構建在內核的驅動程序一起使用。<CODE>ether=</CODE>參數對一個模塊化的驅動程序<EM>完全不起作用</EM>。它的最通用形式如下：
+<P>
+<BLOCKQUOTE><CODE>
+ether=IRQ,BASE_ADDR,PARAM_1,PARAM_2,NAME
+</CODE></BLOCKQUOTE>
+<P>所有的參數都是可選的。第一個非數字的參數被用做NAME。
+<P><B>IRQ:</B>
+很明顯。為“0”的IRQ值（一般為缺省值）意味著autoIRQ。首先設置IRQ而不是base_addr是一個歷史性的巧合──無論在改變別的什么時都可以順便改正這一點。
+<P><B>BASE_ADDR:</B>
+也很明顯。值為“0”（一般為缺省值）意味著探測以太網卡的網卡類型特定的地址列表。
+<P><B>PARAM_1:</B>
+這開始是用來覆蓋WD80*3這樣的共享內存網卡的起始內存的值。有些驅動程序使用該值的低4位來設置診斷信息級別。0──缺省值，1-7──級別1..7，（7是最完全的信息）8──級別0（沒有信息）。另外，LANCE驅動程序使用該值的低4位來選擇DMA通道。否則就使用auto-DMA。
+<P><B>PARAM_2:</B>
+3c503驅動程序使用它來選擇內部還是外部收發器。0──缺省/內部，1──外部AUI。Cabletron的E21XX網卡還使用PARAM_2的低4位來選擇輸出媒介。否則就自動檢測。
+<P><B>NAME:</B>
+選擇該值所指的網絡設備。標准內核對附屬于總線的以太網卡使用名稱“eth0”、“eth1”、“eth2”和“eth3”，對并口“袖珍”以太網適配器使用“atp0”。arcnet驅動程序使用名稱“arc0”。可以使用這些LILO參數明確設置基址來啟用多塊網卡。1.0內核把基于LANCE的以太網卡作為特殊情況進行處理：LILO參數被忽略，LANCE網卡總是被分配為從“eth0”開始的名稱“eth&lt;n&gt;”。附加的非LANCE網卡必須被明確指定為“eth&lt;n+1&gt;”，并用諸如“ether=0,-1,eth0”的方式禁止通常的“eth0”探測。（對，這是個Bug。）
+<P>
+<H3><A NAME="reserve"></A> <CODE>reserve</CODE>命令</H3>
+
+<P>
+<P>這個緊接著的LILO命令用法與上面的“ether=”一樣，即附加在lilo.conf里指定的啟動選擇名稱后面。
+<P>
+<BLOCKQUOTE><CODE>
+reserve=IO-base,extent{,IO-base,extent...}
+</CODE></BLOCKQUOTE>
+<P>在某些機器上，可能需要防止設備驅動程序在某個特定區域里檢查設備（自動探測）。其原因可能是由于設計低劣的硬件使啟動<EM>凍結</EM>（如某些以太網卡）、被錯誤識別的硬件、在較早的探測中狀態被改變的硬件、或者僅僅是不想讓內核初始化硬件。
+<P>啟動時的參數<CODE>reserve</CODE>通過指定無需探測的I/O端口區域來解決這個問題。該區域保留在內核的端口注冊表里，就象該區域里已經發現了一個設備一樣。注意，這一機制在大多數機器上是不必要的。只有在有問題或特定的情況下才有必要使用它。
+<P>指定區域里的I/O端口受到保護，不被設備探測影響。在某些驅動程序被NE2000挂起，或其它設備被錯誤地識別為NE2000時使用這一方法。正確的設備驅動程序不該探測一個保留區域，除非另一個啟動參數明確指定它這么做。這隱含了<CODE>reserve</CODE>經常與其它啟動參數一起使用。因此，如果指定了一個<CODE>reserve</CODE>區域來保護某個特定設備，通常就必須明確指定對該設備的探測。大多數驅動程序在給定了明確地址后就忽略了端口注冊表。
+<P>例如，啟動行
+<P>
+<BLOCKQUOTE><CODE>
+LILO: linux  reserve=0x300,32  ether=0,0x300,eth0
+</CODE></BLOCKQUOTE>
+<P>使以太網卡驅動程序以外的所有設備驅動程序都不探測0x300-0x31f。
+<P>一般啟動時的參數限制是11個，因此每個<CODE>reserve</CODE>關鍵詞只能指定5個保留區域。如果請求很復雜，可以使用多個<CODE>reserve</CODE>指令。
+<P>
+<H2><A NAME="modules"></A> <A NAME="ss9.2">9.2 把以太網驅動程序作為模塊使用</A>
+</H2>
+
+<P>
+<P>現在大多數Linux發行版里的內核都只包含很少几個內建的驅動程序。驅動程序都采用獨立的動態可加載模塊的形式提供。這些模塊化驅動程序通常由管理員使用<CODE>modprobe(8)</CODE>命令載入，或者在某些情況下由內核通過“kerneld”（在2.0版）或“kmod”（在2.1版）自動載入，然后調用<CODE>modprobe</CODE>。
+<P>你所用的發行版可能會提供良好的圖形配置工具來設置以太網模塊。如果可能就先使用它們。下面描述了在這些花俏的配置程序下的信息，以及這些程序改變了哪些東西。
+<P>控制使用哪些模塊和每個模塊提供哪些選項的信息一般保存在文件<CODE>/etc/conf.modules</CODE>里。在這個文件里使用的兩個感興趣的主要選項（對以太網卡而言）是<CODE>alias</CODE>和<CODE>options</CODE>。<CODE>modprobe</CODE>命令查閱該文件以了解模塊信息。
+<P>實際的模塊本身一般保存在名為<CODE>/lib/modules/`uname -r`/net</CODE>的目錄下，其中<CODE>uname -r</CODE>命令給出內核的版本（如2.0.34）。你可以在這里看看哪一個模塊與你的網卡匹配。
+<P>在你的<CODE>conf.modules</CODE>文件里首先需要的是告訴<CODE>modprobe</CODE>對于<CODE>eth0</CODE>（和<CODE>eth1</CODE>以及......）網絡接口使用什么驅動程序。為此要使用
+<HR>
+<PRE>
+alias
+</PRE>
+<HR>
+命令。例如，有一塊使用<CODE>smc-ultra.o</CODE>驅動程序模塊的ISA SMC EtherEZ網卡，需要增加如下一行把該驅動程序<CODE>alias</CODE>到<CODE>eth0</CODE>上：
+<P>
+<PRE>
+        alias eth0 smc-ultra
+</PRE>
+<P>其次，可能需要一個<CODE>options</CODE>行來指出與某個特定模塊（或模塊別名）一起使用哪些選項。還采用上面那個例子，如果只有一行<CODE>alias</CODE>而沒有<CODE>options</CODE>行，內核會警告（參見<CODE>dmesg</CODE>）說自動探測ISA網卡不好。要消除這個警告，需要增加另一行來告訴模塊網卡被配置在哪個I/O基址上，比方說是16進制地址<CODE>0x280</CODE>。
+<P>
+<PRE>
+        options smc-ultra io=0x280
+</PRE>
+<P>大多數ISA模塊在<CODE>insmod</CODE>命令行接受<CODE>io=0x340</CODE>和<CODE>irq=12</CODE>這樣的參數。提供這些參數以避免探測該網卡是<EM>必須的</EM>或至少是<EM>強烈建議的</EM>。與PCI和EISA設備不同，對大多數ISA設備而言沒有真正安全的自動探測方法，所以在把驅動程序作為模塊使用時應當避免自動探測。
+<P>每個模塊所接受的所有選項列表可以在以下文件中找到：
+<P><CODE>/usr/src/linux/Documentation/networking/net-modules.txt</CODE>
+<P>推荐閱讀該文件以了解對你的特定網卡可以使用哪些選項。注意，對于單個模塊能夠處理多個設備的模塊，有些支持用逗號分開的值列表，如所有基于8390的驅動程序和PLIP驅動程序。例如：
+<P>
+<HR>
+<PRE>
+        options 3c503 io=0x280,0x300,0x330,0x350 xcvr=0,1,0,1
+</PRE>
+<HR>
+<P>上面就是一個模塊控制四塊3c503網卡，其中網卡2和4使用外部收發器。不要在“=”或逗號周圍使用空格。
+<P>還要注意，一個<EM>忙的</EM>模塊不能被刪除。這也就是說在刪除模塊前需要使用<CODE>ifconfig eth0 down</CODE>（關閉以太網卡）。
+<P>命令<CODE>lsmod</CODE>可以顯示哪些模塊被載入、它們是否正在被使用，而<CODE>rmmod</CODE>可以刪除這些模塊。
+<P>
+<H2><A NAME="ss9.3">9.3 相關文檔</A>
+</H2>
+
+<P>
+<P>本文檔的很多信息來自comp.os.linux新聞組保存的帖子，這表明該新聞組是一個有價值的信息源。其它的有用信息來自Donald自己的一大堆小文件。當然，如果你正在設置一塊以太網卡，你還要讀一下NET-2 Howto才能真正配置好你要用的軟件。另外，如果你想做個黑客，你總能從驅動程序的源碼里找到些有用的信息。在開始實際代碼之前，總有一到兩段描述關鍵點的文字。
+<P>對于那些尋找不是Linux特有信息（如什么是10BaseT、什么是AUI、Hub是干什么的等等）的人，我強烈推荐使用新聞組<EM>comp.dcom.lans.ethernet</EM>或<EM>comp.sys.ibm.pc.hardware.networking</EM>。那些在<CODE>dejanews.com</CODE>上的新聞組檔案也是很有價值的信息源。你可以從以下URL的RTFM（保存所有新聞組的FAQ）獲取新聞組的FAQ：
+<P>
+<A HREF="ftp://rtfm.mit.edu/pub/usenet-by-hierarchy/">Usenet FAQs</A><P>你還可以在以下URL看一下可以說是“Ethernet-HomePage”的主頁：
+<P>
+<A HREF="http://wwwhost.ots.utexas.edu/ethernet/ethernet-home.html">Ethernet-HomePage</A><P>
+<P>
+<H2><A NAME="copyright"></A> <A NAME="ss9.4">9.4 聲明與版權</A>
+</H2>
+
+<P>本文檔<EM>不</EM>是福音書。它可能是你所找到的最新的資料。除了你自己，沒人會對你的硬件出現的問題負責。如果你的以太網卡或其它的硬件冒煙的話（几乎不可能！），我們也不承擔任何責任。也就是說，本文作者不對任何使用本文信息采取行動造成的損失負責。
+<P>Copyright (c) 1993-1999 本文的版權所有人為Paul Gortmaker。在保留版權信息和本許可內容的條件下，本文檔允許任意復制和傳播。
+<P>在保留原始版權信息的條件下，允許復制和傳播本文檔修改后的版本﹔在本許可內容不變的條件下，允許傳播所有依據本文檔推導出的結果。
+<P>在上述針對修改版本的條件下，允許復制和傳播本文檔的其它語言翻譯版本。
+<P>對翻譯者的提示。首先，翻譯SGML源文件（可以用FTP從HowTo主站點獲得），這樣可以生成其它的輸出格式。請注意保留一份翻譯的原始英文SGML源文件！在發布更新后的HowTo時，獲取該版本的新SGML源文件，簡單地使用<CODE>diff -u old.sgml new.sgml</CODE>就可以知道何處有變動，并把這些變動放入你的翻譯版本，無需重新閱讀或重新翻譯全部內容。
+<P>如果你想在公開出版物中使用本文檔，請聯系本文作者（通過e-mail），這樣可以獲得最新的資料。以前有些Linux HowTo的過時版本被公開出版，使得開發者為一些在更新版本中已經回答過的問題飽受折磨。
+<P>This document is <EM>not</EM> gospel. However, it is probably the most
+up to date info that you will be able to find. Nobody is responsible
+for what happens to your hardware but yourself. If your ethercard
+or any other hardware goes up in smoke (...nearly impossible!)
+we take no responsibility. ie. THE AUTHORS ARE NOT RESPONSIBLE
+FOR ANY DAMAGES INCURRED DUE TO ACTIONS TAKEN BASED ON THE
+INFORMATION INCLUDED IN THIS DOCUMENT.
+<P>This document is Copyright (c) 1993-1999 by Paul Gortmaker.
+Permission is granted to make and distribute verbatim copies
+of this manual provided the copyright notice and this permission
+notice are preserved on all copies.
+<P>Permission is granted to copy and distribute modified versions
+of this document under the conditions for verbatim copying,
+provided that this copyright notice is included exactly as in
+the original, and that the entire resulting derived work is
+distributed under the terms of a permission notice identical
+to this one.
+<P>Permission is granted to copy and distribute translations
+of this document into another language, under the above
+conditions for modified versions.
+<P>A hint to people considering doing a translation.  First,
+translate the SGML source (available via FTP from the HowTo
+main site) so that you can then generate other output formats.
+Be sure to keep a copy of the original English SGML source that
+you translated from! When an updated HowTo is released,
+get the new SGML source for that version, and then a simple
+<CODE>diff -u old.sgml new.sgml</CODE> will show you exactly what has
+changed so that you can easily incorporate those changes into
+your translated SMGL source without having to re-read or
+re-translate everything.
+<P>If you are intending to incorporate this document into a
+published work, please make contact (via e-mail) so that
+you can be supplied with the most up to date information
+available. In the past, out of date versions of the Linux
+HowTo documents have been published, which caused the developers
+undue grief from being plagued with questions that were already
+answered in the up to date versions.
+<P>
+<H2><A NAME="ss9.5">9.5 結束語</A>
+</H2>
+
+<P>
+<P>如果你在本文檔中發現有錯別字或過時信息，請給我發e-mail。本文檔比較大，所以很容易出現疏漏。如果你曾發e-mail要求改正，而在新版本中依然沒改過來，請把改正要求再發一遍，可能你的上一封e-mail被我平時收到的大量垃圾信件掩蓋了。
+<P>謝謝！
+<P>Paul Gortmaker, <CODE>p_gortmaker@yahoo.com</CODE>
+（戈紹男，<CODE>isaac_ge@yahoo.com</CODE>）
+<HR>
+<IMG SRC="img/next.gif" ALT="Next">
+<A HREF="Ethernet-HOWTO-8.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Ethernet-HOWTO.html#toc9"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

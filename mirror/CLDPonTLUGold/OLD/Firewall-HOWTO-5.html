@@ -1,0 +1,161 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>防火牆和代理伺服器 - HOWTO: 設定Linux系統</TITLE>
+ <LINK HREF="Firewall-HOWTO-6.html" REL=next>
+ <LINK HREF="Firewall-HOWTO-4.html" REL=previous>
+ <LINK HREF="Firewall-HOWTO.html#toc5" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Firewall-HOWTO-6.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Firewall-HOWTO-4.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Firewall-HOWTO.html#toc5"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s5">5. 設定Linux系統</A></H2>
+
+<H2><A NAME="ss5.1">5.1 編輯內核</A>
+</H2>
+
+<P>首先利用Linux版本重新安裝Linux系統（我用RedHat 3.0.3，此後實例均以這一版本為準）。系統中安裝的軟件越少，毛病和漏洞也越少，因為這些毛病和漏洞對系統的安全都會產生問題，所以只要安裝夠用的最少量軟件即可。
+選用一個穩定的內核。我的系統用了Linux 2.0.14的內核。        因此，這份文件以這種內核設置為基礎。
+根據適當的選項（options）重新編輯內核。 如果以前沒有讀過Kernel HOWTO、 Ethernet HOWTO和NET-2 HOWTO，此時不妨利用這個機會讀一讀這些HOWTO。 
+以下是在‘make config’內與網路有關的設定。 
+<OL>
+<LI>在General setup中
+<OL>
+<LI>設Networking Support 為ON</LI>
+</OL>
+</LI>
+<LI>在Networking Options中
+<OL>
+<LI>設Network firewalls為 ON</LI>
+<LI>設TCP/IP Networking為 ON</LI>
+<LI>設IP forwarding/gatewaying為 OFF （除非要用IP過濾）</LI>
+<LI>設IP Firewalling為ON</LI>
+<LI>設IP firewall packet loggin為 ON（不是必需，設了更好）</LI>
+<LI>設IP: masquerading 為OFF（不屬本文范圍）</LI>
+<LI>設IP: accounting 為ON</LI>
+<LI>設IP: tunneling 為OFF</LI>
+<LI>設IP: aliasing 為OFF</LI>
+<LI>設IP: PC/TCP compatibility mode 為OFF</LI>
+<LI>設 IP: Reverse ARP 為OFF</LI>
+<LI>設Drop source routed frames 為ON</LI>
+</OL>
+</LI>
+<LI>在Network device support項下
+<OL>
+<LI>設Network device support 為ON</LI>
+<LI>設Dummy net driver support 為ON</LI>
+<LI>設Ethernet (10 or 100Mbit) 為ON</LI>
+<LI>選擇網路卡</LI>
+</OL>
+</LI>
+</OL>
+
+現在重新編輯，重新安裝內核，重新啟動。網路卡應在啟動的提示中顯示。如果沒有抓到網路卡，查閱其他HOWTO，直到設對為止。   
+<P>
+<H2><A NAME="ss5.2">5.2 設定兩張網路卡</A>
+</H2>
+
+<P>電腦中如有兩張網路卡，極可能需要在/etc/lilo.conf檔中增加一行，說明兩張網路卡的IRQ和地址。在我的機器中，lilo.conf檔增加的一行如下︰
+<PRE>
+    append=&quot;ether=12,0x300,eth0 ether=15,0x340,eth1&quot;
+</PRE>
+<P>
+<H2><A NAME="ss5.3">5.3 設定Network Addresses</A>
+</H2>
+
+<P>
+<P>這部分比較有趣，而且得要做些決定。由于不打算讓網際網路進入自設網路的任何部分，因此網路中不需要用實際的網址。在網際網路中留了一些地址可讓網路隨意使用，因為自設網路總得需要地址，而且這些地址也無法進入網際網路，攪渾全局。因此不妨選用這些地址。
+在這些地址中，192.168.2.xxx是被留用的地址，因此就用這些地址來作說明。
+<P>由于代理伺服器同時身處兩個網路，因此它能居中傳送兩邊的數據。
+<P>
+<PRE>
+            199.1.2.10   __________    192.168.2.1
+     _  __  _        \ |         | /         _______________
+   | \/  \/ |             \|        |/          |            |          
+     網際網路 \-------------| 防火牆 |-------------------| 工作站     |
+     \_/\_/\_/\_/          |_________|           |______________|
+</PRE>
+
+如要設置過濾防火牆，依舊可用這些網址，不過得使用IP masquerading。經過這種設定，防火牆就會轉送數據包，並加附實際的IP地址送往網際網路。
+在網路卡的網際網路端（外端）得設定真正的IP地址，在以太網卡的內端設為192.168.2.1。這是這台電腦代理/網關的IP地址。受保護的網路內的所有其他電腦均可選用192.168.2.xxx中的任何一個作為地址（從192.168.2.2 到192.168.2.254）。
+在RedHat Linux 中，得在 /etc/sysconfig/network-scripts目錄下增加一個ifcfg-eth1檔，以便在啟動時，通過這個檔設定網路和routing表。
+ifcfg-eth1的參數可設定如下︰
+<PRE>
+    #!/bin/sh
+    #>>>Device type: ethernet
+    #>>>Variable declarations:
+    DEVICE=eth1
+    IPADDR=192.168.2.1
+    NETMASK=255.255.255.0
+    NETWORK=192.168.2.0
+    BROADCAST=192.168.2.255
+    GATEWAY=199.1.2.10
+    ONBOOT=yes
+    #>>>End variable declarations
+</PRE>
+
+可試用這些參數使數據機與ISP自動連接。不妨看看 ipup-ppp檔。
+如用數據機與網際網路連接，ISP會在連接時指定外端的IP地址。
+<P>
+<H2><A NAME="ss5.4">5.4 測試網路</A>
+</H2>
+
+<P>從測試ifconfig和route開始。如機器上有兩張網路卡，各項設置應有如下情況︰
+<PRE>
+  #ifconfig
+  lo        Link encap:Local Loopback
+            inet addr:127.0.0.0  Bcast:127.255.255.255  Mask:255.0.0.0
+            UP BROADCAST LOOPBACK RUNNING  MTU:3584  Metric:1
+            RX packets:1620 errors:0 dropped:0 overruns:0
+            TX packets:1620 errors:0 dropped:0 overruns:0
+
+  eth0      Link encap:10Mbps Ethernet  HWaddr 00:00:09:85:AC:55
+            inet addr:199.1.2.10 Bcast:199.1.2.255  Mask:255.255.255.0
+            UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+            RX packets:0 errors:0 dropped:0 overruns:0
+            TX packets:0 errors:0 dropped:0 overruns:0
+            Interrupt:12 Base address:0x310
+
+  eth1      Link encap:10Mbps Ethernet  HWaddr 00:00:09:80:1E:D7
+            inet addr:192.168.2.1  Bcast:192.168.2.255  Mask:255.255.255.0
+            UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+            RX packets:0 errors:0 dropped:0 overruns:0
+            TX packets:0 errors:0 dropped:0 overruns:0
+            Interrupt:15 Base address:0x350
+</PRE>
+
+route 表應看起來如下︰
+<PRE>
+#route -n
+Kernel routing table
+Destination   Gateway   Genmask    Flags  MSS  Window  Use  Iface
+199.1.2.0     *       255.255.255.0   U   1500   0      15 eth0
+192.168.2.0   *       255.255.255.0   U   1500   0       0 eth1
+127.0.0.0     *       255.0.0.0      U   3584   0       2 lo
+default      199.1.2.10   *          UG  1500   0       72 eth0
+</PRE>
+<P><B>注︰</B> 199.1.2.0在防火牆的網際網路端，192.168.2.0在自設網路一端。
+首先試試從防火牆ping 網際網路。不妨把nic.ddn.mil作試驗點。這個試驗點還不錯，只是不如我預期的可靠。如果沒聯上，試試ping幾個不是你網路上的地址。如果仍聯不上，則PPP的設定一定不對。再讀一次Net-2 HOWTO，然後再試。
+然後，試驗從防火牆ping保護網路內的電腦。所有網路內的電腦應能ping網路內的任何其他一台電腦。如果不行，再讀讀Net-2 HOWTO，再試一次。
+接著試驗從保護網路內ping防火牆以外的地址。（注意︰不屬于192.168.2.xxx的任何地址）如果可以，表示IP Forwarding的功能沒有取消。想一想這是否符合原先的構想。如果保留IP Forwarding的功能，就別放過下面設定IP filtering的部分。
+現在試試從防火牆後ping 網際網路。利用以前試通的同一地址（例如，nic.ddn.mil）。如果 IP Forwarding功能已經取消，就不應接通。不過如果這項功能沒有取消，就應該接通。
+假設保留了IP Forwarding功能，而在自設的網路中使用實際的IP地址（不是192.168.2.*），在這種設定下，如果無法ping 網際網路，但能夠ping網際網路邊的防火牆，就得檢查上一層的router有否把數據包傳送到自設網路的地址上。（可能得由ISP作這項檢查）
+如果保護網路的地址定為192.168.2.*，則任何數據包都不能傳送。如果沒有作這些設定，而使用了IP masquerading，這項試驗應該成功。
+至此，各項設定基本完成。
+<P>
+<H2><A NAME="ss5.5">5.5 加固防火牆</A>
+</H2>
+
+<P>如果通過防火牆上沒有使用的功能能夠隨意進出防火牆，則這種防火牆也就沒有什么用處。 &quot;駭客&quot; 能到防火牆內作出必要的修改，供其所用。
+首先關閉所有不用的功能。先檢查 /etc/inetd.conf檔。這個檔控制所謂的&quot;超級伺服器&quot;。它控制了許多伺服器的daemon，然後在需要時啟動這些daemon。
+完全取消netstat、 systat、 tftp、 bootp和finger功能。取消功能的方法是把#作為功能行的行首字母。設定完畢後，鍵入<B>&quot;kill -HUP &lt;pid&gt;&quot;</B>，執行SIG-HUP ，其中&lt;pid&gt;是inetd的程序編號。inetd會再次讀取配置檔（inetd.conf），並從新啟動系統。
+利用telnet 測試防火牆的埠號（port）15，這是netstat的埠號。如netstat回應網路情況，系統並沒有按要求正確地從新啟動。
+<P>
+<HR>
+<A HREF="Firewall-HOWTO-6.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Firewall-HOWTO-4.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Firewall-HOWTO.html#toc5"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

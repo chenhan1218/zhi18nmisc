@@ -1,0 +1,261 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>CVS-RCS- HOW-TO document for Linux (Source Code Control System): sedit </TITLE>
+ <LINK HREF="CVS-RCS-HOWTO-22.html" REL=next>
+ <LINK HREF="CVS-RCS-HOWTO-20.html" REL=previous>
+ <LINK HREF="CVS-RCS-HOWTO.html#toc21" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="CVS-RCS-HOWTO-22.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="CVS-RCS-HOWTO-20.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="CVS-RCS-HOWTO.html#toc21"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="sedit"></A> <A NAME="s21">21. sedit </A></H2>
+
+<P><B>NOTE : <I>Korn shell /bin/ksh is got by installing pdksh*.rpm from Linux contrib cdrom</I></B>
+<P>Save this file as text file and chmod a+rx on it.
+<P>
+<HR>
+<PRE>
+#!/bin/ksh
+
+# CVS program sedit
+# Program to check out the file from CVS read/write mode with locking
+
+# Every filename is composed of 3 parts - Home directory, sub-directory 
+# and the filename. The full-path is $HOME/$subdir/$fname
+# And in CVS the same directory structure is maintained (by 
+# variable $subdir) therefore in cvs we will have $CVSROOT/$subdir/$fname
+# In this program these 4 variables $HOME, $CVSROOT, $subdir and $fname
+# play an important role. For example, sample values can be like
+# HOME=/home/aldev, subdir=myproject/src CVSROOT=/home/cvsroot 
+# and fname=foo.cpp
+
+# Caution: Put double-quotes to protect the variables having 
+#          spaces, like "$HOME/$subdir" if subdir is 'some foo.cpp'
+
+cmdname=`basename $0`
+
+Usage()
+{
+#       print "\nUsage: $cmdname [-r revision_number] [-F] &lt;filename>"
+#       print "The options -r, -F are optional "
+#       print "The option -F is FORCE edit even if file is "
+#       print "locked by another developer"
+
+        print "\nUsage: $cmdname [-r revision_number] &lt;filename>"
+        print "The options -r are optional "
+
+        print "For example - "
+        print " $cmdname -r 1.1 foo.cpp"
+        print " $cmdname foo.cpp "
+#       print " $cmdname -F foo.cpp "
+        print " "
+}
+
+# Command getopt will not supported in next major release.
+# Use getopts instead.
+#while getopts r:F ii
+while getopts r: ii
+do
+        case $ii in
+        r) FLAG1=$ii; OARG1="$OPTARG";;
+#       F) FLAG2=$ii; OARG2="$OPTARG";;
+        ?) Usage; exit 2;;
+        esac
+done
+shift ` expr $OPTIND - 1 `
+
+#echo FLAG1 = $FLAG1 , OARG1 = $OARG1
+
+if [ $# -lt 1 ]; then
+        Usage
+        exit
+fi
+
+homedir=` echo $HOME | cut -f1 -d' '  `
+if [ "$homedir" = "" ]; then
+        print "\nError: \$HOME is not set!!\n"
+        exit
+fi
+
+bkextn=sedit_bak
+
+cur_dir=`pwd`
+#echo $cur_dir
+
+len=${#homedir}
+len=$(($len + 2))
+#echo $len
+
+subdir=` echo $cur_dir | cut -b $len-2000 `
+tmpaa=`dirname $1`
+if [ "$tmpaa" = "." ]; then
+        fname=$1
+        if [ "$subdir" = "" ]; then
+                subdir=$tmpaa
+        fi
+else
+        fname=`basename $1`
+        if [ "$subdir" = "" ]; then
+                subdir=$tmpaa
+        else
+                subdir="$subdir/$tmpaa"
+        fi
+fi
+#echo "subdir is : " $subdir
+#echo "fname is : " $fname
+
+# If file is already checked out by another developer....
+cvs_root=` echo $CVSROOT | cut -f1 -d' '  `
+if [ "$cvs_root" = "" ]; then
+        print "\nError: \$CVSROOT is not set!!\n"
+        exit
+fi
+mkdir -p "$CVSROOT/$subdir/Locks" 2>/dev/null
+
+if [ ! -e "$CVSROOT/$subdir/$fname,v" ]; then
+        print "\nError: File $fname does not exist in CVS repository!!\n"
+        exit
+fi
+
+# CVS directory in your local directory is required for all commands..
+if [ ! -d  "$homedir/$subdir/CVS" ]; then
+        tmpaa=` (cd "$CVSROOT/$subdir"; find * -prune -type f -print | head -1 ) `
+        tmpbb=`basename $tmpaa | cut -d',' -f1 `
+        if [ "$tmpaa" = "" -o ! -f "$CVSROOT/$subdir/$tmpbb,v" ]; then
+                print "\nThe directory $homedir/$subdir/CVS does not exist"
+                print "You must do a sget on `basename $subdir` directory. Give -"
+                print "       cd $homedir/`dirname $subdir` "
+                print "       sget `basename $subdir` "
+                exit
+        else
+                # Now try to create CVS in local dir by sget
+                (
+                        cd "$homedir"
+                        if [ "$subdir" = "." ]; then  # don't use dot, will mess up cvs
+                                cvs -r checkout -A $tmpbb
+                        else
+                                cvs -r checkout -A "$subdir/$tmpbb"
+                        fi
+                )
+        fi
+fi
+
+# Get the tip revision number of the file....
+# Use tmpfile as the arg cannot be set inside the sub-shell
+tmpfile=$homedir/sedit-lock.tmp
+\rm -f $tmpfile 2>/dev/null
+if [ "$FLAG1" = "" ]; then
+        (
+        cd $homedir
+                if [ "$subdir" = "." ]; then  # don't use dot, will mess up cvs
+                        cvs log $fname | head -6 | grep head: | awk '{print $2}' > $tmpfile
+                else
+                        cvs log "$subdir/$fname" | head -6 | grep head: | awk '{print $2}' > $tmpfile
+                fi
+        )
+        OARG1=`cat $tmpfile`
+        \rm -f $tmpfile 2>/dev/null
+fi
+
+lockfile="$CVSROOT/$subdir/Locks/$fname-$OARG1"
+#echo "lockfile is : " $lockfile
+#if [ -e $lockfile -a "$FLAG2" = "" ]; then
+if [ -e $lockfile ]; then
+        print "\nError: File $fname Revision $OARG1 already locked by another developer !!"
+        aa=` ls -l $lockfile | awk '{print "Locking developers unix login name is = " $3}' `
+        print $aa
+        print "That developer should do scommit OR sunlock to release the lock"
+        print " "
+#       print "You can also use -F option to force edit the file even if"
+#       print "the file is locked by another developer. But you must talk to"
+#       print "other developer to work concurrently on this file."
+#       print "For example - this option is useful if you work on a seperate"
+#       print "C++ function in the file which does not interfere with other"
+#       print "developer."
+#       print " "
+        exit
+fi
+
+# Get read-only copy now....
+if [ ! -e "$HOME/$subdir/$fname" ]; then
+        (
+        cd $homedir
+                if [ "$subdir" = "." ]; then  # don't use dot, will mess up cvs
+                        cvs -r checkout $fname 1>/dev/null
+                else
+                        cvs -r checkout "$subdir/$fname" 1>/dev/null
+                fi
+        )
+fi
+
+# Check if file already exists....
+tmpaa="$HOME/$subdir/$fname"
+if [ -f $tmpaa ]; then
+        user_perms=" "
+        group_perms=" "
+        other_perms=" "
+        user_perms=`ls -l $tmpaa | awk '{print $tmpaa }' | cut -b3-3 `
+        group_perms=`ls -l $tmpaa | awk '{print $tmpaa }' | cut -b6-6 `
+        other_perms=`ls -l $tmpaa | awk '{print $tmpaa }' | cut -b9-9 `
+        if [ "$user_perms" = "w" -o "$group_perms" = "w"  \
+                        -o "$other_perms" = "w" ]; then
+                print "\nError: The file is writable. Aborting $cmdname ......"
+                print "       You must backup, scommit or delete file and"
+                print "       try $cmdname again\n"
+                exit
+        fi
+        #print "\nNote: The file $tmpaa is read-only."
+        #print "Hence I am moving it to $tmpaa.$bkextn ....\n"
+        \mv -f $tmpaa $tmpaa.$bkextn
+        chmod 444 $tmpaa.$bkextn
+elif [ -d $tmpaa ]; then
+        print "\nError: $tmpaa is a directory and NOT a file. Aborting $cmdname ....\n"
+        exit
+fi
+
+# Create subshell
+print "\nNow getting the file $fname from CVS repository ...\n"
+(
+        cd $homedir
+        # Use -A option to clear the sticky tag and to get
+        # the HEAD revision version
+        if [ "$FLAG1" = "" ]; then
+                if [ "$subdir" = "." ]; then  # don't use dot, will mess up cvs
+                        cvs -w checkout -A $fname
+                else
+                        cvs -w checkout -A "$subdir/$fname"
+                fi
+        else
+                if [ "$subdir" = "." ]; then  # don't use dot, will mess up cvs
+                        cvs -w checkout -A -$FLAG1 $OARG1 $fname
+                else
+                        cvs -w checkout -A -$FLAG1 $OARG1 "$subdir/$fname"
+                fi
+        fi
+)
+
+if [ -e "$HOME/$subdir/$fname" ]; then
+        # The lockfile is $CVSROOT/$subdir/Locks/$fname-$OARG1
+        touch $lockfile
+        if [ -e $lockfile ]; then
+                print "\nDone $cmdname"
+        else
+                print "\nFatal Error: File $fname Revision $OARG1 not locked !!"
+                print "\nCheck the reason for this failure.. before proceeding..."
+        fi
+fi
+
+#pwd
+
+#print "\nTip (Usage): $cmdname &lt;filename> \n"
+</PRE>
+<HR>
+<HR>
+<A HREF="CVS-RCS-HOWTO-22.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="CVS-RCS-HOWTO-20.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="CVS-RCS-HOWTO.html#toc21"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

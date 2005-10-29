@@ -1,0 +1,308 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Diskless Nodes HOW-TO document for Linux: Introduction to Network Booting and Etherboot</TITLE>
+ <LINK HREF="Diskless-HOWTO-9.html" REL=next>
+ <LINK HREF="Diskless-HOWTO-7.html" REL=previous>
+ <LINK HREF="Diskless-HOWTO.html#toc8" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Diskless-HOWTO-9.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Diskless-HOWTO-7.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Diskless-HOWTO.html#toc8"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s8">8. Introduction to Network Booting and Etherboot</A></H2>
+
+<P>This chapter is written by Ken Yap 
+<A HREF="mailto:ken.yap@acm.org">ken.yap@acm.org</A>
+and explains how to bootstrap your computer from a program stored in non-volatile memory without accessing your hard disk. It is an ideal technique for maintaining and configuring a farm of linux boxes.
+<H2><A NAME="ss8.1">8.1 What is Network booting?</A>
+</H2>
+
+<P>
+<P>Network booting is an old idea. The central idea is that the computer has some bootstrap code 
+in non-volatile memory, e.g. a ROM chip,
+that will allow it to contact a server and obtain system files over a network link. 
+<P>
+<H2><A NAME="ss8.2">8.2 How does it work</A>
+</H2>
+
+<P>In order to boot over the network, the computer must get 
+<OL>
+<LI> an identity </LI>
+<LI> an operating system image and </LI>
+<LI> usually, a working filesystem. </LI>
+</OL>
+<P>Consider a diskless computer (DC) that has a network boot ROM. It may be one of several identical DCs. How can we distinguish this computer from others? There is one piece of information that is unique to that computer (actually its network adapter) and that is its Ethernet address. Every Ethernet adapter in the world has an unique 48 bit Ethernet address because every Ethernet hardware manufacturer has been assigned blocks of addresses. By convention these addresses are written as hex digits with colons separating each group of two digits, for example - <B>00:60:08:C7:A3:D8</B> .
+<P>The protocols used for obtaining an IP address, given an Ethernet address, are called <B>Boot Protocol (BOOTP)</B> and <B>Dynamic Host Configuration Protocol (DHCP)</B>. DHCP is an evolution of BOOTP. In our discussion, unless otherwise stated, anything that applies to BOOTP also applies to DHCP. (Actually it's a small lie that BOOTP and DHCP only translate Ethernet addresses. In their foresight, the designers made provision for BOOTP and DHCP to work with any kind of hardware address. But Ethernet is what most people will be using.)
+<P>An example of a BOOTP exchange goes like this:
+<P><B>DC:</B> Hello, my hardware address is <B>00:60:08:C7:A3:D8</B>, please give me my IP address.  
+<P><B>BOOTP server:</B> (Looks up address in database.) Your name is aldebaran, your IP address is 192.168.1.100, your server is 192.168.1.1, the file you are supposed to boot from is /tftpboot/vmlinux.nb (and a few other pieces of information).
+<P>You may wonder how the DC found the address of the BOOTP server in the first place. The answer is that it didn't. The BOOTP request was broadcast on the local network and any BOOTP server that can answer the request will.
+<P>After obtaining an IP address, the DC must download an operating system image and execute it. Another Internet protocol is used here, called <B>Trivial File Transfer Protocol (TFTP)</B>. TFTP is like a cut-down version of FTP---there is no authentication, and it runs over User Datagram Protocol (UDP) instead of Transmission Control Protocol (TCP). UDP was chosen instead of TCP for simplicity. The implementation of UDP on the DC can be small so the code is easy to fit on a ROM. Because UDP is a block oriented, as opposed to a stream oriented, protocol, the transfer goes block by block, like this:
+<P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+DC: Give me block 1 of /tftpboot/vmlinux.nb.
+TFTP server: Here it is.
+DC: Give me block 2.
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>and so on, until the whole file is transferred. Handshaking is a simply acknowledge each block scheme, and packet loss is handled by retransmit on timeout. When all blocks have been received, the network boot ROM hands control to the operating system image at the entry point.
+<P>Finally, in order to run an operating system, a root filesystem must be provided. The protocol used by Linux and other Unixes is normally <B>Network File System (NFS)</B>, although other choices are possible. In this case the code does not have to reside in the ROM but can be part of the operating system we just downloaded. However the operating system must be capable of running with a root filesystem that is a NFS, instead of a real disk. Linux has the required configuration variables to build a version that can do so.
+<P>
+<P>
+<P>
+<H2><A NAME="ss8.3">8.3 Netbooting in Practice</A>
+</H2>
+
+<P>Net Loader is a small program that runs as a BIOS extension, usually on 
+an EPROM on the NIC. It handles the BOOTP query and TFTP loading
+and then transfers control to the loaded image. 
+It uses TCP/IP protocols but the loaded image doesn't have to be Linux. The loaded image can be anything, even DOS. 
+They can also be loaded from a floppy for testing and for temporary setups. 
+<P>Besides commercial boot ROMs, there are <B>TWO</B> sources for free packages for network booting.
+Free implementations of TCP/IP net loaders are - 
+<OL>
+<LI> <B>ETHERBOOT</B> 
+<A HREF="http://www.slug.org.au/etherboot/">http://www.slug.org.au/etherboot/</A>  and
+and at 
+<A HREF="http://etherboot.sourceforge.net">mirror-site</A>
+and at 
+<A HREF="http://www.google.com/search?q=Etherboot">google-site</A></LI>
+<LI> <B>NETBOOT</B> 
+<A HREF="http://www.han.de/~gero/netboot.html">http://www.han.de/~gero/netboot.html</A></LI>
+</OL>
+<P>Etherboot uses built-in drivers while Netboot uses Packet drivers. 
+First you have to ascertain that your network card is supported by Etherboot or Netboot. Eventually you have to find a person who is willing to put the code on an EPROM (Erasable Programmable Read Only Memory) for you but in the beginning 
+you can do <B>network booting from a floppy</B>. 
+<P>To create a boot floppy, a special boot block is provided in the distribution. This small 512 byte program loads the disk blocks following it on the floppy into memory and starts execution. Thus to make a boot floppy, one has only to concatenate the boot block with the Etherboot binary containing the driver for one's network card like this:
+<P>
+<HR>
+<PRE>
+        # cat floppyload.bin 3c509.lzrom > /dev/fd0
+</PRE>
+<HR>
+<P>Get the nfsboot package (the package is available from your favourite
+linux mirror site in the /pub/Linux/system/Linux-boot directory). It
+contains a booteprom image for the network cards (like wd8013) which can be directly
+burned in. See also the 
+LTSP site at 
+<A HREF="http://www.ltsp.org">http://www.ltsp.org</A><P>Before you put in the network boot floppy, you have to set up three services on Linux - 
+<OL>
+<LI> BOOTP (or DHCP)</LI>
+<LI> TFTP and</LI>
+<LI> NFS. </LI>
+</OL>
+<P>You don't have to set up all three at once, you can do them step by step, making sure each step works before going on to the next.
+<P>
+<H3>Bootp</H3>
+
+<P>Install Bootp. See bootp*.rpm on Redhat linux cdrom. 
+See also LTSP site for RPM packages at 
+<A HREF="http://www.ltsp.org">http://www.ltsp.org</A>.
+See also unix manual pages 'man 5 bootptab', 'man 8 bootpd', 'man 8 bootpef', 'man 8 bootptest'.
+You then have to ensure that this server is waiting for bootp requests. 
+The daemon can be run either directly by issuing command
+<HR>
+<PRE>
+       bootpd -s
+</PRE>
+<HR>
+<P>Or by using inetd
+edit the file /etc/inetd.conf and put a line like this:
+<P>
+<HR>
+<PRE>
+        bootps dgram   udp     wait    root    /usr/sbin/in.bootpd    bootpd
+</PRE>
+<HR>
+
+Insert or uncomment the following two lines in /etc/services:
+<HR>
+<PRE>
+bootps          67/tcp          # BOOTP server
+tftp            69/udp          # TFTP server
+</PRE>
+<HR>
+<P>If you had to modify /etc/inetd.conf, then you need to restart inetd by sending the process a HUP signal.
+<HR>
+<PRE>
+       kill -HUP &lt;process id of inetd>.
+</PRE>
+<HR>
+<P>Next, you need to give bootp a database to map Ethernet addresses to IP addresses. This database 
+is in /etc/bootptab. 
+You must modify it by inserting the IP addresses of
+your gateway, dns server, and the ethernet address(es) of your
+diskless machine(s).  
+It contains lines of the following form:
+<P>
+<HR>
+<PRE>
+        aldebaran.foo.com:ha=006008C7A3D8:ip=192.168.1.100:bf=/tftpboot/vmlinuz.nb 
+</PRE>
+<HR>
+<P>Other information can be specified but we will start simple.
+<P>Another example of /etc/bootptab is :
+<P>
+<HR>
+<PRE>
+  global.prof:\
+          :sm=255.255.255.0:\
+          :ds=192.168.1.5:\
+          :gw=192.168.1.19:\
+          :ht=ethernet:\
+          :bf=linux:
+  machine1:hd=/export/root/machine1:tc=global.prof:ha=0000c0863d7a:ip=192.168.1.140:
+  machine2:hd=/export/root/machine2:tc=global.prof:ha=0800110244e1:ip=192.168.1.141:
+  machine3:hd=/export/root/machine3:tc=global.prof:ha=0800110244de:ip=192.168.1.142:
+</PRE>
+<HR>
+<P>global.prof is a general template for host entries, where
+<P>
+<UL>
+<LI> sm field contains the subnet mask</LI>
+<LI> ds field contains the address of the Domain Name Server</LI>
+<LI> gw field contains the default gateway address</LI>
+<LI> ht field contains the lan media hardware type</LI>
+<LI> bf field contains the name of the boot file</LI>
+</UL>
+<P>After this, every machine must have a line:
+<P>
+<UL>
+<LI>  the first field contains the host name,</LI>
+<LI>  hd field contains the directory of the bootfile,</LI>
+<LI>  the global template can be included with the tc field,</LI>
+<LI>  ha field contains the hardvare address of the ethernet card,</LI>
+<LI>  ip field contains the assigned ip address.</LI>
+</UL>
+<P>Now boot the DC with the floppy and it should detect your Ethernet card and broadcast a BOOTP request. If 
+all goes well, the server should respond to the DC with the information required. Since /tftpboot/vmlinux.nb 
+doesn't exist yet, it will fail when it tries to load the file.  Now you need to compile a special kernel, 
+one that has the option for mounting the root filesystem from NFS turned on. You also need to enable the 
+option to get the IP address of the kernel from the original BOOTP reply. You also need to compile the 
+Linux driver for your network adapter into the kernel instead of loading it as a module. It is possible
+to download an initial ramdisk so that module loading works but this is something you can do later.
+<P>You cannot install the zImage resulting from the kernel compilation directly. It has to be turned into a tagged image. A tagged image is a normal kernel image with a special header that tells the network bootloader where the bytes go in memory and at what address to start the program. You use a program called mknbi-linux to create this tagged image. This utility can be found in the Etherboot distribution. After you have generated the image, put it in the /tftpboot directory under the name specified in /etc/bootptab. Make sure to make this file world readable because the tftp server does not have special privileges.
+<P>
+<H3>Tftp</H3>
+
+<P>For TFTP, see tftp*.rpm on Redhat Linux cdrom. 
+TFTP (Trivial File Transfer Protocol) is a file transfer protocol,
+such as ftp, but it's much simpler to help coding it in EPROMs. TFTP
+can be used in two ways:
+<P>
+<UL>
+<LI> <B>Simple tftp:</B> means that the client can acces to your whole file
+system. It's simpler but it's a big security hole (anyone can get
+your password file via tftp).</LI>
+<LI> <B>Secure tftp:</B> the tftp server uses a chroot.2 system call to change
+it's own root directory. Anything outside the new root directory
+will be completely inaccessible. Because of the chroot dir becomes
+the new root dir, the hd filed in the bootptab must reflect the new
+situation. For example: 
+when using insecure tftp, the hd field
+contains the full path to the boot directory:
+/export/root/machine1.  When using secure tftp whith /export as
+root dir, then /export becomes / and the hd field must be
+/root/machine1.</LI>
+</UL>
+<P>Tftpd is normally started up from 
+inetd with a line like this in /etc/inetd.conf.
+<P>
+<HR>
+<PRE>
+tftp dgram udp wait root /usr/sbin/tcpd in.tftpd -s /tftpboot
+#tftp   dgram   udp     wait    root    /usr/sbin/in.tftpd     tftpd /export
+</PRE>
+<HR>
+<P>Again, restart inetd with a HUP signal and you can retry the boot and this time it 
+should download the kernel image and start it. You will find that the boot will 
+continue until the point where it tries to mount a root filesystem. At this 
+point you must configure and export NFS partitions to proceed.
+<P>
+<H3>NFS root filesystem</H3>
+
+<P>For various reasons, it's not a good idea to use the root filesystem of the server as
+the root filesystem of the DCs. One is simply that there are various configuration 
+files there and the DC will get the wrong information that way. Another 
+is security. It's dangerous to allow write access (and write access is needed 
+for the root filesystem, for various reasons) to your server's root. However 
+the good news is that a root filesystem for the DC is not very large, only 
+about 30 MB and a lot of this can be shared between multiple DCs.
+<P>Ideally, to construct a root filesystem, you have to know what files your 
+operating system distribution is expecting to see there. Critical to booting are 
+device files, files in /sbin and /etc. You can bypass a lot of the hard work 
+by making a copy of an existing root filesystem and modifying some files for 
+the DC. In the Etherboot distribution, there is a tutorial and links to a 
+couple of shell scripts that will create such a DC root filesystem from an 
+existing server root filesystem. There are also troubleshooting tips in the 
+Etherboot documentation as this is often the trickiest part of the setup.
+<P>The customised Linux kernel for the DC expects to see the root 
+filesystem at /tftpboot/(IP address of the DC), for 
+example: /tftpboot/192.168.1.100 in the case above. This can be 
+changed when configuring the kernel, if desired.
+<P>Now create or edit /etc/exports (see 'man 5 exports' and 'man 8 exportfs') on the server and 
+put in a line of the following form:
+<P>
+<HR>
+<PRE>
+/tftpboot/192.168.1.100 aldebaran.foo.com(rw,no_root_squash)
+</PRE>
+<HR>
+<P>The rw access is needed for various system services. The no_root_squash attribute prevents the NFS system from mapping root's ID to another one. If this is not specified, then various daemons and loggers will be unhappy.
+<P>Start or restart the NFS services (rpc.portmap and rpc.mountd) and retry the 
+diskless boot.  If you are successful, the kernel should be able to mount a root 
+filesystem and boot all the way to a login prompt. Most likely, you will find
+several things misconfigured. Most Linux distributions are oriented towards disked 
+operation and require a little modification to suit diskless booting. The most common 
+failing is reliance on files under /usr during the boot process, which is 
+normally imported from a server late in the boot process. Two possible solutions are -
+<P>
+<OL>
+<LI> Provide the few required files under a small /usr directory on 
+the root filesystem, which will then be overlaid when /usr is imported, and 
+<P>
+</LI>
+<LI> Modify the paths to look for the files in the root filesystem. The 
+files to edit are under /tftpboot/192.168.1.100 (remember, this is 
+the root directory of the DC).</LI>
+</OL>
+<P>You may wish to mount other directories from the server, such as /usr (which can be exported read-only).
+<P>
+<H3>Burn EPROM</H3>
+
+<P>When you are satisfied that you can boot over the network without any problems, you
+may wish to put the code on an EPROM. 
+<P>
+<H2><A NAME="ss8.4">8.4 Uses of Network booting</A>
+</H2>
+
+<P>X-terminals are one natural use of network booting. The lack of a disk in the terminal makes it quieter and contributes to a pleasant working environment. The machine should ideally have 16MB of memory or more and the best video card you can find for it. This is an ideal use for a high-end 486 or low-end Pentium that has been obsoleted by hardware advances.  Other people have used network booting for clusters of machines where the usage is light on the DC and does not warrant a disk, e.g. a cluster of classroom machines.
+<H2><A NAME="ss8.5">8.5 For more information</A>
+</H2>
+
+<P>Your first stop should be the Etherboot home page:
+<A HREF="http://www.slug.org.au/etherboot/">http://www.slug.org.au/etherboot/</A>
+and at 
+<A HREF="http://etherboot.sourceforge.net">mirror-site</A>
+and at 
+<A HREF="http://www.google.com/search?q=Etherboot">google-site</A><P>There you will find links to other resources, including a mailing list you can subscribe to, where problems and solutions are discussed.
+<P>Related documents
+<P>
+<UL>
+<LI> NFS-root Mini Howto at /usr/doc/HOWTO/mini or on Linux cdrom.</LI>
+<LI> Linux Networking-HOWTO by Terry Dawson,  at /usr/doc/HOWTO or on linux cdrom
+<A HREF="mailto:94004531@postoffice.csu.edu.au">94004531@postoffice.csu.edu.au</A></LI>
+<LI> NET-3-Howto at /usr/doc/HOWTO or on Linux cdrom.</LI>
+<LI> /usr/src/linux/README about configuring and compiling new kernels</LI>
+</UL>
+<HR>
+<A HREF="Diskless-HOWTO-9.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Diskless-HOWTO-7.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Diskless-HOWTO.html#toc8"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

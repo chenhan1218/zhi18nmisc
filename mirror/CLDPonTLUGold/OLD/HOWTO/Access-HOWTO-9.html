@@ -1,0 +1,309 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux Access HOWTO: Hardware</TITLE>
+ <LINK HREF="Access-HOWTO-10.html" REL=next>
+ <LINK HREF="Access-HOWTO-8.html" REL=previous>
+ <LINK HREF="Access-HOWTO.html#toc9" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Access-HOWTO-10.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Access-HOWTO-8.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Access-HOWTO.html#toc9"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s9">9. Hardware</A></H2>
+
+<H2><A NAME="memmap-braille"></A> <A NAME="ss9.1">9.1 Braille terminals driven from Screen Memory</A>
+</H2>
+
+<P>These are Braille terminals that can read the screen memory
+directly in a normal text mode.  It is possible to use it to work with
+Linux for almost all of the things that a seeing user can do on the
+console, including installation.  However, it has a problem with the
+scrolling of the normal Linux kernel, so a kernel patch needs to be
+applied.  See 
+<A HREF="#memmap-patch">Patching the Kernel for Braillex and Brailloterm</A>.
+<P>
+<H3>Braillex </H3>
+
+<P>The Braillex is a terminal which is designed to read directly from
+the Screen memory, thus getting round any problems with MS-DOS
+programs which don't behave strangely.  If you could see it on screen,
+then this terminal should be able to display it in Braille.  In Linux,
+unfortunately, screen handling is done differently from MS-DOS, so
+this has to be changed somewhat.  
+<P>To get this terminal to work, you have to apply the patch given below
+in section 
+<A HREF="#memmap-patch">Patching the Kernel</A>.  Once
+this is done, the Braillex becomes one of the most convenient ways to
+use Linux as it allows all of the information normally available to a
+seeing person to be read.  Other terminals don't start working until
+the operating system has completely booted.
+<P>The Braillex is available with two arrangements of Braille cells (80x1
+or 40x2) and there is a model, called the IB 2-D which also has a
+vertical bar to show information about all of the lines of the screen
+(using 4 programmable dots per screen line)
+<P>
+<PRE>
+Price: 8,995  (pounds sterling) or 11495 UKP for 2-D
+Manufacturer: Alphavision Limited (UK)
+Suppliers: ????
+</PRE>
+<P>
+<H3>Brailloterm</H3>
+
+<P>``What is Brailloterm?
+<P>
+<P>It's a refreshable display Braille, made by KTS
+Kommunikations-Technik Stolper GmbH.  It has 80 Braille cells in an
+unique line. Each cell has 8 dots that are combined (up/down) to
+represent a character. By default, Brailloterm shows me the line in
+which the screen cursor is. I can use some functions in Brailloterm to
+see any line in the screen.'' - <I>Jose Vilmar Estacio de Souza</I>
+<A HREF="mailto:jvilmar@embratel.net.br">&lt;jvilmar@embratel.net.br&gt;</A><P>
+<P>Jose then goes on to say that the terminal can also use the serial
+port under DOS but that it needs a special program.  I don't know if
+any of the ones for Linux would work.
+<P>
+<P>As with Braillex, this needs a special patch to the kernel work
+properly.  See section 
+<A HREF="#memmap-patch">Patching the Kernel</A>.  
+<P>
+<PRE>
+Price: about 23.000,- DM /  $ 15.000,
+Manufacturer: Kommunikations-Technik Stolper GmbH
+Suppliers: ????
+</PRE>
+<P>
+<P>
+<H3><A NAME="memmap-patch"></A> Patching the Kernel for Braillex and Brailloterm</H3>
+
+<P>This probably also applies to any other terminals which read
+directly from screen memory to work under MS-DOS.  Mail me to confirm
+any terminals that you find work.  This does not apply and will
+actually lose some features for terminals driven using the BRLTTY
+software.
+<P>
+<P>I am told this patch applies to all Kernels version 1.2.X.  It
+should also work on all Kernel versions from 1.1.X to 1.3.72, with
+just a warning from patch (I've tested that the patch applies to
+1.3.68 at least).  <B>From 1.3.75 the patch is no longer needed</B>
+because the Kernel can be configured not to scroll using `<CODE>linux
+no-scroll</CODE>' at the LILO prompt.  See the Boot Prompt HOWTO for more
+details.
+<P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+*** drivers/char/console.c~     Fri Mar 17 07:31:40 1995
+--- drivers/char/console.c      Tue Mar  5 04:34:47 1996
+***************
+*** 601,605 ****
+  static void scrup(int currcons, unsigned int t, unsigned int b)
+  {
+!       int hardscroll = 1;
+  
+        if (b > video_num_lines || t >= b)
+--- 601,605 ----
+  static void scrup(int currcons, unsigned int t, unsigned int b)
+  {
+!       int hardscroll = 0;
+  
+        if (b > video_num_lines || t >= b)
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>To apply it:
+<P>
+<OL>
+<LI>Save the above text to a file (say patch-file)</LI>
+<LI>change to the drivers/char directory of your kernel sources</LI>
+<LI>run 
+<BLOCKQUOTE><CODE>
+<PRE>
+                patch &lt; patch-file
+        
+</PRE>
+</CODE></BLOCKQUOTE>
+</LI>
+<LI>Compile your kernel as normal</LI>
+</OL>
+<P>
+<P>Apply those patches and you should be able to use the Braille terminal
+as normal to read the Linux Console. 
+<P>
+<P>Put in words, the patch just means `change the 1 to a 0 in the
+first line of the function <CODE>scrup</CODE> which should be near line 603 in the
+file drivers/char/console.c'.  The main thing about <CODE>patch</CODE> is that
+program understands this, and that it knows how to guess what to do
+when the Linux developers change things in that file.
+<P>
+<P>If you want to use a more modern kernel with completely disabled
+scrolling, (instead of the boot prompt solution I already mentioned),
+please use the following patch.  <B>This does not apply to kernels
+earlier than 1.3.75</B>.
+<P>
+<P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+*** console.c~  Fri Mar 15 04:01:45 1996
+--- console.c   Thu Apr  4 13:29:48 1996
+***************
+*** 516,520 ****
+  unsigned char has_wrapped;          /* all of videomem is data of fg_console */
+  static unsigned char hardscroll_enabled;
+! static unsigned char hardscroll_disabled_by_init = 0;
+
+  void no_scroll(char *str, int *ints)
+--- 516,520 ----
+  unsigned char has_wrapped;          /* all of videomem is data of fg_console */
+  static unsigned char hardscroll_enabled;
+! static unsigned char hardscroll_disabled_by_init = 1;
+
+  void no_scroll(char *str, int *ints)
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>
+<H2><A NAME="serial-braille"></A> <A NAME="ss9.2">9.2 Software Driven Braille Terminals</A>
+</H2>
+
+<P>The principle of operation of these terminal is very close to that
+of a CRT terminal such as the vt100.  They connect to the serial port
+and the computer has to run a program which sends them output.  At
+present there are two known programs for Linux.  <CODE>BRLTTY</CODE>, see section
+<A HREF="Access-HOWTO-8.html#brltty">BRLTTY</A>) and Braille enhanced screen.
+<P>
+<H3>Tieman B.V. </H3>
+
+<H3>CombiBraille</H3>
+
+<P>This Braille terminal is supported by the <CODE>BRLTTY</CODE>
+software.  It comes in three versions with 25, 45 or 85 Braille cells.
+The extra five cells over a standard display are used for status
+information.
+<P>
+<PRE>
+Price: around 4600 UKP for the 45 cell model ...
+Manufacturer: Tieman B.V.
+Suppliers: Concept Systems, Nottingham, England (voice +44 115 925 5988)
+</PRE>
+<P>
+<H3>Alva B.V. </H3>
+
+<P>The ABT3xx series is supported in <CODE>BRLTTY</CODE>.  Only the ABT340 has
+been confirmed to work at this time.  Please pass back information to
+the <CODE>BRLTTY</CODE> authors on other models.
+<P>
+<PRE>
+Price: 20 cell - 2200 UKP; 40 cell 4500 UKP; 80 cell 8000 UKP
+Manufacturer: Alva
+Suppliers: Professional Vision Services LTD, Hertshire, England 
+           (+44 1462 677331)
+</PRE>
+<P>
+<H3>Telesensory Systems Inc. displays</H3>
+
+<P>Because they have provided programming information to the
+developers, the Telesensory displays are supported both by <CODE>BRLTTY</CODE>
+and <CODE>screen</CODE>.
+<P>
+<H3>Powerbraille</H3>
+
+<P>There are three models the 40, the 65 and the 80.  Only the 40 is
+known to be supported by <CODE>BRLTTY</CODE>.
+<P>
+<PRE>
+Price: 20 cell - 2200 UKP; 40 cell 4500 UKP; 80 cell 8000 UKP
+Manufacturer: Alva
+Suppliers: Professional Vision Services LTD, Hertshire, England 
+           (+44 1462 677331)
+</PRE>
+<P>
+<H3>Navigator</H3>
+
+<P>Again there are three models the 20, the 60 and the 80.  Recent
+versions are all known to work with <CODE>BRLTTY</CODE> but whether earlier
+ones (with earlier firmware) also work has not been confirmed.  
+<P>
+<PRE>
+Price: 80 cell 7800 UKP
+Manufacturer: Alva
+Suppliers: Professional Vision Services LTD, Hertshire, England 
+           (+44 1462 677331)
+</PRE>
+<P>
+<H3>Braille Lite</H3>
+
+<P>This is more a portable computer than a terminal.  It could,
+however, be used with BRLTTY version 0.22 (but not newer versions) as
+if it was a normal Braille terminal.  Unfortunately, many of the
+features available with the CombiBraille cannot be used with the
+Braille Lite.  This means that it should be avoided for Linux use
+where possible.
+<P>
+<PRE>
+Price: $3,395.00
+Manufacturer: Blazie Engineering
+</PRE>
+<P>
+<H2><A NAME="ss9.3">9.3 Speech Synthesisers</A>
+</H2>
+
+<P>Speech synthesisers normally connect to the serial port of a PC.
+Useful features include
+<P>
+<UL>
+<LI>Braille labels on parts</LI>
+<LI>Many voices to allow different parts of document to be spoken
+differently </LI>
+<LI>Use with headphones (not available on all models)</LI>
+</UL>
+<P>The critical problem is that the quality of the speech.  This is much
+more important to someone who is using the speech synthesiser as their
+main source of information than to someone who is just getting neat
+sounds out of a game.  For this reason T.V. Raman seems to only
+recommend the DECTalk.  Acceptable alternatives would be good.
+<P>
+<H3>DECTalk Express</H3>
+
+<P>This is a hardware speech synthesiser.  It is recommended for use
+with Emacspeak and in fact the DECTalk range are the only speech
+synthesisers which work with that package at present.  This
+synthesiser has every useful feature that I know about.  The only
+disadvantage that I know of at present is price.
+<P>
+<PRE>
+Price: $1195.00
+Manufacturer: Digital Equipment Corporation
+
+Suppliers: Many.  I'd like details of those with Specific Linux
+        support / delivering international or otherwise of note only
+        please.  Otherwise refer to local organisations.
+        Digital themselves or the Emacspeak WWW pages.
+</PRE>
+<P>
+<P>
+<H3>Accent SA</H3>
+
+<P>This is a synthesiser made by Aicom Corporation.  An effort has
+begun to write a driver for it however help is needed.  Please see
+<A HREF="http://www.cyberspc.mb.ca/~astrope/speak.html">http://www.cyberspc.mb.ca/~astrope/speak.html</A> if you think
+you can help.
+<P>
+<P>
+<H3>SPO256-AL2 Speak and Spell chip.</H3>
+
+<P>Some interest has been expressed in using this chip in self built
+talking circuits.  I'd be interested to know if anyone has found this
+useful.  A software package <CODE>speak-0.2pl1.tar.gz</CODE> was produced by
+David Sugar 
+<A HREF="mailto:dyfet@tycho.com">&lt;dyfet@tycho.com&gt;</A>.  My suspicion, though, is
+that the quality of the output wouldn't be good enough for regular use.
+<P>
+<HR>
+<A HREF="Access-HOWTO-10.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Access-HOWTO-8.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Access-HOWTO.html#toc9"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

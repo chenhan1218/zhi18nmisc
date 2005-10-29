@@ -1,0 +1,82 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Logical Volume Manager HOWTO: Replacing disks</TITLE>
+ <LINK HREF="LVM-HOWTO-7.html" REL=next>
+ <LINK HREF="LVM-HOWTO-5.html" REL=previous>
+ <LINK HREF="LVM-HOWTO.html#toc6" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="LVM-HOWTO-7.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="LVM-HOWTO-5.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="LVM-HOWTO.html#toc6"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s6">6. Replacing disks</A></H2>
+
+<P>This is one of the benefits of LVM. Once you start seeing errors
+on a disk, it is high time to move your data. With LVM this is easy as pie.
+We first do the obvious replacement example where you add a disk to the
+system that's at least as large as the one you want to replace.
+<P>To move data, we move Physical Extents of a Volume Group to another disk, or
+more precisely, to another Physical Volume. For this, LVM offers us the
+<CODE>pvmove</CODE> utility.
+<P>Let's say that our suspicious disk is called /dev/hda1 and we want to replace
+it by /dev/sdb3. We first add /dev/sdb3 to the Volume Group that contains
+/dev/hda1. 
+<P>It appears advisable to unmount any filesystems on this Volume Group before
+doing this. Having a full backup might not hurt either.
+<P>FIXME: is this necessary?
+<P>We then execute <CODE>pvmove</CODE>. In its simplest invocation, we
+just mention the disk we want to remove, like this:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# pvmove /dev/hda1
+pvmove -- moving physical extents in active volume group "test1"
+pvmove -- WARNING: moving of active logical volumes may cause data loss!
+pvmove -- do you want to continue? [y/n] y
+pvmove -- doing automatic backup of volume group "test1"
+pvmove -- 12 extents of physical volume "/dev/hda1" successfully moved
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Please heed this warning. Also, it appears that at least some kernels or LVM
+versions have trouble with this command. I tested it with 2.3.99pre6-2, and
+it works, but be warned.
+<P>Now that /dev/hda1 contains no Physical Extents anymore, we can reduce it
+from the Volume Group:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# vgreduce test1 /dev/hda1
+vgreduce -- doing automatic backup of volume group "test1"
+vgreduce -- volume group "test1" successfully reduced by physical volume:
+vgreduce -- /dev/hda1
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>FIXME: we need clarity on a few things. Should the volume group be active?
+When do we get data loss?
+<P>
+<H2><A NAME="ss6.1">6.1 When it's too late</A>
+</H2>
+
+<P>If a disk fails without warning and you are unable to move the Physical Extents
+off it to a different Physical Volume you will have lost data unless the
+Logical Volumes on the PV that failed was mirrored. The correct course of
+action is to replace the failed PV with an identical one or at least a 
+partition of the same size. 
+<P>The directory /etc/lvmconf contains backups
+of the LVM data and structures that make the disks into Physical Volumes and
+list which Volume Groups that PV belongs to and what Logical Volumes are
+in the Volume Group. 
+<P>After replacing the faulty disk you can use the
+<CODE>vgcfgrestore</CODE> command to recover the LVM data to the new PV. This
+restores the Volume Group and all it's info, but it does not restore the
+data that was in the Logical Volumes.  This is why most LVM commands make
+backups automatically of the LVM data when doing changes.
+<P>
+<HR>
+<A HREF="LVM-HOWTO-7.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="LVM-HOWTO-5.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="LVM-HOWTO.html#toc6"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

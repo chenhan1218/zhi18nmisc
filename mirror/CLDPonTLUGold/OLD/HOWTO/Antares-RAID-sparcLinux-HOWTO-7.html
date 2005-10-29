@@ -1,0 +1,571 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Antares-RAID-sparcLinux-HOWTO: 5070 Onboard Configuration</TITLE>
+ <LINK HREF="Antares-RAID-sparcLinux-HOWTO-8.html" REL=next>
+ <LINK HREF="Antares-RAID-sparcLinux-HOWTO-6.html" REL=previous>
+ <LINK HREF="Antares-RAID-sparcLinux-HOWTO.html#toc7" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Antares-RAID-sparcLinux-HOWTO-8.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Antares-RAID-sparcLinux-HOWTO-6.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Antares-RAID-sparcLinux-HOWTO.html#toc7"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s7">7. 5070 Onboard Configuration</A></H2>
+
+<P>
+<P>Before diving into the RAID configuration I need to define a few terms.
+<UL>
+<LI>&quot;RaidRunner&quot; is the name given to the the 5070 controller board.</LI>
+<LI>&quot;Husky&quot; is the name given to the shell which produces the &quot;:raid;&quot;
+command prompt. It is a command language interpreter that executes commands
+read from the standard input or from a file. Husky is a scaled down model of
+Unix's Bourne shell (sh). One major difference is that husky has no concept
+of current working directory. For more information on the husky shell and command
+prompt see the &quot;Advanced Topics&quot; section</LI>
+<LI>The &quot;host port&quot; is the SCSI ID assigned to the controller card
+itself. This is usually ID 7.</LI>
+<LI>A &quot;backend&quot; is a drive attached to the controller on a given
+channel.</LI>
+<LI>A &quot;rank&quot; is a collection of all the backends from each channel
+with the same SCSI ID
+(i.e. rank 0 would consist of all the drives with SCSI
+ID 0 on each channel)</LI>
+<LI>Each of the backends is identified by a three digit number where the first
+digit is the channel, the second the SCSI ID of the drive, and the third the
+LUN of the drive. The numbers are separated by a period. The identifier is
+prefixed with a &quot;D&quot; if it is a disk or &quot;T&quot; if it is
+a tape (e.g. D0.1.0). This scheme is referred to as &lt;device_type_c.s.l&gt;
+in the following documentation.</LI>
+<LI>A &quot;RAID set&quot; consists of given number of backends (there are
+certain requirements which I'll come to later)</LI>
+<LI>A &quot;spare&quot; is a drive which is unused until there is a failure
+in one of the RAID drives. At that time the damaged drive is automatically
+taken offline and replaced with the spare. The data is then reconstructed on
+the spare and the RAID resumes normal operation. </LI>
+<LI>Spares may either be &quot;hot&quot; or &quot;warm&quot; depending
+on user configuration. Hot spares are spun up when the RAID is started, which
+shortens the replacement time when a drive failure occurs. Warm spares are
+spun up when needed, which saves wear on the drive.</LI>
+</UL>
+<P>The test based GUI can be started by typing &quot;agui&quot;
+<PRE>
+: raid; agui 
+</PRE>
+<P>at the husky prompt on the serial terminal (or emulator). 
+<P>Agui is a simple ASCII based GUI that can be run on the RaidRunner console
+port which enables one to configure the RaidRunner. The only argument agui
+takes is the terminal type that is connected to the RaidRunner console. Current
+supported terminals are dtterm, vt100 and xterm. The default is dtterm.
+<P>Each agui screen is split into two areas, data and menu. The data area,
+which generally uses all but the last line of the screen, displays the details
+of the information under consideration. The menu area, which generally is the
+bottom line of the screen, displays a strip menu with a title then list of
+options or sub-menus. Each option has one character enclosed in square brackets
+(e.g. [Q]uit) which is the character to type to select that option.
+Each menu line allows you to refresh the screen data (in case another process
+on the RaidRunner writes to the console). The refresh character may also be
+used during data entry if the screen is overwritten. The refresh character
+is either &lt;Control-l&gt; or &lt;Control-r&gt;.
+<P>When agui starts, it reads the configuration of the RaidRunner and probes
+for every possible backend. As it probes for each backend, it's &quot;name&quot;
+is displayed in the bottom left corner of the screen.
+<H2><A NAME="ss7.1">7.1 Main Screen Options </A>
+</H2>
+
+<P>
+<H3>&lt;Figure 1: Main Screen&gt;</H3>
+
+<P>
+<P>The Main screen is the first screen displayed. It provides a summary of
+the RaidRunner configuration. At the top is the RaidRunner model, version and
+serial number. Next is a line displaying, for each controller, the SCSI ID's
+for each host port (labeled A, B, C, etc) and total and currently available
+amounts of memory. The next set of lines display the ranks of devices on the
+RaidRunner. Each device follows the nomenclature of &lt;device_type_c.s.l&gt;
+where device_type_ can be D for disk or T for tape, c is the internal channel
+the device is attached to, s is the SCSI ID (Rank) of the device on that channel,
+and l is the SCSI LUN of the device (typically 0).
+<P>The next set of lines provide a summary of the Raid Sets configured on
+the RaidRunner. The summary includes the raid set name, it's type, it's size,
+the amount of cache allocated to it and a comma separated list of it's backends.
+See rconf in the &quot;Advanced Topics&quot; section for a full description
+of the above.
+<P>Next are the spare devices configured. Each spare is named (device_type_c.s.l
+format), followed by it's size (in 512-byte blocks), it's spin state (Hot or
+Warm), it's controller allocation , and finally it's current status (Used/Unused,
+Faulty/Working). If used, the raid set that uses it is nominated.
+<P>At the bottom of the data area, the number of controllers, channels, ranks
+and devices are displayed.
+<P>The menu line allows one to quit agui or select further actions or sub-menus.
+<UL>
+<LI>[Q]uit: Exit the main screen and return to the husky prompt.</LI>
+<LI>[R]aidSets: Enter the RaidSet configuration screen.</LI>
+<LI>[H]ostports Enter the Host Port configuration screen.</LI>
+<LI>[S]pares Enter the Spare Device configuration screen.</LI>
+<LI>[M]onitor Enter the SCSI Monitor configuration screen.</LI>
+<LI>[G]eneral Enter the General configuration/information screen.</LI>
+<LI>[P]robe Re-probe the device backends on the RaidRunner. As each
+backend is probed it's &quot;name&quot; (c.s.l format) is displayed in the
+bottom left corner of the screen.</LI>
+</UL>
+<P>These selections are described in detail below.
+<H2><A NAME="ss7.2">7.2 [Q]uit </A>
+</H2>
+
+<P>
+<P>Exit the agui main screen and return to the husky ( :raid; ) prompt.
+<H2><A NAME="ss7.3">7.3 [R]aidSets: </A>
+</H2>
+
+<P>
+<H3>&lt;Figure 2: RAIDSet Configuration Screen&gt;</H3>
+
+<P>
+<P>The Raid Set Configuration screen displays a Raid Set in the data area
+and provides a menu which allows you to Add, Delete, Modify, Install (changes)
+and Scroll through all other raid sets (First, Last, Next and Previous). If
+no raid sets have been configured, only the screen title and menu is displayed.
+All attributes of the raid set are displayed. For information on each attribute
+of the raid set, see the rconf command in the &quot;Advanced Topics&quot;
+section. The menu line allows one to leave the Raid Set Configuration screen
+or select further actions:
+<UL>
+<LI>[Q]uit: Exit the Raid Set Configuration screen and return to
+the Main screen. If you have modified, deleted or added a raid set and have
+not installed the changes you will be asked to confirm this. If you select
+Yes to continue the exit, all changes made since the last install action will
+be discarded.</LI>
+<LI>[I]nst: This action installs (into the RaidRunner configuration
+area) any changes that may have been made to raid sets, be that deletion, addition
+or modification. If you exit prior to installing, all changes made since the
+last installation will be discarded. The installation process takes time. It
+is complete once the typed &quot;i&quot; character, is cleared from the menu
+line.</LI>
+<LI>[M]od: This action allows you to modify the displayed raid set.
+You will be prompted for each Raid Set attribute that can be changed. The prompt
+includes allowable options or formats required. If you don't wish to change
+a particular attribute, then press the RETURN or TAB key. The attributes you
+can change are the raid set name, I/O mode, status (Active to Inactive), bootmode,
+spares usage, backend zone table usage, IO size (if raid set has never been
+used - i.e. just added), cache size, I/O queues length, host interfaces and
+additional stargd arguments. If you wish to change a single attribute then
+use the RETURN or TAB key to skip all other options. The changed attribute
+will be re-displayed as soon as you press the RETURN key. When specifying cache
+size, you may suffix the number with 'm' or 'M' to indicate the number is in
+Megabytes or with 'k' or 'K' to indicate the number is in Kilobytes. Note you
+can only enter whole integer values. When specifying io size, you may suffix
+the number with 'k' or 'K' to indicate the number is in Kilobytes. When you
+enter data, it is checked for correctness and if incorrect, a message is displayed
+and all changes are discarded and you will have to start again. Remember you
+must install ([I]nst.) any changes.</LI>
+<LI>[A]dd: When this option is selected you will be prompted for
+various attributes of the new raid set. These attributes are the raid set name,
+the raid set type, the initial host interface the raid set is to appear on
+(in c.h.l format where c is the controller number, h is the host port (0, 1,
+2 etc) and l is the SCSI LUN) and finally a list of backends. When backends
+are to be entered, the screen displays a list of available backends, each with
+a numeric index (commencing at 0). You select each backend by entering the
+index and once complete enter q for Quit. As each backend index is entered,
+it's backend name is displayed in a comma separated list. When you enter data,
+it is checked for correctness and if incorrect, a message is displayed and
+the addition will be ignored and you will have to start again. Once the backends
+are complete, the newly created raid set will be displayed on the screen with
+supplied and default attributes. You can then modify the raid set to change
+other attributes. Remember you must install ([I]nst.) any new raid
+sets.</LI>
+<LI>[D]elete: This action will delete the currently displayed raid
+set. If this raid set is Active, then you will not be allowed to delete it.
+You will have to make it Inactive (via the [M]od. option) then delete
+it. You will be prompted to confirm the deletion. Once you confirm the deletion,
+the screen will be cleared and the next raid set will be displayed, if configured.
+Remember you must install ([I]nst.) any changes.</LI>
+<LI>[F]irst, [L]ast, [N]ext and [P]rev
+allow you to scroll through the configured raid sets.</LI>
+</UL>
+<H2><A NAME="ss7.4">7.4 [H]ostports: </A>
+</H2>
+
+<P>
+<H3>&lt;Figure 3: Host Port Configuration Screen&gt;</H3>
+
+<P>
+<P>The Host Port Configuration screen displays for each controller, each host
+port (labelled A, B, C, etc for port number 0, 1, 2, etc) and the assigned
+SCSI ID. If the RaidRunner you use, has external switches for host port SCSI
+ID selection, you may only exit ([Q]uit) from this screen. If the
+RaidRunner you use, does NOT have external switches for host port SCSI ID selection,
+then you may modify (and hence install) the SCSI ID for any host port. The
+menu line allows one to leave the Host Port Configuration screen or select
+further actions (if NO external host):
+<UL>
+<LI>[Q]uit: Exit the Host Port Configuration screen and return to
+the Main screen. If you have modified a host port SCSI ID assignment and have
+not installed the changes you will be asked to confirm this. If you select
+Yes to continue the exit, all changes made since the last install action will
+be discarded.</LI>
+<LI>[I]nstall: This action installs (into the RaidRunner configuration
+area) any changes that may have been made to host port SCSI ID assign­ ments.
+If you exit prior to installing, all changes made since the last installation
+will be discarded. The installation process takes time. It is complete once
+the typed &quot;i&quot; character, is cleared from the menu line.</LI>
+<LI>[M]odify: This action allows you to modify the host port SCSI
+ID assignments for each host port on each controller (if NO external host port
+SCSI ID switches). You will be prompted for the SCSI ID for each host port.
+You can enter either a SCSI ID (0 thru 15), the minus &quot;-&quot; character
+to clear the SCSI ID assignment or RETURN to SKIP. As you enter data, it is
+checked for correctness and if incorrect, a message will be printed although
+previously correctly entered data will be retained. Remember you must install
+([I]nst.) any changes.</LI>
+</UL>
+<H2><A NAME="ss7.5">7.5 [S]pares: </A>
+</H2>
+
+<P>
+<H3>&lt;Figure 4: Spare Device Configuration Screen&gt;</H3>
+
+<P>
+<P>The Spare Device Configuration screen displays all configured spare devices
+in the data area and provides a menu which allows you to Add, Delete, Mod­
+ify and Install (changes) spare devices. If no spare devices have been configured,
+only the screen title and menu is displayed. Each spare device displayed, shows
+it's name (in device_type_c.s.l format), it's size in 512-byte blocks, it's
+spin status (Hot or Warm), it's controller allocation, finally it's current
+status (Used/Unused, Faulty/Working). If used, the raid set that uses it is
+nominated. For information on each attribute of a spare device, see the rconf
+command in the &quot;Advanced Topics&quot; section. The menu line allows
+one to leave the Spare Device Configuration screen or select further actions:
+<UL>
+<LI>[Q]uit: Exit the Spare Device Configuration screen and return
+to the Main screen. If you have modified, deleted or added a spare device and
+have not installed the changes you will be asked to confirm this. If you select
+Yes to continue the exit, all changes made since the last install action will
+be discarded.</LI>
+<LI>[I]nstall: This action installs (into the RaidRunner configuration
+area) any changes that may have been made to the spare devices, be that deletion,
+addition or modification. If you exit prior to installing, all changes made
+since the last installation will be discarded. The installation process takes
+time. It is complete once the typed &quot;i&quot; character, is cleared from
+the menu line.</LI>
+<LI>[M]odify: This action allows you to modify the unused spare devices.
+You will be prompted for each spare device attribute that can be changed. The
+prompt includes allowable options or formats required. If you don't wish to
+change a particular attribute, then press the RETURN key. The attributes you
+can change are the new size (in 512-byte blocks), the spin state (H or hot
+or W for Warm), and the controller allocation (A for any, 0 for controller
+0, 1 for controller 1, etc). If you wish to change a single attribute of a
+spare device, then use the RETURN key to skip all other attributes for each
+spare device. The changed attribute will not be re-displayed until the last
+prompted attribute is entered (or skipped). When you enter data, it is checked
+for cor­ rectness and if incorrect, a message is dis­ played and all changes
+are discarded and you will have to start again. Remember you must install ([I]nstall)
+any changes.</LI>
+<LI>[A]dd: When adding a spare device, the list of available devices
+is displayed and you are required to type in the device name. Once entered,
+the spare is added with defaults which you can change, if required, via the
+[M]odify option. Remember you must install ([I]nstall)
+any changes.</LI>
+<LI>[D]elete: When deleting a spare device, the list of spare devices
+allowed to be deleted is displayed and you are required to type in the required
+device name. Once entered, the spare is deleted from the screen. Remember you
+must install ([I]nstall) any changes.</LI>
+</UL>
+<H2><A NAME="ss7.6">7.6 [M]onitor: </A>
+</H2>
+
+<P>
+<H3>&lt;Figure 5: SCSI Monitor Screen&gt;</H3>
+
+<P>
+<P>The SCSI Monitor Configuration screen displays a table of SCSI monitors
+configured for the RaidRunner. Up to four SCSI monitors may be configured.
+The table columns are entitled Controller, Host Port, SCSI LUN and Protocol
+and each line of the table shows the appropriate SCSI Monitor attribute. For
+details on SCSI Monitor attributes, see the rconf command in the &quot;Advanced
+Topics&quot; section. The menu line allows one to leave the SCSI Monitor Configuration
+screen or modify and install the table.
+<UL>
+<LI>[Q]uit: Exit the SCSI Monitor Configuration screen and return
+to the Main screen. If you have made changes and have not installed them you
+will be asked to confirm this. If you select Yes to continue the exit, all
+changes made since the last install action will be discarded.</LI>
+<LI>[I]nstall: This action installs (into the RaidRunner configuration
+area) any changes that may have been made to SCSI Monitor configuration. If
+you exit prior to installing, all changes made since the last installation
+will be discarded. The installation process takes time. It is complete once
+the typed &quot;i&quot; character, is cleared from the menu line.</LI>
+<LI>[M]odify: This action allows you to modify the SCSI Monitor configuration.
+The cursor will be moved around the table, prompting you for input. If you
+do not want to change an attribute, enter RETURN to skip. If you want to delete
+a SCSI monitor then enter the minus &quot;-&quot; character when prompted
+for the controller number. If you want to use the default protocol list, then
+enter RETURN at the Protocol List prompt. As you enter data, it is checked
+for correctness and if incorrect, a message will be printed and any previously
+entered data is discarded. You will have to re-enter the data again. Remember
+you must install ([I]nstall) any changes.</LI>
+</UL>
+<H2><A NAME="ss7.7">7.7 [G]eneral: </A>
+</H2>
+
+<P>
+<H3>&lt;Figure 6: General Screen&gt;</H3>
+
+<P>
+<P>The General screen has a blank data area and a menu which allows one to
+Quit and return to the main screen, or to select further sub-menus which provide
+information about Devices, the System Message Logger, Global Environment variables
+and throughput Statistics.
+<UL>
+<LI>[Q]uit: Exit the General screen and return to the Main screen.</LI>
+<LI>[D]evices: Enter the Device information screen. The Devices screen
+displays the name of all devices on the RaidRunner. The menu line allows one
+to Quit and return to the General screen or display information about the devices.
+
+&lt;Figure
+7: Devices Screen&gt;
+
+<UL>
+<LI>[Q]uit: Exit the Devices screen and return to the General screen.
+ </LI>
+<LI>[I]nformation: The Device Information screen displays information
+about each device. You can scroll through the devices. For disks, information
+displayed includes, the device name, serial number, vendor name, product id,
+speed, version, sector size, sector count, total device size in MB, number
+of cylinders, heads and sectors per track and the zone/notch partitions. The
+menu line allows one the leave the Device Information screen or browse through
+devices. 
+
+&lt;Figure 8: Device Information Screen&gt;
+
+<UL>
+<LI>[Q]uit: Exit the Device Information screen and return to the
+Devices screen.</LI>
+<LI>[F]irst, [L]ast, [N]ext and [P]rev
+allow you to scroll through the devices and hence display their current data
+.</LI>
+</UL>
+</LI>
+</UL>
+</LI>
+<LI>Sys[L]og: Enter the System Logger Messages screen.
+
+&lt;Figure
+9: System Logger Messages Screen&gt;
+
+<UL>
+<LI>[Q]uit: Exit the System Logger Messages screen and return to
+the General screen.</LI>
+<LI>[F]irst, [L]ast, [N]ext and [P]rev
+allow you to scroll through the system log.</LI>
+</UL>
+</LI>
+<LI>[E]nvironment: Enter the Global Environment Variable configuration
+screen. The Environment Variable Configuration screen dis­ plays all configured
+Global Environment Variables and provides a menu which allows you to Add, Delete,
+Modify and Install (changes) variables. Each variable name is displayed followed
+by an equals &quot;=&quot; and the value assigned to that variable enclosed
+in braces - &quot;{&quot; .. &quot;}&quot;. The menu line allows
+you to Quit and return to the General screen or select further actions.
+
+&lt;Figure
+10: Environment Global Variable Configuration Screen&gt;
+
+<UL>
+<LI>[Q]uit: Exit the Environment Variable Configuration screen and
+return to the General screen. If you have modified, deleted or added an environment
+variable and have not installed the changes you will be asked to confirm this.
+If you select Yes to continue the exit, all changes made since the last install
+action will be discarded.</LI>
+<LI>[I]nst: This action installs (into the RaidRunner configuration
+area) any changes that may have been made to environment variables, be that
+deletion, addition or modification. If you exit prior to installing, all changes
+made since the last installation will be discarded. The installation process
+takes time. It is complete once the typed &quot;i&quot; character, is cleared
+from the menu line.</LI>
+<LI>[M]od: This action allows you to modify an environment variable's
+value. You will be prompted for the name of the environment variable and then
+prompted for it's new value. If the environment variable entered is not found,
+a message will be printed and you will not be prompted for a new value. If
+you do not enter a new value, (i.e. just press RETURN) no change will be made.
+Remember you must install ([I]nstall) any changes.</LI>
+<LI>[A]dd: When adding a new environment variable, you will be prompted
+for it's name and value. Providing the variable name is not already used and
+you enter a value, the new variable will be added and displayed. Remember you
+must install ([I]nstall) any changes.</LI>
+<LI>[D]elete: When deleting an environment variable, you will be
+prompted for the variable name and if valid, the environment variable will
+be deleted. Remember you must install ([I]nstall) any changes.</LI>
+</UL>
+</LI>
+<LI>[S]tats: Enter the Statistics monitoring screen. The Statistics
+screen display various general and specific statistics about raid sets configured
+and running on the RaidRunner. The first section of the data area displays
+the current temperature in degrees Celsius and the current speed of fans in
+the RaidRunner. The next section of the data area displays various statistics
+about the named raid set. The statistics are - the current cache hit rate,
+the cumulative number of reads, read failures, writes and write failures for
+each backend of the raid set and finally the read and write throughput for
+each stargd process (indicated by it's process id) that front's the raid set.
+The menu line allows one the leave the Statistics screen or select further
+actions.
+
+&lt;Figure 11: Statistics Monitoring Screen&gt;
+
+<UL>
+<LI>[Q]uit: Exit the Statistics screen and return to the General
+screen.</LI>
+<LI>[F]irst, [L]ast, [N]ext and [P]rev
+allow you to scroll through the statistics. </LI>
+<LI>[R]efresh: This option will get the statistics for the given
+raid set and re-display the current statistics on the screen. </LI>
+<LI>[Z]ero: This option will zero the cumulative statistics for the
+currently displayed raid set. </LI>
+<LI>[C]ontinuous: This option will start a back­ ground process that
+will update the statis­ tics of the currently displayed raid set every 2 seconds.
+A loop counter is created and updated every 2 seconds also. To inter­ rupt
+this continuous mode of gathering statistics, just press any character. If
+you need to re-fresh the display, then press the refresh characters - &lt;Control-l&gt;
+or &lt;Con­ trol-r&gt;.</LI>
+</UL>
+</LI>
+</UL>
+<H2><A NAME="ss7.8">7.8 [P]robe</A>
+</H2>
+
+<P>
+<P>The probe option re-scans the SCSI channels and updates the backend list
+with the hardware it finds.
+<H2><A NAME="ss7.9">7.9 Example RAID Configuration Session</A>
+</H2>
+
+<P>
+<P>The generalized procedure for configuration consists of three steps arranged
+in the following order:
+<OL>
+<LI>Configuring the Host Port(s) </LI>
+<LI>Assigning Spares</LI>
+<LI>Configuring the RAID set</LI>
+</OL>
+<P>Note that there is a minimum number of backends required for the various
+supported RAID levels:
+<UL>
+<LI>Level 0 : 2 backends</LI>
+<LI>Level 3 : 2 backends</LI>
+<LI>Level 5 : 3 backends</LI>
+</UL>
+<P>In this example we will configure a RAID 5 using 6, 2.04 gigabyte drives.
+The total capacity of the virtual drive will be 10 gigabytes (the equivalent
+of one drive is used for redundancy). This same configuration procedure can
+be used to configure other levels of RAID sets by changing the type parameter.
+<OL>
+<LI>Power on the computer with the serial terminal connected to the RaidRunner's
+serial port. </LI>
+<LI>When the husky ( :raid; ) prompt appears, Start the GUI by typing &quot;agui&quot;
+and pressing return.</LI>
+<LI>When the main screen appears, select &quot;H&quot; for [H]ostport
+configuration</LI>
+<LI>On some models of RaidRunner the host port in not configurable. If you
+have only a [Q]uit option here then there is nothing further to be
+done for the host port configuration, note the values and skip to step 6. If
+you have add/modify options then your host port is software configurable. </LI>
+<LI>If there is no entry for a host port on this screen, add an entry with
+the parameters: controller=0, hostport=0 , SCSI ID=0. Don't forget to [I]nstall
+your changes. If there is already and entry present, note the values (they
+will be used in a later step).</LI>
+<LI>From this point onward I will assume the following hardware configuration:
+ 
+<OL>
+<LI>There are 7 - 2.04 gig drives connected as follows: 
+<OL>
+<LI>2 drives on SCSI channel 0 with SCSI IDs 0 and 1 (backends 0.0.0, and 0.1.0,
+respectively).</LI>
+<LI>3 drives on SCSI channel 1 with SCSI IDs 0 ,1 and 5 (backends 1.0.0, 1.1.0,
+and 1.5.0).</LI>
+<LI>2 drives on SCSI channel 2 with SCSI IDs 0 and 1 (backends 2.0.0 and 2.1.0).</LI>
+</OL>
+</LI>
+<LI>Therefore:
+<OL>
+<LI>Rank 0 consists of backends 0.0.0, 1.0.0, 2.0.0</LI>
+<LI>Rank 1 consists of backends 0.1.0, 1.1.0, 2.1.0</LI>
+<LI>Rank 5 contains only the backend 1.5.0</LI>
+</OL>
+</LI>
+<LI>The RaidRunner is assigned to controller 0, hostport 0</LI>
+</OL>
+</LI>
+<LI>Press Q to [Q]uit the hostports screen and return to the Main
+screen. </LI>
+<LI>Press S to enter the [S]pares screen</LI>
+<LI>Select A to [A]dd a new spare to the spares pool. A list of available
+backends will be displayed and you will be prompted for the following information:
+<BLOCKQUOTE><CODE>
+<PRE>
+Enter the device name to add to spares - from above: 
+</PRE>
+</CODE></BLOCKQUOTE>
+</LI>
+</OL>
+<P>enter 
+<PRE>
+D1.5.0
+</PRE>
+
+
+<LI>Select I to [I]nstall your changes
+<LI>Select Q to [Q]uit the spares screen and return to the Main screen
+<LI>Select R from the Main screen to enter the [R]aidsets screen.
+<LI>Select A to [A]dd a new RAID set. You will be prompted for each
+of the RAID set parameters. The prompts and responses are given below.
+<OL>
+<LI>Enter the name of Raid Set: cim_homes (or whatever you want to call it).</LI>
+<LI>Raid set type [0,1,3,5]: 5 </LI>
+<LI>Enter initial host interface - ctlr,hostport,scsilun: 0.0.0 
+
+Now a list
+of the available backends will be displayed in the form: 
+0 - D0.0.0 1 - D1.0.0
+2 - D2.0.0 3 - D0.1.0 4 - D1.1.0 5 - D2.1.0</LI>
+<LI>Enter index from above - Q to Quit:
+1 press return
+2 press return
+3 press
+return
+4 press return
+5 press return
+Q</LI>
+</OL>
+
+<LI>After pressing Q you will be returned to the Raid Sets screen. You should
+see the newly configured Raid set displayed in the data area.
+<LI>Press I to [I]nstall the changes</LI>
+</LI>
+</LI>
+</LI>
+</LI>
+</LI>
+<P>&lt;Figure 12: The RaidSets
+screen of the GUI showing the newly configured RAID 5&gt;
+<P>
+<LI>Press Q to exit the RaidSet screen and return to the the Main screen
+<LI>Press Q to [Q]uit agui and exit to the husky prompt.
+<LI>type &quot;reboot&quot; then press enter. This will reboot the RaidRunner
+(not the host machine.)
+<LI>When the RaidRunner reboots it will prepare the drives for the newly configured
+RAID. 
+NOTE: Depending on the size of the RAID this could take a few minutes
+to a few hours. For the above example it takes the 5070 approximately 10 -
+20 minutes to stripe the RAID set.
+<LI>Once you see the husky prompt again the RAID is ready for use. You can
+then proceed with the Linux configuration.
+</LI>
+</LI>
+</LI>
+</LI>
+</LI>
+<HR>
+<A HREF="Antares-RAID-sparcLinux-HOWTO-8.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Antares-RAID-sparcLinux-HOWTO-6.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Antares-RAID-sparcLinux-HOWTO.html#toc7"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

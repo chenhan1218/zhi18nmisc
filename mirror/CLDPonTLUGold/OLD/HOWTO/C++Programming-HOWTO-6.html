@@ -1,0 +1,459 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>C++ Programming HOW-TO: String.h file</TITLE>
+ <LINK HREF="C++Programming-HOWTO-7.html" REL=next>
+ <LINK HREF="C++Programming-HOWTO-5.html" REL=previous>
+ <LINK HREF="C++Programming-HOWTO.html#toc6" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="C++Programming-HOWTO-7.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="C++Programming-HOWTO-5.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="C++Programming-HOWTO.html#toc6"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s6">6. String.h file</A></H2>
+
+<P>In C++ (or any object oriented language), you just read the "class data-structure"
+(i.e. interface) to begin using that object. 
+You just need to understand the interface and not the implementation of the interface.
+In case of String class, you just need to read and
+understand the String class in String.h file. You <B>do not need</B> to read 
+the entire implementation (String.cpp) in order to use String class. 
+The object oriented classes are real time saver and they
+<B>very neatly hide</B> the implementation.
+<P>(In object oriented Java language there is the equivalent called <B>'interface'</B>
+, which hides the implementation details.)
+<P>Given below is <B>String.h</B> file and
+see also 
+<A HREF="C++Programming-HOWTO-27.html#Appendix A">Appendix A String.h</A>
+<HR>
+<PRE>
+//
+// Author : Al Dev  Email: alavoor@yahoo.com
+// Use string class or String class
+//
+// To prevent memory leaks - a char class to manage character variables
+// Always prefer to use String or string class 
+// instead of char[] or char *
+//
+
+#ifndef __STRING_H_
+#define __STRING_H_
+
+#include &lt;iostream> // do not use iostream as program becomes bulky..
+#include &lt;stdio.h> // for FILE and sprintf()
+#include &lt;list.h> // for list
+
+const short INITIAL_SIZE =      50;
+const short NUMBER_LENGTH = 300;
+const int MAX_ISTREAM_SIZE = 2048;
+
+class StringBuffer;
+
+class String
+{
+        public:
+                String();
+                String(const char bb[]);  // needed by operator+
+                String(const char bb[], int start, int slength); // subset of chars
+                String(int bb);  // needed by operator+
+                String(unsigned long bb);  // needed by operator+
+                String(long bb);  // needed by operator+
+                String(float bb);  // needed by operator+
+                String(double bb);  // needed by operator+
+                String(const String &amp; rhs);  // Copy Constructor needed by operator+
+                String(StringBuffer sb);  // Java compatibility
+                String(int bb, bool dummy);  // for StringBuffer class
+                virtual ~String();  // Made virtual so that when base class is deleted
+                                                        // then the derived class destructor is called.
+
+                char *val() {return sval;} // It is not safe to make sval public
+
+                // Functions below imitate Java language's String object 
+                unsigned long length() { return strlen(sval); }
+                char charAt(int where);
+                void getChars(int sourceStart, int sourceEnd, 
+                                char target[], int targetStart);
+                char* toCharArray();
+                char* getBytes();
+
+                bool equals(String str2); // See also == operator
+                bool equals(char *str2); // See also == operator
+                bool equalsIgnoreCase(String str2);
+
+                bool regionMatches(int startIndex, String str2, 
+                                int str2StartIndex, int numChars);
+                bool regionMatches(bool ignoreCase, int startIndex, 
+                                String str2, int str2StartIndex, int numChars);
+
+                String toUpperCase();
+                String toLowerCase();
+
+                bool startsWith(String str2);
+                bool startsWith(char *str2);
+
+                bool endsWith(String str2);
+                bool endsWith(char *str2);
+
+                int compareTo(String str2);
+                int compareTo(char *str2);
+                int compareToIgnoreCase(String str2);
+                int compareToIgnoreCase(char *str2);
+
+                int indexOf(char ch, int startIndex = 0);
+                int indexOf(char *str2, int startIndex = 0);
+                int indexOf(String str2, int startIndex = 0);
+
+                int lastIndexOf(char ch, int startIndex = 0);
+                int lastIndexOf(char *str2, int startIndex = 0);
+                int lastIndexOf(String str2, int startIndex = 0);
+
+                String substring(int startIndex, int endIndex = 0);
+                String replace(char original, char replacement);
+                String replace(char *original, char *replacement);
+
+                String trim(); // See also overloaded trim()
+
+                String concat(String str2);  // See also operator +
+                String concat(char *str2); // See also operator +
+
+                String reverse(); // See also overloaded reverse()
+                String deleteCharAt(int loc);
+                String deleteStr(int startIndex, int endIndex); // Java's "delete()"
+
+                String valueOf(char ch)
+                        {char aa[2]; aa[0]=ch; aa[1]=0; return String(aa);}
+                String valueOf(char chars[]){ return String(chars);}
+                String valueOf(char chars[], int startIndex, int numChars);
+                String valueOf(bool tf)
+                        {if (tf) return String("true"); else return String("false");}
+                String valueOf(int num){ return String(num);}
+                String valueOf(long num){ return String(num);}
+                String valueOf(float num) {return String(num);}
+                String valueOf(double num) {return String(num);}
+
+                // See also StringBuffer class in this file given below
+
+                // ---- End of Java like String object functions -----
+
+                //////////////////////////////////////////////////////
+                //              List of additonal functions not in java
+                //////////////////////////////////////////////////////
+                String ltrim();
+                void ltrim(bool dummy); // Directly changes object. dummy to get different signature
+                String rtrim();
+                void rtrim(bool dummy); // Directly changes object. See also chopall(). 
+                                // dummy to get different signature
+
+                void chopall(char ch='\n'); // removes trailing character 'ch'. See also rtrim()
+                void chop(); // removes one trailing character
+
+                void roundf(float input_val, short precision);
+                void decompose_float(long *integral, long *fraction); 
+
+                void roundd(double input_val, short precision);
+                void decompose_double(long *integral, long *fraction); 
+
+                void explode(char *separator); // see also token() and overloaded explode()
+                String *explode(int &amp; strcount, char separator = ' '); // see also token()
+                void implode(char *glue);
+                void join(char *glue);
+                String repeat(char *input, unsigned int multiplier);
+                String tr(char *from, char *to); // translate characters
+                String center(int padlength, char padchar = ' ');
+                String space(int number = 0, char padchar = ' ');
+                String xrange(char start, char end);
+                String compress(char *list = " ");
+                String left(int slength = 0, char padchar = ' ');
+                String right(int slength = 0, char padchar = ' ');
+                String overlay(char *newstr, int start = 0, int slength = 0, char padchar = ' ');
+
+                String at(char *regx); // matches first match of regx
+                String before(char *regx); // returns string before regx
+                String after(char *regx); // returns string after regx
+                String mid(int startIndex = 0, int length = 0);
+
+                bool isNull();  
+                bool isInteger();
+                bool isInteger(int pos);
+                bool isNumeric();
+                bool isNumeric(int pos);
+                bool isEmpty();  // same as length() == 0
+                bool isUpperCase();
+                bool isUpperCase(int pos);
+                bool isLowerCase();
+                bool isLowerCase(int pos);
+                bool isWhiteSpace();
+                bool isWhiteSpace(int pos);
+                bool isBlackSpace();
+                bool isBlackSpace(int pos);
+                bool isAlpha();
+                bool isAlpha(int pos);
+                bool isAlphaNumeric();
+                bool isAlphaNumeric(int pos);
+                bool isPunct();
+                bool isPunct(int pos);
+                bool isPrintable();
+                bool isPrintable(int pos);
+                bool isHexDigit();
+                bool isHexDigit(int pos);
+                bool isCntrl();
+                bool isCntrl(int pos);
+                bool isGraph();
+                bool isGraph(int pos);
+
+                void clear();
+                int toInteger();
+                long parseLong();
+
+                double toDouble();
+                String token(char separator = ' '); // see also StringTokenizer, explode()
+                String crypt(char *original, char *salt);
+                String getline(FILE *infp = stdin); // see also putline()
+                //String getline(fstream *infp = stdin); // see also putline()
+
+                void putline(FILE *outfp = stdout); // see also getline()
+                //void putline(fstream *outfp = stdout); // see also getline()
+
+                void swap(String aa, String bb); // swap aa to bb
+                String *sort(String aa[]);  // sorts array of strings
+                String sort(int startIndex = 0, int length = 0);  // sorts characters inside a string
+                int freq(char ch); // returns the number of distinct, nonoverlapping matches
+                void Format(const char *fmt, ...);
+                String replace (int startIndex, int endIndex, String str);
+
+                void substring(int startIndex, int endIndex, bool dummy); // Directly changes object
+                void reverse(bool dummy); // Directly changes object. dummy to get different signature
+                String deleteCharAt(int loc, bool dummy); // Directly changes object
+                String deleteStr(int startIndex, int endIndex, bool dummy);
+                void trim(bool dummy); // Directly changes object. dummy to get different signature
+                String insert(int index, String str2);
+                String insert(int index, String str2, bool dummy); // Directly changes object
+                String insert(int index, char ch);
+                String insert(int index, char ch, bool dummy); // Directly changes object
+                String insert(char *newstr, int start = 0, int length = 0, char padchar = ' ');
+
+                String dump(); // Dump the string like 'od -c' (octal dump) does
+
+                // required by java's StringBuffer
+                void ensureCapacity(int capacity);
+                void setLength(int len);
+                void setCharAt(int where, char ch); // see also charAt(), getCharAt()
+
+                // required by java's Integer class, Long, Double classes
+                int parseInt(String ss) {return ss.toInteger();}
+                int parseInt(char *ss)
+                        {String tmpstr(ss); return tmpstr.toInteger();}
+                long parseLong(String ss) {return ss.parseLong();}
+                long parseLong(char *ss)
+                        {String tmpstr(ss); return tmpstr.parseLong();}
+                float floatValue() {return (float) toDouble(); }
+                double doubleValue() {return toDouble(); }
+
+                ///////////////////////////////////////////////
+                //              List of duplicate function names
+                ///////////////////////////////////////////////
+                // char * c_str() // use val()
+                // bool find();  // Use regionMatches()
+                // bool search();  // Use regionMatches()
+                // bool matches(); // Use regionMatches()
+                // int rindex(String str2, int startIndex = 0); Use lastIndexOf()
+                // String blanks(int slength);  // Use repeat()
+                // String append(String str2); // Use concat() or + operator
+                // String prepend(String str2);  // Use + operator. See also append()
+                // String split(char separator = ' ');  // Use token(), explode() or StringTokenizer class
+                bool contains(char *str2, int startIndex = 0); // use indexOf()
+                // void empty(); Use is_empty()
+                // void vacuum(); Use clear()
+                // void erase(); Use clear()
+                // void zero(); Use clear()
+                // bool is_float(); Use is_numeric();
+                // bool is_decimal(); Use is_numeric();
+                // bool is_Digit(); Use is_numeric();
+                // float float_value(); Use toDouble();
+                // float tofloat(); Use toDouble();
+                // double double_value(); Use toDouble();
+                // double numeric_value(); Use toDouble();
+                // int int_value(); Use toInteger()
+                // int tonumber(); Use toInteger()
+                // String get(); Use substring() or val() but prefer java's substring
+                // String getFrom(); Use substring() or val() but prefer java's substring
+                // String head(int len); Use substring(0, len)
+                // String tail(int len); Use substring(length()-len, length())
+                // String cut(); Use deleteCharAt() or deleteStr()
+                // String cutFrom(); Use deleteCharAt() or deleteStr()
+                // String paste(); Use insert()
+                // String fill(); Use replace()
+                // char firstChar(); // Use substring(0, 1);
+                // char lastChar(); // Use substring(length()-1, length());
+                // String findNext(); Use token(), explode() or StringTokenizer class
+
+                // begin();  iterator. Use operator [ii]
+                // end();  iterator. Use operator [ii]
+                // copy();  Use assignment =  operator, String aa = bb;
+                // clone();  Use assignment =  operator, String aa = bb;
+                // void putCharAt(int where, char ch); Use setCharAt()
+                // void replaceCharAt(int where, char ch); Use setCharAt()
+                // char getCharAt(int where); Use CharAt()
+                // void parseArgs(int where, char ch); Use StringTokensizer class, token() or explode()
+                // void truncate(); Use trim(), rtrim(), chop() or chopall()
+
+                // All Operators ...
+                String operator+ (const String &amp; rhs);
+                friend String operator+ (const String &amp; lhs, const String &amp; rhs);
+
+                String&amp; operator+= (const String &amp; rhs); // using reference will be faster
+                String&amp; operator= (const String &amp; rhs); // using reference will be faster
+                bool operator== (const String &amp; rhs); // using reference will be faster
+                bool operator== (const char *rhs);
+                bool operator!= (const String &amp; rhs);
+                bool operator!= (const char *rhs); 
+                char operator [] (unsigned long Index) const;
+                char&amp; operator [] (unsigned long Index);
+                friend ostream &amp;  operator&lt;&lt; (ostream &amp; Out, const String &amp; str2);
+                friend istream &amp;  operator>> (istream &amp; In, String &amp; str2);
+
+                static  list&lt;String>                 explodeH;  // list head
+
+        protected:
+                char *sval; // Not safe to make sval public
+                inline void verifyIndex(unsigned long index) const;
+                inline void verifyIndex(unsigned long index, char *aa) const;
+
+                void _str_cat(char bb[]);
+                void _str_cat(int bb);
+                void _str_cat(unsigned long bb);
+                void _str_cat(float bb);
+
+        private:
+                // Note: All the private variables and functions begin
+                // with _ (underscore)
+                
+                //static String *_global_String; // for use in add operator
+                //inline void _free_glob(String **aa);
+                void _str_cpy(char bb[]);
+                void _str_cpy(int bb); // itoa
+                void _str_cpy(unsigned long bb);
+                void _str_cpy(float bb); // itof
+
+                bool _equalto(const String &amp; rhs, bool type = false);
+                bool _equalto(const char *rhs, bool type = false);
+                String *_pString;  // temporary pointer for internal use..
+                inline void _allocpString();
+                inline void _reverse();
+                inline void _deleteCharAt(int loc);
+                inline void _deleteStr(int startIndex, int endIndex);
+                inline void _trim();
+                inline void _ltrim();
+                inline void _rtrim();
+                inline void _substring(int startIndex, int endIndex);
+};
+
+// Global variables are defined in String.cpp
+
+#endif // __STRING_H_
+</PRE>
+<HR>
+<H2><A NAME="ss6.1">6.1 StringBuffer.h</A>
+</H2>
+
+<P>
+<HR>
+<PRE>
+//
+// Author : Al Dev  Email: alavoor@yahoo.com
+//
+
+#ifndef __STRINGBUFFER_H_
+#define __STRINGBUFFER_H_
+
+// Imitate Java's StringBuffer object
+// This class is provided so that the Java code is
+// portable to C++, requiring minimum code changes
+// Note: While coding in C++ DO NOT use this class StringBuffer,
+// this is provided only for compiling code written in Java
+// which is cut/pasted inside C++ code.
+class StringBuffer: public String
+{
+        public:
+                StringBuffer();
+                StringBuffer(int size);
+                StringBuffer(String str);
+                ~StringBuffer();
+
+                int capacity() {return strlen(sval);}
+                StringBuffer append(String str2);
+                        // See also operator +
+                        //{ *this += str2; return *this;} // This is causing core dumps...
+
+                StringBuffer append(char *str2);
+                StringBuffer append(int bb);
+                StringBuffer append(unsigned long bb) ;
+                StringBuffer append(float bb) ;
+                StringBuffer append(double bb) ;
+
+                StringBuffer insert(int index, String str2);
+
+                StringBuffer insert(int index, char ch);
+
+                StringBuffer reverse();
+
+                // Java's "delete()". Cannot use name delete in C++
+                StringBuffer deleteStr(int startIndex, int endIndex);
+                StringBuffer deleteCharAt(int loc);
+
+                StringBuffer substring(int startIndex, int endIndex = 0);
+};
+
+#endif // __STRINGBUFFER_H_
+</PRE>
+<HR>
+<H2><A NAME="ss6.2">6.2 StringTokenizer.h</A>
+</H2>
+
+<P>
+<HR>
+<PRE>
+//
+// Author : Al Dev  Email: alavoor@yahoo.com
+//
+
+#ifndef __STRINGTOKENIZER_H_
+#define __STRINGTOKENIZER_H_
+
+// Imitate java's StringTokenizer class
+// provided to compile java code in C++ and vice-versa
+class StringTokenizer: public String
+{
+        public:
+                StringTokenizer(String str);
+                StringTokenizer(String str, String delimiters);
+                StringTokenizer(String str, String delimiters, bool delimAsToken);
+                ~StringTokenizer();
+
+                int     countTokens();
+                bool    hasMoreElements();
+                bool    hasMoreTokens();
+                String  nextElement(); // in java returns type 'Object'
+                String  nextToken();
+                String  nextToken(String delimiters);
+        private:
+                int             CurrentPosition; // current index on string
+                int             TotalTokens;
+                int             RemainingTokens;
+                char *  ListOfDl; // list of delimiters
+                char *  WorkStr; // temp work string
+                char *  OrigStr; // original string passed
+                bool    DlFlag;  // delimiter flag
+                inline  void vPrepWorkStr(char *delimiters = NULL);
+};
+
+#endif // __STRINGTOKENIZER_H_
+</PRE>
+<HR>
+<HR>
+<A HREF="C++Programming-HOWTO-7.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="C++Programming-HOWTO-5.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="C++Programming-HOWTO.html#toc6"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

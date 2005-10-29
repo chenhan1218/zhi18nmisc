@@ -1,0 +1,501 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux 2.4 Advanced Routing HOWTO: Cookbook</TITLE>
+ <LINK HREF="Adv-Routing-HOWTO-15.html" REL=next>
+ <LINK HREF="Adv-Routing-HOWTO-13.html" REL=previous>
+ <LINK HREF="Adv-Routing-HOWTO.html#toc14" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Adv-Routing-HOWTO-15.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Adv-Routing-HOWTO-13.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Adv-Routing-HOWTO.html#toc14"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s14">14. Cookbook</A></H2>
+
+<P>This section contains 'cookbook' entries which may help you solve problems.
+A cookbook is no replacement for understanding however, so try and comprehend
+what is going on. 
+<P>
+<H2><A NAME="ss14.1">14.1 Running multiple sites with different SLAs</A>
+</H2>
+
+<P>You can do this in several ways. Apache has some support for this with a
+module, but we'll show how Linux can do this for you, and do so for other
+services as well. These commands are stolen from a presentation by Jamal
+Hadi that's referenced below.
+<P>Let's say we have two customers, with http, ftp and streaming audio, and we
+want to sell them a limited amount of bandwidth. We do so on the server itself.
+<P>Customer A should have at most 2 megabits, cusomer B has paid for 5
+megabits. We separate our customers by creating virtual IP addresses on our
+server.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# ip address add 188.177.166.1 dev eth0
+# ip address add 188.177.166.2 dev eth0
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>It is up to you to attach the different servers to the right IP address. All
+popular daemons have support for this.
+<P>We first attach a CBQ qdisc to eth0:
+<BLOCKQUOTE><CODE>
+<PRE>
+# tc qdisc add dev eth0 root handle 1: cbq bandwidth 10Mbit cell 8 avpkt 1000 \
+  mpu 64
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>We then create classes for our customers:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# tc class add dev eth0 parent 1:0 classid 1:1 cbq bandwidth 10Mbit rate \
+  2MBit avpkt 1000 prio 5 bounded isolated allot 1514 weight 1 maxburst 21
+# tc class add dev eth0 parent 1:0 classid 1:2 cbq bandwidth 10Mbit rate \
+  5Mbit avpkt 1000 prio 5 bounded isolated allot 1514 weight 1 maxburst 21
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Then we add filters for our two classes:
+<BLOCKQUOTE><CODE>
+<PRE>
+##FIXME: Why this line, what does it do?, what is a divisor?:
+##FIXME: A divisor has something to do with a hash table, and the number of
+##       buckets - ahu
+# tc filter add dev eth0 parent 1:0 protocol ip prio 5 handle 1: u32 divisor 1
+# tc filter add dev eth0 parent 1:0 prio 5 u32 match ip src 188.177.166.1
+  flowid 1:1
+# tc filter add dev eth0 parent 1:0 prio 5 u32 match ip src 188.177.166.2
+  flowid 1:2
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>And we're done.
+<P>FIXME: why no token bucket filter? is there a default pfifo_fast fallback
+somewhere?
+<P>
+<H2><A NAME="ss14.2">14.2 Protecting your host from SYN floods </A>
+</H2>
+
+<P>From Alexey's iproute documentation, adapted to netfilter and with more
+plausible paths. If you use this, take care to adjust the numbers to
+reasonable values for your system.
+<P>If you want to protect an entire network, skip this script, which is best
+suited for a single host.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#! /bin/sh -x
+#
+# sample script on using the ingress capabilities
+# this script shows how one can rate limit incoming SYNs
+# Useful for TCP-SYN attack protection. You can use
+# IPchains to have more powerful additions to the SYN (eg 
+# in addition the subnet)
+#
+#path to various utilities;
+#change to reflect yours.
+#
+TC=/sbin/tc
+IP=/sbin/ip
+IPTABLES=/sbin/iptables
+INDEV=eth2
+#
+# tag all incoming SYN packets through $INDEV as mark value 1
+############################################################ 
+$iptables -A PREROUTING -i $INDEV -t mangle -p tcp --syn \
+  -j MARK --set-mark 1
+############################################################ 
+#
+# install the ingress qdisc on the ingress interface
+############################################################ 
+$TC qdisc add dev $INDEV handle ffff: ingress
+############################################################ 
+
+#
+# 
+# SYN packets are 40 bytes (320 bits) so three SYNs equals
+# 960 bits (approximately 1kbit); so we rate limit below
+# the incoming SYNs to 3/sec (not very useful really; but
+#serves to show the point - JHS
+############################################################ 
+$TC filter add dev $INDEV parent ffff: protocol ip prio 50 handle 1 fw \
+police rate 1kbit burst 40 mtu 9k drop flowid :1
+############################################################ 
+
+
+#
+echo "---- qdisc parameters Ingress  ----------"
+$TC qdisc ls dev $INDEV
+echo "---- Class parameters Ingress  ----------"
+$TC class ls dev $INDEV
+echo "---- filter parameters Ingress ----------"
+$TC filter ls dev $INDEV parent ffff:
+
+#deleting the ingress qdisc
+#$TC qdisc del $INDEV ingress
+</PRE>
+</CODE></BLOCKQUOTE>
+<H2><A NAME="ss14.3">14.3 Ratelimit ICMP to prevent dDoS</A>
+</H2>
+
+<P>Recently, distributed denial of service attacks have become a major nuisance
+on the internet. By properly filtering and ratelimiting your network, you can
+both prevent becoming a casualty or the cause of these attacks.
+<P>You should filter your networks so that you do not allow non-local IP source
+addressed packets to leave your network. This stops people from anonymously
+sending junk to the internet. 
+<P>
+<P>
+<P>Rate limiting goes much as shown earlier. To refresh your memory, our
+ASCIIgram again:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+[The Internet] ---&lt;E3, T3, whatever>--- [Linux router] --- [Office+ISP]
+                                      eth1          eth0
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>We first set up the prerequisite parts:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# tc qdisc add dev eth0 root handle 10: cbq bandwidth 10Mbit avpkt 1000
+# tc class add dev eth0 parent 10:0 classid 10:1 cbq bandwidth 10Mbit rate \
+  10Mbit allot 1514 prio 5 maxburst 20 avpkt 1000
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>If you have 100Mbit, or more, interfaces, adjust these numbers. Now you need
+to determine how much ICMP traffic you want to allow. You can perform
+measurements with tcpdump, by having it write to a file for a while, and
+seeing how much ICMP passes your network. Do not forget to raise the
+snapshot length!
+<P>If measurement is impractical, you might want to choose 5% of your available
+bandwidth. Let's set up our class:
+<BLOCKQUOTE><CODE>
+<PRE>
+# tc class add dev eth0 parent 10:1 classid 10:100 cbq bandwidth 10Mbit rate \
+  100Kbit allot 1514 weight 800Kbit prio 5 maxburst 20 avpkt 250 \
+  bounded
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>This limits at 100Kbit. Now we need a filter to assign ICMP traffic to this
+class:
+<BLOCKQUOTE><CODE>
+<PRE>
+# tc filter add dev eth0 parent 10:0 protocol ip prio 100 u32 match ip
+  protocol 1 0xFF flowid 10:100
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss14.4">14.4 Prioritizing interactive traffic</A>
+</H2>
+
+<P>If lots of data is coming down your link, or going up for that matter, and
+you are trying to do some maintenance via telnet or ssh, this may not go too
+well. Other packets are blocking your keystrokes. Wouldn't it be great if
+there were a way for your interactive packets to sneak past the bulk
+traffic? Linux can do this for you!
+<P>As before, we need to handle traffic going both ways. Evidently, this works
+best if there are Linux boxes on both ends of your link, although other
+UNIX's are able to do this. Consult your local Solaris/BSD guru for this.
+<P>The standard pfifo_fast scheduler has 3 different 'bands'. Traffic in band 0
+is transmitted first, after which traffic in band 1 and 2 gets considered.
+It is vital that our interactive traffic be in band 0!
+<P>We blatantly adapt from the (soon to be obsolete) ipchains HOWTO:
+<P>There are four seldom-used bits in the IP header, called the Type of Service
+(TOS) bits. They effect the way packets are treated; the four bits are
+"Minimum Delay", "Maximum Throughput", "Maximum Reliability" and "Minimum
+Cost". Only one of these bits is allowed to be set. Rob van Nieuwkerk, the
+author of the ipchains TOS-mangling code, puts it as follows:
+<P>
+<BLOCKQUOTE><CODE>
+Especially the "Minimum Delay" is important for me. I switch it on for
+"interactive" packets in my upstream (Linux) router. I'm
+behind a 33k6 modem link. Linux prioritizes packets in 3 queues. This
+way I get acceptable interactive performance while doing bulk
+downloads at the same time. 
+</CODE></BLOCKQUOTE>
+<P>The most common use is to set telnet &amp; ftp control connections to "Minimum
+Delay" and FTP data to "Maximum Throughput". This would be
+done as follows, on your upstream router:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# iptables -A PREROUTING -t mangle -p tcp --sport telnet \
+  -j TOS --set-tos Minimize-Delay
+# iptables -A PREROUTING -t mangle -p tcp --sport ftp \
+  -j TOS --set-tos Minimize-Delay
+# iptables -A PREROUTING -t mangle -p tcp --sport ftp-data \
+  -j TOS --set-tos Maximize-Throughput
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Now, this only works for data going from your telnet foreign host to your
+local computer. The other way around appears to be done for you, ie, telnet,
+ssh &amp; friends all set the TOS field on outgoing packets automatically.
+<P>Should you have a client that does not do this, you can always do it with
+netfilter. On your local box:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# iptables -A OUTPUT -t mangle -p tcp --dport telnet \
+  -j TOS --set-tos Minimize-Delay
+# iptables -A OUTPUT -t mangle -p tcp --dport ftp \
+  -j TOS --set-tos Minimize-Delay
+# iptables -A OUTPUT -t mangle -p tcp --dport ftp-data \
+  -j TOS --set-tos Maximize-Throughput
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss14.5">14.5 Transparent web-caching using netfilter, iproute2, ipchains and squid</A>
+</H2>
+
+<P>
+<A NAME="SQUID"></A> 
+This section was sent in by reader Ram Narula from Internet for Education
+(Thailand).
+<P>The regular technique in accomplishing this in Linux
+is probably with use of ipchains AFTER making sure
+that the "outgoing" port 80(web) traffic gets routed through
+the server running squid.
+<P>There are 3 common methods to make sure "outgoing"
+port 80 traffic gets routed to the server running squid
+and 4th one is being introduced here.
+<P>
+<DL>
+<DT><B>Making the gateway router do it.</B><DD><P>If you can tell your gateway router to 
+match packets that has outgoing destination port
+of 80 to be sent to the IP address of squid server.
+<P>BUT
+<P>This would put additional load on the router and
+some commercial routers might not even support this.
+<DT><B>Using a Layer 4 switch.</B><DD><P>Layer 4 switches can handle this without any problem.
+<P>BUT
+<P>The cost for this equipment is usually very high. Typical
+layer 4 switch would normally cost more than
+a typical router+good linux server.
+<DT><B>Using cache server as network's gateway.</B><DD><P>You can force ALL traffic through cache server.
+<P>BUT
+<P>This is quite risky because Squid does
+utilize lots of cpu power which might
+result in slower over-all network performance
+or the server itself might crash and no one on the
+network will be able to access the internet if
+that occurs.
+<P>
+<P>
+<DT><B>Linux+NetFilter router.</B><DD><P>By using NetFilter another technique can be implemented
+which is using NetFilter for "mark"ing the packets
+with destination port 80 and using iproute2 to
+route the "mark"ed packets to the Squid server.
+</DL>
+
+<BLOCKQUOTE><CODE>
+<PRE>
+|----------------|
+| Implementation |
+|----------------|
+
+ Addresses used
+ 10.0.0.1 naret (NetFilter server)
+ 10.0.0.2 silom (Squid server)
+ 10.0.0.3 donmuang (Router connected to the internet)
+ 10.0.0.4 kaosarn (other server on network)
+ 10.0.0.5 RAS
+ 10.0.0.0/24 main network
+ 10.0.0.0/19 total network
+
+|---------------|
+|Network diagram|
+|---------------|
+
+Internet
+|
+donmuang
+|
+------------hub/switch----------
+|        |             |       |
+naret   silom        kaosarn  RAS etc.
+</PRE>
+</CODE></BLOCKQUOTE>
+
+First, make all traffic pass through naret by making
+sure it is the default gateway except for silom.
+Silom's default gateway has to be donmuang (10.0.0.3) or
+this would create web traffic loop.
+<P>
+<P>
+<P>(all servers on my network had 10.0.0.1 as the default gateway
+which was the former IP address of donmuang router so what I did
+was changed the IP address of donmuang to 10.0.0.3 and gave
+naret ip address of 10.0.0.1)
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+Silom
+-----
+-setup squid and ipchains 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>Setup Squid server on silom, make sure it does support
+transparent caching/proxying, the default port is usually
+3128, so all traffic for port 80 has to be redirected to port
+3128 locally. This can be done by using ipchains with the following:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+silom# ipchains -N allow1
+silom# ipchains -A allow1 -p TCP -s 10.0.0.0/19 -d 0/0 80 -j REDIRECT 3128
+silom# ipchains -I input -j allow1
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P> 
+<P>Or, in netfilter lingo:
+<BLOCKQUOTE><CODE>
+<PRE>
+silom# iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 80 -j REDIRECT --to-port 3128
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>(note: you might have other entries as well)
+<P>
+<P>For more information on setting Squid server please refer
+to Squid faq page on 
+<A HREF="http://squid.nlanr.net">http://squid.nlanr.net</A>).
+<P>
+<P>
+<P>Make sure ip forwarding is enabled on this server and the default
+gateway for this server is donmuang router (NOT naret).
+<P>
+<P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+Naret
+-----
+-setup iptables and iproute2
+-disable icmp REDIRECT messages (if needed)
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<OL>
+<LI>"Mark" packets of destination port 80 with value 2
+<BLOCKQUOTE><CODE>
+<PRE>
+ 
+naret# iptables -A PREROUTING -i eth0 -t mangle -p tcp --dport 80 \
+ -j MARK --set-mark 2
+</PRE>
+</CODE></BLOCKQUOTE>
+</LI>
+<LI>Setup iproute2 so it will route packets with "mark" 2 to silom
+<BLOCKQUOTE><CODE>
+<PRE>
+naret# echo 202 www.out >> /etc/iproute2/rt_tables
+naret# ip rule add fwmark 2 table www.out
+naret# ip route add default via 10.0.0.2 dev eth0 table www.out
+naret# ip route flush cache
+</PRE>
+</CODE></BLOCKQUOTE>
+
+<P>If donmuang and naret is on the same subnet then
+naret should not send out icmp REDIRECT messages.
+In this case it is, so icmp REDIRECTs has to be
+disabled by:
+<BLOCKQUOTE><CODE>
+<PRE>
+naret# echo 0 > /proc/sys/net/ipv4/conf/all/send_redirects
+naret# echo 0 > /proc/sys/net/ipv4/conf/default/send_redirects
+naret# echo 0 > /proc/sys/net/ipv4/conf/eth0/send_redirects
+</PRE>
+</CODE></BLOCKQUOTE>
+</LI>
+</OL>
+<P>The setup is complete, check the configuration
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+On naret:
+
+naret# iptables -t mangle -L
+Chain PREROUTING (policy ACCEPT)
+target     prot opt source               destination         
+MARK       tcp  --  anywhere             anywhere           tcp dpt:www MARK set 0x2 
+
+Chain OUTPUT (policy ACCEPT)
+target     prot opt source               destination         
+
+naret# ip rule ls
+0:      from all lookup local 
+32765:  from all fwmark        2 lookup www.out 
+32766:  from all lookup main 
+32767:  from all lookup default 
+
+naret# ip route list table www.out
+default via 203.114.224.8 dev eth0 
+
+naret# ip route   
+10.0.0.1 dev eth0  scope link 
+10.0.0.0/24 dev eth0  proto kernel  scope link  src 10.0.0.1
+127.0.0.0/8 dev lo  scope link 
+default via 10.0.0.3 dev eth0 
+
+(make sure silom belongs to one of the above lines, in this case
+it's the line with 10.0.0.0/24)
+
+|------|
+|-DONE-|
+|------|
+
+</PRE>
+</CODE></BLOCKQUOTE>
+<H3>Traffic flow diagram after implementation</H3>
+
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+
+|-----------------------------------------|
+|Traffic flow diagram after implementation|
+|-----------------------------------------|
+
+INTERNET
+/\
+||
+\/
+-----------------donmuang router---------------------
+/\                                      /\         ||
+||                                      ||         ||
+||                                      \/         ||
+naret                                  silom       ||
+*destination port 80 traffic=========>(cache)      ||
+/\                                      ||         ||
+||                                      \/         \/
+\\===================================kaosarn, RAS, etc.
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Note that the network is asymmetric as there is one extra hop on 
+general outgoing path.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+Here is run down for packet traversing the network from kaosarn
+to and from the internet.
+
+For web/http traffic:
+kaosarn http request->naret->silom->donmuang->internet
+http replies from internet->donmuang->silom->kaosarn
+
+For non-web/http requests(eg. telnet):
+kaosarn outgoing data->naret->donmuang->internet
+incoming data from internet->donmuang->kaosarn
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>
+<P>
+<HR>
+<A HREF="Adv-Routing-HOWTO-15.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Adv-Routing-HOWTO-13.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Adv-Routing-HOWTO.html#toc14"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

@@ -1,0 +1,222 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="LinuxDoc-Tools 0.9.16">
+ <TITLE>The Linux Bootdisk HOWTO: 常见问题 (FAQ) 列表 -- Frequently Asked Question (FAQ) list</TITLE>
+ <LINK HREF="Bootdisk-HOWTO-11.html" REL=next>
+ <LINK HREF="Bootdisk-HOWTO-9.html" REL=previous>
+ <LINK HREF="Bootdisk-HOWTO.html#toc10" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Bootdisk-HOWTO-11.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="Bootdisk-HOWTO-9.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="Bootdisk-HOWTO.html#toc10"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s10">10.</A> <A HREF="Bootdisk-HOWTO.html#toc10">常见问题 (FAQ) 列表 -- Frequently Asked Question (FAQ) list</A></H2>
+
+
+<P><EM>Q. 我从我的 boot/root 磁片开机，但是什么都跑不出来。我现在怎么办 ?</EM></P>
+
+<P>请看之前的 
+<A HREF="Bootdisk-HOWTO-7.html#Troubleshooting">Troubleshooting</A> 这节。</P>
+<P><EM>Q. Slackware/Debian/RedHat 的 bootdisk 如何运作 ?</EM></P>
+
+<P>请看之前的 
+<A HREF="Bootdisk-HOWTO-9.html#Pros">What the pros do</A> 这节。</P>
+<P><EM>Q. 我要如何以 XYZ 驱动程式制作一张开机磁片 ?</EM></P>
+
+<P>最简单的方法是去从离你最近的 Slackware 映射站拿到一个 Slackware 的 kernel 。 Slackware 的 kernel 是一般的 (generic) kernel ，这些 kernel 企图将许多设备的驱动程式尽可能地包含于其中，因此，假如你有一个 SCSI或IDE控制器，试试看，很有可能它的驱动程式会在 Slackware 的 kernel 当中。</P>
+<P>找到 a1 目录，并且依据你所拥有的控制器种类，选择 IDE 或 SCSI 两者之一的 kernel 。对所选择的 kernel 检视其 xxxxkern.cfg 档，并且去了解这份 kernel 中所拥有的驱动程式。如果你想要使用的设备在这份列表中，那么这个符合的 kernel 就应该能用来开机。下载 xxxxkern.tgz 档，并且用之前在有关 making boot disks 的章节中所描述之方法， copy 它到你的开机磁片中。
+<!--
+device drivers
+-->
+</P>
+<P>然后你必须检查在 kernel 中的 root 设备，使用 <CODE>rdev zImage</CODE> 这个指令。接著 rdev 将显示目前在 kernel 中的 root 设备。如果这和你所想要的 root 设备不同，那么使用 <CODE>rdev</CODE> 改变它。举例来说，我试的 kernel 设定到 /dev/sda2 ，但是我的 root SCSI partition 是 /dev/sda8 。为了能使用 root 磁片，你将必须使用这个指令 <CODE>rdev zImage </CODE>dev/fd0/ 。</P>
+<P>假如你还想知道如何 set up 一张 Slackware 的 root 磁片，这就已经超出这份 HOWTO 的范围，所以我建议你查阅 Linux Install Guide ，或是设法取得 Slackware distribution 。详情请看在这份 HOWTO 中，标题为 ``Reference'' 的章节。</P>
+<P><EM>Q. 我如何以新的档案更新我的 root 磁片 ? </EM></P>
+<P>
+<!--
+root filesystems, updating
+-->
+</P>
+<P>最简单的方法是从 rootdisk copy 档案系统回你所使用的那个 DEVICE (从之前的 
+<A HREF="Bootdisk-HOWTO-4.html#CreatingRootFS">Creating the filesystem</A> 这节而得的)。然后挂上这个档案系统并且进行改变动作。你必须记住你的 root 档案系统从哪里开始，以及它占了多少 block：
+<PRE>
+        dd if=/dev/fd0 bs=1k skip=ROOTBEGIN count=BLOCKS | gunzip > DEVICE
+        mount -t ext2 DEVICE /mnt
+</PRE>
+
+在完成改变之后，如同之前一样进行下去 (在 
+<A HREF="Bootdisk-HOWTO-4.html#WrappingItUp">Wrapping it up</A> 这节中) ，并且把 root filesystem 传送回那张磁片上。如果你并没有改变新的 root filesystem 的启始位置，你应该不用再重传 kernel ，或是重新计算 ramdisk 的 word。</P>
+<P><EM>Q. 我要如何移除 LILO ，好让我能再用 DOS 开机 ? </EM></P>
+<P>
+<!--
+Master Boot Record (MBR)
+-->
+
+<!--
+LILO
+-->
+</P>
+<P>这个问题并非真的是 Bootdisk 的一个主题，只是这个问题常常被问到。在 Linux 的环境下，你可以执行：
+<BLOCKQUOTE><CODE>
+<PRE>
+        /sbin/lilo -u
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>你也可以使用 <CODE>dd</CODE> 这个指令把被 LILO 所储存的备份， copy 到开机磁区上。如果你想要这样做，请参考 LILO 的文件。</P>
+<P>在 DOS 与 Windows 的环境下，你可以使用这个 DOS 指令：
+<BLOCKQUOTE><CODE>
+<PRE>
+        FDISK /MBR
+</PRE>
+</CODE></BLOCKQUOTE>
+
+MBR 是 Master Boot Record(主要开机记录)的缩写，它会用一个乾净的 DOS 开机磁区，替换原本的开机磁区，而且这个动作不会影响 partition table 。一些有洁癖的人 (purists) 并不同意这一点，可是就连 LILO 的原作者， Werner Almesberger ，都同意此作法。这个作法简单，而且有用。</P>
+<P><EM>Q. 如果我遗失了我的 kernel <EM> 与 </EM> 我的开机磁片，我要如何开机 ? </EM></P>
+
+<P>如果你并没有一张已准备好的开机磁片，最简单的作法可能是要依照你的磁碟控制器类型 (IDE 或 SCSI) 取得一份 Slackware kernel ，如同之前所述的 ``我如何用XXX驱动程式制作一张开机磁片 ?'' 。然后你就可以用这个 kernel 开机，接著修理有损坏的地方。</P>
+<P>你取得的 kernel 可能没有与你想要的磁碟种类和 partition 相对应的 root 设备集。举例来说， Slackware 的 generic SCSI kernel 有与 /dev/sda2 相对应的 root设备集，然而，我的 root Linux partition 是在 /dev/sda8 。在此情况下， kernel 中的 root 设备将必须被改变。</P>
+<P>你仍然可以改变 kernel 的 root 设备与 ramdisk 的设定，纵使你手上只有一个 kernel 和某种其它的作业系统，像 DOS 。</P>
+<P><CODE>rdev</CODE> 藉著改变在 kernel 档案里，在固定位移位置 (offset) 上的值，来改变 kernel 的设定，因此，如果你手上有一个 hex 编辑器 (on whatever systems you do still have running) ，你可以完成相同的事 -- 例如在 DOS 环境下的 Norton Utilities Disk Editor 。接著，你需要进行检查，如果必要的话，你得改变 kernel 档案里，在以下位移位置上的值：
+<!--
+ramdisk word
+-->
+<!--
+rdev
+-->
+</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+HEX(16进位)     DEC(10进位)  DESCRIPTION(用途描述)
+0x01F8           504          RAMDISK word的低字元组 (Low byte of RAMDISK word)
+0x01F9           505          RAMDISK word的高字元组 (High byte of RAMDISK word)
+0x01FC           508          Root minor设备号码 - 详见其后
+0X01FD           509          Root major设备号码 - 详见其后
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>关于 ramdisk word 之解释，写在之前的 
+<A HREF="Bootdisk-HOWTO-6.html#SettingRamdiskWord">Setting the ramdisk word</A> 这节里。</P>
+<P>Major 与 minor 设备号码必须设成你想要挂你的 root filesystem 于其上的设备。一些可供选择的有用参考数值如下：
+<BLOCKQUOTE><CODE>
+<PRE>
+DEVICE          MAJOR MINOR
+/dev/fd0            2     0   第一台软碟机
+/dev/hda1           3     1   在第一颗IDE硬碟上的partition 1
+/dev/sda1           8     1   在第一颗SCSI硬碟上的partition 1
+/dev/sda8           8     8   在第一颗SCSI硬碟上的partition 8
+</PRE>
+</CODE></BLOCKQUOTE>
+
+一旦你设定了这些值，接下来你可以将这个档案写入一张磁片内，你可以利用 Norton Utilities Disk Editor ，不然就是利用名为 <CODE>rawrite.exe</CODE> 的这支程式。这支程式在所有的 distribution 都找得到。这支程式是一支在DOS环境下执行的程式，它能将档案写入一张 ``raw'' disk ，从开机磁区开始写入，而不是将档案写入档案系统。如果你使用 Norton Utilities ，你必须将档案写入一张实体磁片，从磁片的头开始写入。</P>
+<P><EM>Q. 我要如何制作 boot/root 磁片的额外备份 ? </EM></P>
+
+<P>因为磁性媒介可能在一段时间后遭遇损害，你应该保留几张你的救援磁片的备份，以防原来的那一片不能被电脑读取。</P>
+<P>制作任何磁片的备份，包括开机用与公用程式 (utility) 磁片，最简单的方法是利用 <CODE>dd</CODE> 这个指令，去 copy 原来那张磁片的内容到你硬碟上的一个档案之中，然后再用相同的指令将这个档案 copy 回一张新磁片上。请注意，你并不需要，也不应该去 mount 这张磁片，因为 <CODE>dd</CODE>利用raw设备介面。</P>
+<P>要 copy 原磁片，请输入以下指令：
+<BLOCKQUOTE><CODE>
+<PRE>
+        dd if=DEVICENAME of=FILENAME
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>在此， DEVICENAME 是指这台磁碟机的设备名 (译按：/dev/fd0) ，而 FILENAME 是指(存在硬碟上的)输出档案档名。省略 <CODE>count</CODE> 参数让 <CODE>dd</CODE> 去copy整张磁片 (如果是高密度磁片，有 2880 个 blocks) 。</P>
+<P>要把从上面得到的档案 copy 到一张新磁片上，请插入一张新磁片并输入相反的指令：
+<BLOCKQUOTE><CODE>
+<PRE>
+        dd if=FILENAME of=DEVICENAME
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>请注意，以上的讨论是假设你只有一台软碟机。假如相同种类的软碟机你有两台，你可以利用像下面的指令去 copy 磁片：
+<BLOCKQUOTE><CODE>
+<PRE>
+        dd if=/dev/fd0 of=/dev/fd1
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P><EM>Q. 我如何能在每一次开机时，不用输入 &ldquo;ahaxxxx=nn,nn,nn&rdquo; ?</EM></P>
+<P>
+<!--
+kernel, parameters
+-->
+</P>
+<P>当一台磁碟设备不能被自动侦测时，就有必要提供 kernel 指定的设备参数字串，诸如：
+<BLOCKQUOTE><CODE>
+<PRE>
+        aha152x=0x340,11,3,1
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>这行参数字串可以利用 LILO 以数种方法提供给 kernel ：</P>
+<P>
+<UL>
+<LI> 每次当系统以 LILO 开机时，你可以在命令列输入它。但是每次这样做会很烦。
+</LI>
+<LI> 你可以使用 LILO 的 <CODE>lock</CODE> 这个关键字，使 LILO 储存这行命令列，并做为预设的命令列，这样每当开机时， LILO 就会使用相同的选项。
+</LI>
+<LI> 你可以在 LILO 的组态档中，使用 <CODE>append=</CODE> 这个叙述。请注意参数字串必须被双引号 (quotes) 夹住。</LI>
+</UL>
+</P>
+<P>举例来说，一行使用上述参数字串的样本命令列将长成这样：
+<BLOCKQUOTE><CODE>
+<PRE>
+        zImage  aha152x=0x340,11,3,1 root=/dev/sda1 lock
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>如此将会传递设备参数字串给 kernel ，同时也要求 kernel 把 root 设备设定到 /dev/sda1 ，并且储存整行命令列，让以后开机时都能再使用这个命令列。</P>
+<P>以下是一个 APPEND 叙述的样本：
+<BLOCKQUOTE><CODE>
+<PRE>
+        APPEND = &ldquo;aha152x=0x340,11,3,1&rdquo;
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>请注意参数字串在命令列上 <EM> 不能 </EM> 被双引号夹住，但是参数字串在 <CODE>APPEND</CODE> 叙述中 <EM> 一定要 </EM> 被双引号夹住。</P>
+<P>另外也请注意，为了能让参数字串起作用， kernel 内必须有符合这个磁碟类型的驱动程式。如果没有，那么就没有东西会去接受 (listen for) 这个参数字串，所以你将必须重新建造一个包含指定驱动程式的 kernel 。有关重新建立 kernel 的细节，请至目录 /usr/src/linux 阅读其 README 档，以及 Linux FAQ 与 Installation HOWTO 。 Alternatively ，你可以为这种磁碟类型取得一个 generic kernel 并且安装它。</P>
+<P>在体验 LILO 安装之前，强烈建议读者先读过 LILO 文件。不小心使用 <CODE>BOOT</CODE> 叙述将会损坏 partition 。</P>
+<P><EM>Q. 在开机的时候，出现了 &ldquo;<CODE>A: cannot execute B</CODE>&rdquo; 的错误讯息。为什么 ?</EM></P>
+<P>
+<!--
+hardcoded locations
+-->
+</P>
+<P>程式名称有好几种不同的写法被写死 (hardcoded) 在不同的公用程式里。这些写法不会在每个地方都发生，但是它们可能说明了为什么一个显而易见的可执行档，不能在你的系统上被发现，纵使你看到它就在那里。你可以找出是否一个已知的程式有另一种被写死的名称，你可以利用 <CODE>strings</CODE> 这个指令，并且利用管道方法 (译按： piping, |) 将输出透过 <CODE>grep</CODE> 呈现出来。</P>
+<P>已知关于写死的例子有：
+<UL>
+<LI> 在某些版本中， <CODE>Shutdown</CODE> 有把 /etc/reboot 写死在其程式码内，所以 <CODE>reboot</CODE> 必须被放置在 /etc 这个目录下。
+</LI>
+<LI> 因为有不能够找到 <CODE>init</CODE> 的 kernel 存在， <CODE>init</CODE> 已至少为一个人带来问题。</LI>
+</UL>
+</P>
+<P>为了修正这些问题，不是移动这些程式到正确的目录，就是更改设定档 (e.g. inittab)以指向正确的目录。假如有所怀疑，就请先把程式如同它们在你硬碟上一样，放入相同的目录，并且如同它们显现在你硬碟上一样，使用相同的 inittab 与 /etc/rc.d 档。</P>
+<P><EM>Q. 我的 kernel 支援 ramdisk ，但是却初始化 0K 的 ramdisk 。为什么 ?</EM></P>
+
+<P>当 kernel 正在进行开机动作时，在问题发生之处，会出现一个像这样的 kernel 讯息： 
+<!--
+ramdisk
+-->
+
+<PRE>
+        Ramdisk driver initialized : 16 ramdisks of 0K size
+</PRE>
+</P>
+<P>这可能是因为 size 已被 kernel 参数在开机时设成 0 。这可能是由于一个 overlooked LILO组态设定档参数所导致：
+<BLOCKQUOTE><CODE>
+<PRE>
+    ramdisk= 0
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>在某些较旧的 distributions 里，这个会被包含在 LILO 组态设定档样本中，这放在那里是为了 override 任何 kernel 原先的设定。如果你有这样的一行，请移除之。</P>
+<P>请注意，如果企图使用一个已被设定成 0 size 的 ramdisk ，这样的行为将会导致不可预测的结果，同时也会让 kernel 不知如何是好。</P>
+
+<HR>
+<A HREF="Bootdisk-HOWTO-11.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="Bootdisk-HOWTO-9.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="Bootdisk-HOWTO.html#toc10"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

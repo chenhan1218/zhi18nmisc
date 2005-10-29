@@ -1,0 +1,119 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>The Linux Printing HOWTO 中文版: 核心印表机装置</TITLE>
+ <LINK HREF="Printing-HOWTO-4.html" REL=next>
+ <LINK HREF="Printing-HOWTO-2.html" REL=previous>
+ <LINK HREF="Printing-HOWTO.html#toc3" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Printing-HOWTO-4.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Printing-HOWTO-2.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Printing-HOWTO.html#toc3"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s3">3. 核心印表机装置</A></H2>
+
+<P>平行埠有两种完全不同的装置驱动程式; 你的核心版本决定了你用的是那一种.
+驱动程式是在 Linux 2.1.33 版所做的改变.
+<P>两种驱动程式的型态仅在很少的一些细节上相同. 最值得注意的是,
+许多人发现 Linux 不会侦测他们的平行埠除非他们在 PC BIOS 的设定中把
+"Plug and Play" 关掉. (这一点也不令人惊讶; 过去的记录显示在 Windows
+和其它地方对非 PCI 装置的 PnP 已经成了某种灾难).
+<P>
+<H2><A NAME="ss3.1">3.1 lp 装置 (核心版本 &lt;=2.1.32)</A>
+</H2>
+
+<P>假如你已经编译或载入了 lp 装置(如果载入了的话, <CODE>cat /proc/devices</CODE>
+的结果应该会看到 lp), Linux 核心 (&lt;=2.1.32) 会提供一个或多个的
+<EM>/dev/lp0</EM>, <EM>/dev/lp1</EM>, <EM>/dev/lp2</EM> 装置档案.
+这些档案不是随意指定的, 相反的, 每一个档案皆对应到一个特定的 I/O 位址.
+这表示你的第一部印表机可能是 <EM>lp0</EM> 或 <EM>lp1</EM>, 完全视你的硬体情况而定.
+两个都试试看吧!
+<P>有些使用者提到如果使用较旧的单向印表机连接线,
+就无法侦测到他们的双向印表机连接埠. 确定你使用了正确的连接线.
+<P>一个印表机埠不能同时载入 plip 和 lp 的驱动程式, 如果你用的是 2.x 或是 1.3.x
+版以後的核心, 你可以用手动或核心的方式选择载入不同的驱动程式.
+只要小心的设定中断等设定, 你应该可以在一个埠上执行 plip, 而在另一个埠上载入
+lp 的驱动程式. 曾经有人修改驱动程式而成功;
+我希望能早日听到有人以一个简单的指令完成相同的事情.
+<P>有一个小程式 <CODE>
+<A HREF="http://www.picante.com/~gtaylor/pht/man/tunelp.8.html">tunelp</A></CODE>, 如果你是 root, 可以用来设定 Linux 2.0 lp 装置使用的中断
+(interrupt), 轮询速率(polling rate) 和其它的项目.
+<P>若是核心编译时包括了 lp 驱动程式, 核心接受 <CODE>lp=</CODE>
+参数设定中断及 IO 位址:
+<BLOCKQUOTE><CODE>
+<PRE>
+若将 lp 驱动程式编译入核心, 你可以用 LILO/LOADLIN 的命令列来指定使用的
+IO 位址及中断.
+
+语法:      lp=port0[,irq0[,port1[,irq1[,port2[,irq2]]]]]
+
+□例:   lp=0x378,0   或   lp=0x278,5,0x378,7 **
+
+要注意的是假如你使用这个功能, 你必须指定 *所有* 要用的印表机埠,
+系统不提供预设值. 你可以用 lp=0 来停用内建的驱动程式.
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>若是以载入模组的方式执行, 可以在 insmod
+指令的命令列(或是在 <EM>/etc/conf.modules</EM> 来模拟核心模式)
+以平常模组参数的语法来指定 IO 位址和中断.
+参数为 <CODE>io=port0,port1,port2</CODE>
+和 <CODE>irq=irq0,irq1,irq2</CODE>. 请参考 <EM>
+<A HREF="http://www.picante.com/~gtaylor/pht/man/insmod.1.html">insmod</A></EM> 的线上手□以取得更进一步的资讯.
+<P>
+<P>**给那些当需要时却总是找不到标准印表机埠位址的人, 位址便如同第二个□例中所示,
+另一个印表机埠 (<EM>lp0</EM>) 则在 0x3bc. 我不知道一般所用的中断是那一个.
+<P>
+<P>Linux 2.0 并列埠驱动程式的原始码在 /usr/src/linux/drivers/char/lp.c.
+<P>
+<H2><A NAME="ss3.2">3.2 parport 装置 (核心版本 &gt;= 2.1.33)</A>
+</H2>
+
+<P>从 2.1.33 版本後的核心(2.0.30 版核心可取得修正档), lp 
+装置成为新增加的 parport 装置的客户端. 增加 parport 
+装置解决了许多困扰旧有 lp 装置驱动程式的问题 - 
+像是可以和其它的驱动程式共用一个连接埠,
+可以动态指定可用的并列埠而不须将装置档对应到固定的 I/O 
+位址等等.
+<P>parport 装置的出现使得很多新的并列埠设备, 像是 Zip 磁碟机, 
+可携式 CD-ROM 和磁碟机等等, 的驱动程式得以出现. 
+其中一些也有提供 2.0 核心可用的版本, 到网路上找找看吧.
+<P>你会注意到的主要差异, 以目前列印来看, 是基於 parport
+的核心会动态地指定 lp 装置给平行埠. 所以在 Linux 2.0 中的 lp1 在 Linux 2.2
+中可能是 lp0. 如果你从使用 lp 驱动程式的核心升级到使用 parport
+驱动程式的核心, 记得检查这一点.
+<P>当我使用了 parport 驱动程式後, 我会更完整地探讨它.
+目前你可以看一下核心原始档中的 
+<A HREF="http://www.cyberelk.demon.co.uk/parport/parport.txt">Documentation/parport.txt</A>. 或者你也可以到 
+<A HREF="http://www.cyberelk.demon.co.uk/parport.html">parport web site</A> 看看.
+<P>
+<H2><A NAME="ss3.3">3.3 序列装置(Serial devices)</A>
+</H2>
+
+<P>序列装置在 Linux 中通常有个像 <EM>/dev/ttyS1</EM> 这类的名称. <CODE>
+<A HREF="http://www.picante.com/~gtaylor/pht/man/stty.1.html">stty</A></CODE> 这个工具程式可以让你查看及设定序列埠.
+<CODE>
+<A HREF="http://www.picante.com/~gtaylor/pht/man/setserial.8.html">setserial</A></CODE>
+可以让你调整更多的属性及设定使用非标准的 IRQ 及 I/O 位址的序列埠.
+<A HREF="http://metalab.unc.edu/mdw/HOWTO/Serial-HOWTO.html">Serial-HOWTO</A> 
+会对 Linux 下的序列埠做更进一步的探讨.
+<P>
+<P>如果你使用的是有流量控制的慢速序列印表机, 可能会发现有些报表被截断.
+这是因为系统预定在程式关闭序列埠 30 秒後, 
+所有在缓冲区内尚未传送的字元都会被清除. 缓冲区内可容纳最多 4096 
+个字元, 假使你的印表机使用流量控制, 而且慢到无法在程式关闭序列埠後 30 
+秒内印出缓冲区内的所有字元, 那麽缓冲区内最後的内容就会遗失. 如果
+<CODE>cat file &gt; /dev/ttyS2</CODE>
+这个指令可以完整印出较小的档案, 但会截断较长的档案时, 
+你可能就是遇到了这种情况.
+<P>
+<P>30 秒的周期可以用 setserial (2.12 及以後的版本) 指令的 "closing_wait" 
+选项来调整. 一台机器通常是在 rc.serial 开机档中呼叫 setserial
+来初始化序列埠. 可以在这修改连接印表机的序列埠的 closing_wait 选项.
+<P>
+<HR>
+<A HREF="Printing-HOWTO-4.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Printing-HOWTO-2.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Printing-HOWTO.html#toc3"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

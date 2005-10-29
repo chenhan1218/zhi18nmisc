@@ -1,0 +1,106 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>CVS-RCS- HOW-TO document for Linux (Source Code Control System): supdate </TITLE>
+ <LINK HREF="CVS-RCS-HOWTO-24.html" REL=next>
+ <LINK HREF="CVS-RCS-HOWTO-22.html" REL=previous>
+ <LINK HREF="CVS-RCS-HOWTO.html#toc23" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="CVS-RCS-HOWTO-24.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="CVS-RCS-HOWTO-22.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="CVS-RCS-HOWTO.html#toc23"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="supdate"></A> <A NAME="s23">23. supdate </A></H2>
+
+<P><B>NOTE : <I>Korn shell /bin/ksh is got by installing pdksh*.rpm from Linux contrib cdrom</I></B>
+<P>Save this file as text file and chmod a+rx on it.
+<P>
+<HR>
+<PRE>
+#!/bin/ksh
+
+# CVS program supdate
+# Program to update the file from CVS read/write mode
+
+# Every filename is composed of 3 parts - Home directory, sub-directory 
+# and the filename. The full-path is $HOME/$subdir/$fname
+# And in CVS the same directory structure is maintained (by 
+# variable $subdir) therefore in cvs we will have $CVSROOT/$subdir/$fname
+# In this program these 4 variables $HOME, $CVSROOT, $subdir and $fname
+# play an important role. For example, sample values can be like
+# HOME=/home/aldev, subdir=myproject/src CVSROOT=/home/cvsroot 
+# and fname=foo.cpp
+
+# Caution: Put double-quotes to protect the variables having 
+#          spaces, like "$HOME/$subdir" if subdir is 'some foo.cpp'
+
+cmdname=`basename $0`
+
+if [ $# -lt 1 ]; then
+        print "\nUsage: $cmdname &lt;filename>"
+        exit
+fi
+
+# Put double quotes to protect spaces in $1
+tmpaa="$1"
+
+# Check if file already exists....
+if [ $# -gt 0 -a  -f $tmpaa ]; then
+        user_perms=" "
+        group_perms=" "
+        other_perms=" "
+        user_perms=`ls -l $tmpaa | awk '{print $tmpaa }' | cut -b3-3 `
+        group_perms=`ls -l $tmpaa | awk '{print $tmpaa }' | cut -b6-6 `
+        other_perms=`ls -l $tmpaa | awk '{print $tmpaa }' | cut -b9-9 `
+        if [ "$user_perms" = "w" -o "$group_perms" = "w"  \
+                        -o "$other_perms" = "w" ]; then
+                while :
+                do
+                        print "\n$cmdname will backup your working file "
+                        print "$tmpaa to $tmpaa.supdate_bak before doing any merges."
+                        print "Are you sure you want the merge the changes from"
+                        print -n "CVS repository to your working file ? &lt;y/n> [n]: "
+                        read ans
+                        if [ "$ans" = "y" -o "$ans" = "Y" ]; then
+                                if [ -f $tmpaa.supdate_bak ]; then
+                                        print "\nWarning : File $tmpaa.supdate_bak already exists!!"
+                                        print "Please examine the file $tmpaa.supdate_bak and delete it"
+                                        print "and than re-try this $cmdname "
+                                        print "Aborting $cmdname ...."
+                                        exit
+                                else
+                                        cp $tmpaa $tmpaa.supdate_bak
+                                        break
+                                fi
+                        elif [ "$ans" = "n" -o "$ans" = "N" -o "$ans" = "" -o "$ans" = " " ]; then
+                                exit
+                        fi
+                done
+        fi
+fi
+
+if [ -d $tmpaa ]; then
+        print "\nDirectory update is disabled because cvs update"
+        print "merges the changes from repository to your working directory."
+        print "Hence give the filename to update - as shown below: "
+        print " Usage: $cmdname &lt;filename>"
+        exit
+#       cvs update
+else
+        cvs update $tmpaa
+fi
+
+print "\nDone $cmdname. $cmdname successful"
+print "\n\nThe original file is backed-up to $tmpaa.supdate_bak"
+print "\nHence your original file is SAVED to $tmpaa.supdate_bak"
+print "\n\n"
+#print "\nTip (Usage): $cmdname &lt;filename/directory name>\n"
+</PRE>
+<HR>
+<HR>
+<A HREF="CVS-RCS-HOWTO-24.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="CVS-RCS-HOWTO-22.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="CVS-RCS-HOWTO.html#toc23"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

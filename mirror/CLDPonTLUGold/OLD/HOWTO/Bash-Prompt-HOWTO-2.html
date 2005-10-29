@@ -1,0 +1,234 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Bash Prompt HOWTO: Bash and Bash Prompts</TITLE>
+ <LINK HREF="Bash-Prompt-HOWTO-3.html" REL=next>
+ <LINK HREF="Bash-Prompt-HOWTO-1.html" REL=previous>
+ <LINK HREF="Bash-Prompt-HOWTO.html#toc2" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Bash-Prompt-HOWTO-3.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Bash-Prompt-HOWTO-1.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Bash-Prompt-HOWTO.html#toc2"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s2">2. Bash and Bash Prompts</A></H2>
+
+<H2><A NAME="ss2.1">2.1 What is Bash? </A>
+</H2>
+
+<P>Descended from the Bourne Shell, Bash is a GNU product, the
+"<B>B</B>ourne <B>A</B>gain <B>SH</B>ell."  It's the standard command
+line interface on most Linux machines.  It excels at interactivity,
+supporting command line editing, completion, and recall.  It also supports
+configurable prompts - most people realize this, but don't know how much
+can be done.
+<P>
+<H2><A NAME="ss2.2">2.2 What Can Tweaking Your Bash Prompt Do For You? </A>
+</H2>
+
+<P>Most Linux systems have a default prompt in one colour (usually gray) that
+tells you your user name, the name of the machine you're working on, and
+some indication of your current working directory.  This is all useful
+information, but you can do much more with the prompt: all sorts of
+information can be displayed (tty number, time, date, load, number of
+users, uptime ...) and the prompt can use ANSI colours, either to make it
+look interesting, or to make certain information stand out.  You can also
+manipulate the title bar of an Xterm to reflect some of this information.
+<P>
+<H2><A NAME="ss2.3">2.3 Why Bother?</A>
+</H2>
+
+<P>Beyond looking cool, it's often useful to keep track of system information.
+One idea that I know appeals to some people is that it makes it possible to
+put prompts on different machines in different colours.  If you have
+several Xterms open on several different machines, or if you tend to forget
+what machine you're working on and delete the wrong files (or shut down the
+server instead of the workstation), you'll find this a great way to
+remember what machine you're on.
+<P>
+<P>For myself, I like the utility of having information about my machine
+and work environment available all the time.  And I like the challenge of
+trying to figure out how to put the maximum amount of information into the
+smallest possible space while maintaining readability.
+<P>
+<P>
+<H2><A NAME="ss2.4">2.4 The First Step</A>
+</H2>
+
+<P>The appearance of the prompt is governed by the shell variable PS1.
+Command continuations are indicated by the PS2 string, which can be
+modified in exactly the same ways discussed here - since controlling it is
+exactly the same, and it isn't as "interesting," I'll mostly be modifying
+the PS1 string.  (There are also PS3 and PS4 strings.  These are never seen
+by the average user - see the Bash man page if you're interested in their
+purpose.)  To change the way the prompt looks, you change the PS1 variable.
+For experimentation purposes, you can enter the PS1 strings directly at the
+prompt, and see the results immediately (this only affects your current
+session, and the changes go away when you log out).  If you want to make a
+change to the prompt permanent, look at the section below 
+<A HREF="#setps">Setting the PS? Strings Permanently</A>.
+<P>
+<P>Before we get started, it's important to remember that the PS1 string is
+stored in the environment like any other environment variable.  If you
+modify it at the command line, your prompt will change.  Before you make
+any changes, you can save your current prompt to another environment
+variable:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+[giles@nikola giles]$ SAVE=$PS1
+[giles@nikola giles]$
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>The simplest prompt would be a single character, such as:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+[giles@nikola giles]$ PS1=$
+$ls
+bin   mail
+$
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>This demonstrates the best way to experiment with basic prompts, entering
+them at the command line.  Notice that the text entered by the user 
+appears immediately after the prompt: I prefer to use 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$PS1="$ "
+$ ls
+bin   mail
+$ 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>which forces a space after the prompt, making it more readable.  To restore
+your original prompt, just call up the variable you stored:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ PS1=$SAVE
+[giles@nikola giles]$
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="bpescapes"></A> <A NAME="ss2.5">2.5 Bash Prompt Escape Sequences</A>
+</H2>
+
+<P>There are a lot of escape sequences offered by the Bash shell for
+insertion in the prompt.  From the Bash 2.02 man page:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+When executing interactively, bash  displays  the  primary
+prompt  PS1  when  it  is ready to read a command, and the
+secondary prompt PS2 when it needs more input to  complete
+a  command.   Bash  allows these prompt strings to be cus-
+tomized by inserting a number of backslash-escaped special
+characters that are decoded as follows:
+       \a     an ASCII bell character (07)
+       \d     the  date  in  "Weekday  Month  Date" format
+              (e.g., "Tue May 26")
+       \e     an ASCII escape character (033)
+       \h     the hostname up to the first `.'
+       \H     the hostname
+       \n     newline
+       \r     carriage return
+       \s     the name of the shell, the  basename  of  $0
+              (the portion following the final slash)
+       \t     the current time in 24-hour HH:MM:SS format
+       \T     the current time in 12-hour HH:MM:SS format
+       \@     the current time in 12-hour am/pm format
+       \u     the username of the current user
+       \v     the version of bash (e.g., 2.00)
+       \V     the  release  of  bash, version + patchlevel
+              (e.g., 2.00.0)
+       \w     the current working directory
+       \W     the basename of the current  working  direc-
+              tory
+       \!     the history number of this command
+       \#     the command number of this command
+       \$     if  the effective UID is 0, a #, otherwise a
+              $
+       \nnn   the character  corresponding  to  the  octal
+              number nnn
+       \\     a backslash
+       \[     begin a sequence of non-printing characters,
+              which could be used to embed a terminal con-
+              trol sequence into the prompt
+       \]     end a sequence of non-printing characters
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>Continuing where we left off:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+[giles@nikola giles]$ PS1="\u@\h \W&gt; "
+giles@nikola giles&gt; ls
+bin   mail
+giles@nikola giles&gt;
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>This is similar to the default on most Linux distributions.  I wanted a
+slightly different appearance, so I changed this to:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+giles@nikola giles&gt; PS1="[\t][\u@\h:\w]\$ "
+[21:52:01][giles@nikola:~]$ ls
+bin   mail
+[21:52:15][giles@nikola:~]$ 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="setps"></A> <A NAME="ss2.6">2.6 Setting the PS? Strings Permanently</A>
+</H2>
+
+<P>Various people and distributions set their PS? strings in different places.
+The most common places are /etc/profile, /etc/bashrc,
+~/.bash_profile, and ~/.bashrc .  Johan Kullstam (
+<A HREF="mailto:johan19@idt.net">johan19@idt.net</A>) writes:
+<P>
+<BLOCKQUOTE>
+<P>the PS1 string should be set in .bashrc.  this is because
+non-interactive bashes go out of their way to unset PS1.  the bash man
+page tells how the presence or absence of PS1 is a good way of knowing
+whether one is in an interactive vs non-interactive (ie script) bash
+session.
+<P>
+<P>the way i realized this is that startx is a bash script.  what this
+means is, startx will wipe out your prompt.  when you set PS1 in
+.profile (or .bash_profile), login at console, fire up X via startx,
+your PS1 gets nuked in the process leaving you with the default
+prompt.
+<P>
+<P>one workaround is to launch xterms and rxvts with the -ls option to
+force them to read .profile.  but any time a shell is called via a
+non-interactive shell-script middleman PS1 is lost.  system(3) uses sh
+-c which if sh is bash will kill PS1.  a better way is to place the
+PS1 definition in .bashrc.  this is read every time bash starts and is
+where interactive things - eg PS1 should go.
+<P>
+<P>therefore it should be stressed that PS1=..blah.. should be in .bashrc
+and not .profile.
+<P>
+</BLOCKQUOTE>
+<P>
+<P>I tried to duplicate the problem he explains, and encountered a
+different one: my PROMPT_COMMAND variable (which will be introduced later)
+was blown away.  My knowledge in this area is somewhat shaky, so I'm going
+to go with what Johan says.
+<P>
+<P>
+<P>
+<HR>
+<A HREF="Bash-Prompt-HOWTO-3.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Bash-Prompt-HOWTO-1.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Bash-Prompt-HOWTO.html#toc2"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

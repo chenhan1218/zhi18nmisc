@@ -1,0 +1,227 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="LinuxDoc-Tools 0.9.16">
+ <TITLE>DNS HOWTO 中譯版: 暫存專用名稱伺服器</TITLE>
+ <LINK HREF="DNS-HOWTO-4.html" REL=next>
+ <LINK HREF="DNS-HOWTO-2.html" REL=previous>
+ <LINK HREF="DNS-HOWTO.html#toc3" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="DNS-HOWTO-4.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="DNS-HOWTO-2.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="DNS-HOWTO.html#toc3"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<HR>
+<H2><A NAME="caching"></A> <A NAME="s3">3.</A> <A HREF="DNS-HOWTO.html#toc3">暫存專用名稱伺服器</A></H2>
+
+<P><B>DNS 配置的首種嘗試，對撥接使用者非常有用．</B></P>
+<P>一台暫存專用名稱伺服器將會為名稱查詢找出答案並且在下一次你需要那個名稱的時候記得答案．</P>
+<P>首先你需要一個稱為 <CODE>/etc/named.boot</CODE> 的檔案．當 <CODE>named</CODE> 啟動時會讀取這個檔案．
+目前它應該單純地包含:</P>
+<P>
+<HR>
+<PRE>
+;  Boot file for nicolais caching name server
+;
+directory /var/named
+;
+; type          domain                          source file or host
+cache           .                               root.cache
+primary         0.0.127.in-addr.arpa            pz/127.0.0
+</PRE>
+<HR>
+</P>
+<P><B>非常重要:</B> 在這文件的某些版本中這個檔案的這份列表會在第一個非空白字元前包含一些空格或 tab 鍵．
+這些不應該出現在檔案中．如果你從這份 HOWTO 剪貼下來，記得<B>刪除任何前面的空白</B>．</P>
+<P>`<CODE>directory</CODE>' 這一行告訴 <CODE>named</CODE> 到哪裡去找尋檔案．所有其後命名的檔案都將是相對於此目錄的．
+根據 Linux 檔案系統標準正確的目錄應該是在 <CODE>/var/named</CODE>．
+因此 <CODE>pz</CODE> 是位於 <CODE>/var/named</CODE> 之下的，也就是，<CODE>/var/named/pz</CODE>．</P>
+<P>稱為 <CODE>/var/named/root.cache</CODE> 的這個檔案是在此命名的．
+這個 <CODE>/var/named/root.cache</CODE> 應該包含:</P>
+<P>
+<HR>
+<PRE>
+ .       518400  NS      D.ROOT-SERVERS.NET.
+ .       518400  NS      E.ROOT-SERVERS.NET.
+ .       518400  NS      I.ROOT-SERVERS.NET.
+ .       518400  NS      F.ROOT-SERVERS.NET.
+ .       518400  NS      G.ROOT-SERVERS.NET.
+ .       518400  NS      A.ROOT-SERVERS.NET.
+ .       518400  NS      H.ROOT-SERVERS.NET.
+ .       518400  NS      B.ROOT-SERVERS.NET.
+ .       518400  NS      C.ROOT-SERVERS.NET.
+;
+D.ROOT-SERVERS.NET.     3600000 A       128.8.10.90
+E.ROOT-SERVERS.NET.     3600000 A       192.203.230.10
+I.ROOT-SERVERS.NET.     3600000 A       192.36.148.17
+F.ROOT-SERVERS.NET.     3600000 A       192.5.5.241
+G.ROOT-SERVERS.NET.     3600000 A       192.112.36.4
+A.ROOT-SERVERS.NET.     3600000 A       198.41.0.4
+H.ROOT-SERVERS.NET.     3600000 A       128.63.2.53
+B.ROOT-SERVERS.NET.     3600000 A       128.9.0.107
+C.ROOT-SERVERS.NET.     3600000 A       192.33.4.12
+</PRE>
+<HR>
+</P>
+<P><B>記住我說過要去掉空白字元!</B></P>
+<P>這個檔案描述了在這個世界上的根名稱伺服器．這會隨時間而改變並且<EM>必須</EM>加以維護．
+如何能保持它隨時更新請參見
+<A HREF="DNS-HOWTO-6.html#maint">維護篇</A>．
+在 <CODE>named</CODE> 的線上使用手冊裡有這個檔案的描述，但是這，以我看來，最適合那些已經了解 <CODE>named</CODE> 的人們．</P>
+<P>在 <CODE>named.boot</CODE> 裡的下一行是 <CODE>primary</CODE> 這一行．
+我將會在稍後的章節裡解釋它的用法，目前只要把它設為在 <CODE>pz</CODE> 子目錄下一個稱為 <CODE>127.0.0</CODE> 的檔案:</P>
+<P>
+<HR>
+<PRE>
+@               IN      SOA     linux.bogus. hostmaster.linux.bogus. (
+                                1       ; Serial
+                                28800   ; Refresh
+                                7200    ; Retry
+                                604800  ; Expire
+                                86400)  ; Minimum TTL
+                        NS      ns.linux.bogus.
+1                       PTR     localhost.
+</PRE>
+<HR>
+</P>
+<P>接下來，你需要一份看起來像這樣的 <CODE>/etc/resolv.conf</CODE> 檔案:</P>
+<P>
+<HR>
+<PRE>
+search subdomain.your-domain.edu your-domain.edu
+nameserver 127.0.0.1
+</PRE>
+<HR>
+</P>
+<P>`<CODE>search</CODE>' 這一行指出對於任何你想連往的主機名稱應該搜尋的領域．
+`<CODE>nameserver</CODE>' 這一行指出你的機器可以在哪個位址上找到一台名稱伺服器，
+在這個例子中是你自己的這台機器，因為你在它上面執行 <CODE>named</CODE>．
+如果你想列出好幾個名稱伺服器把它們都放在一行 `<CODE>nameserver</CODE>' 裡，用空格隔開．
+(注意: <CODE>named</CODE> 從不讀取這個檔案，而是使用 <CODE>named</CODE> 的名稱解答器會讀取．)</P>
+<P>來說明一下這個檔案有什麼作用: 如果某個客戶端嘗試要找尋 <CODE>foo</CODE> 的話，
+那麼首先嘗試的是 <CODE>foo.subdomain.your-domain.edu</CODE> 這個名稱，
+然後接下來是 <CODE>foo.your-fomain.edu</CODE> 這個名稱，最後則是 <CODE>foo</CODE> 這個名稱．
+如果有某個客戶端嘗試要找尋 <CODE>sunsite.unc.edu</CODE> 的話，
+那首先嘗試的是 <CODE>sunsite.unc.edu.subdomain.your-domain.edu</CODE> 這個名稱(沒錯，它真笨! 不過它就是這麼做)，
+然後接下來是 <CODE>sunsite.unc.edu.your-domain.edu</CODE> 這個名稱，最後則會是 <CODE>sunsite.unc.edu</CODE> 這個名稱．
+你可能不會想放太多領域到 <CODE>search</CODE> 該行裡去，搜尋它們會多花時間．</P>
+<P>這個範例假設你屬於 <CODE>subdomain.your-domain.edu</CODE> 這個領域，
+那麼你的機器，可能會稱為 <CODE>your-machine.subdomain.your-domain.edu</CODE>．
+在 <CODE>search</CODE> 這行裡不應該包含你的 TLD (頂層領域 Top Level Domain，在這個例子中是 <CODE>edu</CODE> 這個領域)．
+如果你經常需要連線到在另外一個領域裡的主機你麼你可以把該領域像這樣地加進 <CODE>search</CODE> 這行裡:</P>
+<P>
+<HR>
+<PRE>
+search subdomain.your-domain.edu your-domain.edu other-domain.com
+</PRE>
+<HR>
+</P>
+<P>依此類推．很明顯的是你得放入真實的領域名稱來取代這些名稱．請注意在領域名稱的最後面並沒有句號 '.'．</P>
+<P>接下來，根據你 libc 版本的不同需要修正 <CODE>/etc/nsswitch.conf</CODE> 或者是 <CODE>/etc/host.conf</CODE> 檔案．</P>
+<P><B>/etc/nsswitch.conf</B></P>
+<P>這是一個很長的檔案，它指出到何處去取得各種不同的資料型態，從什麼檔案或是資料庫取得．
+它的頂端經常會包含一些有用的註解．找出以 `<CODE>hosts:</CODE>'  作為開頭的那一行，它應該是這樣:</P>
+<P>
+<HR>
+<PRE>
+hosts:      files dns
+</PRE>
+<HR>
+</P>
+<P>如果檔案裡沒有以 `<CODE>hosts:</CODE>' 作為開頭的行那麼把上面這一行加上去．
+它是說程式應該先在 <CODE>/etc/hosts</CODE> 檔案裡找尋，然後根據 <CODE>resolv.conf</CODE> 詢問 DNS．</P>
+<P><B>/etc/host.conf</B> </P>
+<P>它可能包含有數行，其中應該有一行以 <CODE>order</CODE> 作為開始而且它看起來會像這樣:</P>
+<P>
+<HR>
+<PRE>
+order hosts,bind
+</PRE>
+<HR>
+</P>
+<P>如果檔案裡沒有 `<CODE>order</CODE>'  這一行的話那麼你應該貼一份上去．
+它告訴主機名稱解析函式先在 <CODE>/etc/hosts</CODE> 裡找尋，然後查問名稱伺服器
+(在 <CODE>resolv.conf</CODE> 裡你說在 127.0.0.1 這個地方)．
+在大部分 Linux 發行套件中最後這兩個檔案的文件在 resolv(8) 的線上使用手冊中(執行 `<CODE>man 8 resolv</CODE>' 即可)．
+這份線上用手冊我覺得可看，而且每個人，特別是 DNS 管理者，都應該要閱讀它．
+現在就做，如果你對你自己說&ldquo;我稍後將會去做&rdquo;，你將永遠不會去接近它．</P>
+
+<H2><A NAME="ss3.1">3.1</A> <A HREF="DNS-HOWTO.html#toc3.1">起始 named</A>
+</H2>
+
+<P>這些全部完成後就可以起始 <CODE>named</CODE> 了．如果你使用撥接連線的話那麼請先連上網路．
+鍵入 `<CODE>ndc start</CODE>'  並且按下 <CODE>RETURN</CODE> 鍵，沒有選項．
+如果它不行的話那麼試著使用 `<CODE>/usr/sbin/ndc start</CODE>' 來取代．
+再不行的話請參考 
+<A HREF="DNS-HOWTO-9.html#qanda">FAQ</A> 一節．
+現在你可以測試你的設定．當你在起始 <CODE>named</CODE> 的時候如果你觀察一下
+(使用 <CODE>tail -f /var/adm/messages</CODE> 指令)系統記錄訊息檔案
+(通常是稱為 <CODE>/var/adm/messages</CODE> 的檔案，但也可能在 <CODE>/var/log</CODE> 下，或是叫 <CODE>syslog</CODE> 的檔案)
+那麼你應該會看見像樣的一些東西:
+<BLOCKQUOTE><CODE>
+<PRE>
+Jun 30 21:50:55 roke named[2258]: starting.  named 4.9.4-REL Sun Jun 30 21:29:03 MET DST 1996   janl@roke.slip.ifi.uio.no:/var/tmp/bind/named
+Jun 30 21:50:55 roke named[2258]: cache zone "" loaded (serial 0)
+Jun 30 21:50:55 roke named[2258]: primary zone "0.0.127.in-addr.arpa" loaded (serial 1)
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>如果有任何關於錯誤的訊息那麼就是有個錯誤發生，
+<CODE>named</CODE> 將會指名有錯誤的檔案(我想是 <CODE>named.boot</CODE> 以及 <CODE>root.cache</CODE> 其中之一:-)．
+殺掉 <CODE>named</CODE> 程序並回頭檢查那些檔案．</P>
+<P>現在可以用 <CODE>nslookup</CODE> 來檢查一下你的工作:
+<BLOCKQUOTE><CODE>
+<PRE>
+$ nslookup
+Default Server:  localhost
+Address:  127.0.0.1
+
+>
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>如果這是你所得到的回應那麼它已經能夠運作．我們希望是這樣．得到任何其它回應都請回頭檢查每一件事．
+每一次你改變 <CODE>named.boot</CODE> 檔案之後你都得使用 <CODE>ndc restart</CODE> 這個指令重新起始 <CODE>named</CODE> 程式．</P>
+<P>現在你可以輸入查詢．嘗試找尋某些靠近你的機器．<CODE>pat.uio.no</CODE> 離我不遠，在 Oslo 的大學裡:
+<BLOCKQUOTE><CODE>
+<PRE>
+> pat.uio.no
+Server:  localhost
+Address:  127.0.0.1
+
+Name:    pat.uio.no
+Address:  129.240.2.50
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>現在 <CODE>nslookup</CODE> 要求你的 <CODE>named</CODE> 找尋 <CODE>pat.uio.no</CODE> 這台機器．
+然後它(<CODE>named</CODE>)聯繫在你 <CODE>root.cache</CODE> 檔案裡所指名的名稱伺服機器其中一台，
+並且從那裡查問它該如何繼續下去．在你取得結果之前可能得花費一點時間，
+因為它搜尋你在 <CODE>/etc/resolv.conf</CODE> 裡指名的所有領域．</P>
+<P>如果你再試一次的話那麼你將會得到:
+<BLOCKQUOTE><CODE>
+<PRE>
+> pat.uio.no
+Server:  localhost
+Address:  127.0.0.1
+
+Non-authoritative answer:
+Name:    pat.uio.no
+Address:  129.240.2.50
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>注意這回我們所得到的 `<CODE>Non-authoritative answer:</CODE>' 這一行．
+這代表 <CODE>named</CODE> 此次並未到網路外去查問，取而代之的是在它的暫存區裡找尋並且在那裡找到答案．
+但是暫存的資訊<EM>可能</EM>會過時．所以它藉由 `<CODE>Non-authorative answer:</CODE>' 來知會你有這個(很輕微的)危險性存在．
+當 <CODE>nslookup</CODE> 說這是你第二次查問某台主機時，這是 <CODE>named</CODE> 能暫存該項資訊並且正常運作的一個訊息．
+你可以使用 `exit' 指令離開 <CODE>nslookup</CODE> 程式．</P>
+<P>如果你是個撥接(ppp, slip) 使用者請閱讀
+<A HREF="DNS-HOWTO-8.html#auto">撥接連線專節</A>，裡面有一些給你的建議．</P>
+<P>現在你知道如何設立一個能夠暫存的 <CODE>named</CODE> 系統．來杯啤酒，牛奶，或是任何你喜歡的東西來慶祝吧．</P>
+
+<HR>
+<A HREF="DNS-HOWTO-4.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="DNS-HOWTO-2.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="DNS-HOWTO.html#toc3"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

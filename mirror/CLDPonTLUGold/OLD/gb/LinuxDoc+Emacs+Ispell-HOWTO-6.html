@@ -1,0 +1,67 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>LinuxDoc+Emacs+Ispell-HOWTO 中文版: 一些投机的技巧   </TITLE>
+ <LINK HREF="LinuxDoc+Emacs+Ispell-HOWTO-7.html" REL=next>
+ <LINK HREF="LinuxDoc+Emacs+Ispell-HOWTO-5.html" REL=previous>
+ <LINK HREF="LinuxDoc+Emacs+Ispell-HOWTO.html#toc6" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="LinuxDoc+Emacs+Ispell-HOWTO-7.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="LinuxDoc+Emacs+Ispell-HOWTO-5.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="LinuxDoc+Emacs+Ispell-HOWTO.html#toc6"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s6">6. 一些投机的技巧   </A></H2>
+
+<H2><A NAME="ss6.1">6.1 自动插入页首 (header)</A>
+    </H2>
+
+<P>在 Emacs 下，您可以将任何事件<EM>外挂 (hook)</EM> 任何的动作（像是打开一个档案，储存，或执行一个新的模式，等等）。
+<P>
+<P>您也可以利用 <B>autoinsert</B> 程式库来执行一些特别的动作：当您在 Emacs 下开新档案时，这个程式库就会根据档案的属性来插入相符的<EM>标准</EM>页首。
+<P>
+<P>就我们的情形，这<EM>标准</EM>页首就是我们说明文件型态 (LinuxDoc)，标题，作者，及日期的地方。
+<P>
+<P>接下来我会描述两个如何插入这种页首的方法。您可以插入一个含有相关资讯的模板 (template) 档案，或者您也可以跑一跑 <B>elisp</B> 程式。
+<P>
+<H3>藉由插入一个档案    </H3>
+
+<P>当您开启一份档案时，首先您必须告诉 Emacs 执行<CODE>自动插入</CODE>，然後再读取 <B>autoinsert</B> 程式库的资料来宣告我们要改变的 <CODE>auto-insert-alist</CODE> 表单。这表单定义了不同档案型态所要插入的页首。它的预设值是要插入的档案必须在 <CODE>~/insert/</CODE> 目录下，但如果您要重新定义其 <CODE>auto-insert-directory</CODE> 也是可行的。
+<P>
+<P>每一次您开启一份新的 SGML 档案时，只要在 <CODE>.emacs</CODE> 档案内加入下列指示，您就可以插入 <CODE>~/emacs/sgml-insert.sgml</CODE> 档：
+<P>
+<PRE>
+      (add-hook 'find-file-hooks 'auto-insert)
+      (load-library "autoinsert")
+      (setq auto-insert-directory "~/emacs/")
+      (setq auto-insert-alist
+            (append '((sgml-mode .  "sgml-insert.sgml"))
+                    auto-insert-alist))
+     
+</PRE>
+<P>那您就可以在 <CODE>~/emacs/sgml-insert.sgml</CODE> 档写入您自订的页首，然後再重新执行 Emacs 来开启某一 <CODE>foobar.sgml</CODE> 档案，之後 Emacs 会询问您确认这自动插入的指令来插入您要的页首。
+<P>
+<H3>藉由执行一个程式    </H3>
+
+<P>这方法跟上述大同小异，但不同的是您必须设定 <CODE>auto-insert-alist</CODE> 表单，告诉它要插入的是一个执行程式，而非一个档案。只要在 <CODE>.emacs</CODE> 档案内加入下列指示，就可以自动执行，不过当然您得先把这程式写在一个叫做 <CODE>~/emacs/sgml-header.el</CODE> 的档案里才可以。（鉴於这函式可能会过长，您不需要将它放在 <CODE>.emacs</CODE> 档案里）：
+<P>
+<PRE>
+      (add-hook 'find-file-hooks 'auto-insert)
+      (load-library "autoinsert")
+      (add-to-list 'load-path "~/emacs")
+      (load-library "sgml-header")
+      (setq auto-insert-alist
+            (append '(((sgml-mode .  "SGML Mode") . insert-sgml-header))
+                    auto-insert-alist))
+     
+</PRE>
+<P>您可以参考
+<A HREF="LinuxDoc+Emacs+Ispell-HOWTO-7.html#insert-sgml-header">附录</A>里有关 <CODE>Insert-sgml-header</CODE> 程式的例子。
+<P>
+<P>
+<HR>
+<A HREF="LinuxDoc+Emacs+Ispell-HOWTO-7.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="LinuxDoc+Emacs+Ispell-HOWTO-5.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="LinuxDoc+Emacs+Ispell-HOWTO.html#toc6"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

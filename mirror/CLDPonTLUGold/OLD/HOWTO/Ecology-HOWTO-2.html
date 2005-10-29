@@ -1,0 +1,163 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux Ecology HOWTO: Reduction of Power Consumption</TITLE>
+ <LINK HREF="Ecology-HOWTO-3.html" REL=next>
+ <LINK HREF="Ecology-HOWTO-1.html" REL=previous>
+ <LINK HREF="Ecology-HOWTO.html#toc2" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Ecology-HOWTO-3.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Ecology-HOWTO-1.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Ecology-HOWTO.html#toc2"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s2">2. Reduction of Power Consumption</A></H2>
+
+<P>There are some means to save power when using a computer which are supported by Linux: Advanced Power Management, certain harddisk settings, working without monitor and others.
+<P>
+<H2><A NAME="ss2.1">2.1 Advanced Power Management (APM/ACPI)</A>
+</H2>
+
+<P>
+<H3>Linux Compatibility Check</H3>
+
+<P>From the Battery-Powered-mini-HOWTO &quot; .. for APM to work on any notebook or energy-conscious desktop, the system BIOS ROM in the machine must support the APM standard. Furthermore, for APM to work with the Linux operating system, the system BIOS ROM must support either the 1.0 or 1.1 version of the APM standard, and it must also support 32-bit protected mode connections. A system that supports APM 1.1 is preferred, as it provides more features that the device driver and supporting utilities can take advantage of.&quot;
+<P>You may get information about the APM version with the <CODE>dmesg</CODE> command and in the /proc/apm file. 
+<P>
+<H3>Introduction</H3>
+
+<P>When you first install Linux, you will probably have to recompile the kernel. The kernel that came with your distribution probably does not have APM enabled.
+<P>APM support consists of two parts: <I>kernel</I> support and <I>user-land</I> support.
+<P>For <I>kernel</I> support, enable the parameters in the corresponding kernel section. AFAIK not all features work with laptops. AFAIK the feature <CODE>CONFIG_APM_POWER_OFF</CODE> works with most laptops.
+<P>The utilities for <I>userland</I> support may be found at 
+<A HREF="http://www.worldvisions.ca/~apenwarr/apmd/">WorldVisions</A>. APMD is a set of programs that control the Advanced Power Management system found in most modern laptop computers. If you run a 2.2.x kernel and want to experiment, Gabor Kuti &lt;seasons@falcon.sch.bme.hu&gt; has made a kernel patch that allows you to <I>hibernate</I> any Linux system to disk, even if your computers APM BIOS doesn't support it directly.
+<P>Richard Gooch wrote: I'have had a look at the beta version of <CODE>apmd</CODE>, and I still don't like it, because:
+<P>
+<UL>
+<LI>Only supports one command to run at suspend time.
+</LI>
+<LI>Doesn't distinguish between user and system suspends.
+</LI>
+<LI>doesn't provide a way to disable policy (the <CODE>sync()</CODE>; <CODE>sleep(0) </CODE>; <CODE>sync()</CODE>; <CODE>sleep(1)</CODE>; sequence)
+</LI>
+<LI>Does not document extra features.
+</LI>
+<LI>And I'm not sure that what we want is a single super daemon. A collection of smaller daemons might be better, since it allows people to pick and choose. A super daemon is bloat for those who only want one small feature. 
+</LI>
+</UL>
+<P>Though this topic was discussed controversly Richard Gooch has put together a package <CODE>suspendd</CODE> at 
+<A HREF="http://www.atnf.csiro.au/~rgooch/linux/">http://www.atnf.csiro.au/~rgooch/linux/</A> .
+<P>Also, have a look at <CODE>apmcd</CODE> (<CODE>apm</CODE> based crontab) at 
+<A HREF="ftp://ftp.binary9.net/pub/linux/">ftp://ftp.binary9.net/pub/linux/</A> . A tool made by Nicolas J. Leon &lt;nicholas@binary9.net&gt; 
+<A HREF="http://mrnick.binary9.net/">http://mrnick.binary9.net/</A>.
+<P>Note: I didn't check wether this features are merged into one package (<CODE>apmd</CODE> eventually) already.
+<P>
+<H3>Caveats</H3>
+
+<P>If you have another operating system preinstalled or use another operating system at the same disk, make sure there is no &quot;hibernation&quot; or &quot;suspend&quot; tool installed, which could severely interfere with Linux, e.g. it might use disk space which is occupied by Linux or vice versa.
+<P>
+<H3>Troubleshooting</H3>
+
+<P>If your machine worked with 2.0.x kernels but not with the 2.2.x series, take this advice from Klaus Franken kfr@klaus.franken.de : &quot;The default changed in 2.2. Search in the init-scripts for <CODE>halt</CODE> and change it to <CODE>halt -p</CODE> or <CODE>poweroff</CODE>. See <CODE>man halt</CODE> , if you don't have this option you need a newer version of <CODE>halt</CODE>.&quot; You may find it in the <CODE>SysVinit</CODE> package.
+<P>Sometimes X windows and APM don't work smoothly together, the machine might even hang. A recommendation from Steve Rader: Some Linux systems have their X server hang when doing <CODE>apm -s</CODE>. Folks with this affliction might want switch to the console virtual terminal then suspend <CODE>chvt 1; apm -s</CODE> as root, or, more appropiately.<CODE>sudo chvt 1; sudo apm -s</CODE>. I have these commands in a script, say, <CODE>my-suspend</CODE> and then do <CODE>xapmload --click-command my-suspend</CODE> .
+<P>On some new machines (for instance HP Omnibook 4150 - 366 MHz model) when accessing /proc/apm, you may get a kernel fault <CODE>general protection fault: f000</CODE>. Stephen Rothwell &lt;Stephen.Rothwell@canb.auug.org.au&gt; 
+<A HREF="http://www.canb.auug.org.au/~sfr/">http://www.canb.auug.org.au/~sfr/</A> explaines: &quot;This is your APM BIOS attempting to use a real mode segment while in protected mode, i.e. it is a bug in your BIOS. .. We have seen a few of these recently, except all the others are in the power off code in the BIOS wher we can work around it by returning to real mode before attempting to power off. Here we cannot do this.&quot;
+<P>
+<H3>ACPI</H3>
+
+<P>The latest standard is ACPI. The ACPI4Linux project has started at the beginning of 1999. The ACPI4Linux project is a kernel driver project aimed at implementing full ACPI support for Linux, including fan control, dock/undock detection and a WindowMaker dockable temperature meter. You may reach it at 
+<A HREF="http://phobos.fachschaften.tu-muenchen.de/acpi/">http://phobos.fachschaften.tu-muenchen.de/acpi/</A> .
+<P>
+<OL>
+<LI>
+<A HREF="ftp://tsx-11.mit.edu/pub/linux/sources/sbin/hdparm-3.0.tar.gz">hdparm</A> <I>hdparm</I> is a Linux IDE disk utility that lets you set spin-down timeouts and other disk parameters. It works also for some SCSI features.
+</LI>
+<LI>
+<A HREF="http://www.complang.tuwien.ac.at/ulrich/linux/tips.html">Mobile Update Daemon </A> This is a drop-in replacement for the standard <CODE>update</CODE> daemon, <CODE>mobile-update</CODE> minimizes disk spin ups and reduces disk uptime. It flushes buffers only when other disk activity is present. To ensure a consistent file system call <CODE>sync</CODE> manually. Otherwise files may be lost on power failure. <CODE>mobile-update</CODE> does not use APM. So it works also on older systems.
+</LI>
+<LI>
+<A HREF="http://www2.prestel.co.uk/hex/toshiba.html">Toshiba Linux Utilities </A> This is a set of Linux utilities for controlling the fan, supervisor passwords, and hot key functions of Toshiba Pentium notebooks. There is a KDE package <I>Klibreta</I>, too.
+</LI>
+<LI>
+<A HREF="http://lcdproc.omnipotent.net/">LCDproc</A> . &quot;LCDproc is a small piece of software that will enable your Linux box to display live system information on a 20x4 line backlit LCD display. AFAIK it connects only to the external Matrix-Orbital 20x4 LCD display 
+<A HREF="http://www.matrix-orbital.com/">Matrix-Orbital</A>, which is a LCD display connected to a serial port.
+</LI>
+<LI>
+<A HREF="http://www.loonie.net/~eschenk/diald.html">Dial Daemon</A> . The Diald daemon provides on demand Internet connectivity using the SLIP or PPP protocols. Diald can automatically dial in to a remote host when needed or bring down dial-up connections that are inactive.
+</LI>
+</OL>
+<P>
+<H2><A NAME="ss2.2">2.2 Power Management Unit - PMU (PowerBook)</A>
+</H2>
+
+<P>PowerBooks don't support the APM specification, but they have a separate protocol for their PMU (Power Management Unit). There is a free (GPL) daemon called <CODE>pmud</CODE> that handles power management; it can monitor the battery level, put the machine to sleep, and set different levels of power consumption. It was written by Stephan Leemburg &lt;stephan@jvc.nl&gt;, and is available from PPC distribution ftp sites (e.g. ftp://ftp.linuxppc.com/contrib/software/Utilities/System/). There is also an older utility called <CODE>snooze</CODE> available from the same sites that just puts the PowerBook to sleep.
+<P>
+<H2><A NAME="ss2.3">2.3 Turn Monitor off, use Keyboard LEDs</A>
+</H2>
+
+<P>There are some tools which allow to get information from your computer without using the monitor:
+<P>
+<UL>
+<LI><CODE>bl</CODE> : Blink Keyboard LEDs </LI>
+<LI><CODE>blinkd</CODE> : &quot;Blinks keyboard LEDs for an answering machine or fax machine. Blinkd is a client/server pair, that lets the keyboard LEDs blink, indicating things like the number of incoming voice calls in the voice box or incoming faxes in the spool.&quot;
+</LI>
+<LI><CODE>mailleds</CODE> : Shows new mails with the keyboard LEDs, <CODE>mailleds</CODE> is a quiet, unobtrusive way to signify that you have  new mail: a user daemon to blink LEDs when there is new mail.
+</LI>
+<LI><CODE>tleds</CODE> : Blinks keyboard LEDs indicating TX and RX network packets. They blink Scroll-Lock LED when a network packet leaves the machine, and Num-Lock LED when one is received.
+</LI>
+</UL>
+<P>
+<H2><A NAME="ss2.4">2.4 Screensavers</A>
+</H2>
+
+<P>Do they only prevent the screen from being burned in or do they save power, too?
+<P>Some recommendations from Wade W. Hampton:
+<P>Screensavers usually display graphics, look for ETI, or perform other tasks.  When using your screensaver in this manner, you may actually consume MORE power. For example a computer using XSETI as a screensaver might get far warmer (hence use more power) than when it was being used to edit a document or perform a compile.
+<P>To really save power, and if your X server plus monitor supports it, use the <CODE>dpms</CODE> option of <CODE>xset</CODE> (see the manual page for <CODE>xset</CODE>). For example, to enable the DPMS (Energy Star) features of you X server: <CODE>xset +dpms</CODE>
+<P>You may also manually change the mode of your X display: 
+<HR>
+<PRE>
+xset dpms force standby
+xset dpms force suspend
+xset dpms force off
+</PRE>
+<HR>
+<P>
+<P>AFAIK a CRT consumes on the order of 25 percent more power when displaying a <I>plain white</I> screen than displaying a <I>plain black</I> screen. So, a screensaver that's mostly black can help save power, even if it doesn't actually use DPMS to power down the screen. Of course, one that's very bright and colourful, or that keeps the CPU running fast is not much help.
+<P>
+<P>Some screen saver programs:
+<P>
+<UL>
+<LI>The purpose of <CODE>xscreensaver</CODE> is to display pretty pictures on your screen when it is not in use, in keeping with the philosophy that unattended monitors should always be doing something interesting, just like they do in the movies. The benefit that this program has over the combination of the <CODE>xlock</CODE> and  <CODE>xautolock</CODE> programs is the ease with which new graphics hacks can be  installed: you don't need to recompile this program to add a new display mode, you just change some resource settings. Any program which can be  invoked in such a way that it draws on the root window of the screen can now be used as a screensaver without modification.  The programs that are being run as screensavers don't need to have any special knowledge about what it means to be a screensaver.</LI>
+<LI><CODE>LockVC</CODE> is a console-locking-program combined with a starfield screensaver. Executing LOCKVC on a virtual console brings up a starfield that starts to rotate around all three axes.</LI>
+</UL>
+<P>
+<H2><A NAME="ss2.5">2.5 Energy Star Label</A>
+</H2>
+
+<P>Robert Horn &lt;rjh@world.std.com&gt; wrote: &quot;
+<P>I had a chance to discuss Energy Star with the designers of desktop printers. They confirmed that the allowable stand-by power targets depend on the device, and they only knew their targets. But they made some other interesting comments: 
+<OL>
+<LI>Energy Star ratings lead to significant operational power savings. Timer based power savings are the exception. Most savings come from designing in power on demand with low leakage drivers. For example, using stepper motors with low leakage current instead of high leakage.
+<P>This savings is both from individual designs and from the resulting demand for low leakage products causing better and cheaper low leakage product designs. The old-style (e.g. typewriter) design with one motor (always on) and various clutches is no longer the least cost.
+<P>
+</LI>
+<LI>Energy Star was good organizational engineering. It never required designers to compromise quality or performance, which made it much harder to argue against design changes to reduce power consumption while idle. Since most of the savings begin the millisecond that parts stop moving, these savings are considerable.
+</LI>
+<LI>The power ratings on PC's are a safety rating, not a usage rating. So the 235W and 300W power supplies that commonly found in PCs are specifying their safety limits. Actual full power usage is much less, typically 20-30 percent of the safe limit. The designers also noted that it is actually difficult to measure the power consumption of a switching power supply. You need to use specially designed power meters. The regular AC meters are designed for motors, and are rather inaccurate for switching power supplies.</LI>
+</OL>
+
+...&quot;
+<P>
+<H2><A NAME="ss2.6">2.6 Miscellaneous Power Saving Techniques</A>
+</H2>
+
+<P>Linux halts the CPU in the idle cycle to further reduce power consumption. Early reports of OS/2, Win3.1/95, NT, and Linux showed Linux to use far less power than DOS-based O/S's that spun in the idle loop and consumed power -- this may have changed hence it would need research to validate.
+<P>Most Linux-users tend to leave their computer on for years whenever possible. However, several modern BIOS's support an unattended powerup, and with <CODE>cron</CODE> you can even do an unattended <CODE>shutdown</CODE>. No need to leave the computer on night after night.
+<P>
+<HR>
+<A HREF="Ecology-HOWTO-3.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Ecology-HOWTO-1.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Ecology-HOWTO.html#toc2"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

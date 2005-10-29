@@ -1,0 +1,333 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux Portuguese-HOWTO: Configuração do console (modo texto)</TITLE>
+ <LINK HREF="Portuguese-HOWTO-4.html" REL=next>
+ <LINK HREF="Portuguese-HOWTO-2.html" REL=previous>
+ <LINK HREF="Portuguese-HOWTO.html#toc3" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Portuguese-HOWTO-4.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Portuguese-HOWTO-2.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Portuguese-HOWTO.html#toc3"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="CONF-CONS"></A> <A NAME="s3">3. Configuração do console (modo texto)</A></H2>
+
+<P>O documento de referência sobre a configuração do console do Linux é o
+<A HREF="http://metalab.unc.edu/pub/Linux/docs/HOWTO/Keyboard-and-Console-HOWTO">Keyboard and Console HOWTO</A>, de Andries Brouwer, que pode ser
+encontrado nos repositórios do LDP. Conforme lá descrito, a configuração da
+fonte de caracteres e mapa de teclado é feita usando o pacote KBD, encontrado
+em todas as distribuições de Linux. 
+<P>
+<H2><A NAME="ss3.1">3.1 Mapas de teclado</A>
+</H2>
+
+<P>Cada tecla do PC possui um código numérico. Ao pressionarmos uma delas o
+processador controlador do teclado envia ao computador esse código <EM>de
+varredura</EM>, também conhecido como <EM>scancode</EM>, junto com um sinal de que a
+tecla foi pressionada ou solta. As seqüências de eventos são então
+processadas pelo <EM>driver</EM> de teclado e armazenadas em uma fila de
+caracteres que é lida pelas aplicações por meio da chamada de funções do
+sistema operativo. 
+<P>Um mapa de teclado é um arquivo de texto que estabelace as correspondências
+entre o <EM>scancode</EM> de tecla e o caracter (ou seqüência de caracteres)
+a gerar quando ela for pressionada, chamado <EM>keycode</EM>. Por exemplo:
+<PRE>
+    # atribuição da tecla '-' do teclado numérico à tecla com código 74
+    keycode  74 = KP_Subtract     
+
+    # atribuição da tecla '4' do teclado numérico à tecla com código 75
+    keycode  75 = KP_4            
+
+    # etc...
+
+    keycode  76 = KP_5            # tecla 5
+    keycode  77 = KP_6            # tecla 6
+    keycode  78 = KP_Add          # soma
+    keycode  79 = KP_1            # tecla 1
+    keycode  80 = KP_2            # tecla 2
+</PRE>
+<P>Além das teclas alfabéticas, numéricas e de símbolos, existem outras
+chamadas <EM>modificadoras</EM> que permitem gerar códigos que não
+correspondem a nenhum sinal gráfico: <EM>Shift Control
+Alt</EM> e <EM>Meta</EM>. Esta última normalmente não é encontrada em
+teclados de PCs, apenas em estações de trabalho de fabricantes como Sun,
+SGI, HP e Digital (eles não gostam de ser chamados de ``DEC''). O editor de
+texto Emacs usa muito a tecla <EM>Meta</EM>.
+<P>O arquivo de mapa permite também especificar teclas especiais chamadas
+``teclas mortas'' (<EM>deadkeys</EM>). Quando pressionadas elas não resultam no
+aparecimento de um caracter na tela, limitando-se a alterar o comportamento da
+tecla pressionada a seguir para que, por exemplo, ao se digitar um
+<B>~</B> seguida de um <B>a</B>, seja gerado um `ã'.
+<P>
+<H2><A NAME="ss3.2">3.2 Mapas de tradução de tela</A>
+</H2>
+
+<P>Um mapa de tradução de tela permite especificar qual o caracter X a ser
+exibido na tela, quando um programa deseja exibir um caracter Y.  Desta
+forma, poderíamos fazer com que ao escrever o caracter com o código do
+<CODE>c-cedilhado</CODE> na tela, fosse na realidade exibido um outro caracter de
+código diferente mas cuja <EM>imagem</EM> na nossa fonte de caracteres
+correspondesse à imagem de um <CODE>c-cedilhado</CODE>.
+<P>Este mapeamento é necessário apenas quando queremos usar uma fonte cujos
+caracteres não possuem códigos diretamente correspondentes aos do conjunto
+usado no mapa de teclado.
+<P>
+<P>
+<H2><A NAME="ss3.3">3.3 Comandos do pacote KBD</A>
+</H2>
+
+<P>
+<DL>
+<DT><B>Loadkeys</B><DD><P>Permite carregar um mapa de teclado. Por exemplo, o comando 
+a seguir carrega o mapa armazenado no arquivo <CODE>portugal.map</CODE>.
+<PRE>
+    loadkeys /usr/lib/kbd/keytables/portugal.map
+</PRE>
+<DT><B>Setfont</B><DD><P>Permite o carregamento de uma fonte de caracteres de tela, possibilitando a
+alteração das fontes utilizadas em modo de texto. O comando a seguir, por
+exemplo, irá carregar uma fonte com o conjunto Latin-1: 
+<PRE>
+    setfont lat1u-16.psf
+</PRE>
+<DT><B>Showfont</B><DD><P>mostra todos os caracteres existentes na fonte que está atualmente em uso
+no console. O X também tem um comanto chamado showfont, que serve para
+mostrar as características de uma determinada fonte, mas não os caracteres
+em si. Para esta última finalidade se usa o comando <EM>xfd</EM>. Se o
+programa showfont do pacote KBD for invocado em um emulador de terminal X,
+como <EM>xterm</EM>, ele gerará um erro ``GIO_SCRNMAP: Invalid argument'', mas
+não provocará nenhum dano.
+<DT><B>Mapscr</B><DD><P>Permite carregar um mapa de tradução de tela. Suponhamos que exista o arquivo
+<CODE>/etc/portugal.trad</CODE>. Se executarmos o comando
+<PRE>
+    mapscrn /etc/portugal.trad
+</PRE>
+
+então a partir deste momento as traduções lá definidas serão usadas.
+<DT><B>Loadunimap</B><DD><P>Carrega um mapa de tradução de Unicode para a fonte de tela. O mapa padrão,
+chamado ``def.uni'' considera que estamos usando a fonte normal do IBM-PC.
+Este comando <B>não</B> é necessário quando usamos uma fonte com caracteres
+definidos no padrão Unicode, pois o programa setfont carrega
+automaticamente a tabela de mapeamento adequada. O comando a seguir
+carregará o mapa de tradução para as fontes latin-1:
+<PRE>
+    loadunimap lat1
+</PRE>
+</DL>
+<P>
+<P>
+<H2><A NAME="SEC:CARFONTE"></A> <A NAME="ss3.4">3.4 Carregamento de uma fonte de caracteres</A>
+</H2>
+
+<P>O pacote KBD contém dois tipos de fontes com codificação latin-1:
+<UL>
+<LI>as que já possuem uma tabela de mapeamento unicode, carregada
+automaticamente pelo programa <CODE>setfont</CODE>. Estas fontes têm nomes
+<CODE>lat1u-*.psf</CODE>;</LI>
+<LI>as que não possuem tabela de mapeamento. Neste caso é preciso carregar
+uma com o programa <CODE>loadunimap</CODE>. Estas têm nomes <CODE>lat1-*.psf</CODE>
+(o ``u'' indica Unicode).</LI>
+</UL>
+<P>Nas versões mais novas do KBD os arquivos são comprimidos com <CODE>gzip</CODE>.  É
+preciso carregar uma fonte que tenha os caractres latinos acentuados no padrão
+ISO 8859-1 e <EM>também</EM> os símbolos semigráficos. As fontes de nome
+<CODE>iso01.*</CODE> não possuem esses símbolos. A fonte mais recomendada é a
+<CODE>lat1u-16.psf</CODE>.
+<P>As versões mais antigas do pacote KBD mantinham essas fontes no diretório
+<CODE>/usr/lib/kbd/consolefonts</CODE>, que foi trocado depois da versão 0.92 por
+<CODE>/usr/share/consolefonts</CODE>. Dependendo da sua distribuição e do quanto
+ela esteja atualizada o diretório poderá ser um ou outro.
+<P>
+<H3>Slackware</H3>
+
+<P>Foi criado o script <CODE>/etc/rc.d/rc.font</CODE>, contendo o seguinte: 
+<P>
+<PRE>
+    #!/bin/sh
+    #
+    # /etc/rc.d/rc.font
+    #
+    # Seleciona uma das fontes de caracteres disponiveis em
+    # /usr/lib/kbd/consolefonts.
+    #
+    setfont lat1u-16.psf
+
+    # O comando a seguir é totalmente desnecessário
+    # com a fonte lat1u-16.psf.
+    # loadunimap lat1u
+
+    # Remova o comentário da linha abaixo se estiver usando uma fonte sem
+    # tabela de mapeamento de Unicode para tela:
+    # loadunimap lat1
+</PRE>
+<P>
+<H3>Debian</H3>
+
+<P>Edite o arquivo <CODE>/etc/kbd/config</CODE> e coloque uma linha contendo
+<PRE>
+    CONSOLE_FONT=lat1u-16.psf
+</PRE>
+
+esse arquivo é processado pelo script <CODE>/etc/rc.boot/kbd</CODE>. Execute-o
+para ativar a nova fonte sem ter que dar ``reboot''. Lembre-se sempre: Linux
+<B>não</B> é Windows!
+<P>
+<H3>Red Hat</H3>
+
+<P>Edite o arquivo <CODE>/etc/sysconfig/i18n</CODE> e veja se contém o seguinte:
+<PRE>
+    LANG=pt_BR
+    LINGUAS=pt_BR
+    LC_CTYPE=ISO-8859-1
+    LC_ALL=pt_BR
+    SYSFONT=lat1u-16
+    SYSTERM=linux-lat
+</PRE>
+<P>
+<H3>Conectiva Red Hat Linux</H3>
+
+<P>Se você selecionar a língua correta durante a instalação não há nada mais a
+fazer. A configuração é feita extatamente como do Red Hat.
+<P>
+<H3>S.u.S.E.</H3>
+
+<P>Edite o arquivo <CODE>/etc/rc.config</CODE> e procure uma linha que começa com
+``FONT='' (linha 64, em minha máquina com S.u.S.E. verão 5.6) e coloque
+<PRE>
+    FONT=lat1u-16.psf
+</PRE>
+<P>Edite os scripts <CODE>boot.setup</CODE> e <CODE>single</CODE> contidos no diretório
+<CODE>/etc/rc.d</CODE>. Procure a linha contendo o comando
+<CODE>/usr/bin/loadunimap</CODE> e remova-a ou ponha no seu início um ``#''
+para deixá-la como comentário. Veja comentários sobre este comando na
+seção&nbsp;
+<A HREF="#SEC:CARFONTE">Carregamento de uma fonte de caracteres</A>.
+<P>
+<H3>Testando a fonte</H3>
+
+<P>Experimente algumas teclas como ``,.|!"#$%&amp;/()=?'',
+etc. e use o comando <CODE>showfont</CODE> para mostrar a fonte em uso.
+<P>
+<H2><A NAME="ss3.5">3.5 Carregando um mapa de teclado</A>
+</H2>
+
+<P>A seguir é necessário carregar o mapa de teclado adequado. Até a versão 0.92
+do pacote KBD esses mapas ficavam no diretório <CODE>/usr/lib/kbd/keytables</CODE>
+passando mais tarde para <CODE>/usr/share/keytables</CODE>.  Dependendo da
+distribuição você terá um diretório ou outro. Os mapas para diversos tipos de
+teclados são apresentados mais adiante. 
+<P>
+<H3>Slackware.</H3>
+
+<P>Foi criado o script <CODE>/etc/rc.d/rc.keyboard</CODE>, contendo o seguinte: 
+<PRE>
+    #!/bin/sh
+    #
+    # /etc/rc.d/rc.keyboard
+    #
+    # Seleciona um dos mapas de teclado disponíveis no diretório
+    # /usr/lib/kbd/keytables
+    #
+    loadkeys abnt2
+</PRE>
+
+e acrescentei as seguintes linhas ao <CODE>/etc/rc.d/rc.S</CODE>,
+imediatamente antes do tratamento do <CODE>/etc/rc.d/rc.keyboard</CODE>: 
+<PRE>
+    # Carrega uma fonte de caracteres se existe um script rc.font.
+    if [ -x /etc/rc.d/rc.font ]; then
+      /etc/rc.d/rc.font start
+    fi
+
+    # Carrega um mapa de teclado se existe um script rc.keyboard.
+    if [ -x /etc/rc.d/rc.keyboard ]; then
+      /etc/rc.d/rc.keyboard start
+    fi
+</PRE>
+<P>
+<H3>Debian.</H3>
+
+<P>Certifique-se de ter instalado o pacote <EM>kbd</EM> e depois faça o seguinte:
+<UL>
+<LI>copie os arquivos com os mapas de teclado fornecidos (veja a seção 
+<A HREF="Portuguese-HOWTO-7.html#SEC:FICHEIROS">Ficheiros necessários</A>) para o diretório
+<CODE>/usr/share/keytables/</CODE>. Não é necessário descomprimi-los;</LI>
+<LI>copie o mapa correspondente ao seu teclado para o arquivo
+<CODE>/etc/kbd/default.map.gz</CODE>.</LI>
+<LI>rode o script <CODE>/etc/init.d/keymaps.sh</CODE>.</LI>
+</UL>
+<P>
+<H3>Red Hat.</H3>
+
+<P>Certifique-se de ter instalado o pacote <EM>kbd</EM>. Copie os arquivos com os
+mapas de teclado fornecidos (veja a seção 
+<A HREF="Portuguese-HOWTO-7.html#SEC:FICHEIROS">Ficheiros necessários</A>) para o diretório
+<CODE>/usr/lib/kbd/keytables/</CODE> (ou
+<CODE>/usr/lib/kbd/keymaps/i386/qwerty/</CODE>, a pertir do Red Hat 5.2). Não
+é necessário descomprimi-los.
+<P>Edite o arquivo /etc/sysconfig/keyboard e coloque o nome do mapa a usar na
+variável KEYTABLE, como por exemplo
+<PRE>
+    KEYTABLE="abnt2"
+</PRE>
+<P>
+<H3>Conectiva Red Hat Linux.</H3>
+
+<P>O CRHL já vem com os mapas de teclado para Português. Se você selecionou o
+teclado correto durante a instalação, não há mais nada a fazer. Caso
+contrário, edite o arquivo <CODE>/etc/sysconfig/keyboard</CODE> e coloque
+<PRE>
+    KEYTABLE="nome"
+</PRE>
+
+Onde ``nome'' é <EM>br-abnt2</EM>, <EM>pt</EM> ou <EM>us-acentos</EM> caso o desenho do
+seu teclado seja ABNT-2, português ou americano.
+<P>
+<P>
+<H3>S.u.S.E..</H3>
+
+<P>Certifique-se de ter instalado o pacote <EM>kbd</EM>. Copie os arquivos com os
+mapas de teclado fornecidos (veja a seção 
+<A HREF="Portuguese-HOWTO-7.html#SEC:FICHEIROS">Ficheiros necessários</A>) para o diretório
+<CODE>/usr/lib/kbd/keytables/</CODE>. Não é necessário descomprimi-los.
+<P>Descomprima o mapa de teclado adequado, copiando para o arquivo
+<CODE>/etc/default.keytab</CODE>, usando por exemplo um comando como
+<PRE>
+    zcat /usr/lib/kbd/keytables/pt.map.gz &gt; /etc/default.keytab
+</PRE>
+<P>
+<H3>Testando o teclado</H3>
+
+<P>Experimente pressionar a tecla <B>c-cedilhado</B> (se o teclado não tem esta
+tecla, digite <CODE>'c</CODE>). Verifique se todas as letras acentuadas, maiúsculas e
+minúsculas são geradas corretamente e aparecem na tela. Se aparecer algum
+caracter estranho verifique se carregou o mapa de teclado e a fonte de
+caracteres corretos, pois provavelmente uma dessas operações foi mal sucedida.
+<P>Se ao invés de c-cedilha minúsculo aparecer um maiúsculo é provável que uma
+tabela de mapeamento Unicode incorreta esteja a ser carregada. Este problema
+ocorrerá na distribuição S.u.S.E. se não se fizerem as alterações nos scripts
+do sistema mencionadas anteriormente.
+<H2><A NAME="ss3.6">3.6 Verificando erros</A>
+</H2>
+
+<P>Mas, e se alguns dos caracteres continuarem a não aparecer? Bem, antes de mais
+nada verifique se a fonte e o mapa de teclado adequados foram carregados. Um
+caso especial é quando queremos usar uma fonte que não segue a codificação ISO
+Latin-1 (é o caso da fonte padrão do console do PC). Teríamos então de
+<EM>convencer</EM> a tela a mostrar os caracteres certos em cada caso.
+<P>Poderíamos recorrer ao comando <EM>mapscrn</EM>.  O arquivo com a tabela de
+tradução teria no entanto de ser criado por nós, seguindo um processo moroso
+de tentativa e erro até encontrar o caracter cuja imagem desejávamos. Ou, de
+uma forma mais fácil, poderíamos usar o comando <EM>showfont</EM>. 
+<P>Se usarmos a fonte de caracteres correta, o uso deste último comando será
+desnecessário. É até recomendável que não se use tal recurso, pois embora ele
+permita criar uma tabela de caracteres ``personalizada'' em um computador,
+será difícil que um documento acentuado produzido nessa máquina possa ser lido
+em outra que não tenha a mesma configuração. 
+<P>
+<HR>
+<A HREF="Portuguese-HOWTO-4.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Portuguese-HOWTO-2.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Portuguese-HOWTO.html#toc3"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

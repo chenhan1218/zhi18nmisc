@@ -1,0 +1,85 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>从源代码打造一个最小化的Linux系统实作篇: Lilo系统引导器</TITLE>
+ <LINK HREF="BuildMin-6.html" REL=next>
+ <LINK HREF="BuildMin-4.html" REL=previous>
+ <LINK HREF="BuildMin.html#toc5" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+<A HREF="BuildMin-6.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="BuildMin-4.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="BuildMin.html#toc5"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s5">5. Lilo系统引导器</A></H2>
+
+<P>Lilo包里面带有一个很小巧的脚本，名叫<CODE>QuickInst</CODE>．请把lilo源码包
+解压到目标系统的源代码目录<CODE>/mnt/target/usr/src</CODE>下面，然后执行该
+脚本，方法是∶<CODE>ROOT=/mnt/target ./QuickInst</CODE>．它会询问您一些关于
+您想怎样安装lilo的问题．
+<P>
+<P>切记∶因为我们已经设置<CODE>ROOT</CODE>根系统为目标系统分区了，所以您回答
+提问时所给出的文件名同它是密切相关的．比如当它询问您默认想启动哪个内核
+的时候，您的回答应该是<CODE>/boot/bzImage</CODE>，而<EM>并不是</EM>
+<CODE>/mnt/target/boot/bzimage</CODE>哦．我发现这个脚本里面有个小错误，它
+会提示说∶
+<P>
+<PRE>
+
+        ./QuickInst: /boot/bzImage: no such file 
+</PRE>
+<P>但是您甭理这个提示就是了，不会有事的．
+<P>
+<P>我们该让<CODE>QuickInst</CODE>把引导扇区(boot sector)放在何处为妥呢？
+当我们重启时，我们希望可以选择引导进入源头系统或者目标系统或者
+其它共存于同一台机器的其它系统．而且我们还希望我们要使用所编译
+的lilo来引导我们新系统的内核．我们怎么把这两件事情合而为一呢？
+让我们先跑一小会儿题，看看lilo在一个双重启动的Linux系统上是怎
+样引导DOS的．在这样的一个系统上的<CODE>lilo.conf</CODE>文件的内容看
+起来可能会跟下面的差不多∶
+<P>
+<P>
+<PRE>
+ 
+prompt  
+timeout = 50
+default = linux
+
+image = /boot/bzImage 
+        label  = linux
+        root   = /dev/hda1
+        read-only
+
+other = /dev/hda2
+        label = dos
+</PRE>
+<P>
+<P>
+<P>如果机器是这么安装起来的，那么主引导记录(MBR，master boot record)就可以
+被BIOS读取并加载，然后MBR加载lilo启动引导器，而后者则给出一个提示．如果
+您在提示后面输入<CODE>dos</CODE>，lilo就会从hda2加载引导记录，就加载了DOS．
+<P>
+<P>我们所要做的事情跟上头是一样的，除了在hda2的引导记录应该是另外一个lilo
+引导记录之外，也就是在<CODE>QuickInst</CODE>所询问要安装的那个．因此来自Linux
+发行套件的lilo会加载我们所编译安装的lilo，然后我们所编译安装的lilo就会
+加载我们所编译安装的内核．当您重启后，您会看到两次lilo的提示．
+<P>
+<P>长话短说，当<CODE>QuickInst</CODE>询问您该把引导扇区(boot sector)放到什么地方
+时，您就回答目标系统所在的分区，比如说是∶<CODE>/dev/hda2</CODE>．
+<P>
+<P>现在来修改您的源头系统上的<CODE>lilo.conf</CODE>配置文件，那么看起来会有点像
+这个样子∶
+<P>
+<PRE>
+ 
+other = /dev/hda2
+        label = target
+</PRE>
+<P>修改完毕，接著执行lilo安装LILO．我们应该可以第一个引导进入目标系统了．
+<P>
+<HR>
+<A HREF="BuildMin-6.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="BuildMin-4.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="BuildMin.html#toc5"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

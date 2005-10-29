@@ -1,0 +1,51 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="LinuxDoc-Tools 0.9.16">
+ <TITLE>Linux Chinese HOWTO 中文版: 在 Linux 上使用中文的困難</TITLE>
+ <LINK HREF="Chinese-HOWTO-3.html" REL=next>
+ <LINK HREF="Chinese-HOWTO-1.html" REL=previous>
+ <LINK HREF="Chinese-HOWTO.html#toc2" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Chinese-HOWTO-3.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="Chinese-HOWTO-1.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="Chinese-HOWTO.html#toc2"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s2">2.</A> <A HREF="Chinese-HOWTO.html#toc2">在 Linux 上使用中文的困難</A></H2>
+
+<P>本節試圖將在 Linux 上使用中文可能遭遇的困難，做一通盤的描述。如此當你遇到問題時，可能比較容易找出關鍵所在。其實這裡描述的困難也不僅僅出現在 Linux 上，許多也同時出現在其它系統，甚至整個電腦使用環境上。
+如果你沒有興趣或真的很著急的話，就直接跳到 
+<A HREF="Chinese-HOWTO-4.html#view">顯示及輸入中文</A> 那節吧!</P>
+<P>我們知道中文字在電腦上是由兩個位元組(two bytes)所編碼組成的。最常見的編碼方式有台灣地區所通行的 big5 編碼，及大陸地區所使用的 GB 編碼。
+而且開頭的位元組幾乎都是大於 128 的數值，也就是所謂 non-ASCII 碼的範圍(ASCII 是指小於 128 的編碼)。</P>
+<P>好的! 那又怎麼樣呢? 問題就在這! 許多程式由於各式各樣的原因，並未考慮到輸入的資料可能是 non-ASCII 碼的問題。
+它往往假設了它所要處理的資料都是 ASCII 碼，更糟糕的是，當它遇到 non-ASCII 碼時，常常假設它不存在，而將它的第八個位元截去!
+這是所謂的 8-bit clean 問題。</P>
+<P>例如，你的 <CODE>
+<A HREF="Chinese-HOWTO-9.html#telnet">telnet</A></CODE> 程式總是認為你輸入的都是七位元的 ASCII 碼。當你輸入中文時，每每將第八位元砍掉，所以都變成亂碼。</P>
+<P>網路上的通訊程式也常常只能傳輸七位元的資料。較早期的 <CODE>sendmail</CODE> 程式就是惡名昭彰的例子。
+<CODE>sendmail</CODE> 只能接送含七位元的信件，導致我們在傳送中文信件時，必須採用各式各樣奇怪的 
+<A HREF="Chinese-HOWTO-9.html#procmail">編碼格式</A> (如 uuencode, base64, QP 等)，這往往又為收信者帶來很大的困擾!
+(我常在想如果當初電子郵件的創造者能多一點點的遠見，我們今天就會少許多的問題!)</P>
+<P>在網路上這個問題顯得更為複雜。即使你和你的收信人的機器都已經安裝了可以處理中文信件的 <CODE>sendmail</CODE> 程式，對方仍有可能收到亂碼信件。
+因為這封信在到達對方手中前可能經過好多部主機，如果其中一部機器的 <CODE>sendmail</CODE> 將第八位元截去，事情就完了!
+對於 client/server 架構的程式，問題可能出在 client 端，也可能是在 server 端，或是雙方都有。</P>
+<P>除了無法處理 non-ASCII 碼資料的問題之外，應用程式無法辨識中文編碼也是一大問題。
+也就是，很多程式(即使能正確處理八位元的資料)都將一個中文字視為兩個獨立的位元組。這在許多情況下不會有什麼不好，但在某些場合下就顯得很糟!</P>
+<P>最顯然的例子，即使你能正確的輸入中文，可是當你按下倒退鍵(backspace)時，往往只倒後了一個位元組而將一個好好的中文字截成兩半，剩下的那半當然就成了亂碼。
+還有，文書編輯器可能在一個中文字中間換行而導致出現亂碼，或是將一行很長的中文句子當作一個很長的英文字母而不換行，使得畫面變得很難看。</P>
+<P>還有更糟的! 某些中文字所含的特殊內碼對某些應用程式具有特別的意義，這導致程式遇到這些內碼時將產生嚴重的錯誤，或是當掉。</P>
+<P>下面將試著為這些問題提出一些解決之道，但是這仍是片面的，不完全的，而且不能令人滿意。
+也許只有當所有的軟體都能為中文量身打造時問題才可能真正的解決。</P>
+<P>話雖如此，愈來愈多的程式在設計上已經注意到國際化的問題，例如現在大部分主機的 <CODE>
+<A HREF="Chinese-HOWTO-9.html#sendmail">sendmail</A></CODE> 程式都已經能正確處理 8-bit 的信件 --- 因為不僅僅是傳輸中文信件需要 8-bit, 現在很多的多媒體郵件也都需要用 8-bit 傳送。
+<A HREF="Chinese-HOWTO-9.html#other">很多軟體</A> 已經完全不需修改，或者只要開啟一些特殊的選項，就能使用中文。
+同時也有愈來愈多人正在為軟體的中文化而努力。且讓我們拭目以待。</P>
+
+
+<HR>
+<A HREF="Chinese-HOWTO-3.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="Chinese-HOWTO-1.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="Chinese-HOWTO.html#toc2"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

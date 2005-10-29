@@ -1,0 +1,569 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Linux 2.4 Packet Filtering HOWTO: 使用 iptables</TITLE>
+ <LINK HREF="Packet-Filtering-HOWTO-8.html" REL=next>
+ <LINK HREF="Packet-Filtering-HOWTO-6.html" REL=previous>
+ <LINK HREF="Packet-Filtering-HOWTO.html#toc7" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Packet-Filtering-HOWTO-8.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Packet-Filtering-HOWTO-6.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Packet-Filtering-HOWTO.html#toc7"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s7">7. 使用 iptables</A></H2>
+
+<P>如果您需要特定的详细了解，iptables 有一个非常详尽的 manual page (<CODE>man iptables</CODE>)。假如您熟悉 ipchains 的话，或许可以直接跳到 
+<A HREF="Packet-Filtering-HOWTO-10.html#Appendix-A">iptables 与 ipchains 的差异 (Differences Between iptables and ipchains)</A> 去看；它们是非常近似的。
+<P>
+<P>您还可以利用 <CODE>iptables</CODE> 做许多不同的事情哦。您所开始的那三个内建(buit-in) 链： <CODE>INPUT</CODE>、<CODE>OUTPUT</CODE>、和<CODE>FORWARD</CODE> ，您是不能删除的。让我们看看整个链的管理运作吧：
+<P>
+<OL>
+<LI> 建立一个新链 (-N)。</LI>
+<LI> 删除一个空链 (-X)。</LI>
+<LI> 改变一个内建链的原则 (-P)。</LI>
+<LI> 列出一个链中的规则 (-L)。</LI>
+<LI> 清除一个链中的所有规则 (-F)。</LI>
+<LI> 归零(zero) 一个链中所有规则的封包字节(byte) 记数器 (-Z)。</LI>
+</OL>
+<P>有好些方法可以统筹一个链中的规则：
+<P>
+<OL>
+<LI> 延增(append) 一个新规则到一个链 (-A)。</LI>
+<LI> 在链内某个位置插入(insert) 一个新规则(-I)。</LI>
+<LI> 在链内某个位置替换(replace) 一条规则 (-R)。</LI>
+<LI> 在链内某个位置删除(delete) 一条规则 (-D)。</LI>
+<LI> 删除(delete) 链内第一条规则 (-D)。</LI>
+</OL>
+<P>
+<H2><A NAME="ss7.1">7.1 当您的机器启动时，您所看到的</A>
+</H2>
+
+<P>iptables 可以做成模组(module)，叫做 `iptable_filter.o' ，当您第一次跑 <CODE>iptables</CODE> 就会被自动载入。它也可以永久性的建置於核心里面。
+<P>
+<P>在跑任何 iptables 命令之前 (小心：有些套件(distributions) 或许会用它们的起始命令稿来跑 iptables)，内建链( `INPUT'、`FORWARD'、和 `OUTPUT' )将不带任何规则，所有链都将原则设为 ACCEPT。您可以将 iptable_filter 模组选项设为 `forward=0' ，来改变预设的 FORWARD 链原则。
+<P>
+<H2><A NAME="ss7.2">7.2 一个单一规则的运作</A>
+</H2>
+
+<P>下面让我们来熟练一下原则的运用吧，所谓熟能生巧是也。您最常用的或许会是 append (-A) 和 delete (-D) 命令。至於其它如 insert (-I) 和 replace (-R)， 只是这些概念的延伸而已。
+<P>
+<P>每一条规则都限定了一组条件(conditions)与特定封包比对，以及当它们符合时要如何处置(指一个`target' )。比方说，您或许要丢弃所有来自127.0.0.1 这个 IP 地址的 ICMP 封包，因而我们这里的条件就成为这样：协定必须是 ICMP，而来源地址必须是 127.0.0.1 ，而我们的 target(目标)将会是`DROP' 。
+<P>
+<P>我们称 127.0.0.1 为 `loopback' 界面，就算您没有真实的网路连接，您也会有这个界面的。您可以用 `ping' 这只程式产生这样的封包 (它只是送出一个 type 8(echo request)的 ICMP 封包，而所有乐於回应的合作端(cooperative hosts) 则送回一个 type 0(echo reply)的 ICMP 封包)。用来测试是很好用的。
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# ping -c 1 127.0.0.1
+PING 127.0.0.1 (127.0.0.1): 56 data bytes
+64 bytes from 127.0.0.1: icmp_seq=0 ttl=64 time=0.2 ms
+
+--- 127.0.0.1 ping statistics ---
+1 packets transmitted, 1 packets received, 0% packet loss
+round-trip min/avg/max = 0.2/0.2/0.2 ms
+# iptables -A INPUT -s 127.0.0.1 -p icmp -j DROP
+# ping -c 1 127.0.0.1
+PING 127.0.0.1 (127.0.0.1): 56 data bytes
+
+--- 127.0.0.1 ping statistics ---
+1 packets transmitted, 0 packets received, 100% packet loss
+#
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>这里您可以看到第一个 ping 成功了(这里的 `-c 1' 参数是告诉 ping 只送出一个封包)。
+<P>
+<P>然後，我们为`INPUT' 延增(-A)一条规则，将来自 127.0.0.1(`-s 127.0.0.1') 的 ICMP 协定 (`-p icmp') 封包送至 DROP 这个目标 (-j DROP)。 
+<P>
+<P>然後我们可以用第二个 ping 来测试我们的规则。在程式放弃继续等待那些永不到来的回应之前，将有一段暂停。
+<P>
+<P>我们有两个方法可以移除规则。首先，因为我们目前制定在 input 链中只有唯一一条规则，所以我们可以指定数字来移除，例如：
+<BLOCKQUOTE><CODE>
+<PRE>
+        # iptables -D INPUT 1
+        #
+</PRE>
+</CODE></BLOCKQUOTE>
+
+这样就把第一条规则从 INPUT 链中移除掉。
+<P>
+<P>第二个方法是映射(mirro)上面的 -A 命令，但用 -D 来代替 -A 而已。当您有一个链，里面写有非常复杂的规则，而又不想逐行数出第 37 行就是您要的那条规则，这时候，这方法就非常有用了。
+<BLOCKQUOTE><CODE>
+<PRE>
+        # iptables -D INPUT -s 127.0.0.1 -p icmp -j DROP
+        #
+</PRE>
+</CODE></BLOCKQUOTE>
+
+在命令行中，其语法是 -D 必须和 -A (或 -I、或 -R) 命令的位置一致。如果在同一个链中有数条相同的规则，那麽只有第一条会被移除掉。
+<P>
+<H2><A NAME="ss7.3">7.3 过滤规格</A>
+</H2>
+
+<P>我们已经看过用 `-p' 来指定协定，以及用 `-s' 来指定来源地址，但还有其它选项我们是可以用来指定出一个封包的特征。底下是一个完整的概述。
+<P>
+<H3>指定来源和目的地之 IP 地址</H3>
+
+<P>我们可以用四种方法来指定来源(`-s'、或`--source'、或 `--src') 和目的地(`-d'、或`--destination'、或`--dst') IP 地址。最常用的方法是使用完整名称，例如 `localhost' 或  `www.linuxhq.com' 。第二种方法是指定其 IP 地址，例如 `127.0.0.1' 。
+<P>
+<P>第三和第四种方法允许指定一组(group) IP地址，例如 `199.95.207.0/24' 或 `199.95.207.0/255.255.255.0' ，这两个设定都指定了所有从 199.95.207.0 到 199.95.207.255 之间的 IP 地址；而在数字後面的 `/' 符号是告诉系统哪部份 IP 才有效。 `/32' 或 `/255.255.255.255' 为预设值(所有 IP 值都必须吻合)。全部用 `/0' 来指定 IP 地址也是可行的，例如：
+<BLOCKQUOTE><CODE>
+<PRE>
+        [ NOTE: `-s 0/0' is redundant here. ]
+        # iptables -A INPUT -s 0/0 -j DROP
+        #
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>不过这非常少用，因为以上的效果和不指定 `-s' 毫无两样。
+<P>
+<H3>相反指定</H3>
+
+<P>许多旗标(flags)，包括 `-s' (或 `--source')、和 `-d' (或 `--destination')，可以在它们前面放置一个 `!' 符号(发音为`not')  ，来符合所有非(NOT)其赋予值的地址。比方说，`-s ! localhost' 符合所有<B>非(not)</B> 来自本机的封包。
+<P>
+<H3>指定协定</H3>
+
+<P>协定可以用 `-p' (或 `--protocol') 旗标来指定。协定可以为一个号码(假如您知道 IP 协定数值的话)，或是一个诸如 `TCP'、或`UDP'、或`ICMP' 这样的名称。大小写没关系，所以 `tcp' 和 `TCP' 都可以工作。
+<P>
+<P>协定也可以加上一个 `!' 前置符号，使之相反。例如 `-p ! TCP' 则指定了所有<B>非</B> TCP 的封包。
+<P>
+<H3>指定界面</H3>
+
+<P>我们用 `-i' (或 `--in-interface') 和 `-o' (或 `--out-interface') 选项来指定一个符合的<B>界面(interface)</B>。一个界面就是封包进入(`-i') ，或传出(`-o')之物理设备。您可以用 <CODE>ifconfig</CODE> 命令列出哪些界面是跑起来(`up' )的。
+<P>
+<P>穿越 <CODE>INPUT</CODE> 链的封包不会有传出(output)界面的，所以，任何在链中使用 `-o' 选项的规则都不与之符合。同样的，穿越 <CODE>OUTPUT</CODE> 链的封包也不会有传入(input)界面，所以在链中任何带 `-i' 选项的规则也是不符合的就是了。
+<P>
+<P>仅仅是穿越 <CODE>FORWARD</CODE> 链的封包才会同时有传入和传出界面。
+<P>
+<P>指定一个不存在的界面是完全合法(legal)的；反正在界面还没起来之前，这条规则是不会符合的。这对於 PPP 拨接(通常会是<CODE>ppp0</CODE>) 或相类连线，就极之有用了。
+<P>
+<P>例如在一个特殊例子中，界面是用一个 `+' 结尾的话，就泛指所有以此字串开头的界面(不管它们目前是否起来了)。例如，要指定一条规则来符合所有的 PPP 界面的话，<CODE>-i ppp+</CODE> 选项就可以用上了。
+<P>
+<P>界面名称前面可以用一个`!' 符号来符合一个与指定界面 <B>不</B> 符合的封包。
+<P>
+<H3>指定封包碎片 (Fragments)</H3>
+
+<P>有时候，一个封包会因为太大而不能一次过塞进连线去。当这样的事情发生了，封包会被切割成 <B>碎片(fragments)</B>，同时会以多个封包来传送。而另一端则重组这些碎片以还原整个封包。
+<P>
+<P>但碎片的问题是，第一个起始碎片有整个封包表头栏位(IP+TCP、UDP、和 ICMP)可供检查，但後继封包却只包含表头的小部份(不带额外协定栏位的 IP)。这样的话，要检查後继碎片之协定表头(比方由 TCP、UDP、和 ICMP extensions 而成)，就不可能了。
+<P>
+<P>如果您要做连线追踪或 NAT，那所有碎片在递给封包过滤码之前都会汇合回一起，所以您无需担心碎片问题。
+<P>
+<P>然而，要弄明白过滤规则如何处理碎片的，就变得非常重要了。任何规则要询问的资料而我们并没有时，将被视为 <EM>不</EM> 符合。也就是说，第一个碎片封包的处理和其它封包一样。但第二及之後的碎片就不是这样了。这样的话，一条 <CODE>-p TCP --sport www</CODE> (指定来源埠口为`www')的规则，将永远不和碎片符合(除第一个碎片外)。相反的规则如<CODE>-p TCP --sport ! www</CODE> 也一样就是了。
+<P>
+<P>不过，您可以用 `-f' (or `--fragment') 旗标特别为第二及以後的碎片指定一条规则。在 `-f' 前面加上一个 `!' 来指定一条规则 <EM>不</EM> 适用於第二及以後碎片，也是可行的。
+<P>
+<P>通常，让第二及以後碎片通过是被视为安全的，因为如果过滤会影响第一个碎片的话，那麽也就可以避免在目标主机进行重组；但是，一些已知的臭虫显示，丢送碎片封包可以轻易的让主机当掉。那是阁下要应付的事情了。
+<P>
+<P>网路玩家要留意的是：当进行这样的检测时，不完整的封包(太短的 TCP、UDP、和 ICMP 封包会让火墙程式读不到埠口或 ICMP 码和类型) 会被丢弃。因此， TCP 碎片都由第 8 个位置开始的 *。
+<P>
+<P>(* 译者注：我也不是很明白作者这里所指何物，原文是：‘So are TCP fragments starting at position 8’。因为懒得去翻资料，故不知道 position 8 是指 TCP 表头位置还是其它。假如您找到答案，欢迎写信给我以作澄清。)
+<P>
+<P>举例来说，以下的规则会丢弃任何送给 192.168.1.1 的碎片。
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# iptables -A OUTPUT -f -d 192.168.1.1 -j DROP
+#
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H3>延伸 iptables ：新的比对(matches)</H3>
+
+<P><CODE>iptables</CODE> 是 <B>可延伸的(extensible)</B>，也就是说，核心和 iptables 工具可以进行扩展以提供新的功能。
+<P>
+<P>某些延伸(Extensions)是标准的，但有些则可以说是派生出来的。别的朋友或许会制做出一些延伸，同时散播给合适的用户。
+<P>
+<P>核心的延伸通常居於核心模组目录内，例如 /lib/modules/2.3.15/net 。假如您的核心是用 CONFIG_KMOD 设定来编译的话，它们是应需求载入的，所以您无需手动的插入它们。
+<P>
+<P>然而，iptables 程式的延伸则通常是居於 /usr/local/lib/iptables/ 里面的分享函式库，或者有些散播版本会将它们放进 /lib/iptables 或 /usr/lib/iptables 里去。
+<P>
+<P>延伸有两个种类：新目标(target)，和新比对(match)；下面我们就讲讲新目标吧。有些协定会自动提供新的测试(tests)：目前有 TCP、UDP、和 ICMP，如下述。
+<P>
+<P>在命令後使用  `-p' 选项把延伸载入进来，您就可以来指定一个新测试了。当延伸选项允许的时候，使用 `-m' 来载入延伸，则可以明确指示一个新测试。
+<P>
+<P>如需某个延伸的求助资料，可以使用选项後接 `-h' 或 `--help' 将之载入(`-p'、 `-j'、或 `-m')，例如：
+<BLOCKQUOTE><CODE>
+<PRE>
+# iptables -p tcp --help
+#
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H3>TCP 延伸</H3>
+
+<P>如果指定了 `-p tcp' ，TCP 之延伸会自动载入的。它提供如下选项(并不符合 fragments)。
+<P>
+<P>
+<DL>
+<DT><B>--tcp-flags</B><DD><P>後接一个 `!' 选项，则有两个旗标的字串让您能够对指定的 TCP 旗标进行过滤。 第一个字串是遮罩(mask)：一个您欲检查的旗标列表。第二个字串是要说哪些东西要设定。例如：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# iptables -A INPUT --protocol tcp --tcp-flags ALL SYN,ACK -j DENY
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>这表示所有旗标都要检查 (`ALL' 就是泛指 `SYN,ACK,FIN,RST,URG,PSH')，但只有 SNY 和 ACK 被设定而已。另外有一个参数 `NONE' 则是没旗标的意思。
+<P>
+<DT><B>--syn</B><DD><P>为`--tcp-flags SYN,RST,ACK SYN' 的简写，其前面可以备选一个 `!' 符号。
+<P>
+<DT><B>--source-port</B><DD><P>其後可以备选 `!' ，然後是一个单独的 TCP 埠口或一个埠口值域(range)。埠口可以为 /etc/services 所列岛埠口名称，也可以是一个数字。如果是值域的话，可以是一对用`:' 符号分隔的埠口名字，或一个埠口後面带 `:' (指大於和等於该埠口)，又或是一个埠口前面带 `:' (指小於和等於该埠口)。
+<P>
+<DT><B>--sport</B><DD><P>等同於 `--source-port'。
+<P>
+<DT><B>--destination-port</B><DD><P>和 
+<DT><B>--dport</B><DD><P>与上同，只是它们是用来指定目的地而非来源埠口加以比对。
+<P>
+<DT><B>--tcp-option</B><DD><P>其後可以备选 `!' ，然後为一个数字，用来比对一个 TCP 选项等於该数字的封包。假如需要检查 TCP 选项，那些 TCP 表头不完整的封包就会自动的被丢弃。
+</DL>
+<P>
+<H3>一个 TCP 旗标的解释</H3>
+
+<P>有时候，允许单向而非双向的 TCP 连线会很好用。例如，您或许想允许连线到外部 WWW 伺服器，但却不想来自该伺服器的连线。
+<P>
+<P>最幼稚的举动或许会是挡掉来自该伺服器的 TCP 封包。但不幸的是，TCP 连线根本就要求封包是双向传递的。
+<P>
+<P>解决之道是把那些要求连线的封包挡掉。这些封包被称为 <B>SYN</B> 封包(嗯，技术上讲，它们是带 SYN 设定的封包，而 FIN 和 ACK 标签则是空白，只是我们将之简称为 SYN 封包而已)。要只限制这样的封包的话，我们就可以制止那些外来的连线尝试了。
+<P>
+<P>`--syn' 旗标可以用於这些方面：它仅对那些指定为 TCP 协定的规则有作用。例如，指定来自 192.168.1.1 的 TCP 连线请求：
+<BLOCKQUOTE><CODE>
+<PRE>
+-p TCP -s 192.168.1.1 --syn
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>这旗标也可以後接一个 `!' 来反设，意指每一个非该类初始连线的封包。
+<P>
+<H3>UDP 延伸</H3>
+
+<P>如果 `-p udp' 被指定的话，这些延伸就会自动载入。它提供了 `--source-port'、 `--sport'、`--destination-port'、以及 `--dport' 这些选项，一如前述的 TCP 设定。
+<P>
+<H3>ICMP 延伸</H3>
+
+<P>如果 `-p icmp' 被指定的话，这个延伸就会自动载入。它只提供一个新的选项：
+<P>
+<P>
+<DL>
+<DT><B>--icmp-type</B><DD><P>其後可以备选 `!' ，然後是一个 icmp 名称类型(如 `host-unreachable' )，或是一个数字类型(如 `3' )，或是一对用 `/' 分隔的数字类型和编码(如 `3/3' )。使用 `-p icmp --help' 就可以获得一份可用 icmp 类型名称清单。
+<P>
+</DL>
+<P>
+<H3>其它比对的延伸</H3>
+
+<P>在 nerfilter 套件中的其它延伸则是展示性(demonstration)的延伸内容，可以用 `-m' 选项来呼叫(假如已安装了的话)。
+<P>
+<DL>
+<DT><B>mac</B><DD><P>此一模组必须要明确的用 `-m mac' 或 `--match mac' 来指定。它用於比对传入封包的来源 Ethernet (MAC) 地址，因而只对那些穿越 PREROUTING 和 INPUT 链的封包起作用。它只提供一个选项：
+<P>
+<DL>
+<DT><B>--mac-source</B><DD><P>其後可以备选 `!' ，然後是一个用冒号分隔的十六进制 ethernet 地址，如  `--mac-source 00:60:08:91:CC:B7'。
+</DL>
+<P>
+<DT><B>limit</B><DD><P>这个模组必须明确的用 `-m limit' 或 `--match limit'来指定。它用来限制一个比对等级，诸如抑制记录信息等。它只能比对一个每秒次数值(预设是每一个小时 3 个比对，伴随 5 个触发(burst))。它接受两个备选参数：
+<P>
+<DL>
+<DT><B>--limit</B><DD><P>後接一个数值；指定可允许的每秒最大平均比对数值。该数值可以用 `/second'、`/minute'、`/hour'、或  `/day'、或其中部份 (故 `5/second' 和 `5/s' 是一样的)，来明确指定单位(unit)，
+<P>
+<DT><B>--limit-burst</B><DD><P>後接一个数值，指示出引起前述限制之前的最大触发次数。
+</DL>
+<P>这个比对常用於 LOG 目标，以进行比率限制(rate-limited) 之记录。为了更好了解它是如何工作的，让我们看一看下面的规则，是以预设限制引数来记录封包的：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# iptables -A FORWARD -m limit -j LOG
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>当此规则第一次引用的时候，封包就会被记录下来；事实上，由於预设的触发为 5 ，那为首的 5 个封包就会记录下来。然後，再隔 20 分钟此规则才会再记录封包，而不管期间有多少个封包抵达。而且，每 20 分钟如果没有符合的封包通过，则会恢复 (regained) 一个触发数值；假如 100 分钟内再无这样的封包触及这规则的话，那麽触发次数就会完全复原(recharged)；回到我们开始时的状态。
+<P>
+<P>注：您目前不能以大於 59 小时的复原时间来建立一个规则，故此，假如您设定一个平均率为每天一次，那麽，您的触发率则一定要少於 3 。
+<P>
+<P>您也可以用这模组去避免以快速比率提升服务回应的阻断服务攻击(DoS)。
+<P>
+<P>Syn-flood protection：
+<BLOCKQUOTE><CODE>
+<PRE>
+# iptables -A FORWARD -p tcp --syn -m limit --limit 1/s -j ACCEPT
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Furtive port scanner：
+<BLOCKQUOTE><CODE>
+<PRE>
+# iptables -A FORWARD -p tcp --tcp-flags SYN,ACK,FIN,RST RST -m limit --limit 1/s -j ACCEPT
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Ping of death：
+<BLOCKQUOTE><CODE>
+<PRE>
+# iptables -A FORWARD -p icmp --icmp-type echo-request -m limit --limit 1/s -j ACCEPT
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>此模组的工作原理有点像“截流阀”一样，请参考下面的图示。
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       rate (pkt/s)  
+             ^        .---.
+             |       / DoS \
+             |      /       \
+Edge of DoS -|.....:.........\.......................
+ = (limit *  |    /:          \
+limit-burst) |   / :           \         .-.
+             |  /  :            \       /   \
+             | /   :             \     /     \
+End of DoS  -|/....:..............:.../.......\..../.
+ = limit     |     :              :`-'         `--'
+-------------+-----+--------------+------------------> time (s)
+   LOGIC =>  Match | Didn't Match |    Match
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>比方说，我们以 5 个封包触发来比对每秒一个封包，但封包从每秒四个开始传入，持续三秒，然後等三秒再重新开始。
+<BLOCKQUOTE><CODE>
+<PRE>
+
+
+        &lt;--Flood 1-->           &lt;---Flood 2--->
+
+Total  ^                   Line  __--      YNNN
+Packets|               Rate  __--      YNNN
+       |            mum  __--      YNNN
+    10 |        Maxi __--         Y
+       |         __--            Y
+       |     __--               Y
+       | __--    YNNN           
+       |-    YNNN
+     5 |    Y    
+       |   Y                                Key:  Y -> Matched Rule
+       |  Y                                       N -> Didn't Match Rule
+       | Y
+       |Y 
+     0 +-------------------------------------------------->  Time (seconds)
+        0   1   2   3   4   5   6   7   8   9  10  11  12
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>您会发现头五个封包被允许超过每秒一个封包，然後就引起限制了，如果有一个停歇，其它的触发也将被允许，但就不能通过规则设定的最高比率(在该触发使用後为每秒一个封包)。
+<P>
+<DT><B>owner</B><DD><P>此模组为本机产生的封包比对不同特征的封包建立者(creator)。它仅对 OUTPUT 链有用，而且，甚至某些封包(如 ICMP ping responses)或许没有 owner，将被视为不符合哦。
+<P>
+<DL>
+<DT><B>--uid-owner userid</B><DD><P>如果封包由一个行程以有效(数字式) user id 建立的，则为符合。
+<DT><B>--uid-owner groupid</B><DD><P>如果封包由一个行程以有效(数字式) group id 建立的，则为符合。
+<DT><B>--pid-owner processid</B><DD><P>如果封包由一个行程以 process id 建立的，则为符合。
+<DT><B>--sid-owner processid</B><DD><P>如果封包由一个行程以 session group 建立的，则为符合。
+</DL>
+<P>
+<DT><B>unclean</B><DD><P>此一实验性模组必须以 `-m unclean' 或 `--match unclean' 来明确指定。它会对封包进行不同的随机判断检测。这模组尚未被稽查过，所以不应该用於安全设备上(它或许会把事情搞砸，因为它本身或许有臭虫的)。它并没提供选项设定。
+</DL>
+<P>
+<H3>The State Match</H3>
+
+<P>最有用的比对判断标准由 `state' 延伸所提供，以诠释 `ip_conntrack' 模组的连线追踪分析。这是非常值得鼓励使用的。
+<P>
+<P>指定  `-m state' 则允许另一个额外的 `--state' 选项，可以为一个豆点分隔的比对陈述列表(  `!'  旗标指示 <B>不(not)</B> 符合那些陈述)。这些陈述是：
+<P>
+<DL>
+<DT><B>NEW</B><DD><P>一个建立新连线的封包。
+<P>
+<DT><B>ESTABLISHED</B><DD><P>一个属於现有连线(如：已经回应封包了)之封包。
+<P>
+<DT><B>RELATED</B><DD><P>一个与现有连线相关，但却并不限於其中部份的封包，诸如 ICMP 错误，或是建立 FTP 数据连线的封包(FTP 模组已插入)。
+<P>
+<DT><B>INVALID</B><DD><P>一个因某些原因不能被鉴别的封包：这包括记忆体不足和不能回应任何已知连线的 ICMP 错误。通常，这样的封包都会被丢弃掉。
+</DL>
+<P>
+<H2><A NAME="ss7.4">7.4 目标(Target)规格</A>
+</H2>
+
+<P>现在，我们知道可以对封包做什麽样的检查了，我们还需要一个方法来说出对一个符合我们测试的封包要做什麽样动作。这就是所谓的一条规则之<B>目标(target)</B> 啦。
+<P>
+<P>有两个非常相类的内建目标：DROP 和 ACCEPT，我们已经接触过了。如果一条规则符合一个封包，同时目标是其中之一，那麽就再没有规则需要咨询：封包的命运已经定下来了。
+<P>
+<P>除了内建外，也有两种类型的目标：延伸和用户自定链。
+<P>
+<H3>用户自定链</H3>
+
+<P><CODE>iptables</CODE> 承袭了 <CODE>ipchains</CODE> 一个非常厉害的功能，就是让使用者可以创建出新链，附加於三个内建链(INPUT、FORWARD、和 OUTPUT)之外。按惯例，用户自定链用小写以示区别(待会我们会在後面的 
+<A HREF="#chain-ops">在整链上运作(Operations on an Entire Chain)</A> 那里解释如何去建立新的用户自定连)
+<P>
+<P>当一个封包符合一条目标为用户自定链之规则时，封包就会开始穿越用户自定链中的规则。假如该链未能决定出封包的命运，则一旦结束穿越该链後，就会接著当前链中的下一个规则继续穿越下去。
+<P>
+<P>继续玩玩 ASCII 艺术好了。假设有这麽两条(怪)链：<CODE>INPUT</CODE> (内建链)， 和 <CODE>test</CODE> (用户自定链)。
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+         `INPUT'                         `test'
+        ----------------------------    ----------------------------
+        | Rule1: -p ICMP -j DROP   |    | Rule1: -s 192.168.1.1    |
+        |--------------------------|    |--------------------------|
+        | Rule2: -p TCP -j test    |    | Rule2: -d 192.168.1.1    |
+        |--------------------------|    ----------------------------
+        | Rule3: -p UDP -j DROP    |
+        ----------------------------
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>假设一个来自192.168.1.1 的 TCP 封包，要到 1.2.3.4 那里去。它进入<CODE>INPUT</CODE> 链，并受到 Rule1 的测试 - 但不符合。但是符合 Rule2 ，且它的目标是 <CODE>test</CODE>，所以下一个要检验的规则将从 <CODE>test</CODE> 开始。在 <CODE>test</CODE> 中的 Rule1 符合，但并没有指定目标，所以再检验下一条规则，也就是 Rule2 。不过它并不符合，所以我们已经抵达这条链的末端了。然後我们回到 <CODE>INPUT</CODE> 链中，也就是我们刚才检验 Rule2 那里，所以我们现在就要检查 Rule3，依然不符合。
+<P>
+<P>这样，该封包的路径是这样子的：
+<BLOCKQUOTE><CODE>
+<PRE>
+                                v    __________________________
+         `INPUT'                |   /    `test'                v
+        ------------------------|--/    -----------------------|----
+        | Rule1                 | /|    | Rule1                |   |
+        |-----------------------|/-|    |----------------------|---|
+        | Rule2                 /  |    | Rule2                |   |
+        |--------------------------|    -----------------------v----
+        | Rule3                 /--+___________________________/
+        ------------------------|---
+                                v
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>用户自定链也可以再跳到另一个用户自定链去(但不要做成回圈：您的封包如果被发现处於回圈中就会被丢弃)。
+<P>
+<H3>iptables 之延伸：新目标</H3>
+
+<P>另一类型的目标是一个延伸。一个目标的延伸由核心模组和可选的 <CODE>iptables</CODE> 延伸组成，以提供新的命令行选项。在预设的 netfilter 散播版本中有好几个延伸：
+<P>
+<DL>
+<DT><B>LOG</B><DD><P>此模组提供核心记录符合的封包。它提供这些额外选项：
+<DL>
+<DT><B>--log-level</B><DD><P>後接一个层次(level)号码或名称。合法的名称有(大小写有别)：`debug'、`info'、`notice'、`warning'、`err'、`crit'、`alert'、以及 `emerg'，相对的号码由 7 到 0 。各层次号码的解释请参考 syslog.conf 的 man page。
+<P>
+<DT><B>--log-prefix</B><DD><P>後接一个最多 30 个字母的字串。此一信息由记录信息开始时送出，令其可以个别的被鉴别出来。
+</DL>
+<P>此模组常用於一个限制目标後，所以，您不要灌爆您的记录档哦。
+<P>
+<DT><B>REJECT</B><DD><P>此模组除了向发送端送出一个 `port unreachable' 这样的 ICMP 错误外，和 `DROP' 是一样的。注：在下列条件中，ICMP 错误信息将不会送出(请参考 RFC 1122)：
+<P>
+<UL>
+<LI> 被过滤的封包一开始就是一个 ICMP 错误信息，或是其它不明的 ICMP 类型。
+</LI>
+<LI> 被过滤的封包为一个无头 (non-head) 碎片。
+</LI>
+<LI> 我们目前已经送出太多至该目的地的 ICMP 错误信息了。</LI>
+</UL>
+<P>REJECT 另外还接受一个 `--reject-with' 选项来更改其回应封包：请参考说明文件。
+</DL>
+<P>
+<H3>特殊的内建目标</H3>
+
+<P>有两种特殊的内建目标：<CODE>RETURN</CODE> 和 <CODE>QUEUE</CODE>。
+<P>
+<P><CODE>RETURN</CODE> 和掉到一个链的末端有相同的效果：对一条内建链的规则而言，则启用该链的原则。对一条用户自定规则而言，则会回到前一个链中继续穿越，就接在跳到这个链的那条规则之後。
+<P>
+<P><CODE>QUEUE</CODE> 也是一个特殊目标，可以替使用者空间(userspace)行程储列封包。要运用它，两个功能组件是必需的：
+<P>
+<UL>
+<LI>其一为 "queue handler"，处理使用者空间与核心之间传送封包的实质机制；</LI>
+<LI>另一个为一使用者空间的应用程式，去接收，或说操控，以及对封包做出裁决。</LI>
+</UL>
+
+IPv4 iptables 的标准 queue handler 为 ip_queue 模组，它目前是以实验性质与核心一起发布的。
+<P>如下是一个如何用 iptables 为使用者空间行程进行储列封包的简单例子：
+<BLOCKQUOTE><CODE>
+<PRE>
+# modprobe iptable_filter
+# modprobe ip_queue
+# iptables -A OUTPUT -p icmp -j QUEUE
+</PRE>
+</CODE></BLOCKQUOTE>
+
+用此规则，本机产生的对外 ICMP 封包(如用 ping 建立) 就会被送至 ip_queue 模组去，然後尝试将封包传给使用者空间应用程式。如果没有使用者空间应用程式在等待的话，该封包就会被丢弃。
+<P>
+<P>要写一个使用者空间应用程式，需使用 libipq API 。它也是和 iptables 一起发布的。程式码□例可以在 CVS 中的 testsuite 工具(如 redirect.c) 找到。
+<P>
+<P>ip_queue 的状态可以用如下方法来检查：
+<BLOCKQUOTE><CODE>
+<PRE>
+/proc/net/ip_queue
+</PRE>
+</CODE></BLOCKQUOTE>
+
+储列的最大长度(如传递给使用者空间且无需送回裁决封包之数量)可以通过这样的方式来控制：
+<BLOCKQUOTE><CODE>
+<PRE>
+/proc/sys/net/ipv4/ip_queue_maxlen
+</PRE>
+</CODE></BLOCKQUOTE>
+
+最大储列长度的预设值为 1024。一旦达到此限制，新的封包就会被丢弃，直到储列长度跌回低於限制之数为止。好的协定，如 TCP，会将丢弃的封包解释为拥挤(congestion)，同时理想地，当储列填起来後会将之挡回去。然而，如果预设值在所举情形下觉得太小的话，或许需要一些实验来决定其理想的最高储列长度。
+<P>
+<H2><A NAME="chain-ops"></A> <A NAME="ss7.5">7.5 在整链上运作</A>
+</H2>
+
+<P><CODE>iptables</CODE> 的一个非常有用的功能是，它能够组合(group)相关的规则於链中。只要您喜欢，您可以随便为链起一个名字，但我建议您使用小写字母以避免和内建链及目标搞混了。链名最长可以去到 31 个字母。
+<P>
+<H3>建立一个新链</H3>
+
+<P>现在就让我们一起建一个新链吧。因为我实在是一个爱幻想的家伙，所以我称之为<CODE>test</CODE> (哈，有点讽刺)。这里，我们用 `-N' 或 `--new-chain' 选项：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# iptables -N test
+#
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>就是这麽简单。好了，现在您可以将一些规则加入其中，一如前面说的那样。
+<P>
+<H3>删除一条链</H3>
+
+<P>要删除一条链也是一样简单，用 `-X' 或 `--delete-chain' 即可。为什麽用 `-X' 呢？嗯， 好用的字母都一早给用光了啦。
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# iptables -X test
+#
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>要删除一条链的话，会有好些限制：它们必需是空的 (请参考後面的 
+<A HREF="#flushing">清空一条链(Flushing a Chain)</A> ) ，同时它们必需不能作为任何规则的目标。任何三条内建链您都不能删除就是了。
+<P>
+<P>假如您不指定一条链，那麽如果可能的话， <EM>全部</EM> 用户自定点链都会被删除。
+<P>
+<H3><A NAME="flushing"></A> 清空一条链</H3>
+
+<P>有一个简单的方法可以清空一条链中的所有规则，就是使用 `-F' (或 `--flush') 命令。
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# iptables -F forward
+#
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>如果您不指定是哪一条链，那麽 <EM>全部</EM> 链都会被清空。
+<P>
+<H3>列示一条链</H3>
+
+<P>您可以使用 `-L' (或 `--list') 命令列示一条链中的所有规则。
+<P>
+<P>每一个用户自定链所列的 `refcnt' ，是说有多少数目的规则是以该链为目标的。在该链被删除之前，这数目必需为零(同时链是空的)。
+<P>
+<P>如果没提供链名称的话，所有链都会被列示出来，就算空链也一样。
+<P>
+<P>有三个选项可以伴随  `-L' 一起使用的。首先是 `-n' (numeric) 选项，它很有用，因为它可以避免 <CODE>iptables</CODE> 去尝试查找 IP 地址，假如您的 DNS 没有设定正确的话，或是您已经过滤掉 DNS 请求了，这或许会造成严重的延迟(假设您和大多数人一样都是使用 DNS )。它同时也会将 TCP 与 UDP 埠口显示为数字而非名称。
+<P>
+<P>第二个是 `-v' 选项，它会显示出您全部规则的细节，诸如封包的 byte 流量统计、TOS 比较、以及界面等。否则这些数值是被略掉的。
+<P>
+<P>注：封包的 byte 流量统计可以分别使用 `K', `M' 或 `G' 这些字尾，分别代表 1000、1,000,000、以及1,000,000,000，来显示。使用 `-x' (expand numbers) 旗标同样也可以显示出完整的数字，根本不理会它们有多长。
+<P>
+<H3>重设(归零)流量记数器(counter)</H3>
+
+<P>能够重设流量记数器当然是有用的。您可以用  `-Z' (或 `--zero') 选项来做。
+<P>
+<P>唯一麻烦是，有时候在进行重设之前，您必需立即记住流量统计值。在前面的例子中，当您下 `-L' 然後 `-Z' 命令，某些封包可能会在这期间通过。因此，您可以把 `-L' 和 `-Z' <EM>一起</EM> 使用，在读取的同时进行记数器重设。
+<P>
+<P>
+<H3><A NAME="policy"></A> 设定原则(policy)</H3>
+
+<P>我们在前面探讨封包如何通过一个链的时候，已诠释过当封包抵达内建链末端时将会发生什麽事情。此时，就由该链的<B>原则</B>来决定封包的命运。只有内建链(<CODE>INPUT</CODE>、<CODE>OUTPUT</CODE>、以及 <CODE>FORWARD</CODE>) 才有原则设定，因为，如果一个封包掉至一个用户自定链的时候，则会回到上一个链中继续穿越。
+<P>
+<P>原则可以为 <CODE>ACCEPT</CODE> 或 <CODE>DROP</CODE>。
+<P>
+<HR>
+<A HREF="Packet-Filtering-HOWTO-8.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Packet-Filtering-HOWTO-6.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Packet-Filtering-HOWTO.html#toc7"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

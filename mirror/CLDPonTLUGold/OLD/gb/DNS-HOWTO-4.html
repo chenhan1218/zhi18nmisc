@@ -1,0 +1,561 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="LinuxDoc-Tools 0.9.16">
+ <TITLE>DNS HOWTO 中译版: 一个简单的领域</TITLE>
+ <LINK HREF="DNS-HOWTO-5.html" REL=next>
+ <LINK HREF="DNS-HOWTO-3.html" REL=previous>
+ <LINK HREF="DNS-HOWTO.html#toc4" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="DNS-HOWTO-5.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="DNS-HOWTO-3.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="DNS-HOWTO.html#toc4"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<HR>
+<H2><A NAME="simple"></A> <A NAME="s4">4.</A> <A HREF="DNS-HOWTO.html#toc4">一个<EM>简单</EM>的领域</A></H2>
+
+<P><B>如何建立你自己的领域</B></P>
+
+<H2><A NAME="ss4.1">4.1</A> <A HREF="DNS-HOWTO.html#toc4.1">先来一点纯理论</A>
+</H2>
+
+<P>在我们<EM>真的</EM>开始进行这一节以前我将会提供你一些关于 DNS 如何运作的理论．
+而你应该阅读它因为这对你有益．如果你不‘想要’那么至少你也得很快地略读一下．
+当你看到应该放进 <CODE>named.boot</CODE> 档案里去的内容时再停止这种略读方式．</P>
+<P>DNS 是一个阶层式的系统．其顶端写作 `<CODE>.</CODE>' 而其发音为 `root' ．
+在 . 之下有几个顶层领域(TLDs)，最知名的是 ORG, COM, EDU  以及 NET 这几个，但是还有更多．</P>
+<P>在寻找一台机器名称时查询会以递回方法从顶端开始．
+当你想要找出 <CODE>prep.ai.mit.edu</CODE> 的位址时你的名称伺服器必须找到负责 <CODE>edu</CODE> 的一台名称伺服器．
+这个问题它会去查问 <CODE>root.cache</CODE> 档案，而 <CODE>.</CODE> 伺服器会给它一份 <CODE>edu</CODE> 伺服器列表．
+<BLOCKQUOTE><CODE>
+<PRE>
+$ nslookup
+Default Server:  localhost
+Address:  127.0.0.1
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>开始查问某台根伺服器．
+<BLOCKQUOTE><CODE>
+<PRE>
+> server c.root-servers.net.
+Default Server:  c.root-servers.net
+Address:  192.33.4.12
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>设定查询型态为 NS (名称伺服器记录 name server records)．
+<BLOCKQUOTE><CODE>
+<PRE>
+> set q=ns
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>查问关于 <CODE>edu.</CODE> 的资料．
+<BLOCKQUOTE><CODE>
+<PRE>
+> edu.
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>结尾的 . 在这里非常重要，它告诉该伺服器我们所查问的 <CODE>edu</CODE> 是在 . 之下的那一个，
+这稍能缩小搜寻的范围．
+<BLOCKQUOTE><CODE>
+<PRE>
+edu     nameserver = A.ROOT-SERVERS.NET
+edu     nameserver = H.ROOT-SERVERS.NET
+edu     nameserver = B.ROOT-SERVERS.NET
+edu     nameserver = C.ROOT-SERVERS.NET
+edu     nameserver = D.ROOT-SERVERS.NET
+edu     nameserver = E.ROOT-SERVERS.NET
+edu     nameserver = I.ROOT-SERVERS.NET
+edu     nameserver = F.ROOT-SERVERS.NET
+edu     nameserver = G.ROOT-SERVERS.NET
+A.ROOT-SERVERS.NET      internet address = 198.41.0.4
+H.ROOT-SERVERS.NET      internet address = 128.63.2.53
+B.ROOT-SERVERS.NET      internet address = 128.9.0.107
+C.ROOT-SERVERS.NET      internet address = 192.33.4.12
+D.ROOT-SERVERS.NET      internet address = 128.8.10.90
+E.ROOT-SERVERS.NET      internet address = 192.203.230.10
+I.ROOT-SERVERS.NET      internet address = 192.36.148.17
+F.ROOT-SERVERS.NET      internet address = 192.5.5.241
+G.ROOT-SERVERS.NET      internet address = 192.112.36.4
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>这告诉我们 <CODE>*.root-servers.net</CODE> 服务 <CODE>edu.</CODE> 领域，所以我们可以藉此继续查问 <CODE>c</CODE> 伺服器．
+现在我们想要知道是谁负责下一层 <CODE>mit.edu.</CODE> 的领域名称:
+<BLOCKQUOTE><CODE>
+<PRE>
+> mit.edu.
+Server:  c.root-servers.net
+Address:  192.33.4.12
+
+Non-authoritative answer:
+mit.edu nameserver = STRAWB.mit.edu
+mit.edu nameserver = W20NS.mit.edu
+mit.edu nameserver = BITSY.mit.edu
+
+Authoritative answers can be found from:
+STRAWB.mit.edu  internet address = 18.71.0.151
+W20NS.mit.edu   internet address = 18.70.0.160
+BITSY.mit.edu   internet address = 18.72.0.3
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P><CODE>steawb</CODE>, <CODE>w20ns</CODE> 以及 <CODE>bitsy</CODE> 负责 <CODE>mit</CODE> 领域，选择其中一个并且查询 <CODE>ai.mit.edu</CODE>:
+<BLOCKQUOTE><CODE>
+<PRE>
+> server W20NS.mit.edu.
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>主机名称不分大小写，但是我使用滑鼠来剪贴所以这些资料是萤幕的拷贝．
+<BLOCKQUOTE><CODE>
+<PRE>
+Server:  W20NS.mit.edu
+Address:  18.70.0.160
+
+> ai.mit.edu.
+Server:  W20NS.mit.edu
+Address:  18.70.0.160
+
+Non-authoritative answer:
+ai.mit.edu      nameserver = WHEATIES.AI.MIT.EDU
+ai.mit.edu      nameserver = ALPHA-BITS.AI.MIT.EDU
+ai.mit.edu      nameserver = GRAPE-NUTS.AI.MIT.EDU
+ai.mit.edu      nameserver = TRIX.AI.MIT.EDU
+ai.mit.edu      nameserver = MUESLI.AI.MIT.EDU
+
+Authoritative answers can be found from:
+AI.MIT.EDU      nameserver = WHEATIES.AI.MIT.EDU
+AI.MIT.EDU      nameserver = ALPHA-BITS.AI.MIT.EDU
+AI.MIT.EDU      nameserver = GRAPE-NUTS.AI.MIT.EDU
+AI.MIT.EDU      nameserver = TRIX.AI.MIT.EDU
+AI.MIT.EDU      nameserver = MUESLI.AI.MIT.EDU
+WHEATIES.AI.MIT.EDU     internet address = 128.52.32.13
+WHEATIES.AI.MIT.EDU     internet address = 128.52.35.13
+ALPHA-BITS.AI.MIT.EDU   internet address = 128.52.32.5
+ALPHA-BITS.AI.MIT.EDU   internet address = 128.52.37.5
+GRAPE-NUTS.AI.MIT.EDU   internet address = 128.52.32.4
+GRAPE-NUTS.AI.MIT.EDU   internet address = 128.52.36.4
+TRIX.AI.MIT.EDU internet address = 128.52.32.6
+TRIX.AI.MIT.EDU internet address = 128.52.38.6
+MUESLI.AI.MIT.EDU       internet address = 128.52.32.7
+MUESLI.AI.MIT.EDU       internet address = 128.52.39.7
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>所以 <CODE>weaties.ai.mit.edu</CODE> 是 <CODE>ai.mit.edu</CODE> 的一台名称伺服器:
+<BLOCKQUOTE><CODE>
+<PRE>
+> server WHEATIES.AI.MIT.EDU.
+Default Server:  WHEATIES.AI.MIT.EDU
+Addresses:  128.52.32.13, 128.52.35.13
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>现在我改变查询的型态，我们已经找到该名称伺服器所以现在我们将要询问 <CODE>wheaties</CODE> 关于 <CODE>prep.ai.mit.edu</CODE> 它所知道的任何事情．
+<BLOCKQUOTE><CODE>
+<PRE>
+> set q=any
+> prep.ai.mit.edu.
+Server:  WHEATIES.AI.MIT.EDU
+Addresses:  128.52.32.13, 128.52.35.13
+
+prep.ai.mit.edu CPU = dec/decstation-5000.25    OS = unix
+prep.ai.mit.edu
+        inet address = 18.159.0.42, protocol = tcp
+         #21 #23 #25 #79
+prep.ai.mit.edu preference = 1, mail exchanger = life.ai.mit.edu
+prep.ai.mit.edu internet address = 18.159.0.42
+ai.mit.edu      nameserver = alpha-bits.ai.mit.edu
+ai.mit.edu      nameserver = wheaties.ai.mit.edu
+ai.mit.edu      nameserver = grape-nuts.ai.mit.edu
+ai.mit.edu      nameserver = mini-wheats.ai.mit.edu
+ai.mit.edu      nameserver = trix.ai.mit.edu
+ai.mit.edu      nameserver = muesli.ai.mit.edu
+ai.mit.edu      nameserver = count-chocula.ai.mit.edu
+ai.mit.edu      nameserver = life.ai.mit.edu
+ai.mit.edu      nameserver = mintaka.lcs.mit.edu
+life.ai.mit.edu internet address = 128.52.32.80
+alpha-bits.ai.mit.edu   internet address = 128.52.32.5
+wheaties.ai.mit.edu     internet address = 128.52.35.13
+wheaties.ai.mit.edu     internet address = 128.52.32.13
+grape-nuts.ai.mit.edu   internet address = 128.52.36.4
+grape-nuts.ai.mit.edu   internet address = 128.52.32.4
+mini-wheats.ai.mit.edu  internet address = 128.52.32.11
+mini-wheats.ai.mit.edu  internet address = 128.52.54.11
+mintaka.lcs.mit.edu     internet address = 18.26.0.36
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>所以我们从 <CODE>.</CODE> 开始连续找出在领域名称里的下一层名称伺服器．
+如果你使用你自己的 DNS 伺服器而不是所有这些个其它的伺服器，
+你的 <CODE>named</CODE> 当然会暂存所有这些在为你寻找这个答案时所找到的资讯，
+而且在一段时间内它不必再次查问．</P>
+<P>一个比较起来很少被论及，但是同样重要的是 <CODE>in-addr.arpa</CODE> 领域．它也像‘正常的’领域一样是巢状的．
+<CODE>in-addr.arpa</CODE> 让我们可以在拥有主机位址的时候得知该主机的名称．
+在这里有件重要的事情要注意的是在 <CODE>in-addr.arpa</CODE> 这个领域中 ip 数字是以反向顺序书写的．
+如果你有某台机器的位址: 192.128.52.43 那么 <CODE>named</CODE> 会以类似 <CODE>prep.ai.mit.edu</CODE> 这个范例的方式来处理:
+找出 <CODE>arpa.</CODE> 的伺服器，找出 <CODE>in-addr.arpa.</CODE> 的伺服器，然后再找出 <CODE>192.in-addr.arpa.</CODE> 的伺服器，
+找出 <CODE>128.192.in-addr.arpa.</CODE> 的伺服器，接著找出 <CODE>52.128.192.in-addr.arpa.</CODE> 的伺服器，
+最后再找出所需之 <CODE>43.52.128.192.in-addr.arpa.</CODE> 的记录．聪明乎? (说‘是的’)．
+头两年这反向的数字也引起过一些困扰．</P>
+<P>其实我是骗你的．DNS 并非完完全全地像我告诉你的这样运作．但是这已经够接近的了．</P>
+
+<H2><A NAME="ss4.2">4.2</A> <A HREF="DNS-HOWTO.html#toc4.2">我们自己的领域</A>
+</H2>
+
+<P>现在来定义我们自己的领域．我们将会创造出 <EM>linux.bogus</EM> 这个领域并且定义其中的机器．
+我使用一个完全是虚拟出来的领域名称以便确定我们不会扰乱到网路上的其它地方．</P>
+<P>我们早就已经以 <CODE>named.boot</CODE> 里的这一行开始了这个部份的设定:</P>
+<P>
+<HR>
+<PRE>
+primary         0.0.127.in-addr.arpa            pz/127.0.0
+</PRE>
+<HR>
+</P>
+<P>请注意在这个档案里的领域名称结尾并没有加上 `<CODE>.</CODE>' 符号．
+第一行把定义 <CODE>0.0.127.in-addr.arpa</CODE> 的档案命名为 <CODE>pz/127.0.0</CODE>．
+我们早已经建立了这个档案，它是这样的:</P>
+<P>
+<HR>
+<PRE>
+@               IN      SOA     linux.bogus. hostmaster.linux.bogus. (
+                                1       ; Serial
+                                28800   ; Refresh
+                                7200    ; Retry
+                                604800  ; Expire
+                                86400)  ; Minimum TTL
+                        NS      ns.linux.bogus.
+1                       PTR     localhost.
+</PRE>
+<HR>
+</P>
+<P>请注意在这个档案里所有的完整领域名称结尾的 `<CODE>.</CODE>' 符号，这与上面提到的 named.boot 档案形成对比．
+有些人喜欢以 <CODE>$ORIGIN</CODE> 指令启始每个区域档案，但这是不必要的．
+一个区域档案的基点(就是其所属的 DNS 阶层架构位置)是在 <CODE>named.boot</CODE> 档案的‘领域’行里指定的，
+在这个例子里是 <CODE>0.0.127.in-addr.arpa</CODE>．</P>
+<P>这个‘区域档案’中包含三种‘资源记录’(resource records, RRs):
+一个是 SOA 资源记录．一个是 NS 资源记录以及一个 PTR 记录．
+SOA 是授权起始(Start Of Authority)的缩写．`@' 是个意思为基点的特殊标记，
+而因为这个档案的‘领域’行说是 <CODE>0.0.127.in-addr.arpa</CODE> 所以第一行实际上是指
+<BLOCKQUOTE><CODE>
+<PRE>
+  0.0.127.IN-ADDR.ARPA. IN      SOA ...
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>NS 是名称伺服器资源记录，它告诉 DNS 什么机器是这个领域 <CODE>0.0.127.in-addr.arpa</CODE> 的名称伺服器，也就是 <CODE>ns.linux.bogus</CODE>.
+而最后的 PTR 记录说 <CODE>1</CODE> (等于是 <CODE>1.0.0.127.IN-ADDR.ARPA</CODE>, 也就是 <CODE>127.0.0.1</CODE>)的名称是 localhost．</P>
+<P>SOA 这个记录是<EM>所有</EM>区域档案的序文，而且在每一个区域档案里都应该有这唯一的一个，最开头的记录．
+它描述该区域，它从何而来(一台称为 <CODE>linux.bogus</CODE> 的机器)，谁负责其内容(<CODE>hostmaster@linux.bogus</CODE>)，
+这个区域档案是什么版本(serial: 1)，以及其它必须做的，有关暂存与次要名称伺服器的事．
+剩下的栏位如 refresh, retry, expire 以及 minimum 你可以使用这份文件里所用的数字而且应该不会出问题．</P>
+<P>现在重新起始你的 <CODE>named</CODE>(使用 <CODE>ndc restart</CODE> 指令)并使用 <CODE>nslookup</CODE> 来检验我们做了什么:
+<BLOCKQUOTE><CODE>
+<PRE>
+$ nslookup
+
+Default Server:  localhost
+Address:  127.0.0.1
+
+> 127.0.0.1
+Server:  localhost
+Address:  127.0.0.1
+
+Name:    localhost
+Address:  127.0.0.1
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>所以它管理从 <CODE>127.0.0.1</CODE> 得到 <CODE>localhost</CODE> 的过程，很好．
+现在开始我们的主要任务，<CODE>linux.bogus</CODE> 这个领域，
+在 <CODE>named.boot</CODE> 里 插入新的一行 <CODE>primary</CODE> 指令:</P>
+<P>
+<HR>
+<PRE>
+primary               linux.bogus                     pz/linux.bogus
+</PRE>
+<HR>
+</P>
+<P>注意，在 <CODE>named.boot</CODE> 档案里领域名称的结尾还是没有 '<CODE>.</CODE>' 符号．</P>
+<P>在这个 <CODE>linux.bogus</CODE> 区域档案里我们将会放入一些完全虚拟的资料:</P>
+<P>
+<HR>
+<PRE>
+;
+; Zone file for linux.bogus
+;
+; Mandatory minimum for a working domain
+;
+@       IN      SOA     linux.bogus. hostmaster.linux.bogus. (
+                        199511301       ; serial, todays date + todays serial #
+                        28800           ; refresh, seconds
+                        7200            ; retry, seconds
+                        3600000         ; expire, seconds
+                        86400 )         ; minimum, seconds
+                NS      ns.linux.bogus.
+                NS      ns.friend.bogus.
+                MX      10 mail.linux.bogus   ; Primary Mail Exchanger
+                MX      20 mail.friend.bogus. ; Secondary Mail Exchanger
+
+localhost       A       127.0.0.1
+ns              A       127.0.0.2
+mail            A       127.0.0.4
+</PRE>
+<HR>
+</P>
+<P>关于 SOA 记录有两件事需要注意．首先 <CODE>ns.linux.bogus</CODE> <EM>必须</EM> 是一台具有 A 记录的真正机器．
+在 SOA 记录中用 CNAME 记录为名称的机器是不合法的．它的名字不一定要是 <CODE>ns</CODE>，它可以是任何合法的主机名称．
+再来，<CODE>hostmaster.linux.bogus</CODE> 应该被视为 <CODE>hostmaster@linux.bogus</CODE>，这应该是一个邮件位址或别名，
+是维护这个 DNS 的人经常读信的位址．任何关于此领域的信件会被送到这个位址．
+它的名字不一定要是 <CODE>hostmaster</CODE>，它可以是任何合法的电子邮件位址，然而这个位址 `<CODE>hostmaster</CODE>' <EM>应该</EM>能工作正常．</P>
+<P>在这个档案里有一种新的资源记录型态，即 MX 型态，或是邮件交换者资源记录(Mail eXchanger RR)．
+这种资源记录型态告诉邮递系统地址 <CODE>someone@linux.bogus</CODE> 的邮件要寄送到哪里，
+换句话说也就是应该寄送到 <CODE>mail.linux.bogus</CODE> 或是 <CODE>mail.friend.bogus</CODE>．
+在每个机器名称前面的数字是 MX 资源记录的优先权，数字比较低 (10) 的资源记录是邮件主要应该寄往的机器．
+如果失败可以把它寄往数字比较高的机器，一台次要的邮件处理者，也就是在这里具有优先权 20 的 <CODE>mail.friend.bogus</CODE>．</P>
+<P>用 <CODE>ndc restart</CODE> 重新起始 <CODE>named</CODE>．以 <CODE>nslookup</CODE> 检验结果:
+<BLOCKQUOTE><CODE>
+<PRE>
+$ nslookup
+> set q=any
+> linux.bogus
+Server:  localhost
+Address:  127.0.0.1
+
+linux.bogus
+        origin = linux.bogus
+        mail addr = hostmaster.linux.bogus
+        serial = 199511301
+        refresh = 28800 (8 hours)
+        retry   = 7200 (2 hours)
+        expire  = 604800 (7 days)
+        minimum ttl = 86400 (1 day)
+linux.bogus     nameserver = ns.linux.bogus
+linux.bogus     nameserver = ns.friend.bogus
+linux.bogus     preference = 10, mail exchanger = mail.linux.bogus.linux.bogus
+linux.bogus     preference = 20, mail exchanger = mail.friend.bogus
+linux.bogus     nameserver = ns.linux.bogus
+linux.bogus     nameserver = ns.friend.bogus
+ns.linux.bogus  internet address = 127.0.0.2
+mail.linux.bogus        internet address = 127.0.0.4
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>小心地检验你将会发现一个错误．这一行
+<BLOCKQUOTE><CODE>
+<PRE>
+  linux.bogus     preference = 10, mail exchanger = mail.linux.bogus.linux.bogus
+</PRE>
+</CODE></BLOCKQUOTE>
+
+全都错了．它应该是
+<BLOCKQUOTE><CODE>
+<PRE>
+  linux.bogus     preference = 10, mail exchanger = mail.linux.bogus
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>我故意犯了个错误所以你可以藉此学习:-) 仔细看看该区域档案我们会发现这一行
+<BLOCKQUOTE><CODE>
+<PRE>
+@              MX      10 mail.linux.bogus     ; Primary Mail Exchanger
+</PRE>
+</CODE></BLOCKQUOTE>
+
+遗漏了一个句点．或是说多了个 `<CODE>linux.bogus</CODE>'．
+在区域档案里如果一个机器名称不是以句点结尾那么会在其结尾加入基点．所以不论是</P>
+<P>
+<HR>
+<PRE>
+@              MX      10 mail.linux.bogus.    ; Primary Mail Exchanger
+</PRE>
+<HR>
+</P>
+<P>或是</P>
+<P>
+<HR>
+<PRE>
+@              MX      10 mail                 ; Primary Mail Exchanger
+</PRE>
+<HR>
+</P>
+<P>都是正确的．我比较喜欢后面这种形式，它需要的打字比较少．
+在一个区域档案里领域名称应该要不就是写出来并以 `<CODE>.</CODE>'  结尾或者就是一点都不要包含进去，
+而在这种情况下其领域预设为基点．其它人也许喜欢采用另一种方式．</P>
+<P>我必须强调的是在 <CODE>named.boot</CODE> 档案里领域名称后面<EM>不应该</EM>有 `<CODE>.</CODE>'  的存在．
+你不知道有多少次因为多了或少了一个 `<CODE>.</CODE>'  而搞砸了并且对许多人造成困扰．</P>
+<P>所以在加入我强调的重点后得到一份新的区域档案，其中还包含一些额外的资讯:</P>
+<P>
+<HR>
+<PRE>
+;
+; Zone file for linux.bogus
+;
+; Mandatory minimum for a working domain
+;
+@       IN      SOA     linux.bogus.    hostmaster.linux.bogus. (
+                        199511301       ; serial, todays date + todays serial #
+                        28800           ; refresh, seconds
+                        7200            ; retry, seconds
+                        604800          ; expire, seconds
+                        86400 )         ; minimum, seconds
+
+                NS      ns              ; Inet Address of name server
+                NS      ns.friend.bogus.
+                MX      10 mail         ; Primary Mail Exchanger
+                MX      20 mail.friend.bogus. ; Secondary Mail Exchanger
+
+localhost       A       127.0.0.1
+ns              A       127.0.0.2
+mail            A       127.0.0.4
+;
+; Extras
+;
+@               TXT     "Linux.Bogus, your DNS consultants"
+
+ns              MX      10 mail
+                MX      20 mail.friend.bogus.
+                HINFO   "Pentium" "Linux 1.2"
+                TXT     "RMS"
+richard         CNAME   ns
+www             CNAME   ns
+
+donald          A       127.0.0.3
+                MX      10 mail
+                MX      20 mail.friend.bogus.
+                HINFO   "i486"  "Linux 1.2"
+                TXT     "DEK"
+
+mail            MX      10 mail
+                MX      20 mail.friend.bogus.
+                HINFO   "386sx" "Linux 1.0.9"
+
+ftp             A       127.0.0.5
+                MX      10 mail
+                MX      20 mail.friend.bogus.
+                HINFO   "P6" "Linux 1.3.59"
+</PRE>
+<HR>
+</P>
+<P>你也许会想要移动前面三个 A  记录以便让它们靠近其它的相关记录，而不是像这样放在最前端．</P>
+<P>这里有几个新的资源记录: 主机资讯(HINFO: Host INFOrmation) 包括两个部份，
+使用引号涵括每个部份是个好习惯．第一个部份是机器上的硬体或是中央处理单元，
+而第二个部份是机器上的软体或是作业系统．<CODE>ns</CODE> 有一颗 Pentium CPU 并且执行 Linux 1.2 系统．
+TXT 记录是个随意的文字记录，你可以用它来记录任何事情．
+正式名称(CNAME: Canonical NAME)可以用来给每台机器数个名称．
+所以 <CODE>richard</CODE> 以及 <CODE>www</CODE> 都是 <CODE>ns</CODE> 的一个别名．
+很重要的一点是 A, MX, CNAME, 以及 SOA 记录<EM>永远不该</EM>参照 CNAME 记录设定的别名，
+它们只应该参照 A 记录所设定的名称，所以像这样的记录是错的</P>
+<P>
+<HR>
+<PRE>
+foobar  CNAME   richard                 ; NO!
+</PRE>
+<HR>
+</P>
+<P>不过这样是对的</P>
+<P>
+<HR>
+<PRE>
+foobar  CNAME   ns                      ; Yes!
+</PRE>
+<HR>
+</P>
+<P>还有一点也很重要的是注意正式名称所设定的对电子邮递位址而言不是合法主机名称: 
+<CODE>webmaster@www.linux.bogus</CODE> 以上面的设定而言是一个不合法的电子邮递位址．
+即使它在你的系统上可以运作，可以预料的是很少有电子邮件管理者会去实行这项规则．
+避免这个问题的方法是使用 A 记录(或者也可能是一些其它的，像是 MX 记录)来取代之:</P>
+<P>
+<HR>
+<PRE>
+www     A       127.0.0.2
+</PRE>
+<HR>
+</P>
+<P>Paul Vixie, 主要的 <CODE>named</CODE> 专家，建议<EM>不要</EM>使用 CNAME 这个设定．
+所以应该考虑不要<EM>很</EM>认真地去使用它．</P>
+<P>藉由执行 <CODE>ndc reload</CODE> 载入新的资料库，这会使 <CODE>named</CODE> 再一次读取其档案．
+<BLOCKQUOTE><CODE>
+<PRE>
+$ nslookup
+Default Server:  localhost
+Address:  127.0.0.1
+
+> ls -d linux.bogus
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>这意指应该列出所有的记录
+<BLOCKQUOTE><CODE>
+<PRE>
+[localhost]
+ linux.bogus.                   SOA   ns.linux.bogus hostmaster.linux.bogus. (199511301 28800 7200 604800 86400)
+ linux.bogus.                   NS    ns.linux.bogus                
+ linux.bogus.                   NS    ns.friend.bogus               
+ linux.bogus.                   MX    10   mail.linux.bogus
+ linux.bogus.                   MX    20   mail.friend.bogus
+ linux.bogus.                   TXT   "Linux.Bogus, your DNS consultants"
+ localhost                      A     127.0.0.1
+ mail                           A     127.0.0.4
+ mail                           MX    10   mail.linux.bogus
+ mail                           MX    20   mail.friend.bogus
+ mail                           HINFO 386sx       Linux 1.0.9
+ donald                         A     127.0.0.3
+ donald                         MX    10   mail.linux.bogus
+ donald                         MX    20   mail.friend.bogus
+ donald                         HINFO i486        Linux 1.2
+ donald                         TXT   "DEK"
+ www                            CNAME ns.linux.bogus
+ richard                        CNAME ns.linux.bogus
+ ftp                            A     127.0.0.5
+ ftp                            MX    10   mail.linux.bogus
+ ftp                            MX    20   mail.friend.bogus
+ ftp                            HINFO P6          Linux 1.3.59
+ ns                             A     127.0.0.2
+ ns                             MX    10   mail.linux.bogus
+ ns                             MX    20   mail.friend.bogus
+ ns                             HINFO Pentium     Linux 1.2
+ ns                             TXT   "RMS"
+ linux.bogus.                   SOA   ns.linux.bogus hostmaster.linux.bogus. (199511301 28800 7200 604800 86400)
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>很好．让我们检查它对于单独的 <CODE>www</CODE> 会说什么:
+<BLOCKQUOTE><CODE>
+<PRE>
+> set q=any
+> www.linux.bogus.
+Server:  localhost
+Address:  127.0.0.1
+
+www.linux.bogus canonical name = ns.linux.bogus
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>...换句话说，<CODE>www.linux.bogus</CODE> 真正的名称是 <CODE>ns.linux.bogus</CODE>．
+<BLOCKQUOTE><CODE>
+<PRE>
+linux.bogus     nameserver = ns.linux.bogus
+linux.bogus     nameserver = ns.friend.bogus
+ns.linux.bogus  internet address = 127.0.0.2
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>而 <CODE>ns.linux.bogus</CODE> 拥有 127.0.0.2 这个位址．看起来也很好．</P>
+
+<H2><A NAME="ss4.3">4.3</A> <A HREF="DNS-HOWTO.html#toc4.3">继续深入</A>
+</H2>
+
+<P>当然，这个领域是高度虚拟的，里面所有的位址也都是，而这或许会让你有些混淆．
+真实领域的一个真实例子请见下一节．</P>
+
+<HR>
+<A HREF="DNS-HOWTO-5.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="DNS-HOWTO-3.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="DNS-HOWTO.html#toc4"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

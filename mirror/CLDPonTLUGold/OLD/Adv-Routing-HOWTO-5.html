@@ -1,0 +1,163 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Linux 2.4 Advanced Routing HOWTO: GRE 及其它通道技術 (GRE and other tunnels)</TITLE>
+ <LINK HREF="Adv-Routing-HOWTO-6.html" REL=next>
+ <LINK HREF="Adv-Routing-HOWTO-4.html" REL=previous>
+ <LINK HREF="Adv-Routing-HOWTO.html#toc5" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Adv-Routing-HOWTO-6.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Adv-Routing-HOWTO-4.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Adv-Routing-HOWTO.html#toc5"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s5">5. GRE 及其它通道技術 (GRE and other tunnels)</A></H2>
+
+<P>在 Linux 裡面的 tunnel 共分三類﹐即 IP in IP tunneling﹑ GRE tunneling﹑以及核心以外的 tunnels (例如﹕PPTP)。
+<H2><A NAME="ss5.1">5.1 關於 tunnels 的幾項注意 (A few general remarks about tunnels):</A>
+</H2>
+
+<P>Tunnels 可以用來做一些非比尋常的酷玩意。不過﹐如果設定不慎﹐也會將事情弄得一塌糊涂。如果您並非 <B>胸有成竹</B>﹐那就千萬不要將您的預設網關指向 tunnel 設備。還有﹐tunneling 也會增加額外的 overhead﹐因為它需要額外的 IP 標頭(header)。一般而言﹐每一個封包大概 20 byte 左右﹐這樣﹐一個正常的網路封包體積 (MTU) 會是 1500 bytes﹐但如封包果經 tunnel 傳送﹐卻只有 14800 byte 而已。這其實也不算是什麼問題﹐但是當您有機會用 tunnels 來連接大型網路的時候﹐請務必檢查 IP 封包的碎片和重組(fragmentation/reassembly)細節。當然囉﹐建立 tunnel 的話﹐最好是從 tunnel 的兩端同時著手﹐雙管齊下。
+<P>
+<P>
+<H2><A NAME="ss5.2">5.2 IP in IP tunneling</A>
+</H2>
+
+<P>此類 tunneling 技術其實在 Linux 裡已行之有年了。它需要兩個核心模組﹕ipip.o 和 new_tunnel.o。
+<P>比方說﹐您有 3 個網路﹕A 和 B 皆為內部網路﹐而透過網路 C (或曰 Internet) 將兩者連接起來。這樣﹐我們的網路 A 會是如此﹕
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+network 10.0.1.0
+netmask 255.255.255.0
+router  10.0.1.1
+</PRE>
+</CODE></BLOCKQUOTE>
+
+接網路 C 的網關位址為 172.16.17.18。
+<P>而網路 B 則這般﹕
+<BLOCKQUOTE><CODE>
+<PRE>
+network 10.0.2.0
+netmask 255.255.255.0
+router  10.0.2.1
+</PRE>
+</CODE></BLOCKQUOTE>
+
+接網路 C 的網關位址為 172.19.20.21 。
+<P>對網路 C 而言﹐我們假設它能夠雙向的將網路 A 和 B 之間的封包送遞對方。您甚至可以用 Internet 啦。
+<P>好了﹐然後您要做的事情是﹕
+<P>首先﹐確定所有模組都裝好了﹕
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+insmod ipip.o
+insmod new_tunnel.o
+</PRE>
+</CODE></BLOCKQUOTE>
+
+然後﹐在網路 A 的 router 上﹐這樣做﹕
+<BLOCKQUOTE><CODE>
+<PRE>
+ifconfig tunl0 10.0.1.1 pointopoint 172.19.20.21
+route add -net 10.0.2.0 netmask 255.255.255.0 dev tunl0
+</PRE>
+</CODE></BLOCKQUOTE>
+
+然後在網路 B 的 router 上﹕
+<BLOCKQUOTE><CODE>
+<PRE>
+ifconfig tunl0 10.0.2.1 pointopoint 172.16.17.18
+route add -net 10.0.1.0 netmask 255.255.255.0 dev tunl0
+</PRE>
+</CODE></BLOCKQUOTE>
+
+完成後﹐將 tunnel 暫時關閉﹕
+<BLOCKQUOTE><CODE>
+<PRE>
+ifconfig tunl0 down
+</PRE>
+</CODE></BLOCKQUOTE>
+
+彈指間﹐就這樣搞定了。然而﹐您不能透過 IP-in-iP tunnel 傳送廣播或 IPv6 資訊。您剛纔將兩個本來不能相互溝通的 IPv4 網路連接起來了﹐然僅此而已。基於兼容考量﹐此程式碼由來已久﹐因而逆溯至 1.3 版核心皆兼籌並顧。據我所知﹐ Linux 之 IP-in-IP tunneling 並不能在其它的作業系統或 router 上工作。然而它短小精悍﹐實屬首選﹐除非您考慮用 GRE。
+<P>
+<H2><A NAME="ss5.3">5.3 GRE tunneling</A>
+</H2>
+
+<P>GRE 是一個原本由 Cisco 開發的 tunneling 協定﹐較於 IP-in-IP tunneling﹐它略為能耐一些。例如﹐您能夠透過 GRE tunnel 傳送 multicast 和 IPv6 資訊。
+<P>在 Linux 裡﹐您得借助 ip_gre.o 模組。
+<P>
+<H3>IPv4 Tunneling</H3>
+
+<P>不如先讓我們將 IPv4 tunneling 做起來吧﹕
+<P>比方說﹐您有 3 個網路﹕A 和 B 皆為內部網路﹐而透過網路 C (或曰 Internet) 將兩者連接起來。
+<P>關於網路 A ﹐如下﹕
+<BLOCKQUOTE><CODE>
+<PRE>
+network 10.0.1.0
+netmask 255.255.255.0
+router  10.0.1.1
+</PRE>
+</CODE></BLOCKQUOTE>
+
+在網路 C 上的 router 位址為 172.16.17.18。
+然後讓我們稱這個網路為 neta (好了﹐萬事起頭難)。
+<P>然後﹐關於網路 B﹕
+<BLOCKQUOTE><CODE>
+<PRE>
+network 10.0.2.0
+netmask 255.255.255.0
+router  10.0.2.1
+</PRE>
+</CODE></BLOCKQUOTE>
+
+在網路 C 上的 router 位址為 172.19.20.21。
+然後讓我們稱這網路為 netb 好了(革命尚未成功﹐同志仍需努力)。
+<P>對網路 C 而言﹐我們假設它能夠雙向的將網路 A 和 B 之間的封包送遞對方。至於何以然及何所以然﹐則非我們所要操心的。
+<P>接下來﹐在網路 A 的 router 上﹐您如此做﹕
+<BLOCKQUOTE><CODE>
+<PRE>
+ip tunnel add netb mode gre remote 172.19.20.21 local 172.16.17.18 ttl 255
+ip link set netb up
+ip addr add 10.0.1.1 dev netb
+ip route add 10.0.2.0/24 dev netb
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>這裡﹐我們不妨研究一下。在第一行裡面﹐我們新增了一個 tunnel 設備﹐稱之為 netb (顯而易見﹐因為這正是吾之所欲也)。再來﹐我們讓它使用 GRE 協定(mode gre)﹐其遠端位址為 172.19.20.21 (於另一端的 router)﹐這樣我們的 tunneling 封包將從 172.16.17.18 從出(您的 router 在網路 C 上可以具有好幾個 IP 位址﹐並由您決定用哪一個來做 tunneling)﹐而且﹐封包的 TTL 欄位被設定為 255 (ttl 255)。
+<P>第 2 行我們將這個設備啟動起來。
+<P>在第 3 行﹐我們為新增的界面 netb 設定一個位址為 10.0.1.1。用這個在小網路上也未嘗不可﹐只是當您踏上採金旅程之際﹐您或需用其它 IP 範圍來給 tunneling 界面就是了(例如在此範例中﹐您可以使用 10.0.3.0)。
+<P>
+<P>在第 4 行﹐我們為網路 B 設定好 router。請留意﹐此處使用的 netmask 表示法並不一樣。如果您不太了解其意所在﹐可以這樣來理解﹕將 netmask 換算為二進位(binary)﹐然後數一數有多少個 1 就是了。如果您連這個也不會﹐萬一又想知道﹐那就這樣強記即可﹕255.0.0.0 是 /8﹑255.255.0.0 是 /16﹑還有 255.255.255.0 是 /24﹑而 255.255.253.0 則是 /23。
+<P>夠了真是的﹐還是讓我們看看網路 B 的 router 吧。
+<BLOCKQUOTE><CODE>
+<PRE>
+ip tunnel add neta mode gre remote 172.16.17.18 local 172.19.20.21 ttl 255
+ip link set neta up
+ip addr add 10.0.2.1 dev neta
+ip route add 10.0.1.0/24 dev neta
+</PRE>
+</CODE></BLOCKQUOTE>
+
+假如您要拿掉 router A 上的 tunnel﹐則﹕
+<BLOCKQUOTE><CODE>
+<PRE>
+ip link set netb down
+ip tunnel del netb
+</PRE>
+</CODE></BLOCKQUOTE>
+
+當然﹐您也可以替 router B 將 netb 換成 neta。
+<P>
+<P>GRE tunnels 目前所選用的 tunneling 類型。它已成標準並且也被廣泛的移植到 Linux 社群之外﹐誠是美事一樁。
+<P>
+<H2><A NAME="ss5.4">5.4 Userland tunnels</A>
+</H2>
+
+<P>在核心之外﹐還有成打形形色色的 tunneling 實作﹐絕非誇張之談。其中表表者非 PPP 和 PPTP 莫屬﹐然而其它的也為數眾多 (有的為專屬的﹐有的是保密的﹐有的甚至不是使用 IP)﹐不過﹐這些實在超過本 HOWTO 的範疇了。
+<P>
+<HR>
+<A HREF="Adv-Routing-HOWTO-6.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Adv-Routing-HOWTO-4.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Adv-Routing-HOWTO.html#toc5"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

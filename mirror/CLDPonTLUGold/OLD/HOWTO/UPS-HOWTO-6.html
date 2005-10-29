@@ -1,0 +1,381 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>The UPS Howto: Hardware notes</TITLE>
+ <LINK HREF="UPS-HOWTO-7.html" REL=next>
+ <LINK HREF="UPS-HOWTO-5.html" REL=previous>
+ <LINK HREF="UPS-HOWTO.html#toc6" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="UPS-HOWTO-7.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="UPS-HOWTO-5.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="UPS-HOWTO.html#toc6"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s6">6. Hardware notes</A></H2>
+
+<P>
+<H2><A NAME="make-cable"></A> <A NAME="ss6.1">6.1 How to make a cable</A>
+</H2>
+
+<P>This section is just from messages I've seen on the net.  I haven't
+done it so I can't write from experience.  If anyone has, please write
+this section for me :).  See also the message about the GPS1000
+contained in section 
+<A HREF="UPS-HOWTO-8.html#gps1000">GPS1000 from ACCODATA</A>,
+not to mention all the UPS specific data in section 
+<A HREF="UPS-HOWTO-8.html#ups-specific">Info on selected UPSs</A>.
+<P>
+<PRE>
+   >From miquels@caution.cistron.nl.mugnet.org Wed Jul 21 14:26:33 1993
+   Newsgroups: comp.os.linux
+   Subject: Re: UPS interface for Linux?
+   From: miquels@caution.cistron.nl.mugnet.org (Miquel van Smoorenburg)
+   Date: Sat, 17 Jul 93 18:03:37
+   Distribution: world
+   Organization: Cistron Electronics.
+
+   In article &lt;1993Jul15.184450.5193@excaliber.uucp>
+   joel@rac1.wam.umd.edu (Joel M. Hoffman) writes:
+   >I'm in the process of buying a UPS (Uninteruptable Power Supply), and
+   >notice that some of them have interfaces for LAN's to signal the LAN
+   >when the power fails.
+   >
+   >Is there such an interface for Linux?
+   >
+   >Thanks.
+   >
+   >-Joel
+   >(joel@wam.umd.edu)
+   >
+
+   When I worked on the last versioon of SysVinit (Now version 2.4),
+   I temporarily had a UPS on my computer, so I added support for it.
+   You might have seen that in the latest &lt;signal.h> header files there
+   is a #define SIGPWR 30 now :-). Anyway, I did not have such a special
+   interface but the output of most UPS's is just a relais that makes or breaks
+   on power interrupt. I thought up a simple way to connect this to the
+   DCD line of the serial port. In the SysVinit package there is a daemon
+   called 'powerd' that keeps an eye on that serial line and sends SIGPWR
+   to init when the status changes, so that init can do something (such as
+   bringing the system down within 5 minutes). How to connect the UPS to
+   the serial line is described in the source "powerd.c", but I will
+   draw it here for explanation:
+
+                        +------------------------o  DTR
+                        |
+                      +---+
+                      |   | resistor
+                      |   | 10 kilo-Ohm
+                      |   |
+                      +---+                                To serial port.
+                        |
+          +-----o-------+------------------------o  DCD
+          |             |
+          o  UPS        |
+        \    relais     |
+         \              |
+          |             |
+          +-----o-------+------------------------o  GND
+
+   Nice drawing eh?
+
+   Hope this helps.
+   SysVinit can be found on sunsite (and tsx-11 probably) as
+   SysVinit2.4.tar.z
+
+   Mike.
+
+   --
+
+   Miquel van Smoorenburg, &lt;miquels@cistron.nl.mugnet.org>
+   Ibmio.com: cannot open CONFIG.SYS: file handle broke off.
+
+
+   >From danny@caution.cistron.nl.mugnet.org Wed Jul 21 14:27:04 1993
+   Newsgroups: comp.os.linux
+   Subject: Re: UPS interface for Linux?
+   From: danny@caution.cistron.nl.mugnet.org (Danny ter Haar)
+   Date: Mon, 19 Jul 93 11:02:14
+   Distribution: world
+   Organization: Cistron Electronics.
+
+   In article &lt;9307174330@caution.cistron.nl.mugnet.org>
+   miquels@caution.cistron.nl.mugnet.org (Miquel van Smoorenburg) writes:
+   >How to connect the UPS to the serial line is described in the source
+   >"powerd.c", but I will draw it here for explanation:
+
+   The drawing wasn't really clear, please use this one in stead !
+   >
+   >                     +------------------------o  DTR
+   >                     |
+   >                   +---+
+   >                   |   | resistor
+   >                   |   | 10 kilo-Ohm
+   >                   |   |
+   >                   +---+                                To serial port.
+   >                     |
+   >       +-----o-------+------------------------o  DCD
+   >       |
+   >       o  UPS
+   >     \    relais
+   >      \
+   >       |
+   >       +-----o--------------------------------o  GND
+   >
+
+   The DTR is kept high, when the UPS's power input is gone it
+   will close the relais . The computer is monitoring
+   the DCD input port to go LOW . When this happens it will start a
+   shutdown sequence...
+
+   _____
+   Danny
+
+   --
+   &lt;=====================================================================>
+   Danny ter Haar  &lt;dannyth@hacktic.nl> or &lt;danny@cistron.nl.mugnet.org>
+   Robins law #103: 'a couple of lightyears can't part good friends'
+</PRE>
+<P>
+<H2><A NAME="hacking"></A> <A NAME="ss6.2">6.2 Reverse-engineering cables and hacking powerd.c</A>
+</H2>
+
+<P>Try to get documentation for the cables that your UPS seller supplies.
+In particular find out:
+<P>
+<UL>
+<LI>What lines need to be kept high.</LI>
+<LI>What line(s) turn off the UPS.</LI>
+<LI>What lines the UPS toggles to indicate that:
+<UL>
+<LI>Power is out.</LI>
+<LI>Battery is low.</LI>
+</UL>
+</LI>
+</UL>
+<P>You then need to either hack <CODE>powerd.c</CODE> appropriately, or use one
+of the above configurable packages (see the packages
+<CODE>genpower-1.0.1.tgz</CODE>, <CODE>powerd-2.0.tar.gz</CODE>, or <CODE>upsd-1.0.tgz</CODE>
+described in section 
+<A HREF="UPS-HOWTO-4.html#software">Software</A>).  If you use
+one of the packages, follow the instructions there.  If you want to
+hack <CODE>powerd.c</CODE>, keep reading.
+<P>If you have trouble getting the above information, or just want to
+check it (a <EM>good</EM> idea) the following program  might help.  It's a
+hacked version of <CODE>powerd.c</CODE>.  It allows you to set the necessary port
+flags from the command line and then monitors the port, displaying the
+control lines every second.  I used it as ``upscheck /dev/cua1 2'' (for
+example) to set the 2nd bit (<CODE>DTR</CODE>) and to clear the other bits.  The
+number base 2 indicates which bits to set, so for example to set bits
+1, 2 and 3, (and clear the others) use 7.  See the code for details.
+<P>Here's the (untested) upscheck.c program.  It's untested because I
+edited the version I originally used to make it clearer, and can't
+test the new version at the moment.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+/*
+ * upscheck     Check how UPS &amp; computer communicate.
+ *
+ * Usage:       upscheck &lt;device> &lt;bits to set>
+ *              For example, upscheck /dev/cua4 4 to set bit 3 &amp;
+ *              monitor /dev/cua4.
+ *
+ * Author:      Harvey J. Stein &lt;hjstein@math.huji.ac.il>
+ *              (but really just a minor modification of Miquel van
+ *              Smoorenburg's &lt;miquels@drinkel.nl.mugnet.org> powerd.c
+ *
+ * Version:     1.0 19940802
+ *
+ */
+#include &lt;sys/types.h>
+#include &lt;sys/ioctl.h>
+#include &lt;fcntl.h>
+#include &lt;errno.h>
+#include &lt;stdlib.h>
+#include &lt;unistd.h>
+#include &lt;stdio.h>
+#include &lt;signal.h>
+
+/* Main program. */
+int main(int argc, char **argv)
+{
+  int fd;
+
+/*  These TIOCM_* parameters are defined in &lt;linux/termios.h>, which  */
+/*  is indirectly included here.                                      */
+  int dtr_bit = TIOCM_DTR;
+  int rts_bit = TIOCM_RTS;
+  int set_bits;
+  int flags;
+  int status, oldstat = -1;
+  int count = 0;
+  int pc;
+
+  if (argc &lt; 2) {
+        fprintf(stderr, "Usage: upscheck &lt;device> &lt;bits-to-set>\n");
+        exit(1);
+  }
+
+  /* Open monitor device. */
+  if ((fd = open(argv[1], O_RDWR | O_NDELAY)) &lt; 0) {
+    fprintf(stderr, "upscheck: %s: %s\n", argv[1], sys_errlist[errno]);
+    exit(1);}
+
+  /* Get the bits to set from the command line. */
+  sscanf(argv[2], "%d", &amp;set_bits);
+
+  while (1) {
+    /* Set the command line specified bits (&amp; only the command line */
+    /* specified bits).                                             */
+    ioctl(fd, TIOCMSET, &amp;set_bits);
+    fprintf(stderr, "Setting %o.\n", set_bits);
+
+    sleep(1);
+
+    /* Get the current line bits */
+    ioctl(fd, TIOCMGET, &amp;flags);
+    fprintf(stderr, "Flags are %o.\n", flags);
+
+/*  Fiddle here by changing TIOCM_CTS to some other TIOCM until    */
+/*  this program detects that the power goes out when you yank     */
+/*  the plug on the UPS.  Then you'll know how to modify powerd.c. */
+    if (flags &amp; TIOCM_CTS) 
+      {
+        pc = 0 ;
+        fprintf(stderr, "power is up.\n");
+      }
+    else 
+      { 
+        pc = pc + 1 ; 
+        fprintf(stderr, "power is down.\n");
+      }
+    }
+
+  close(fd);
+}
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="serial-port"></A> <A NAME="ss6.3">6.3 Serial port pin assignments</A>
+</H2>
+
+<P>The previous section presupposes knowledge of the correspondence
+between terminal signals and serial port pins.  Here's a reference for
+that correspondence, taken from David Tal's ``Frequently Used Cables
+and Connectors'' document.  I'm including a diagram illustrating the
+connectors, and a table listing the correspondence between pin numbers
+and terminal line signals.
+<P>If you need a general reference for cable wiring, connectors, etc,
+then David Tal's would be a good one, but I can't seem to locate this
+document on the net any more.  But I've found a good replacement.
+It's 
+<A HREF="http://www.blackdown.org/~hwb/hwb.html">The Hardware Book</A>.
+<P>Other useful sites:
+<UL>
+<LI>
+<A HREF="http://star.sols.pt/docs/yost.html">Yost Serial Device Wiring Standard</A> which contains
+interesting information on how to use RJ-45 jacks and eight wire
+cables for all serial port connections.</LI>
+<LI>
+<A HREF="http://www.stokely.com/stokely">Stokely Consulting</A> for
+general Unix info, and in particular their Unix Serial Port Resources.</LI>
+<LI>
+<A HREF="http://www.uwsg.indiana.edu/usail/edcert/">Unix Workstation System Administration Education Certification</A> which
+contains 
+<A HREF="http://www.uwsg.indiana.edu/usail/peripherals/serial/rs232/">RS-232: Connectors and Cabling</A></LI>
+</UL>
+<P>Incidentally, it seems that the Linuxdoc-sgml package still doesn't
+format tables very well in the <CODE>html</CODE> output.  If you want to be
+able to read the following table, you're probably going to have to
+look at either the <CODE>DVI</CODE> version or the plain text version of this
+document.
+<P>
+<P>
+<CENTER><TABLE BORDER><TR><TD>
+<BR>
+DB-25 </TD><TD> DB-9 </TD><TD> Name </TD><TD> EIA </TD><TD> CCITT </TD><TD> DTE-DCE</TD><TD> Description </TD></TR><TR><TD>
+Pin #</TD><TD> Pin #</TD><TD> </TD><TD> </TD><TD> </TD><TD> </TD><TD> </TD></TR><TR><TD>
+1 </TD><TD> </TD><TD> FG </TD><TD> AA </TD><TD> 101 </TD><TD> --- </TD><TD>Frame Ground/Chassis GND</TD></TR><TR><TD>
+2 </TD><TD> 3 </TD><TD> TD </TD><TD> BA </TD><TD> 103 </TD><TD> ---&gt; </TD><TD>Transmitted Data, TxD</TD></TR><TR><TD>
+3 </TD><TD> 2 </TD><TD> RD </TD><TD> BB </TD><TD> 104 </TD><TD> &lt;---</TD><TD> Received Data, RxD</TD></TR><TR><TD>
+4 </TD><TD> 7 </TD><TD> RTS </TD><TD> CA </TD><TD> 105 </TD><TD> ---&gt; </TD><TD>Request To Send</TD></TR><TR><TD>
+5 </TD><TD> 8 </TD><TD> CTS </TD><TD> CB </TD><TD> 106 </TD><TD> &lt;---</TD><TD> Clear To Send</TD></TR><TR><TD>
+6 </TD><TD> 6 </TD><TD> DSR </TD><TD> CC </TD><TD> 107 </TD><TD> &lt;---</TD><TD> Data Set Ready</TD></TR><TR><TD>
+7 </TD><TD> 5 </TD><TD> SG </TD><TD> AB </TD><TD> 102 </TD><TD> ---- </TD><TD>Signal Ground, GND</TD></TR><TR><TD>
+8 </TD><TD> 1 </TD><TD> DCD </TD><TD> CF </TD><TD> 109 </TD><TD> &lt;---</TD><TD> Data Carrier Detect</TD></TR><TR><TD>
+9 </TD><TD> </TD><TD> -- </TD><TD> -- </TD><TD> - </TD><TD> - </TD><TD>Positive DC test voltage</TD></TR><TR><TD>
+10 </TD><TD> </TD><TD> -- </TD><TD> -- </TD><TD> - </TD><TD> - </TD><TD>Negative DC test voltage</TD></TR><TR><TD>
+11 </TD><TD> </TD><TD> QM </TD><TD> -- </TD><TD> - </TD><TD> &lt;---</TD><TD> Equalizer mode</TD></TR><TR><TD>
+12 </TD><TD> </TD><TD> SDCD </TD><TD> SCF </TD><TD> 122 </TD><TD> &lt;---</TD><TD> Secondary Data Carrier Detect</TD></TR><TR><TD>
+13 </TD><TD> </TD><TD> SCTS </TD><TD> SCB </TD><TD> 121 </TD><TD> &lt;---</TD><TD> Secondary Clear To Send</TD></TR><TR><TD>
+14 </TD><TD> </TD><TD> STD </TD><TD> SBA </TD><TD> 118 </TD><TD> ---&gt; </TD><TD>Secondary Transmitted Data</TD></TR><TR><TD>
+15 </TD><TD> </TD><TD> TC </TD><TD> DB </TD><TD> 114 </TD><TD> &lt;---</TD><TD> Transmitter (signal) Clock</TD></TR><TR><TD>
+16 </TD><TD> </TD><TD> SRD </TD><TD> SBB </TD><TD> 119 </TD><TD> &lt;---</TD><TD> Secondary Receiver Clock</TD></TR><TR><TD>
+17 </TD><TD> </TD><TD> RC </TD><TD> DD </TD><TD> 115 </TD><TD> ---&gt; </TD><TD>Receiver (signal) Clock</TD></TR><TR><TD>
+18 </TD><TD> </TD><TD> DCR </TD><TD> -- </TD><TD> - </TD><TD> &lt;---</TD><TD> Divided Clock Receiver</TD></TR><TR><TD>
+19 </TD><TD> </TD><TD> SRTS </TD><TD> SCA </TD><TD> 120 </TD><TD> ---&gt; </TD><TD>Secondary Request To Send</TD></TR><TR><TD>
+20 </TD><TD> 4 </TD><TD> DTR </TD><TD> CD </TD><TD> 108.2</TD><TD> ---&gt; </TD><TD>Data Terminal Ready</TD></TR><TR><TD>
+21 </TD><TD> </TD><TD> SQ </TD><TD> CG </TD><TD> 110 </TD><TD> &lt;---</TD><TD> Signal Quality Detect</TD></TR><TR><TD>
+22 </TD><TD> 9 </TD><TD> RI </TD><TD> CE </TD><TD> 125 </TD><TD> &lt;---</TD><TD> Ring Indicator</TD></TR><TR><TD>
+23 </TD><TD> </TD><TD> -- </TD><TD> CH </TD><TD> 111 </TD><TD> ---&gt; </TD><TD>Data rate selector</TD></TR><TR><TD>
+24 </TD><TD> </TD><TD> -- </TD><TD> CI </TD><TD> 112 </TD><TD> &lt;---</TD><TD> Data rate selector</TD></TR><TR><TD>
+25 </TD><TD> </TD><TD> TC </TD><TD> DA </TD><TD> 113 </TD><TD> &lt;---</TD><TD> Transmitted Clock</TD></TR><TR><TD>
+
+<CAPTION>   Pin Assignment for the Serial Port (RS-232C), 25-pin and 9-pin</CAPTION>
+</TD></TR></TABLE></CENTER>
+<P>
+<PRE>
+        1                         13         1         5
+      _______________________________      _______________
+      \  . . . . . . . . . . . . .  /      \  . . . . .  /    RS232-connectors
+       \  . . . . . . . . . . . .  /        \  . . . .  /     seen from outside
+        ---------------------------          -----------      of computer.
+        14                      25            6       9
+
+   DTE : Data Terminal Equipment (i.e. computer)
+   DCE : Data Communications Equipment (i.e. modem)
+   RxD : Data received; 1 is transmitted "low", 0 as "high"
+   TxD : Data sent; 1 is transmitted "low", 0 as "high"
+   DTR : DTE announces that it is powered up and ready to communicate
+   DSR : DCE announces that it is ready to communicate; low=modem hangup
+   RTS : DTE asks DCE for permission to send data
+   CTS : DCE agrees on RTS
+   RI  : DCE signals the DTE that an establishment of a connection is attempted
+   DCD : DCE announces that a connection is established
+</PRE>
+<P>
+<H2><A NAME="ioctl"></A> <A NAME="ss6.4">6.4 Ioctl to RS232 correspondence</A>
+</H2>
+
+<P>Since you also might need to modify <CODE>powerd.c</CODE> to raise and lower the
+correct lines, you might also need the numeric values of different
+terminal signals.  The can be found in
+<CODE>/usr/include/linux/termios.h</CODE>, but are reproduced here for
+reference.  Since they could change, you're best off confirming these
+values against said file.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+/* modem lines */
+#define TIOCM_LE        0x001
+#define TIOCM_DTR       0x002
+#define TIOCM_RTS       0x004
+#define TIOCM_ST        0x008
+#define TIOCM_SR        0x010
+#define TIOCM_CTS       0x020
+#define TIOCM_CAR       0x040
+#define TIOCM_RNG       0x080
+#define TIOCM_DSR       0x100
+#define TIOCM_CD        TIOCM_CAR
+#define TIOCM_RI        TIOCM_RNG
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Note that the 3rd column is in Hex.
+<P>
+<HR>
+<A HREF="UPS-HOWTO-7.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="UPS-HOWTO-5.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="UPS-HOWTO.html#toc6"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

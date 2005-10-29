@@ -1,0 +1,198 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Linux Serial HOWTO 中译版: 我要怎麽样用数据机以 getty_ps 拨入及拨出?</TITLE>
+ <LINK HREF="Serial-HOWTO-7.html" REL=next>
+ <LINK HREF="Serial-HOWTO-5.html" REL=previous>
+ <LINK HREF="Serial-HOWTO.html#toc6" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Serial-HOWTO-7.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Serial-HOWTO-5.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Serial-HOWTO.html#toc6"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s6">6. 我要怎麽样用数据机以 <CODE>getty_ps</CODE> 拨入及拨出?</A></H2>
+
+<P>让你的数据机能够正确地拨号出去．如果你还没有读过 
+<A HREF="Serial-HOWTO-5.html#dialout">我怎麽用数据机拨号出去</A> 一节的话<EM>现在去读</EM>！
+它包含有<EM>非常</EM>重要的设定资讯．如果你只想用数据机来<EM>拨出</EM>的话你<EM>不需要</EM>读此节．
+<P>
+<H2><A NAME="ss6.1">6.1 拨入及拨出的数据机配置</A>
+</H2>
+
+<P>要用来接受拨接以及拨号出去的话，那麽你<EM>必须</EM>确实地设定你的数据机（再一次对你的数据机使用 <CODE>AT</CODE> 指令群）：
+<BLOCKQUOTE><CODE>
+<PRE>
+E1       本地回应指令
+Q0       回报结果回应
+V1       开启冗长模式
+S0=0     不要接听 (uugetty 以 WAITFOR 选项来处理)
+</PRE>
+</CODE></BLOCKQUOTE>
+
+如果你没有正确地设定，放在你配置档里的起始(<CODE>INIT</CODE>)字串可能会失败，因而停住整个程序．
+但是，下面有更多配置档的选项...
+<BLOCKQUOTE><CODE>
+<PRE>
+&amp;C1     DCD 只有在连线以後才开启
+&amp;S0     DSR 永远为开启
+        DTR 开启/关闭 重置数据机（是数据机制造商而定 - RTFM)
+</PRE>
+</CODE></BLOCKQUOTE>
+
+这些会影响你数据机有关开始以及结束拨号的动作．
+<P>如果你的数据机不支援储存设定，你可以透过在你配置档里的起始字串来设定这些东西．
+参阅下面所述．有一些数据机是以 DIP 开关来影响暂存器的设定，也要确定这些设定是正确的．
+<P>我已经开始著手收集不同种类数据机的设定．
+到目前为止，我还只有它们的一小部分，如果你想要寄送给我你目前所用配置，非常欢迎!
+你可以从这些取得设些设定: <CODE>
+<A HREF="ftp://ftp.cc.gatech.edu/pub/people/gregh/modem-configs">ftp://ftp.cc.gatech.edu/pub/people/gregh/modem-configs</A></CODE>．
+<P>注意: 为了让我的 USR Courier V.34 数据机在 DTR 讯号掉下去後正常地重置，我必须设定 <CODE>&amp;D2</CODE> 及 <CODE>S13=1</CODE>(这是设定暂存器 S13 的 bit 0)．这确定能在 USR Sportster V.34 上运作正常．
+<P>注意: 某些 Supra 数据机处理 DCD 讯号的方式异於其它的数据机．
+如果你在用 Supra 数据机，试著设定为 <CODE>&amp;C0</CODE> 而<EM>不是</EM> <CODE>&amp;C1</CODE>．
+你也必须设定 <CODE>&amp;D2</CODE> 使之正常地处理 DTR 讯号．
+<P>
+<H2><A NAME="ss6.2">6.2 安装 <CODE>getty_ps</CODE></A>
+</H2>
+
+<P>从 <CODE>
+<A HREF="ftp://sunsite.unc.edu/pub/Linux/system/serial">ftp://sunsite.unc.edu/pub/Linux/system/serial</A></CODE> 最新的版本．
+特别地，如果你想使用高速通讯(57600 或 115200 bps)，你必须取得 2.0.7j 或以後的版本．
+你也必须有 libc 5.x 或之後的版本．
+<P>依照预设值，<CODE>getty_ps</CODE> 将会照 Linux 的档案系统标准(FSSTND, File System Standard)来配置，这个意思是二进位码将会放在 <CODE>/sbin</CODE> 下，而配置档将会以 <CODE>/etc/conf.{uu}getty.ttyS</CODE><EM>N</EM> 来命名．
+这点并不能从文件叙述中找到！它也会假定 lock files 将得要放到 <CODE>/var/lock</CODE> 目录里．要确定你有 <CODE>/var/lock</CODE> 这个目录．
+<P>如果你不想依照 FSSTND 的话，二进位码将会放到 <CODE>/etc</CODE> 里面，而配置档将会放到 <CODE>/etc/default/{uu}getty.ttyS</CODE><EM>N</EM> 里面，而 lock files 则将会放到 <CODE>/usr/spool/uucp</CODE> 里面．
+如果你有使用 UUCP 的话那麽我建议这样做，因为如果你把 lock files 搬到 UUCP 无法找到的地方去那麽它将会出问题的．
+<P><CODE>getty_ps</CODE> 也可使用 <CODE>syslogd</CODE> 来记录讯息．如果你目前没有执行它的话，参阅 <CODE>syslogd(1)</CODE> 以及 <CODE>syslog.conf(5)</CODE> 的线上手册来设定 <CODE>syslogd</CODE>．
+讯息会优先以 LOG_AUTH 记录，错误使用 LOG_ERR 记录，而除错使用 LOG_DEBUG．
+如果你不想使用 syslogd 的话那麽你可以编辑在 <CODE>getty_ps</CODE> 原始档案里的 <CODE>tune.h</CODE> 用一个记录档来取代，预设档名为 <CODE>/var/adm/getty.log</CODE>．
+<P>     
+决定好是否要依照 FSSTND 以及使用 syslog．你也可以选择两者的组合．
+编辑 <CODE>Makefile</CODE>，<CODE>tune.h</CODE> 以及 <CODE>config.h</CODE> 来反应你所作的决定．
+然後，根据套件里的说明编译及安装．
+<P>     
+<P>从现在起，所有谈到 <CODE>getty</CODE> 的地方都是指 <CODE>getty_ps</CODE> 而言．
+谈到 <CODE>uugetty</CODE> 则是指 <CODE>getty_ps</CODE> 套件里的 <CODE>uugetty</CODE> 而言．
+这些指令在 <CODE>mgetty</CODE> 或 <CODE>agetty</CODE> 上将不能运作．
+<P>
+<H2><A NAME="ss6.3">6.3 设定 <CODE>uugetty</CODE></A>
+</H2>
+
+<P>为了要能从你的数据机拨入及拨出，我们想要用 <CODE>uugetty</CODE>．uugetty 执行很重要的 lock file 检查．
+如果没有的话更新 <CODE>/etc/gettydefs</CODE> 以便为数据机增加项目(注意到这里的项目互相参考，它们并非固定速度 - 每个项目之间的空白行是必要的):
+<BLOCKQUOTE><CODE>
+<PRE>
+# Modem entries
+115200# B115200 CS8 # B115200 SANE -ISTRIP HUPCL #@S @L @B login: #57600
+
+57600# B57600 CS8 # B57600 SANE -ISTRIP HUPCL #@S @L @B login: #38400
+
+38400# B38400 CS8 # B38400 SANE -ISTRIP HUPCL #@S @L @B login: #19200
+
+19200# B19200 CS8 # B19200 SANE -ISTRIP HUPCL #@S @L @B login: #9600
+
+9600# B9600 CS8 # B9600 SANE -ISTRIP HUPCL #@S @L @B login: #2400
+
+2400# B2400 CS8 # B2400 SANE -ISTRIP HUPCL #@S @L @B login: #115200
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>如果你有 9600 bps 或更快且具资料压缩功能的数据机，你可以锁定你的串列埠速度而让数据机去处理传输的其它速度．
+然後，不像上面在 <CODE>/etc/gettydefs</CODE> 里的一连串列表，只需为数据机加上一行，例如:
+<BLOCKQUOTE><CODE>
+<PRE>
+# 115200 fixed speed
+F115200# B115200 CS8 # B115200 SANE -ISTRIP HUPCL #@S @L @B login: #F115200
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>     
+如果你将你的数据机设成 RTS/CTS 执行硬体流量控制的话，那麽你可以将 <CODE>CRTSCTS</CODE> 加到这些项目里：
+<BLOCKQUOTE><CODE>
+<PRE>
+# 115200 fixed speed with hardware flow control
+F115200# B115200 CS8 CRTSCTS # B115200 SANE -ISTRIP HUPCL CRTSCTS #@S @L @B login: #F115200
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>如果你要的话，你可以让 <CODE>uugetty</CODE> 在签入时的标题上印出些有趣的东西．
+在我的例子里，我印出系统名称，串列线路，以及目前的每秒位元传输率．
+你可以加入其它的东西：
+<BLOCKQUOTE><CODE>
+<PRE>
+       @B    目前的每秒位元传输率(bps, 在看到 @B 时估计的)．
+       @D    现在日期, 格式 MM/DD/YY．
+       @L    getty 所连接的串列线路．
+       @S    系统名称．
+       @T    现在时间，格式 HH:MM:SS (24 小时制)．
+       @U    目前签入的使用者．这是在 /etc/utmp 档中非空 ut_name 栏位项目的计数值．
+       @V    版本值，在预设档中给定的．
+       如果要显示 '@' 符号的话，用 '\@' 或 '@@'．
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>接下来，确定你数据机所接的串列埠有输出及输入的设备．
+如果你的数据机设在 <CODE>ttyS3</CODE> 的话你将会需要 <CODE>/dev/cua3</CODE>，以及 <CODE>/dev/ttyS3</CODE> 这两个设备．
+如果你没有正确的设备，参阅 
+<A HREF="Serial-HOWTO-3.html#dev">在 /dev 中建立设备</A> 该节说明如何建立设备，并且建立这些设备．
+如果你希望在你的 <CODE>uugetty</CODE> 正在监视这个串列埠是否有人签入时还能够用数据机拨出的话，用 <CODE>/dev/cua</CODE><EM>N</EM> 设备而不要用 <CODE>/dev/ttyS</CODE><EM>N</EM>．
+<P>当你正在编辑 <CODE>/etc/gettydefs</CODE> 时，你可以这样来检查它的语法是否正确:       
+<BLOCKQUOTE><CODE>
+<PRE>
+linux# getty -c /etc/gettydefs
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss6.4">6.4 自订 <CODE>uugetty</CODE></A>
+</H2>
+
+<P>你有许多参数可以用来改变你所拥有的每一个埠．这些是以分别对每一个埠使用不同配置档的方式来实作的．
+这个 <CODE>/etc/conf.uugetty</CODE> 档案会被<EM>所有</EM>的 <CODE>uugetty</CODE> 行程所使用，而 <CODE>/etc/conf.uugetty.ttyS</CODE><EM>N</EM> 只由那个埠使用．
+预设的配置档□例可以在 <CODE>getty_ps</CODE> 的原始档案里找到，这在绝大部分的 Linux 发行套件里面都会有．
+因为篇幅的考量，没有把它们列在这里．
+要注意的是如果你用的是比较旧的 <CODE>getty</CODE> 版本(比 2.0.7e 版还旧)，或者是你没有依照 FSSTND 的话，那麽预设的档案将会是 <CODE>/etc/default/uugetty.ttyS</CODE><EM>N</EM>．
+我的 <CODE>/etc/conf.uugetty.ttyS3</CODE> 看起来像这样:
+<BLOCKQUOTE><CODE>
+<PRE>
+# sample uugetty configuration file for a Hayes compatible modem to allow
+# incoming modem connections
+#
+# alternate lock file to check... if this lock file exists, then uugetty is
+# restarted so that the modem is re-initialized
+ALTLOCK=cua3
+ALTLINE=cua3
+# line to initialize
+INITLINE=cua3
+# timeout to disconnect if idle...
+TIMEOUT=60
+# modem initialization string... 
+# format: &lt;expect> &lt;send> ... (chat sequence)
+INIT="" AT\r OK\r\n
+WAITFOR=RING
+CONNECT="" ATA\r CONNECT\s\A
+# this line sets the time to delay before sending the login banner
+DELAY=1
+#DEBUG=010
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>将下面那一行加到你的 <CODE>/etc/inittab</CODE> 里去，那麽 <CODE>uugetty</CODE> 就会在你的串列埠上执行(用你环境的正确资讯来取代 - 配置档的位置，串列埠名，速度，及预设终端机形式):
+<BLOCKQUOTE><CODE>
+<PRE>
+S3:456:respawn:/sbin/uugetty -d /etc/default/uugetty.ttyS3 ttyS3 F115200 vt100
+</PRE>
+</CODE></BLOCKQUOTE>
+
+重新启动 <CODE>init</CODE>:
+<BLOCKQUOTE><CODE>
+<PRE>
+linux# init q 
+</PRE>
+</CODE></BLOCKQUOTE>
+
+对於在你 <CODE>/etc/inittab</CODE> 里面的速度参数，你会希望使用你数据机所能支援的最高每秒位元传输率．
+<P>现在 Linux 将会随时监视你的串列埠是否有连线．从别的地方拨号并签入你的 Linux 机器．
+<P><CODE>uugetty</CODE> 还有更多的选项，参阅 getty (lm) 线上手册获得更完整的叙述．
+别的不提它还有排程(scheduling)的功能，以及回拨的能力．
+<P>
+<HR>
+<A HREF="Serial-HOWTO-7.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Serial-HOWTO-5.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Serial-HOWTO.html#toc6"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

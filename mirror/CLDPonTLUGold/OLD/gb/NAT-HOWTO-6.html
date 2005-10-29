@@ -1,0 +1,164 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Linux 2.4 NAT HOWTO: 谈谈要怎样 Mangle 封包</TITLE>
+ <LINK HREF="NAT-HOWTO-7.html" REL=next>
+ <LINK HREF="NAT-HOWTO-5.html" REL=previous>
+ <LINK HREF="NAT-HOWTO.html#toc6" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="NAT-HOWTO-7.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="NAT-HOWTO-5.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="NAT-HOWTO.html#toc6"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s6">6. 谈谈要怎样 Mangle 封包</A></H2>
+
+<P>现在，我们知道如何去挑选那些我们要 mangle 的封包。为了要完善我们的规则，我们需要准确无误的告诉核心，什麽才是我们要对封包做的。
+<P>
+<H2><A NAME="ss6.1">6.1 Source NAT</A>
+</H2>
+
+<P>您想要做  Source NAT，是要去将连线的来源地址换成别的什麽的。这就要在它最後要送出去之前，於 POSTROUTING 链中完成了；这是一个非常重要的细节，因为它意味著所有在 Linux 主机本身上的其它东西 (routing, packet filtering) 都只看见那个还没改变的封包。同时，这也就是说，`-o' (传出界面) 选项可以派上用场了。
+<P>
+<P>Source NAT 是用 `-j SNAT' 来指定的，同时， `--to source' 则指定一个 IP 地址、或一段 IP 地址、以及一个可配选的埠口或一段值域的埠口(仅适用於 UDP 和 TCP 协定)。
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+## Change source addresses to 1.2.3.4.
+# iptables -t nat -A POSTROUTING -o eth0 -j SNAT --to 1.2.3.4
+
+## Change source addresses to 1.2.3.4, 1.2.3.5 or 1.2.3.6
+# iptables -t nat -A POSTROUTING -o eth0 -j SNAT --to 1.2.3.4-1.2.3.6
+
+## Change source addresses to 1.2.3.4, ports 1-1023
+# iptables -t nat -A POSTROUTING -p tcp -o eth0 -j SNAT --to 1.2.3.4:1-1023
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H3>封包伪装 (Masquerading)</H3>
+
+<P>有一个 Source NAT 之特例，叫做封包伪装：它只用於动态分配的 IP 地址，例如标准的拨接(如果用静态 IP 地址，则使用前述之 SNAT)。
+<P>
+<P>您无需明确地将 masquerading 放进来源地址那里去：它将会使用封包传出界面作为来源地址。但更重要的是，如果该连接(link)断掉的话，那麽连线 (connections，无可避免的将失掉) 也会被忘掉，当连线用新的 IP 地址回来的时候就会有问题了。
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+## Masquerade everything out ppp0.
+# iptables -t nat -A POSTROUTING -o ppp0 -j MASQUERADE
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss6.2">6.2 Destination NAT</A>
+</H2>
+
+<P>一旦封包进入，会由 PREROUTING 链完成处理；也就是说，除了该主机自己的其它东西(诸如：路由、封包过滤) 都将封包看成要送到 `真正' 目的地。另外，那个 `-i' (传入界面) 选项也可以在这里使用。
+<P>
+<P>需要修改本机产生的封包之目的地的话，那麽 OUTPUT 链就可以用上了，不过这并不常碰到。
+<P>
+<P>Destination NAT 必须以 `-j DNAT' 来指定使用，同时用 `--to destination' 选项指定一个 IP 地址、或一段 IP 地址，以及可以配选一个埠口或一段埠口值域(只能用於 UDP 和 TCP 协定上面)。
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+## Change destination addresses to 5.6.7.8
+# iptables -t nat -A PREROUTING -i eth1 -j DNAT --to 5.6.7.8
+
+## Change destination addresses to 5.6.7.8, 5.6.7.9 or 5.6.7.10.
+# iptables -t nat -A PREROUTING -i eth1 -j DNAT --to 5.6.7.8-5.6.7.10
+
+## Change destination addresses of web traffic to 5.6.7.8, port 8080.
+# iptables -t nat -A PREROUTING -p tcp --dport 80 -i eth1 \
+        -j DNAT --to 5.6.7.8:8080
+
+## Redirect local packets to 1.2.3.4 to loopback.
+# iptables -t nat -A OUTPUT -d 1.2.3.4 -j DNAT --to 127.0.0.1
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H3>重导向 (Redirection)</H3>
+
+<P>在 Destination NAT  有一个特别的情形：它是一个简单的便利，完全等同於给传入界面地址做 DNAT 一样。
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+## Send incoming port-80 web traffic to our squid (transparent) proxy
+# iptables -t nat -A PREROUTING -i eth1 -p tcp --dport 80 \
+        -j REDIRECT --to-port 3128
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss6.3">6.3 进一步的映对(Mappings)</A>
+</H2>
+
+<P>还有许多 NAT 上面的解决方案是大多数人无需用到的。这里不妨和那些有兴趣的朋友探讨一下：
+<P>
+<H3>同一□围内的复合地址(Multiple Addresses)之选择。</H3>
+
+<P>如果您已经指定了一段 IP 地址， 而 IP 地址的使用选择是基於机器所知连线目前最少使用之 IP。它可以提供最原始的平衡负载(load-balancing)。
+<P>
+<H3>建立空 NAT 映对</H3>
+
+<P>您可以使用 `-j ACCEPT' 目标来让一个连线通过，而绕过 NAT 的处理。
+<P>
+<H3>标准的 NAT 行为(Behaviour)</H3>
+
+<P>预设的行为是在使用者制定的规则限制内，尽可能少的改变连线。换而言之，非不得已不要重映对(remap)埠口。
+<P>
+<H3>绝对来源埠口映对</H3>
+
+<P>如果其它连线已经被映对到新的连线，就算对於一个无需 NAT 的连线来说，来源埠口的转换有时或是必须绝对存在的。让我们假设一个封包伪装的情形，这已经非常普遍了：
+<P>
+<OL>
+<LI> 一个网页连线由一台 192.1.1.1 的机器从 port 1024 建立，要连接到www.netscape.com port 80。
+</LI>
+<LI> 它被封包伪装主机以其自己的 IP 地址(1.2.3.4)进行伪装。
+</LI>
+<LI> 该封包伪装主机尝试由 1.2.3.4 (它的外部界面地址) port 1024 来做一个网页连线至www.netscape.com port 80。
+</LI>
+<LI> 然後 NAT 程式改变第二个连线的来源埠口为 1025，所以这两个连线不至於相冲(clash)。</LI>
+</OL>
+<P>
+<P>当这个绝对来源映对存在之时，埠口被拆分为三个等级：
+<UL>
+<LI> 512 以下的埠口</LI>
+<LI> 512 到 1023 之间的埠口</LI>
+<LI> 1024 以上的埠口</LI>
+</UL>
+<P>任何一个埠口都不会被绝对映对到不同的等级去。
+<P>
+<H3>当 NAT 失效时会怎样？</H3>
+
+<P>如果没有办法如用户要求那样独一无二地映对连线，那麽连线就会被挡掉。当一个封包不能够界定为任何连线的时候，结果也一样，因为它们可算是畸形的，或者是该机器记忆体耗光了，诸如此类。
+<P>
+<H3>复合映对、重叠、和相冲(clash)</H3>
+
+<P>您可以设定 NAT 规则在同一个□围之上映对封包；NAT 程式足以聪明的去避免相冲。比方说，用两条规则将  192.168.1.1 和 192.168.1.2 这两个来源地址分别映对到 1.2.3.4，是完全可行的。
+<P>
+<P>再来，您可以映对到真实的、已用的 IP 地址，只要这些地址通过这个映对主机就行。所以，如果您获得一个网路(1.2.3.0/24)，但有一个内部网路使用这些地址，而另一个使用私有地址 192.168.1.0/24 ，您就可以 NAT 那些 192.168.1.0/24 的来源地址到 1.2.3.0 网路之上，而无需担心相冲：
+<BLOCKQUOTE><CODE>
+<PRE>
+# iptables -t nat -A POSTROUTING -s 192.168.1.0/24 -o eth1 \
+        -j SNAT --to 1.2.3.0/24
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>这同样适用於那些 NAT 主机自己使用的地址：这其实就是封包伪装如何工作的了(分享伪装封包地址和来自主机本身封包之 `真实' 地址。 )
+<P>
+<P>更甚者，您还可以映对相同的封包到许多不同的目标(targets)上去，而且它们都是共享的。例如，如果您不想映对任何东西到 1.2.3.5 上去，您可以这样做：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# iptables -t nat -A POSTROUTING -s 192.168.1.0/24 -o eth1 \
+        -j SNAT --to 1.2.3.0-1.2.3.4 --to 1.2.3.6-1.2.3.254
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H3>改变本机产生的连线之目的地</H3>
+
+<P>如果本机产生的封包之目的地改变了(例如，用 OUTPUT 链)，而这样会导致封包由不同的界面送出去，这样来源地址也跟著变为那个界面。举例子说，改变一个环回(loopback)封包之目的地由 eth0 送出，会让来源地址也由 127.0.0.1 变成 eth0 的地址；而不像其它来源地址映对那样，这是立即完成的。当然，所有这些映对在回应封包进入时是颠倒过来的。
+<P>
+<HR>
+<A HREF="NAT-HOWTO-7.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="NAT-HOWTO-5.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="NAT-HOWTO.html#toc6"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

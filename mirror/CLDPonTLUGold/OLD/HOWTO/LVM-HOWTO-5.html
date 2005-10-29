@@ -1,0 +1,135 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Logical Volume Manager HOWTO: Growing your filesystem</TITLE>
+ <LINK HREF="LVM-HOWTO-6.html" REL=next>
+ <LINK HREF="LVM-HOWTO-4.html" REL=previous>
+ <LINK HREF="LVM-HOWTO.html#toc5" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="LVM-HOWTO-6.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="LVM-HOWTO-4.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="LVM-HOWTO.html#toc5"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s5">5. Growing your filesystem</A></H2>
+
+<P>You can do this with a provided script which does a lot of work for you, or
+you can do it by hand if needed.
+<H2><A NAME="ss5.1">5.1 With e2fsadm</A>
+</H2>
+
+<P>If there is room within your volume group, and you use the ext2 filesystem
+(most people do), you can use this handy tool.
+<P>The <CODE>e2fsadm</CODE> command uses the commercial resize2fs tool. While
+people feel that this is good software, it is not very widely installed.
+<P>If you want to use the FSF's <CODE>ext2resize</CODE> command, you need to inform
+<CODE>e2fsadm</CODE> of this:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ 
+# export E2FSADM_RESIZE_CMD=ext2resize 
+# export E2FSADM_RESIZE_OPTS=""
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>The rest is easy, <CODE>e2fsadm</CODE> is a lot like the other LVM commands:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# e2fsadm /dev/test/HOWTO -L+50M
+e2fsadm -- correcting size 102 MB to physical extent boundary 104 MB
+e2fsck 1.18, 11-Nov-1999 for EXT2 FS 0.5b, 95/08/09
+Pass 1: Checking inodes, blocks, and sizes
+Pass 2: Checking directory structure
+Pass 3: Checking directory connectivity
+Pass 4: Checking reference counts
+Pass 5: Checking group summary information
+/dev/test/HOWTO: 11/25688 files (0.0% non-contiguous), 3263/102400 blocks
+lvextend -- extending logical volume "/dev/test/howto" to 104 MB
+lvextend -- doing automatic backup of volume group "test"
+lvextend -- logical volume "/dev/test/HOWTO" successfully extended
+
+ext2_resize_fs
+ext2_grow_fs
+ext2_block_relocate
+ext2_block_relocate_grow
+ext2_grow_group
+ext2_add_group
+ext2_add_group
+ext2_add_group
+ext2_add_group
+ext2_add_group
+ext2_add_group
+direct hits 4096 indirect hits 0 misses 1
+e2fsadm -- ext2fs in logical volume "/dev/test/HOWTO" successfully extended to 104 MB
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss5.2">5.2 Growing your Logical Volume</A>
+</H2>
+
+<P>The <CODE>e2fsadm</CODE> command takes care of this for you. However, it may be
+useful to understand how to do this manually:
+<P>If you have room within your Volume Group, this is a one liner:
+<BLOCKQUOTE><CODE>
+<PRE>
+# lvextend -L+12M /dev/test/HOWTO 
+lvextend -- rounding size to physical extent boundary
+lvextend -- extending logical volume "/dev/test/HOWTO" to 116 MB
+lvextend -- doing automatic backup of volume group "test"
+lvextend -- logical volume "/dev/test/HOWTO" successfully extended
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss5.3">5.3 Growing your Volume Group</A>
+</H2>
+
+<P>This is done with the vgextend utility, and is easy as pie. You first need
+to create a physical volume. This is done with the <CODE>pvcreate</CODE>
+utility. With this tool, you convert any block device into a physical
+volume.
+<P>After that is done, <CODE>vgextend</CODE> does the rest:
+<BLOCKQUOTE><CODE>
+<PRE>
+# pvcreate /dev/sda1
+pvcreate -- physical volume "/dev/sda1" successfully created
+# vgextend webgroup /dev/sda1
+vgextend -- INFO: maximum logical volume size is 255.99 Gigabyte
+vgextend -- doing automatic backup of volume group "webgroup"
+vgextend -- volume group "webgroup" successfully extended
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Please note that in order to do this, your Volume Group needs to be
+active. You can make it by executing 'vgchange -a y webgroup'.
+<P>
+<H2><A NAME="ss5.4">5.4 Growing your filesystem</A>
+</H2>
+
+<P>If you want to do this manually, there are a couple of ways to do this.
+<H3>ext2 off-line with ext2resize</H3>
+
+<P>By off-line, we mean that you have to unmount the file-system to make
+these changes.  The file-system and it's data will be unavailable while
+doing this.  Note this means you must use other boot media if extending
+the size of the root or other important partitions.
+<P>The ext2resize tool is available on the GNU ftp size, but most distributions
+carry it as a package. The syntax is very straightforward:
+<BLOCKQUOTE><CODE>
+<PRE>
+# ext2resize /dev/HOWTO/small 40000
+</PRE>
+</CODE></BLOCKQUOTE>
+
+Where 40000 is the number of blocks the filesystem should have after growing
+or shrinking.
+<P>
+<H3>ext2 on-line</H3>
+
+<P>FIXME: write this
+<P>
+<HR>
+<A HREF="LVM-HOWTO-6.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="LVM-HOWTO-4.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="LVM-HOWTO.html#toc5"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

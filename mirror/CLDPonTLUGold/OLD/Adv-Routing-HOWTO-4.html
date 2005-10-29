@@ -1,0 +1,91 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Linux 2.4 Advanced Routing HOWTO: 規則 - 路由原則資料庫 (Rules - routing policy database)</TITLE>
+ <LINK HREF="Adv-Routing-HOWTO-5.html" REL=next>
+ <LINK HREF="Adv-Routing-HOWTO-3.html" REL=previous>
+ <LINK HREF="Adv-Routing-HOWTO.html#toc4" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Adv-Routing-HOWTO-5.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Adv-Routing-HOWTO-3.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Adv-Routing-HOWTO.html#toc4"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s4">4. 規則 - 路由原則資料庫 (Rules - routing policy database)</A></H2>
+
+<P>假如您有一個強大的路由器﹐那您或許要滿足各適其式的不同人等之需。路由原則就能讓您透過多組路由表格﹐見招拆招。
+<P>如果您真的需要這個功能﹐請確定您的核心有將 "IP: advanced router" 和 "IP: policy routing" 功能編譯進來。
+<P>在核心進行路由判斷的時候﹐它要找出哪一個表格以便查詢。在預設情況之下﹐會有三個表格。舊的 'route' 工具會修改 main 和 local 表格﹐(預設上)和 ip 工具一樣就是了。
+<P>預設規則如下﹕
+<BLOCKQUOTE><CODE>
+<PRE>
+[ahu@home ahu]$ ip rule list
+0:      from all lookup local 
+32766:  from all lookup main 
+32767:  from all lookup default
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>這個表格列示出全部規則的優先次序。我們不難發現所有規則都適用於所有封包('from all')。'main' 表格我們前面已經看過 了﹐可以用 <CODE>ip route ls</CODE> 看到其輸出結果﹐不過﹐ 'local' 和 'default' 表格則是新的。
+<P>若想玩些高難度動作﹐我們可以產生新規則﹐然後指向不同表格﹐而改寫整個系統的路由規則。
+<P>當存在更多對應規則時﹐核心是如何確切處置的﹐請參考 Alexey 兄之 ip-cref 文件。
+<P>
+<H2><A NAME="ss4.1">4.1 簡易源路由 (Simple source routing)</A>
+</H2>
+
+<P>還是讓我們再用一個真實範例來說好了﹐我有兩個(實際上在我退掉之前有 3 個) cable modem ﹐連接到一台 Linux NAT ('masqauerading') router 上面去。住在這裡的人付錢給我使用 internet。假設其中一個租客只單純的探訪 hotmail 而想少付一點錢。對我來說當然沒問題啦﹐只是您會被分配到較低階的 cable modem 而已。
+<P>那台 '較快' 的 cable mode 的位址是 212.64.94.251﹐同時以 PPP 連接到 212.64.94.1 那裡去。而那台 '較慢' 的 cable modem 使用的是變動位址﹐目前在此範例中是 212.64.78.148﹐同時連接到 195.96.98.253 去。
+<P>關於本機的表格﹐如下﹕
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+[ahu@home ahu]$ ip route list table local
+broadcast 127.255.255.255 dev lo  proto kernel  scope link  src 127.0.0.1 
+local 10.0.0.1 dev eth0  proto kernel  scope host  src 10.0.0.1 
+broadcast 10.0.0.0 dev eth0  proto kernel  scope link  src 10.0.0.1 
+local 212.64.94.251 dev ppp0  proto kernel  scope host  src 212.64.94.251 
+broadcast 10.255.255.255 dev eth0  proto kernel  scope link  src 10.0.0.1 
+broadcast 127.0.0.0 dev lo  proto kernel  scope link  src 127.0.0.1 
+local 212.64.78.148 dev ppp2  proto kernel  scope host  src 212.64.78.148 
+local 127.0.0.1 dev lo  proto kernel  scope host  src 127.0.0.1 
+local 127.0.0.0/8 dev lo  proto kernel  scope host  src 127.0.0.1 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>大部份我們都知道是什麼了﹐只有其中一部份需要特別指定而已。嗯﹐也不難找啦。其 '預設(default)' 表格目前是空的。
+<P>那先讓我們看看 'main' 表格吧﹕
+<BLOCKQUOTE><CODE>
+<PRE>
+[ahu@home ahu]$ ip route list table main 
+195.96.98.253 dev ppp2  proto kernel  scope link  src 212.64.78.148 
+212.64.94.1 dev ppp0  proto kernel  scope link  src 212.64.94.251 
+10.0.0.0/8 dev eth0  proto kernel  scope link  src 10.0.0.1 
+127.0.0.0/8 dev lo  scope link 
+default via 212.64.94.1 dev ppp0 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>我們現在先產生一條新規則﹐取名為 'John'﹐是為我們假設的房客而設的。雖然﹐我們可以全部用號碼來做﹐不過﹐如果我們將表格加入 /etc/iproute2/rt_tables 的話﹐會更加容易些。
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# echo 200 John >> /etc/iproute2/rt_tables
+# ip rule add from 10.0.0.10 table John
+# ip rule ls
+0:      from all lookup local 
+32765:  from 10.0.0.10 lookup John
+32766:  from all lookup main 
+32767:  from all lookup default
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>接下來﹐我們只需增加 Johns 表格﹐同時清空(flush) route cache 就好﹕
+<BLOCKQUOTE><CODE>
+<PRE>
+# ip route add default via 195.96.98.253 dev ppp2 table John
+# ip route flush cache
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>好了﹐這樣就行了。剩下的﹐就作為我們讀者的練習﹐在 ip-up 下做做看吧。
+<HR>
+<A HREF="Adv-Routing-HOWTO-5.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Adv-Routing-HOWTO-3.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Adv-Routing-HOWTO.html#toc4"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

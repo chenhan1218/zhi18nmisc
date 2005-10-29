@@ -1,0 +1,271 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Linux PCMCIA HOWTO 中文版: 编译与安装</TITLE>
+ <LINK HREF="PCMCIA-HOWTO-3.html" REL=next>
+ <LINK HREF="PCMCIA-HOWTO-1.html" REL=previous>
+ <LINK HREF="PCMCIA-HOWTO.html#toc2" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="PCMCIA-HOWTO-3.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="PCMCIA-HOWTO-1.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="PCMCIA-HOWTO.html#toc2"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s2">2. 编译与安装</A></H2>
+
+<H2><A NAME="prereq"></A> <A NAME="ss2.1">2.1 准备工作与核心设定</A>
+</H2>
+
+<P>在开始前， 您应该想想是否需要自己来编译 PCMCIA 套件。 因为大部份的
+Linux 供应商版本已含有已编译过的 PCMCIA 驱动程式套件。一般上来说，
+如果您需要最新的驱动程式或您更动的  Linux 供应商版本内的核心和您原
+本的 PCMCIA 驱动程式无法相容时才会需要自己动手做。 虽然编译 PCMCIA
+套件在技术上并不难，但还是需要您对 Linux 已有一定的熟悉的。
+<P>下列的东西必须在您开始安装PCMCIA程式之前先行安装妥当：
+<UL>
+<LI>一个版本 2.0.*  或 2.1.* 系列的核心原始程式树。</LI>
+<LI>  一套合适的模组公用程式。</LI>
+<LI> (选择性 ) ``XForms'' X11 使用者界面工具组</LI>
+</UL>
+<P>目前的驱动程式套件事实上可在核心版本  1.2.8 开始的核心版本上正常工
+作。而用旧一点的核心版本就背道而驰了些，最好不要这样。
+<P>您还需要完整的 Linux 原始程式树， 不是只有最新版的核心映像档就可用
+来编译 PCMCIA 套件的。 PCMCIA 模组含有一些对核心原始程式档案的参考
+指令，   也许您会想做个不含那些不必要的驱动程式的核心，   但是安装
+PCMCIA 并不需要您这麽做。
+<P>目前稳定的的核心程式的原始档及修补档可以在 
+<A HREF="ftp://sunsite.unc.edu/pub/Linux/kernel/v2.0">ftp://sunsite.unc.edu/pub/Linux/kernel/v2.0</A>
+或 
+<A HREF="ftp://tsx-11.mit.edu/pub/linux/sources/system/v2.0">ftp://tsx-11.mit.edu/pub/linux/sources/system/v2.0</A>
+内找到。 发展中的核心程式可在 <CODE>v2.1</CODE> 目录内找到，目前的模组公用
+程式也可在同样的地方找到。
+<P>在核心 2.0 及 2.1 版所用的 Linux 原始程式树内的 <CODE>Documentation/Changes</CODE>
+档案中描述了核心程式所需要的各种类别的系统元件。您可检视它并核对您
+的系统是否为最新版本，尤其当您已更新了核心程式。 如果您使用 2.1 版
+核心，请确认您用了正确的程式库和模组工具的组合。
+<P>当您建构核心时，如果您计画要用 PCMCIA 网路卡，您应该打开网路支援并
+关上正常的   Linux  网路卡驱动程式，  这包括口袋型可携式型介面卡。
+PCMCIA 网路卡驱动程式都设计成可载入式模组， 所以将驱动程式编译到核
+心程式内只会浪费空间而已。
+<P>如果您要使用 SLIP、PPP 或 PLIP，可在建立核心时将这些功能打开，或者
+使用这些功能的可载入模组版本。 但是在核心 1.2.X 版本下建构作业时有
+小缺撼，就是不能为载入式模组设定建构选项 (例如 SLIP 压缩 )，所以如
+果您需要这个功能，只好将 SLIP 连结到核心程心□了。
+<P>为了要使用 PCMCIA 拓□链网路卡， 您的核心程式应该将  ``Token  Ring
+driver support'' (<CODE>CONFIG_TR</CODE>) 这项目开启，并将 <CODE>CONFIG_IBMTR</CODE>
+这项关闭。
+<P>如果您要使用 PCMCIA IDE 卡，针对核心 1.3.72 至 2.1.7 版， 核心建构
+时应该要将 <CODE>CONFIG_BLK_DEV_IDE_PCMCIA</CODE> 功能打开，旧版的核心并不
+支援可移式 IDE 设备，而较新的核心就不需这麽特别设定了。
+<P>如果您要使用 PCMCIA SCSI 卡， 在建构核心时应将 <CODE>CONFIG_SCSI</CODE> 功
+能打开。 并且，将您要使用的 SCSI 设备项目之驱动程式打开 (SCSI 磁碟
+机、磁带机、唯读光碟机等等 )。所有给特定介面卡的低层次驱动程式应该
+要关掉，因为它们只会占用空间而已。
+<P>如果您想把给 PCMCIA 设备使用的驱动程式模组化，请修改 <CODE>/etc/pcmcia/config</CODE>
+来指定哪些模组在哪种卡片使用下需被载入。例如，如果串列埠驱动程式被
+模组化了，那麽串列埠设备的定义应该如下：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+device "serial_cs"
+  class "serial" module "misc/serial", "serial_cs"
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>在套件□还有个 X 环境使用的卡片状态公用程式 <CODE>cardinfo</CODE>。 此程式
+是奠定在一个免费供应的使用者介面工具套件 XForms 程式库。通常被附在
+大部份的 Linux 供应商的产品内。 如果您想建造 <CODE>cardinfo</CODE>，您得在
+建构 PCMCIA 套件前安装好 XForms 和所有的一般  X 程式头档及程式库。
+<P>
+<H2><A NAME="ss2.2">2.2 安装</A>
+</H2>
+
+<P>以下是安装过程的简要步骤：
+<P>
+<UL>
+<LI>解开 pcmcia-cs-3.0.?.tar.gz 到 /usr/src目录内</LI>
+<LI>在新的  <CODE>pcmcia-cs-3.0.?</CODE> 目录内执行  ``<CODE>make  config</CODE>''</LI>
+<LI>执行 ``<CODE>make   all</CODE>''，再执行 ``<CODE>make install</CODE>''。</LI>
+<LI>为您的系统在 <CODE>/etc/pcmcia</CODE> 内自订 PCMCIA 启动手稿和选择档案
+。</LI>
+</UL>
+<P>如果您想安装其他非主要 PCMCIA 分享套件程式所包含的客户端驱动程式，
+将它们解开到 PCMCIA 原始程式树的顶层，再依正常的建造指令，即可将这
+增加的驱动程式编译及安装起来。
+<P>执行 ``<CODE>make config</CODE>'' 会列出一些建构选项，请检查您的系统并比对
+这些选项是否符合安装 PCMCIA 支援的条件。请小心检查此命令的输出讯息
+，尤其哪边有问题时。
+<P>如果您想编译个 PCMCIA 套件给其他机器使用，在建构手稿执行到出现指定
+目标目录时请指定个替代的目录，它应该是个绝对路径，所有的 PCMCIA 工
+具将被安装在这目录的相对位置□。然後，您就可以 <CODE>tar</CODE> 这个目录起
+来，再把它拷贝到其他机器上，解压缩到相对目录上後再安装它们到适当的
+地方。
+<P>如果您想编译个 PCMCIA 套件给其他机器使用，在建构手稿执行到要求您指
+定目标目录时请指定个替代的目录， 它应该是个绝对路径，所有的 PCMCIA
+工具将被安装在这目录的相对位置□。然後，您就可以 <CODE>tar</CODE> 这个目录
+起来，再把它拷贝到其他机器上，解压缩到相对目录上後再安装它们到适当
+的地方。
+<P>如果您在其他电脑上做交叉编译，您可以指定替代档名给编译器及连结器。
+这对混合著 a.out 及 ELF 系统时很有助益。此手稿会要求输入做为除错时
+使用的编译旗标。
+<P>某些支援公用程式 (<CODE>cardctl</CODE>  和 <CODE>cardinfo</CODE>) 可以在安全或可信
+的形式下编译。在安全形式下可以防止非 root 的使用者更改卡片的建构。
+可信的形式下允许一般使用者执行暂停、继续、重置卡片的命令及改变目前
+的建构。建构手稿会问你要将公用程式编译成安全或可信的形式，内定为安
+全形式。
+<P>有些核心程式建构选项会影响到 PCMCIA 的工具。建构手稿（一般状况下）
+会在执行核心程式时推断出这些影响。另外，如果您是编译来安装到其他机
+器上的，它能从核心原始程式树□读到这些建构，或是互动地设定每个选项
+。
+<P>执行 ``<CODE>make all</CODE>'' 後，接著 ``<CODE>make install</CODE>'' 将建立并安装
+核心程式模组及公用程式。 核心模组会被安装在  <CODE>/lib/modules/&lt;
+版本 &gt;/pcmcia</CODE> 内。 <CODE>cardmgr</CODE> 和 <CODE>cardctl</CODE> 两程式被安
+装在 <CODE>/sbin</CODE> 目录内。 如果 <CODE>cardinfo</CODE> 有被建立的话，它会
+被安装在 <CODE>/usr/bin/X11</CODE> □。
+<P>建构档会被安装在 <CODE>/etc/pcmcia</CODE> 目录内。如果您安装在一个旧版
+本之上，您的旧版建构手稿会被备份起来不会被盖掉，被保存下来的档案名
+称会被加个 <CODE>*.~1~</CODE>、<CODE>*.~2~</CODE> 之类的档名。
+<P>如果您不知道您的    PCMCIA    控制晶片是什麽厂牌的，    您可以使用
+<CODE>cardmgr/</CODE> 目录下的 <CODE>probe</CODE> 公用程式来探测它。目前最主要
+的晶片有：Databook TCIC-2 晶片及 Intel i82365SL 相容晶片。
+<P>在少数情况下，<CODE>probe</CODE> 命令将无法自动地判断您的控制器之类别。 如
+果您有个 Halikan NBD 486 系统， 它有个放在不同地方的 TCIC-2 控制器
+： 此时您就需要修改 <CODE>rc.pcmcia</CODE>  来载入 <CODE>tcic</CODE> 模组， 并且将
+<CODE>PCIC_OPTS</CODE> 参数设定成 ``<CODE>tcic_base=0x02c0</CODE>''。
+<P>有些使用 Cirrus 控制器的系统， 包括 NEC Versa M 系统的 BIOS 会在系
+统启动时将控制器置於一个特别的悬置状态下。在这类系统上，<CODE>probe</CODE>
+命令并无法找到任何已知的  PCMCIA  控制器。 如果发生这种事， 请修改
+<CODE>rc.pcmcia</CODE>  将 <CODE>PCIC</CODE> 设为 <CODE>i82365</CODE>， <CODE>PCIC_OPTS</CODE>  为
+``<CODE>wakeup=1</CODE>''。
+<P>
+<H2><A NAME="ss2.3">2.3 安装完後（使用BSD 启动手稿的系统）</A>
+</H2>
+
+<P>有些 Linux 供应商，包括 Slackware，使用 BSD 的安排方式做为系统启动
+手稿的方排。 如果有 <CODE>/etc/rc.d/rc.M</CODE> 这个档的系统就属这类型
+的。安装在 <CODE>/etc/rc.d</CODE> 内的 <CODE>rc.pcmcia</CODE> 手稿会控制启动和
+关闭 PCMCIA 系统。 在 ``<CODE>make install</CODE>'' 时会用 <CODE>probe</CODE> 命令
+来决定您的控制器种类并适当修改 <CODE>rc.pcmcia</CODE> 的内容。您可在系统启
+动档 <CODE>/etc/rc.d/rc.M</CODE>  内加上一行如下面的指令来执行  PCMCIA
+启动手稿。
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+/etc/rc.d/rc.pcmcia start
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>将这行插排在哪行前面都可以，只要 PCMCIA 驱动程式在 <CODE>syslogd</CODE> 後
+启动即可。
+<P>
+<H2><A NAME="ss2.4">2.4 安装完後（使用System V 启动手稿的系统）</A>
+</H2>
+
+<P>
+<H2><A NAME="ss2.5">2.5 安装完後（使用  System  V 起始手稿的系统）  </A>
+</H2>
+
+<P> Red Hat、
+Caldera  及 Debian 等供应商的 Linux 使用 System V 型的安排系统启动
+档案。 如果有个 <CODE>/etc/init.d</CODE>  或 <CODE>/etc/rc.d/init.d</CODE>
+目录的系统就是这类型。        <CODE>rc.pcmcia</CODE>        手稿会被安装到
+<CODE>/etc/rc.d/init.d/pcmcia</CODE>  或是 <CODE>/etc/init.d/pcmcia</CODE>
+下。它会自动启动 PCMCIA 功能，不必去修改任何的启动手稿了。
+<P>如果  <CODE>/etc/sysconfig</CODE>   目录在系统内，  那麽有另一个建构档
+<CODE>/etc/sysconfig/pcmcia</CODE> 会被建立起来做为启动选项。 如果您需
+要更改任何的模组选项 (如 <CODE>PCIC=</CODE> 或 <CODE>PCIC_OPTS=</CODE> 设定 )， 只
+需编辑这个建构档而不必修改真正的 PCMCIA 启动手稿。此档案也不会被往
+後的安装而覆盖掉。
+<P>有些以前的版本使用 <CODE>/etc/sysconfig/pcmcia-scripts</CODE> 目录而不
+是现在的 <CODE>/etc/pcmcia</CODE> 目录。现在所有的系统的版本都已或将改
+用 <CODE>/etc/pcmcia</CODE> 目录了，。
+<P>
+<H2><A NAME="timing"></A> <A NAME="ss2.6">2.6 插槽驱动程式选项 </A>
+</H2>
+
+<P>有些 PCMCIA 控制器拥有其他的功能可能会也可能不会被特别的系统所采用
+。而插槽驱动程式也没有办法侦测到是否这些功能被采用与否。请检查您的
+插槽驱动程式的 man 说明页看看您的控制器有哪些其他的功能。
+<P>低阶的插槽驱动程式 <CODE>tcic</CODE> 及 <CODE>i82365</CODE> 有许多汇流排分时参数特
+别是在采用高速处理器的系统上时需做些修改。分时发生问题的症状像卡片
+辨认问题、在重负载下的闭锁、错误比率高，或是造成设备性能变差。详情
+请参阅相关的 man 页会有更多的细节，在此简述如下：
+<P>
+<UL>
+<LI>Cirrus 控制器有许多可建构的分时参数。 最重要的应该是 <CODE>cmd_time</CODE>
+旗标， 它用来决定 PCMCIA  汇流排周期的长度。 速度快的 486 系统（如
+DX4-100 ）下将它从 6 (内定值 ) 加大成为 12 或 16 时可看到它效果。</LI>
+<LI>Cirrus PD6729 PCI 控制器有 <CODE>fast_pci</CODE> 旗标，如果 PCI 汇流排的速
+度比 25 MHz 快时应该设定它。</LI>
+<LI>Vadem VG-468 控制器及 Databook  TCIC-2 控制器内的 <CODE>async_clock</CODE>
+旗标必须更改为与 PCMCIA 汇流排和主汇流排相对的周期速度。更改这个旗
+标会使某些操作上增加等待的时间。然而，我好像还没听说有哪个笔记型电
+脑需要这麽做的。</LI>
+<LI><CODE>pcmcia_core</CODE> 模组有个 <CODE>cis_speed</CODE> 参数， 它是用来更改取存卡
+片的卡片资讯结构 Card Information Structure (CIS) 之记忆体速度。有
+些速度快的汇流排时序的系统上，增加这个参数（例如，减慢卡片的存取）
+可以解决卡片辨识的问题。</LI>
+<LI>这□我们并非讨论分时的议题，但如果您的系统上有一个以上的
+ISA-to-PCMCIA 控制器或在扩充坞上有其他的插槽时，<CODE>i82365</CODE> 模组应
+该和参数设为   1   的   <CODE>extra_sockets</CODE>   一起被载入，   但对於
+PCI-to-PCMCIA 或 PCI-to-CardBus 桥接器者就不必这麽做。</LI>
+</UL>
+<P>所有的这些选项应修改 <CODE>/etc/rc.d/rc.pcmcia</CODE>来建构，例如：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# Should be either i82365 or tcic
+PCIC=i82365
+# Put socket driver timing parameters here
+PCIC_OPTS="cmd_time=12"
+# Put pcmcia_core options here
+CORE_OPTS="cis_speed=500"
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>这□有一些特殊系统的分时设定：
+<P>
+<UL>
+<LI> 在 ARM Pentium-90 或 Midwest Micro Soundbook Plus 上， 使用
+``<CODE>freq_bypass=1 cmd_time=8</CODE>''。</LI>
+<LI> 在 Midwest Micro Soundbook Elite，使用 ``<CODE>cmd_time=12</CODE>''
+。</LI>
+<LI> 在 Gateway Liberty 上，试试 ``<CODE>cmd_time=16</CODE>''。</LI>
+</UL>
+<P>
+<H2><A NAME="ss2.7">2.7 系统资源设定</A>
+</H2>
+
+<P> 卡片服务系统应该自动地去避免分配到已被其他标准设备使用了的  IO
+埠和插断。它也会试著侦测本身与不知名设备间的冲突，只不过还不是很完
+全可靠。                如果遇到这种情形，                您需要将
+<CODE>/etc/pcmcia/config.opts</CODE> 内的资源给排除掉。
+<P>以下是某些特定的笔记型电脑之资源设定：
+<P>
+<UL>
+<LI>在 AMS SoundPro, 排除 irq 10.</LI>
+<LI>在有些 AMS TravelPro 5300 models, use memory 0xc8000-0xcffff.</LI>
+<LI>在 BMX 486DX2-66, 排除 irq 5, irq 9.</LI>
+<LI>在 Chicony NB5, use memory 0xda000-0xdffff.</LI>
+<LI>在 Compaq Presario 1020, 排除 port 0x2f8-0x2ff, irq 3, irq 5.</LI>
+<LI>在 HP Omnibook 4000C, 排除 port 0x300-0x30f.</LI>
+<LI>在 Micron Millenia Transport, 排除 irq 5, irq 9.</LI>
+<LI>在  NEC Versa M, 排除 irq 9, port 0x2e0-2ff.</LI>
+<LI>在  NEC Versa P/75, 排除 irq 5, irq 9.</LI>
+<LI>在  NEC Versa S, 排除 irq 9, irq 12.</LI>
+<LI>在  NEC Versa 6000 系列, 排除 port 0x300-0x33f, irq 9, irq 10.</LI>
+<LI>在 ProStar 9200, Altima Virage, 及 Acquiline Hurricane DX4-100, 排
+除 irq 5, port 0x330-0x35f. 可以使用 memory 0xd8000-0xdffff.</LI>
+<LI>在  Siemens Nixdorf SIMATIC PG 720C, 使用memory 0xc0000-0xcffff,
+port 0x300-0x3bf.</LI>
+<LI>在  TI TravelMate 5000,使用 memory 0xd4000-0xdffff.</LI>
+<LI>在  Toshiba   T4900   CT,  排除  irq  5,  port  0x2e0-0x2e8,  port
+0x330-0x338.</LI>
+<LI>在 Twinhead  5100, HP 4000, Sharp PC-8700 和 PC-8900, 排除 irq 9 (
+音效 ), irq 12.</LI>
+<LI>在 MPC 800 系列，排除 irq 5, port 0x300-0x30f 是给 CD-ROM 用的。</LI>
+</UL>
+<P>
+<HR>
+<A HREF="PCMCIA-HOWTO-3.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="PCMCIA-HOWTO-1.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="PCMCIA-HOWTO.html#toc2"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

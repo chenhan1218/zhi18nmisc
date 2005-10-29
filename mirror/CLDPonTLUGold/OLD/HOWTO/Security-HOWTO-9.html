@@ -1,0 +1,138 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux Security HOWTO: Security Preparation (before you go on-line)</TITLE>
+ <LINK HREF="Security-HOWTO-10.html" REL=next>
+ <LINK HREF="Security-HOWTO-8.html" REL=previous>
+ <LINK HREF="Security-HOWTO.html#toc9" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Security-HOWTO-10.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Security-HOWTO-8.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Security-HOWTO.html#toc9"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="secure-prep"></A> <A NAME="s9">9. Security Preparation (before you go on-line)</A></H2>
+
+<P>Ok, so you have checked over your system, and determined it's as secure
+as feasible, and you're ready to put it online.  There are a few things
+you should now do in order to prepare for an intrusion,
+so you can quickly disable the intruder, and get
+back up and running.
+<P>
+<H2><A NAME="ss9.1">9.1 Make a Full Backup of Your Machine</A>
+</H2>
+
+<P>Discussion of backup methods and storage is beyond the scope of this
+document, but here are a few words relating to backups and security: 
+<P>If you have less than 650mb of data to store on a partition, a CD-R
+copy of your data is a good way to go (as it's hard to tamper with
+later, and if stored properly can last a long time). Tapes and other
+re-writable media should be write-protected as soon as your backup is
+complete, and then verified to prevent tampering. Make sure you store your
+backups in a secure off-line area. A good backup will ensure that you
+have a known good point to restore your system from.
+<P>
+<H2><A NAME="ss9.2">9.2 Choosing a Good Backup Schedule</A>
+</H2>
+
+<P>A six-tape cycle is easy to maintain.  This includes four tapes
+for during the week, one tape for even Fridays, and one tape for odd
+Fridays.  Perform an incremental backup every day, and a full backup
+on the appropriate Friday tape. If you make some particularly important
+changes or add some important data to your system, a full backup might
+well be in order. 
+<P>
+<H2><A NAME="ss9.3">9.3 Backup Your RPM or Debian File Database</A>
+</H2>
+
+<P>In the event of an intrusion, you can use your RPM database like you
+would use <CODE>tripwire</CODE>, but only if you can be sure it too hasn't been
+modified.  You should copy the RPM database to a floppy, and keep this
+copy off-line at all times. The Debian distribution likely has
+something similar.
+<P>The files <CODE>/var/lib/rpm/fileindex.rpm</CODE> and
+<CODE>/var/lib/rpm/packages.rpm</CODE> most likely won't fit on a single floppy.
+But if compressed, each should fit on a seperate floppy.
+<P>Now, when your system is compromised, you can use the command:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+                        root#  rpm -Va
+</PRE>
+</CODE></BLOCKQUOTE>
+
+to verify each file on the system.  See the <CODE>rpm</CODE> man page, as there are
+a few other options that can be included to make it less verbose.
+Keep in mind you must also be sure your RPM binary has not been
+compromised.
+<P>This means that every time a new RPM is added to the system, the RPM
+database will need to be rearchived.  You will have to decide the
+advantages versus drawbacks.
+<P>
+<H2><A NAME="logs"></A> <A NAME="ss9.4">9.4 Keep Track of Your System Accounting Data</A>
+</H2>
+
+<P>It is very important that the information that comes from <CODE>syslog</CODE>
+not be compromised.  Making the files in <CODE>/var/log</CODE> readable and
+writable by only a limited number of users is a good start. 
+<P>Be sure to keep an eye on what gets written there, especially under
+the <CODE>auth</CODE> facility.  Multiple login failures, for example, can
+indicate an attempted break-in.
+<P>Where to look for your log file will depend on your distribution. In a
+Linux system that conforms to the "Linux Filesystem Standard", such as
+Red Hat, you will want to look in <CODE>/var/log</CODE> and check <CODE>messages</CODE>,
+<CODE>mail.log</CODE>, and others.
+<P>You can find out where your distribution is logging to by looking at
+your <CODE>/etc/syslog.conf</CODE> file. This is the file that tells
+<CODE>syslogd</CODE> (the system logging daemon) where to log various messages.
+<P>You might also want to configure your log-rotating script or daemon to 
+keep logs around longer so you have time to examine them. Take a look
+at the <CODE>logrotate</CODE> package on recent Red Hat distributions. Other
+distributions likely have a similar process. 
+<P>If your log files have been tampered with, see if you can determine
+when the tampering started, and what sort of things appeared to be
+tampered with. Are there large periods of time that cannot be accounted
+for?  Checking backup tapes (if you have any) for untampered log files
+is a good idea.
+<P>Intruders typically modify log files in order to cover their
+tracks, but they should still be checked for strange happenings. You
+may notice the intruder attempting to gain entrance, or exploit a
+program in order to obtain the root account. You might see log entries
+before the intruder has time to modify them.
+<P>You should also be sure to separate the <CODE>auth</CODE> facility from other log 
+data, including attempts to switch users using <CODE>su</CODE>, login attempts,
+and other user accounting information.
+<P>If possible, configure <CODE>syslog</CODE> to send a copy of the most important
+data to a secure system.  This will prevent an intruder from covering
+his tracks by deleting his login/su/ftp/etc attempts.  See the
+<CODE>syslog.conf</CODE> man page, and refer to the <CODE>@</CODE> option.
+<P>There are several more advanced <CODE>syslogd</CODE> programs out
+there. Take a look at 
+<A HREF="http://www.core-sdi.com/ssyslog/">http://www.core-sdi.com/ssyslog/</A> for Secure Syslog. Secure
+Syslog allows you to encrypt your syslog entries and make sure no one
+has tampered with them. 
+<P>Another <CODE>syslogd</CODE> with more features is 
+<A HREF="http://www.balabit.hu/products/syslog-ng.html">syslog-ng</A>. It allows you a lot more flexibility in your
+logging and also can has your remote syslog streams to prevent
+tampering. 
+<P>Finally, log files are much less useful when no one is reading
+them. Take some time out every once in a while to look over your log
+files, and get a feeling for what they look like on a normal
+day. Knowing this can help make unusual things stand out.
+<P>
+<H2><A NAME="ss9.5">9.5 Apply All New System Updates.</A>
+</H2>
+
+<P>Most Linux users install from a CD-ROM. Due to the fast-paced nature of 
+security fixes, new (fixed) programs are always being released. Before 
+you connect your machine to the network, it's a good idea to check with your
+distribution's ftp site and get all the updated packages since you 
+received your distribution CD-ROM. Many times these packages contain 
+important security fixes, so it's a good idea to get them installed. 
+<P>
+<HR>
+<A HREF="Security-HOWTO-10.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Security-HOWTO-8.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Security-HOWTO.html#toc9"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

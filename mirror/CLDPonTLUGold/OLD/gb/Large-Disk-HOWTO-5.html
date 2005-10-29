@@ -1,0 +1,58 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Large Disk mini-HOWTO 中译版: 核心的 IDE 磁碟转换</TITLE>
+ <LINK HREF="Large-Disk-HOWTO-6.html" REL=next>
+ <LINK HREF="Large-Disk-HOWTO-4.html" REL=previous>
+ <LINK HREF="Large-Disk-HOWTO.html#toc5" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Large-Disk-HOWTO-6.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Large-Disk-HOWTO-4.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Large-Disk-HOWTO.html#toc5"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s5">5. 核心的 IDE 磁碟转换</A></H2>
+
+<P>如果 Linux  侦测到 IDE  磁碟上有某些磁碟管理程式存在, 它将会试著使用与该磁碟管理程式相同的方式来重新对应磁碟, 所以 Linux  看到与, 例如 DOS  配合 OnTrack  或是 EZ-Drive 相同的磁碟分割．
+然而, 当你在指令列上指定 geometry 时, 就不会做任何的重新对应 -  所以一行 `<CODE>hd=</CODE><I>cyls</I><CODE>,</CODE><I>heads</I><CODE>,</CODE><I>secs</I>' 指令列选项可能取消掉与磁碟管理程式的相容．
+<P>此重新对应的方式是尝试 4,8,16,32,64,128,255 磁头数(H*C 保持不变)直到 C &lt;= 1024  或是 H = 255．
+<P>细节如下 -  小节的抬头是出现在相对应之启动讯息里的字串．在此以及在这份文件任何其它地方中分割的型态都以十六进位数字表示．
+<P>
+<H2><A NAME="ss5.1">5.1 EZD</A>
+</H2>
+
+<P>侦测到 EZ-Drive , 因为第一个主要分割区型态为 55 ．如上述重新对应 geometry, 且忽略从第 0  磁区读入的分割表 -  以第 1  磁区的分割表取代．磁碟的区块号码(block numbers) 没有改变, 但对磁区 0  的写入会转向磁区 1．此动作可以藉由修改在 <I>ide.c</I> 中的
+<BLOCKQUOTE><CODE>
+<CODE> #define FAKE_FDISK_FOR_EZDRIVE  0 </CODE>
+</CODE></BLOCKQUOTE>
+
+并重新编译核心来改变．
+<P>
+<H2><A NAME="ss5.2">5.2 DM6:DDO</A>
+</H2>
+
+<P>侦测到 OnTrack DiskManager(在第一个磁碟上), 因为第一个主要分割区型态为 54 ．如上述重新对应 geometry 而且整个磁碟平移 63 个磁区．
+(所以旧的磁区 63 变成磁区 0)然後从新的第 0  磁区读入新的 MBR (与分割表)．此平移当然是为 DDO 留空间 -  这也就是为什麽其它磁碟不必平移．
+<P>
+<H2><A NAME="ss5.3">5.3 DM6:AUX</A>
+</H2>
+
+<P>侦测到 OnTrack DiskManager(在其它磁碟上), 因为第一个主要分割区型态为 51 或 53．如上述重新对应 geometry ．
+<P>
+<H2><A NAME="ss5.4">5.4 DM6:MBR</A>
+</H2>
+
+<P>侦测到某旧版的 OnTrack DiskManager, 并非藉由分割区型态, 而是签名(signature)．(测试在 MBR  里第 2,3  位元组的偏移值是否不大於 430, 而且在此偏移位址找到的 short 等於 0x55AA, 後面并跟著一个奇数的位元组) 再一次如上述重新对应 geometry ．
+<P>
+<H2><A NAME="ss5.5">5.5 PTBL</A>
+</H2>
+
+<P>最後, 核心会尝试从主分割区的 <CODE>start</CODE> 以及 <CODE>end</CODE> 值推断转换方式: 若某些分割区的 <CODE>start</CODE> 以及 <CODE>end</CODE> 磁簇小於 256, 而且 <CODE>start</CODE> 以及 <CODE>end</CODE> 磁区号码分别为 1  和 63 , 而且 end  磁头为 31, 63,  或 127, 那麽, 因为依惯例分割区会在磁簇边界结束, 而且更因为 IDE  介面最多使用 16  个磁头, 故推测有开启 BIOS 转换, 分别使用 32, 64 或 128  磁头数重新对应 geometry．
+(也许这里有点瑕疵,  <I>genhd.c</I> 不应该测试磁簇号码前两个位元吗?)无论如何, 当目前的 geometry 已经为每磁轨 63 个磁区且至少这麽多磁头时, 不会做重新对应 (因为这可能意谓著重对应已完成)．
+<P>
+<HR>
+<A HREF="Large-Disk-HOWTO-6.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Large-Disk-HOWTO-4.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Large-Disk-HOWTO.html#toc5"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

@@ -1,0 +1,137 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" content="text/html; charset=big5">
+<TITLE>Linux Soundblaster 16 PnP Mini-Howto 中譯版</TITLE>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+<PRE>
+原始文件：Linux Soundblaster 16 PnP Mini-Howto
+檔案敘述：如何在 Linux 設定 Soundblaster 16 PnP 音效卡
+翻譯日期：1997/11/20
+翻譯維護：<a href="mailto:cwhuang@phys.ntu.edu.tw">cwhuang@phys.ntu.edu.tw</a>
+----------------------------------------------------------------------------------------------
+Linux Soundblaster 16 PnP Mini-Howto
+by Eric Z. Ayers &lt;<a href="mailto:Eric.Ayers@compgen.com">Eric.Ayers@compgen.com</a>&gt;
+v1.0, 14 January 1997
+
+很高興地，我的太太給我一塊嶄新的音效卡作為生日禮物．但不幸地，這塊
+Soundblaster 16 PnP 音效卡拒絕在 Linux 下工作．事實上，我的 3com 
+3c509 網路卡也不能在 Linux 下運作．
+
+最後，在隨附核心而來的 Linux 音效卡驅動程式及由 
+<a href="ftp://ftp.redhat.com/pub/utils/isapnptools-1.8.tgz">ftp://ftp.redhat.com/pub/utils/isapnptools-1.8.tgz</a> 取得的
+isapnp 套件的協助下我終於讓我的硬體能運作了．
+
+結果是我必須面對兩項主要的困難以便讓音效卡能工作．第一個困難是我不
+知道用來和音效卡溝通的 IRQ 及輸出入埠(IO ports)位址．這點由 isapnp
+工具套件所解決．第二個問題是 3c509 乙太網路卡．似乎不論我怎麼去改變
+卡上的設定，Linux 的核心都沒辦法認出這塊乙太網路卡．結果是因為有一
+個音效卡上的裝置和 3c509 的偵測程式碼相衝．
+
+
+1) 安裝 isapnp 套件．編輯 /etc/isapnp.conf 使得音效卡的 IRQ 及輸出
+   入埠位址不會和你的任何其它裝置相衝．
+
+2) 重建 Linux 核心．將音效支援變成一可載入模組，其中 IRQ, 輸出入及
+   DMA 位址就如 isapnp.conf 所配置的．同時也將你的 3c509 做成一模組
+   (在編譯及安裝完你的核心之後不要忘了執行 make modules 及 make 
+   modules_install)．
+
+3) 修改你系統的啟動程序稿．
+
+我在跑的是 Slackware 套件而核心版本是 2.0.23．在網路被設定之前，我
+執行 isapnp 程式 (在 /etc/rc.d/rc.M 裡就在 hostname 被設定之後):
+
+
+# EZA
+# 設定即插即用裝置
+/sbin/isapnp /etc/isapnp.conf
+
+
+然後，我在 /etc/rc.d/rc.inet1 所做的第一件事是載入網路卡驅動程式
+
+
+# EZA
+# 載入網路卡模組
+/sbin/insmod 3c509
+
+我忽略了啟動時動態偵測乙太網路卡無法運作的警告訊息，因為它對我沒
+有影響．最後，在 /etc/rc.d/rc.local 裡我插入了音效卡驅動程式模組:
+
+
+/sbin/insmod sound
+
+
+更多關於 Linux 即插即用裝置的資訊可在 
+<a href="http://www.redhat.com/linux-info/pnp/">http://www.redhat.com/linux-info/pnp/</a> 找到．我現在快樂地以
+Real-Audio player 享用網路並且聆聽由我的光碟機所撥放的 CD 音樂．
+
+Eric Ayers
+eric.ayers@compgen.com
+
+---------------------------------------------------------------------------
+這兒有份我的 isapnp.conf 的拷貝，大部份的註解都已去掉．
+
+# Trying port address 0203
+# Board 1 has serial identifier 67 00 00 40 17 2b 00 8c 0e
+
+# (DEBUG)
+(READPORT 0x0203)
+(ISOLATE)
+(IDENTIFY *)
+
+# Card 1: (serial identifier 67 00 00 40 17 2b 00 8c 0e)
+# CTL002b Serial No 16407 [checksum 67]
+# Version 1.0, Vendor version 2.0
+# ANSI string -->Creative SB16 PnP<--
+#
+# Logical device id CTL0031
+#
+# Edit the entries below to uncomment out the configuration required.
+# Note that only the first value of any range is given, this may be changed if required
+# Don't forget to uncomment the activate (ACT Y) when happy
+
+(CONFIGURE CTL002b/16407 (LD 0
+#     ANSI string -->Audio<--
+
+# Multiple choice time, choose one only !
+
+#     Start dependent functions: priority preferred
+#       IRQ 5.
+#             High true, edge sensitive interrupt (by default)
+(INT 0 (IRQ 5 (MODE +E)))
+(DMA 0 (CHANNEL 1))
+(DMA 1 (CHANNEL 5))
+(IO 0 (BASE 0x0220))
+(IO 1 (BASE 0x0330))
+(IO 2 (BASE 0x0388))
+(ACT Y)
+))
+
+(CONFIGURE CTL002b/16407 (LD 1
+(INT 0 (IRQ 11 (MODE +E)))
+(IO 0 (BASE 0x01e8))
+(IO 1 (BASE 0x03ee))
+ (ACT Y)
+))
+
+
+(CONFIGURE CTL002b/16407 (LD 2
+#     ANSI string -->StereoEnhance<--
+#     Logical device decodes 16 bit IO address lines
+#         Minimum IO base address 0x0100
+#         Maximum IO base address 0x0138
+#         IO base alignment 8 bytes
+#         Number of IO addresses required: 1
+#(IO 0 (BASE 0x0100))
+#(ACT Y)
+))
+
+
+(CONFIGURE CTL002b/16407 (LD 3
+(IO 0 (BASE 0x0200))
+(ACT Y)))
+
+
+</PRE>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

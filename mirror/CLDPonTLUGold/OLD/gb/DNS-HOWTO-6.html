@@ -1,0 +1,71 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="LinuxDoc-Tools 0.9.16">
+ <TITLE>DNS HOWTO 中译版: 维护工作</TITLE>
+ <LINK HREF="DNS-HOWTO-7.html" REL=next>
+ <LINK HREF="DNS-HOWTO-5.html" REL=previous>
+ <LINK HREF="DNS-HOWTO.html#toc6" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="DNS-HOWTO-7.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="DNS-HOWTO-5.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="DNS-HOWTO.html#toc6"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<HR>
+<H2><A NAME="maint"></A> <A NAME="s6">6.</A> <A HREF="DNS-HOWTO.html#toc6">维护工作</A></H2>
+
+<P><B>维持它的运作．</B></P>
+<P>维持它们的继续执行之外，对于 <CODE>named</CODE> 你还有个维护的任务得要做．
+那就是维持 <CODE>root.cache</CODE> 档案的更新．最简单的方法是使用 <CODE>dig</CODE> 程式，
+首先不加任何参数执行 <CODE>dig</CODE> 程式，你将会取得从你自己伺服器得到的 <CODE>root.cache</CODE>．
+然后以 <CODE>dig @rootserver . ns</CODE> 查问所列出的根伺服器其中之一．
+你将会注意到这份输出看起来非常地像一个 <CODE>root.cache</CODE> 档案，除了一堆额外的数字以外．这些数字不会有什么妨碍．
+把它存放到档案里(<CODE>dig @e.root-servers.net . ns &gt;root.cache.new</CODE>)并且用它来取代原本旧的 <CODE>root.cache</CODE> 档案．</P>
+<P>取代了原先的档案之后要记得重新启动 <CODE>named</CODE> 程式．</P>
+<P>Al Longyear 寄给我这个指令稿，它可以自动执行来更新 <CODE>named.cache</CODE>，为它安装个 crontab 项目然后忘了它．
+这个指令稿假设你的电子邮件可以运作而且 `hostmaster' 这个邮件别名有定义．你应该修订它以便符合你的设定．</P>
+<P>
+<HR>
+<PRE>
+#!/bin/sh
+#
+# Update the nameserver cache information file once per month.
+# This is run automatically by a cron entry.
+#
+(
+ echo "To: hostmaster &lt;hostmaster>"
+ echo "From: system &lt;root>"
+ echo "Subject: Automatic update of the named.boot file"
+ echo
+
+ export PATH=/sbin:/usr/sbin:/bin:/usr/bin:
+ cd /var/named
+
+ dig @rs.internic.net . ns >root.cache.new
+
+ echo "The named.boot file has been updated to contain the following information:"
+ echo
+ cat root.cache.new
+
+ chown root.root root.cache.new
+ chmod 444 root.cache.new
+ rm -f root.cache.old
+ mv root.cache root.cache.old
+ mv root.cache.new root.cache
+ ndc restart
+ echo
+ echo "The nameserver has been restarted to ensure that the update is complete."
+ echo "The previous root.cache file is now called /var/named/root.cache.old."
+) 2>&amp;1 | /usr/lib/sendmail -t
+exit 0
+</PRE>
+<HR>
+</P>
+<P>有些人可能用 ftp 从 Internic 得到 <CODE>root.cache</CODE> 档案．
+请<EM>不要</EM>用 ftp 来更新 <CODE>root.cache</CODE>，上面提到的方法更为便利．</P>
+
+<HR>
+<A HREF="DNS-HOWTO-7.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="DNS-HOWTO-5.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="DNS-HOWTO.html#toc6"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

@@ -1,0 +1,105 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>C++ Programming HOW-TO: C++ Zap (Delete) function </TITLE>
+ <LINK HREF="C++Programming-HOWTO-10.html" REL=next>
+ <LINK HREF="C++Programming-HOWTO-8.html" REL=previous>
+ <LINK HREF="C++Programming-HOWTO.html#toc9" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="C++Programming-HOWTO-10.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="C++Programming-HOWTO-8.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="C++Programming-HOWTO.html#toc9"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="zap"></A> <A NAME="s9">9. C++ Zap (Delete) function </A></H2>
+
+<P>The 
+<B>delete</B> and
+<B>new</B> 
+operators in C++ are much better than the malloc and free functions of C.
+Consider using new and zap (delete function) instead of malloc and free 
+as much as possible.
+<P>To make 
+<B>delete</B> 
+operators even more cleaner, make a Zap() inline function. Define 
+a zap() function like this: 
+<HR>
+<PRE>
+// Put an assert to check if x is NULL, this is to catch
+// program "logic" errors early. Even though delete works 
+// fine with NULL by using assert you are actually catching 
+// "bad code" very early
+
+// Defining Zap using templates
+// Use zap instead of delete as this will be very clean
+template &lt;class T>
+inline void zap(T &amp; x)
+{
+        {assert(x != NULL);}
+        delete x;
+        x = NULL;
+}
+
+// In C++ the reason there are 2 forms of the delete operator is - because
+// there is no way for C++ to tell the difference between a pointer to
+// an object and a pointer to an array of objects. The delete operator
+// relies on the programmer using "[]" to tell the two apart.
+// Hence, we need to define zaparr function below.
+// To delete array of pointers
+template &lt;class T>
+inline void zaparr(T &amp; x)
+{
+         {assert(x != NULL);}
+     delete [] x;
+     x = NULL;
+}
+</PRE>
+<HR>
+<P>The zap() function will delete the pointer and set it NULL.
+This will ensure that even if multiple zap()'s are called on the
+same deleted pointer then the
+program will not crash. Please see the function zap_example() in 
+<A HREF="http://www.angelfire.com/country/aldev0/cpphowto/example_String.cpp">example_String.cpp</A>.
+<P>
+<HR>
+<PRE>
+        // See zap_example() in example_String.cpp
+        zap(pFirstname);
+        //zap(pFirstname); // no core dumps.  Because pFirstname is NULL now
+        //zap(pFirstname); // no core dumps.  Because pFirstname is NULL now
+
+        zap(pLastname);
+        zap(pJobDescription);
+
+        int *iiarray = new int[10];
+        zaparr(iiarray);
+</PRE>
+<HR>
+<P>There is nothing magical about this, it just saves 
+repetative code, saves typing time and makes programs more readable. The
+C++ programmers often forget to reset the deleted pointer
+to NULL, and this causes annoying
+problems causing core dumps and crashes. The zap() takes care of 
+this automatically.
+Do not stick a typecast in the zap() function -- if something errors out on the 
+above zap() function it likely has another error somewhere.
+<P>Also 
+<A HREF="C++Programming-HOWTO-11.html#my_malloc">my_malloc()</A>
+, my_realloc() and my_free() should be used 
+instead of malloc(), realloc() and free(), as they
+are much cleaner and have additional checks. 
+For an example, see the file "String.h" which is using 
+the 
+<A HREF="C++Programming-HOWTO-11.html#my_malloc">my_malloc()</A>
+and my_free() functions.
+<P><B>WARNING :</B> Do not use free() to free memory allocated with 'new'
+or 'delete' to free memory allocated with malloc. If you do, then
+results will be unpredictable.
+<P>See the zap examples in
+<A HREF="http://www.angelfire.com/country/aldev0/cpphowto/example_String.cpp">example_String.cpp</A>.
+<HR>
+<A HREF="C++Programming-HOWTO-10.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="C++Programming-HOWTO-8.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="C++Programming-HOWTO.html#toc9"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

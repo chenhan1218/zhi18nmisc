@@ -1,0 +1,247 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Linux 2.4 Advanced Routing HOWTO: 用 CBQ 進行頻寬管理 (Using Class Based Queueing for bandwidth management)</TITLE>
+ <LINK HREF="Adv-Routing-HOWTO-10.html" REL=next>
+ <LINK HREF="Adv-Routing-HOWTO-8.html" REL=previous>
+ <LINK HREF="Adv-Routing-HOWTO.html#toc9" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Adv-Routing-HOWTO-10.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Adv-Routing-HOWTO-8.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Adv-Routing-HOWTO.html#toc9"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s9">9. 用 CBQ 進行頻寬管理 (Using Class Based Queueing for bandwidth management)</A></H2>
+
+<P>現階段由我來發掘這功能﹐<EM>委實</EM>是折殺小弟了。Linux 2.2 本身就自帶有許多頻寬管理辦法﹐其實已夠得上那些高級專屬的頻寬管理系統了。
+<P>Linux 所提供的﹐甚至比 Frame 及 ATM 還要更多。
+<P>流量控管的兩個基本單元是過濾器(filters) 和佇列(queues)。前者將流量安排至後者﹐後者則收集流量然後決定哪些要先送﹑哪些要晚送﹑或是丟棄掉(drop)。而兩者都各有其不同系列。
+<P>最常見的過濾器是 fwmark 和 u32﹐前者讓您可以使用 Linux netfilter 程式選擇流量﹔而後者則允許您依據任何標頭(header)選擇流量。至於最常聽到的佇列演算法就是 Class Based Queue 了。CBQ 可以說是一個 super-queue﹐在其裡面包含了其它佇列 (甚至其它 CBQs)。
+<P>或許﹐關於佇列演算法(queueing)在頻寬管理上的運用﹐一時間尚難一窺全豹﹐不過﹐它還真的不負眾望就是了。
+<P>作為我們的參考資料框架﹐我把目前這個章節套用在一個 ISP 模式之上﹐也就是我偷師學藝之所﹐暫且稱之為 Casema Internet in The Netherlands 吧。Casema﹐事實上是一家 cable 公司﹐他們的客戶和他們自己的辦公室都有 internet 的需求。大多數公司電腦都有 internet 的連線。實際上﹐他們有大把金錢可以花而不是用 Linux 來做頻寬管理的。
+<P>那讓我們看看我們的 ISP 是怎樣用 Linux 來管理其頻寬吧。
+<P>
+<H2><A NAME="ss9.1">9.1 佇列演算法是什麼東東﹖(What is queueing?)</A>
+</H2>
+
+<P>我們用佇列演算法來判定數據 <EM>被傳送</EM> 的順序。有一個很重要的概念我們要知道﹐就是我們只能處理那些我們要傳送的數據。那它又是如何影響傳送速度之判定順序呢﹖您可以想像為一位收款員每一分鐘可以處理 3 個客人。
+<P>然後要付款的客人就要跑到隊列的 '尾巴' 去排隊。這是所謂的 'FIFO quequeing' (First IN, First Out --- 先入先出)。不過﹐假設我們讓某些客人插入隊列中間﹐而不是排在最後﹐然後這些客人就可以花更少時間在隊列中﹐因而也可以更快的購物。
+<P>在 inetnet 的環境中﹐我們沒辦法直接控制別人要送什麼東西過來。這有點像您家中的(實體)信箱﹐您沒辦法影響全世界去修改他們要送信給您的數量﹐除非您有能力通知所有人。
+<P>然而﹐internet 賴以為繼的 TCP/IP﹐卻有某些功能可以協助我們的。TCP/IP 本身是沒辦法知道兩台主機之間的網路容量的﹐所以它會越來越快('剛開始很慢')的將數據送出去﹐而當封包開始丟失的時候﹐因為沒有空間將他們送出去了﹐然後就會開始減慢下來。
+<P>這情形﹐就有點像您還沒讀完一半信件的時候﹐會希望別人不要再寄信給您一樣。不同之處﹐這裡是在 internet 上面而已。
+<P>FIXME﹕解釋擁塞視窗 (congestion windows)
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+[The Internet] ---&lt;E3, T3, whatever>--- [Linux router] --- [Office+ISP]
+                                      eth1          eth0
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>現在﹐我的 Linux router 有兩張界面﹐eth0 和 eth1。eth1 用來連接我們的 router﹐它負責將封包送至光纖線路以及將封包接收進來。
+<P>eth0 則用來連接另外一個 subnet﹐內有公司防火牆及我們的網路前端﹐我們透過它來連接客戶。
+<P>由於我們僅能限制送出的部份﹐我們需要兩套獨立但非常近似的規則。透過修改 eth0 的佇列﹐我們可以判定資訊要多快送至我們客戶那邊﹐因而要分配多少下傳(downstream) 頻寬給他們﹐所謂的‘下載速度’是也。
+<P>在 eth1 上面﹐我們判定數據要多快送給 Internet﹑多快給我們的使用者﹐而且公司內部和業務方面均需要上傳數據。
+<P>
+<H2><A NAME="ss9.2">9.2 先搞定頻寬切割 (First attempt at bandwidth division)</A>
+</H2>
+
+<P>CBQ 可以讓我們產生好些不同類別(classes)﹐甚至類別中的類別。至於更大的切割﹐或許可以稱為 '代理(agencies)'。而在這些類別裡面﹐或者可以找到諸如 'bulk' 或 'interactive' 之類的名稱。
+<P>例如﹐我們或有一條 10 megabit 的 'internet' 連線﹐以分享給我們的客戶及公司之需。但我們不能讓辦公室裡的少數同仁盜取大量的本來要賣給客戶的頻寬。
+<P>在另一邊﹐比方說我們的客戶﹐也不能佔用本來給我們的門市通往客戶資料庫的頻寬。
+<P>在過去﹐用來解決的辦法﹐莫過於使用 Frame Relay/ATM 或建立虛擬電路(Virtual Circuits)。這的確能解決問題﹐只不過 frame 並不容易十分細緻調整﹐而 ATM 在攜帶 IP 流量上的效能也非常差強人意﹐而且﹐兩者都未有標準法則以產生不同類型的流量進入不同的 VCs 。
+<P>不過﹐假如您真的使用  ATM 的話﹐Linux 同樣能架輕就熟的為您表演高難度的流量分類技巧。而另一方法是牽兩條獨立的線路﹐但似乎不怎麼實用﹐也不十分完善﹐且也不見得能完全解決您的所有問題。
+<P>這時候﹐您就要求助於 CBQ 這尊菩薩了。
+<P>顯而易見﹐我們這裡主要有兩個類別﹕ 'ISP' 和 'Office' 。剛開始的時候﹐我們真的不必十分講究他們頻寬的切割﹐所以我們就不再於其類別下細分了。
+<P>我們決定客戶的下傳流量必須保證在 8 megabits 的範圍﹐而我們的辦公室只有 2 megabits。
+<P>可以用 iproute2 之 <CODE>tc</CODE> 工具來設定起流量控管。
+<BLOCKQUOTE><CODE>
+<PRE>
+# tc qdisc add dev eth0 root handle 10: cbq bandwidth 10Mbit avpkt 1000
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>好了﹐這裡有一堆數字。究竟如何呢﹖我們已經設定起 eth0 的 '佇列戒律 (queueing discipline)' 了。我們以 'root' 來宣告這是頂層(root) discipline。我們還將其 handle 設為 '10'。因為我們這裡要做 CBQ﹐所以我們也同時在命令行中指明。我們告訴核心﹐它可以支配 10M bit ﹐同時平均封包體積大約為 1000 個 octet。
+<P>好﹐現在我們就產生我們的頂層類別﹐它凌架於其它的所有類別之上。
+<BLOCKQUOTE><CODE>
+<PRE>
+# tc class add dev eth0 parent 10:0 classid 10:1 cbq bandwidth 10Mbit rate \
+  10Mbit allot 1514 weight 1Mbit prio 8 maxburst 20 avpkt 1000
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>哇﹐這裡的數字更多﹗Linux 的 CBQ 在實作上其實蠻具通用性的。我們用 'parent 10:0' 來指定此類別是源自我們剛纔產生的 qdisc handel '10:' 這個頂層類別而來的。而 'classid 10:1' 呢﹐則是我們授予這個類別的名稱。
+<P>我們這裡無須告訴核心更多資訊﹐單純產生一個類別以滿足可用設備就是了。我們同時還指定出 MTU(外加一些 overhead) 為 1514 個 octet。而且﹐我們量定此類別的 '比重(weight) ' 為 1Mbit﹐此為一個微調參數而已。
+<P>現在﹐再讓我們產生 ISP 類別吧﹕
+<BLOCKQUOTE><CODE>
+<PRE>
+# tc class add dev eth0 parent 10:1 classid 10:100 cbq bandwidth 10Mbit rate \
+  8Mbit allot 1514 weight 800Kbit prio 5 maxburst 20 avpkt 1000 \
+  bounded
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>我們先撥出 8Mbit﹐同時用 'bounded' 參數來指定此類別一定不能超過此限制。否則此類別或會從其它類別那裡借用頻寬﹐我們後面將會討論到。
+<P>還是讓我們產生Office 之頂層類別﹐趕快收鑼吧﹕
+<BLOCKQUOTE><CODE>
+<PRE>
+# tc class add dev eth0 parent 10:1 classid 10:200 cbq bandwidth 10Mbit rate \
+  2Mbit allot 1514 weight 200Kbit prio 5 maxburst 20 avpkt 1000 \
+  bounded
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>為了幫助我們更好的理解﹐下面的圖示列出了所有的類別﹕
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
++-------------[10: 10Mbit]-------------------------+
+|+-------------[10:1 root 10Mbit]-----------------+|
+||                                                ||
+|| +-----[10:100 8Mbit]---------+ [10:200 2Mbit]  ||
+|| |                            | |            |  ||
+|| |          ISP               | |   Office   |  ||
+|| |                            | |            |  ||
+|| +----------------------------+ +------------+  ||
+||                                                ||
+|+------------------------------------------------+|
++--------------------------------------------------+
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>好了﹐現在我們已經告訴核心有什麼類別存在﹐但還沒說要怎樣去管理佇列。我們不如馬上起而行﹐一次搞定兩個類別吧。
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# tc qdisc add dev eth0 parent 10:100 sfq quantum 1514b perturb 15
+# tc qdisc add dev eth0 parent 10:200 sfq quantum 1514b perturb 15
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>目前的範例中﹐我們安裝的是 Stochastic Fairness Queueing discipline (sfq)﹐雖然不是很貼切﹐不過它卻可以在不耗費更多 CPU 運轉之下﹐很好的處理大量頻寬。而我們通常使用的會是 The Token Bucket Filter。
+<P>到目前為止﹐我們僅剩一件事情要做而已﹐就是向核心解釋什麼樣的封包屬於什麼樣的類別。剛開始﹐我們純粹用 iproute2 來做就好﹐但是﹐配合 netfilter 雙劍合璧的話﹐更是如虎添翼。
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# tc filter add dev eth0 parent 10:0 protocol ip prio 100 u32 match ip dst \
+  150.151.23.24 flowid 10:200
+
+# tc filter add dev eth0 parent 10:0 protocol ip prio 25 u32 match ip dst \
+  150.151.0.0/16 flowid 10:100
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>這裡﹐我們假設辦公室網路躲在位址為 150.151.23.24 的防火牆之後﹐而我們其它 IP 位址則屬於 ISP 的。
+<P>使用 u32 比對(match) 更是容易﹐而用 netfilter 來標識封包也更能夠設定出精密的比對規則﹐然後我們可以在 tc 裡進行比對。
+<P>好了﹐現在我們已經將下傳頻寬切割完畢﹐同樣的﹐我們在上傳頻寬上面依樣畫葫蘆。為求簡捷﹐這次讓我們一鼓作氣﹕
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# tc qdisc add dev eth1 root handle 20: cbq bandwidth 10Mbit avpkt 1000
+
+# tc class add dev eth1 parent 20:0 classid 20:1 cbq bandwidth 10Mbit rate \
+  10Mbit allot 1514 weight 1Mbit prio 8 maxburst 20 avpkt 1000
+
+# tc class add dev eth1 parent 20:1 classid 20:100 cbq bandwidth 10Mbit rate \
+  8Mbit allot 1514 weight 800Kbit prio 5 maxburst 20 avpkt 1000 \
+  bounded
+
+# tc class add dev eth1 parent 20:1 classid 20:200 cbq bandwidth 10Mbit rate \
+  2Mbit allot 1514 weight 200Kbit prio 5 maxburst 20 avpkt 1000 \
+  bounded
+
+# tc qdisc add dev eth1 parent 20:100 sfq quantum 1514b perturb 15
+# tc qdisc add dev eth1 parent 20:200 sfq quantum 1514b perturb 15
+
+# tc filter add dev eth1 parent 20:0 protocol ip prio 100 u32 match ip src \
+  150.151.23.24 flowid 20:200
+
+# tc filter add dev eth1 parent 20:0 protocol ip prio 25 u32 match ip src \
+  150.151.0.0/16 flowid 20:100
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss9.3">9.3 如何處理頻寬透支 (What to do with excess bandwidth)</A>
+</H2>
+
+<P>在我們這個虛構範例中﹐我們發現一個現象﹐就是在 ISP 客戶大都離線的時候(比方說﹐早上 8 點)﹐我們的辦公室卻只有 2Mbit﹐顯然是極其浪費的。
+<P>如果將 'bounded' 敘述拿掉﹐那麼類別就能夠借取其它類別的頻寬來用。
+<P>而有些類別或許不願意將他們的頻寬外借﹐例如兩個租用同一線路的敵對 ISP﹐是絕對不會向對方進貢的。在那樣的狀況下﹐您可以在 'tc class add' 的句子後端﹐加上一個關鍵詞 'isolated' 即可。 
+<P>
+<H2><A NAME="ss9.4">9.4 類別再分 (Class subdivisions)</A>
+</H2>
+
+<P>FIXME﹕此構思並沒經過測試﹗小心嘗試﹗
+<P>我們這裡還可精益求精。如果所有辦公室員工同時開啟他們的股票程式﹐還是有可能把資料庫的頻寬給吃掉的。所以﹐我們可以再建兩個子類別﹕'Human' 和 'Database'。
+<P>我們的資料庫永遠需要 500Kbit﹐所以就剩下 1.5M 給我們的員工來花費。
+<P>我們要在 Office 這個類別裡面再建兩個類別﹕
+<BLOCKQUOTE><CODE>
+<PRE>
+# tc class add dev eth0 parent 10:200 classid 10:250 cbq bandwidth 10Mbit rate \
+  500Kbit allot 1514 weight 50Kbit prio 5 maxburst 20 avpkt 1000 \
+  bounded
+
+# tc class add dev eth0 parent 10:200 classid 10:251 cbq bandwidth 10Mbit rate \
+  1500Kbit allot 1514 weight 150Kbit prio 5 maxburst 20 avpkt 1000 \
+  bounded
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>FIXME﹕尚需範例﹗
+<P>
+<H2><A NAME="ss9.5">9.5 多界面的負載分流 (Loadsharing over multiple interfaces)</A>
+</H2>
+
+<P>有好些方法都可以做到這點。其中最簡單明了就是 'TEQL' --- "True" (or "trivial") link equalizer。和大多數用來做佇列的辦法一樣﹐負載分流也是雙向的。線路的兩端都需要參與﹐才能獲得完整的效果。
+<P>發揮一下想像力吧﹕
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+                 +-------+   eth1   +-------+
+                 |       |==========|       |
+ 'network 1' ----|   A   |          |   B   |---- 'network 2'
+                 |       |==========|       |
+                 +-------+   eth2   +-------+
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>A 和 B 都是路由器﹐而且﹐我們目前假設它們都是跑 Linux 的。如果流量從 network 1 送到 network 2 那邊﹐那麼 router A 就需要將封包分送至 B 的兩條線路去。而 router B 則需要設定為能夠接受這樣的安排。調過來也一樣﹐當封包從 network 2 流向 network 1﹐router B 也需要將封包分送至 eth1 和 eth2 去。
+<P>負責分送的部份﹐就是由 'TEQL' 設備來做的﹐參考如下劍訣(易如削蠟)﹕
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# tc qdisc add dev eth1 root teql0
+# tc qdisc add dev eth2 root teql0
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>這需要在兩邊的機器上做啦。那個 teql0 的設備﹐基本上以 roundrobin 的方式向 eth1 和 eth2 進行分送﹐來發送封包。數據並不是從 teql 設備進入的﹐僅僅以 'raw' 格式出現在 eth1 和 eth2 上面。
+<P>然而﹐我們現在只是把設備弄起來而已﹐我們還需要適當的路由。方法之一是用一個 /31 的網路給這兩條線路﹐另外一個 /31 網路給 teql0 設備﹕
+<P>FIXME: 不知道是否需要某些諸如 'nobroadcast' 的設定呢﹖用一個 /31 同時包含網路位址和廣播位址似乎太小了 --- 如果這個設計不可行﹐那就試用 /30 吧﹐然後相應的調整 IP 位址就是了。您或許甚至連 eth1 和 eth2 的 IP 位址也不想給呢﹗
+<P>On router A:
+<BLOCKQUOTE><CODE>
+<PRE>
+# ip addr add dev eth1 10.0.0.0/31
+# ip addr add dev eth2 10.0.0.2/31
+# ip addr add dev teql0 10.0.0.4/31
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>On router B:
+<BLOCKQUOTE><CODE>
+<PRE>
+# ip addr add dev eth1 10.0.0.1/31
+# ip addr add dev eth2 10.0.0.3/31
+# ip addr add dev teql0 10.0.0.5/31
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>現在﹐router A 應該可以在這 2 條真實線路和 1 個均衡設備上 ping 10.0.0.1﹑10.0.0.3﹑和 10.0.0.5 了。而 router B 也應該可以透過線路 ping 10.0.0.0﹑10.0.0.2﹑和 10.0.0.4 。
+<P>如果上面的都成功了﹐router A 要將 10.0.0.5 設定為連接 network 2 的路由﹐同時 router B 則要將 10.0.0.4 設為連接 network 1 的路由。在一些特殊環境中﹐例如 network 1 是您家中的網路﹐而 network 2 是 internet﹐那麼 router A 就要將 10.0.0.5 設定為預設網關了。
+<P>
+<H3>一些注意地方 (Caveats)</H3>
+
+<P>任何事情都是知易行難。在 router A 和 router B 雙方﹐它們的 eth1 和 eth2 都必須將返回路徑的過濾關閉﹐否則它們會將那些不是以它們本身為目標 IP 位址的封包丟棄掉﹕
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# echo 0 > /proc/net/ipv4/conf/eth1/rp_filter
+# echo 0 > /proc/net/ipv4/conf/eth2/rp_filter
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>然後﹐就是討厭的封包重排序的問題了。比方說﹐有 6 個封包需要從 A 送到 B 去 --- eth1 或會得到 1﹑3﹑和 5 ﹔而 eth2 或會得到 2﹑4﹑和 6 。假如一切理想﹐router B 會收到這樣的順序﹕1﹑2﹑3﹑4﹑5﹑6。不過﹐現實中有很大機會將會是﹐核心按這樣的順序接收﹕2﹑1﹑4﹑3﹑6﹑5。問題是這樣會讓 TCP/IP 感到困擾。透過線路攜帶多個不同的 TCP/IP 連線並不至於有什麼問題﹐然而您卻不能合併多條線路讓下載單一檔案的 FTP 變得大幅加快﹐除非您用來傳送和接收的作業系統都是 Linux﹐因為在某些簡單的重排序中﹐連線的交握並不容易處理。
+<P>不過﹐對許多應用程式而言﹐線路的負載分流的確是一個非常厲害的武器。
+<P>
+<HR>
+<A HREF="Adv-Routing-HOWTO-10.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Adv-Routing-HOWTO-8.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Adv-Routing-HOWTO.html#toc9"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

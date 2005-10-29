@@ -1,0 +1,762 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" content="text/html; charset=big5">
+<TITLE>Linux 的中文化問題簡介</TITLE>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 4, 1);</SCRIPT>
+
+<center>
+<table width=80%>
+<tr><td>
+<center><b>作者按</b></center>
+<p>
+底下這篇文章是我最近寫程式的一點點心得，除了前段部討論了 Linux I18N
+環境外 (已在 Linux 連線版貼出)，後半部還加了一些有關 I18N 程式寫作的簡介。
+我想這篇文章就發表在 CLDP 上，
+希望 CLDP 可以收錄。更希望這篇文章對有興趣的朋友有幫助，
+讓大家能早日進入 I18N 的世界 :-))
+<p>
+由於我所知很有限，所以文章中可能有很多錯誤，而關於 Xi18n 的部分，
+我也有很多因為沒有去研究，故略過不提了。
+因此，希望各位高手能多多給我批評與建議，
+或幫忙我將不足之處補齊，讓這篇文章更完美。
+<p>
+在此先謝謝各位。
+<p>
+謝東翰 (Tung-Han Hsieh) 
+&lt;<a href="mailto:thhsieh@twcpro.phys.ntu.edu.tw">thhsieh@twcpro.phys.ntu.edu.tw</a>&gt;
+</td></tr>
+</table>
+</center>
+
+<hr>
+
+<center><h3>Linux 的中文化問題簡介</h3></center>
+
+<b>一、前言:</b>
+<p>
+最近這個話題大家吵得有點厲害，大家都希望 Linux 能在中文方面有所進
+步，各家有各家的說法，莫衷一是。由於我最近常與 CLE 的 group 有聯繫，
+同時也正在寫一些與中文相關的程式，因此我大略說一下「我們正在做什麼」，
+讓大家參考。                                                          
+<p>
+我希望大家能將這篇文章當做技術性文章來讀，不要再有情緒化的批評，必境
+我們要的是 solution, 情緒化的批評對我們實在沒有幫助。除此之外，我的觀
+點可能有錯，也可能過份樂觀，也歡迎大家能就技術方面給予我指教。
+<p>
+
+<b>二、 I18N 與 locale:</b>
+<p>
+要將 Linux 中文化，朝著標準走才是長遠之計。各位如果有見過近代商業版的
+UNIX 就會曉得，它們「中文化」之徹底，令人驚嘆，諸如中文選單、中文訊息
+.... 您能想像得到，或說只能在 Win95/98/NT OS/2 .... 等上頭才見得到的 
+中文環境，它們都有。然而，它們的中文並不是像目前 Linux 上常見到的那樣，
+由一堆程式七拼八湊出來的，它們全部都是遵循一個標準: I18N 。
+<p>
+I18N 是 InternationalizatioN (國際化) 的縮寫，第一個字 I 與最後一個字
+N 之間有 18 的字母，故名。 I18N 並不是只有表面上將 X Window 「國際化」
+而已，它是壂基在最底層的 libc 上。 libc 必須要有 locale 的支援，才能向
+I18N 起步。
+<p>
+什麼是 locale? 簡單說就是一組「地區語言」的資訊。它包括了 
+(詳見 man setlocale):
+<p>
+<ul>
+<li>LC_CTYPE:  字元定義
+
+<li>LC_MESSAGES:  訊息顯示
+
+<li>LC_TIME:  時間顯示格式
+
+<li>LC_NUMERIC:  數字顯示格式
+
+<li>LC_MONETARY:  貨幣顯示格式
+
+<li>LC_COLLATE:  字母順序與字串比較
+</ul>
+<p>
+其中，與一般使用者最有關係的，是 LC_CTYPE 與 LC_MESSAGES 。 LC_CTYPE 直
+接關係到某些字元或內碼在目前的 locale 下是否可印? 要如何轉換? 對應到那
+一個字? .... 等等。 LC_MESSAGES 則關係到軟體的訊息輸出是什麼樣的語文。真
+正完整的 locale 支援，是當我們在 shell prompt 下，直接設好環境變數，則我
+們馬上就能切換到那個語文了。例如:
+<p>
+<code>
+bash:  export LC_CTYPE=zh_TW.Big5
+</code>
+<p>
+有了 locale 的「協定」，使得任何地區的語文，只要在加入適當的 locale data
+之後， libc 就能正確地處理它了，而我們的「中文」當然也不例外。由於前人與
+CLE group 的努力，目前我們已有自己的 locale data 了。有安裝 CLE 的朋友可
+以到 /usr/share/locale 下看看， zh_TW.Big5 就是我們的 locale data, 雖然還
+不夠完整，但已能 work。
+<p>
+目前 Linux 對於 locale 的支援如何? 可以大概地說，西方語系差不多沒問題了，
+但東方語系還有不少問題。如果您的 Linux 系統是用 libc5 (例如 Slackware)
+的話，那差不多可以說支援得相當差，幾乎只能靠「七拼八湊」的方法來有限度地
+使用中文。如果是用 libc6 (glibc2) 的話，那就有相當的 locale 支援了。
+<p>
+然而，目前大部分使用 glibc2 的系統都是 glibc-2.0.7, 這一版對東方語系的支
+援還不夠好，特別是 LC_CTYPE ，它無法辨認、轉換我們的 Big5 碼，必須要等到
+glibc-2.1 以後，才能完全解決這些問題。但這並不是說使用 glibc-2.0.7 的廣
+大使用者都沒希望了，事實上有一個 libwcsmbs 的套件，它可以將 glibc 中有問
+題的部分取代掉，讓我們的 LC_CTYPE 部分可以「幾乎 90% 正確」地工作。而這個
+套件就是目前 CLE 的標準之一，也是很重要的一個部分，雖然大家可能感受不到它
+的存在。
+<p>
+最近 glibc-2.1 的 pre-release 已經出來，我個人已做過初步測試， LC_CTYPE
+在我們的 locale 下已經正常，雖然仍有其他問題存在，但這已是一個好消息，我
+預計在未來的一年內，等大部分的 Linux distribution 都換裝了 glibc-2.1 之
+後，我們就有了最底層的「中文化」條件。
+<p>
+
+
+<b>三、 X Window 的部分:</b>
+<p>
+接著我們來看看上層， X Window 的「中文化」 (或「國際化」)。 X11R6 也有一
+個 locale 的目錄，放在 /usr/X11R6/lib/X11/locale 裏頭，如果是裝 CLE 的朋
+友，就會見到一個 zh_TW.Big5 的目錄，那就是我們的 XLC Locale data。在「標
+準」的情況下， XLC Locale 必須架構在 libc locale 之上運作，它裏頭除了定
+義一些字元對應，最重要的是內碼與字型的對應。以我們的 locale 為例，我們需
+要兩種字型，一是「半形 (單位元)」，顯示 ASCII 碼用，另一是「全形 (雙位元)」
+用來顯示中文。舉一個例子，像以下這一串字:
+<p>
+<code>
+        這是一個 abcd .... 測試字串 string! ＯＫ！
+</code>
+<p>
+那些要用全形顯示? 那些要用半形顯示? 這必須靠 libc 的 LC_CTYPE 來判斷。因
+此， LC_CTYPE 如果掛掉，可以說什麼都沒輒。
+<p>
+我相信，有了上述的「配備」後，基本的 I18N 環境就已經具備了。但一定有人會
+問: 「看起來 CLE 在上述所說的都沒問題，為什麼還是到處都不是中文?」 沒錯，
+那是因為目前 Linux 上大部分的程式還不是用 I18N 的標準而寫的。例如大家常用
+的 Netscape, xcin, crxvt .... 等等，它們都是用「自己」的招術來處理中文，
+這也就是為什麼 xcin 只能在 crxvt 上輸入，為什麼我們要靠 CXWin 來看中文 ....
+等等。這些都不是正解，只是暫時的一個手段，最後都是要放棄的。
+<p>
+目前，有越來越多程式將朝向 I18N 來發展，而我們目前最需要的工作，就是弄
+I18N 的 zh_TW.Big5 部分。舉個例子，目前 CLE group 正忙於 GNOME 的中文化，
+它算是目前 I18N 化相當徹底的一個 X Disktop / Window Manager, Platin 預計
+在下一版的 CLE 就是以 GNOME 為主，只要將其中的訊息都翻譯成中文，做好 
+LC_MESSAGES 的工作，未來在 GNOME 中，將不需要依靠 CXWin, 打開後就到處都
+是中文。
+<p>
+其他的 GNU 軟體也是，有另一組人馬正將一些常見指令如 ls, cp 等的訊息中文
+化，並將結果回報給 GNU, 期望未來新版的 GNU 軟體中，中文訊息就是標準的一
+部分，我們不再需要每次人家更新版就急急忙忙地做 patch 了。
+<p>
+中文輸入就比較複雜，除了上述的 I18N 以外，還有一個 XIM (X Input Method)
+協定。我們必須要有 XIM server 來取代目前的 xcin, 而且還要 X Window 的應
+用程式能夠遵循 XIM 協定，才能做到 "Chinese Input Anywhere"。目前 CLE 已
+有一個 XIM server, 即 xcin-cxim 之類的程式，但麻煩的是遵循 XIM 協定的應
+用程式仍不多，最著名的就是 GNOME, xemacs, 以及一些 X11R6 所附的軟體 (如
+xedit, 由 Xt 及 Xaw 提供 I18N 支援)。而我個人目前正在寫的 xcin-2.5 就是一個 
+XIM server, 我希望這個軟體能在將來與「各路人馬」配合，做出一點貢獻。
+<p>
+因此，「中文化」的工作，並不是那麼簡單地說「因為 Linux 是免費、沒有人付
+錢給程式設計師，所以做不好」，或者說「我們中國人不團結，大家不肯合作發
+展程式」，或者說「 Linux 是 server 導向，不適合做中文」 .... 等等。 Linux
+可以發展中文，而且有很多人正努力地在工作，但是更重要的是，我們還得配合國
+外 (或說軟體的原設計者) 的腳步。前面說過，我們要有完整 locale 支援的 libc,
+這一切才有希望，我們也需要我們常用的軟體 (如 Netscape, window manager,
+甚至 database, office ....) 的設計者覺悟到，真正的標準是 I18N, 是 locale,
+是 XIM, 我們才能跟進，將中文化的部分加進去。更重要的一點，我們自己的程式
+設計師在寫軟體時，是不是也能遵循 I18N, locale, XIM??
+<p>
+中文化，需要一個標準，而我們希望這個標準，是世界通用的，而不是我們自己七
+拼八湊出來的。否則的話，我們永遠都要自己玩自己的，永遠都會事倍功半，永遠
+會抱怨「為什麼 Linux 的中文支援比不上 Win95?」
+<p>
+
+
+<b>四、中文列印:</b>
+<p>
+中文列印與上述的關係較小，但也是大家關心的問題之一，在此我也稍作一些說明。
+<p>
+在 UNIX 的世界，就我所知印表機輸出最常見的就是兩個: ASCII 碼與 Postscript,
+而 Postscript 就是「圖形列印」的共通語言。因此，當我們要做中文列印，就是要
+尋求「圖形列印」的途徑，也就是找一個「能將中文字檔轉成 Postscript 輸出」的
+程式」。目前大家常見的，如傳統的 cnprint、 CLE 中能直接使用 TTF 字型的 bg5ps,
+或是 ChiTeX, CJK+LaTeX, lyx .... 等等。
+<p>
+在此稍微值得一提的是， CJK 似乎已漸漸成為 Free Software / Open Source 所公
+認的標準之一，其原因如下:
+<p>
+<ol>
+<li> 它是 Free Software 。
+<li> 目前 CJK 與 freetype 配合，已經可以完全整合到 LaTeX 的環境中，而不需要
+   像以往一樣需要再更動 LaTeX 的程式與環境。相信在不久的將來它應該會成為 
+   LaTeX 的標準附件之一。
+</ol>
+<p>
+就我所知， Netscape 在下一版的列印部分將支援 CJK 做為中日文 Postscript 輸出,
+我想這一點很值得成為我們未來發展中文列印的一個參考。
+<p>
+
+
+<b>五、準備您的 I18N 環境:</b>
+<p>
+以下我針對目前大家常用的系統，如何做到像 CLE 那樣，有基本的 locale 環境，
+而不必真的非裝 CLE 不可 (因為常聽大家說 CLE 太大)。雖然以下所說的對各位的
+中文環境可能改善不多 (因為目前大部分的軟體都還沒有 I18N 化)，但就當做是為
+未來做準備。也希望對 source code 有興趣，喜歡東玩玩、西摸摸 Linux 的網友
+們，能多多熟悉這個領域，或者能加入這個領域與我們共同努力。
+<p>
+以下的軟體我以 tgz 為主，而不用 RedHat 的 RPM, 或 Debian 的 deb, 希望這
+個「共通語言」在大部分的 Linux distribution 都能適用。
+<p>
+<ol>
+<li> 請確定您的 Linux 的 libc 是 glibc-2.0.7 以上，若您還是用 libc5, 請參
+   考您的 distribution 套件，將 glibc-2.0.7 裝起來。
+<p>
+   若您有冒險的精神，想直接玩 glibc-2.1 的話，
+  可以在<a href="ftp://linux.sinica.edu.tw/pub1/debian/dists/potato/main/binary-i386/devel/">這裏</a>找到 source:
+<p>
+<code>
+        glibc-pre2.1_*.tar.gz
+</code>
+<p>
+   請注意，如果您決定玩 glibc-2.1, 您必須為自己負責，除非您是有經驗者，
+   否則您要有「 Linux 可能會被我不小心玩掛掉」的心裏準備。一個保險的做
+   法，是找一台空機器，或一個空的 partition 灌一個白老鼠系統來玩。如果
+   您不小心出差錯而造成任何損失的話，本人不負任何責任。
+<p>
+
+<li> 如果您是用 glibc-2.1 且一切正常的話，那麼恭喜您，您可以略過這一步。
+   如果您是用 glibc-2.0.7, 請至 <a href="ftp://xcin.linux.org.tw/pub/xcin/libwcs/">xcin.linux.org.tw</a> 抓
+<p>
+<pre>
+        libwcsmbs-0.0.4.tar.gz
+        wcsmbs-locale-0.4.7.tar.gz
+</pre>
+<p>
+   並將它們裝起來。這兩個套件其實是來自 CLE, 其中特別注意 wcsmbs-locale 這
+   個套件，其原始套件不包函 zh_TW.Big5 locale data, 這個 locale data 是
+   Platin 加入的，有了它才有用。然後，在 /etc/profile 中加一行:
+<p>
+<pre>
+   export LD_PRELOAD=&lt;路徑名&gt;/libwcsmbs.so
+</pre>
+<p>
+
+<li>
+   如果您是使用 glibc-2.0.7 的話，請跳過這一步。若您是用 glibc-2.1, 您的系
+   統多半還沒有 zh_TW.Big5 locale data, 此 locale data 可以在上述 wcsmbs-locale
+   套件中找到。請將該套件抓回並解開後，找到 localedata 目錄下的 zh_TW.Big5
+   及 charmaps/BIG5 兩個檔，這兩個分別是 locale def 與 charmap 檔，您必須
+   將這兩個檔 compile 之後才能使用:
+<font size=-1>
+<pre>
+   localedef -i zh_TW.Big5 -f BIG5 -u charids.894 zh_TW.Big5
+</pre>
+</font>
+   (有關 localedef 的用法請見 localedef --help), compile 完成後的 locale
+   data 會自動安裝到 /usr/share/locale/zh_TW.big5 下，但由於我們的 locale
+   名是 zh_TW.Big5, 所以請您自行將它改名，或做一個 symbolic link。
+   <p>
+
+
+<li> 請抓回
+<p>
+<code>
+   ftp://xcin.linux.org.tw/pub/xcin/libwcs/XLC_LOCALE
+</code>
+<p>
+   檔，並放在 /usr/X11R6/lib/X11/locale/zh_TW.Big5 目錄下 (您可能需要自
+   行建此目錄) ，同時修改 /usr/X11R6/lib/X11/locale/locale.dir 檔，在最
+   後加入這一行:
+<p>
+<pre>
+   zh_TW.Big5/XLC_LOCALE   zh_TW.Big5
+</pre>
+<p>
+
+<li> 您如果沒有中文字型的話，必須抓幾個回來裝。我個人建議使用 twmoe 字型，
+   您應該可以在
+<p>
+<code>
+    ftp://linux.cis.nctu.edu.tw/pcakges/Chinese
+</code>
+<p>
+   裏頭找到。 twmoe 字型非常多，您不用全抓，像我就只有
+<pre>
+        kai14.pcf.gz  kai15.pcf.gz  kai16.pcf.gz  
+        kai18.pcf.gz  kai20.pcf.gz  kai24.pcf.gz
+</pre>
+   而已。安裝方式是: 造一個 /usr/X11R6/lib/X11/fonts/chinese 目錄，將字
+   型檔放進去，在那個目錄下執行 mkfontdir, 在 /etc/X11/XF86Config 中將
+   /usr/X11R6/lib/X11/fonts/chinese 這個路徑加入 FontPath 列表裏頭。最
+   後在那個目錄下寫一個 fonts.alias 檔，建議內容如下
+<p>
+<font size=-2>
+<pre>
+kai18 -twmoe-kai-medium-r-normal--18-180-75-75-c-180-big5-1
+kai16 -twmoe-kai-medium-r-normal--16-160-75-75-c-160-big5-1
+kai20 -twmoe-kai-medium-r-normal--20-200-75-75-c-200-big5-1
+kai14 -twmoe-kai-medium-r-normal--14-140-75-75-c-140-big5-1
+kai15 -twmoe-kai-medium-r-normal--15-150-75-75-c-150-big5-1
+kai24 -twmoe-kai-medium-r-normal--24-240-75-75-c-240-big5-1
+</pre>
+<pre>
+-twmoe-kai-medium-r-normal-fs-18-180-75-75-c-180-big5-0    (接下一行)
+-twmoe-kai-medium-r-normal--18-180-75-75-c-180-big5-1
+-twmoe-kai-medium-r-normal-fs-16-160-75-75-c-160-big5-0    (接下一行)
+-twmoe-kai-medium-r-normal--16-160-75-75-c-160-big5-1
+-twmoe-kai-medium-r-normal-fs-20-200-75-75-c-200-big5-0    (接下一行)
+-twmoe-kai-medium-r-normal--20-200-75-75-c-200-big5-1
+-twmoe-kai-medium-r-normal-fs-14-140-75-75-c-140-big5-0    (接下一行)
+-twmoe-kai-medium-r-normal--14-140-75-75-c-140-big5-1
+-twmoe-kai-medium-r-normal-fs-15-150-75-75-c-150-big5-0    (接下一行)
+-twmoe-kai-medium-r-normal--15-150-75-75-c-150-big5-1
+-twmoe-kai-medium-r-normal-fs-24-240-75-75-c-240-big5-0    (接下一行)
+-twmoe-kai-medium-r-normal--24-240-75-75-c-240-big5-1
+</pre>
+</font>
+   然後重新進入 X-Window 。
+</ol>
+<p>
+到此為止，您的系統已具備 I18N 的環境了，如果應用程式有支援 I18N, 則只要您
+設以下的環境變數:
+<p>
+<font size=-1>
+<pre>
+   export LC_CTYPE=zh_TW.Big5      (字元顯示、轉換為 zh_TW.Big5)
+   export LC_MESSAGES=zh_TW.Big5   (訊息顯示為中文)
+</pre>
+</font>
+或
+<font size=-1>
+<pre>
+   export LC_ALL=zh_TW.Big5
+   export LANG=zh_TW.Big5          (二者皆為所有的東東都變成中文)
+</pre>
+</font>
+<p>
+則應該馬上可以見到效果。但由於大部分的程式都還沒有 I18N 化，因此這裏提供
+兩個例子供您測試:
+<p>
+<ol>
+<li> 在 wcsmbs-locale 套件的 source 中，請到 test 目錄 make 一下，執行
+   testmwm 程式，然後輸入任意中英文字 (用 xcin & crxvt) 後按 return,
+   像這樣:
+<p>
+<hr><pre>
+THH:thhpc $ testmwm
+我是居士 1234567
+mb -> wc, size: 13
+wc -> mb, size: 17
+a7 da ac 4f a9 7e a4 68 20 31 32 33 34 35 36 37 0a 
+string in buffer *after* mb -> wc then wc -> mb
+我是居士 1234567
+</pre><hr>
+   表示 LC_CTYPE locale 成功了，若是
+<hr><pre>
+THH:thhpc $ testmwm
+我是居士 1234567 
+mb -> wc, size: -1
+wc -> mb, size: 0
+</pre><hr>
+   表示沒有成功。可能原因是: 您沒有設 LD_PRELOAD? 沒有設 LC_CTYPE? 或您以上
+   的安裝出錯了?
+
+<p>
+<li> 您可以在 xedit 中顯示中文。但因為 Xlib 有一個 bug, 請您找這個軟體回來
+   compile:
+<p>
+<code>
+   ftp://xcin.linux.org.tw/pub/xcin/libwcs/lcGen.tar.gz
+</code>
+<p>
+   然後在您的 $HOME/.Xresources 中加入:
+
+<hr>
+<font size=-1>
+<pre>
+xtDefaultFontSet: -*-big5-0,-adobe-*-iso8859-1
+xedit*international: True
+xedit*fontSet: -*-big5-0, -adobe-*-iso8859-1
+</pre>
+</font>
+<hr>
+   執行:
+<font size=-1>
+<pre>
+   xrdb merge ~/.Xresources
+   LD_PRELOAD="&lt;路徑名&gt;/libwcsmbs.so &lt;路徑名&gt;/lcGen.so" xedit
+</pre>
+</font>
+   這時會跑出一個 xedit 視窗，您可以用 xcin & crxvt 在別的地方先打好一段
+   中英文文字，然後用滑鼠 cut & copy 到 xedit, 是不是見到正確的中文了?
+<p>
+   (PS. xedit 還有點問題，所以用這個方式用 xedit 讀取檔案可能會不正常)
+</ol>
+   
+
+<b>六、撰寫 I18N 的程式:</b>
+<p>
+在此我將我的一些心得與大家分享。由於這個問題牽涉的層面很廣，而我只有針對部
+分子題稍微摸索一下，因此本文的目的不在於成為一個「完整」的文件說明，也許做
+為入門導引來得好些，希望能對 I18N 程式寫作有興趣的朋友提供一個方向。有興趣
+的朋友同時也可以參考 info libc 的 Locale 章節，以及
+<p>
+<font size=-1>
+<ul>
+<!--<li>
+<a href="http://i44www.info.uni-karlsruhe.de/~drepper/conf96/paper.html">http://i44www.info.uni-karlsruhe.de/~drepper/conf96/paper.html</a><br>
+<a href="http://www.pgroup.com/ppro_docs/pgC++_lib/stdlibug/int_6094.htm">http://www.pgroup.com/ppro_docs/pgC++_lib/stdlibug/int_6094.htm</a><br>
+(感謝 Pofeng Lee &lt;informer@mylinux.cgu.edu.tw&gt; 的提供)
+</li>-->
+<li>
+ftp.nctu.edu.tw:
+<a href="ftp://ftp.nctu.edu.tw/documents/FAQ/comp/answers/internationalization/">/documents/FAQ/comp/answers/internationalization/programming-faq.gz</a>
+<br>
+(感謝 stevel &lt;b86014@mail.ee.ntu.edu.tw&gt; 兄提供)
+</li>
+</ul>
+</font>
+裏頭有更完整的說明。
+<p>
+除此之外，在這裏我也會參雜一些我個人的理念，不一定是對的，僅供參考，也請各
+位多多給予我批評與指教。
+<p>
+<ol>
+<li> 第一步: setlocale (詳見 man setlocale 與其他相關 man page)
+<p>
+程式的第一步必須要設定 locale, 而一般的寫法是 locale 資料是經由環境變數取
+得，而不要寫死在程式裏頭，例如:
+
+<hr><pre>
+#include &lt;locale.h&gt;
+main()
+{
+        setlocale(LC_ALL, "");
+        .....
+}
+</pre><hr>
+
+或分別設定:
+<pre>
+        setlocale(LC_CTYPE, "");
+        setlocale(LC_MESSAGES, "");
+        .....
+</pre>
+
+我個人的建議是，在 setlocale() 時只要設我們程式中需要的項目即可，而不要設
+LC_ALL, 原因是在某些 locale 下 (如我們的 zh_TW.Big5), 並非所有的項目都能
+正確運作。我想對大部分的程式而言，設好 LC_CTYPE 與 LC_MESSAGES 就差不多了，
+故以下我針對這兩個做說明。
+
+
+<li> wcs. vs. mbs. (詳見 man mbstowcs 與相關 man page)
+<p>
+"wcs" 是 "wide-chararater string" 的縮寫，而 "mbs" 是 "multi-byte string" 
+的縮寫，二者分別代表字串的表現方式。所謂的 multi-byte 是指數個 char 組成
+一個字 (如全形字或中文字是由兩個 char 組成)，而 wide-char 是指一個 wchar_t 
+type 就是一個字, 而 sizeof(wchar_t) 的大小與系統有關，一般而言是 4 bytes。
+一般我們可以直接看、輸出輸入等都是 multi-byte, 如:                                         
+
+<pre>
+        char *str = "這是一個句子: abcd";
+</pre>
+但我們會建議在程式內部，用 mbstowcs() 將它轉成 wchar_t 來統一處理，這個
+轉換其實是根據 locale 中的 LC_CTYPE 的機制，它定義了 multi-byte 與 wide-
+char 值二者間的對應關係。做這樣轉換的好處是，您不用擔心全形、半形的問題，
+因為一個 wchar_t 矩陣元就是一個字。 
+<p>
+wchar_t 有一組與 string.h 中相對應的字串處理函式 (目前在 Linux 中可能還沒
+有 man page 說明)，就定義在 wchar.h 中，讓我們可以如同處理 (char *) 那樣
+地處理 (wchar_t *), 其部分的對應關係如下，其他的可以直接看 wchar.h 的內容:
+<pre>
+        wcscpy()        <====>          strcpy()
+        wcsncpy()       <====>          strncpy()
+        wcslen()        <====>          strlen()
+        wcsdup()        <====>          strdup()
+        wcscmp()        <====>          strcmp()
+        wcsncmp()       <====>          strncmp()
+        ........................................
+</pre>
+<p>
+由於 mbs 碼與 wcs 碼的對應關係是由該 locale 的 LC_CTYPE 來決定的，也就是不
+同的 locale 寫法其對應關係可能會不一樣。就我們的 glibc2, zh_TW.Big5 locale
+而言，由 mbs 轉成的 wcs 即為 unicode (有關 unicode 的資訊可以在
+<a href="http://www.unicode.org/">
+http://www.unicode.org/</a> 中找到)，但不能保證在其他的系統或環境下也是如此。
+故最保險的做法，是將字串儲存成 multi-byte, 然後在 run-time 時才用 mbstowcs() 
+轉成 wide-char 來運作。
+<p>
+
+<li> 訊息輸出 (詳見 info gettext):
+<p>
+一般我們程式的訊息輸出，是經由 stdio.h 裏頭的函式，直接輸出到 stdout 或
+stderr, 而輸出的內容是直接寫死在程式碼中。這樣的程式要做多國語文化會造成困
+擾，因為我們必須要修改原始碼，將所有的訊息字串翻譯成另一種語文。因此，我們
+必須透過 locale 的 LC_MESSAGES 來處理訊息輸出。其原理很簡單，就是將程式中
+的所有訊息抽離出來，為每一個 locale 分別做好一個訊息檔，當程式要輸出訊息時，
+則透過 libc 的函式依目前的 locale 去正確的訊息檔中抓取訊息。
+<p>
+在此我用 GNU gettext 為例，簡單說明其原理。在 /usr/share/locale 中，裏頭有
+各種 locale 的資料目錄。而每個目錄下，都會有一個 LC_MESSAGES 的目錄，而這
+些目錄就是用來放各別程式的訊息檔。例如:
+<p>
+<font size=-1>
+<pre>
+   /usr/share/locale/ja/LC_MESSAGES/prog.mo           (日文)
+   /usr/share/locale/zh_TW.Big5/LC_MESSAGES/prog.mo   (Big5)
+</pre>
+</font>
+<p>
+其中在 ja/ 目錄下的 prog.mo 就是 prog 這個程式的日文訊息，而 zh_TW.Big5/
+下的 prog.mo 就是 prog 這個程式的中文訊息。假設在還沒加入 LC_MESSAGES 支
+援之前， prog.c 長得像這樣:
+
+<hr>
+<font size=-1>
+<pre>
+#include &lt;stdio.h&gt;
+main()
+{
+    printf("This is a test string.\n");
+}
+</pre>
+</font>
+<hr>
+
+現在我們要用 gettext 來加入支援，則程式只要改成:
+
+<hr>
+<font size=-1>
+<pre>
+#include &lt;stdio.h&gt;
+#include &lt;libintl.h&gt;
+#define _(STRING) gettext(STRING)
+#define PACKAGE "prog"
+
+main()
+{
+    setlocale(LC_MESSAGES, "");
+    textdomain(PACKAGE);
+        /* 這裏就是指定用
+            /usr/share/locale/$LOC/LC_MESSAGES/prog.mo
+           作為訊息檔。其中 $LOC 是在 setlocale 中設定的 */
+    printf(_("This is a test string.\n"));
+        /* 使用 gettext 來抓出訊息，再交給 printf 來印 */
+}
+</pre>
+</font>
+<hr>
+<p>
+如果在指定的 locale 下找不到 prog.mo 檔，則程式就直接以原英文訊息印出。因
+此，加入 LC_MESSAGES 的支援，原 source code 修改並不多，其實相當方便。
+<p>
+比較麻煩的是各 locale 下的訊息檔製作，而這些步驟可以經由 GNU gettext 套件
+很容易地達成，其步驟簡述如下 (詳見 info gettext):
+
+<font size=-1>
+<pre>
+            xgettext    editor   msgfmt  (install)
+   source code --> .pot --> .pox --> .gmo --> .mo --> <run time>
+   (節錄自 Platin.bbs@csie.nctu.edu.tw 的文章:
+           [REF] 關於 gettext (一、簡介))
+</pre>
+</font>
+
+ <ul>
+   <li> 使用 xgettext 產生 .pot 檔:
+<font size=-1>
+<pre>
+        xgettext -a -o prog.pot prog.c 
+</pre>
+</font>
+      而 prog.pot 檔的內容如下:
+
+<hr>
+<font size=-1>
+<pre>
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR Free Software Foundation, Inc.
+# FIRST AUTHOR &lt;EMAIL@ADDRESS&gt;, YEAR.
+#
+#: prog.c:8
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 1999-02-28 19:18+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME &lt;EMAIL@ADDRESS&gt;\n"
+"Language-Team: LANGUAGE &lt;LL@li.org&gt;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Transfer-Encoding: ENCODING\n"
+
+#: prog.c:10
+msgid "This is a test string.\n"
+msgstr ""
+</pre>
+</font>
+<hr>
+      各位可以注意到倒數兩行， msgid 就是原來 source 裏頭的英文訊息，而我
+      們可以直接在 msgstr 中將原訊息翻譯成中文。所以，接下來的工作其實就
+      是翻譯，我們可以用任意的編輯器編輯這個檔案，並將翻譯好的檔案存成
+      prog.pox 檔。
+      <p>
+
+   <li> 將 prog.pox 編譯成 prog.gmo:
+<pre>
+      msgfmt -o prog.gmo prog.pox
+</pre>
+      其中 prog.gmo。就是我們要的訊息檔，等到我們把它安裝到 
+<pre>
+      /usr/share/locale/..../LC_MESSAGES/
+</pre>
+      之後，就名改為 prog.mo 。在此， .pot, pox, gmo 等附檔名是 info 
+      gettext 中建議的，分別代表未翻譯前的訊息原始檔、翻譯後的訊息原始檔、
+      經 GNU gettext 套件編譯後的訊息檔。
+ </ul>
+</ol>
+
+<b>七、撰寫 Xi18n 程式:</b>
+<p>
+Xi18n 意指在 X Window 中加入 I18N 的支援。除了上述的部分外， Xi18n 還需要
+考慮字形設定、圖形字串輸出、以及輸入的問題。由於目前我只有看過 Xlib, 對於
+其他 Widget 還沒有深入研究，因此我只能對 Xlib 的部分稍作說明。而這類的參考
+資料，有興趣的朋友可以找
+<p>
+        The Definitive Guides to the X Window System
+<p>
+這一系列的書來看，出版商是 O'Reilly & Associates Inc. ，其中有兩本
+<p>
+<ol>
+<li> Volume One,
+   Xlib Programming Manual (for Version 11)
+<p>
+   Author: Adrian Nye
+</li>
+
+<li> R6 Update for the R5 Editions of vols. 1, 2, 4, & 5
+   Programmer's Supplement for Release 6 of the X Window System.
+<p>
+   Author: Adrian Nye
+</li>
+</ol>
+<p>
+在 I18N 方面有詳盡的資料，很值得參考。或者是可以看看 XFree86 內附的 .ps 文
+件 (如果您有安裝的話，應該在 /usr/X11R6/lib/X11/doc 裏頭)。
+
+<ol>
+<p>
+<li> 第一步 (詳見 man XSupportsLocale):
+<p>
+   除了 setlocale() 之外，您還要呼叫 XSupportsLocale() 來確定 X Window 對您
+   目前的 locale 是否有支援。另外，您還要呼叫 XSetLocaleModifiers() 來設定
+   一些 X-modifier 的值，範例如下:
+
+<hr>
+<font size=-1>
+<pre>
+#include &lt;X11/Xlib.h&gt;
+#include &lt;X11/Xlocale.h&gt;
+#include &lt;stdio.h&gt;
+
+main()
+{
+   setlocale(LC_CTYPE, "");
+   if (XSupportsLocale() != True) {
+        printf("error X locale setting\n");
+        exit(0);
+   }
+   XSetLocaleModifiers("");
+}
+</pre>
+</font>
+<hr>
+
+   在此我們用 X11/Xlocale.h 來取代原來的 locale.h, 這是 "Xlib programming
+   manual" 書中建議的，在其備完整 locale 支援的 libc 環境下，它其實是等價
+   於 include &lt;locale.h&gt;, 但若在其他環境， Xlocale.h 會用 XLOCALE 機制來
+   取代原有的機制。
+<p>
+   上頭的 XSetLocaleModifiers 會存環境變數 XMODIFIERS 中取得 X-modifier
+   的值並加以設定之。 XMODIFIERS 的格式為:
+<pre>
+   export XMODIFIERS='@category=value'
+</pre>
+   目前 category 只有 "im" 有用，如 "@im=xcin-cxims", 意指設定 xcin-cxims
+   作為此 X Window 程式的 XIM server。
+<p>
+
+<li> 設定 fontset (詳見 man XCreateFontSet):
+<p>
+   以往 X Window 程式都是呼叫 XLoadQueryFont() 之類的函式來載入並使用字型。
+   但在 Xi18n 的架構下，一個 locale 的 encoding 通常不能光用一種字型來表示。
+   例如我們的 zh_TW.Big5, 半形字需用英文字型 (如 -*-iso8859-1)，而全形字需
+   用中文字型 (如 -twmoe-*-big5-0), 因此，我們不能用 XLoadQueryFont() 將這
+   些字型分別載入，而要用 XCreateFontSet() 來載入所需的 fontset。
+
+<p>
+<hr>
+<font size=-1>
+<pre>
+Display *display;
+XFontSet fontset;
+char *fontset_name, **missing_charset, *def_string;
+int missing_charset_count;
+
+fontset_name = "-*-iso8859-1,-twmoe-*-big5-0";
+fontset = XCreateFontSet(display, fontset_name,
+                         &missing_charset_list, 
+                         &missing_charset_count,
+                         &def_string);
+</pre>
+</font>
+<hr>
+<p>
+   在這裏我們可以將 fontset 看成一個「字型物件」，而不要把它看成 
+   "-*-iso8859-1" 與 "-twmoe-*-big5-0" 這兩種字型的組合。當我們要畫任何字
+   串時，我們不用擔心要畫的到底是全型字或半型字，使用 fontset 便能幫我們
+   處理一切。
+   <p>
+
+
+<li> 畫出字串 (詳見 man XwcDrawImageString, man XmbDrawImageString, manXOpenOM)
+<p>
+   平常我們要在視窗畫字串時，都會用 XDrawImageString() 等函式，或者用 
+   XDrawImageString16() 來畫雙位元的字串 (即全型字)。現在可以我們用 
+   XwcDrawImageString (用來畫 wide-char (wchar_t *) 字串) 或
+   XmbDrawImageString (用來畫 multi-byte (char *) 字串) 。不管您輸入的字
+   串是全型或半型，或二者的混合，使用者兩個函式都能正確處理，同時會根據
+   您的 fontset 的設定來畫字。
+<p>
+   除此之外， X11R6 還有一個 Output Method 機制，用來做多國語系字串輸出
+   (畫字串)，我們可以在程式中呼叫 XOpenOM() 來開啟一個 Output Method 。
+   但這部分我還沒有仔細研究，有興趣的朋友可以參考本章開頭所列的參考資料
+   以獲得進一步資訊。
+   <p>
+
+
+<li> XIM (詳見 man XOpenIM)
+<p>
+   XIM 應分兩方面來談，一是 XIM server, 另一是 XIM client。對 XIM client
+   而言，如同 Output Method 一般，我們可以在程式中呼叫 XOpenIM() 來開啟一
+   個 Input Method, 同時指定 XIM server 的名字。但這部分我還沒有仔細研究，
+   有興趣的朋友可以參考本章開頭所列的參考資料。
+<p>
+   我目前是在寫 XIM server 的部分，但我沒有直接拿 X Window 的函式來寫，而
+   是拿 IMdkit lib 來寫，以簡化整個程式寫作。在此我不多作說明了，有興趣的
+   朋友可以抓取:
+<p>
+<code>
+   <a href="ftp://xcin.linux.org.tw/pub/xcin/xcin/v2.5/">xcin-2.5-19990218.tar.gz</a>
+</code>
+<p>
+   回去看，裏頭的 doc/programming/ 目錄中有對此稍作說明，同時 IMdkit 的
+   source 也整個附在 xcin-2.5 source 中。
+<p>
+
+
+<hr>
+以上資料，僅供參考，歡迎大家指教。
+
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>
+

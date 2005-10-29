@@ -1,0 +1,257 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Linux 2.4 Advanced Routing HOWTO: 核心網路參數 (Kernel network parameters)</TITLE>
+ <LINK HREF="Adv-Routing-HOWTO-15.html" REL=next>
+ <LINK HREF="Adv-Routing-HOWTO-13.html" REL=previous>
+ <LINK HREF="Adv-Routing-HOWTO.html#toc14" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Adv-Routing-HOWTO-15.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Adv-Routing-HOWTO-13.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Adv-Routing-HOWTO.html#toc14"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s14">14. 核心網路參數 (Kernel network parameters)</A></H2>
+
+<P>核心有很多參數可以調節﹐以適用於不同的狀況。通常﹐ 99% 的安裝﹐使用預設參數就可以了﹐不過﹐與其這樣的話﹐此稱為 Advanced 的 HOWTO 就浪得虛名了﹗
+<P>有空請看看 /proc/sys/net﹐或有意外收穫哦。只是﹐剛開始的時候﹐並非所有東西都會寫在這裡﹐我們盡力而為就是了。
+<H2><A NAME="ss14.1">14.1 逆向路徑過濾 (Reverse Path Filtering)</A>
+</H2>
+
+<P>預設情況下﹐router 會路由所有東西﹐就算該封包‘顯然’不屬於貴網路的。常見的例子﹐莫過於將私有 IP 泄漏到 internet 上去。假如您有一個界面﹐其上設定的路由為 195.96.96.0/24﹐那您不會預期來自 212.64.94.1 的封包會到達這裡。
+<P>許多人都想關閉此一功能﹐因此核心設計者也打開了方便之門。在 /proc 裡面有些檔案﹐透過它們您可以讓核心為您做到這點。此方法被稱為 "逆向路徑過濾(Reverse Path Filtering)"。基本上﹐假如對此封包作出的回應﹐不是循其進入的界面送出去﹐那它就被視之為一個 bogus 封包﹐而被置之不理。
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# for i in /proc/sys/net/ipv4/conf/*/rp_filter ; do
+{  echo 2 > $i 
+} done
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>我們用上面的例子來看看﹐如果一個封包從 eth1 到達 Linux router﹐自稱來自 Office+ISP 這個 subnet﹐那它就會被丟棄。同樣地﹐如果封包來自 Office 這個 subnet﹐卻自稱來自防火牆外部﹐那它也同樣會被丟棄。
+<P>上面是完全(full) 逆向路徑過濾。預設是只根據直接相連網路的 IP 進行過濾﹐這時因為完全過濾會打斷所謂的非對稱路(asymmetric routing)情形 (也就是﹐封包從一端進入﹐而從另一端出去﹐例如衛星流量傳送﹐或是您的網路使用動態 (bgp﹑ospf﹑rip)路由。資料從衛星接受碟下傳進來﹐而回應則從正常的專線送回去)。
+<P>假如您屬於這種例外(您應該心中有數)﹐那您可以簡單的在衛星數據進入的界面上關閉 rp_filter。如果您想要看看封包是否真的會被丟棄﹐那可以透過同一目錄的 log_martians 檔案﹐告訴核心將之記錄到 syslog 上面去。
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# echo 1 >/proc/sys/net/ipv4/conf/&lt;interfacename>/log_martians
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>FIXME: 不清楚設定 conf/{default,all}/* 下面的檔案是否足夠﹖ --- martijn
+<P>
+<H2><A NAME="ss14.2">14.2 尚不明確的設定 (Obscure settings)</A>
+</H2>
+
+<P>嗯﹐太多參數其實都可以修改啦。我們會試著將它們儘數羅列出來﹐而且(部份)會寫在Documentation/ip-sysctl.txt 中。
+<P>其中有些設定的預設值會有不同﹐看您在編譯核心的時候﹐是否以 'Yes' 來回答 'Configure as router and not host' 囉。
+<P>
+<H3>一般的 ipv4 (Generic ipv4)</H3>
+
+<P>請留意﹐大多數的速率(rate)限制功能都不適用於 loopback 之上﹐所以請勿在本機上進行測試。這個限制受制於所謂的 'jiffies' ﹐且它們硬性的只能使用前述的 token bucket filter。
+<P>核心有一個內部時鐘﹐每秒跑 'HZ' 跳(或曰 'jiffies' )。在 intel 上面﹐'HZ' 大概為 100 (譯者註﹕我猜這裡指所謂的 '內頻' 而言吧﹖新的主機板大都支援 133 這個速度)。比方說﹐設定一個 *_rate 檔案為 50 好了﹐則可每秒處理 2 個封包。而 token bucket filter 也可以被設定為﹐如果有足夠的 tokens 存儲的話﹐能讓每一個 burst (瞬增流量)可達 6 個封包。
+<P>如下列表中的一些項目﹐拷貝自 /usr/src/linux/Documentation/networking/ip-sysctl.txt﹐由 Alexey Kuznetsov &lt;kuznet@ms2.inr.ac.ru&gt; and Andi Kleen &lt;ak@muc.de&gt; 所撰寫。
+<P>
+<DL>
+<DT><B>/proc/sys/net/ipv4/icmp_destunreach_rate</B><DD><P>如果核心認為它不能傳送某一封包﹐則將之丟棄﹐同時向封包來源送出一個 ICMP 告知其結果。
+<P>
+<DT><B>/proc/sys/net/ipv4/icmp_echo_ignore_all</B><DD><P>對所有封包均不作出 echo 。請勿將預設值設為啟動﹐除非您被利用為一個 DoS 工具的跳站﹐那或許有用。
+<P>
+<DT><B>/proc/sys/net/ipv4/icmp_echo_ignore_broadcasts [Useful]</B><DD><P>如果您 ping 網路的廣播位址﹐那所有主機都會做出回應﹐這將是一個非常便利的 dinal-of-servie 工具。將這裡設定為 1 則會忽略這些廣播訊息。
+<P>
+<DT><B>/proc/sys/net/ipv4/icmp_echoreply_rate</B><DD><P>送出 echo 回應至任意目的端之速率
+<P>
+<DT><B>/proc/sys/net/ipv4/icmp_ignore_bogus_error_responses</B><DD><P>設定它會忽略因網路主機對那些送至理解為廣播位址之框包作出抵抗而引起的 ICMP 錯誤。
+<P>
+<DT><B>/proc/sys/net/ipv4/icmp_paramprob_rate</B><DD><P>一個相對未知的 ICMP 信息﹐其發送是因損毀的 IP 或 TCP 標頭封包而引發的。透過這個檔﹐您可以控制其發送的速率。
+<P>
+<DT><B>/proc/sys/net/ipv4/icmp_timeexceed_rate</B><DD><P>這可以成為導致 traceroute 出現 '星星(* * *)' 的主因。這裡限制送出 ICMP Time Exceeded 訊息的數目。
+<P>
+<DT><B>/proc/sys/net/ipv4/igmp_max_memberships</B><DD><P>主機上所傾聽的最大 igmp (multicast) socket 數量。<BR>
+FIXME: 不知道是否真的?
+<P>
+<DT><B>/proc/sys/net/ipv4/inet_peer_gc_maxtime</B><DD><P>FIXME: 增加一個關於 inet peer storage 之簡短說明?<BR>
+廢物收集(garbage collection)通過的最長間隔。這個間隔會影響到 pool 中記憶體的低位(或缺少)壓力(pressure )。 以 jiffies 測量。
+<P>
+<DT><B>/proc/sys/net/ipv4/inet_peer_gc_mintime</B><DD><P>廢物收集(GC)通過的最短間隔。這個間隔會影響到 pool 中記憶體的高位壓力。 以 jiffies 測量。<BR><BR>
+(譯者註﹕不清楚上面兩個解釋是否正確﹐因為原文中﹐作者均解釋為"Minimum interval between garbage collection passes"﹐我這裡私自將第一個改為“最長間隔”。)
+<P>
+<DT><B>/proc/sys/net/ipv4/inet_peer_maxttl</B><DD><P>最高存活期項目。在此期限到達之後﹐如果沒有在 pool 上構成記憶體壓力的話(例如﹐pool 中的項目數目非常少)﹐不使用的項目將會逾時。以 jiffies 測量。
+<P>
+<DT><B>/proc/sys/net/ipv4/inet_peer_minttl</B><DD><P>最低存活期項目。在重組端必須要有足夠的碎片(fragment)存活期。這個最低存活期必須保證 pool 體積是否少於 inet_peer_threshold。以 jiffies 測量。
+<P>
+<DT><B>/proc/sys/net/ipv4/inet_peer_threshold</B><DD><P>INET peer storage 的適當體積。由此出發點開始的項目都會被強制拋棄。此出發點還判定項目的存活期﹐以及廢物收集通過的時間間隔。項目越多﹐存活期越低﹐GC 間隔越短。
+<P>
+<DT><B>/proc/sys/net/ipv4/ip_autoconfig</B><DD><P>如果主機透過 RARP﹑BOOTP﹑DHCP﹑或類似方式獲得其 IP 設定﹐這檔會設為 1﹐否則為 0。
+<P>
+<DT><B>/proc/sys/net/ipv4/ip_default_ttl</B><DD><P>封包的存活期。設為 64 應是安全的。如果您的網路超大的﹐那就提昇此值。千萬不要隨便亂玩 --- 如遇到路由迴圈(routing loop)將導致更嚴重的災難。在某些情形之下﹐您甚至會降低此值。
+<P>
+<DT><B>/proc/sys/net/ipv4/ip_dynaddr</B><DD><P>假如您要用動態界面位址做 dial-on-demand ﹐那就設定它。一旦您的請求界面起來之後﹐所有看不到回應的本地 TCP socket 都會重新捆綁(rebound)﹐以獲得正確的位址。假如遇到啟動界面的連線自己不工作﹐但再試一次卻又可以的情形﹐設定這個可解決這個問題。
+<P>
+<DT><B>/proc/sys/net/ipv4/ip_forward</B><DD><P>是否要核心傳送封包。預設是關閉的。
+<P>
+<DT><B>/proc/sys/net/ipv4/ip_local_port_range</B><DD><P>對外連線時所使用的本地埠口範圍。預設值事實上蠻小的﹕1024 到 4999。
+<P>
+<DT><B>/proc/sys/net/ipv4/ip_no_pmtu_disc</B><DD><P>如果您要關閉 Path MTU discovery --- 一種在路徑上判定可接受的最大傳送單位(Maximum Transfer Unit)數值的技術﹐那就設定這裡。
+<P>
+<DT><B>/proc/sys/net/ipv4/ipfrag_high_thresh</B><DD><P>IP 碎片重組所需的最大記憶體。當記憶體的 ipfrag_high_thresh bytes 因此目的獲得分配之後﹐碎片處理程序會擱置封包﹐直到達到 ipfrag_low_thresh 為止。
+<P>
+<DT><B>/proc/sys/net/ipv4/ip_nonlocal_bind</B><DD><P>如果您想讓應用程式能夠捆綁到一個不屬於該系統的位址﹐就需要設定這裡。當機器使用非固定(或是動態)線路的時候﹐這功能就很有用了﹐因而﹐當您的線路斷掉之後﹐您的服務仍可啟動而且捆綁到特定的位址之上。
+<P>
+<DT><B>/proc/sys/net/ipv4/ipfrag_low_thresh</B><DD><P>IP 碎片重組所需的最小記憶體。
+<P>
+<DT><B>/proc/sys/net/ipv4/ipfrag_time</B><DD><P>IP 碎片保留在記憶體中的秒數。
+<P>
+<DT><B>/proc/sys/net/ipv4/tcp_abort_on_overflow</B><DD><P>一個 boolean 旗標﹐處於大量進入連線的時候控制其行為特性。當打開之後﹐會讓核心在服務出現超載的時候主動送出 RST 封包。
+<P>
+<DT><B>/proc/sys/net/ipv4/tcp_fin_timeout</B><DD><P>如果 socket 是有我們這端結束的﹐socket 保持 FIN-WAIT-2 狀態的時間。連線端或會掛斷且不會從它那端結束﹐或是甚至意外終結(died)。預設值為 60 秒。過去在 2.2 核心中是 180 秒﹐您可以復原它﹐但請記住﹐如果您的機器為一台盈負載(underloaded) 網頁伺服器﹐您可能要冒著記憶體被大量死亡封包填滿的風險﹐FIN-WAIT-2 sockets 的危險性低於 FIN-WAIT-1  ﹐因為它們最多只吃 1.5K 的記憶體﹐但是它們存在時間更長。另外參考 tcp_max_orphans。
+<P>
+<DT><B>/proc/sys/net/ipv4/tcp_keepalive_time</B><DD><P>當 keepalive 打開之後﹐TCP 要多久送出 keepalive 信息。<BR>
+預設為 2 小時。
+<P>
+<DT><B>/proc/sys/net/ipv4/tcp_keepalive_intvl</B><DD><P>當一個探測(probe)沒有獲得確認之後﹐隔多久要被重送。<BR>
+預設是 75 秒。
+<P>
+<DT><B>/proc/sys/net/ipv4/tcp_keepalive_probes</B><DD><P>在決定掛斷連線之前﹐要送出多少個 keepalive 探測。<BR>
+預設值為﹕9 。<BR>
+再乘上 tcp_keepalive_intvl﹐就是在一條線路在送出 keepalive 之後﹐所允許的不回應時間。
+<P>
+<DT><B>/proc/sys/net/ipv4/tcp_max_orphans</B><DD><P>對於那些沒有附屬於任何使用者檔案 handle 的 TCP sockets﹐系統所能處理的最大數量。假如超過這個數量﹐那麼這些無人看管的連線將會被立即重設(reset)﹐並同時顯示警告信息。之所以要設定這個限制﹐純粹為了抵禦那些簡單的 DoS 攻擊﹐千萬不要依賴這個或是人為的降低這個限制﹐不過﹐如果網路條件需要比預設值更多﹐而且調整網路服務獲得拖延並強制性砍掉這類狀態﹐則可以提高它(或許還要增加記憶體)。再提醒一次﹕每一個這樣的 orphan 都會吃掉 &nbsp;64K 不能置換的記憶體。
+<P>
+<DT><B>/proc/sys/net/ipv4/tcp_orphan_retries</B><DD><P>在我們這端砍掉 TCP 連線之前﹐要進行多少次重試。預設是 7 個﹐相當於 &nbsp;50秒 - 16分鐘﹐視 RTO 而定。如果您機器為負載(loaded)網頁伺服器﹐您或許會打算降低這個數值﹐這類 sockets 可能會耗費大量的資源。另外參考 tcp_max_orphans 。
+<P>
+<DT><B>/proc/sys/net/ipv4/tcp_max_syn_backlog</B><DD><P>對於那些依然還未獲得客戶端確認的連線請求﹐需要記憶的最大數目。對於超過 128Mb 記憶體的系統﹐預設值是 1024 ﹐低於 128Mb 的則為 128。如果伺服器經常出現過載﹐可以嘗試增加這個數字。警告﹗假如您將此值設為大於 1024﹐最好修改 include/net/tcp.h 裡面的 TCP_SYNQ_HSIZE ﹐以保持 TCP_SYNQ_HSIZE*16&lt;=tcp_max_syn_backlog ﹐並且編進核心之內。
+<P>
+<DT><B>/proc/sys/net/ipv4/tcp_max_tw_buckets</B><DD><P>系統在同一時間內所處理的最大 timewait sockets 數目。如果超過此數字的話﹐time-wait socket 會被立即砍除並且顯示警告信息。之所以要設定這個限制﹐純粹為了抵禦那些簡單的 DoS 攻擊﹐千萬不要人為的降低這個限制﹐不過﹐如果網路條件需要比預設值更多﹐則可以提高它(或許還要增加記憶體)。
+<P>
+<DT><B>/proc/sys/net/ipv4/tcp_retrans_collapse</B><DD><P>針對某些損壞印表機的 bug-to-bug 兼容性。於重傳上嘗試送出更大的封包﹐以解決特定 TCP 堆疊中的臭蟲。
+<P>
+<DT><B>/proc/sys/net/ipv4/tcp_retries1</B><DD><P>當某些事情不對勁而必須向網路層報告這個可疑狀況之前﹐需要進行多少次重試。最低的 RFC 數值是 3 ﹐這也是預設值﹐相當於 &nbsp;3秒 - 8分鐘﹐視 RTO 而定。
+<P>
+<DT><B>/proc/sys/net/ipv4/tcp_retries2</B><DD><P>在砍掉存活 TCP 連線之前﹐需要進行多少次重試。RFC1122 裡面說﹐這個限制必須大於 100秒。此數字非常小。預設值為 15 ﹐相當於 &nbsp;13-30分鐘﹐視 RTO 而定。
+<P>
+<DT><B>/proc/sys/net/ipv4/tcp_rfc1337</B><DD><P>這個 boolean 會啟動關於 'time-wait assassination hazards in tcp' 的修正﹐請參考 RFC 1337。如果被打開﹐會讓核心丟棄那些處於 time-wait 狀態 sockets 之 RST 封包。<BR>
+預設為 0 。
+<P>
+<DT><B>/proc/sys/net/ipv4/tcp_sack</B><DD><P>使用 Selective ACK﹐它可以用來找出特定的遺失封包 --- 因而有助於迅速復原。
+<P>
+<DT><B>/proc/sys/net/ipv4/tcp_stdurg</B><DD><P>使用 TCP urg pointer 欄位中的主機請求詮釋功能。<BR>
+大部份的主機都使用老舊的 BSD 詮釋﹐因而﹐如果您在 Linux 打開它﹐或會導致不能和它們正確溝通。<BR>
+預設為﹕FALSE
+<P>
+<DT><B>/proc/sys/net/ipv4/tcp_syn_retries</B><DD><P>對於一個新建連線﹐核心要送多少個 SYN 封包數才決定放棄。
+<P>
+<DT><B>/proc/sys/net/ipv4/tcp_synack_retries</B><DD><P>為了與另一端建立連線﹐核心會連同 SYN 一起送出 ACK ﹐以確認收到上一個 SYN。這是所謂的三段交握( threeway handshake) 的第二個步驟。這裡決定核心在放棄連線之前所送出的 SYN+ACK 數目。
+<P>
+<DT><B>/proc/sys/net/ipv4/tcp_timestamps</B><DD><P>Timestamps 用在其它一些東西中﹐可以防範那些偽造的 sequence 號碼。一條 1 gigabit 的線路或許會重遇到帶 out-of-line 數值的舊 sequence 號碼(假如它是由於上次產生的)。Timestamp 會讓它知道這是個 '舊封包'。
+<P>
+<DT><B>/proc/sys/net/ipv4/tcp_tw_recycle</B><DD><P>啟動快速 TIME-WAIT sockets 回收。預設值是 1 。除非得到技術專家的建議或要求﹐請不要修改這個值。
+<P>
+<DT><B>/proc/sys/net/ipv4/tcp_window_scaling</B><DD><P>正常來說﹐TCP/IP 可以接受大至 65535 byte 的 windows。對於高速網路﹐這或許還是不夠的。這個 windows scaling 選項則允許接近 gigabyte 的 windows﹐這將有助改善高頻寬延遲產品。
+<P>
+</DL>
+<H3>逐個設備設定 (Per device settings)</H3>
+
+<P>DEV 可以只代表一個真實界面﹐也可以是 '全部' 或 '預設值'。而預設值也或許會改變建立的界面設定。
+<DL>
+<DT><B>/proc/sys/net/ipv4/conf/DEV/accept_redirects</B><DD><P>如果 router 認為您在不適當的使用它(ie﹐需要在同一界面上重送封包)﹐那它就會送出一個 ICMP Redirect。這或許會造成輕度的安全風險﹐所以您最好關閉它﹐或是使用 secure redirects。
+<P>
+<DT><B>/proc/sys/net/ipv4/conf/DEV/accept_source_route</B><DD><P>此功能並不常用。過去﹐您可以給出一個 IP 位址列表﹐讓它提供此功能。Linux 也可以實踐這個 IP 選項。
+<P>
+<DT><B>/proc/sys/net/ipv4/conf/DEV/bootp_relay</B><DD><P>FIXME: 有待補充
+<P>
+<DT><B>/proc/sys/net/ipv4/conf/DEV/forwarding</B><DD><P>FIXME: 有待補充
+<P>
+<DT><B>/proc/sys/net/ipv4/conf/DEV/log_martians</B><DD><P>請參考逆向路徑過濾章節。
+<P>
+<DT><B>/proc/sys/net/ipv4/conf/DEV/mc_forwarding</B><DD><P>是否在該界面上進行 multicast forwarding。
+<P>
+<DT><B>/proc/sys/net/ipv4/conf/DEV/proxy_arp</B><DD><P>如果設為 1﹐那麼所有其它界面都會回應以此界面為目的之 arp 請求。當架設 'ip pseudo bridges' 時相當有用。啟用此功能之前﹐請確定您的 netmasks 要非常正確。
+<P>
+<DT><B>/proc/sys/net/ipv4/conf/DEV/rp_filter</B><DD><P>請參考逆向路徑過濾章節。
+<P>
+<DT><B>/proc/sys/net/ipv4/conf/DEV/secure_redirects</B><DD><P>FIXME: 有待補充
+<P>
+<DT><B>/proc/sys/net/ipv4/conf/DEV/send_redirects</B><DD><P>是否要送出前面提到的 redirects。
+<P>
+<DT><B>/proc/sys/net/ipv4/conf/DEV/shared_media</B><DD><P>FIXME: 有待補充
+<P>
+<DT><B>/proc/sys/net/ipv4/conf/DEV/tag</B><DD><P>FIXME: 有待補充
+<P>
+</DL>
+<P>
+<H3>鄰接原則 (Neighbor pollicy)</H3>
+
+<P>DEV 可以只代表一個真實界面﹐也可以是 '全部' 或 '預設值'。而預設值也或許會改變建立的界面設定。
+<DL>
+<DT><B>/proc/sys/net/ipv4/neigh/DEV/anycast_delay</B><DD><P>FIXME: 有待補充
+<P>
+<DT><B>/proc/sys/net/ipv4/neigh/DEV/app_solicit</B><DD><P>FIXME: 有待補充
+<P>
+<DT><B>/proc/sys/net/ipv4/neigh/DEV/base_reachable_time</B><DD><P>FIXME: 有待補充
+<P>
+<DT><B>/proc/sys/net/ipv4/neigh/DEV/delay_first_probe_time</B><DD><P>FIXME: 有待補充
+<P>
+<DT><B>/proc/sys/net/ipv4/neigh/DEV/gc_stale_time</B><DD><P>FIXME: 有待補充
+<P>
+<DT><B>/proc/sys/net/ipv4/neigh/DEV/locktime</B><DD><P>FIXME: 有待補充
+<P>
+<DT><B>/proc/sys/net/ipv4/neigh/DEV/mcast_solicit</B><DD><P>FIXME: 有待補充
+<P>
+<DT><B>/proc/sys/net/ipv4/neigh/DEV/proxy_delay</B><DD><P>FIXME: 有待補充
+<P>
+<DT><B>/proc/sys/net/ipv4/neigh/DEV/proxy_qlen</B><DD><P>FIXME: 有待補充
+<P>
+<DT><B>/proc/sys/net/ipv4/neigh/DEV/retrans_time</B><DD><P>FIXME: 有待補充
+<P>
+<DT><B>/proc/sys/net/ipv4/neigh/DEV/ucast_solicit</B><DD><P>FIXME: 有待補充
+<P>
+<DT><B>/proc/sys/net/ipv4/neigh/DEV/unres_qlen</B><DD><P>FIXME: 有待補充
+<P>
+</DL>
+<P>
+<H3>路由設定 (Routing settings)</H3>
+
+<P>
+<DL>
+<DT><B>/proc/sys/net/ipv4/route/error_burst</B><DD><P>FIXME: 有待補充
+<P>
+<DT><B>/proc/sys/net/ipv4/route/error_cost</B><DD><P>FIXME: 有待補充
+<P>
+<DT><B>/proc/sys/net/ipv4/route/flush</B><DD><P>FIXME: 有待補充
+<P>
+<DT><B>/proc/sys/net/ipv4/route/gc_elasticity</B><DD><P>FIXME: 有待補充
+<P>
+<DT><B>/proc/sys/net/ipv4/route/gc_interval</B><DD><P>FIXME: 有待補充
+<P>
+<DT><B>/proc/sys/net/ipv4/route/gc_min_interval</B><DD><P>FIXME: 有待補充
+<P>
+<DT><B>/proc/sys/net/ipv4/route/gc_thresh</B><DD><P>FIXME: 有待補充
+<P>
+<DT><B>/proc/sys/net/ipv4/route/gc_timeout</B><DD><P>FIXME: 有待補充
+<P>
+<DT><B>/proc/sys/net/ipv4/route/max_delay</B><DD><P>FIXME: 有待補充
+<P>
+<DT><B>/proc/sys/net/ipv4/route/max_size</B><DD><P>FIXME: 有待補充
+<P>
+<DT><B>/proc/sys/net/ipv4/route/min_adv_mss</B><DD><P>FIXME: 有待補充
+<P>
+<DT><B>/proc/sys/net/ipv4/route/min_delay</B><DD><P>FIXME: 有待補充
+<P>
+<DT><B>/proc/sys/net/ipv4/route/min_pmtu</B><DD><P>FIXME: 有待補充
+<P>
+<DT><B>/proc/sys/net/ipv4/route/mtu_expires</B><DD><P>FIXME: 有待補充
+<P>
+<DT><B>/proc/sys/net/ipv4/route/redirect_load</B><DD><P>FIXME: 有待補充
+<P>
+<DT><B>/proc/sys/net/ipv4/route/redirect_number</B><DD><P>FIXME: 有待補充
+<P>
+<DT><B>/proc/sys/net/ipv4/route/redirect_silence</B><DD><P>FIXME: 有待補充
+</DL>
+<P>
+<P>
+<HR>
+<A HREF="Adv-Routing-HOWTO-15.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Adv-Routing-HOWTO-13.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Adv-Routing-HOWTO.html#toc14"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

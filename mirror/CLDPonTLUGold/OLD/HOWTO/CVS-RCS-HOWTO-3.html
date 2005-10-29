@@ -1,0 +1,153 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>CVS-RCS- HOW-TO document for Linux (Source Code Control System): Setting up CVS </TITLE>
+ <LINK HREF="CVS-RCS-HOWTO-4.html" REL=next>
+ <LINK HREF="CVS-RCS-HOWTO-2.html" REL=previous>
+ <LINK HREF="CVS-RCS-HOWTO.html#toc3" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="CVS-RCS-HOWTO-4.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="CVS-RCS-HOWTO-2.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="CVS-RCS-HOWTO.html#toc3"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="Setting up CVS"></A> <A NAME="s3">3. Setting up CVS </A></H2>
+
+<P>First you need to install the CVS package, on Redhat linux use
+<HR>
+<PRE>
+cd /mnt/cdrom/Redhat/RPMS
+rpm -i rcs*.rpm
+rpm -i cvs*.rpm
+To see the list of files installed do -
+rpm -qpl cvs*.rpm | less
+</PRE>
+<HR>
+
+and browse output using j,k, CTRL+f, CTRL+D, CTRL+B, CTRL+U or using arrow keys, page up/down keys.
+See 'man less'.
+<P>On other flavors of unix, you may need to download the RCS and CVS tar balls
+and follow README, INSTALL files to setup CVS.
+Visit 
+<A HREF="http://www.cyclic.com">http://www.cyclic.com</A>
+and 
+<A HREF="http://www.loria.fr/~molli/cvs-index.html">http://www.loria.fr/~molli/cvs-index.html</A><H2><A NAME="CVS-Env"></A> <A NAME="ss3.1">3.1 Environment variables </A>
+</H2>
+
+<P>The following environment variables need to be setup in /etc/profile - default values required for all users.
+If not set in /etc/profile, than you should add these to your local profile file &nbsp;/.bash_profile.
+<HR>
+<PRE>
+export EDITOR=/bin/vi
+export CVSROOT=/home/cvsroot
+export CVSREAD=yes
+</PRE>
+<HR>
+<P>Create a directory to store the source code repository 
+and give read, write access to unix group/user.
+Also make sure that the directory name of CVSROOT does not contain
+any blank spaces. For example CVSROOT should not be like '/home/my rootcvs'.
+<HR>
+<PRE>
+export CVSROOT=/home/cvsroot
+mkdir $CVSROOT
+chmod o-rwx $CVSROOT
+chmod ug+rwx $CVSROOT
+</PRE>
+<HR>
+
+Now, change the group of $CVSROOT to group-name of users who want to use cvs sytem.
+<HR>
+<PRE>
+chgrp users $CVSROOT
+</PRE>
+<HR>
+
+To initialize the CVS and to put in source code files do -
+<HR>
+<PRE>
+cvs init
+
+# Change directory is a must
+cd $HOME/my_source_code_dir
+
+# Must give vendor tag and revision tag
+cvs import my_source_code_dir V1_0 R1_0  
+</PRE>
+<HR>
+<H2><A NAME="RCS2CVS"></A> <A NAME="ss3.2">3.2 Migrate RCS to CVS </A>
+</H2>
+
+<P>To migrate the existing RCS files to CVS, use the following script. Make sure
+that you installed korn shell package pdksh*.rpm from Linux contrib cdrom.
+<P><B>NOTE : <I>Korn shell /bin/ksh is obtained by installing pdksh*.rpm from Linux contrib cdrom</I></B>
+<HR>
+<PRE>
+#!/bin/ksh
+
+#############################################################
+# Program to Migrate the existing source code in RCS to CVS 
+#
+# Needs the korn shell RPM package  pdksh*.rpm from Linux 
+# contrib cdrom
+#############################################################
+
+#
+# rcs2cvs - convert source tree from RCS to CVS
+#
+
+# project to convert
+PROJECT='project'
+
+# current RCS root
+RCSROOT="$HOME/rcs"
+
+if cd "$RCSROOT/$PROJECT"
+then
+        cd "$RCSROOT"
+else
+        echo >&amp;2 "`basename "$0"`: can't change to RCS directory '$RCSROOT/$PROJECT'."
+        exit 1
+fi
+
+# current CVS root
+CVSROOT="$HOME/cvs"
+
+# create new CVS directory for project 'project'
+if mkdir "$CVSROOT/$PROJECT"
+then
+        :
+else
+        echo >&amp;2 "`basename "$0"`: can't create CVS directory '$CVSROOT/$PROJECT'."
+        exit 2
+fi
+
+# create CVS project tree from RCS tree
+find "$PROJECT" -type d -name RCS -print |
+while read RCS
+do
+        CVS="`dirname "$RCS"`"
+        (if cd "$RCS"
+        then
+#               if find . -type f -name '*,v' -print | cpio -pdmv "$CVSROOT/$CVS"
+                if find . -type f -print | cpio -pdmv "$CVSROOT/$CVS"
+                then
+                        :
+                else
+                        echo >&amp;2 "`basename "$0"`: can't convert RCS subdirectory '$RCSROOT/$RCS' to CVS subdirectory '$CVSROOT/$CVS'."
+                fi
+        else
+                echo >&amp;2 "`basename "$0"`: can't change to RCS subdirectory '$RCSROOT/$RCS'."
+        fi)
+done
+</PRE>
+<HR>
+
+Now the RCS is migrated to CVS as 'project'. You can start using the
+CVS commands on module 'project'.
+<HR>
+<A HREF="CVS-RCS-HOWTO-4.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="CVS-RCS-HOWTO-2.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="CVS-RCS-HOWTO.html#toc3"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

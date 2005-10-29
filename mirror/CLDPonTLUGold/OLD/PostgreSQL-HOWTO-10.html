@@ -1,0 +1,242 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE> Linux 的 Database-SQL-RDBMS HOWTO 文件 (PostgreSQL 物件關聯資料庫系統): 資料庫保安 </TITLE>
+ <LINK HREF="PostgreSQL-HOWTO-11.html" REL=next>
+ <LINK HREF="PostgreSQL-HOWTO-9.html" REL=previous>
+ <LINK HREF="PostgreSQL-HOWTO.html#toc10" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="PostgreSQL-HOWTO-11.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="PostgreSQL-HOWTO-9.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="PostgreSQL-HOWTO.html#toc10"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="security"></A> <A NAME="s10">10. 資料庫保安 </A></H2>
+
+<P>資料庫保安問題需在多個不同層面探討︰
+<UL>
+<LI> 資料庫檔案保護。資料庫的所有檔案都不淮 <I>postgres</I>
+超級用戶以外的用戶讀取。</LI>
+<LI> 據預設值，從用戶連接到資料庫伺服器只能透過本機的 UNIX 插座
+(socket)，不是 TCP/IP 插座。伺服器需以 -i 選項啟動才能容許非本機客戶連接。</LI>
+<LI> 客戶連接可以 IP 地址和 / 或用者名稱加以限制，只需修改 <B>$PG_DATA</B>
+中的 <B>pg_hba.conf</B> 檔。</LI>
+<LI> 可籍外部套件認證客戶連接。</LI>
+<LI> 每位 Postgres 用戶都有一個使用者名稱和選擇性地擁有一個密碼。
+預設值是用戶沒有權限寫入不是自己建立的資料庫。</LI>
+<LI> 用戶可被編配到群組中，能否存取一個表格可以群組特權來限制。 </LI>
+</UL>
+<H2><A NAME="ss10.1">10.1 用戶認證</A>
+</H2>
+
+<P>認證是後端伺服器和 postmaster 確保要求存取資料的用戶是否確為其人的過程。所有啟動
+Postgres 的用者都與認證是後端伺服器和 postmaster <B>pg_user</B>
+類別比較，以確定他們有權做想做的工作。
+而用者真實身分的辨別工作以多個不同方法完成︰
+<UL>
+<LI> <B>在使用者 shell 中︰</B> 在使用者 shell
+直接啟動的後端伺服器記下用者的（有效）使用者代號 (effective 
+user-id)，之後作一次 <B>setuid</B> 來化身為 <B>postgres</B>。
+有效使用者識別號會被用作存取控制的基礎。再沒有其他認證工作。</LI>
+<LI> <B>來自網絡︰</B> 如果 Postgres 系統以分散式運行，任何人都可存取
+postmaster 行程 (process) 的互聯網 TCP 埠。資料庫管理員需設定 <B>$PGDATA</B>
+目錄中的 <B>pg_hda.conf</B> 檔，來指定不同主機連接不同資料庫時所用的認證系統。
+
+請參閱 <B>pg_hba.conf(5)</B> （man 5 pg_hba.conf）
+以了解不同認證系統。當然，根據主機來進行認證在 Unix
+也不是毫無破碇。有決心的入侵者也可以偽裝自己所用的主機。這些保安問題不在
+Postgres 的控制範圍。</LI>
+</UL>
+<H2><A NAME="ss10.2">10.2 依據主機控制存取</A>
+</H2>
+
+<P>依據主機控制存取即 PostgreSQL
+用於決定什麼客戶可存取資料庫和他們如何確認身份的過程。每個資料庫都有一個名為
+<B>pg_hba.conf</B> 的檔案，在它的 <B>$PGDATA</B>
+目錄中，它控制誰能存取資料庫。每個存取資料庫的用戶都要在 <B>pg_hba.conf</B>
+中有相應的紀錄。否則所有來自該客戶的連接都會以<B>"User authemtication
+failed"</B> 錯誤訊息被拒。
+<P>請參閱 <B>pg_hba.conf(5)</B> 的 man page（man 5 pg_hba.conf）。
+<P><B>pg_hba.conf</B> 檔的基本格式是一組紀錄，一行一個。空行或以 hash
+字母（#）開始的行則不理會。一個紀錄由一些用空格和 / 或 Tab 分開的欄位組成。
+<P>從客戶來的連接可經 Unix 插座或互聯網插座（即 TCP/IP）。來自 Unix
+插座的連接用以下格式的記錄控制︰
+<HR>
+<PRE>
+local database authentication method
+</PRE>
+<HR>
+
+而
+<P><B>database</B> 指定本紀錄用於哪個資料庫。<B>all</B>
+代表它適用於所有資料庫。
+<P><B>authentication method</B> 指定用戶在使用 Unix 
+插座時用來認證的方法。不同的方法容後詳述。
+<P>
+<P>來自互聯網插座的連接用以下格式的記錄控制︰
+<P>
+<HR>
+<PRE>
+host database TCP/IP-address TCP/IP-mask authentication method
+</PRE>
+<HR>
+<P><B>TCP/IP</B> 地址會 <I>邏輯上 and'ed</I> 到指定的 TCP/IP 罩和客戶的 
+TCP/IP 地址。如兩者相等，這紀錄會用於這個連接。如果一個連接符合超過一個紀錄，
+檔案中的第一個紀錄會被使用。不論 TCP/IP 地址還是 TCP/IP 
+罩都是以分點的十進數格式 (dotted decimal notation) 
+表達。如果一個連接和所有紀錄都不符，reject 認證方法將會被使用。（參閱
+<A HREF="#auth_method">認證方法</A>）
+<H2><A NAME="auth_method"></A> <A NAME="ss10.3">10.3 認證方法 </A>
+</H2>
+
+<P>Unix 和 TCP/IP 插座都支援以下認證方法︰
+<UL>
+<LI> <B>trust</B>
+無條件地容許連接。</LI>
+<LI> <B>reject</B>
+無條件地拒絕連接。</LI>
+<LI> <B>crypt</B>
+問客戶端用者的密碼。它會經加密（使用 crypt(3)）和與 pg_shadow
+表格的密碼比較。如果密碼相符，便容許連接。</LI>
+<LI> <B>password</B>
+問客戶端用者的密碼。它會原裝傳送和與 pg_shadow
+表格的密碼比較。如果密碼相符，便容許連接。一個選擇性的密碼檔可在 password
+關鍵字後出現。這樣密碼的配對會用這檔案，而不是 <B>pg_shadow</B> 檔案。請參閱
+<B>pg_passwd</B>。</LI>
+</UL>
+<P>以下認證方法只受 TCP/IP 插座支援︰
+<UL>
+<LI> <B>krb4</B>
+用 Kerberos V4 來認證用戶。</LI>
+<LI> <B>krb5</B>
+用 Kerberos V4 來認證用戶。</LI>
+<LI> <B>ident</B>
+用客戶端的 ident 伺服器來認證用戶（RFC 1413）。在 <B>ident</B>
+關鍵字後還可選擇性地指明一個映射，讓 ident 用戶名稱對應到 Postgres
+用戶名稱。對應的關係儲存在 <B>$PGDATA/pg_ident.conf</B> 檔中。</LI>
+</UL>
+<P>這裡有一些例子︰
+<HR>
+<PRE>
+# 信任所有來自 Unix 插座的連接。
+local   trust
+# 信任所有這部電腦經 TCP/IP 來的連接。
+host    all 127.0.0.1   255.255.255.255     trust
+# 我們討厭這部電腦。
+host    all 192.168.0.10    255.255.255.0       reject
+# 這部電腦不懂加密，所以我們要純文字的密碼。
+host    all 192.168.0.3 255.255.255.0       password
+# 這群電腦的其他成員都要提供加密了的密碼。
+host    all 192.168.0.0 255.255.255.0       crypt
+</PRE>
+<HR>
+<H2><A NAME="ss10.4">10.4 存取控制</A>
+</H2>
+
+<P>Postgres 提供了限制其他用家存取自己資料的機制。
+<UL>
+<LI> <B>資料庫超級用家 (Database superusers)</B>
+資料庫超級用家（即 <B>pg_user.usesuper</B>
+設定為對的用家）自動通過以下兩項之外的所有存取控制︰<B>pg_user.usecatupd</B>
+沒有設定為對的話不准手動更新系統目錄，摧毀系統目錄（或修改它的綱目 
+(schema)）則永不准許。</LI>
+<LI> <B>存取特權 (Access Privilege)</B>
+存取特權是用來限制讀、寫和設定類別 (class) 規則的權力，用 SQL 
+<B>grant/revoke(1)</B> 來決定。</LI>
+<LI> <B>移除類別和修改綱目</B>
+毀滅或修改現存類別的結構，如修改、丟棄表格，和丟棄索引，只能由類別的主人執行。
+如上所述，這類動作不許用於系統目錄。</LI>
+</UL>
+<H2><A NAME="ss10.5">10.5 經 SSH 的保安 TCP/IP 連接</A>
+</H2>
+
+<P>你可用 <B>ssh</B> 來加密客戶和 Postgres
+伺服器間的網絡連接。做得正確的話，這樣可形成一個保安的網絡連接。
+<P><B>ssh</B> 的文件提供了大部份開始時需要的資料。請參閱 
+<A HREF="http://www.heimhardt.de/htdocs/ssh.html">http://www.heimhardt.de/htdocs/ssh.html</A> 以加深了解。逐步解釋只需兩步。
+<P><B>經 ssh 形成一條保安通道︰</B>
+逐步解釋只需兩步。
+<UL>
+<LI> 產生一條到後端電腦的通道，如下︰
+<HR>
+<PRE>
+ssh -L 3333:wit.mcs.anl.gov:5432 postgres@wit.mcs.anl.gov
+</PRE>
+<HR>
+</LI>
+<LI> <B>-L</B>
+參數後的第一個數字，<B>33333</B>，是你這方通道的埠號。第二個數字，
+<B>5432</B>，是另一方的終點—後端的埠號。兩個埠數之間的名稱或地址屬於伺服器。
+<B>ssh</B> 最後一個參數中用家自行選擇是否加上的用戶名稱也是。
+沒有用戶名稱的話，<B>ssh</B> 會嘗試使用登入客戶端電腦的用戶名稱。
+你可用任何伺服器電腦接受的用戶名稱，不一定要用和 PostgreSQL 有關的。</LI>
+<LI> 你現在已開始了一個 <B>ssh</B> 時段，你把可你所用的電腦的 Postgres 
+客戶連接到你前一步所定的埠號。如你使用 
+<B>psql</B>，你要另一個介面，因為之前所用的一個已被 <B>ssh</B> 佔據。
+<HR>
+<PRE>
+psql -h localhost -p 3333 -d mpw
+</PRE>
+<HR>
+</LI>
+<LI> 注意你要用 <B>-h</B> 參數使得你的客戶用 TCP 插座而不是 Unix
+插座。如果你用 <B>5432</B> 作通道的終點你可略去埠的參數。</LI>
+</UL>
+<H2><A NAME="ss10.6">10.6 Kerberos 認證</A>
+</H2>
+
+<P>Kerberos 是一個業界標準的保安認證系統，適用於經過公用網絡的分散式系統。
+<P><B>如何取得</B>
+Kerberos 認證系統並不隨同 Postgres 散佈。不同版本的 Kerberos
+多以可供選擇的軟件的形式自作業系統廠商得到。此外，原程式碼的發行版本 
+(distribution) 可自 MIT Project Athena 得到。
+<P>
+<HR>
+<PRE>
+注意︰即使你使廠商提供了 Kerberos，你仍可能想用 MIT 
+版，因為一些廠商的版本被故意弄壞以致不能和 MIT 版本合作。
+</PRE>
+<HR>
+<P>有關 Kerberos 的查詢可提交你的廠商或 MIT Project Athena。注意
+FAQLs（常問問題名單，Frequently-Asked Questions Lists) 會被定時寄至 Kerberos
+通信論壇（寄信去訂閱），和 USENET 新聞組。
+<P><B>安裝︰</B>
+安裝 Kerberos 在 Kerberos Installation Notes 中已詳細說明。要確定伺服器鍵碼檔
+(key file)（<B>srvtab</B> 或 <B>keytab</B>）可被 postgres
+用戶讀到。籍設定 <B>src/Makefile.global</B> 檔的 KRBVERS 變數，Postgres 
+或其客戶程式可編譯為使用 MIT Kerberos 通訊協定的第四或五版。你也可改變 
+Postgres 期望找到相關函式庫、標頭檔和自己的伺服器鍵碼檔的位置。編譯完後，
+Postgres 要登記為一個 Kerberos 服務。請參閱 Kerberos  Operations Notes 和相關 
+manual pages 以取得有關登記服務的詳情。
+<P><B>操作︰</B>
+安裝之後，Postgres 在各方面應如一般 Kerberos
+服務運作。要知道認證的使用方法，請參閱 <I>PostgreSQL User's Guide</I> 有關
+<B>postmaster</B> 和 <B>psql</B> 的章節。
+<P>在 Kerberos 第五版掛釣
+(hooks)，對用戶和服務命名作了以下假設（也請參閱以下表格）。
+<UL>
+<LI> 用戶的主要名稱 (principal names，anames) 第一個部份中假設含有 Unix /
+Postgres 用戶名稱。</LI>
+<LI> Postgres
+服務假設有兩個部份，服務名稱和主機名稱。後者如同第四版的格式
+（即除去所有域名的部分）。</LI>
+</UL>
+<P>
+<HR>
+<PRE>
+                表格︰Kerberos 參數例子
+ ------------------------------------------------------
+ 參數       例子 
+ ------------------------------------------------------
+ user       frew@S2K.ORG
+ user       aoki/HOST=miyu.S2K.Berkeley.EDU@S2K.ORG
+ host       postgres_dbms/ucbvax@S2K.ORG
+ ------------------------------------------------------
+</PRE>
+<HR>
+<HR>
+<A HREF="PostgreSQL-HOWTO-11.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="PostgreSQL-HOWTO-9.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="PostgreSQL-HOWTO.html#toc10"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

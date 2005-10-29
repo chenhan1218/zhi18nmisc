@@ -1,0 +1,35 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Large Disk mini-HOWTO 中譯版: 轉換與磁碟管理程式</TITLE>
+ <LINK HREF="Large-Disk-HOWTO-5.html" REL=next>
+ <LINK HREF="Large-Disk-HOWTO-3.html" REL=previous>
+ <LINK HREF="Large-Disk-HOWTO.html#toc4" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Large-Disk-HOWTO-5.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Large-Disk-HOWTO-3.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Large-Disk-HOWTO.html#toc4"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s4">4. 轉換與磁碟管理程式</A></H2>
+
+<P>沒有人對磁碟的'真實' geometry 有興趣．磁軌的磁區數通常是變動的 - 接近磁碟外圍的磁軌有比較多的磁區 -  所以沒有'真實'的每磁軌磁區數．
+對於使用者而言最好是把磁碟當作編號 0,1,..., 的磁區組合成的線性陣列, 讓控制器去找出磁區究竟位於磁碟的那裡．
+<P>此線性編號一般通稱為 LBA．對於 geometry 為 (C,H,S)  的磁碟而言屬(c,h,s) 的線性位址為 c*H*S+h*S+(s-1)．所有 SCSI 控制器都使用 LBA, 某些 IDE  控制器也是．
+<P>如果 BIOS 把這 24 個位元(c,h,s) 轉換成 LBA  並餵給懂得 LBA  的控制器, 那麼又可以定址到 7.875 GB ．並不足以應付所有的磁碟, 但仍然是個改進．注意此處 BIOS 使用的 CHS, 它不再與'實體'有任何關係．
+<P>當控制器不懂何為 LBA  但是 BIOS 知道如何轉換時有些類似的方法可行．(在 BIOS 設定中通常稱為 'Large'．)現在 BIOS 將呈現 geometry 為(C',H',S')給作業系統, 而在與磁碟控制器溝通時則使用(C,H,S)．
+通常 S=S', C'=C/N  而 H'=H*N,  其中 N  是確保 C'&lt;=1024 之 2  的最小次方(所以 C'=C/N 時捨去的數浪費少許容量)．再一次, 這允許存取最多達 7.875 GB．
+<P>如果 BIOS 不知道 'Large'  或是 'LBA', 那麼還是有軟體的解決方案．像是 OnTracker  或 EZ-Drive 這些個磁碟管理程式會以它們自己的函式(routines)替換掉 BIOS 的．
+通常這是藉由將磁碟管理程式放在 MBR  及其後幾個磁區(OnTrack 稱這些程式碼為 DDO: Dynamic Drive Overlay )來達成的, 所以它會在任何其它作業系統之前被啟動．
+這也就是為什麼在安裝磁碟管理程式後從軟碟啟動可能會出問題．
+<P>這影響可能多於或少於 BIOS 轉換 -  但特別是在相同的磁碟上跑數種不同的作業系統時, 磁碟管理程式可能引起許多問題．
+<P>Linux 從 1.3.14 版開始支援 OnTrack  磁碟管理程式, 從 1.3.29 開始
+支援 EZ-Drive ．下面有些更進一步的資訊．
+<P>
+<P>
+<HR>
+<A HREF="Large-Disk-HOWTO-5.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Large-Disk-HOWTO-3.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Large-Disk-HOWTO.html#toc4"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

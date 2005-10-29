@@ -1,0 +1,276 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux Security HOWTO: Kernel Security</TITLE>
+ <LINK HREF="Security-HOWTO-8.html" REL=next>
+ <LINK HREF="Security-HOWTO-6.html" REL=previous>
+ <LINK HREF="Security-HOWTO.html#toc7" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Security-HOWTO-8.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Security-HOWTO-6.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Security-HOWTO.html#toc7"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="kernel-security"></A> <A NAME="s7">7. Kernel Security</A></H2>
+
+<P>This is a description of the kernel configuration options that relate
+to security, and an explanation of what they do, and how to use them.
+<P>As the kernel controls your computer's networking, it is important
+that it be very secure, and not be
+compromised. To prevent some of the latest networking attacks, you 
+should try to keep your kernel version current. You can find new
+kernels at 
+<A HREF="ftp://ftp.kernel.org">ftp://ftp.kernel.org</A> or from your distribution
+vendor.
+<P>There is also a international group providing a single unified crypto
+patch to the mainstream Lnux kernel. This patch provides support for
+a number of cyrptographic subsystems and things that cannot be
+included in the mainstream kernel due to export restrictions. For more 
+information, visit their web page at: 
+<A HREF="http://www.kerneli.org">http://www.kerneli.org</A><P>
+<H2><A NAME="ss7.1">7.1 2.0 Kernel Compile Options</A>
+</H2>
+
+<P>For 2.0.x kernels, the following options apply. You should see these
+options during the kernel configuration process.  Many of the comments
+here are from <CODE>./linux/Documentation/Configure.help</CODE>, which is
+the same document that is referenced while using the Help facility during 
+the <CODE>make config</CODE> stage of compiling the kernel. 
+<P>
+<UL>
+<LI>Network Firewalls
+(CONFIG_FIREWALL)
+<P>This option should be on if you intend to run any firewalling or
+masquerading on your Lnux machine. If it's just going to be a regular 
+client machine, it's safe to say no.
+<P>
+</LI>
+<LI>IP: forwarding/gatewaying
+(CONFIG_IP_FORWARD)
+<P>If you enable IP forwarding, your Linux box essentially becomes a
+router.  If your machine is on a network, you could be forwarding data
+from one network to another, and perhaps subverting a firewall that
+was put there to prevent this from happening.  Normal dial-up users
+will want to disable this, and other users should concentrate on the
+security implications of doing this.  Firewall machines will want this
+enabled, and used in conjunction with firewall software.
+<P>You can enable IP forwarding dynamically using the following command:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+        root#  echo 1 > /proc/sys/net/ipv4/ip_forward
+</PRE>
+</CODE></BLOCKQUOTE>
+
+and disable it with the command:
+<BLOCKQUOTE><CODE>
+<PRE>
+        root#  echo 0 > /proc/sys/net/ipv4/ip_forward
+</PRE>
+</CODE></BLOCKQUOTE>
+
+Keep in mind the files in /proc are "virtual" files and the shown size
+of the file might not reflect the data output from it. 
+<P>
+</LI>
+<LI>IP: syn cookies
+(CONFIG_SYN_COOKIES)
+<P>a "SYN Attack" is a denial of service (DoS) attack that consumes all the
+resources on your machine, forcing you to reboot.  We can't think of a
+reason you wouldn't normally enable this. In the 2.2.x kernel series
+this config option merely allows syn cookies, but does not enable
+them. To enable them, you have to do:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+                root# echo 1 > /proc/sys/net/ipv4/tcp_syncookies &lt;P>
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+</LI>
+<LI>IP: Firewalling
+(CONFIG_IP_FIREWALL)
+<P>This option is necessary if you are going to configure your machine as
+a firewall, do masquerading, or wish to protect your dial-up
+workstation from someone entering via your PPP dial-up interface.
+<P>
+<P>
+</LI>
+<LI>IP: firewall packet logging
+(CONFIG_IP_FIREWALL_VERBOSE)
+<P>This option gives you information about packets your firewall
+received, like sender, recipient, port, etc.
+</LI>
+<LI>IP: Drop source routed frames
+(CONFIG_IP_NOSR)
+<P>This option should be enabled.  Source routed frames contain the
+entire path to their destination inside of the packet.  This means
+that routers through which the packet goes do not need to inspect it,
+and just forward it on. This could lead to data entering your system
+that may be a potential exploit.
+<P>
+</LI>
+<LI>IP: masquerading
+(CONFIG_IP_MASQUERADE)
+If one of the computers on your local network for which your Linux
+box acts as a firewall wants to send something to the outside, your
+box can "masquerade" as that host, i.e., it forwards the traffic
+to the intended destination, but makes it look like it came from the
+firewall box itself.  See 
+<A HREF="http://www.indyramp.com/masq">http://www.indyramp.com/masq</A> for more information.
+<P>
+</LI>
+<LI>IP: ICMP masquerading
+(CONFIG_IP_MASQUERADE_ICMP)
+This option adds ICMP masquerading to the previous option of only 
+masquerading TCP or UDP traffic.
+<P>
+</LI>
+<LI>IP: transparent proxy support
+(CONFIG_IP_TRANSPARENT_PROXY)
+This enables your Linux firewall to transparently redirect any
+network traffic originating from the local network and
+destined for a remote host to a local server, called a "transparent
+proxy server".  This makes the local computers think they are talking
+to the remote end, while in fact they are connected to the local proxy.
+See the IP-Masquerading HOWTO and 
+<A HREF="http://www.indyramp.com/masq">http://www.indyramp.com/masq</A> for more information.
+<P>
+</LI>
+<LI>IP: always defragment
+(CONFIG_IP_ALWAYS_DEFRAG)
+<P>Generally this option is disabled, but if you are building a firewall
+or a masquerading host, you will want to enable it.  When data is sent
+from one host to another, it does not always get sent as a single
+packet of data, but rather it is fragmented into several pieces.  The
+problem with this is that the port numbers are only stored in the
+first fragment.  This means that someone can insert information into
+the remaining packets that isn't supposed to be there.
+It could also prevent a teardrop attack against an internal
+host that is not yet itself patched against it.
+<P>
+</LI>
+<LI>Packet Signatures
+(CONFIG_NCPFS_PACKET_SIGNING)
+<P>This is an option that is available in the 2.2.x kernel series that will
+sign NCP packets for stronger security.  Normally you can leave it
+off, but it is there if you do need it.
+<P>
+</LI>
+<LI>IP: Firewall packet netlink device
+(CONFIG_IP_FIREWALL_NETLINK)
+<P>This is a really neat option that allows you to analyze the first 128
+bytes of the packets in a user-space program, to determine if you would
+like to accept or deny the packet, based on its validity.
+</LI>
+</UL>
+<P>
+<H2><A NAME="ss7.2">7.2 2.2 Kernel Compile Options</A>
+</H2>
+
+<P>For 2.2.x kernels, many of the options are the same, but a few new
+ones have been developed.  Many of the comments here are from
+<CODE>./linux/Documentation/Configure.help</CODE>, which is the same
+document that is referenced while using the Help facility during 
+the <CODE>make config</CODE> stage of compiling the kernel. Only the newly-
+added options are listed below.  Consult the 2.0 description for a
+list of other necessary options.  The most significant change in the
+2.2 kernel series is the IP firewalling code.  The <CODE>ipchains</CODE>
+program is now used to install IP firewalling, instead of the
+<CODE>ipfwadm</CODE> program used in the 2.0 kernel.
+<P>
+<UL>
+<LI>Socket Filtering
+(CONFIG_FILTER)
+<P>For most people, it's safe to say no to this option. This option
+allows you to connect a userspace filter to any socket and determine
+if packets should be allowed or denied. Unless you have a very
+specific need and are capable of programming such a filter, you should 
+say no. Also note that as of this writing, all protocols were
+supported except TCP. 
+<P>
+</LI>
+<LI>Port Forwarding
+Port Forwarding is an addition to IP Masquerading which allows some
+forwarding of packets from outside to inside a firewall on given
+ports. This could be useful if, for example, you want to run a web
+server behind the firewall or masquerading host and that web server
+should be accessible from the outside world. An external client
+sends a request to port 80 of the firewall, the firewall forwards
+this request to the web server, the web server handles the request
+and the results are sent through the firewall to the original
+client. The client thinks that the firewall machine itself is
+running the web server. This can also be used for load balancing if
+you have a farm of identical web servers behind the firewall.
+
+Information about this feature is available from
+http://www.monmouth.demon.co.uk/ipsubs/portforwarding.html (to
+browse the WWW, you need to have access to a machine on the Internet
+that has a program like lynx or netscape). For general info, please
+see ftp://ftp.compsoc.net/users/steve/ipportfw/linux21/
+<P>
+</LI>
+<LI>Socket Filtering
+(CONFIG_FILTER)
+Using this option, user-space programs can attach a filter to any
+socket and thereby tell the kernel that it should allow or disallow
+certain types of data to get through the socket.  Linux socket
+filtering works on all socket types except TCP for now.  See the
+text file <CODE>./linux/Documentation/networking/filter.txt</CODE> for
+more information.
+<P>
+</LI>
+<LI>IP: Masquerading
+The 2.2 kernel masquerading has been improved.  It provides additional
+support for masquerading special protocols, etc. Be sure to read
+the IP Chains HOWTO for more information.</LI>
+</UL>
+<P>
+<H2><A NAME="ss7.3">7.3 Kernel Devices</A>
+</H2>
+
+<P>There are a few block and character devices available on Linux that
+will also help you with security.
+<P>The two devices <CODE>/dev/random</CODE> and <CODE>/dev/urandom</CODE> are provided by the
+kernel to provide random data at any time.
+<P>Both <CODE>/dev/random</CODE> and <CODE>/dev/urandom</CODE> should be secure enough to use in
+generating PGP keys, <CODE>ssh</CODE> challenges, and other applications where
+secure random numbers are required.  Attackers should be unable to
+predict the next number given any initial sequence of numbers from these
+sources.  There has been a lot of effort put in to ensuring that the
+numbers you get from these sources are random in every sense of the word.
+<P>The only difference between the two devices, is that <CODE>/dev/random</CODE> runs out of random bytes
+and it makes you wait for more to be accumulated.  Note that on some
+systems, it can block for a long time waiting for new user-generated
+entropy to be entered into the system.  So you have to use care before
+using <CODE>/dev/random</CODE>.  (Perhaps the best thing to do is to use it when
+you're generating sensitive keying information, and you tell the user to
+pound on the keyboard repeatedly until you print out "OK, enough".)
+<P><CODE>/dev/random</CODE> is high quality entropy, generated from measuring the
+inter-interrupt times etc. It blocks until enough bits of random data
+are available.
+<P><CODE>/dev/urandom</CODE> is similar, but when the store of entropy is running low,
+it'll return a cryptographically strong hash of what there is. This
+isn't as secure, but it's enough for most applications.
+<P>You might read from the devices using something like:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+        root#  head -c 6 /dev/urandom | mimencode
+</PRE>
+</CODE></BLOCKQUOTE>
+
+This will print eight random characters on the console, suitable for
+password generation.  You can find <CODE>mimencode</CODE> in the <CODE>metamail</CODE>
+package.
+<P>See <CODE>/usr/src/linux/drivers/char/random.c</CODE> for a description of the
+algorithm.
+<P>Thanks to Theodore Y. Ts'o, Jon Lewis, and others from Linux-kernel
+for helping me (Dave) with this.
+<P>
+<HR>
+<A HREF="Security-HOWTO-8.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Security-HOWTO-6.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Security-HOWTO.html#toc7"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

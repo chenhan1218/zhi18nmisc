@@ -1,0 +1,123 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>瘟猫和Linux配置实作指南: 是ISA还是PCI？</TITLE>
+ <LINK HREF="Winmodems-and-Linux-HOWTO-3.html" REL=next>
+ <LINK HREF="Winmodems-and-Linux-HOWTO-1.html" REL=previous>
+ <LINK HREF="Winmodems-and-Linux-HOWTO.html#toc2" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Winmodems-and-Linux-HOWTO-3.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Winmodems-and-Linux-HOWTO-1.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Winmodems-and-Linux-HOWTO.html#toc2"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s2">2. 是ISA还是PCI？</A></H2>
+
+<P>
+<H2><A NAME="ss2.1">2.1 PCI ？</A>
+</H2>
+
+<P>嗯，知道了，我们现在知道我们的猫是一只瘟猫了。但是瘟猫有两种类型：ISA或是PCI的。可恶的厂商们为了让事情变得更糟糕，故意把两种接口做的非常不同。所以，现在我们就要测试一下我们的猫是PCI的还是ISA的。首先，必须要配置一把内核。在make *config的过程当中，必须对下列问题回答'yes'：
+<P>
+<P>
+<UL>
+<LI>在Loadable module support（可加载模块支持）部分：'Enable loadable module support (CONFIG_MODULES)'（激活可加载模块支持），及 'Set version information on all modules for symbols (CONFIG_MODVERSIONS)'(切记必须已经安装了modutils模块工具软件包；请参阅Kerneld-HOWTO)</LI>
+<LI>在General setup部分： <P>'PCI support' (CONFIG_PCI)
+<P>在'PCI Access Mode' (CONFIG_PCI_GOBIOS)处选择'Any'
+<P>'PCI quirks' (CONFIG_PCI_QUIRKS)
+<P>'Backward compatible /proc/pci' (CONFIG_PCI_OLD_PROC)
+<P>
+</LI>
+<LI>在Filesystems部分<P>'/proc filesystem support' (CONFIG_PROC_FS)
+<P>
+</LI>
+</UL>
+
+如果您从未重编译过内核，可能您使用的发行套件的内核就已经包含这些东西。如果想重编译内核，而且您还从未干过这样的事情，请参阅Kernel-HOWTO. 
+<P>
+<P>现在，我们假定您的新内核已经安装妥当。 
+<P>
+<P>现在请运行'cat /proc/pci'命令。如果您在命令行返回的结果当中看到了您的猫的名字，那么您的猫是PCI瘟猫。请跳至'安装驱动程序'一节
+<P>
+<P>
+<H2><A NAME="ss2.2">2.2 难道是ISA的？</A>
+</H2>
+
+<P>如果您还没有找到您的猫，很有可能您拿到的是一只ISA的猫。怎么确定是ISA猫呢？
+<P>ISA的支持在内核是不考虑直接支持的（2.4.*系列内核会考虑，但是目前它还是不够稳定的）。这里有一个第三方的软件，名字就叫isapnp，是用来检测ISA设备的。首先您必须确认您已经安装了该软件包。如果还没有安装，也可以通过下载isapnptools软件包来解决。 
+<P>一旦isapnptools已经安装好，我们先运行一个特定程序，叫pnpdump。它可以检测您的电脑系统，从中寻找出ISA设备来。在运行当中，程序试图检测设备所使用的资源并将这些资源打印到文件/etc/isapnp.conf当中。然后，您需要编辑该文件并执行另外一个程序isapnp。该程序会读取isapnp.conf文件并自动配置您的设备。
+<P>
+<P>嗯？听起来很难么？那就走一走以下的步骤吧： 
+<P>
+<P>1. 请执行'pnpdump > /etc/isapnp.conf'。
+<P>2. 请使用您最喜欢的文本编辑器来编辑该文件。
+<P>3. 定位到描述您的猫的节段部分。
+<P>4. 去掉文件当中的某些行列的注释（就是去掉行首的#号啦）。您得： 
+<P>1 line '(IO 0 ...)'
+<P>1 line '(INT 0 ...)'
+<P>1 line '(DMA 0 ...)'
+<P>1 line '(DMA 1 ...)'
+<P>1 line '(IO 1...)'
+<P>5. 请删除掉所有未注解IO行当中的'(CHECK)'
+<P>6. 请执行'isapnp /etc/isapnp.conf'。如果提示有错，请根据您得到的错误信息，编辑文件isapnp.conf并变更参数。如果没有错误提示，编辑文件isapnp.conf并解除描述您的猫的节段部分的'(ACT Y)'行注释。然后再执行'isapnp /etc/isapnp.conf'，系统会提示您" [[Name of your modem]] Enabled OK"
+<P>7. 请把'isapnp /etc/isapnp.conf'添加到您的/etc/rc.d/rc.local当中，方法是输入 'echo "isapnp /etc/isapnp.conf" >> /etc/rc.d/rc.local'。在每一次的系统启动的设备自动配置时，这会起到很大作用。
+<P>
+<P>如果能对大家有帮助的话，以下就是我的/etc/isapnp.conf文件的摘录（我已经在文件当中注释了，原文件的注释以##打头）
+<P>
+<P>
+<HR>
+<PRE>
+
+# Snip details ...
+## (DEBUG)
+(READPORT 0x0203)
+(ISOLATE PRESERVE)
+(IDENTIFY *)
+(VERBOSITY 2)
+(CONFLICT (IO FATAL)(IRQ FATAL)(DMA FATAL)(MEM FATAL)) # or WARNING
+
+# 我的猫卡的辩识信息
+
+## Card 1: (serial identifier e2 00 00 01 00 05 50 c3 1e)
+## Vendor Id GVC5005, Serial Number 256, checksum 0xE2.
+## Version 1.0, Vendor version 0.1
+## ANSI string -->LT Win Modem&lt;--
+##
+## Logical device id HSM0140
+##     Device support I/O range check register
+#
+
+# 我们要配置 GVC5005/256 卡
+
+(CONFIGURE GVC5005/256 (LD 0
+
+# I/O Base address 0x03f8, with a range of 8
+(IO 0 (SIZE 8) (BASE 0x03f8) )
+# IRQ 4
+(INT 0 (IRQ 4 (MODE +E)))
+# DMA 5
+(DMA 0 (CHANNEL 5))
+# DMA 7
+(DMA 1 (CHANNEL 7))
+# I/O Base Address 2  0x0100, range 8
+(IO 1 (SIZE 8) (BASE 0x0100) )
+# 卡的名称
+ (NAME "GVC5005/256[0]{LT Win Modem        }")
+# 激活之
+(ACT Y)
+# 结束配置
+))
+
+######## The parameters for my other ISA devices ##############
+ 
+## Returns all cards to the "Wait for Key" state
+(WAITFORKEY)
+</PRE>
+<HR>
+<P>
+<HR>
+<A HREF="Winmodems-and-Linux-HOWTO-3.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Winmodems-and-Linux-HOWTO-1.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Winmodems-and-Linux-HOWTO.html#toc2"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

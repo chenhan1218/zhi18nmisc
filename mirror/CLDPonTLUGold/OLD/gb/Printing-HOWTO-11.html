@@ -1,0 +1,343 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>The Linux Printing HOWTO 中文版: 如何列印到网路印表机</TITLE>
+ <LINK HREF="Printing-HOWTO-12.html" REL=next>
+ <LINK HREF="Printing-HOWTO-10.html" REL=previous>
+ <LINK HREF="Printing-HOWTO.html#toc11" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Printing-HOWTO-12.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Printing-HOWTO-10.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Printing-HOWTO.html#toc11"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s11">11. 如何列印到网路印表机</A></H2>
+
+<P>Lpd 的一个特性便是可以透过网路将报表列印到实体连接在其它机器上的印表机.
+只要仔细地组合 filter 命令稿和相关的工具程式, 你就可以让 lpr 得以透通地
+(transparently) 列印到各种网路上的印表机.
+<P>
+<H2><A NAME="ss11.1">11.1 列印至 Unix/lpd</A>
+</H2>
+
+<P>要让远端的机器能够使用你的印表机列印, 你必须将远端机器列名在
+<EM>/etc/hosts.equiv</EM> 或是 <EM>/etc/hosts.lpd</EM> 档案之中.
+(要注意 <EM>hosts.equiv</EM> 还有其它很多作用; 如果你要将一部机器列在这儿,
+请确定你知道你在做什麽). 你也可以利用 <EM>rs</EM> 
+属性来限定其它机器上的某些特定使用者才能使用你的印表机. 请看 <CODE>
+<A HREF="http://www.picante.com/~gtaylor/pht/man/lpd.8.html">lpd</A></CODE> 的线上手□以取得这方面的讯息.
+<P>
+<H3>用 <CODE>lpd</CODE></H3>
+
+<P>要列印到另一部机器, 你要在 <EM>/etc/printcap</EM> 中加上这样的记录,
+<BLOCKQUOTE><CODE>
+<PRE>
+# REMOTE djet500
+lp|dj|deskjet:\
+        :sd=/var/spool/lpd/dj:\
+        :rm=machine.out.there.com:\
+        :rp=printername:\
+        :lp=/dev/null:\
+        :sh:
+</PRE>
+</CODE></BLOCKQUOTE>
+
+请注意在本地的机器还是要有一个由 <CODE>lpd</CODE> 管理的列印暂存器目录.
+如果远端的机器离线或是忙不过来, 
+列印工作会留在本地的暂存区中直到送出去为止.
+<P>
+<H3>用 <CODE>rlpr</CODE></H3>
+
+<P>你也可以用 <EM>rlpr</EM> 将列印工作直接送到远端机器的伫列中,
+省下设定 lpd 的麻烦. 假如你偶尔才要列印到其它不同的印表机, 
+这个方法就最有用. 引一段 <EM>rlpr</EM> 的声明:
+<P>
+<P>rlpr 利用 TCP/IP 将列印工作送到网路上任何位置的 lpd 伺服器.
+<P>
+<P>与 lpr 不同的是, 你列印来源端的机器 *不需要* 明确地知道远端的印表机,
+(例如透过 <EM>/etc/printcap</EM>) 因此有相当大的弹性, 
+管理的负担也比较轻.
+<P>
+<P>
+<P>rlpr 可以用在任何使用传统 lpr 的地方, 而且和传统的 BSD lpr 相容.
+<P>
+<P>rlpr 最大的好处在於可以 *从任何地方列印到任何地方* 
+而不用管列印来源端的系统设定. 它可以像传统的 lpr 做为一个 filter,
+而让在远端机器上执行的客户端像 netscape, xemacs 
+等能够轻易地列印报表到你本地的机器.
+<P>
+<P>你可以在 <CODE>
+<A HREF="ftp://metalab.unc.edu/pub/Linux/system/printing/">Metalab</A></CODE> 找到 rlpr.
+<P>
+<H2><A NAME="ss11.2">11.2 列印到 Win95, WinNT, LanManager, 或 Samba 上的印表机</A>
+</H2>
+
+<P>在 Printing to Windows mini-HOWTO 中有比这儿更多的资讯.
+<P>透过 <CODE>
+<A HREF="http://www.picante.com/~gtaylor/pht/man/smbclient.1.html">smbclient</A></CODE>
+这个程式 (samba 套件的一部份) 可以将 lpd 伫列导向到架构在 TCP/IP
+之上的 SMB 列印服务. Samba 包含了一个命令稿 <CODE>smbprint</CODE> 来做这件事.
+简单地说, 替这样的印表机在列印暂存器工作目录 (spool directory) 中加上设定档,
+然後将 <EM>if</EM> 设为 <CODE>smbprint</CODE> 命令稿.
+<P>在 <EM>/etc/printcap</EM> 中的记录看起来应该像这个样子:
+<BLOCKQUOTE><CODE>
+<PRE>
+lp|remote-smbprinter:\
+    :lp=/dev/null:sh:\
+    :sd=/var/spool/lpd/lp:\
+    :if=/usr/local/sbin/smbprint:
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>你应该阅读一下 <CODE>smbprint</CODE> 命令稿中的说明以得到更多相关的讯息.
+<P>你也可以不管 <CODE>lpd</CODE>, 直接用 <CODE>smbclient</CODE> 将档案送到 SMB 
+列印服务. 请参照线上手□.
+<P>
+<H2><A NAME="ss11.3">11.3 列印到 NetWare 上的印表机</A>
+</H2>
+
+<P>ncpfs 套件中包含了一个名为 <CODE>nprint</CODE> 的工具程式, 它提供如同 <CODE>smbprint</CODE>
+一般的功能, 只不过适用的对象是 Netware. 你可以在 
+<A HREF="ftp://metalab.unc.edu/pub/Linux/system/filesystems/ncpfs/">Metalab</A> 取得 ncpfs.
+下面是从 0.16 版的 LSM 中节录出来的:
+<BLOCKQUOTE>
+With ncpfs you can mount volumes of your netware server under
+Linux. You can also print to netware print queues and spool netware
+print queues to the Linux printing system. You need kernel 1.2.x or
+1.3.54 and above. ncpfs does NOT work with any 1.3.x kernel below
+1.3.54.
+<P>利用 ncpfs, 你可以在 Linux 下挂上你的 netware 伺服器上的目录.
+你也可以列印到 netware 的列印伫列以及将 netware 的列印伫列排存(spool)
+到 Linux 的列印系统. 你需要 1.2.x 或 1.3.54 以上(含 1.3.54) 的核心. ncpfs
+无法在 1.3.54 以前的任何一版 1.3.x 核心下运作.
+</BLOCKQUOTE>
+<P>
+<P>要使 <CODE>nprint</CODE> 透过 lpd 运作, 你要写个小小的 shell script 将 stdin
+列印到 Netware 上的印表机, 并设成 lpd 列印伫列的 <EM>if</EM>. 你可能会有:
+<BLOCKQUOTE><CODE>
+<PRE>
+sub2|remote-NWprinter:\
+        :lp=/dev/null:sh:\
+        :sd=/var/spool/lpd/sub2:\
+        :if=/var/spool/lpd/nprint-script:
+</PRE>
+</CODE></BLOCKQUOTE>
+
+<CODE>nprint-script</CODE> 看起来可能大致上像:
+<BLOCKQUOTE><CODE>
+<PRE>
+#! /bin/sh
+# You should try the guest account with no password first!
+/usr/local/bin/nprint -S net -U name -P passwd -q printq-name -
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss11.4">11.4 列印到 EtherTalk (Apple) 上的印表机</A>
+</H2>
+
+<P>netatalk 套件包含了像 <CODE>nprint</CODE> 和 <CODE>smbclient</CODE> 的东西. 
+其他人已经写下了使用 Apple 网路列印的程序, 远比我所能写的好得多; 请参阅 
+<A HREF="http://thehamptons.com/anders/netatalk/">Linux Netatalk-HOWTO</A>.
+<P>
+<H2><A NAME="ss11.5">11.5 列印到 HP 或其它的以太网路(ethernet) 印表机</A>
+</H2>
+
+<P>有些 HP 和其它厂牌的印表机提供了可以直接用 lpd 列印的以太网路介面.
+你应该遵照印表机或其网路介面所附的指示, 但是通常这种印表机上 "跑" 的是 lpd,
+而且提供一到多个你可以使用的伫列. 举例来说, 一部 HP 可能可以用这样的 printcap:
+<BLOCKQUOTE><CODE>
+<PRE>
+lj-5|remote-hplj:\
+        :lp=/dev/null:sh:\
+        :sd=/var/spool/lpd/lj-5:\
+        :rm=printer.name.com:rp=raw:
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>具有 Jet Direct 介面的 HP Laserjet 印表机通常支援两个内建的 lpd 伫列 - "raw"
+接受 PCL (可能也接受 Postscript), 以及 "text" 接受单纯的 ascii
+(而且会自动地克服阶梯效应). 如果你有的是 JetDirect Plus3 三埠的介面,
+伫列的名称则为 "raw1", "text2" 等等.
+<P>注意 ISS 公司己经找到某一类的过量攻击(denial of service attacks)
+可以导致 HP Jetdirect 界面当掉. 大部份是在 98 年的秋天开始被发现的.
+<P>在一个大型的环境, 特别是个有些印表机不支援 PostScript 的大型环境中,
+架设一部专门的列印伺服器, 让所有的机器都列印到这部伺服器并让所有的 ghostscript
+工作都在这部伺服器上面执行可能会有用.
+<P>这样子也可以让你的 Linux 做为印表机的排存伺服器(spool server),
+如此一来你的网路使用者便可以快一点完成他们的列印工作然後继续手边的事情,
+而不必等待印表机印完先前别人所送出的报表. 如果你有无法调整的旧型 HP Laserjets;
+也可以这样做以降低印表机壅塞的机率.
+<P>要这样做, 先在你的 linux 机器上设定一个列印伫列指到配有以太网路介面 HP LJ
+(如前所述). 现在将所有在你区域网路上的客户端设定指到这个 Linux 伫列
+(如前面□例中的 lj-5).
+<P>有些 HP 网路印表机似乎不理会客户端送出的标题页(banner page) 设定. 
+你可以关掉它们内部自行产生的标题页, 用 telnet 连接到印表机, 按两下 return 键,
+打入 "banner: 0", 接著打入 "quit". 还有其它可以调整的设定也是用这个方式; 打入
+"?" 可以看到它们的表列.
+<P>你可以用 HP 的 
+<A HREF="http://www.hp.com/go/webjetadmin">WebJet</A>
+软体来控制全部的设定. 这套软体是以 daemon 的方式执行, 接受在指定埠号上的 http
+连线需求(http request). 它提供 http 表格(form) 及 Java applets
+来控制网路上的 HP 印表机. 理论上, 它也可以控制 Unix 的印表机伫列,
+但是这得使用极不安全的的 rexec 服务. 我不建议使用这个功能.
+<P>
+<H3>列印到比较旧的 HP 印表机</H3>
+
+<P>有些印表机 (或是将印表机连上网路的装置) 只支援很阳春的 TCP 连线.
+在这一类中较著名的便是早期的 JetDirect (包括一些 JetDirectEx) 介面卡. 基本上, 
+要列印到这类的印表机, 你必须建立到印表机上某个特定埠 (典型是在 9100, 
+或是三埠机种的 9100, 9101 和 9102) 的 TCP 连接, 然後将你的报表送进去. 
+LPRng (如果你正在读这一段, 你真的该改用它) 内建支援将列印工作送到任意的
+TCP 埠, 但是 BSD 的 lpd 就不是这麽简单了. 我们可以用 Perl
+来实做, 或是用其它的方式:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#!/usr/bin/perl
+# Thanks to Dan McLaughlin for writing the original version of this
+# script (And to Jim W. Jones for sitting next to Dan when writing me
+# for help ;)
+
+$fileName = @ARGV[0];
+
+open(IN,"$fileName") || die "Can't open file $fileName";
+
+$dpi300     = "\x1B*t300R";
+$dosCr      = "\x1B&amp;k3G";
+$ends = "\x0A";
+
+$port =  9100 unless $port;
+$them = "bach.sr.hp.com" unless $them;
+
+$AF_INET = 2;
+$SOCK_STREAM = 1;
+$SIG{'INT'} = 'dokill';
+$sockaddr = 'S n a4 x8';
+
+chop($hostname = `hostname`);
+($name,$aliases,$proto) = getprotobyname('tcp');
+($name,$aliases,$port) = getservbyname($port,'tcp')
+    unless $port =~ /^\d+$/;;
+($name,$aliases,$type,$len,$thisaddr) =
+        gethostbyname($hostname);
+($name,$aliases,$type,$len,$thataddr) = gethostbyname($them);
+$this = pack($sockaddr, $AF_INET, 0, $thisaddr);
+$that = pack($sockaddr, $AF_INET, $port, $thataddr);
+
+if (socket(S, $AF_INET, $SOCK_STREAM, $proto)) {
+#    print "socket ok\n";
+}
+else {
+    die $!;
+}
+# Give the socket an address.
+if (bind(S, $this)) {
+#    print "bind ok\n";
+}
+else {
+    die $!;
+}
+
+# Call up the server.
+
+if (connect(S,$that)) {
+#    print "connect ok\n";
+}
+else {
+    die $!;
+}
+
+# Set socket to be command buffered.
+
+select(S); $| = 1; select(STDOUT);
+
+#    print S "@PJL ECHO Hi $hostname! $ends";
+#    print S "@PJL OPMSG DISPLAY=\"Job $whoami\" $ends";
+#    print S $dpi300;
+
+# Avoid deadlock by forking.
+
+if($child = fork) {
+    print S $dosCr;
+    print S $TimesNewR;
+
+    while (&lt;IN>) {
+        print S;
+    }
+    sleep 3;
+    do dokill();
+} else {
+    while(&lt;S>) {
+        print;
+    }
+}
+
+sub dokill {
+    kill 9,$child if $child;
+}
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss11.6">11.6 替远端印表机执行 <EM>if</EM></A>
+</H2>
+
+<P>lpd 一个不寻常的地方在於如果是远端印表机, <EM>if</EM> 不会被执行. 
+如果你发现你需要执行 <EM>if</EM>, 你可以设定双重伫列(double queue) 并重新伫列报表.
+举个例子, 看一下这个 <EM>printcap</EM>:
+<BLOCKQUOTE><CODE>
+<PRE>
+lj-5:\
+        :lp=/dev/null:sh:\
+        :sd=/var/spool/lpd/lj-5:\
+        :if=/usr/lib/lpd/filter-lj-5:
+lj-5-remote:lp=/dev/null:sh:rm=printer.name.com:\
+        :rp=raw:sd=/var/spool/lpd/lj-5-raw:
+</PRE>
+</CODE></BLOCKQUOTE>
+
+和相关的 <CODE>filter-lj-5</CODE> 命令稿(script):
+<BLOCKQUOTE><CODE>
+<PRE>
+#!/bin/sh
+gs &lt;options> -q -dSAFER -sOutputFile=- - | \
+        lpr -Plj-5-remote -U$5
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>只有在 lpr 以监控程式(daemon) 模式执行的时候, <EM>-U</EM> 选项才有作用,
+这个选项会正确地设定第二重伫列中的送件人姓名. 
+你可能应该用更可靠的方法取得送件人姓名, 因为有些时候它并不是第五个参数.
+请参照 <EM>
+<A HREF="http://www.picante.com/~gtaylor/pht/man/printcap.5.html">printcap</A></EM>
+的线上手□.
+<P>
+<H2><A NAME="ss11.7">11.7 从 Windows 列印</A>
+</H2>
+
+<P>利用 SAMBA 套件可以直接支援以 SMB 协定从 Windows (或许 OS/2) 客户端列印到 Linux
+伺服器, 这个套件同时也支援将你的 Linux 档案系统分享给 Windows 客户端.
+<P>Samba 包含了相当完整的文件, 也有一份很不错的 Samba FAQ 涵盖到这方面的内容.
+你可以在 Linux 上设置 magic filter 然後以 PostScript 列印, 或是在每一部 Windows
+机器上安装印表机专用的驱动程式然後为他们设定一个不用任何 filter 的伫列. 使用
+Windows 驱动程式有些时候会有比较好的输出, 但是如果有很多部 Windows 机器,
+管理者就比较麻烦. 所以先试试看 PostScript 吧!
+<P>
+<H2><A NAME="ss11.8">11.8 从 Apple 列印</A>
+</H2>
+
+<P>Netatalk 支援由 Apple 客户端透过 EtherTalk 列印. 请参照
+<A HREF="http://thehamptons.com/anders/netatalk/">Netatalk HOWTO Page</A>
+以取得更进一步的资讯.
+<P>
+<H2><A NAME="ss11.9">11.9 从 Netware 列印</A>
+</H2>
+
+<P>ncpfs 套件含有一个叫作 pserver 的监控程式(daemon) 可以提供服务给 NetWare
+的列印伫列. 据我所了解, 这个系统必须搭配 Bindery-based 的 NetWare, 像是
+2.x, 3.x, 或是使用 bindery 存取的 4.x 版本.
+<P>要取得更进一步关於 ncpfs 和其 pserver 程式的资讯, 请参照
+<A HREF="ftp://ftp.gwdg.de/pub/linux/misc/ncpfs/">ncpfs 的 FTP 站</A>.
+<P>
+<HR>
+<A HREF="Printing-HOWTO-12.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Printing-HOWTO-10.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Printing-HOWTO.html#toc11"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

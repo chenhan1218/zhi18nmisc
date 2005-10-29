@@ -1,0 +1,110 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>NFS-Root Mini-Howto: 伺服器的设定</TITLE>
+ <LINK HREF="NFS-Root-4.html" REL=next>
+ <LINK HREF="NFS-Root-2.html" REL=previous>
+ <LINK HREF="NFS-Root.html#toc3" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+<A HREF="NFS-Root-4.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="NFS-Root-2.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="NFS-Root.html#toc3"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s3">3. 伺服器的设定</A></H2>
+
+<H2><A NAME="ss3.1">3.1 编译核心</A>
+</H2>
+
+<P>把 <EM>RARP</EM> 支援编译到核心中是个好方法.
+如果在你不想在启动时传递额外的参数给核心, 你必须将他编译到核心中.
+但如果客户端不在同一个子网路区段中, 这个方式便没有作用.
+<P>工作站的核心则必须至少有下列的支援:
+<UL>
+<LI><EM>NFS</EM> 档案系统支援. (不需要把 <EM>ext2</EM> 档案系统的支援编译到核心中, 以模组方式编译就够了.)</LI>
+<LI>启动 "Root on NFS" 的功能.</LI>
+<LI>网路卡的 Ethernet 驱动程式必须被编译在核心中.</LI>
+<LI>依据你的需求而将 NFS 根目录系统下面的 <EM>RARP</EM> 或 <EM>BOOTP</EM> 编译到核心中.
+(也就是当 make config 执行时, 在 NFS 选项之後的设定.)</LI>
+</UL>
+<P>如果在你不想在工作站开机时传递参数给核心, 你必须把根目录设备设定成 0:255.
+做法是用 <CODE>mknod /dev/nfsroot b 0 255</CODE> 建立一个装置控制档.
+有了这个档案後, 你便可以把核心内的根目录路径以 <CODE>rdev &lt;<EM>kernel-image</EM>&gt; /dev/nfsroot</CODE> 指定.
+<H2><A NAME="ss3.2">3.2 建立根目录档案系统</A>
+</H2>
+
+<H3>复制档案系统</H3>
+
+<P><EM>警告: 这些指令可能可以正常作用, 但并不表示可以在其他环境下作用.
+对於建立根目录档案系统的较佳方式请参考 Ofer Maor <CODE>&lt;ofer@hadar.co.il&gt;</CODE> 所写的 NFS-Root-Client mini howto.</EM> 
+<P>决定了根目录的放置路径後, 可以用下面的指令建立
+<CODE>mkdir -p &lt;<EM>路径</EM>&gt;</CODE>, 接著执行 <BR>
+<CODE>tar cClf / - | tar xpCf &lt;<EM>路径</EM>&gt; -</CODE>.
+<P>如果你不用 LILO 启动核心, 根目录路径必须置於
+<CODE>/tftpboot/&lt;<EM>IP 位置</EM>&gt;</CODE>. 
+如果你不喜欢这个位置, 你可以修改核心原始码中最顶层的 Makefile, 找到类似下面这行并加以修改<BR>
+<CODE>NFS_ROOT = -DNFS_ROOT="\"/tftpboot/%s\""</CODE><BR>
+如果你改了这个, 你必须重新编译核心.
+<P>
+<H3>根目录系统所需的改变</H3>
+
+<P>首先清除不需要的档案, 并且检查 /etc/rc.d 的指令稿.
+下面是一些重点:
+<UL>
+<LI>首先是 eth0 的设定.
+工作站启动时最少要启动 eth0, 让工作站使用伺服器的 IP 位置可不是一个好主意.
+(作者早期便犯过这个错误)</LI>
+<LI>另一个重点是 /etc/fstab 的设定.
+他应该设成 nfs 档案系统.
+</LI>
+<LI> <B>警告</B>: 不要把伺服器的根目录系统与客户端工作站的根目录系统弄混了.
+(我曾经改了伺服器上的 rc.inet1, 并怀疑为何工作站仍然不能运作)</LI>
+</UL>
+<P>
+<H3>将档案系统分享出去</H3>
+
+<P>要将根目录系统分享给工作站的指令请参照 <CODE>exports(5)</CODE>.
+在改变设定档後, 你必须重新起动 nfsd 与 mountd.
+在 RedHat 下, 你只要执行
+<CODE>/etc/rc.d/init.d/nfs stop ; /etc/rc.d/init.d/nfs start</CODE>
+就可以了.
+<P>
+<H3>设定 RARP</H3>
+
+<P>在网路上必须有一个 <EM>RARP</EM> 伺服器.
+如果启动时同时没有设定 nfsroot 参数, 则 <EM>RARP</EM> 伺服器必须设在 <EM>NFS</EM> 伺服器上.
+通常都将 <EM>RARP</EM> 伺服器设在 <EM>NFS</EM> 伺服器上.
+要完成这个设定, 你的核心必须要有 <EM>RARP</EM> 支援.
+<P>并且必须执行下面的指令 (通常放在 <CODE>/etc/rc.d</CODE> 里面):
+<P><CODE>/sbin/rarp -s &lt;<EM>ip 位置</EM>&gt; &lt;<EM>硬体位置</EM>&gt;</CODE>
+<P> 其中
+<DL>
+<DT><B>ip 位置</B><DD><P>是工作站的 IP 位置, 而
+<DT><B>硬体位置</B><DD><P>则是工作站网路卡的乙太网路位置.
+</DL>
+<P>例如: <CODE>/sbin/rarp -s 131.131.90.200 00:00:c0:47:10:12</CODE>
+<P>你也可以使用符号名称来取代 IP 位置, 但伺服器必须能找到该名称所对应的 IP 位置.
+(设定在 /etc/hosts 中, 或是经由 <EM>DNS</EM> 查询)
+<P>
+<H3>数定 BOOTP</H3>
+
+<P>要设定 <EM>BOOTP</EM>, 你必须编辑 <CODE>/etc/bootptab</CODE>.
+请参阅 <EM>bootpd(8)</EM> 以及 <EM>bootptab(5)</EM> 说明页.
+<P>
+<H3>找寻硬体位置</H3>
+
+<P>如果我不知道网路卡的硬体位置, 我该如何查询?
+<UL>
+<LI>利用你所制作的核心磁片开机, 并且找寻网路卡被确认的部分.
+通常都会有 6 组 16 进位的位元组, 这应该就是网路卡的硬体位置.</LI>
+<LI>用其他支援 TCP/IP 的作业系统启动工作站.
+然後从伺服器 ping 这个工作站, 接著利用下面的指令查询伺服器上的 ARP 快取.<BR>
+<CODE>/sbin/arp -a</CODE></LI>
+</UL>
+<P>
+<HR>
+<A HREF="NFS-Root-4.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="NFS-Root-2.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="NFS-Root.html#toc3"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

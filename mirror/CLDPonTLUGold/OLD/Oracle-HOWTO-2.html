@@ -1,0 +1,158 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Oracle Database HOWTO: 安裝 Oracle 軟件</TITLE>
+ <LINK HREF="Oracle-HOWTO-3.html" REL=next>
+ <LINK HREF="Oracle-HOWTO-1.html" REL=previous>
+ <LINK HREF="Oracle-HOWTO.html#toc2" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Oracle-HOWTO-3.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Oracle-HOWTO-1.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Oracle-HOWTO.html#toc2"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s2">2. 安裝 Oracle 軟件</A></H2>
+
+<H2><A NAME="ss2.1">2.1 伺服器的準備工夫</A>
+</H2>
+
+<H3>建立 Oracle 用戶</H3>
+
+<P>如大家所料，我們需要一個用戶來保存 Oracle 的資料庫。因為我們不想重新鏈結 Oracle 核心（容後再談），我們要接受 Oracle 內定的使用者及群組名稱，即使用者為 ORACLE，而群組為 DBA。
+<P>
+<OL>
+<LI>以 root 的身分簽入
+<P>
+</LI>
+<LI>建立使用者 oracle 及群組 dba。
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+$ groupadd dba 
+$ useradd  oracle
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</LI>
+<LI>確保使用者 oracle 有初始目錄 (home directory)
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+$ mkdir /home/oracle
+$ mkdir /home/oracle/7.3.3.0.0 (Oracle 的版本)
+$ chown -R oracle.dba /home/oracle
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</LI>
+</OL>
+<P>
+<H2><A NAME="ss2.2">2.2 從光碟安裝</A>
+</H2>
+
+<P>不幸地，SCO 光碟的 Oracle 安裝程式不能運作。使用者會遇到一連串不同的問題，從 core dump 到當機。所以我們要自己從光碟把檔案抄到硬碟及解壓：
+<P>（確保光碟已掛 (mount) 到系統上）。
+<OL>
+<LI>以 Oracle 的身份簽入</LI>
+<LI>到 <CODE>/home/oracle/7.3.3.0.0</CODE> 目錄。</LI>
+<LI>從光碟抄出把所有安裝檔案
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+$ cp -a /mnt/cdrom/* .
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</LI>
+<LI>解壓光碟上的所有 Oracle 檔案。
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+$ find . -name *_ -exec ~/7.3.3.0.0/orainst/oiuncomp {} \;
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</LI>
+</OL>
+<P>
+<H2><A NAME="ss2.3">2.3 安裝後的工作</A>
+</H2>
+
+<H3>Root 的工作</H3>
+
+<P>把以下數行加到 <CODE>/etc/profile</CODE> 或加到每一個會使用 Oracle 的用家的 <CODE>.profile</CODE> 中。
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# Oracle 專用
+ORACLE_HOME=/home/oracle/7.3.3.0.0
+ORACLE_SID=orcl
+ORACLE_TERM=vt100
+export ORACLE_HOME ORACLE_SID ORACLE_TERM
+
+# 為 Oracle 修改路徑
+PATH="$PATH:$ORACLE_HOME/bin"
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+<P>
+<P>我們也需要修改 Oracle ulimit 提升工具的擁有人及許可 (permissions)。
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+$ chown root.root $ORACLE_HOME/bin/osh
+$ chmod u+s $ORACLE_HOME/bin/osh
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+<P>
+<H3>Oracle 的工件</H3>
+
+<P>修改 Oracle 檔案的許可來確保操作正確。
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+$ chmod +x $ORACLE_HOME/bin/*
+$ chmod u+s $ORACLE_HOME/bin/oracle
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+<P>
+<P>Oracle 的工具要求把訊息放在 <CODE>$ORACLE_HOME/tool_name/mesg</CODE> 目錄。所以我們要把及 <CODE>msg_ship</CODE> 目錄下的<CODE>msg</CODE> 檔案移到 <CODE>mesg</CODE> 目錄下。
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+$ mv $ORACLE_HOME/plsql/mesg/mesg_ship/* $ORACLE_HOME/plsql/mesg/.
+$ mv $ORACLE_HOME/rdbms/mesg/mesg_ship/* $ORACLE_HOME/rdbms/mesg/.
+$ mv $ORACLE_HOME/svrmgr/mesg/mesg_ship/* $ORACLE_HOME/svrmgr/mesg/.
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+
+如果沒有以下目錄，要建立它們：
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+$ mkdir $ORACLE_HOME/rdbms/log
+$ mkdir $ORACLE_HOME/rdbms/audit
+$ mkdir $ORACLE_HOME/network/log
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+<H3>可移除的東西</H3>
+
+<P>以下目錄可以安全地移除：
+<UL>
+<LI><CODE>$ORACLE_HOME/guicommon2/</CODE></LI>
+<LI><CODE>$ORACLE_HOME/ctx/</CODE></LI>
+<LI><CODE>$ORACLE_HOME/md/</CODE></LI>
+<LI><CODE>$ORACLE_HOME/mlx/</CODE></LI>
+<LI><CODE>$ORACLE_HOME/precomp/</CODE></LI>
+<LI><CODE>$ORACLE_HOME/slax/</CODE></LI>
+</UL>
+<HR>
+<A HREF="Oracle-HOWTO-3.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Oracle-HOWTO-1.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Oracle-HOWTO.html#toc2"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

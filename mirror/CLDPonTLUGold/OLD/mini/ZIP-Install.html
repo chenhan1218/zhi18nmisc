@@ -1,0 +1,954 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" content="text/html; charset=big5">
+<TITLE>Linux Quota mini-HOWTO 中譯版</TITLE>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+<PRE>
+Installing Linux on ZIP disk using ppa ZIP Drive Mini-Howto
+John Wiggins,  jwiggins@comp.uark.edu
+v0.7, 26 January 1998
+
+中文翻譯
+許遠明, Yeuan-Ming_Sheu@brown.edu
+v0.7-1, 10 March 1998
+
+本文僅適用於列表機介面版的  ZIP  機，安裝可攜式或備份的  Linux 系統在 ZIP 
+磁片上。
+
+
+1. 聲明
+
+   NOTE: 因沒有  IDE 版的  ZIP 機，所以我不懂該機工作原理，也請不要問我。
+
+   安裝 Debian 的部份基本上只是拷貝(原作者的內容)，沒有做什麼修改。 可能有
+   些指令會重複。
+
+   本文假設如下:
+
+   你有印表機版的 ZIP 機 ( 因 ZIP Plus 有兩種連接方式，我假設亦可使用。)
+
+   你已經安裝並可使用 Linux 了, 本文不是用於第一次安裝 Linux 的情況。
+
+   你的核心(Kernel)已有 ppa 支援，或有 ppa 模組(Module)且已經載入。
+
+   ---------------------------------------------------------------------
+   譯註:
+
+       本譯者對於因翻譯或原文內容所造成的任何的狀況或損失，一概不負任何
+       責任。
+
+       (國內的讀者可能會對於上面的聲明覺得很奇怪，譯者看過許多不可思憶
+        且可笑的事，為了免除不必要的困擾，請勿見怪。)
+        
+   ---------------------------------------------------------------------
+
+2. 介紹
+
+   本文分為四部分，每部分描述如何使用印表機版的 ZIP 機在一片 100MB 的
+   ZIP 磁片上安裝最基本的 Linux 系統。
+
+   第一部分描述如何設定 ZIP 磁片，適用於 Red Hat 和 Slackware 的版本上。
+   第二﹑第三﹑第四部分則分別描述如何在 ZIP 磁片上安裝 Red Hat 4.2, 
+   Slackware 2.2 和 Debian 1.2。
+
+
+   NOTE: 我了解到現在 Red Hat 5.0 已經發行，但在課業和工作中，(先讓我這
+   麼說吧)，在我有空在上面努力可能已經是五月底了。  而且我也希望能測試出
+   其他的版本。
+   
+  
+2.1. 新東西
+
+   我終於有足夠時間來更新本文件，(雖然我真正應該準備一個社會學考試。)
+   感謝那些送 email 給我意見的人。
+
+   本文件中新增的部分:
+
+   . Debian 版本
+
+   . 在磁片上的 LILO
+
+   . 新版的 Red Hat (4.2 Biltmore)
+
+   . 網路的設定 (For Red Hat，未測試)
+
+
+2.2. 文件慣例
+
+   . 表示下列文字是命令:
+
+     ==>
+
+   . 表示一些值得注意的東西:
+
+     ------------------------------------------
+     NOTE:
+     ------------------------------------------
+
+   . 表示是螢幕的內容:
+
+     ------------------------------------------
+
+
+     ------------------------------------------
+
+   . 譯註:
+
+     ------------------------------------------
+     譯註:
+
+     ------------------------------------------
+ 
+
+2.3. 更新
+
+    雖然機會很少，若有任何的更新，請檢視
+
+    http://comp.uark.edu/~jwiggins/linuxZIP/
+
+    ---------------------------------------------------------------------
+    譯註:
+
+        如原文作者相同，譯者也很忙，雖然機會很少，如有任何的更新，請檢視
+        中文文件計劃網頁:
+
+        http://www.linux.org.tw/CLDP/
+   
+    ----------------------------------------------------------------------
+
+   
+2.4. 參考資料
+
+    . Installation-HOWTO
+
+    . SCSI-HOWTO
+
+    . NET-3-HOWTO
+
+    . ZIP-Drive (mini-HOWTO)
+  
+    . ParPort kernel patch (gives access to pass-through printer-port)
+        http://www.cyberelk.demon.co.uk/parport/
+
+
+    -----------------------------------------------------------------
+    譯註:
+
+        部分的參考資料有中文版，請檢閱中文文件翻譯計劃網頁:
+   
+        http://www.linux.org.tw/CLDP/
+
+    ------------------------------------------------------------------
+
+
+2.4.1. 感謝和提供者名單
+
+    . Slackware 2.2 感謝 Michael Littlejohn <mike@mesa7.mesa.colorado.edu>
+
+    . Debian 1.2 感謝 John D. Blair <jdblair@uab.edu>
+
+    . LILO 的資訊和許多其他的內容感謝 Darcy Boese <possum@niagara.com>
+      和 Javier Rodriguez <jrodrigu@nextgeninter.net.mx>
+
+
+3.  設定 ZIP 磁片
+
+   (適用於 Red Hat 和 Slackware 版本。) 在開始之前先確定你可以使用 ZIP 機;
+   在 kernel(核心) 中有支援 ppa 或是安裝 ppa 的模組(module)。
+   有一個簡單的方法可以檢查:
+
+   ==> dmesg
+
+   假如 dmesg 的內容相當長，你可以管式輸送(pipe)到 more 。
+
+   ------------------------------------------------------
+   譯註: 即是
+  
+       ==> dmesg | more
+   
+   ------------------------------------------------------
+
+   下列是我的輸出的一部分:
+
+   ______________________________________________________________________
+   scsi0 : PPA driver version 0.26 using 4-bit mode on port 0x3bc.
+   scsi : 1 host.
+     Vendor: IOMEGA    Model: ZIP 100           Rev: D.08
+     Type:   Direct-Access                      ANSI SCSI revision: 02
+   Detected scsi removable disk sda at scsi0, channel 0, id 6, lun 0
+   SCSI device sda: hdwr sector= 512 bytes. Sectors= 196608 [96 MB] [0.1 GB]
+     sda: Write Protect is off
+     sda: sda1 sda2
+   ______________________________________________________________________
+
+
+   假如你看到的東西像:
+
+   ______________________________________________________________________
+       scsi : 0 hosts.
+       scsi : detected total.
+   ______________________________________________________________________   
+        
+
+   表示你有 SCSI 的支援，但沒有發現 ZIP 機。
+
+
+3.1. 分割(Partitioning) ZIP 磁片
+
+   要分割 ZIP 磁片，執行 fdisk
+
+   ==> fdisk /dev/sda
+
+   下面列出我設定的分割表(Partition table):
+
+   ______________________________________________________________________
+   Disk /dev/sda: 64 heads, 32 sectors, 96 cylinders
+   Units = cylinders of 2048 * 512 bytes
+  
+      Device  Boot   Begin    Start      End   Blocks   Id  System
+    /dev/sda1            1        1       81    82928   83  Linux native
+    /dev/sda2           82       82       96    15360   82  Linux swap
+   ______________________________________________________________________
+
+
+   因為我想要能夠使用這個(ZIP 磁片)在任何機器上，我決定要有一個 Swap 分區
+   (Partition)。
+
+
+3.2. 格式化(Formatting)和掛載(Mounting) ZIP 磁片
+
+    在執行 fidsk 之後，格式化新的分區(Partition): 
+    
+     ==> mke2fs -c /dev/sda1
+
+    最後你將需要掛載上 ZIP 磁片:
+
+      ==> mount /dev/sda1 /iomega -t ext2
+
+
+    ---------------------------------------------------
+    譯註:
+
+        你也需要格式化 Swap 分區:
+
+         ==> mkswap -c /dev/sda2
+
+    ---------------------------------------------------
+
+
+3.3. 建立開機磁片(Boot disk)
+
+   因為 ppa (印表機埠)版本的 ZIP 驅動程式不是真正的 SCSI device(裝置)，即它
+   不是可開機的裝置。  所以需要一個核心(kernel)含有 ppa 支援而不是模組化的
+   開機磁片。
+
+
+3.3.1.  設定和製作核心(Kernel)
+
+   首先你需要設定(Configure)和製作(Make)一個核心(kernel)，其中要有啟動 ppa
+   支援的設定而不只是設定成可載入式的模組。
+
+   為了要有 ppa 的選擇，選擇 SCSI support:
+ 
+   --------------------------------------------------
+    SCSI support (CONFIG_SCSI) Y/m/n/?
+   --------------------------------------------------
+
+   另外，SCSI disk support:
+
+   --------------------------------------------------
+    SCSI disk support (CONFIG_BLK_DEV_SD) Y/m/n/?
+   --------------------------------------------------
+
+   最後，在 SCSI low-level drivers 之下是 ppa support:
+
+   ----------------------------------------------------------------------
+    IOMEGA Parallel Port ZIP drive SCSI support (CONFIG_SCSI_PPA) Y/m/n/?
+   ----------------------------------------------------------------------
+
+     
+   再一次提醒，確定不要包含 ppa 成為模組(module)而是要在核心(kernel)中。
+   另外，因未使用 parport kernel patch (見 4.1)， ppa 驅動程式不允許 ZIP 
+   機上的被動式埠給印表機使用，你可能必須在 parallel printer support 上
+   選擇 no:
+
+   --------------------------------------------------------
+   Parallel printer support (CONFIG_PRINTER) N/y/m/?
+   --------------------------------------------------------
+
+   ------------------------------------------------------------------
+   NOTE: 關於 ppa 驅動程式進一步的資料，請參考 ZIP-Drive mini-HOWTO。
+   ------------------------------------------------------------------
+     
+
+   一旦設定好核心(kernel)，製作(make)核心:
+
+   ==> make dep; make clean; make zImage
+
+   新的核心(kernel)應該出現在 arch/i386/boot/zImage。
+
+
+3.3.2.1.  安裝 LILO
+
+   對於那些必須或是不管如何就是要有數個核心((kernel)在同一張磁片上的人，
+   或僅是要能夠傳參數(例如單一使用者模式)，我收到 email 關於如何在磁片上
+   安裝 LILO。  
+
+
+3.3.2.1.1.  建立 ext2 檔案系統
+
+   在磁片上建立 ext2 檔案系統，只要做和 ZIP 磁片相同的命令:
+
+   ==> mke2fs -t /dev/fd0
+
+
+3.3.2.1.2.  拷貝基本的檔案
+
+   再來是確定有一個目錄(directory)可做掛載點(mount point)，和掛載軟碟
+   (我使用 /mnt/floppy):  
+
+   ==> mount /dev/fd0 /mnt/floppy -t ext2
+
+   為了要可順利開機，你需要用你現在安裝好的 Linux 中 LILO 使用的相同檔案。
+   
+   ------------------------------------------------------------------
+   NOTE: 這些檔案是從我的機器中出現的位置，可能不是每個人的都相同。
+   ------------------------------------------------------------------
+
+   ==> cp /boot/boot.b /mnt/floppy
+
+   ==> cp /boot/map /mnt/floppy
+
+   ==> cp /usr/src/linux/arch/i386/boot/zImage /mnt/floppy/vmlinuzDESK
+       
+
+   現在為了建立 LILO 的 config 檔案，我忘了要有 liloconfig 這個程式 (感謝
+   Javier Rodriguez 提供這資料)。 首先給在 ZIP 磁片上的那些核心建立 LILO 
+   的 config 檔案 (/mnt/floppy/lilo.conf)。 下面是我使用的，能讓我同時有不
+   同的核心可測試:
+   ______________________________________________________________________
+   boot=/dev/fd0
+   map=/mnt/floppy/map
+   install=/mnt/floppy/boot.b
+   prompt
+   compact
+   timeout=50
+   image=/mnt/floppy/vmlinuzLAP
+      label=Laptop
+      root=/dev/sda1
+      read-only
+   image=/mnt/floppy/vmlinuzDESK
+      label=Desktop   
+      root=/dev/sda1
+      read-only
+   image=/mnt/floppy/vmlinuzDESK
+      label=rescue
+      root=/dev/hdc1
+      read-only   
+   ______________________________________________________________________
+       
+
+   我有兩個核心，一個是給需要在核心中有數學模擬程式的筆記型 486，另一是
+   給我桌上型電腦用。  其中 rescue 是為了讓我可緊急開機到硬碟上。
+
+   最後，在軟碟仍然掛載時，執行 LILO 去安裝到軟碟上:
+
+    ==> lilo -C /mnt/floppy/lilo.conf
+
+   一旦 LILO 被安裝好在磁片上，跳過下面兩個步驟，除非你喜歡再做一遍。 
+
+
+3.3.2.2.  單獨核心的安裝
+
+   ---------------------------------------------------------------
+   NOTE:這不適於 LILO 的安裝。
+   ---------------------------------------------------------------  
+
+   拷貝新造的核心(kernel)到軟碟上:
+
+   ==> cp arch/i386/boot/zImage /dev/fd0
+
+   或
+
+   ==> cat arch/i386/boot/zImage > /dev/fd0
+  
+   是的，雖然有許多方法可以拷貝核心到磁碟片上，但最後的方法是有一些神祕，
+   也是我的最喜歡的。  試著不要忘記 '>'，除非你喜歡看二元檔案。 :)
+
+
+3.3.2.2.1.  設定軟碟的根目錄(root)和 swap
+
+   ---------------------------------------------------------------
+   NOTE:這不適合於 LILO 的安裝。
+   ---------------------------------------------------------------
+  
+   一旦核心在軟碟上，你需要設定根目錄設備(root device)到 ZIP磁片上:
+
+   ==> rdev /dev/fd0 /dev/sda1
+
+   我不確定下一個選項是否必要，但我不管如何還是做了:
+  
+   ==> rdev -s /dev/fd0 /dev/sda2
+
+   ------------------------------------------------------------------
+   譯註:
+       根據作者的 ZIP 磁片分割法，/dev/sda1 是 Linux 的分區，/dev/sda2
+    是 swap 分區，若你的方法不同時，則必須改變 sda 後的數字為正確的分
+    區號碼(Partition number)。
+   -------------------------------------------------------------------
+
+
+4.  Red Hat 4.2 的安裝
+
+   任何跟電腦有關的東西，三個月的可被認為是過時且需要更新。  因為我無法
+   總是有時間隨著新版的推出而更新本文件，我會盡我最大的努力試著做到至少
+   每二版更改一次。  至於其他的發行版(Distribution)，除非作者們願意送更
+   新的來，它們將維持跟現在的內容一樣。
+
+  
+4.1.  個人的設備
+
+  
+   在安裝時，我擁有且使用
+
+   . Kernel 2.0.30
+
+   . Imoega ppa disk drive (印表機埠版的 ZIP 機)
+
+   . Red Hat 4.2
+
+
+4.2.  套件((Package)的安裝
+
+   當我第一次試圖安裝 Red Hat 到一片 ZIP 磁片時，我覺得直接使用 Red Hat
+   的安裝(啟動)磁片(boot disk)會比較容易。  然後我做了。  我做到非常接近到 
+   建立一個開機磁片，甚至經由 email 從 Red Hat 裡許多的人那得到幫助。  但
+   最後在我發現 rpm 中有 '--root' 的選項時，我開始放棄這整個計劃。 
+
+
+4.2.1.  要安裝那些套作(Package)
+
+   在閱讀在一個我在 Red Hat 的備份站(Mirror)上找到的一個檔案時，我發現那些
+   是要安裝的套件。  那個檔案可以在任何備份站(Mirror)上的
+
+       redhat/redhat-4.2/i386/RedHat/base/comps
+
+   內找到。
+
+
+   在這安裝中，我想要包含網路的支援。  但因為 Red Hat 的 X視窗網路設定方
+   式，我將必須手工調整，或是相當手動地試著去設定在 /etc/sysconfig/ 內的
+   網路設置工作稿件(Network setup script)。(參照 4.3.3 節)
+
+
+   至少在沒有用特殊修改的核心版本(Kernel version)下，在 ZIP 機中編譯任何
+   程式是相當慢的，所以我決定不安裝任何的發展軟體套件(Development package)。
+   基於空間的考量，我也選擇不安裝 X視窗系統。  稍後，我會試圖去掛上硬碟並建
+   立一個與 /usr 的符號連接(Symlink, Symbolic link)，看看我是否可讓 X視窗運
+   作。
+   
+   下面以安裝的順序列出我安裝的套件名單。  那些有打星號的表示從 Red Hat
+   的勘誤(Errata)中有更新。  在括弧中則是更新的套件號碼。
+   
+   例如，NetKit-B-0.09-6 被更新到 NetKit-B-0.09-8，所以內容將是:
+
+        *91) NetKit-B-0.09-6 (-8)
+
+   ______________________________________________________________________
+
+        (此表是執行命令  rpm --root /iomega -qa 所產生)
+
+        1) setup-1.7-2                   2) pamconfig-0.51-2
+        3) filesystem-1.3-1              4) MAKEDEV-2.2-9   
+        5) adduser-1.7-1                 6) libc-5.3.12-18  
+        7) SysVinit-2.64-8               8) ash-0.2-8   
+        9) at-2.9b-2                    10) libtermcap-2.0.8-4
+       11) bash-1.14.7-1                12) bc-1.03-6
+       13) bdflush-1.5-5                14) cpio-2.4.2-4
+       15) cracklib-dicts-2.5-1         16) tmpwatch-1.2-1  
+       17) crontabs-1.5-1              *18) db-1.85-10 (-11)
+       19) dev-2.5.1-1                  20) diffutils-2.7-5
+       21) etcskel-1.3-1                22) file-3.22-5
+       23) fileutils-3.16-1             24) findutils-4.1-11
+       25) grep-2.0-5                   26) groff-1.10-8
+      *27) ld.so-1.7.14-4 (-5)          28) getty_ps-2.0.7h-4
+       29) gzip-1.2.4-7                 30) mingetty-0.9.4-3
+      *31) initscripts-2.92-1 (93-1)    32) ed-0.2-5
+       33) info-3.9-1                   34) ncurses-1.9.9e-4
+       35) libg++-2.7.1.4-5            *36) pwdb-0.54-3 (-4)
+       37) rootfiles-1.5-1             *38) pam-0.57-2 (-4) 
+       39) redhat-release-4.2-1         40) less-321-3  
+       41) mount-2.5l-2                 42) zlib-1.0.4-1
+       43) rpm-2.3.11-1                 44) e2fsprogs-1.10-0
+       45) sysklogd-1.3-15              46) tar-1.11.8-11
+       47) passwd-0.50-7                48) gawk-3.0.2-1
+       49) gdbm-1.7.3-8                 50) gpm-1.10-8
+       51) hdparm-3.1-2                 52) kbd-0.91-9
+       53) slang-0.99.37-2              54) newt-0.8-1 
+       55) kbdconfig-1.4-1              56) ncompress-4.2.4-7
+      *57) sh-utils-1.16-4 (-5)         58) procinfo-0.9-1
+      *59) logrotate-2.3-3 (4-1)        60) lilo-0.19-1
+       61) losetup-2.5l-2               62) linuxthreads-0.5-1
+      *63) mkinitrd-1.6-1 (7-1)         64) mailcap-1.0-3
+      *65) man-1.4h-5 (j-1)             66) mt-st-0.4-2
+       67) modules-2.0.0-5              68) mailx-5.5.kw-6  
+       69) net-tools-1.32.alpha-2       70) procmail-3.10-10
+       71) procps-1.01-11               72) psmisc-11-4 
+       73) quota-1.55-4                 74) readline-2.0-10
+       75) sed-2.05-6                   76) setconsole-1.0-1
+       77) sendmail-8.8.5-4             78) shadow-utils-960530-6
+       79) stat-1.5-5                   80) tcsh-6.06-10
+       81) termcap-9.12.6-5             82) textutils-1.22-1
+       83) time-1.7-1                   84) timeconfig-1.8-1
+       85) util-linux-2.5-38            86) vim-4.5-2  
+       87) vixie-cron-3.0.1-14          88) which-1.0-5
+       89) zoneinfo-96i-4               90) tcp_wrappers-7.5-1
+      *91) NetKit-B-0.09-6 (-8)        *92) lpr-0.18-1 (19-1)
+      *93) bind-4.9.5p1-2 (9.6-1)      *94) bind-utils-4.9.5p1-2 (9.6-1)
+      *95) wu-ftpd-2.4.2b12-6 (b15-1)   96) anonftp-2.3-3
+       97) zip-2.1-1                    98) unzip-5.12-5
+       99) statserial-1.1-7            100) minicom-1.75-2  
+      101) lrzsz-0.12.14-1             102) dip-3.3.7o-9
+      103) ppp-2.2.0f-3                104) portmap-4.0-3
+      105) perl-5.003-8               *106) traceroute-1.0.4.4bsd-2 (1.4a5-1)
+     *107) elm-2.4.25-7 (-8)           108) lynx-2.6-2
+      109) ncftp-2.3.0-5               110) pine-3.95-2
+      111) rdate-0.960923-1            112) apache-1.1.3-3
+     *113) nfs-server-2.2beta16-7     *114) nfs-server-clients-2.2beta16-7
+           (2.2beta16-8)                    (2.2beta16-8)   
+   ______________________________________________________________________
+   
+   而且在安裝上面的全部後，我仍然剩下 32MB。
+
+4.2.1.1. 更新; 勘誤
+
+   正如許多的 Red Hat 使用者知道，部分的套件可能被發現有一些安全漏洞，或
+   任何其他會引起爭論發生的問題。  基於這個理由，Red Hat給這些套件發行更
+   新。  我已經更新那些我安裝且有更新的套件，並且在上述的名單中標上星號。
+   請參考關於更新套件的Red Hat網頁:
+
+     http://www.redhat.com/support/docs/rhl/rh42-errata-general.html
+     
+
+   ---------------------------------------------------------------------
+   NOTE:
+
+        在你可以更新那些套件前，你將必須如 3.3.1.1 中描述一樣執行 
+        ldconfig 。
+   ----------------------------------------------------------------------  
+ 
+4.2.2. 如何在使用 rpm 而不用 glint 下安裝
+
+
+   在 rpm 中，使用 --root 選項去特定掛載目錄為安裝置的根目錄。  因為安裝前
+   (Preinstall)和安裝後(Postinstall)的執行稿(Script)基於不同的根目錄而無法
+   正確地被執行，我已發現有許多套件無法安裝。  所以使用 --noscripts 選項:
+
+   ==> rpm --root /iomega -i --noscripts PACKAGE.i386.rpm
+
+   我肯定許多人會注意到，你會得到一個錯誤訊息像:
+   ______________________________________________________________________
+       failed to open /iomega/var/lib/rpm/packages.rpm
+
+       error: cannot open /iomega/var/lib/rpm/packages.rpm
+   ______________________________________________________________________
+                
+   所以，只要建立 var/lib/rpm 的目錄:
+
+   ==> mkdir /iomega/var; mkdir /iomega/var/lib; mkdir /iomega/var/lib/rpm
+
+
+4.2.3. 那個先來， pamconfig 或 pam ?
+
+   假如任何人試圖安裝 pamconfig ，它將會抱怨關於 pam 的錯誤附屬性(Depen-
+   dency)﹔當你再試著安裝 pam 抱怨關於 pamconfig 的錯誤附屬性!  這像雞生
+   蛋﹑蛋生雞問題一樣困擾我一陣子，但要感謝 --nodeps 這個旗幟，我們可以強
+   迫 pamconfig 被安裝; 除了 pamconfig 外，pam 另外有更多的錯誤附屬性。
+
+   ==> rpm --root /iomega -i --nodeps --noscripts pamconfig-0.51-2
+
+
+4.3.  套件安裝後的問題
+
+   一旦所有的東西都安裝好後，不幸的是，這磁片並不是功能完整的，假如可以這
+   麼說的話。  我的意思是，假如你現在試著從軟磁開機的話，你將會沒有多少進
+   展。  一旦 init 試著開始，你將會得到兩個可愛的錯誤; 兩個執行稿被運行且
+   會抱怨找不到已經安裝的某些檔案。
+
+
+4.3.1.  找不到 /etc/ld.so.cache 和 libc.so.5 的問題
+
+   假如你試著開機，你會得到兩個錯誤，第一個是 /etc/ld.so.cache 檔案失蹤，
+   第二個是抱怨找不到 libc.so.5 。
+
+4.3.1.1.  /etc/ld.so.cache
+
+   如許多讀者所提到，我以前的方法並不是如所說的會動。  為了建立這個檔案，
+   當 ZIP 磁片還掛載時，你將必須執行 ldconfig:
+
+   ==> chroot /iomega; /sbin/ldconfig
+
+   感謝 Javier Rodriguez 的解答。
+
+4.3.1.2.  libc.so.5
+
+   為了解決找不到 lib 的問題，你將必須建立一個安裝執行稿應該做的符號聯結
+   (Symlink):
+
+   ==> cd /iomega/lib; ln -s libc.so.5.3.12 libc.so.5
+
+   感謝 Darcy Boese 的解答。
+
+4.3.2.  設定 root 的密碼
+
+   正如在 4.3.1.1 中執行 ldconfig 一樣，你可能也要為新系統改變或建立 
+   root 的密碼:
+
+   ==> chroot /iomega; passwd root
+
+4.3.4.  安裝程式所建立的東西
+
+   ------------------------------------------------------------------
+   NOTE:
+         這是一個非常簡單的設定，一個我尚未能夠測試是否會工作的。 理
+         論上應該會，但請不要送我不會動的抱怨。
+   ------------------------------------------------------------------
+
+   當我翻閱我的 Red Hat 4.2 光碟片時，我看到一些相當有趣的東西; 安裝程
+   式的原始程式碼。 我發現它在 /misc/src/install 和一個有用的 net.c 。   
+   在裡面，我發現安裝程式執行時，建立的那些檔案。 大部分只是產生網路支
+   援(為什麼叫 net.c)，即使你沒有網路卡，你仍然可用 localhost 當做網路
+   (加上 Apache 會抱怨無法決定主機名稱(hostname))。 這些檔案包含:
+
+             /etc/hosts
+             /etc/HOSTNAME
+             /etc/resolv.conf
+             /etc/sysconfig/network
+             /etc/sysconfig/network-scripts/ifcfg-eth0
+             (or any other network device you may have.)
+             (或你可能有的其他網路裝置。)
+
+
+4.3.4.  網路的設定               
+
+   本文中，我需要有給我的 3COM 3c595 快速乙太網路卡的網路支援。  (這卡
+   在前幾個月中被用在另一部機器上。)
+
+   首先，我需要一個名字，且因我跑一個自己的 Name Server (這又是另一個
+   長故事)，我定了這個名字: dash-dot.wig.org (我就是喜歡它的聲調。) 有
+   名稱且沒 IP 也是有點無意義的，所以我用了一個非網際網路保留可用
+   192.168.10.0 的網址，我的 Name Server 也用這個。  即使主機名稱通常
+   存在 /etc/HOSTNAME 中，Red Hat 會在 /etc/sysconfig/network 中檢查這個
+   名稱; 所以讓我們從那開始。  我的 /etc/sysconfig/network 的樣本:
+
+   ______________________________________________________________________
+      NETWORKING=yes
+      HOSTNAME=dash-dot
+      DOMAINNAME=wig.org
+      GATEWAY=
+      GATEWAYDEV=eth0
+      NS1=192.168.10.7
+    ______________________________________________________________________
+
+   再來，基本上拷貝同樣的資料到 /etc/HOSTNAME，/etc/resolv.conf，和
+   /etc/hosts裡:
+
+   /etc/HOSTNAME:
+
+   ______________________________________________________________________
+       dash-dot.wig.org
+   ______________________________________________________________________
+       
+
+   /etc/resolv.conf:
+
+   ______________________________________________________________________
+      search wig.org
+      nameserver ns.wig.org
+   ______________________________________________________________________
+       
+
+   /etc/hosts:
+       
+   ______________________________________________________________________
+      127.0.0.1 localhost
+      192.168.10.99 dash-dot.wig.org dash-dot
+      192.168.10.7  ns.wig.org ns
+   ______________________________________________________________________
+
+   
+   Red Hat 在 /etc/sysconfig/network-scripts 的執行稿中設定所有的網路裝置。
+   任何網路的設定通常首先經由安裝程式建立，所以我必須手動建立這些設定檔。
+   它們全是由 ifcfg-xxx 開頭，其中 xxx 是 ifconfig 啟動的網路介面; 比如是
+   ppp0，eth0 等等。  在這個例子中，我必須建立一個叫 ifcfg-eth0 的檔案，內
+   容包括:
+   ______________________________________________________________________
+       DEVICE=eth0
+       ONBOOT=yes
+       BOOTPROTO=none
+       BROADCAST=192.168.10.255
+       NETWORK=192.168.10.0
+       NETMASK=255.255.255.0
+       IPADDR=192.168.10.99
+   ______________________________________________________________________
+
+   最後，現在為了讓這個會動，當還在 /etc/sysconfig/network-scripts 的目
+   錄中時，執行:
+
+   ==> ./ifup ifcfg-eth0 boot
+
+   假如介面被設成在開機('boot')時啟動，這將會啟動設立網路介面的執行稿。
+
+   更進一步的資訊，請參考 NET-3-HOWTO 的文件。
+
+
+5.  Slackware 2.2 的安裝
+
+   _____________________________________________________________________
+   NOTE: 
+             這部分並未更新。
+   ______________________________________________________________________
+
+ 
+5.1.  需求
+
+  � . ZIP 磁片和機子 (很明顯)
+       
+  � . 有 ZIP 支援的核心(Kernel)
+         
+  � . ZIP HOWTO (推荐)
+           
+  � . 格式化的 1.44" HD 碟片
+
+  � . 一到兩個小時的時間
+
+5.2.  安裝
+
+   好的，現在開始有趣的部分: 找出那些檔案需要在系統磁片上，和你想要(和能
+   塞進)那些套件在你的 ZIP 機裡。
+
+
+   我決定最簡單的開始方法是直接安裝 Slackware 到 ZIP 機中。  我決定這樣的
+   方法主要是因為 Slackware 是一個比 Red Hat 小的發行版，且它可能比較容易
+   除去我不想要的。  那個和無論如何我是用 Slackware 的發行版使它成了一個
+   明顯的選擇。
+
+   安裝 Slackware 到 ZIP 磁片中是簡單的，當 root 執行設定程式，和選擇 
+   /iomega 為安裝的分區，設定 Slackware 來源的分區 (光碟，硬碟等等)，
+   選擇 install 和隨著顯示行動。
+
+
+5.3.  安裝那些東西
+
+   最難的部分是決定那些要加入，那些不要。明顯地，你將需要 'A' 系列(大約
+   8MB)，其他就隨便你了。
+
+
+   我最後能把 Slackware 版縮小到令人尊敬的 70MB 安裝，其中包含了 gcc/g++，
+   perl，X11R6(不是全部!)，sendmail，線上文件(少去全部 development man
+   pages，但包含所有的 HOWTO)，和一些好東東，同時剩下大約 10MB 給使用者
+   檔案用。 
+
+
+6.  設立 /etc/fstab 
+
+   (共通於 Red Hat 和 Slackware 發行版)
+
+   在重開機前，最後一件需要做的是在將會成為根分區(root partition)上設立
+   fstab 檔案。  下面是你在 /iomega/etc/fstab 中最少的需求:
+
+   ______________________________________________________________________
+      /dev/sda1      /         ext2        defaults   1   1
+      /dev/sda2      none      swap        sw
+      none           /proc     proc        defaults   1   1
+   ______________________________________________________________________
+
+
+   存檔，用新做的開機磁片重開機和開始享受!
+
+   (特別感謝 Mike 提醒我這非常重要且必要的步驟。 --- John)
+
+
+7.  Debian 的安裝
+
+    ______________________________________________________________________
+    NOTE: 
+          本節的作者在 June 11, 1997 把這部分寄給我。
+    ______________________________________________________________________
+
+
+7.1.  需求
+
+   . 印表機埠的 ZIP 機和 ZIP 磁片
+   
+   . 兩片 1.44MB 的空白磁片
+         
+   . 一套完整的 Debian 安裝磁片 (假如你不記得如何製做這些磁片的話，複習 
+      Debian 的安裝說明文件。) 
+   . 幾個小時的時間
+
+
+7.2.  概論
+
+   在與 dpkg 博鬥了數小時後，我決定若修改 Debian 的 "Rescue" 磁片能夠辨認
+   ppa ZIP 機可能比較簡單。  這經證明是非常容易的。  你可以用這修改後的磁
+   片去進行正常的 Debian base system (基本系統)安裝。  一旦完成了基本系統
+   的安裝，你可以使用開機磁片(Boot disk)去啟動新的基本系統和用 dselect 完
+   成安裝程序。  為了要用這個技術，你必須要造兩個核心(Kernel) -- 一個有
+   ppa 和 初始 RAM disk 支援，另一個沒有 RAM disk 支援。
+
+   假如你願意的話，可跳過第二節中所有的步驟，而讓 Debian 的安裝程序負責為
+   你格式化 ZIP 磁片。
+
+
+7.3.  建造修改的 Rescue disk
+
+   Debian Rescue disk 是一種 SYSLINUX 式的開機磁片，其使用 DOS 格式化的磁
+   片和一個特殊的開機程式載入器(Boot loader)去避免載入 MSDOS。 這些磁片非
+   常容易修改去開發符合自己需求的開機設定。  Debian 的'boot-floppies'套件
+   包含有一組執行稿去自動執行建造開機磁片的程序。  然而，它是如此外的容易
+   ，我發現用手動的方式比較簡單。  這雖然有點偏離了 Debian 的精神，但我完
+   成了 :) 。  Rescue 磁片中的 'readme.txt' 檔案裡有簡略的說明。
+
+
+7.3.1.  使用 dd (或是 DOS 中的 RAWRITE) 建造新的 Rescue disk
+
+   假如你不記得如何做的話，複習 Debian 的安裝文件。
+
+
+7.3.2.  造一個有 ZIP ppa 支援的核心(Kernel)
+
+   (如 3.3.1 的步驟)造一個有 ZIP ppa 支援的核心(Kernel)，但也要規劃 RAM
+   disk 和 initial RAM disk support(初始 RAM disk 支援)。  你也需要規劃
+   msdos, fat, minix, ext2fs, 和 procfs 檔案系統。
+
+
+   同時設立任何你想要在 ZIP 碟片上最終安裝的模組。  
+  �
+   一旦核心(Kernel)規劃好後，用:
+
+   ==> make dep; make clean
+
+   ==> make bzImage
+
+   建造模組用:
+
+   ==> make modules
+
+   你會在後來安裝這些(模組)。
+   ______________________________________________________________________
+   NOTE: 
+         確定你要用  'make bzImage'而不是 'make zImage'。
+   ______________________________________________________________________
+
+
+7.3.3.  掛上新的 Rescue disk
+
+
+   ==> fdmount fd0
+
+   或
+       
+   ==> mount /dev/fd0 /mnt
+                       
+   或  
+
+   ==> whatever :)  (隨便你)
+    
+
+7.3.4.  拷貝核心(Kernel image)
+
+   拷貝核心(Kernel image)(在 i386 的作業平台上，它位於 arch/i386/boot/bzImage)
+   到軟碟的 'linux'上。
+  
+
+7.3.5.  編輯 'rdev.sh' 執行稿(Script)
+
+   用你最喜歡的編輯器開啟位於 Rescue disk 上的 'rdev.sh' 執行稿(Script)。
+   修改最後一行:
+
+   由   --:
+
+         'rdev /mnt/linux /dev/ram0'
+
+   變成 --:
+
+         'rdev /mnt/linux /dev/sda1'
+
+
+   你也需要改變所有的 /mnt/linux 成正確的路徑(Path)。  因我掛載我的軟碟
+   在 /fd0 ，我必須改變 /mnt/linux 成 /fd0/linux 。
+
+
+7.3.6.  執行修改後的 'rdev.sh' 執行稿(Script)
+
+   ==> ./rdev.sh
+   
+
+7.4.  安裝基本系統到 ZIP 機
+
+   用修改的 Rescue disk 開機。  假如一切正常，你將會得到熟悉的 Debian 的
+   選單式的安裝過程，除了它現在認得你的 ppa ZIP 機。  像安裝系統到正常硬
+   碟一樣進行，但掛載 /dev/sda1 成根目錄裝置(root)和啟始 /dev/sda2 成 
+   swap 。
+
+   有一個與標準安裝置過程不同的地方 -- 不要安裝或規化任可載入式的模組
+   (Loadable Module)。 你將會在稍後安裝你在步驟 7.3.2 中建造的模組(Module)。
+
+
+7.5.  建造開機磁片(Boot disk)
+
+   你可以如步驟 3.3.1 到 3.3.2 一樣建造開機磁片，或你要的話，就使用 Debian 
+   安裝過程的 "Create Boot Disk"(建造開機磁片) 的選項。  我喜歡第二個方法，
+   因為我可以得到另一片 SYSLINUX 開機磁片，這可讓我編輯一個可以表達自定的開
+   機磁片性質的問候訊息和輸入額外的核心參數(Kernel argument)。  你甚至可以
+   加入可經由功能鍵(Function key)取得的說明檔案(Help file)。  你稍後仍然可
+   以重建核心(Kernel)和手工修改這開機磁片去除 RAM disk 支援。  你的選擇。
+
+
+7.6. 重新啟動系統
+
+   插入你的開機磁片並在安裝選單裡選擇 'Reboot'(重開機) 的選項。
+
+
+7.7. 規劃基本身系統和完成安裝置程序
+
+   當系統重新開機後，你將會有一個在 ppa ZIP 機上緩慢但完全可工作的 Debian
+   基本安裝。  這時如正常安裝一樣進行。  我安裝了所有的普通的 Unix 工具，
+   附帶著文件集，make，gcc，函式庫和各種有用的檔案處理工具。  最後的結果是
+   一個非常強大的緊急開機系統，可讓我用來在緊急時解救任何我部門裡的系統。
+
+   ______________________________________________________________________
+   NOTE: 
+        你至少將需要安裝 'make'去完全下一步驟。
+   ______________________________________________________________________
+
+
+7.8.  安裝在步驟 7.3.2 中建造的模組(Module)
+
+   假如有在前一步驟安裝 make ，你應該可以掛上包含有你建造核心(Kernel)的硬碟
+   分區，cd (改變)到正確的目錄和執行 'make modules_install' 。  下面是我的
+   做法:
+
+   ==> mount /dev/hda2 /mnt
+
+   ==> cd /mnt/usr/src/linux
+
+   ==> make modules_install
+
+   ______________________________________________________________________
+   NOTE:  如步驟 5 所說，你將不需要修改 /etc/fstab 檔案。  Debian 的安裝
+           過程已經處理了那部分。
+   ______________________________________________________________________
+
+
+
+8.  後言
+
+   哎﹑喝!  在累積 31片 ZIP 碟片和一包 ZIP unleashed 電池之後，我下一個
+   實驗是試著讓我的筆記型電腦的 pcmcia 可工作。
+
+</PRE>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>
+

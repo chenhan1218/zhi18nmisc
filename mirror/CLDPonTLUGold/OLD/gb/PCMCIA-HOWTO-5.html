@@ -1,0 +1,280 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Linux PCMCIA HOWTO 中文版: 进阶的主题</TITLE>
+ <LINK HREF="PCMCIA-HOWTO-6.html" REL=next>
+ <LINK HREF="PCMCIA-HOWTO-4.html" REL=previous>
+ <LINK HREF="PCMCIA-HOWTO.html#toc5" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="PCMCIA-HOWTO-6.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="PCMCIA-HOWTO-4.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="PCMCIA-HOWTO.html#toc5"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s5">5. 进阶的主题</A></H2>
+
+<P>
+<P>
+<H2><A NAME="ss5.1">5.1 PCMCIA 设备的资源分配</A>
+</H2>
+
+<P>理论上， 哪一个插断被使用到哪个设备上都没关系。 只要两个 (或以上 )
+设备不被建构成使用相同的插断即可。在 <CODE>/etc/pcmcia/config.opts</CODE>
+□你可以发现有个地方用来排除那些被非 PCMCIA 设备所使用著的插断。
+<P>同样地，也没有办法可以直接指定 I/O 位址给一个 PCMCIA 卡来使用。
+<CODE>/etc/pcmcia/config.opts</CODE>  档案允许你指定可被所有的  PCMCIA
+设备所使用的埠□围， 或是排除那些会和其他设备相冲突的埠□围。
+<P>在修改了  <CODE>/etc/pcmcia/config.opts</CODE>後，你可以使用 ``<CODE>kill -HUP</CODE>''
+来重新启动 <CODE>cardmgr</CODE>。
+<P>被用来监视卡片状态的插断是在 <CODE>cardmgr</CODE> 处理 <CODE>/etc/pcmcia/config</CODE>
+档案之前由低阶的插槽驱动程式模组 (<CODE>i82365</CODE> 或 <CODE>tcic</CODE>) 所选择
+的。因此改变这个档案并不会有什麽影响。要设定这个插断，在插槽驱动程
+式被载入时，设定在 <CODE>/etc/rc.d/rc.pcmcia</CODE> 内的 <CODE>PCIC_OPTS</CODE>
+变数使用 <CODE>cs_irq=</CODE> 选项。
+<P>所有的客户端卡片驱动程式都有个叫做 <CODE>irq_list</CODE> 的参数。 被用来指
+定哪些插断可用试著用来配置给他们的。这些驱动程式选项应该被设定在你
+的 <CODE>/etc/pcmcia/config</CODE> 档案□。例如:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+device "serial_cs"
+  module "serial_cs" opts "irq_list=8,12"
+  ...
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>会指定串列埠驱动程式只使用  irq  8 或 irq  12。 不管 <CODE>irq_list</CODE>
+的设定如何， 卡片服务程式 Card Services 绝不会分配已被其他设备所使
+用了的插断，或是在建构档□被排除的插断。
+<P>
+<H2><A NAME="ss5.2">5.2 我怎样才能为家庭及工作的使用做各别的设备设定呢?</A>
+</H2>
+
+<P>我们可以很简单地使用 PCMCIA ``scheme'' 支援来达成。 使用两种不同的
+建构 schemes，分别叫 ``home'' 及 ``work''。 以下是个有 scheme 指定
+的设定的 <CODE>network.opts</CODE> 手稿□例:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+case "$ADDRESS" in
+work,*,*,*)
+    # definitions for network card in work scheme
+    ...
+    ;;
+home,*,*,*|default,*,*,*)
+    # definitions for network card in home scheme
+    ...
+    ;;
+esac
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>PCMCIA  设备位址的首要部份都是建构  scheme。 在这个例子中， 第二个
+``case'' 句子会从 ``homee'' 和 ``default'' schemes 中挑选一个。 因
+此，不管任何理由 scheme 并没被设定了，内定值是 ``home'' 设定。
+<P>现在，要在二个设定集□头挑选一个，可执行:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+cardctl scheme home
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>或者是
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+cardctl scheme work
+</PRE>
+</CODE></BLOCKQUOTE>
+<P><CODE>cardctl</CODE>  命令相当於关掉所有的卡片後再重启动它们。 不管 PCMCIA
+系统是否被载入，这个命令都可安全地被执行。但是如果你在当时正在使用
+其他的 PCMCIA 设备时这个命令可能会失败。 (虽然他们的建构并不完全依
+靠 scheme 的设定。 )。
+<P>要知道目前 PCMCIA scheme 的设定，执行:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+cardctl scheme
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss5.3">5.3 从 PCMCIA 设备开机</A>
+</H2>
+
+<P>
+<P>要在一个 PCMCIA  设备上做个档案系统需要耍个小把戏可行， 因为 Linux
+的 PCMCIA 系统并没有设计成连接到核心程式上。它的主要元件，可载入式
+核心模组以及使用者模式的  cardmgr 精灵是仰赖在一个已经在执行的系统
+上。核心的 ``initrd'' 以允许 Linux 使用一个有最小化的根
+映像档、载入驱动程式的暂时性的动态记忆体磁碟来开机，然後再重新挂上
+一个不同的根档案系统。这个暂时的根系统可以建构 PCMCIA 设备，然後再
+把它重新挂成一个根系统。
+<P>initrd  映像档绝对必须存放在一个可开机的设备上: 一般来说这就无法放
+到 PCMCIA 设备上了。这是因为 BIOS 的限制，可不是核心的限制。在这□
+， 能够分辨出 `` 可开机的 (boot-able)'' 设备 (例如，任何可以做开机
+使用的设备 ) 与 `` 可做根系统的 (root-able)'' 设备 (例如，可以被挂
+入成为根系统的设备    )    的不同处也是很重要的。   ``    可开机的
+(Boot-able) '' 设备是由 BIOS 所决定的， 通常是内部软碟机和硬式磁碟
+机。`` 可做根系统的 (root-able)'' 设备是任何可以在被载入即即被核心
+所支援的区块设备。 initrd 的功能可使更多的设备变成 `` 可做根系统的
+(root-able)''，而非 ``可开机的 (boot-able)''。
+<P>有些 Linux 供应版本允许安装到 PCMCIA SCSI 卡接著的设备上。使得它们
+无意地多出了可支援从  PCMCIA  SCSI  CD-ROM  设备来安装的边际效应。
+然而，  到目前为止， 并没有任何  Linux  安装工具支援建构一个可以从
+PCMCIA  根档案系统上开机到  Linux  的合适  ``initrd''。 设立一个以
+PCMCIA  根档案的 Linux 系统需要您使用其他的  Linux  系统来产生一个
+``initrd'' 映像档案。如果没有可用的其他 Linux 系统，另一个替代方法
+是做最小安装到非 PCMCIA 磁碟上，建立一个 initrd 映像档，然後再重新
+安装到 PCMCIA 目地设备上。
+<P>在 Linux Bootdisk-HOWTO □有一些关於设定开机磁碟片的一般资讯，但却
+没有任何有关於 initrd 的资讯。 initrd 的主要文件被放在最新的核心程
+式码供应版本□头，  在   <CODE>linux/Documentation/initrd.txt</CODE>。
+在开始前，你应该要先读一下这份文件。 对於 <CODE>lilo</CODE> 的熟悉也是有助
+益的。 要使用 initrd 也需要你已有个将  <CODE>CONFIG_BLK_DEV_RAM</CODE>  和
+<CODE>CONFIG_BLK_DEV_INITRD</CODE> 功能打开後所编译出来的核心。
+<P>这是个高等建构技术， 需要您对 Linux 以及 PCMCIA 系统有一定程度的熟
+悉度。请确认在您阅读完所有相关的文件後再开始。下面的 `` 食谱 '' 应
+该是可行的， 但是一旦不依照□例来做的话， 就会很快地将你推向未知及
+`` 不被支援的 '' 地方，那你就得自己来的。
+<P>这方法需要你一定要使用 PCMCIA 驱动程式 2.9.5 或最新的版本才可以。
+旧的 PCMCIA 套件或是个别的元件并不能在 initrd □使用。请不要将不同
+的版本的元件混合了。
+<P>
+<H3>pcinitrd 辅助员手稿</H3>
+
+<P><CODE>pcinitrd</CODE>  手稿用来建立一个使用  PCMCIA 根磁区分割来启动 Linux
+的基本   initrd    映像档。   该映像档□包含一个最小的目录层级结构
+、 以及有用的设备档案、一些二进位档案、共用程式库档以及一套 PCMCIA
+驱动程式模组。 当你执行 <CODE>pcinitrd</CODE> 时，要指定要要包含进去映像档
+□面的驱动程式模组名称。 而主要 PCMCIA  核心元件  <CODE>pcmcia_core</CODE>
+及 <CODE>ds</CODE>会被自动地包含进去。
+<P>例如，假设你的笔记电脑使用一个 i82365 同容的 PCMCIA 主控制器，而你
+想从一个接著 Adaptec SlimSCSI 卡而装有根档案系统的硬碟上启动 Linux
+。你可以建立一个合适的 initrd 映像档，方法如下:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+pcinitrd -v initrd pcmcia/i82365.o pcmcia/aha152x_cs.o
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>来自订 initrd 启使排程，你可以用下面的命令来使用 ``loopback'' 设备
+来挂上该映像档案:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+mount -o loop -t ext2 initrd /mnt
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>然後编修 <CODE>linuxrc</CODE> 手稿。 PCMCIA 建构的档案会被安装到映像档案□
+头的    <CODE>/etc</CODE>    内，   当然你也可以自已设定。    细节请看
+<CODE>pcinitrd</CODE> 的 man 页。
+<P>
+<H3>建立一个 initrd 开机软碟片</H3>
+
+<P>
+<P>在建立了 <CODE>pcinitrd</CODE> 映像档後， 你可以利用拷贝核心的方式来做一片
+可开机的磁碟片， 并把被压缩的 initrd 映像档、支援给 <CODE>lilo</CODE> 使用
+的档案到一张空白磁碟片上。 下面的列子， 我们假设我们需要的  PCMCIA
+根设备是 <CODE>/dev/sda1</CODE>:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+mke2fs /dev/fd0
+mount /dev/fd0 /mnt
+mkdir /mnt/etc /mnt/boot /mnt/dev
+cp -a /dev/fd0 /dev/sda1 /mnt/dev
+cp [kernel-image] /mnt/vmlinuz
+gzip &lt; [initrd-image] > /mnt/initrd
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>建立一个包含下面内容的 <CODE>/mnt/etc/lilo.conf</CODE> 档案:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+boot=/dev/fd0
+compact
+image=/vmlinuz
+    label=linux
+    initrd=/initrd
+    read-only
+    root=/dev/sda1
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>最後，执行 lilo 如下:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+lilo -r /mnt
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>当 <CODE>lilo</CODE> 被执行时配合使用 <CODE>-r</CODE> 选项，它会做所有与被指定的根
+目录的相关动作。  在  <CODE>/mnt/dev</CODE>   □建立设备档案的理由是，
+当它是在替代的根目录模式下 <CODE>lilo</CODE> 并无法使用在 <CODE>/dev</CODE> 内
+的档案。
+<P>
+<H3>安装 initrd 映象档到非Linux 磁碟内</H3>
+
+<P>initrd  功能一般都使用在当内部的硬碟机被分派给其他的作业系统使用时
+。 Linux 核心以及 initrd  映像档可以被放在非  Linux 的磁区分割内，
+而且  <CODE>lilo</CODE>  或是  <CODE>LOADLIN</CODE>   可以被设定由这些映像档来开启
+Linux 系统。
+<P>假设你有个已被建构好合适的根设备，且 initrd 映像档被建立在另外的系
+统上了，启动 Linux 系统的最容易方法是使用 <CODE>LOADLIN</CODE>，如下:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+LOADLIN &lt;kernel> initrd=&lt;initrd-image>
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>一旦你可以在你的目标机器上启动 Linux， 你就可以安装 <CODE>lilo</CODE> 来允
+许直接地启动 Linux 了。 例如，假设 <CODE>/dev/hda1</CODE> 是个非 Linux
+的目标磁区分割，且 <CODE>/mnt</CODE> 可以被用做为挂入点。 首先，在目标
+磁区分割上建立一个放 Linux 档案的子目录:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+mount /dev/hda1 /mnt
+mkdir /mnt/linux
+cp [kernel-image] /mnt/linux/vmlinuz
+cp [initrd-image] /mnt/linux/initrd
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>在这个例子中， 假设 <CODE>/dev/sda1</CODE> 是我们要做为 Linux 根分割的
+磁碟， 它是个经由  PCMCIA  SCSI  卡所挂上的  SCSI  硬碟机。 要安装
+<CODE>lilo</CODE>，请建立一个有以下内容的 <CODE>lilo.conf</CODE> 档:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+boot=/dev/hda
+map=/mnt/linux/map
+compact
+image=/mnt/linux/vmlinuz
+        label=linux
+        root=/dev/sda1
+        initrd=/mnt/linux/initrd
+        read-only
+other=/dev/hda1
+        table=/dev/hda
+        label=windows
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>在 <CODE>boot=</CODE> 这行□说要在指定的设备之主开机记录  MBR( master boot
+record) □安装开机载入程式。 <CODE>root=</CODE> 这行指出在载入 initrd 映像
+档後需要使用的根档案系统，如果核心映像档□已这麽建构了那就不需这麽
+做了。  在  <CODE>other=</CODE>   那行是用来描述说有其他的作业系统被安装在
+<CODE>/dev/hda1</CODE> □。
+<P>要安装这个例子□的 <CODE>lilo</CODE> ，使用:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+lilo -C lilo.conf
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>记得在这个案子□，<CODE>lilo.conf</CODE> 档案使用了包括 <CODE>/mnt</CODE> 在内
+的绝对位址。我用这个例子的原因是目标档案系统并不一定支援使用 <CODE>boot=</CODE>
+和 <CODE>root=</CODE> 选项来建立 Linux 设备档案的建立。
+<P>
+<HR>
+<A HREF="PCMCIA-HOWTO-6.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="PCMCIA-HOWTO-4.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="PCMCIA-HOWTO.html#toc5"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

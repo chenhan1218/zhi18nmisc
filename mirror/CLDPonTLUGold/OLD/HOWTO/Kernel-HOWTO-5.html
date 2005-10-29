@@ -1,0 +1,144 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>The Linux Kernel HOWTO: Compiling the kernel </TITLE>
+ <LINK HREF="Kernel-HOWTO-6.html" REL=next>
+ <LINK HREF="Kernel-HOWTO-4.html" REL=previous>
+ <LINK HREF="Kernel-HOWTO.html#toc5" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Kernel-HOWTO-6.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Kernel-HOWTO-4.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Kernel-HOWTO.html#toc5"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s5">5. Compiling the kernel </A></H2>
+
+<P>
+<P>
+<H2><A NAME="ss5.1">5.1 Cleaning and depending </A>
+</H2>
+
+<P>
+<P>When the configure script ends, it also tells you to `<CODE>make dep</CODE>'
+and (possibly) `<CODE>clean</CODE>'.
+So, do the `<CODE>make dep</CODE>'. This insures that all of the
+dependencies, such the include files, are in place. It does not take long,
+unless your computer is fairly slow to begin with.
+For older versions of the kernel, when finished, you should do a
+`<CODE>make clean</CODE>'.
+This removes all of the object files and some other things
+that an old version leaves behind. In any case,
+<I>do not</I> forget this step before attempting to recompile a kernel.
+<P>
+<P>
+<H2><A NAME="ss5.2">5.2 Compile time </A>
+</H2>
+
+<P>
+<P>After <CODE>dep</CODE>ending and <CODE>clean</CODE>ing, you may now `<CODE>make
+bzImage</CODE>' or `<CODE>make bzdisk</CODE>' (this is the part that takes a long
+time.).
+`<CODE>make bzImage</CODE>' will compile the kernel, and leave
+a file in <CODE>arch/i386/boot</CODE> called `<CODE>bzImage</CODE>'
+(among other things). This is the new compressed kernel. `<CODE>make bzdisk</CODE>'
+does the same thing, but also places the new <CODE>bzImage</CODE>
+on a floppy disk which you hopefully put in drive ``A:''.
+`<CODE>bzdisk</CODE>' is fairly handy for testing new
+kernels; if it bombs (or just doesn't work right), just remove the floppy
+and boot with
+your old kernel. It can also be a handy way to boot if you accidentally
+remove your kernel (or something equally as dreadful). You can also use it
+to install new systems when you just dump the contents of one disk onto the
+other (``all this and more! NOW how much would you pay?'').
+<P>
+<P>All even halfway reasonably recent kernels are compressed, hence the
+`<CODE>bz</CODE>' in front of the names. A compressed kernel automatically
+decompresses itself when executed.
+<P>In older kernels, you don't have the option to build a <CODE>bzImage</CODE>; it
+was simply a <CODE>zImage</CODE>. That option is at the moment still available,
+however, given the code size of newer kernels, it is now more or
+less mandatory to build a <CODE>bzImage</CODE> because the older methods can't
+handle a kernel that's just too large.
+<P>
+<P>
+<H2><A NAME="ss5.3">5.3 Other ``make''ables </A>
+</H2>
+
+<P>
+<P>`<CODE>make mrproper</CODE>' will do a more extensive `<CODE>clean</CODE>'ing.
+It is sometimes necessary; you may wish to do it at every patch. `<CODE>make
+mrproper</CODE>' will also delete your configuration file, so you might want
+to make a backup of it (<CODE>.config</CODE>) if you see it as valuable.
+<P>
+<P>`<CODE>make oldconfig</CODE>' will attempt to configure the kernel from an old
+configuration file; it will run through the `<CODE>make config</CODE>' process
+for you. If you haven't ever compiled a kernel before or don't have an old
+config file, then you probably shouldn't do this, as you will most likely
+want to change the default configuration.
+<P>
+<P>See the section on modules for a description of `<CODE>make modules</CODE>'.
+<P>
+<P>
+<H2><A NAME="ss5.4">5.4 Installing the kernel </A>
+</H2>
+
+<P>After you have a new kernel that seems to work the way you want it
+to, it's time to install it. Most people use LILO (Linux Loader) for
+this. `<CODE>make bzlilo</CODE>' will install the kernel, run LILO on it,
+and get you all ready to boot, BUT ONLY if lilo is configured in the
+following way on your system: kernel is
+<CODE>/vmlinuz</CODE>, lilo is in <CODE>/sbin</CODE>, and your lilo config
+(<CODE>/etc/lilo.conf</CODE>) agrees with this.
+<P>
+<P>Otherwise, you need to use LILO directly. It's a fairly easy package to
+install and work with, but it has a tendency to
+confuse people with the configuration file.
+Look at the config file (either <CODE>/etc/lilo/config</CODE> for older
+versions or <CODE>/etc/lilo.conf</CODE> for new versions), and see what the
+current setup is. The config file looks like this:
+<P>
+<P>
+<PRE>
+    image = /vmlinuz
+        label = Linux
+        root = /dev/hda1
+        ...
+</PRE>
+<P>The `<CODE>image =</CODE>' is set to the currently installed kernel.
+Most people use <CODE>/vmlinuz</CODE>. `<CODE>label</CODE>'
+is used by lilo to determine which kernel or operating system to
+boot, and `<CODE>root</CODE>' is the <CODE>/</CODE> of that particular operating
+system. Make a backup
+copy of your old kernel and copy the <CODE>bzImage</CODE>
+which you just
+made into place (you would say `<CODE>cp bzImage /vmlinuz</CODE>' if you
+use `<CODE>/vmlinuz</CODE>').  Then, rerun lilo -- on newer systems, you can
+just run `<CODE>lilo</CODE>', but on older stuff, you might have to do an
+<CODE>/etc/lilo/install</CODE> or even an
+<CODE>/etc/lilo/lilo -C /etc/lilo/config</CODE>.
+<P>
+<P>If you would like to know more about LILO's configuration, or you don't have
+LILO, get the newest version from your favorite ftp site and follow the
+instructions.
+<P>
+<P>To boot one of your old kernels off the hard disk
+(another way to save yourself in case you screw up the new kernel),
+copy the lines below (and including) `<CODE>image = xxx</CODE>' in the LILO config
+file to the bottom of the file, and change the `<CODE>image = xxx</CODE>' to
+`<CODE>image = yyy</CODE>', where `<CODE>yyy</CODE>' is the full pathname of
+the file you saved your
+backup kernel to. Then, change the `<CODE>label = zzz</CODE>' to
+`<CODE>label = linux-backup</CODE>' and rerun <CODE>lilo</CODE>. You may need to
+put a line in
+the config file saying `<CODE>delay=x</CODE>', where x is an amount in tenths of a
+second, which tells LILO to wait that much time before booting, so that you
+can interrupt it (with the shift key, for example), and type in the label
+of the backup boot image (in case unpleasant things happen).
+<P>
+<P>
+<HR>
+<A HREF="Kernel-HOWTO-6.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Kernel-HOWTO-4.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Kernel-HOWTO.html#toc5"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

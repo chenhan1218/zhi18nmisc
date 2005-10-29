@@ -1,0 +1,292 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Vim Color Editor HOW-TO (Vi Improved with syntax color highlighting) : Vi companions</TITLE>
+ <LINK HREF="Vim-HOWTO-7.html" REL=next>
+ <LINK HREF="Vim-HOWTO-5.html" REL=previous>
+ <LINK HREF="Vim-HOWTO.html#toc6" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Vim-HOWTO-7.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Vim-HOWTO-5.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Vim-HOWTO.html#toc6"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s6">6. Vi companions</A></H2>
+
+<P>Generally Vim is used in conjunction with other powerful 
+tools like <B>ctags</B> and <B>gdb</B>. <B>ctags</B> is for very rapid navigation
+through millions of lines of "C/C++" code and <B>gdb</B> is for debugging the "C/C++" code.
+A brief introduction of these two indispensable commands will be given in this chapter.
+<P><B>ctags</B> is the most powerful command available for coding C, C++, Java, Perl,
+Korn/Bourne shell scripts or Fortran. Developers very extensively use <B>ctags</B> to
+navigate through thousands of functions within C/C++ programs. See 'man ctags' on Unix.
+It is <B>very important</B> that you learn how to use ctags to 
+develop programs in C or C++, Java, etc.. Navigation is the single most important task while
+doing development of C or C++ code. Using ctags you can very quickly read the code
+by jumping from a calling line to the called function, drill down deeper into nested function calls,
+and unwind back all the way up to the top. You can go back and forth from function to function
+very quickly. 
+<P>Without NAVIGATION you will be completely lost! <B>ctags</B> is like the magnetic COMPASS 
+needle for the programmers.
+<P>Usage of <B>ctags</B> : 
+<HR>
+<PRE>
+        ctags *.cpp
+        gvim -t foo_function
+        gvim -t main
+</PRE>
+<HR>
+
+This will edit the C++ program file which contains the function foo_function() and will
+automatically place the cursor on the first line of the function foo_function(). The second
+command takes you to the line with the main() function definition.
+<P>Inside the Vim editor, you can jump to a function by typing : (colon) tag &lt; function name &gt;as below -
+<HR>
+<PRE>
+        :tag sample_function
+</PRE>
+<HR>
+
+This will place the cursor on first line of sample_function()
+<P>If you want to jump into the function from a line in file which contains the function name, place the
+cursor just before the function name and press <B>CTRL+]</B> (press control key and 
+left-square-bracket key simultaneously).
+<HR>
+<PRE>
+                // example code
+                switch(id_number) {
+                        Case 1:
+                                if ( foo_function( 22, "abcef") == 3 )
+                                    ^
+                                    |
+                                    |
+                                    |
+                  Place the cursor here (just before foo_function) and press CTRL+]
+                  This takes you to the function named "foo_function". 
+                  To come back to this line press CTRL+t
+</PRE>
+<HR>
+
+To go back to the calling line press <B>CTRL+t</B> (Control key and letter 't' together). Keep pressing <B>CTRL+t</B> 
+to unwind and go to the first line where you started the navigation. That is you can keep pressing <B>CTRL+]</B>
+and then keep pressing <B>CTRL+t</B> to go back. You can repeat these as many times as you want to have complete
+navigation through all the functions of C or C++.
+<H2><A NAME="ss6.1">6.1 Ctags for ESQL</A>
+</H2>
+
+<P>Since ctags does not directly support the Embedded SQL/C (ESQL) language, the following shell script 
+can be used to create tags for esql. ESQL/C is database SQL commands embedded inside the "C" programs. 
+Oracle's ESQL/C is called Pro*C and Sybase, Informix have ESQL/C and PostgreSQL has product "ecpg".
+<P>Save this file as "sqltags.sh" and do chmod a+rx tags_gen.sh.
+<HR>
+<PRE>
+#!/bin/sh
+
+# Program to create ctags for ESQL, C++ and C files
+ESQL_EXTN=pc
+tag_file1=tags_file.1
+tag_file2=tags_file.2
+
+which_tag=ctags
+
+rm -f $tag_file1 $tag_file2 tags
+
+aa=`ls *.$ESQL_EXTN`
+#echo $aa
+for ii in $aa 
+do
+        #echo $ii
+        jj=`echo $ii | cut -d'.' -f1`
+        #echo $jj
+
+        if [ ! -f $jj.cpp ]; then
+                echo " "
+                echo " "
+                echo "***********************************************"
+                echo "ESQL *.cpp files does not exist.. "
+                echo "You must generate the *.cpp from *.pc file"
+                echo "using the Oracle Pro*C pre-compiler or Sybase"
+                echo "or Informix esql/c pre-compiler."
+                echo "And then re-run this command"
+                echo "***********************************************"
+                echo " "
+                exit
+        fi
+
+        rm -f tags
+        $which_tag $jj.cpp
+        kk=s/$jj\.cpp/$jj\.pc/g
+
+        #echo $kk > sed.tmp
+        #sed -f sed.tmp tags >> $tag_file1
+
+        #sed -e's/sample\.cpp/sample\.pc/g' tags >> $tag_file1
+        sed -e $kk tags >> $tag_file1
+done
+
+# Now handle all the C++/C files - exclude the ESQL *.cpp files
+rm -f tags $tag_file2
+bb=`ls *.cpp *.c`
+aa=`ls *.$ESQL_EXTN`
+for mm in $bb 
+do
+        ee=`echo $mm | cut -d'.' -f1`
+        file_type="NOT_ESQL"
+        # Exclude the ESQL *.cpp and *.c files
+        for nn in $aa 
+        do
+                dd=`echo $nn | cut -d'.' -f1`
+                if [ "$dd" = "$ee" ]; then
+                        file_type="ESQL"
+                        break
+                fi
+        done
+
+        if [ "$file_type" = "ESQL" ]; then
+                continue
+        fi
+
+        rm -f tags
+        $which_tag $mm
+        cat tags >> $tag_file2
+done
+
+mv -f $tag_file2 tags
+cat  $tag_file1 >> tags
+rm -f $tag_file1
+
+# Must sort tags file for it work properly ....
+sort tags > $tag_file1
+mv $tag_file1 tags
+</PRE>
+<HR>
+<H2><A NAME="ss6.2">6.2 Ctags for JavaScript programs, Korn, Bourne shells</A>
+</H2>
+
+<P>The shell script given below can be used to generate tags for a very large variety of programs
+written in JavaScript, PHP/FI scripts, Korn shell, C shell, Bourne shell and many others. This is
+a very generic module.
+<P>Save this file as tags_gen.sh and do chmod a+rx tags_gen.sh.
+<HR>
+<PRE>
+#!/bin/sh
+
+tmp_tag=tags_file
+tmp_tag2=tags_file2
+
+echo " "
+echo " "
+echo " "
+echo " "
+echo " "
+echo "Generate tags for ...."
+while :
+do
+        echo "    Enter file extension for which you want to generate tags."
+        echo -n "    File-extension should be like sh, js, ksh, etc... : "
+        read ans
+
+        if [ "$ans" == "" ]; then
+                echo " "
+                echo "Wrong entry. Try again!"
+        else
+                break
+        fi
+done
+
+\rm -f $tmp_tag
+
+aa=`ls *.$ans`
+
+for ii in $aa
+do
+        jj=`echo $ii | cut -d'.' -f1`
+        #echo $jj
+        cp $ii $jj.c
+        ctags $jj.c
+        echo "s/$jj.c/$ii/g" > $tmp_tag2
+        sed -f $tmp_tag2 tags >> $tmp_tag
+        \rm -f tags $jj.c
+done
+
+sort $tmp_tag > tags
+
+\rm -f $tmp_tag $tmp_tag2
+</PRE>
+<HR>
+<H2><A NAME="ss6.3">6.3 Debugger gdb</A>
+</H2>
+
+<P>You would be using gdb extensively along with Vi.
+Debugging is the most important aspect of programming
+as the major cost of software projects goes into debugging and testing.
+<P>To debug C++/C programs use 'gdb' tool. See <B>'man gdb'</B>.
+You must compile your programs with -g3 option like 
+<BLOCKQUOTE><CODE>
+<PRE>
+        gcc -g3 foo.c foo_another.c sample.c
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>To set up easy aliases do -
+<BLOCKQUOTE><CODE>
+<PRE>
+  Setup an alias in your ~/.bash_profile
+        alias gdb='gdb -directory=/home/src -directory=/usr/myname/src '
+  Give -
+        gdb foo.cpp
+        gdb> dir /hom2/another_src
+        This will add to file search path
+        gdb> break 'some_class::func&lt;TAB>&lt;TAB>
+  This will complete the function name saving you typing time... and will output like -
+        gdb> break 'some_class::function_foo_some_where(int aa, float bb)'
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Pressing TAB key twice is the command line completion, which will save
+you lots of typing time. This is one of the most important technique of using gdb.
+<P>To get online help do -
+<BLOCKQUOTE><CODE>
+<PRE>
+        gdb> help
+  Gives online help
+        gdb> help breakpoints
+  Gives more details about breakpoints.
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>To set breakpoints and do debugging
+<BLOCKQUOTE><CODE>
+<PRE>
+        unixprompt> gdb exe_filename 
+        gdb> b main
+  This will put breakpoint in main() function
+        gdb> b 123
+  This will put breakpoint in line 123 of the current file
+        gdb> help breakpoints
+  Gives more details about breakpoints.
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>To analyze the core dumps do 
+<BLOCKQUOTE><CODE>
+<PRE>
+        unixprompt> gdb exe_filename  core
+        gdb> bt
+  Gives backtrace of functions and line numbers where the program failed
+        gdb> help backtrace
+  Gives more details about backtrace.
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>You can also use GUI version of gdb called xxgdb.
+<P>Memory leak tools - 
+<UL>
+<LI> Freeware Electric Fence on linux cd, </LI>
+<LI> Commercial tools Purify 
+<A HREF="http://www.rational.com">http://www.rational.com</A> </LI>
+<LI> Insure++ 
+<A HREF="http://www.insure.com">http://www.insure.com</A></LI>
+</UL>
+<P>
+<HR>
+<A HREF="Vim-HOWTO-7.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Vim-HOWTO-5.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Vim-HOWTO.html#toc6"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

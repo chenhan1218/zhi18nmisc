@@ -1,0 +1,226 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux PCMCIA HOWTO: General information and hardware requirements</TITLE>
+ <LINK HREF="PCMCIA-HOWTO-2.html" REL=next>
+
+ <LINK HREF="PCMCIA-HOWTO.html#toc1" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="PCMCIA-HOWTO-2.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<IMG SRC="../img/prev.gif" ALT="Previous">
+<A HREF="PCMCIA-HOWTO.html#toc1"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s1">1. General information and hardware requirements</A></H2>
+
+<H2><A NAME="ss1.1">1.1 Introduction</A>
+</H2>
+
+<P>Card Services for Linux is a complete PCMCIA or
+``PC Card'' support package.  It includes a set of loadable
+kernel modules that 
+implement a version of the Card Services applications program interface,
+a set of client drivers for specific cards, and a card manager daemon
+that can respond to card insertion and removal events, loading and
+unloading drivers on demand.  It supports ``hot swapping'' of most
+card types, so cards can be safely inserted and ejected at any time.
+<P>This software is continually under development.  It probably contains
+bugs, and should be used with caution.  I'll do my best to fix
+problems that are reported to me, but if you don't tell me, I may
+never know.  If you use this code, I hope you will send me your
+experiences, good or bad!
+<P>If you have any suggestions for how this document could be improved,
+please let me know (<CODE>
+<A HREF="mailto:dahinds@users.sourceforge.net">dahinds@users.sourceforge.net</A></CODE>). 
+<P>
+<H2><A NAME="ss1.2">1.2 Copyright notice and disclaimer</A>
+</H2>
+
+<P>Copyright (c) 1998 David A. Hinds
+<P>This document may be reproduced or distributed in any form without my
+prior permission.  Modified versions of this document, including
+translations into other languages, may be freely distributed, provided
+that they are clearly identified as such, and this copyright is
+included intact.
+<P>This document may be included in commercial distributions without my
+prior consent.  While it is not required, I would like to be informed
+of such usage.  If you intend to incorporate this document in a
+published work, please contact me to make sure you have the latest
+available version.
+<P>This document is provided ``AS IS'', with no express or implied
+warranties.  Use the information in this document at your own risk.
+<P>
+<H2><A NAME="ss1.3">1.3 What is the latest version, and where can I get it?</A>
+</H2>
+
+<P>The current major release of Card Services is version 3.1, and minor
+updates or bug fixes are numbered 3.1.1, 3.1.2, and so on.
+<P>Source code for the latest version is available by FTP at
+<CODE>projects.sourceforge.net</CODE> in the <CODE>/pub/pcmcia-cs</CODE>
+directory, as <CODE>pcmcia-cs-3.1.?.tar.gz</CODE>.  There will usually be
+several versions here.  I generally only keep the latest minor release
+for a given major release.  New major releases may contain relatively
+untested code, so I also keep the latest version of the previous major
+release as a relatively stable fallback; the current fallback is
+3.0.14.  It is up to you to decide which version is more appropriate,
+but the <CODE>CHANGES</CODE> file will summarize the most important
+differences.
+<P>The Linux PCMCIA FTP site is mirrored at <CODE>sunsite.unc.edu</CODE>
+(and all sunsite mirror sites) in <CODE>/pub/Linux/kernel/pcmcia</CODE>.
+<P>If you do not feel up to compiling the drivers from scratch,
+pre-compiled drivers are included with current releases of most of the
+major Linux distributions, including Slackware, Debian, Red Hat,
+Caldera, SuSE, and Yggdrasil, among others.
+<P>
+<H2><A NAME="ss1.4">1.4 What systems are supported?</A>
+</H2>
+
+<P>This package should run on almost Intel-based Linux-capable laptop.
+It also runs on Alpha-based platforms (i.e., the DEC Multia).  Work is
+being done to make the package fully dual-endian, so that it will also
+support PowerPC-based platforms (i.e., Apple Powerbooks).  Most 
+common socket controllers are supported.  Card docks for
+desktop systems should work as long as they use a supported
+controller, and are plugged directly into the ISA or PCI bus, as
+opposed to SCSI-to-PCMCIA or IDE-to-PCMCIA adapters.  The following
+controllers are recognized by the supplied socket drivers:
+<P>
+<UL>
+<LI>Cirrus Logic PD6710, PD6720, PD6722, PD6729, PD6730, PD6732, PD6832</LI>
+<LI>Intel i82365sl B, C, and DF steps, 82092AA</LI>
+<LI>O2Micro OZ6729, OZ6730, OZ6812, OZ6832, OZ6833, OZ6836, OZ6860</LI>
+<LI>Omega Micro 82C365G, 82C092G</LI>
+<LI>Ricoh RF5C296, RF5C396, RL5C465, RL5C466, RL5C475, RL5C476, RL5C478</LI>
+<LI>SMC 34C90</LI>
+<LI>Texas Instruments PCI1031, PCI1130, PCI1131, PCI1210, PCI1211,
+PCI1220, PCI1221, PCI1225, PCI1250A, PCI1251A, PCI1251B, PCI1410,
+PCI1420, PCI1450</LI>
+<LI>Toshiba ToPIC95, ToPIC97, ToPIC100 (experimental, incomplete)</LI>
+<LI>Vadem VG465, VG468, VG469</LI>
+<LI>VLSI Technologies 82C146, VCF94365</LI>
+<LI>VIA VT83C469</LI>
+<LI>Databook DB86082, DB86082A, DB86084, DB86084A, DB86072, DB86082B</LI>
+</UL>
+<P>Other controllers that are register compatible with the Intel i82365sl
+will generally work, as well.
+<P>Support for 32-bit CardBus cards is still somewhat experimental.
+Drivers prior to version 3.0 only support 16-bit cards in CardBus
+sockets.  Due to the rapid pace of technological change for laptop
+hardware, new controllers appear frequently, and there may be delays
+between when a new model appears on the market, and when driver
+support becomes available.
+<P>Toshiba has made available some documentation for their ToPIC95 and
+ToPIC97 chipsets, however the information they have provided has not
+really been adequate.  Despite conflicting reports to the contrary,
+Toshiba has not made any effective effort to remedy this situation.
+There are serious bugs in Linux support for the ToPIC chipsets, that
+cannot be resolved until better documentation or help from Toshiba
+becomes available.  I do not recommend use of Toshiba laptops at this
+time.  For use of 16-bit cards, I recommend setting the bridge mode to
+``PCIC'' in the BIOS setup; for CardBus cards, you are on your own.
+<P>The Motorola 6AHC05GA controller used in some Hyundai laptops is not
+supported.  The custom host controller in the HP Omnibook 600 is
+also unsupported.
+<P>
+<H2><A NAME="ss1.5">1.5 What cards are supported?</A>
+</H2>
+
+<P>The current release includes drivers for a variety of ethernet cards,
+a driver for modem and serial port cards, several SCSI adapter
+drivers, a driver for ATA/IDE drive cards, and memory card drivers
+that should support most SRAM cards and some flash cards.  The
+<CODE>SUPPORTED.CARDS</CODE> file included with each release of Card Services
+lists all cards that are known to work in at least one actual system.
+<P>The likelihood that a card not on the supported list will work depends
+on the type of card.  Essentially all modems should work with the
+supplied driver.  Some network cards may work if they are OEM versions
+of supported cards.  Other types of IO cards (frame buffers,
+sound cards, etc) will not work until someone writes the appropriate
+drivers.
+<P>
+<H2><A NAME="ss1.6">1.6 When will my favorite (unsupported) card become supported?</A>
+</H2>
+
+<P>Unfortunately, they usually don't pay me to write device drivers, so
+if you would like to have a driver for your favorite card, you are
+probably going to have to do at least some of the work.  Ideally, I'd
+like to work towards a model like the Linux kernel, where I would be
+responsible mainly for the ``core'' driver code and other authors
+would contribute and maintain client drivers for specific cards.  The
+<CODE>SUPPORTED.CARDS</CODE> file mentions some cards for which driver work is
+currently in progress.  I will try to help where I can, but be warned
+that debugging kernel device drivers by email is not particularly
+effective.  
+<P>Manufacturers interested in helping provide Linux support for their
+products can contact me about consulting arrangements.
+<P>
+<H2><A NAME="ss1.7">1.7 Mailing lists and other information sources</A>
+</H2>
+
+<P>I used to maintain a database and mailing list of Linux PCMCIA users.
+More recently, I've turned my web page for Linux PCMCIA information
+into a ``HyperNews'' site, with a set of message lists for Linux
+PCMCIA issues.  There are lists for installation and configuration
+issues, for different types of cards, and for programming and
+debugging issues.  The Linux PCMCIA information page is at
+<A HREF="http://pcmcia-cs.sourceforge.net">http://pcmcia-cs.sourceforge.net</A>.
+Users can request email notification of new responses to particular
+questions, or notification for all new messages in a given category.
+I hope that this will become a useful repository of information, for
+questions that go beyond the scope of the HOWTO.
+<P>There is a Linux mailing list devoted to laptop issues, the
+``linux-laptop'' list.  For more information, send a message
+containing the word ``help'' to <CODE>majordomo@vger.rutgers.edu</CODE>.  To
+subscribe, send a message containing ``subscribe linux-laptop'' to the
+same address.  This mailing list might be a good forum for discussion
+of Linux PCMCIA issues.
+<P>The Linux Laptop Home Page at
+<A HREF="http://www.cs.utexas.edu/users/kharker/linux-laptop">http://www.cs.utexas.edu/users/kharker/linux-laptop</A> has links
+to many sites that have information about configuring specific types
+of laptops for Linux.  There is also a searchable database of system
+configuration information.
+<P>
+<H2><A NAME="ss1.8">1.8 Why don't you distribute binaries?</A>
+</H2>
+
+<P>For me, distributing binaries would be a significant hassle.  It is
+complicated because some features can only be selected at compile
+time, and because the modules are somewhat dependent on having
+the ``right'' kernel configuration.  So, I would probably need to
+distribute precompiled modules along with matching kernels.  Beyond
+this, the greatest need for precompiled modules is when installing
+Linux on a clean system.  This typically requires setting up drivers so
+they can be used in the installation process for a particular Linux
+distribution.  Each Linux distribution has its own ideosyncracies, and
+it is not feasible for me to provide boot and root disks for even just
+the common combinations of drivers and distributions.
+<P>PCMCIA is now a part of many of the major Linux distributions,
+including Red Hat, Caldera, Slackware, Yggdrasil, Craftworks, and
+Nascent Technology.
+<P>
+<H2><A NAME="ss1.9">1.9 Why is the package so darned big?</A>
+</H2>
+
+<P>Well, first of all, it isn't actually that large.  All the driver
+modules together take up about 500K of disk space.  The utility
+programs add up to about 70K, and the scripts in <CODE>/etc/pcmcia</CODE>
+are about 50K.  The core driver modules take up about 55K of system
+memory.  The <CODE>cardmgr</CODE> daemon will generally be swapped out except
+when cards are inserted or removed.  The total package size is
+comparable to DOS/Windows Card Services implementations.
+<P>Compared to DOS ``point enablers'', this may still seem like a lot of
+overhead, especially for people that don't plan on using many of the
+features of PCMCIA, such as power management or hot swapping.  Point
+enablers can be tiny because they generally support only one or a
+small set of cards, and also generally support a restricted set of
+host controllers.  If someone were to write a genuinely ``generic''
+modem enabler, it would end up incorporating much of the functionality
+of Card Services, to handle cards from different vendors and the full
+range of host controller variants.
+<P>
+<HR>
+<A HREF="PCMCIA-HOWTO-2.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<IMG SRC="../img/prev.gif" ALT="Previous">
+<A HREF="PCMCIA-HOWTO.html#toc1"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

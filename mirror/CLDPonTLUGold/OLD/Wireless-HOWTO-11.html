@@ -1,0 +1,57 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="LinuxDoc-Tools 0.9.16">
+ <TITLE>Wireless HOWTO: 附錄 B - Siemens DECT Radio Modem (西門子--德特無線modem)</TITLE>
+ <LINK HREF="Wireless-HOWTO-10.html" REL=previous>
+ <LINK HREF="Wireless-HOWTO.html#toc11" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<IMG SRC="img/next.png" ALT="Next">
+<A HREF="Wireless-HOWTO-10.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="Wireless-HOWTO.html#toc11"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s11">11.</A> <A HREF="Wireless-HOWTO.html#toc11">附錄 B - Siemens DECT Radio Modem (西門子--德特無線modem)</A></H2>
+
+<P>西門子的首頁       
+<A HREF="http://www.siemens.com">http://www.siemens.com</A></P>
+<P>那是什麼? 
+這兩個組成部分不是真的PC卡, 有點像外設的modem.</P>
+<P>Host1-serial - RadioModem1 - - - - - RadioModem2 - serial-Host2 </P>
+<P>我怎麼連接它?</P>
+<P>如果你把它們抽像化, 你可以得到下面這種模型:<BR>
+Host1-serial - - NULL MODEM CABLE - - serial-Host2 </P>
+
+<P>你可以在兩個主機的串行口之間進行無線的連接,大體上有兩種設定方法:
+<BLOCKQUOTE><CODE>
+<PRE>
+1. Linux和Windows, Linux 運行一個daemon侍服程式回應Windows的遠程PPP拔入.
+2. Linux 和 Linux, 在它們之間使用不同的IP地址進行PPP連接.  
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>第1個方法可以在Linux主機上使用這個簡單的 script:
+"/usr/sbin/pppd -detach lock idle 300 crtscts connect "/usr/sbin/chat -v TIMEOUT 5 AT OK AT OK AT OK AT OK" IPLINUX:IPWINDOWS /dev/ttySx 115200 disconnect "/usr/sbin/chat -v AT OK" ms-dns IPDNS" </P>
+
+
+<P>那兒:
+<BLOCKQUOTE><CODE>
+<PRE>
+/dev/ttySx 是你的串行端口, 
+IPDNS 是DNS主機的IP地址, 
+IPLINUX 是Linux IP地址 , IPWINDOWS 是 Windows IP地址. 
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>上面的script是讓Windows認為Linux上有一個modem.
+在Windows 你需要使用crtscts,並創建撥號連接.
+speed at 115200 and with a stupid number to call (need by Remote Access but absolutely not used). </P>
+<P>在第 2 個方法中你只要在每個主機中運行一個簡單的 script: </P>
+<P>"/usr/sbin/pppd passive local crtscts IPLINUX1:IPLINUX2 /dev/ttySx 115200 noauth persist" </P>
+<P>where you'll invert IPLINUX1 with IPLINUX2 at the other edge. </P>
+<P>Note that you can do authentication even Linux-Windows than in Linux-Linux if you want. </P>
+<HR>
+<IMG SRC="img/next.png" ALT="Next">
+<A HREF="Wireless-HOWTO-10.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="Wireless-HOWTO.html#toc11"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

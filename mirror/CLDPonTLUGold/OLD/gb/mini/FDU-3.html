@@ -1,0 +1,318 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>XFree86 字体美化 Mini HOWTO: TrueType 字型 (少数 Windows 在行的事情)</TITLE>
+ <LINK HREF="FDU-4.html" REL=next>
+ <LINK HREF="FDU-2.html" REL=previous>
+ <LINK HREF="FDU.html#toc3" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+<A HREF="FDU-4.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="FDU-2.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="FDU.html#toc3"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s3">3. TrueType 字型 (少数 Windows 在行的事情)</A></H2>
+
+<P>因为在 Redmond 的那群家伙非常关心他们软体的外观而不是内容，他们在 Windows 里加上对 TrueType 字型的支援。当然，他们是从源起於 MacOS 中的 TrueType 中得到了这个主意。 Window 9x 和其他的 Windows 都内含 Arial，Times New Roman，和 Courier New。他们约等於 Helvetica，Times，和 Courier。TrueType 字型是能缩放的，所以它们在放大时很好看，而它们也被好好的调整(hint)过，在缩小的时候依然可读。有许多的 Windows 应用程式附送好几打的 TrueType 字型。先别急著把你的 Windows CD 拿去微波，得先拿到这些字型。
+<P>不幸的是，XFree86 3.x 并没有内建支援 TrueType，所以你必须自己加入。然而，XFree86 4.x 则内建了 (请参考第 4 节)。这表示支援 TrueType 的字型伺服器和字型将会被安装。但你并不会在各家的 distribution 中发现精美的 TrueType 字型。最可能的原因是现在并没有以适当的 license 发行的精美字型。
+<P>
+<H2><A NAME="ss3.1">3.1 取得 TrueType 字型</A>
+</H2>
+
+<P>让我们先处理字型。在各种 MS Windows 所附的 TrueType 字型应该都可以用。别忘记文字处理器和其他应用程式也都附有自己的字型。MacOS 的字型不能使用。若你已经把那片 CD 拿去微波，还有一些免费的 TrueType 字型可以下载 (请参考 6.2 节的连结)。
+<P>为了使用 TrueType 字型，这些字型必须能够被字型伺服器读取。这表示它们必须是在一个一直被挂载 (mount) 的档案系统中。在双作业系统 (dual boot system) 上，这也可以是一个 Windows 分割区。当然，这些字型也可以拷贝到 Linux 中。首先先变成超级使用者:
+<P>
+<PRE>
+ # su -
+ # mkdir -p /usr/local/share/fonts/ttfonts
+</PRE>
+<P>现在切换到新的字型目录下:
+<P>
+<PRE>
+ # cd /usr/local/share/fonts/ttfonts
+</PRE>
+<P>然後将字型加入这个目录。不论你是从 Windows 系统中拷贝过来
+<P>
+<PRE>
+ # cp /mnt/&lt;path_to_fonts&gt;/*ttf  .
+</PRE>
+<P>或是从 
+<A HREF="http://www.microsoft.com/typography/fontpack/default.htm">Mircosoft</A> 下载。这些字型是自解压缩的 zip 档。若你想在 Linux 下解压缩，必须下载标示 'Windows 3.1' 的档案。在 Linux 下以 Linux zip 解开
+<P>
+<PRE>
+ # ls *exe | xargs -n 1 unzip -L
+</PRE>
+<P>'-L' 的选项会将字名转为小写，这对於 xfsft 和 Redhat 的 xfs 是必要的。注意现在的 Linux zip 程式并不能处理 32 位元的 Win9x 字型压缩档。看起来似乎 Microsoft 不会再在这个网站上放入 16 bit 的 Arial, Courier 和 Times-Roman。或是你可以在 
+<A HREF=" http://rpmfind.net/linux/RPM/contrib/noarch/noarch/webfonts-1-3.noarch.html">这里</A> 下载包含许多 MS TrueType 字型的 WebFonts RPM。它已经包含足够的字型给 Netscape 和其他的网路浏览器使用了。
+<P>你必须在 X server 的 FontPath 中加入这个新的 TrueType 目录。用你顺手的文字编辑器加上适当的几行:
+<P>
+<PRE>
+FontPath        "/usr/local/share/fonts/ttfonts"
+FontPath        "/usr/X11R6/lib/X11/fonts/misc:unscaled"
+FontPath        "/usr/X11R6/lib/X11/fonts/100dpi:unscaled"
+FontPath        "/usr/X11R6/lib/X11/fonts/75dpi:unscaled"
+FontPath        "/usr/X11R6/lib/X11/fonts/Type1"
+FontPath        "/usr/X11R6/lib/X11/fonts/Speedo"
+FontPath        "/usr/X11R6/lib/X11/fonts/misc"
+FontPath        "/usr/X11R6/lib/X11/fonts/100dpi"
+FontPath        "/usr/X11R6/lib/X11/fonts/75dpi"
+</PRE>
+<H2><A NAME="ss3.2">3.2 字型伺服器</A>
+</H2>
+
+<P>现在有许多字型伺服器都可以使用: xfstt，xfsft，和 Redhat 自 xfsft 修改而来的 xfs。虽然这些名字看起来很像，但是它们却是不同的套件。至少一个以上的套件应该已经包含於任何最近的 Linux distribution。而你也可能已经安装了。
+<P>以前字型伺服器是用於在网路上提供字型。字型的资源可以存於一台机器上，其他的 client 可以在需要的时候读取。但是它的发展者增加了新功能，如可以画 TrueType 字型。(XFree86 4.x 已经包含这个功能，所以若只是要提供 TrueType 支援的话，并不需要另外的字型伺服器)。
+<H3>xfstt</H3>
+
+<P>一个这样的字型伺服器是 xfstt。它在设计上就有考虑到 TrueType 字型。
+<H3>安装</H3>
+
+<P>xfstt 非常容易安装和设定。若你尚未安装的话，必须从网站上下载 tarball 或是找找你的 CD。最新的版本是在 
+<A HREF="http://metalab.unc.edu/pub/Linux/X11/fonts/">http://metalab.unc.edu/pub/Linux/X11/fonts/</A><P>有了 tarball 後，把它解开:
+<P>
+<PRE>
+ $ tar -zxvf Xfstt-*tgz
+</PRE>
+<P>然後编译和安装它。INSTALL 档有简单的说明。但是其实是不用花什麽脑筋，只要在 xfstt 的目录下，输入下面的指令即可:
+<P>
+<PRE>
+ # make
+ # make install
+</PRE>
+<P>键入下面的指令来启动 xfstt:
+<P>
+<PRE>
+ # xfstt --sync              # 更新 xfstt 的字型资料库
+ # xfstt &amp;                # 在背景执行 xfstt
+</PRE>
+<P>xfstt 应该要比 X server 更早启动。一旦这样执行无误，你可以在 <CODE>/etc/rc.d/rc.local</CODE> 或是适当的起始档中加入上面这一行。然後键入:
+<P>
+<PRE>
+ $ xset +fp unix/:7100       # 知会 X 有关 xfstt 和到那里去找字型
+</PRE>
+<P>或是在你的 <CODE>XF86Config</CODE> 档中加入下面的指令，知会 X 有关於字型伺服器。当 FontPath 的位置和内容有改变的时候，重新执行 <CODE>xfstt --sync</CODE>。
+<P>FontPath "unix/:7101"
+<H3>调整预设字型的大小</H3>
+
+<P>若你的 TrueType 字型显得相当小，下面的指令可能有帮助。
+<P>在 X server 命令列加上 <CODE>-dpi</CODE> (请参考第 3 章)。
+<P>使用 <CODE>--res</CODE> 来告诉 xfstt 增加预设的解析度。用下面的指令
+<P>
+<PRE>
+ # xfstt --res 120
+</PRE>
+<H3>Redhat 的 xfs</H3>
+
+<P>就如同 Redhat Linux 6.0 一般，架构在 Redhat 上的 distribution (如 Mandrake 等) 已经包含了一个特别修正的 xfs 和修正过的 X servers。Redhat 的 xfs 包含了 xfsft 的修正档，而这些修正档则是架构在 FreeType Font library。Redhat 的 xfs 提供与 xfstt 类似的功能。它不只能处理 TrueType 和 Type 1 字型，也可以对付原本的 X 字型。
+<P>若是你使用架构於 Redhat 的 distribution，xfs 应该已经安装好了。若没有，它是在 <CODE>XFree86-xfs*rpm</CODE> 中。要想确定它是预设执行的服务，可以用 <CODE>ntsysv</CODE> 或:
+<P>
+<PRE>
+ # chkconfig --add xfs
+</PRE>
+<P>现在 xfs 就会在每一次开机的时候启动。
+<H3>设定 xfs 的 FontPath</H3>
+
+<P>在 Redhat 的预设安装中，xfs 是经由 Unix Domain Socket 提供字型。我们必须告诉 X server 到那里去找 xfs 和字型。在 <CODE>/etc/X11/XF86Config</CODE> 中的 FontPath 一定要包含:
+<P>
+<PRE>
+FontPath   "unix/:-1"
+</PRE>
+<P>至少预设的设置是如此。这是一个 xfs 会去 listen 的 socket。你也可以加上另外的 FontPath，但是它们必须由 X server 来处理，而不是 xfs。安装新的 Redhat 6.x 应该就已经设定好了，但是若你是从旧的版本升级上来，必须自己动手修改。
+<P>xfs 在 <CODE>/etc/X11/fs/config</CODE> 中存有自己的 FontPath。这里就是它找字型的地方。在 <CODE>XF86Config</CODE> 档中，它放在 X server 的 FontPath 上面。你可以用文字编辑器加入新的路径，或是用 <CODE>chkfontpath</CODE> 命令:
+<P>
+<PRE>
+ # chkfontpath --add /usr/local/share/fonts/ttfonts
+</PRE>
+<P>该 FontPath 在执行 <CODE>chkfontpath</CODE> 命令前必须要先存在。在 <CODE>/etc/X11/fs/config</CODE> 中相关部份看起来应该像是:
+<P>
+<PRE>
+catalogue = /usr/X11R6/lib/X11/fonts/misc:unscaled,
+            /usr/X11R6/lib/X11/fonts/100dpi:unscaled,
+            /usr/X11R6/lib/X11/fonts/75dpi:unscaled,
+            /usr/X11R6/lib/X11/fonts/Type1,
+            /usr/X11R6/lib/X11/fonts/Speedo,
+            /usr/X11R6/lib/X11/fonts/misc,
+            /usr/X11R6/lib/X11/fonts/100dpi,
+            /usr/X11R6/lib/X11/fonts/75dpi,
+            /usr/local/share/fonts/ttfonts
+</PRE>
+<H3>准备好字型</H3>
+
+<P>在真正使用 TrueType 字型前还有一些事情要作。xfs 需要一些事情按照规矩来。首先，所有的字名都必须是小写。第二，字名里不能有空白。然後，我们还要产生一些档案才行。
+<P>先成为超级使用者，然後到 TrueType 字型的目录下:
+<P>
+<PRE>
+ # su -
+ # cd /usr/local/share/fonts/ttfonts
+</PRE>
+<P>若是有小写的字名，你可以使用下面的 script 将所有的字名转为小写:
+<P>
+<PRE>
+ #!/bin/sh
+ #
+ ## -------- convert upper to lower case ---------
+ 
+ ls * | while read f
+  do
+    if [ -f $f ]; then
+      if [ "$f" != "`echo \"$f\" | tr A-Z a-z`" ]; then
+       #Note that 'This' will overwrite 'this'!
+       mv -iv "$f" "`echo \"$f\" | tr A-Z a-z`"
+      fi
+    fi
+  done
+
+ ## eof
+</PRE>
+<P>注意标点符号 -- 反引号 (backquotes) 很重要! 它也将字名中的空白移除。当 TrueType 字型适当被安装後，你必须要产生 <CODE>fonts.dir</CODE> 和 <CODE>fonts.scale</CODE> 档。下面的命令可以做到:
+<P>
+<PRE>
+ # ttmkfdir -o fonts.scale
+ # mkfontdir
+</PRE>
+<P>现在你的 TrueType 字型目录中应该有 <CODE>fonts.dir</CODE> 和 <CODE>fonts.scale</CODE> 档。<CODE>ttmkfdir</CODE> 是在 <CODE>Freetype</CODE> 的 RPM 里，而且它必须在 <CODE>mkfontdir</CODE> 前执行。这些命令不见得每次都会回报错误，所以要再验证的确产生了档案，且不是空档:
+<P>
+<P>
+<P>
+<PRE>
+ $ ls -l fonts.*
+  -rw-r--r--  1 root   root   11657 Aug 17 10:31 fonts.dir
+  -rw-r--r--  1 root   root   11657 Aug 17 10:31 fonts.scale
+</PRE>
+<P>若你遇到问题，试试在 <CODE>ttmkfdir</CODE> 中加上 <CODE>- m</CODE> 的选项。这会放弃档案中不正确的字元。设定一个数字，如 50 或是 100 (<CODE>ttmkfdir -m 50</CODE>) 。档案本身是文字档。看一看:
+<P>
+<PRE>
+ $ less  fonts.dir
+  114
+  webdings.ttf  -microsoft-Webdings-medium-r-normal--0-0-0-0-p-0-microsoft-symbol
+  verdanaz.ttf  -microsoft-Verdana-bold-i-normal--0-0-0-0-p-0-ascii-0
+  verdanaz.ttf  -microsoft-Verdana-bold-i-normal--0-0-0-0-p-0-fcd8859-15
+  verdanaz.ttf  -microsoft-Verdana-bold-i-normal--0-0-0-0-p-0-iso8859-15
+  verdanaz.ttf  -microsoft-Verdana-bold-i-normal--0-0-0-0-p-0-iso8859-9
+  verdanaz.ttf  -microsoft-Verdana-bold-i-normal--0-0-0-0-p-0-iso8859-1
+ [...]
+</PRE>
+<P>接著，更新 xfs (在 XFree86 4.x 或许不用) 和你 X server 的 FontPath:
+<P>
+<PRE>
+ # /etc/rc.d/init.d/xfs restart
+ $ xset +fp /usr/local/share/fonts/ttfonts
+ $ xset fp rehash
+</PRE>
+<P>当你加入或移除新的字型时，重新执行头尾这两个命令。<CODE>xset +fp </CODE>只有在增加新的字型目录时才需执行。
+<P>现在应该就没问题了。你可以检查 X 可以使用的字型:
+<P>
+<PRE>
+$ xlsfonts | less
+</PRE>
+<P>或是再用 <CODE>xfontsel</CODE> 或 <CODE>gfontsel</CODE> 来检查。若在 <CODE>xlsfonts</CODE> 中可以看到，则 X 可以使用，反之亦然。若没有出现，以 Ctrl-Alt-BS 重新启动 X。
+<H2><A NAME="ss3.3">3.3 xfsft</A>
+</H2>
+
+<P>
+<A HREF="http://www.dcs.ed.ac.uk/home/jec/programs/xfsft/">xfsft</A> 是由 Juliusz Chroboczek 所写的 TrueType 解决方案。xfsft 是架构在 Mark Leisher 等人所写的 FreeType font library。它基本上是一个 XFree86 xfs 再加上相关函式库的修补档 -- xfs + ft。Redhat 的 xfs 基本上是 xfsft 再加上一些小小的修正。而 Free86 4.x 也包含了同为 Juliusz 所写的 <CODE>freetype</CODE> 字型模组(font module)。它是 XFree86 4.x 的 TrueType 解决方案中的一个。
+<P>要想编译 xfsft 除了 xfsft 本身外，至少还要一些 XFree86 的原始档，所以不适合心脏不够强壮的人。编译和设定 xfsft 的说明已经在 tarball 中，所以在这里我不打算详细叙述。他很直接。在 xfsft 的网页 (见上面) 上有一些可执行档的连结。
+<P>注意你必须产生 <CODE>fonts.scale</CODE> 和 <CODE>fonts.dir</CODE> 档给 xfsft。<CODE>fonts.scale</CODE> 可以手动产生，或是用 <CODE>ttmkfdir</CODE> 程式。它并未包含於 xfsft，但是你可以在 
+<A HREF="http://www.joerg-pommnitz.de/TrueType/ttmkfdir.tar.gz">这里</A> 或许多 Linux 的网站上抓到。Redhat 在 <CODE>Freetype</CODE> 的 RPM 里包含了这个程式。
+<P>你也会需要一个设定档。下面是个例子:
+<P>
+<PRE>
+
+-----------------------------------------------------
+
+clone-self = off
+use-syslog = off
+
+client-limit = 20
+
+catalogue = /usr/local/share/font/ttfonts
+
+error-file = /home/jec/fonts/xfs.errors
+
+# in decipoints
+default-point-size = 120
+
+# x,y
+default-resolutions = 100,100,75,75
+
+-----------------------------------------------------
+</PRE>
+<P>然後执行 xfsft:
+<P>
+<PRE>
+# xfs -port 7100 -config /path/to/your/config/file &amp;
+</PRE>
+<P>你可以在 X server 的 <CODE>FontPath</CODE> 中加上 xfsft:
+<P>
+<PRE>
+$ xset +fp tcp/localhost:7100
+</PRE>
+<P>若一切顺利的话，你可以在 <CODE>XF86Config</CODE> 中加上这个 <CODE>FontPath</CODE>。
+<H2><A NAME="ss3.4">3.4 fonts.alias 档</A>
+</H2>
+
+<P><CODE>fonts.alias</CODE> 是另一个可以调整如何处理字型的设定档。就如同 <CODE>fonts.scale</CODE> 和 <CODE>fonts.dir</CODE> 一般，<CODE>fonts.alias</CODE> 也必须和字型放在同一个目录下。它虽然不是必要的，但是有的话的确解决了某些可能发生问题。下面是一个摘自 Redhat 系统中 <CODE>/usr/X11R6/lib/X11/fonts/misc/fonts.alias</CODE> 第一行的例子:
+<P>
+<PRE>
+ fixed    -misc-fixed-medium-r-semicondensed--13-120-75-75-c-60-iso8859-1
+</PRE>
+<P>这里 <CODE>fixed</CODE> 就是化身(alias)。每次 <CODE>fixed</CODE> 被呼叫时，我们事实上所得到的是第二列的字型定义。字太小了吗? 只要改字型定义即可 (警告:至少在 Redhat 中，这个档案很重要)。相同的原则可以应用到所有的字型，包含 TrueType 字。事实上，若你没有 TrueType，你可以用这个技巧将 Type 1 或类似的字型化身为 TrueType。 
+<P>在某些无法妥善处理自 <CODE>fonts.scale</CODE> 提供的资料的应用程式中，<CODE>fonts.alias</CODE> 就显得相当重要。其中最著名的就是 Netscape。若没有 <CODE>fonts.alias</CODE>，你会发现 Netscape 只能显示现有 0 到 12 点的字。或许你也发现若在 <CODE>Preferences</CODE> 中指定另一种点数再配合上 <CODE>scalable font</CODE> 选项，Netscape 将无法存下这个设定。真令人厌烦! 所以我们需要这个档案。下面是取自一个 <CODE>fonts.scale</CODE> 档:
+<P>
+<PRE>
+ arial.ttf   -monotype-Arial-medium-r-normal--0-0-0-0-p-0-ascii-0
+ arial.ttf   -monotype-Arial-medium-r-normal--0-0-0-0-p-0-fcd8859-15
+ arial.ttf   -monotype-Arial-medium-r-normal--0-0-0-0-p-0-iso8859-15
+ arial.ttf   -monotype-Arial-medium-r-normal--0-0-0-0-p-0-iso8859-1
+</PRE>
+<P>因为这些字是可以缩放的，所以并没有预设的点数。举 Arial 来说，我们必须产生我们自己的 <CODE>fonts.alias</CODE> ，如下:
+<P>
+<PRE>
+
+ -monotype-Arial-medium-r-normal--6-60-0-0-p-0-iso8859-1 \
+             -monotype-Arial-medium-r-normal--9-90-75-75-p-0-iso8859-1
+
+ -monotype-Arial-medium-r-normal--7-70-0-0-p-0-iso8859-1 \
+             -monotype-Arial-medium-r-normal--9-90-75-75-p-0-iso8859-1
+
+ -monotype-Arial-medium-r-normal--8-80-0-0-p-0-iso8859-1 \
+             -monotype-Arial-medium-r-normal--10-100-75-75-p-0-iso8859-1
+
+ -monotype-Arial-medium-r-normal--9-90-0-0-p-0-iso8859-1 \
+             -monotype-Arial-medium-r-normal--11-110-75-75-p-0-iso8859-1
+
+ -monotype-Arial-medium-r-normal--10-100-0-0-p-0-iso8859-1 \
+             -monotype-Arial-medium-r-normal--12-120-75-75-p-0-iso8859-1
+
+ -monotype-Arial-medium-r-normal--11-110-0-0-p-0-iso8859-1 \
+             -monotype-Arial-medium-r-normal--12-120-75-75-p-0-iso8859-1
+
+ -monotype-Arial-medium-r-normal--12-120-0-0-p-0-iso8859-1 \
+             -monotype-Arial-medium-r-normal--12-120-75-75-p-0-iso8859-1
+
+ -monotype-Arial-medium-r-normal--13-130-0-0-p-0-iso8859-1 \
+             -monotype-Arial-medium-r-normal--13-130-75-75-p-0-iso8859-1
+
+ -monotype-Arial-medium-r-normal--14-140-0-0-p-0-iso8859-1 \
+             -monotype-Arial-medium-r-normal--14-140-75-75-p-0-iso8859-1
+
+ -monotype-Arial-medium-r-normal--15-150-0-0-p-0-iso8859-1 \
+             -monotype-Arial-medium-r-normal--15-150-75-75-p-0-iso8859-1
+
+ -monotype-Arial-medium-r-normal--18-180-0-0-p-0-iso8859-1 \
+            -monotype-Arial-medium-r-normal--18-180-75-75-p-0-iso8859-1
+
+ -monotype-Arial-medium-r-normal--24-240-0-0-p-0-iso8859-1 \
+            -monotype-Arial-medium-r-normal--24-240-75-75-p-0-iso8859-1
+</PRE>
+<P>(<I>请注意我们将原本是一行的写成两行以增加可读性</I>)。这两列其实应该放在同一行，用一个以上的空白来区分，而且中间没有 "\" 符号。这样做了之後就会让 Netscape 跑得很顺。你可能也发现在前面几行里，第一列和第二列的点数并不相同。第一项的第一列是'6'，但是在第二列却化身为'9'，所以是 9 点字。这是为了解决在 Netscape 里天杀的小字而故意改的。你可依照你的喜好，解析度和眼力来调整。
+<P>
+<P>
+<P>这个档案可以手动产生，或是用神奇的 sed 和 awk script。
+<A HREF="http://home.c2i.net/dark/linux.html#ttf">这里</A> 有一个讨论这档案和其他字型相关的主题在 Kristin Aanestad 的网站上。那里也有一个可以重复自动产生 <CODE>fonts.alias</CODE> 档的 python script。感谢 Kristin，他的努力和见解启发了这一节。
+<HR>
+<A HREF="FDU-4.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="FDU-2.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="FDU.html#toc3"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

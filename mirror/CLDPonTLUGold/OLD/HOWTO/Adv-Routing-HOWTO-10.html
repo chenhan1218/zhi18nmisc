@@ -1,0 +1,84 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux 2.4 Advanced Routing HOWTO: Netfilter &amp; iproute - marking packets</TITLE>
+ <LINK HREF="Adv-Routing-HOWTO-11.html" REL=next>
+ <LINK HREF="Adv-Routing-HOWTO-9.html" REL=previous>
+ <LINK HREF="Adv-Routing-HOWTO.html#toc10" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Adv-Routing-HOWTO-11.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Adv-Routing-HOWTO-9.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Adv-Routing-HOWTO.html#toc10"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s10">10. Netfilter &amp; iproute - marking packets</A></H2>
+
+<P>So far we've seen how iproute works, and netfilter was mentioned a few
+times. This would be a good time to browse through 
+<A HREF="http://netfilter.kernelnotes.org/unreliable-guides/">Rusty's Remarkably Unreliable Guides</A>. Netfilter itself
+can be found 
+<A HREF="http://netfilter.filewatcher.org/">here</A>.
+<P>Netfilter allows us to filter packets, or mangle their headers. One special
+feature is that we can mark a packet with a number. This is done with the
+--set-mark facility. 
+<P>As an example, this command marks all packets destined for port 25, outgoing
+mail:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# iptables -A PREROUTING -i eth0 -t mangle -p tcp --dport 25 \
+ -j MARK --set-mark 1
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Let's say that we have multiple connections, one that is fast (and
+expensive, per megabyte) and one that is slower, but flat fee. We would most
+certainly like outgoing mail to go via the cheap route.
+<P>We've already marked the packets with a '1', we now instruct the routing
+policy database to act on this:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# echo 201 mail.out >> /etc/iproute2/rt_tables
+# ip rule add fwmark 1 table mail.out
+# ip rule ls
+0:      from all lookup local 
+32764:  from all fwmark        1 lookup mail.out 
+32766:  from all lookup main 
+32767:  from all lookup default 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Now we generate the mail.out table with a route to the slow but cheap link:
+<BLOCKQUOTE><CODE>
+<PRE>
+# /sbin/ip route add default via 195.96.98.253 dev ppp0 table mail.out
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>And we are done. Should we want to make exceptions, there are lots of ways
+to achieve this. We can modify the netfilter statement to exclude certain
+hosts, or we can insert a rule with a lower priority that points to the main
+table for our excepted hosts.
+<P>We can also use this feature to honour TOS bits by marking packets with a
+different type of service with different numbers, and creating rules to act
+on that. This way you can even dedicate, say, an ISDN line to interactive
+sessions.
+<P>Needless to say, this also works fine on a host that's doing NAT
+('masquerading').
+<P>Note: for this to work, you need to have some options enabled in your
+kernel:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+IP: advanced router (CONFIG_IP_ADVANCED_ROUTER) [Y/n/?]
+ IP: policy routing (CONFIG_IP_MULTIPLE_TABLES) [Y/n/?]
+  IP: use netfilter MARK value as routing key (CONFIG_IP_ROUTE_FWMARK) [Y/n/?]
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>See also 
+<A HREF="Adv-Routing-HOWTO-14.html#SQUID">Transparent web-caching using netfilter, iproute2, ipchains and squid</A>
+in the Cookbook.
+<HR>
+<A HREF="Adv-Routing-HOWTO-11.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Adv-Routing-HOWTO-9.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Adv-Routing-HOWTO.html#toc10"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

@@ -1,0 +1,126 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>桥接器的运作 mini-Howto: 设定</TITLE>
+ <LINK HREF="Bridge-2.html" REL=next>
+
+ <LINK HREF="Bridge.html#toc1" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+<A HREF="Bridge-2.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<IMG SRC="../img/prev.gif" ALT="Previous">
+<A HREF="Bridge.html#toc1"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s1">1. 设定</A></H2>
+
+<P>
+<OL>
+<LI>取得 ``桥接器配置'':
+<BLOCKQUOTE><CODE>
+<A HREF="ftp://shadow.cabi.net/pub/Linux/BRCFG.tgz">ftp://shadow.cabi.net/pub/Linux/BRCFG.tgz</A></CODE></BLOCKQUOTE>
+
+</LI>
+<LI>取得和阅读 ``Multiple ethernet'' HOWTO:
+<BLOCKQUOTE><CODE>
+<A HREF="ftp://sunsite.unc.edu/pub/Linux/docs/HOWTO/mini/Multiple-Ethernet">ftp://sunsite.unc.edu/pub/Linux/docs/HOWTO/mini/Multiple-Ethernet</A></CODE></BLOCKQUOTE>
+
+</LI>
+<LI><P>使多个乙太网路设备在你的机器运作照著
+加入这行到你的 <CODE>/etc/lilo.conf</CODE>,
+和重新执行 <CODE>lilo</CODE>:
+<BLOCKQUOTE><CODE>
+<PRE>
+append = "ether=0,0,eth1"
+        
+</PRE>
+</CODE></BLOCKQUOTE>
+
+如果你在你的桥接器上有三张界面卡,使用这些行取代上面:
+<BLOCKQUOTE><CODE>
+<PRE>
+append = "ether=0,0,eth1 ether=0,0,eth2"
+        
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>靠加入更多的乙太陈述可以找到更多的界面.
+预设上一个传统的 Linux 核心只侦测一张独一的乙太网路卡,
+和当一个被找到侦测就会停止.
+上面所附加的陈述告诉核心在第一个被找到之後继续侦测
+去找到更多乙太网路设备.
+<P>另一个方法,可以使用启动变数来取代:
+<BLOCKQUOTE><CODE>
+<PRE>
+linux ether=0,0,eth1
+        
+</PRE>
+</CODE></BLOCKQUOTE>
+
+或者, 有三个界面,使用:
+<BLOCKQUOTE><CODE>
+<PRE>
+linux ether=0,0,eth1 ether=0,0,eth2
+        
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+</LI>
+<LI>重新编译那核心启动<CODE>BRIDGING</CODE>功能.
+</LI>
+<LI>一个桥接器应没有一个的 IP 地址.
+它可以有一个,但是一个平常的桥接器不需要一个 IP 地址.
+从你的桥接器上移除 IP 地址,到
+<CODE>/etc/sysconfig/network-scripts/</CODE> (对於一个 RedHat系统)
+和拷贝 <CODE>ifcfg-lo0</CODE>到 <CODE>ifcfg-eth0</CODE> &amp;
+<CODE>ifcfg-eth1</CODE>.
+在这两个乙太档案中,改变那行包含
+``<CODE>DEVICE=lo</CODE>'' to ``<CODE>DEVICE=eth0</CODE>''
+和 ``<CODE>DEVICE=eth1</CODE>''.
+别的 Linux distribution 也许和这个不同,自已动手做你想要的!
+如果桥接器上有超过两个界面卡,
+确定也使设定符合这些界面.
+</LI>
+<LI>重新启动,执行那包含桥接器功能的核心,
+另外也查明确认一个 IP 地址没有指定到
+这网路界面卡.
+</LI>
+<LI>一次系统是备份,
+把乙太网路卡设定在纷乱(promiscuous)的模式,
+他们将靠它的界面监看每一个通过的封包:
+<BLOCKQUOTE><CODE>
+<PRE>
+ifconfig promisc eth0 ; ifconfig promisc eth1
+        
+</PRE>
+</CODE></BLOCKQUOTE>
+
+连接到网路区段的全部的界面卡被桥接器分开
+进入 promiscuous(纷乱) 的模式.
+</LI>
+<LI>启动桥接器使用 <CODE>brcfg</CODE>程式:
+<BLOCKQUOTE><CODE>
+<PRE>
+brcfg -ena
+        
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>检验每一个界面卡有不同的交通流量:
+<BLOCKQUOTE><CODE>
+<PRE>
+tcpdump -i eth0      (在一个视窗)
+tcpdump -i eth1      (在另一个视窗)
+        
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>执行一个 sniffer (监看器) 或者 <CODE>tcpdump</CODE> 在另外的机器上
+去检验桥接器正确地分开区段.</LI>
+</OL>
+<HR>
+<A HREF="Bridge-2.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<IMG SRC="../img/prev.gif" ALT="Previous">
+<A HREF="Bridge.html#toc1"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

@@ -1,0 +1,329 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>The Linux 3Dfx HOWTO: FAQ: Voodoo Graphics (tm)? 3Dfx? </TITLE>
+ <LINK HREF="3Dfx-HOWTO-7.html" REL=next>
+ <LINK HREF="3Dfx-HOWTO-5.html" REL=previous>
+ <LINK HREF="3Dfx-HOWTO.html#toc6" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="3Dfx-HOWTO-7.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="3Dfx-HOWTO-5.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="3Dfx-HOWTO.html#toc6"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s6">6. FAQ: Voodoo Graphics (tm)? 3Dfx? </A></H2>
+
+<H2><A NAME="ss6.1">6.1 Who is 3Dfx?</A>
+</H2>
+
+<P>3Dfx is a San Jose based manufacturer of 3D graphics 
+accelerator hardware for arcade games, game consoles,
+and PC boards.
+Their official website is
+<A HREF="http://www.3dfx.com/">www.3dfx.com</A>. 3Dfx does not sell any boards,
+but other companies do, e.g. Quantum3D.
+<P>
+<P>
+<H2><A NAME="ss6.2">6.2 Who is Quantum3D?</A>
+</H2>
+
+<P>Quantum3D started as a 3Dfx spin-off, manufacturing
+high end accelerator boards based on 3Dfx chip
+technology for consumer and business market, and
+supplying arcade game technology. See
+their home page at
+<A HREF="http://www.quantum3d.com/">www.quantum3d.com</A>
+for additional information. For general inquiries
+regarding Quantum3D,
+please send mail to
+<A HREF="mailto:info@quantum3d">info@quantum3d</A>.
+<P>
+<P>
+<P>
+<H2><A NAME="ss6.3">6.3 What is the Voodoo Graphics (tm)?</A>
+</H2>
+
+<P>The Voodoo Graphics (tm) is a chipset manufactured by 3Dfx. It
+is used in hardware acceleration boards for the PC.
+See the HOWTO section on supported hardware.
+<P>
+<H2><A NAME="ss6.4">6.4 What is the Voodoo Rush (tm)?</A>
+</H2>
+
+<P>The Voodoo Rush (tm) is a derivate of the Voodoo Graphics (tm) that
+has an interface to cooperate with a 2D VGA
+video accelerator, effectively supporting
+accelerated graphics in windows. This combo 
+is currently not supported with Linux.
+<P>
+<H2><A NAME="ss6.5">6.5 What is the Voodoo 2 (tm)?</A>
+</H2>
+
+<P>The Voodoo 2 (tm) is the successor of the Voodoo Graphics (tm) chipset,
+featuring several improvements. It is announced
+for late March 1998, and annoucements of Voodoo 2 (tm)
+based boards have been published e.g. by Quantum 3D,
+by Creative Labs, Orchid Technologies, and
+Diamond Multimedia.
+<P>The Voodoo 2 (tm) is supposed to be backwards compatible.
+However, a new version of Glide will have to be
+ported to Linux. 
+<P>
+<P>
+<H2><A NAME="ss6.6">6.6 What is VGA pass-though?</A>
+</H2>
+
+<P>The Voodoo Graphics (tm) (but not the Voodoo Rush (tm)) boards are
+add-on boards, meant to be used with a regular
+2D VGA video accelerator board. In short, the
+video output of your regular VGA board is used
+as input for the Voodoo Graphics (tm) based add-on board,
+which by default passes it through to the display
+also connected to the Voodoo Graphics (tm) board. If the
+Voodoo Graphics (tm) is used (e.g. by a game), it will
+disconnect the VGA input signal, switch the
+display to a 640x480 fullscreen mode with the
+refresh rate configured by SST variables and
+the application/driver, and generate the video
+signal itself. The VGA doesn't need to be aware
+of this, and won't be.
+<P>This setup has several advantages: free choice
+of 2D VGA board, which is an issue with Linux,
+as XFree86 drivers aren't available for all
+chipsets and revisions, and a cost effective 
+migration path to accelerated 3D graphics. It 
+also has several disadvantages: an application
+using the Voodoo Graphics (tm) might not re-enable video
+output when crashing, and regular VGA video
+signal deteoriates in the the pass-through
+process.
+<P>
+<H2><A NAME="ss6.7">6.7 What is Texelfx or TMU?</A>
+</H2>
+
+<P>Voodoo Graphics (tm) chipsets have two units. The first one interfaces
+the texture memory on the board, does the texture mapping,
+and ultimately generates the input for the second unit
+that interfaces the framebuffer. This one is called
+Texelfx, aka Texture Management Unit, aka TMU. The neat
+thing about this is that a board can use two Texelfx
+instead of only one, like some of
+the Quantum3D Obsidian boards did, effectively doubling the
+processing power in some cases, depending on the application.
+<P>As each Texelfx can address 4MB texture memory, a dual
+Texelfx setup has an effective texture cache of up to 8MB.
+This can be true even if only one Texelfx is actually
+needed by a particular application, as textures can be
+distributed to both Texelfx, which are used depending
+on the requested texture. Both Texelfx are used together
+to perform certain operations as trilinear filtering and
+illumination texture/lightmap passes (e.g. in glQuake)
+in a single pass instead of the two passes that are
+required with only one Texelfx. To actually exploit the
+theoretically available speedup and cache size increase,
+a Glide application has to use both Texelfx properly.
+<P>The two Texelfx can not be used separately to
+each draw a textured triangle at the same time. A triangle
+is always drawn using whatever the current setup is,
+which can be to use both Texelfx for a single pass
+operation combining two textures, or one Texelfx
+for only a single texture. Each Texelfx can only
+access its own memory.
+<P>
+<P>
+<H2><A NAME="ss6.8">6.8 What is a Pixelfx unit?</A>
+</H2>
+
+<P>Voodoo Graphics (tm) chipsets have two units. The second one interfaces
+the framebuffer and ultimately generates the depth buffer
+and pixel color updates. This one is called Pixelfx. The
+neat thing here is that two Pixelfx units can cooperate
+in SLI mode, like with some of the Quantum3D Obsidian boards,
+effectively doubling the frame rate.
+<P>
+<P>
+<H2><A NAME="ss6.9">6.9 What is SLI mode?</A>
+</H2>
+
+<P>SLI means "Scanline Interleave". In this mode, two Pixelfx
+are connected and render in alternate turns, one handling
+odd, the other handling even scanlines of the actual output.
+Inthis mode, each Pixelfx stores only half of the image
+and half of the depth buffer data in its own local
+framebuffer, effectively doubling the number of pixels.
+<P>The Pixelfx in question can be on the same board,
+or on two boards properly connected. Some Quantum3D
+Obsidian boards support SLI with Voodoo Graphics (tm).
+<P>As two cards can decode the same PCI addresses and receive
+the same data, there is not necessarily additional bus
+bandwidth required by SLI. On the other hand, texture
+data will have to be replicated on both boards, thus
+the amount of texture memory effectively stays the same.
+<P>
+<P>
+<H2><A NAME="ss6.10">6.10 Is there a single board SLI setup?</A>
+</H2>
+
+<P>There are now two types of Quantum3D SLI boards.
+The intial setup used two boards, two PCI slots,
+and an interconnect (e.g. the Obsidian 100-4440).
+The later revision which performs identically is
+contained on one full-length PCI board (e.g.
+Obsidian 100-4440SB). Thus a single board SLI
+solution is possible, and has been done.
+<P>
+<P>
+<H2><A NAME="ss6.11">6.11 How much memory? How many buffers?</A>
+</H2>
+
+<P>The most essential difference between different boards
+using the Voodoo Graphics (tm) chipset is the amount and
+organization of memory. Quantum3D used a three digit
+scheme to descibe boards. Here is a slightly modifed
+one (anticipating Voodoo 2 (tm)). Note that if you use
+more than one Texelfx, they need the same amount of
+texture cache memory each, and if you combine two
+Pixelfx, each needs the same amount of frame buffer
+memory. 
+<HR>
+<PRE>
+    "SLI / Pixelfx / Texelfx1 / Texelfx2 "
+</PRE>
+<HR>
+
+It means that a common 2MB+2MB board would be a
+<CODE>1/2/2/0</CODE> solution, with the minimally
+required total 4Mb of memory. A Canopus Pure 3D
+would be <CODE>1/2/4/0</CODE>, or 6MB. An Obsidian-2220
+board with two Texelfx would be <CODE>1/2/2/2</CODE>,
+and an Obsidian SLI-2440 board would be <CODE>2/2/4/4</CODE>.
+A fully featured dual board solution (2 Pixelfx, each
+with 2 Texelfx and 4MB frame buffer, each Texelfx 4 MB
+texture cache) would be <CODE>2/4/4/4</CODE>, and the
+total amount of memory would be
+<CODE>SLI*(Pixelfx+Texelfx1+Texelfx2)</CODE>, or 24 MB.   
+<P>So there. 
+<P>
+<H2><A NAME="ss6.12">6.12 Does the Voodoo Graphics (tm) do 24 or 32 bit color?</A>
+</H2>
+
+<P>No. The Voodoo Graphics (tm) architecture uses 16bpp internally.
+This is true for  Voodoo Graphics (tm), Voodoo Rush (tm) and Voodoo 2 (tm)
+alike. Quantum3D claims to implement 22-bpp effective color depth
+with an enhanced 16-bpp frame buffer, though. 
+<P>
+<H2><A NAME="ss6.13">6.13 Does the Voodoo Graphics (tm) store 24 or 32 bit z-buffer per pixel?</A>
+</H2>
+
+<P>No. The Voodoo Graphics (tm) architecture uses 16bpp internally
+for the depth buffer, too. This again is true for  Voodoo Graphics (tm),
+Voodoo Rush (tm) and Voodoo 2 (tm) alike. Again, Quantum3D claims
+that using the floating point 16-bits per pixel (bpp) depth
+buffering provides 22-bpp effective Z-buffer precision.
+<P>
+<H2><A NAME="ss6.14">6.14 What resolutions does the Voodoo Graphics (tm) support?</A>
+</H2>
+
+<P>The Voodoo Graphics (tm) chipset supports up to 4 MB frame buffer
+memory. Presuming double buffering and a depth buffer,
+a 2MB framebuffer will support a resolution of 640x480.
+With 4 MB frame buffer, 800x600 is possible.
+<P>Unfortunately 960x720 is not supported. The Voodoo Graphics (tm)
+chipset requires that the amount of memory for a particular
+resolution must be such that the vertical and horizontal
+resolutions must be evenly divisible by 32. The video
+refresh controller, though can output any particular
+resolution, but the "virtual" size required for the memory
+footprint must be in dimensions evenly divisible by 32.
+So, 960x720 actually requires 960x736 amount of memory,
+and 960x736x2x3 = 4.04MBytes.
+<P>However, using two boards with SLI, or a dual Pixelfx
+SLI board means that each framebuffer will only have
+to store half of the image. Thus 2 times 4 MB in SLI
+mode are good up to 1024x768, which is the maximum
+because of the overall hardware design. You will be
+able to do 1024x768 tripled buffered with Z, but you
+will not be able to do e.g. 1280x960 with double
+buffering.
+<P>Note that triple buffering (no VSync synchonization 
+required by the application), stereo buffering (for
+interfacing LCD shutters) and other more demanding
+setups will severely decrease the available resolution.
+<P>
+<P>
+<H2><A NAME="ss6.15">6.15 What texture sizes are supported?</A>
+</H2>
+
+<P>The maximum texture size for the Voodoo Graphics (tm) chipset 
+is 256x256, and you have to use powers of two. Note
+that for really small textures (e.g. 16x16) you
+are better off merging them into a large texture,
+and adjusting your effective texture coordinates
+appropriately.
+<P>
+<H2><A NAME="ss6.16">6.16 Does the Voodoo Graphics (tm) support paletted textures?</A>
+</H2>
+
+<P>The Voodoo Graphics (tm) hardware and Glide support the palette
+extension to OpenGL. The most recent version of
+Mesa does support the 
+<CODE>GL_EXT_paletted_texture</CODE>
+and 
+<CODE>GL_EXT_shared_texture_palette</CODE> extensions.
+<P>
+<P>
+<H2><A NAME="ss6.17">6.17 What about overclocking?</A>
+</H2>
+
+<P>If you want to put aside considerations about warranty
+and overheating, and want to do overclocking to boost
+up performance even further, there is related info out
+on the web. The basic mechanism is to use
+Glide environment variables to adjust the clock.
+<P>Note that the actual recommended clock is board
+dependend. While the default clock speed is 50 Mhz,
+the Diamond Monster 3D property sheet lets you set up
+a clock of 57 MHz. It all comes down to the design of
+a specific board, and which components are used with
+the Voodoo Graphics (tm) chipset - most notably access speed of
+the RAM in question. If you exceed the limits of your
+hardware, rendering artifacts will occur to say the
+least. Reportedly, 57 MHz usually works, while 60 MHz
+or more is already pushing it.
+<P>Increasing the clock frequency also means increasing
+the waste heat disposed in the chips, in a nonlinear
+dependency (10% increase in frequency means a lot
+larger increase in heating). In consequence, for permanent
+overclocking you might want to educate yourself about
+ways to  add cooling fans to the board in a way that does
+not affect warranty. A very recommendable source is
+the "3Dfx Voodoo Heat Report" by Eric van Ballegoie,
+available on the web.
+<P>
+<P>
+<H2><A NAME="ss6.18">6.18 Where could I get additional info on Voodoo Graphics (tm)?</A>
+</H2>
+
+<P>There is a FAQ by 3Dfx, which should be available
+at their
+<A HREF="http://www.3dfx.com/voodoo/faq.html">web site</A>.
+You will find retail information
+at the following locations:
+<A HREF="http://www.3dfx.com/voodoo/sale/">www.3dfx.com</A>
+and
+<A HREF="http://www.quantum3d.com/">www.quantum3d.com</A>.
+<P>Inofficial sites that have good info
+are "Voodoo Extreme" at
+<A HREF="http://www.ve3d.com/">www.ve3d.com</A>, and
+"Operation 3Dfx"
+at 
+<A HREF="http://www.ve3d.com/">www.ve3d.com</A>.
+<P>
+<P>
+<P>
+<HR>
+<A HREF="3Dfx-HOWTO-7.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="3Dfx-HOWTO-5.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="3Dfx-HOWTO.html#toc6"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

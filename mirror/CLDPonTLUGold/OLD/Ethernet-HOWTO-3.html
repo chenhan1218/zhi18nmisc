@@ -1,0 +1,75 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Linux以太網-HOWTO: 性能小技巧</TITLE>
+ <LINK HREF="Ethernet-HOWTO-4.html" REL=next>
+ <LINK HREF="Ethernet-HOWTO-2.html" REL=previous>
+ <LINK HREF="Ethernet-HOWTO.html#toc3" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Ethernet-HOWTO-4.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Ethernet-HOWTO-2.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Ethernet-HOWTO.html#toc3"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="perf"></A> <A NAME="s3">3. 性能小技巧</A></H2>
+
+<P>如果你的以太網吞吐量太小，或者想提高ftp傳輸的速度，可以使用這里的一些小技巧。
+<P>程序<CODE>ttcp.c</CODE>是測試原始吞吐量大小的好實驗。另一個普通的技巧是把一個大于1MB的<CODE>large_file</CODE>駐留在發送機器的緩沖內存里，然后執行<CODE>ftp> get large_file /dev/null</CODE>。（至少要“get”兩次，因為第一次是把文件駐留在發送機器的緩沖內存中。）把文件駐留在緩沖內存的原因是你對測量里混進從磁盤存取文件的速度不感興趣。這也是把輸入數據發送到<CODE>/dev/null</CODE>而不是磁盤上的原因。
+<P>
+<H2><A NAME="ss3.1">3.1 一般概念</A>
+</H2>
+
+<P>即使一個8比特的網卡在接收背靠背的數據包時也沒有問題。但在計算機無法迅速地從網卡接收數據包為更多進來的數據包騰出空間時，困難就出現了。如果計算機不能迅速地清除已經接收到的數據包占據的網卡內存，網卡就沒有空間存放新的數據包了。
+<P>在這種情況下，網卡或者丟棄新的數據包，或者把它放在以前接收的數據包位置上。任何一個都會引起重新傳送而嚴重地中斷平滑的數據傳輸流，并使性能被嚴重降低，其降級因子甚至可以達到5！
+<P>擁有更多板上內存的網卡可以“緩沖”更多的數據包，因此可以無需丟棄就處理更大量的突發背靠背數據包。這也就意味著網卡不需要主機響應從緩存讀取數據包的延遲更小以避免丟棄數據包。
+<P>大多數8比特網卡有8kB緩存，而大多數16比特網卡有16kB緩存。大多數的Linux驅動程序要保留3kB的緩存（作為兩個Tx緩存），這樣就只給8比特網卡剩下5kB作為接收的空間。它只夠存放三個完全大小（1500字節）的以太網數據包。
+<P>
+<H2><A NAME="ss3.2">3.2 ISA網卡和ISA總線速度</A>
+</H2>
+
+<P>在上面提到，如果從網卡移走數據包的速度足夠快，即使Rx數據包緩沖內存的數量小，丟棄/覆蓋的情況也不會出現。設置數據包從網卡移到計算機內存的速率的因子是連接這二者的數據通道的速度──即ISA總線的速度。（如果CPU是很慢的386sx-16，它也會起一定的作用。）
+<P>推荐的ISA總線時鐘為8MHz，但很多主板和周邊設備可以運行在更高的頻率上。一般通過在CMOS設置里選擇主板/CPU時鐘頻率因子，可以設置ISA總線的時鐘頻率。有些ISA和PCI/ISA主板可能沒有這一選項，那么就只能使用制造商的缺省值了。
+<P>例如，下面是在一台40MHz的486上，不同ISA總線速度下，8比特WD8003EP網卡用TTCP程序測量得到的一些接收速度。
+<P>
+<HR>
+<PRE>
+        ISA總線速度(MHz)    Rx TTCP (kB/s)
+        -------------------                  --------------
+        6.7                     740
+        13.4                    970
+        20.0                    1030
+        26.7                    1075
+</PRE>
+<HR>
+<P>使用TCP/IP，對<EM>任何</EM>10Mb/s以太網卡都難以得到高于1075kB/s的結果。但是，不要期望每一個系統都可以工作在快的ISA總線速度下。大多數系統在高于13MHz的速度上無法正常工作。（同樣，某些PCI系統的ISA總線速度固定在8MHz，所以用戶沒有機會提高它。）
+<P>另外，對于快的傳輸速度，可以從較短的內存和I/O周期減少CPU占用量中獲益。（注意，設置在ISA總線上的硬盤和視頻卡也會從提高的ISA總線速度中感受到性能的提高。）
+<P>在實驗超過8MHz的ISA總線速度之前，一定要備份你的數據，并在提高速度后徹底測試所有的ISA周邊設備是否工作正常。
+<P>
+<H2><A NAME="ss3.3">3.3 設置TCP的Rx窗口</A>
+</H2>
+
+<P>
+<P>再說一遍，網卡的板上RAM小以及網卡與計算機內存間的數據通道相對較慢會引起麻煩。TCP缺省的Rx窗口設置為32kB，也就是說與你在同一子網的一台較快的計算機會一下子發給你32kB的數據，而不會停下來看看你是否正常地接收到了它們。
+<P>近期版本的<CODE>route</CODE>命令能夠在運行過程中設置這個窗口的大小。一般它只用在需要減小該窗口的局域網，因為在若干路由器或網關后面的計算機會得到足夠的“緩沖”而不造成問題。下例為一個可能的用法：
+<P>
+<HR>
+<PRE>
+        route add &lt;whatever> ... window &lt;win_size>
+</PRE>
+<HR>
+<P>其中的<CODE>win_size</CODE>是你希望使用的窗口大小（以字節計算）。一個運行在8MHz或更低速度下的ISA總線上的8比特3c503網卡，可以在4kB大小的窗口下很好地工作。太大的窗口會導致覆蓋和丟棄數據包，并嚴重降低以太網的吞吐量。你可以用<CODE>cat /proc/net/dev</CODE>檢查操作狀態，它會顯示出現的丟棄或覆蓋狀況。
+<P>
+<H2><A NAME="ss3.4">3.4 增強NFS性能</A>
+</H2>
+
+<P>有些人發現在使用8kB（Sun的原始值）的NFS數據包大小時，在NFS客戶端使用8比特網卡得到的性能比預期的要差。
+<P>可能的原因在于8比特網卡與16比特網卡的板上緩存大小不同。最大的以太網數據包大小為1500字節。這樣8kB的NFS數據包就成為大約6個背靠背的最大大小的以太網數據包。8比特網卡和16比特網卡在接收背靠背數據包時都沒有問題。在機器無法及時從網卡緩存移走數據包時就有問題了，緩存會溢出。8比特網卡每次傳送時要多占用一個ISA總線周期的事實也幫不上忙。如果用的是8比特網卡，你<EM>能</EM>做的是把NFS傳送大小設置為2kB（甚至1kB），或者試著提高ISA總線速度以加快清空網卡上的緩存。我發現8MHz下（沒有其它系統負載），一個舊的WD8003E網卡可以跟得上2kB大小的NFS接收，但在4kB時，性能降低的因子為3。
+<P>另一方面，如果缺省的安裝選項為1kB大小，而你的網卡至少為16比特的
+ISA網卡，把其大小提高到4kB（甚至8kB）會使性能顯著提高。
+<P>
+<HR>
+<A HREF="Ethernet-HOWTO-4.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Ethernet-HOWTO-2.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Ethernet-HOWTO.html#toc3"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

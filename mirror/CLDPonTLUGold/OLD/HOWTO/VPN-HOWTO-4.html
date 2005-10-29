@@ -1,0 +1,211 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>VPN HOWTO: Client</TITLE>
+ <LINK HREF="VPN-HOWTO-5.html" REL=next>
+ <LINK HREF="VPN-HOWTO-3.html" REL=previous>
+ <LINK HREF="VPN-HOWTO.html#toc4" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="VPN-HOWTO-5.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="VPN-HOWTO-3.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="VPN-HOWTO.html#toc4"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s4">4. Client</A>                </H2>
+
+<P>Now we examine the client end.  In practice, when used to allow access
+to a remote network, this box can easily serve as a Samba (Windows
+Networking) server, DHCP server, and even an internal web server.  The
+important thing to remember is that this box should be as secure as
+possible, as it runs your whole remote network.
+<H2><A NAME="ss4.1">4.1 The Kernel</A>
+                        </H2>
+
+<P>First things first, you must have ppp available in your kernel.  If you are
+going to allow multiple machines to use the tunnel, then you need to have
+firewalling and forwarding available too.  If the client is going to be a single
+machine, ppp is enough.
+<H2><A NAME="ss4.2">4.2 Bring up the link</A>
+                        </H2>
+
+<P>The link is created by running <CODE>pppd</CODE> through a pseudo terminal that is
+created by <CODE>pty-redir</CODE> and connected to <CODE>ssh</CODE>.  This is done with
+something similar to the following sequence of commands:
+<P>
+<PRE>
+# /usr/sbin/pty-redir /usr/bin/ssh -t -e none -o 'Batchmode yes' -c blowfish -i /root/.ssh/identity.vpn -l joe > /tmp/vpn-device
+# sleep 10
+
+# /usr/sbin/pppd `cat /tmp/vpn-device`
+# sleep 15
+
+# /sbin/route add -net 172.16.0.0 gw vpn-internal.mycompany.com netmask 255.240.0.0
+# /sbin/route add -net 192.168.0.0 gw vpn-internal.mycompany.com netmask 255.255.0.0
+</PRE>
+<P>Simply, what this does is run ssh, redirecting it's input and output to
+pppd.  The options passed to ssh configure it to run without escape
+characters (-e), using the blowfish crypto algorithm (-c), using the
+identity file specified (-i), in terminal mode (-t), with the options
+'Batchmode yes' (-o).  The sleep commands are used to space out the
+executions of the commands so that each can complete their
+startup before the next is run.
+<H2><A NAME="ss4.3">4.3 scripting</A>
+                        </H2>
+
+<P>Of course you don't want to have to type those commands in every time
+that you want to get the tunnel running.  I've written a set of bash
+scripts that keep the tunnel up and running.  You can download the
+package from 
+<A HREF="http://www.shinythings.com/vpnd/vpnd.tar.gz">here</A>. Just download that an uncompress it into /usr/local/vpn.
+Inside you'll find three files:
+<P>
+<UL>
+<LI>vpnd: The script that controls the tunnel connection.</LI>
+<LI>check-vpnd: a script to be run by cron to check that vpnd is still up.</LI>
+<LI>pty-redir: a small executable needed to initialize the tunnel.</LI>
+</UL>
+<P>You'll need to edit the <CODE>vpnd</CODE> script to set things like the client's
+username and the server's names.  You may also need to modify the starttunnel
+section of the script to specify which networks you are using.  Below is a copy of the script
+for your reading enjoyment.  You'll note that you could put the script in a
+different directory, you just need to change the VPN_DIR variable.
+<P>
+<A NAME="vpnd-script"></A> <PRE>
+
+#! /bin/bash
+#
+# vpnd: Monitor the tunnel, bring it up and down as necessary
+#
+
+USERNAME=vpn-username
+IDENTITY=/root/.ssh/identity.vpn
+
+VPN_DIR=/usr/local/vpn
+LOCK_DIR=/var/run
+VPN_EXTERNAL=vpn.mycompany.com
+VPN_INTERNAL=vpn-internal.mycompany.com
+PTY_REDIR=${VPN_DIR}/pty-redir
+SSH=${VPN_DIR}/${VPN_EXTERNAL}
+PPPD=/usr/sbin/pppd
+ROUTE=/sbin/route
+CRYPTO=blowfish
+PPP_OPTIONS="noipdefault ipcp-accept-local ipcp-accept-remote local noauth nocrtscts lock nodefaultroute"
+ORIG_SSH=/usr/bin/ssh
+
+
+starttunnel () {
+   $PTY_REDIR $SSH -t -e none -o 'Batchmode yes' -c $CRYPTO -i $IDENTITY -l $USERNAME > /tmp/vpn-device
+   sleep 15
+
+   $PPPD `cat /tmp/vpn-device` $PPP_OPTIONS
+   sleep 15
+
+   # Add routes (modify these lines as necessary)
+   /sbin/route add -net 10.0.0.0 gw $VPN_INTERNAL netmask 255.0.0.0
+   /sbin/route add -net 172.16.0.0 gw $VPN_INTERNAL netmask 255.240.0.0
+   /sbin/route add -net 192.168.0.0 gw $VPN_INTERNAL netmask 255.255.0.0
+}
+
+stoptunnel () {
+   kill `ps ax | grep $SSH | grep -v grep | awk '{print $1}'`
+}
+
+resettunnel () {
+   echo "reseting tunnel."
+   date >> ${VPN_DIR}/restart.log
+   eval stoptunnel
+   sleep 5
+   eval starttunnel
+}
+
+checktunnel () {
+   ping -c 4 $VPN_EXTERNAL 2>/dev/null 1>/dev/null
+
+   if [ $? -eq 0 ]; then
+      ping -c 4 $VPN_INTERNAL 2>/dev/null 1>/dev/null
+      if [ $? -ne 0 ]; then
+         eval resettunnel
+      fi
+   fi
+}
+
+settraps () {
+   trap "eval stoptunnel; exit 0" INT TERM
+   trap "eval resettunnel" HUP
+   trap "eval checktunnel" USR1
+}
+
+runchecks () {
+   if [ -f ${LOCK_DIR}/tunnel.pid ]; then
+      OLD_PID=`cat ${LOCK_DIR}/vpnd.pid`
+      if [ -d /proc/${OLD_PID} ]; then
+         echo "vpnd is already running on process ${OLD_PID}."
+         exit 1
+      else
+         echo "removing stale pid file."
+         rm -rf ${LOCK_DIR}/vpnd.pid
+         echo $$ > ${LOCK_DIR}/vpnd.pid
+         echo "checking tunnel state."
+         eval checktunnel
+      fi
+   else
+      echo $$ > ${LOCK_DIR}/vpnd.pid
+      eval starttunnel
+   fi
+}
+
+case $1 in
+    check)  if [ -d /proc/`cat ${LOCK_DIR}/vpnd.pid` ]; then
+               kill -USR1 `cat ${LOCK_DIR}/vpnd.pid`
+               exit 0
+            else
+               echo "vpnd is not running."
+               exit 1
+            fi ;;
+
+    reset)  if [ -d /proc/`cat ${LOCK_DIR}/vpnd.pid` ]; then
+               kill -HUP `cat ${LOCK_DIR}/vpnd.pid`
+               exit 0
+            else
+               echo "vpnd is not running."
+               exit 1
+            fi ;;
+
+   --help | -h)
+            echo "Usage: vpnd [ check | reset ]"
+            echo "Options:"
+            echo "     check    Sends running vpnd a USR1 signal, telling it to check"
+            echo "              the tunnel state, and restart if neccesary."
+            echo "     reset    Sends running vpnd a HUP signal, telling it to reset"
+            echo "              it's tunnel connection." ;; 
+esac
+
+ln -sf $ORIG_SSH $SSH
+settraps
+runchecks
+
+while true; do
+   i=0
+   while [ $i -lt 600 ]; do
+      i=((i+1))
+      sleep 1
+   done
+   eval checktunnel
+done
+</PRE>
+<H2><A NAME="ss4.4">4.4 LRP - Linux Router Project</A>
+                        </H2>
+
+<P>I actually run this setup on pentium 90's running the LRP distribution
+of Linux.  LRP is a distribution of Linux that fits in, and boots off of
+a single floppy disk.  You can learn more about it at 
+<A HREF="http://www.linuxrouter.org/">http://www.linuxrouter.org/</A> 
+You can download my LRP package for the VPN client from 
+<A HREF="http://www.shinythings.com/vpnd/vpnd.lrp">here</A>.  You will
+also need both the ppp and ssh packages from the LRP site.
+<HR>
+<A HREF="VPN-HOWTO-5.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="VPN-HOWTO-3.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="VPN-HOWTO.html#toc4"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

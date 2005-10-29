@@ -1,0 +1,142 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Partition Rescue mini HOWTO: Solving the problem</TITLE>
+ <LINK HREF="Partition-Rescue-mini-HOWTO-9.html" REL=next>
+ <LINK HREF="Partition-Rescue-mini-HOWTO-7.html" REL=previous>
+ <LINK HREF="Partition-Rescue-mini-HOWTO.html#toc8" REL=contents>
+<SCRIPT src="../../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(2, 8, 2);</SCRIPT>
+<A HREF="Partition-Rescue-mini-HOWTO-9.html"><IMG SRC="../../img/next.gif" ALT="Next"></A>
+<A HREF="Partition-Rescue-mini-HOWTO-7.html"><IMG SRC="../../img/prev.gif" ALT="Previous"></A>
+<A HREF="Partition-Rescue-mini-HOWTO.html#toc8"><IMG SRC="../../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s8">8. Solving the problem</A></H2>
+
+<P>Please, beware ! following the explanations given here will lead you to
+turn back to a previous system, loosing all your recent installed one, if any !
+You must choose...
+<H2><A NAME="ss8.1">8.1 The simpler case</A>
+</H2>
+
+<P>All is simple if you have at hand :
+<P>
+<UL>
+<LI>a disk (floppy or cd) able to start Linux by itself with fdisk available
+- most rescue disks of any distribution can do that,</LI>
+<LI>a paper with the fdisk -l content written down.</LI>
+</UL>
+<P>It's enough to
+<P>
+<OL>
+<LI>start Linux,</LI>
+<LI>start fdisk /dev/hda (or whatever is the disk to rescue),</LI>
+<LI>use fdisk to delete (d option) all the existing partitions on the damaged
+disk,</LI>
+<LI>use fdisk to create all the primary (1-4) partition mentioned on the paper,</LI>
+<LI>give them the appropriate tag (t option) : 82 is for Linux swap, 83 for
+Linux main (L gives you the list), 5 is extended and must be done before creating
+logical partitions.</LI>
+<LI>create any logical partition.</LI>
+</OL>
+<P>fdisk is a small and very smart programs. There are many other makes of
+fdisk, but I always prefer the bare bone one (I speak of Linux ones, of course,
+not the others...).
+<P>Be aware that fdisk doesn't write anything to disk before you hit w and
+return. In case you fear a mistake, hit q (quit) or Ctrl C (\^{ }C) to quit safe.
+<P>When your new partition table is written, start your Linux. Chance is you
+can't do that as usual : lilo can have been damaged also and you will need a
+boot floppy or booting from a cd (choose the option "booting the installed partition").
+<P>If you use to boot with lilo, as soon as you are logged in as root, key
+in "lilo" and hit return to reinstall you favourite boot loader.
+<P>Your Linux should be all here, test it. Try also to start windows if applicable.
+If you can't, there is a (very little) chance you can read your data from Linux,
+may be with a raw sector by sector read. If you can identify the disk sectors
+you data is on, using dd can copy them on a file. This is wise for text only.
+This recovery is NOT in the scope of this mini-HOWTO.
+<H2><A NAME="ss8.2">8.2 A not so simple case</A>
+</H2>
+
+<H3>By hand</H3>
+
+<P>This is when the previous case can't be used, for lack of fdisk paper or
+if it won't run for use of an out of date one.
+<P>First, be aware that as soon as you don't write to the disk (except with
+fdisk), you can't erase your data, so that you can use a block by block try.
+That is you need to know the beginning of the partition to start it. If, say
+a 153 don't fit, try a 154, and so on.
+<P>This can be tiresome, but if you remember approximately the size of the
+Linux partition, there is a chance to win.
+<H3>gpart</H3>
+
+<P>But there is a better way if you can still access the net or have "gpart"
+at hand.
+<P>"gpart - guess PC-type hard disk partitions" is the first line of the man
+page of gpart (man gpart).
+<P>"gpart tries to guess which partitions are on a hard disk. If the primary
+partition table has been lost, overwritten or destroyed the partitions still
+exist on the disk but the operating system cannot access them.". This is exactly
+what we need.
+<P>gpart is still beta, but is already a very good tool.
+<P>The problem is the following : the first block of any partition is marked.
+But it's never "unmarked" if not overwritten. So many "first partition block" are
+existing on an old disk and gpart tries to do it's best guessing what is the
+good one. In fact it's not too difficult to try, nothing is written on the
+disk by gpart.
+<P>Here is the result of gpart on the previously seen disk hdb :
+<P>root@charles:/home/jdd &gt; gpart /dev/hdb
+<P>Begin scan... 
+<P>Possible partition(Linux ext2), size(1200Mb), offset(0Mb) 
+<P>Possible partition(Windows NTFS), size(1200Mb), offset(1200Mb) 
+<P>Possible partition(Linux ext2), size(1004Mb), offset(2402Mb) 
+<P>Possible partition(Windows NTFS), size(1600Mb), offset(4102Mb) 
+<P>End scan.
+<P>Checking partitions...
+<P>* Warning: partition(OS/2 HPFS, NTFS, QNX or Advanced UNIX) ends beyond
+disk end . 
+<P>Partition(Linux ext2 filesystem): primary 
+<P>Partition(OS/2 HPFS, NTFS, QNX or Advanced UNIX): primary 
+<P>Partition(Linux ext2 filesystem): primary 
+<P>Partition(OS/2 HPFS, NTFS, QNX or Advanced UNIX): invalid primary 
+<P>Ok.
+<P>Guessed primary partition table:
+<P>Primary partition(1) 
+<P>type: 131(0x83)(Linux ext2 filesystem) 
+<P>size: 1200mb #s(2457880) s(63-2457942) 
+<P>chs: (0/1/1)-(152/254/61)d (0/1/1)-(152/254/61)r 
+<P>Primary partition(2) 
+<P>type: 007(0x07)(OS/2 HPFS, NTFS, QNX or Advanced UNIX) 
+<P>size: 1200mb #s(2457880) s(2457944-4915823) 
+<P>chs: (152/254/63)-(305/253/60)d (152/254/63)-(305/253/60)r 
+<P>Primary partition(3) 
+<P>type: 131(0x83)(Linux ext2 filesystem) 
+<P>size: 1004mb #s(2056256) s(4919781-6976036) 
+<P>chs: (306/61/49)-(434/60/47)d (306/61/49)-(434/60/47)r 
+<P>Primary partition(4) 
+<P>type: 000(0x00)(unused) size: 0mb #s(0) s(0-0) chs: (0/0/0)-(0/0/0)d
+(0/0/0)-(0/0/0)r 
+<P>As you see, primary partition can be recovered, but for extended ones it's
+still to be done.
+<P>Dos partitions are labelled "windows NTFS" because they were created while
+trying to install Windows 2000 (a very awful experience !). The "invalid" one
+is, in fact the extended partition.
+<P>With this, one can use fdisk and try re-creating the partition table (remember,
+this is risk-free given the original one is already lost).
+<H2><A NAME="ss8.3">8.3 The rich man case</A>
+</H2>
+
+<P>Partition Magic is a commercial product, not so cheap given the little
+use one can have (approx a hundred bucks in France) but with a very high reputation
+all around there. However I never use it and will not rate it. It's said to
+be able to do anything with partitions, including restoring them.
+<P>Original Ralf partition-rescue mini HOWTO was essentially based around
+the use of Partition Magic, so I presume it's a very good solution if you have
+valuable data on your Linux partition and little Linux capability. However
+there are now very recent makes of Partition Magic and I think it's better
+for you to read the manual.
+<HR>
+<A HREF="Partition-Rescue-mini-HOWTO-9.html"><IMG SRC="../../img/next.gif" ALT="Next"></A>
+<A HREF="Partition-Rescue-mini-HOWTO-7.html"><IMG SRC="../../img/prev.gif" ALT="Previous"></A>
+<A HREF="Partition-Rescue-mini-HOWTO.html#toc8"><IMG SRC="../../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

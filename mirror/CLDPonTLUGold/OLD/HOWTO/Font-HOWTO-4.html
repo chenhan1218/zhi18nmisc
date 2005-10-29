@@ -1,0 +1,333 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Font HOWTO: Making Fonts Available To X</TITLE>
+ <LINK HREF="Font-HOWTO-5.html" REL=next>
+ <LINK HREF="Font-HOWTO-3.html" REL=previous>
+ <LINK HREF="Font-HOWTO.html#toc4" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Font-HOWTO-5.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Font-HOWTO-3.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Font-HOWTO.html#toc4"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="xfonts"></A> <A NAME="s4">4. Making Fonts Available To X</A></H2>
+
+<P>There are a number of ways fonts can be added to X. Firstly, XFree86
+has a <EM>font path</EM> which is just a list of several directories
+or <EM>font servers</EM> where it searches for fonts. A font server
+is just a background process that makes fonts available to XFree86. 
+An advantage of font servers is that they can send fonts to remote displays.
+<P>Recently, <CODE>xfs</CODE> ( the ``X font server'' ) has been patched 
+to support TrueType fonts, and run as a stand-alone program.  
+The patched version ships with Redhat and Redhat-based distributions,
+and is included in XFree86 3.9.17 ( the latest version at the time of 
+writing. It will also be a part of XFree86 4.0 )
+<CODE>xfs</CODE> is actually just the standard font server that comes
+with XFree86. It's source code is part of the XFree86 source tree.
+However, distributions have recently been shipping a version that runs
+in stand alone mode.
+The standalone X font server, with the TrueType support 
+patch ( the TrueType support takes place via a font server 
+called <CODE>xfsft</CODE> ) is probably the nicest font management 
+solution currently available. Its advantages include:
+<UL>
+<LI>Support for different types of fonts, including Type1, TrueType
+and bitmap.</LI>
+<LI>Makes fonts available to remote displays.</LI>
+<LI>Greatly simplifies editing the fontpath -- you can do it via
+the command line utility <CODE>chkfontpath</CODE>, as opposed to
+having to edit configuration files. This not only makes life
+easier for users, it makes packaging more safer and more scriptable 
+for packagers.</LI>
+</UL>
+<P>Because different distributions ship with different configurations,
+it is not true that one size fits all. We can split users up into
+three groups:
+<UL>
+<LI>Your distribution ships with a standalone <CODE>xfs</CODE>
+and it has been patched to support TrueType. This group 
+includes Redhat users and users of derivatives of Redhat 
+such as Mandrake, TurboLinux, and Independence.
+For this group, the wisest strategy is to install both TrueType
+and Type1 fonts through <CODE>xfs</CODE></LI>
+<LI>Some distributions ship with a stand alone <CODE>xfs</CODE>
+package, but no TrueType support (at the time of writing.
+Note that XFree86 supports TrueType as of version 3.9.17 ). 
+This includes Debian. For these users, the best thing to do is use 
+<CODE>xfs</CODE> to install Type1 fonts, and install TrueType
+fonts via <CODE>xfstt</CODE>. Debian users can seek out 
+the 
+<A HREF="http://www.dimensional.com/~bgiles/debian-tt.html">TrueType Fonts in Debian mini-HOWTO</A>
+for information about installing TrueType fonts in Debian.</LI>
+<LI>If you don't have <CODE>xfs</CODE> then you will need to install
+Type1 fonts by adding to their XFree86 font path and
+using xset. You should install TrueType 
+via <CODE>xfstt</CODE>.</LI>
+</UL>
+<H2><A NAME="fontpath"></A> <A NAME="ss4.1">4.1 The font path </A>
+</H2>
+
+<P>XFree86 finds your fonts by searching a <EM>font path</EM>,
+a list of directories ( or servers -- we'll explain this 
+further later. ) containing fonts.
+When an application requests a font, it searches through 
+the directories in your font path one at a time until the font
+is found.
+To make fonts available requires you to set your font path.
+You can add a directory to your font path with the command
+<A NAME="xset"></A> 
+<PRE>
+        xset fp+ directory
+        
+</PRE>
+
+Once you have done this, you need to ask the X server to re-scan 
+for available fonts with the command 
+<PRE>
+        xset fp rehash
+        
+</PRE>
+
+Since you will want these commands to run automatically, you should
+put them in your <CODE>.xinitrc</CODE> file ( or possibly your 
+<CODE>.Xclients</CODE> or <CODE>.xsession</CODE> file -- this depends on 
+how you start X. It's convenient to make two of these files symlinks
+to the other to avoid confusion ).
+Another way to have the commands  set automatically is edit XF86Config.
+For example, to add <CODE>/usr/share/fonts/myfonts</CODE> to the fontpath
+when X is started, edit <CODE>XF86Config</CODE> like this:
+<PRE>
+                ...
+                Section "Files"
+                ...
+                
+                FontPath /usr/share/fonts/myfonts
+                ...
+                EndSection
+                ...
+</PRE>
+
+The advantage of editing XF86Config is that the resulting changes 
+are system wide.
+<H2><A NAME="ss4.2">4.2 Installing Type1 Fonts</A>
+</H2>
+
+<H3>Run Type1inst</H3>
+
+<P>The easiest way to make Type1 fonts available to X is with the
+help of the Type1inst utility. This is a perlscript that automatically
+creates the fonts.dir and fonts.scale files that you need for X
+to use the fonts. Simply CD to the directory, and run type1inst.
+<PRE>
+        cd directory
+        type1inst
+        
+</PRE>
+<H3>If You Have the <CODE>xfs</CODE> Package</H3>
+
+<P>Now you need to add the fonts to your fontpath. If you already 
+have the standalone 
+<A HREF="#xfs">xfs</A> running, you do this 
+by editing your <CODE>xfs</CODE> configuration file.
+<EM> 
+Redhat users can just use 
+<A HREF="#chkfontpath">chkfontpath</A>.
+the format is </EM>
+<CODE>chkfontpath --add directory</CODE>
+<P>Your fonts should now be available to X. Now you 
+just run
+<PRE>
+        xset fp rehash
+        
+</PRE>
+
+and X will be able to find the new fonts.
+<P>
+<H3>If You Don't Have The <CODE>xfs</CODE> Package</H3>
+
+<P>In this case, you need to add the directory containing 
+your new fonts to the font path, as described previously.
+<H2><A NAME="ss4.3">4.3 True Type Fonts</A>
+</H2>
+
+<P>Adding TrueType fonts is a little more difficult, because you need 
+to have a font server that is capable of serving TrueType fonts.
+Two font servers that do this are xfstt and xfs.
+<P><CODE>xfstt</CODE> is a TrueType font server. While it's easy to configure,
+and quite useful, it appear that <CODE>xfs</CODE> is becoming more popular.
+The main advantage of <CODE>xfs</CODE> over <CODE>xfstt</CODE> is that it supports
+both Type1 and TrueType fonts.
+<H3>xfstt</H3>
+
+<P>To set up xfstt, just download it and install it. If you have an rpm
+based distribution, there is a well packaged version of xfstt at
+http://independence.seul.org/. 
+Once you install it, you need to do the following:
+<OL>
+<LI>    
+install fonts into the appropriate
+directory ( read the documentation that comes with the package ).</LI>
+<LI>cd to that directory and run <CODE>xfstt --sync</CODE>. This causes it
+to look for the fonts and create the <CODE>fonts.dir</CODE> file. </LI>
+<LI>Now add <CODE>unix/:7100</CODE> to your font path.</LI>
+</OL>
+
+Your TrueType fonts should now display and be available to applications
+such as GIMP and Netscape.
+You may want to configure it to start every time your system starts up.
+Check to see if there's a startup file included ( if you are using 
+RPM, you can use <CODE>rpm -ql xfstt |grep init</CODE> and look for the 
+file with a name something like this: <CODE>/etc/rc.d/init.d/xfstt</CODE>
+) 
+If you don't have an init script, just
+put two  lines in <CODE>/etc/rc.local</CODE> like this:
+<PRE>
+        /usr/X11R6/bin/xfstt --sync
+        /usr/X11R6/bin/xfstt &amp;
+        
+</PRE>
+<H2><A NAME="xfs"></A> <A NAME="ss4.4">4.4 xfs</A>
+</H2>
+
+<P>Some of the newer Linux distributions ship with the X font server 
+<CODE>xfs</CODE> configured to run as a stand alone program. 
+Notably, Redhat and all the redhat based distributions use this 
+modularised <CODE>xfs</CODE> with TrueType compiled in.
+Debian also ship <CODE>xfs</CODE>, but the version 
+they ship doesn't have built in true 
+type support.
+<P>Running <CODE>xfs</CODE> 
+as a stand alone server has several benefits, especially 
+if it is compiled with TrueType support. The main advantage is that since
+the font server is no longer attached to the X server, it is possible
+to serve fonts to remote displays. Also, it makes it much easier
+to modify the font path.
+<H3>The <CODE>xfs</CODE> Path</H3>
+
+<P>As a font server, <CODE>xfs</CODE> has it's own font path. 
+One might wonder where this fits into the picture. It
+works like this: you can place the <CODE>xfs</CODE> font server
+in XFree86's font path, by adding <CODE>unix/:port</CODE> to
+the XFree86 font path.
+Once you do this, any font in the <CODE>xfs</CODE> font path
+automatically becomes available to XFree86.
+<P>The <CODE>xfs</CODE> font path 
+is determined by the <CODE>xfs</CODE> configuration file,
+which is <CODE>/etc/X11/fs/config</CODE> on Redhat, and 
+<CODE>/etc/X11/xfs/config</CODE> on Debian.
+Redhat users do not need to explicitly edit this file, they 
+can use the <CODE>chkfontpath</CODE> utility.
+The syntax is simple:
+<A NAME="chkfontpath"></A>  
+<PRE>
+        chkfontpath --add directory
+        
+</PRE>
+
+Users of other distributions can edit the configuration file as 
+follows:
+<PRE>
+        catalogue = /usr/X11R6/lib/X11/fonts/misc:unscaled,
+        ...
+        /usr/share/fonts/my_new_fonts/,
+        ...
+        /usr/share/fonts/some_other_directory
+        # in 12 points, decipoints
+        default-point-size = 120
+        ...
+        
+</PRE>
+
+The above would add <CODE>/usr/share/fonts/my_new_fonts/</CODE> to the
+<CODE>xfs</CODE> font path. <EM>Note that the last line of the list of 
+directories doesn't have a comma at the end.</EM>
+For these modifications to the font path to become effective, <CODE>xfs</CODE>
+must be restarted. It's also a good idea to restart your 
+X session after restarting
+<CODE>xfs</CODE>.
+<H3>Installing a Font Into <CODE>xfs</CODE></H3>
+
+<P>To prepare a font for <CODE>xfs</CODE>, you need to follow the following 
+steps:
+<UL>
+<LI>If you don't have xfs installed, you need to install it.</LI>
+<LI>Put the new fonts in a directory.</LI>
+<LI>If you are installing Type1 fonts,
+prepare the new directory for the server 
+by running <CODE>type1inst</CODE> in the directory.</LI>
+<LI>If you are installing
+TrueType fonts, ( <EM>remember, not all distributions can do TrueType via
+xfs ! </EM> ), prepare the new directory for the server by running 
+<PRE>
+        ttmkfdir -o fonts.scale
+        mkfontdir
+        
+</PRE>
+
+in the directory containing your new fonts.
+<CODE>ttmkfdir</CODE> is part of the <EM>freetype</EM> package.</LI>
+<LI>Now you can add the new directory to your <CODE>xfs</CODE> search path. 
+Users of Redhat-like distributions 
+can do this with the <CODE>chkfontpath</CODE> utility:
+Other users can do this by editing their <CODE>xfs</CODE> configuration
+file.</LI>
+<LI>if <CODE>xfs</CODE> is already installed on your system,
+you should see which port it is running on. You can do this
+as follows:
+<PRE>
+        ps ax|grep xfs
+        
+</PRE>
+</LI>
+<LI>Then check your XFree86 font path. 
+<PRE>
+                xset -q
+        
+</PRE>
+</LI>
+<LI>If your font path includes something like <CODE>unix:/<EM>port_number</EM></CODE>
+were <EM>port_number</EM> is the port which the server is running on, then
+you already have xfs set up properly. Otherwise, you should add it to
+your XFree86 font path.
+<PRE>
+                xset fp+ unix/:port_number
+                xset fp rehash
+        
+</PRE>
+
+You can add it permanently by editing your <CODE>.xinitrc</CODE> as explained 
+previously.
+To add it system wide, edit your XF86Config file ( probably either 
+<CODE>/etc/X11/XF86Config</CODE>, <CODE>/etc/XF86Config</CODE> or
+<CODE>/usr/X11R6/lib/X11/XF86Config</CODE> ), by adding a 
+line <CODE>FontPath "unix:/port_number"</CODE> in the Files section.
+Here's an example:
+<PRE>
+                ...
+                Section "Files"
+                ...
+                
+                FontPath "unix/:-1" 
+                ...
+                EndSection
+                ...
+                
+</PRE>
+</LI>
+<LI>If <CODE>xfs</CODE> is already properly installed, then you can restart 
+it like this:
+<PRE>
+                /etc/rc.d/init.d/xfs restart
+                
+</PRE>
+</LI>
+<LI>After restarting <CODE>xfs</CODE>, it's a good idea to restart your
+X-session.</LI>
+</UL>
+<HR>
+<A HREF="Font-HOWTO-5.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Font-HOWTO-3.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Font-HOWTO.html#toc4"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

@@ -1,0 +1,80 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>PPP HOWTO 中译版: 区域网路上的递送问题</TITLE>
+ <LINK HREF="PPP-HOWTO-26.html" REL=next>
+ <LINK HREF="PPP-HOWTO-24.html" REL=previous>
+ <LINK HREF="PPP-HOWTO.html#toc25" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="PPP-HOWTO-26.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="PPP-HOWTO-24.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="PPP-HOWTO.html#toc25"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s25">25. 区域网路上的递送问题</A></H2>
+
+<P>如果你已经连接在某个区域网路上但是仍然想要使用在你个人的 Linux 机器上的 pppd 的话，你得要应付某些递送封包的问题，从你的机器到你的区域网路（经过你的乙太网路界面）以及到远端的 PPP 伺服器和更外面的世界．
+<P>
+<P>这一节并不尝试教你有关封包递送的机制 － 它只处理一个简单的，特定的递送情况（静态的）!
+<P>
+<P>如果你不熟悉递送机制的话，那麽我强烈地鼓励你阅读 Linux Network Administrator Guide (NAG)．
+同时 O'Reilly 的书 "TCP/IP Network Administration" 也以非常容易了解的方式涵盖了这个主题．
+<P>
+<P>静态递送路径的基本规则是预设递送路径应该是指向网路位址号码最多的那一个．
+对於其它的网路则在递送表格中输入指定递送路径．
+<P>
+<P>我唯一打算在这里介绍的情况是你的 Linux 机器在一个没有连上网际网路的区域网路上 － 而你想要在仍然连接著区域网路的情况下拨接到网际网路上供自己使用．
+<P>
+<P>首先，确定你的乙太网路递送路径是设往能够通过你的区域网路的指定网路位址 － 不是设往预设递送路径!
+<P>
+<P>藉由发出 route  指令检查之，你应该会看见如下的讯息:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+[root@hwin /root]# route -n
+Kernel routing table
+Destination     Gateway         Genmask         Flags MSS    Window Use Iface
+loopback        *               255.255.255.0   U     1936   0       50 lo
+10.0.0.0        *               255.255.255.0   U     1436   0      565 eth0
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>如果你的乙太网路界面 (eth0) 指向预设递送路径，（在 eth0 该行的第一列上会显示 "default" 字样）那麽你得要变更你的乙太网路起始指令稿使它指向特定的网路号码而非预设递送路径（参照  Net2 HOWTO 以及 NAG）．
+<P>
+<P>这将允许 pppd 设立你的预设递送路径，如下所示:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+[root@hwin /root]# route -n
+Kernel routing table
+
+Destination     Gateway         Genmask         Flags MSS    Window Use Iface
+10.144.153.51   *               255.255.255.255 UH    488    0        0 ppp0
+127.0.0.0       *               255.255.255.0   U     1936   0       50 lo
+10.1.0.0        *               255.255.255.0   U     1436   0      569 eth0
+default         10.144.153.51   *               UG    488    0        3 ppp0
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>如同你所见到的，我们拥有经由 ppp0 到 PPP 伺服器(10.144.153.51)的主机递送设定而且也拥有使用 PPP 伺服器作为闸道的预设网路递送设定．
+<P>
+<P>如果你的设定得要比此更复杂 － 阅读已经提过有关递送的文件并请教在你身旁的专家!
+<P>
+<P>如果你的区域网路上已经有路由器，那麽在你那里已经建立了通往宽广网路世界的闸道．
+你仍应把你的预设递送路径指往 PPP 界面 － 并且使其它的递送路径指定到由路由器服务的网路．
+<P>
+<H2><A NAME="ss25.1">25.1 安全上的注意事项</A>
+</H2>
+
+<P>当你在现有的区域网路上设定一台 Linux 机器连结到网际网路上，你在不知不觉中已经对网际网路 － 以及在那里的骇客们 － 开放了你的整个区域网路．
+在你这样做之前，我强烈地鼓励你请教你的网路管理者并参考该处的安全策略．
+如果你的 PPP 连线被成功地用来攻击你的站台的话，那麽你最少也会招致同夥的使用者，网路及系统的管理者强烈的愤怒．
+你也可能会发现你自己置身於非常严重的麻烦!
+<P>在你连接区域网路到网际网路上去之前，甚至是动态的连线你都应该要考虑安全的隐忧 － 因此早点参考 O'Reilly 的 "Building Internet Firewalls"!
+<P>
+<HR>
+<A HREF="PPP-HOWTO-26.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="PPP-HOWTO-24.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="PPP-HOWTO.html#toc25"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

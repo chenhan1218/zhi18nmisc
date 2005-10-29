@@ -1,0 +1,172 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Large Disk HOWTO: Disk Access</TITLE>
+ <LINK HREF="Large-Disk-HOWTO-5.html" REL=next>
+ <LINK HREF="Large-Disk-HOWTO-3.html" REL=previous>
+ <LINK HREF="Large-Disk-HOWTO.html#toc4" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Large-Disk-HOWTO-5.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Large-Disk-HOWTO-3.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Large-Disk-HOWTO.html#toc4"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s4">4. Disk Access</A></H2>
+
+<P>In order to read or write something from or to the disk, we have
+to specify a position on the disk, for example by giving a sector
+or block number.
+If the disk is a SCSI disk, then this sector number goes directly
+into the SCSI command and is understood by the disk.
+If the disk is an IDE disk using LBA, then precisely the same holds.
+But if the disk is old, RLL or MFM or IDE from before the LBA times,
+then the disk hardware expects a triple (cylinder,head,sector) to
+designate the desired spot on the disk.
+<P>The correspondence between the linear numbering and this 3D notation
+is as follows: for a disk with C cylinders, H heads and S sectors/track
+position (c,h,s) in 3D or CHS notation is the same as position
+c<CODE>*</CODE>H<CODE>*</CODE>S + h<CODE>*</CODE>S + (s-1) in linear or LBA notation.
+(The minus one is because traditionally sectors are counted from 1,
+not 0, in this 3D notation.)
+<P>Consequently, in order to access a very old non-SCSI disk, we need to know
+its <EM>geometry</EM>, that is, the values of C, H and S.
+(And if you don't know, there is a lot of good information on
+<A HREF="http://www.thetechpage.com/cgi-bin/default.cgi">www.thetechpage.com</A>.)
+<P>
+<H2><A NAME="ss4.1">4.1 BIOS Disk Access and the 1024 cylinder limit</A>
+</H2>
+
+<P>Linux does not use the BIOS, but some other systems do.
+The BIOS, which predates LBA times, offers with INT13
+disk I/O routines that have (c,h,s) as input.
+(More precisely: <CODE>AH</CODE> selects the function to perform,
+<CODE>CH</CODE> is the low 8 bits of the cylinder number, <CODE>CL</CODE>
+has in bits 7-6 the high two bits of the cylinder number
+and in bits 5-0 the sector number, <CODE>DH</CODE> is the head number,
+and <CODE>DL</CODE> is the drive number (80h or 81h).
+This explains part of the layout of the partition table.)
+<P>Thus, we have CHS encoded in three bytes,
+with 10 bits for the cylinder number, 8 bits for the head number,
+and 6 bits for the track sector number (numbered 1-63).
+It follows that cylinder numbers can range from 0 to 1023
+and that no more than 1024 cylinders are BIOS addressable.
+<P>DOS and Windows software did not change when IDE disks
+with LBA support were introduced, so DOS and Windows
+continued needing a disk geometry, even when this was
+no longer needed for the actual disk I/O, but only for talking
+to the BIOS. This again means that Linux needs the geometry
+in those places where communication with the BIOS or with
+other operating systems is required, even on a modern disk.
+<P>This state of affairs lasted for four years or so,
+and then disks appeared on the market that could not be
+addressed with the INT13 functions (because the 10+8+6=24
+bits for (c,h,s) can address not more than 8.5 GB) and a new
+BIOS interface was designed: the so-called Extended INT13
+functions, where DS:SI points at a 16-byte Disk Address Packet
+that contains an 8-byte starting absolute block number.
+<P>Very slowly the Microsoft world is moving towards using these
+Extended INT13 functions. Probably a few years from now
+no modern system on modern hardware will need the concept
+of `disk geometry' anymore.
+<P>
+<H2><A NAME="ss4.2">4.2 History of BIOS and IDE limits</A>
+</H2>
+
+<P>
+<DL>
+<DT><B>ATA Specification (for IDE disks) - the 137 GB limit</B><DD><P>At most 65536 cylinders (numbered 0-65535), 16 heads (numbered 0-15),
+255 sectors/track (numbered 1-255), for a maximum total capacity of
+267386880 sectors (of 512 bytes each), that is, 136902082560 bytes (137 GB).
+This is not yet a problem (in 1999), but will be a few years from now.
+<P>
+<DT><B>BIOS Int 13 - the 8.5 GB limit</B><DD><P>At most 1024 cylinders (numbered 0-1023), 256 heads (numbered 0-255),
+63 sectors/track (numbered 1-63) for a maximum total capacity of
+8455716864 bytes (8.5 GB). This is a serious limitation today.
+It means that DOS cannot use present day large disks.
+<P>
+<DT><B>The 528 MB limit</B><DD><P>If the same values for c,h,s are used for the BIOS Int 13 call and
+for the IDE disk I/O, then both limitations combine, and one can
+use at most 1024 cylinders, 16 heads, 63 sectors/track, for a
+maximum total capacity of 528482304 bytes (528MB), the infamous
+504 MiB limit for DOS with an old BIOS.
+This started being a problem around 1993, and people resorted to all kinds
+of trickery, both in hardware (LBA), in firmware (translating BIOS),
+and in software (disk managers).
+The concept of `translation' was invented (1994): a BIOS could use
+one geometry while talking to the drive, and another, fake, geometry
+while talking to DOS, and translate between the two.
+<P>
+<DT><B>The 2.1 GB limit (April 1996)</B><DD><P>Some older BIOSes only allocate 12 bits for the field in CMOS RAM that
+gives the number of cylinders. Consequently, this number can be at most
+4095, and only 4095<CODE>*</CODE>16<CODE>*</CODE>63<CODE>*</CODE>512=2113413120 bytes are accessible.
+The effect of having a larger disk would be a hang at boot time.
+This made disks with geometry 4092/16/63 rather popular. And still today
+many large disk drives come with a jumper to make them appear 4092/16/63.
+See also 
+<A HREF="http://www.firmware.com/support/bios/over2gb.htm">over2gb.htm</A>. 
+<A HREF="http://www.asus.com/Products/Techref/Ide/Intel/intel-ide-001.html">Other BIOSes</A>
+would not hang but just detect a much smaller disk, like 429 MB instead of 2.5 GB.
+<P>
+<DT><B>The 3.2 GB limit</B><DD><P>There was a bug in the Phoenix 4.03 and 4.04 BIOS firmware that would
+cause the system to lock up in the CMOS setup for drives with a capacity
+over 3277 MB. See 
+<A HREF="http://www.firmware.com/support/bios/over3gb.htm">over3gb.htm</A>.
+<P>
+<DT><B>The 4.2 GB limit (Feb 1997)</B><DD><P>Simple BIOS translation (ECHS=Extended CHS, sometimes called `Large 
+disk support' or just `Large')
+works by repeatedly doubling the number of heads and halving the number
+of cylinders shown to DOS, until the number of cylinders is at most 1024.
+Now DOS and Windows 95 cannot handle 256 heads,
+and in the common case that the disk reports 16 heads, this means that
+this simple mechanism only works up to 8192<CODE>*</CODE>16<CODE>*</CODE>63<CODE>*</CODE>512=4227858432
+bytes (with a fake geometry with 1024 cylinders, 128 heads, 63 sectors/track).
+Note that ECHS does not change the number of sectors per track, so if
+that is not 63, the limit will be lower.
+See 
+<A HREF="http://www.firmware.com/support/bios/over4gb.htm">over4gb.htm</A>.
+<P>
+<DT><B>The 7.9 GB limit</B><DD><P>Slightly smarter BIOSes avoid the previous problem by first adjusting the
+number of heads to 15 (`revised ECHS'), so that a fake geometry with
+240 heads can be obtained, good for
+1024<CODE>*</CODE>240<CODE>*</CODE>63<CODE>*</CODE>512=7927234560 bytes.
+<P>
+<DT><B>The 8.4 GB limit</B><DD><P>
+<A NAME="The 8.4 GB limit"></A> 
+Finally, if the BIOS does all it can to make this translation a success,
+and uses 255 heads and 63 sectors/track (`assisted LBA' or just `LBA')
+it may reach 1024<CODE>*</CODE>255<CODE>*</CODE>63<CODE>*</CODE>512=8422686720 bytes, slightly less
+than the earlier 8.5 GB limit because the geometries with 256 heads must be
+avoided.
+(This translation will use for the number of heads the first value H
+in the sequence 16, 32, 64, 128, 255 for which the total disk capacity
+fits in 1024<CODE>*</CODE>H<CODE>*</CODE>63<CODE>*</CODE>512, and then computes the number of
+cylinders C as total capacity divided by (H<CODE>*</CODE>63<CODE>*</CODE>512).)
+<P>
+<DT><B>The 33.8 GB limit (August 1999)</B><DD><P>
+<A NAME="biosupgrades"></A> 
+The next hurdle comes with a size over 33.8 GB.
+The problem is that with the default 16 heads and 63 sectors/track
+this corresponds to a number of cylinders of more than 65535, which
+does not fit into a short. Most BIOSes in existence today can't handle
+such disks. (See, e.g., 
+<A HREF="http://www.asus.com/Products/Motherboard/bios_slot1.html">Asus upgrades</A>
+for new flash images that work.)
+Linux kernels older than 2.2.14 / 2.3.21 need a patch.
+See 
+<A HREF="Large-Disk-HOWTO-12.html#verylarge">IDE problems with 34+ GB disks</A> below.
+</DL>
+<P>For another discussion of this topic, see
+<A HREF="http://www.maxtor.com/products/DiamondMax/techsupport/Q&amp;A/30004.html">Breaking the Barriers</A>, and, with more details,
+<A HREF="http://www.maxtor.com/technology/whitepapers/63001.html">IDE Hard Drive Capacity Barriers</A>.
+<P>Hard drives over 8.4 GB are supposed to report their geometry as 16383/16/63.
+This in effect means that the `geometry' is obsolete, and the total disk
+size can no longer be computed from the geometry.
+<P>
+<P>
+<P>
+<HR>
+<A HREF="Large-Disk-HOWTO-5.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Large-Disk-HOWTO-3.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Large-Disk-HOWTO.html#toc4"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

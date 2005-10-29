@@ -1,0 +1,177 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>如何在 Linux 下撰寫程式來使用 I/O 埠: 一些有用的 I/O 埠</TITLE>
+ <LINK HREF="IO-Port-Programming-7.html" REL=next>
+ <LINK HREF="IO-Port-Programming-5.html" REL=previous>
+ <LINK HREF="IO-Port-Programming.html#toc6" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+<A HREF="IO-Port-Programming-7.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="IO-Port-Programming-5.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="IO-Port-Programming.html#toc6"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s6">6. 一些有用的 I/O 埠</A></H2>
+
+<P>本節提供一些常用 I/O 埠的程式撰寫資訊這些都是可以直接拿來用的一般目的
+TTL (或 CMOS) 邏輯位準的 I/O 埠.
+<P>如果你要按照其原始的設計目的來使用這些或其他常用的I/O 埠 
+(例如, 控制一般的印表機或數據機), 你應該會使用現成的裝置驅動程式 
+(他通常被含在核心中) 而不會如本文所說地去撰寫 I/O 埠程式.
+本節主要是提供給那些想要將 LCD 顯示器, 步進馬達, 或是其他商業電子產品
+連接到 PC 標準 I/O 埠的人.
+<P>如果你想要控制大眾市場所販賣的裝置像是掃描器 (已經在市場販賣了一段期間),
+去找看看是否有現成的 Linux 裝置驅動程式.
+網頁 
+<A HREF="http://sunsite.unc.edu/pub/Linux/docs/HOWTO/Hardware-HOWTO">Hardware-HOWTO</A> 是個好的參考起點.
+<P>至於想要知道更多有關如何連接電子裝置到電腦(以及一般的電子學原理)的相關資訊則網頁
+<A HREF="http://www.hut.fi/Misc/Electronics/">http://www.hut.fi/Misc/Electronics/</A> 是個好的資料來源. 
+<P>
+<P>
+<H2><A NAME="ss6.1">6.1 並列埠 (parallel port)</A>
+</H2>
+
+<P>並列埠的基本埠位址 (以下稱之為 ``<CODE>BASE</CODE>'') 之於 <CODE>/dev/lp0</CODE> 
+是 0x3bc , 之於 <CODE>/dev/lp1</CODE> 是 0x378 , 之於 <CODE>/dev/lp2</CODE> 是 0x278 .
+如果你只是想要控制一些像是一般印表機的動作, 可以參考網頁 
+<A HREF="http://sunsite.unc.edu/pub/Linux/docs/HOWTO/Printing-HOWTO">Printing-HOWTO</A>. 
+<P>除了下面即將描述的標準僅輸出 (output-only) 模式, 大多數的並列埠都有 `擴充的'
+雙向 (bidirectional) 模式. 至於較新的 ECP/EPP 模式 (以及一般的 IEEE 1284 標準) 埠口的相關資料,
+可以參考網頁 
+<A HREF="http://www.fapo.com/">http://www.fapo.com/</A> 以及 
+<A HREF="http://www.senet.com.au/~cpeacock/parallel.htm">http://www.senet.com.au/~cpeacock/parallel.htm</A>.
+因為在使用者模式 (user-mode) 中的程式無法使用 IRQs 或 DMA, 想要使用 ECP/EPP 
+模式你或許得撰寫一個核心的裝置驅動程式; 我想應該有人寫了這類的裝置驅動程式, 
+但是詳情我並不知道. 
+<P>埠位址 <CODE>BASE+0</CODE> (資料埠) 用來控制資料埠的信號位準 (D0 到 D7 分別代表著 
+bits 0 到 7, 位準狀態: 0 = 低位準 (0 V), 1 = 高位準 (5 V)). 
+一個寫入資料到該埠的動作會將資料信號位準拴住 (latches) 在埠的腳位 (pins) 上.
+一個將該埠的資料讀出的動作會將上一次以標準僅輸出 (output-only) 
+模式或擴充的寫入模式所拴住的資料信號位準讀回, 或是以擴充讀出模式 從另外一
+個裝置將腳位上的資料信號位準讀回.
+<P>埠位址 <CODE>BASE+1</CODE> (狀態埠) 是個僅讀 (read-only) 的埠, 會將下面的輸入信號位準讀回:
+<UL>
+<LI>Bits 0 和 1 保留不用.</LI>
+<LI>Bit 2 IRQ 的狀態 (不是個腳位 (pin) , 我不知道他的工作原理)</LI>
+<LI>Bit 3 ERROR (1=高位準)</LI>
+<LI>Bit 4 SLCT (1=高位準)</LI>
+<LI>Bit 5 PE (1=高位準)</LI>
+<LI>Bit 6 ACK (1=高位準)</LI>
+<LI>Bit 7 -BUSY (0=高位準)</LI>
+</UL>
+
+(我不確定高低位準的電壓狀態.)
+<P>埠位址 <CODE>BASE+2</CODE> (控制埠) 是個僅寫 (write-only) 的埠 
+(一個將該埠的資料讀出的動作僅會將上一次寫入的資料信號位準讀回), 用來控制下面的狀態信號:
+<UL>
+<LI>Bit 0 -STROBE (0=高位準)</LI>
+<LI>Bit 1 AUTO_FD_XT (1=高位準)</LI>
+<LI>Bit 2 -INIT (0=高位準)</LI>
+<LI>Bit 3 SLCT_IN (1=高位準)</LI>
+<LI>Bit 4 當被設定為 1 時允許並列埠產生 IRQ 信號 
+(發生在 ACK 腳位的位準由低變高的瞬間)  </LI>
+<LI>Bit 5 用來控制擴充模式時埠的輸出入方向 (0 = 寫, 1 = 讀),
+這是個僅寫 (write-only) 的埠 (一個將該埠的資料讀出的動作對此 bit 一點用處也沒有).</LI>
+<LI>Bits 6 and 7 保留不用.</LI>
+</UL>
+
+(同樣地, 我不確定高低位準的電壓狀態.)
+<P>埠的腳位排列 (Pinout) 方式 (該埠是一個 25 隻腳 D 字形外殼 (D-shell) 的母頭連接器)
+(i=輸入, o=輸出):
+<BLOCKQUOTE><CODE>
+<PRE>
+1io -STROBE, 2io D0, 3io D1, 4io D2, 5io D3, 6io D4, 7io D5, 8io D6,
+9io D7, 10i ACK, 11i -BUSY, 12i PE, 13i SLCT, 14o AUTO_FD_XT,
+15i ERROR, 16o -INIT, 17o SLCT_IN, 18-25 Ground
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>IBM 的規格文件上說腳位 1, 14, 16, 和 17 (控制信號的輸出) 採用電晶體的開集極
+(open collector) 驅動方式必需使用 4.7 仟歐姆 (kiloohm) 的提升電阻接至 
+5 V 的電壓 (可流入電流 20 mA, 流出電流 0.55 mA, 高位準的輸出電壓就是 
+5.0 V 減去提升電阻的電壓). 剩下來的腳位可流入電流 24 mA, 流出電流 15 mA, 
+高位準的輸出電壓最小 2.4 V. 低位準的輸出電壓二者都是最大 0.5 V.
+那些非 IBM 規格的並列埠或許會偏離這個標準. 更多的相關資料請參考網頁
+<A HREF="http://www.hut.fi/Misc/Electronics/circuits/lptpower.html">http://www.hut.fi/Misc/Electronics/circuits/lptpower.html</A>.
+<P>最後, 給你一個警告: 留心接地的問題. 我曾經在電腦還是開機的狀況就去連接他因而
+弄壞好幾個並列埠. 發生了這種事情你可能會覺得還是不要將並列埠整
+合到主機板裡面比較好. (你通常可以拿一片便宜的標準 `multi-I/O' 卡安裝第二個
+並列埠; 只要將其他不需要的埠停用, 然後將卡片上並列埠的埠位址設定在
+空著的位址即可. 你不需在意並列埠的 IRQ 設定, 因為通常不會被用到.)
+<P>
+<H2><A NAME="ss6.2">6.2 遊戲 (操縱桿) 埠 (game port)</A>
+</H2>
+
+<P>遊戲埠的埠位址範圍為 0x200-0x207. 想要控制一般的操縱桿, 
+有一個核心層次的操縱桿驅動程式, 可參考網址 
+<A HREF="ftp://sunsite.unc.edu/pub/Linux/kernel/patches/">ftp://sunsite.unc.edu/pub/Linux/kernel/patches/</A>,
+檔名 <CODE>joystick-*</CODE>.
+<P>埠的腳位排列 (Pinout) 方式 (該埠是一個 15 隻腳 D 字形外殼 (D-shell) 的母頭連接器):
+<UL>
+<LI>1,8,9,15: +5 V (電源)</LI>
+<LI>4,5,12: 接地</LI>
+<LI>2,7,10,14: 分別是 BA1, BA2, BB1, 和 BB2 等數位輸入</LI>
+<LI>3,6,11,13: 分別是 AX, AY, BX, 和 BY 等``類比''輸入</LI>
+</UL>
+<P>+5 V 的腳位似乎通常會被直接連接到主機板的電源線上, 所以他應該能夠提供相當的電力,
+這還要看所使用主機板, 電源供給器, 以及遊戲埠的類型.
+<P>數位輸入用於操縱桿的按鈕可以讓你連接二個操縱桿的四個按鈕 (操縱桿 A 和 操縱桿 B, 
+各有二個按鈕) 到遊戲埠也就是數位輸入的四個腳位. 他們應該是一般 TTL 電壓位準的輸入,
+你可以直接從狀態埠 (參考下面說明) 讀出他們的位準狀態. 
+一個實際的操縱桿在按鈕被壓下時會傳回低位準 (0 V) 狀態否則就是高位準 
+(5V 經由 1 Kohm 的電阻連接到電源腳位) 狀態. 
+<P>所謂的類比輸入實際是量測到的阻抗值. 遊戲埠有四個單擊多諧振盪器
+(one-shot multivibrator) (一個 558 晶片) 連接到四個類比輸入腳位. 
+每個類比輸入腳位與多諧振盪器的輸出之間連接著一個 2.2 Kohm 的電阻, 
+而且多諧振盪器的輸出與地之間連接著一個 0.01 uF 的時序電容
+(timing capacitor).  一個實際的操縱桿其每個座標 (X 和 Y) 上會有一個可變電阻, 
+連接在 +5 V 與每個相對的類比輸入腳位之間 (腳位 AX 或 AY 是給操縱桿 A 用的, 
+而腳位 BX 或 BY 是給操縱桿 B用的).
+<P>操作的時候, 多諧振盪器將其輸出設定為高位準 (5 V) 並且等到時序電容上的電壓達到
+3.3 V 之後將相對的輸出設定為低位準. 因此操縱桿中多諧振盪器輸出的高位準時間周期
+與可變電阻的電阻值成正比 (也就是, 操縱桿在相對座標的位置), 如下所示:
+<BLOCKQUOTE>
+R = (t - 24.2) / 0.011,
+</BLOCKQUOTE>
+
+其中 R 是可變電阻的阻抗值 (ohms) 而 t 是高位準時間周期的長度 (秒).
+<P>因此要讀出類比輸入腳位的數值, 首先你得啟動多諧振盪器 (以埠寫入的方式; 請看下面),
+然後查詢四個座標的信號狀態(以持續的埠讀出方式)一直到信號狀態由高位準變成低位準,
+計算其高位準時間周期的長度. 這個持續查詢的動作花費相當多的 CPU 時間, 
+而且在一個非即時的多工環境像是 (一般的使用者模式 (user-mode) ) Linux, 
+所得的結果不是非常準確因為你無法以固定的時間來查詢信號的狀態 
+(除非你使用核心層次的驅動程式而且你得在你查詢的時候抑制掉中斷的產生,
+但是這樣做會浪費更多的 CPU 時間). 如果你知道信號的狀態將會花費一段不短的時間
+(數十毫秒) 纔會成為低位準, 你可以在查詢之前呼叫函式 usleep() 將 CPU 
+的時間讓給其他想要執行的行程 (processes).
+<P>遊戲埠中唯一需要你來存取的埠位址是 0x201 (其他的埠位址不是動作一樣就是沒用).
+任何對這個埠位址所做的寫入動作 (不論你寫入什麼) 都會啟動多諧振盪器.
+對這個埠位址做讀出動作會取回輸入信號的狀態:
+<UL>
+<LI>Bit 0: AX ( (1=高位準) 多諧振盪器的輸出狀態)</LI>
+<LI>Bit 1: AY ( (1=高位準) 多諧振盪器的輸出狀態)</LI>
+<LI>Bit 2: BX ( (1=高位準) 多諧振盪器的輸出狀態)</LI>
+<LI>Bit 3: BY ( (1=高位準) 多諧振盪器的輸出狀態)</LI>
+<LI>Bit 4: BA1 (數位輸入, 1=高位準)</LI>
+<LI>Bit 5: BA2 (數位輸入, 1=高位準)</LI>
+<LI>Bit 6: BB1 (數位輸入, 1=高位準)</LI>
+<LI>Bit 7: BB2 (數位輸入, 1=高位準)</LI>
+</UL>
+<P>
+<P>
+<H2><A NAME="ss6.3">6.3 串列埠 (serial port)</A>
+</H2>
+
+<P>如果你所說的裝置是支援一些像是 RS-232 那類的東西, 你應該可以如你所願地使用串列埠.
+Linux 所提供的串列埠驅動程式應該能夠應用在任何地方 (你應該不需要直接撰寫串列埠程式,
+或是核心的驅動程式); 他相當具有通用性, 所以像是使用非標準的 bps 速率以及其他等等應該不是問題.
+請參考 <CODE>termios(3)</CODE> 說明文件, 串列埠驅動程式原始程式碼
+(<CODE>linux/drivers/char/serial.c</CODE>), 以及網頁 
+<A HREF="http://www.easysw.com/~mike/serial/index.html">http://www.easysw.com/~mike/serial/index.html</A> 
+上有更多在 Unix 作業系統撰寫串列埠程式的相關資料.
+<P>
+<HR>
+<A HREF="IO-Port-Programming-7.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="IO-Port-Programming-5.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="IO-Port-Programming.html#toc6"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

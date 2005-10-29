@@ -1,0 +1,162 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>The Linux Kernel HOWTO: Patching the kernel </TITLE>
+ <LINK HREF="Kernel-HOWTO-7.html" REL=next>
+ <LINK HREF="Kernel-HOWTO-5.html" REL=previous>
+ <LINK HREF="Kernel-HOWTO.html#toc6" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Kernel-HOWTO-7.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Kernel-HOWTO-5.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Kernel-HOWTO.html#toc6"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s6">6. Patching the kernel </A></H2>
+
+<P>
+<P>
+<H2><A NAME="ss6.1">6.1 Applying a patch </A>
+</H2>
+
+<P>
+<P>Incremental upgrades of the kernel are distributed as patches. For
+example, if you have version 1.1.45, and you notice that there's a
+`<CODE>patch46.gz</CODE>' out there for it, it means you can upgrade to version
+1.1.46 through application of the patch. You might want to make a backup of the
+source tree first (`<CODE>make clean</CODE>' and then
+`<CODE>cd /usr/src; tar zcvf old-tree.tar.gz linux</CODE>'
+will make a compressed tar archive for you.).
+<P>
+<P>So, continuing with the example above, let's suppose that
+you have `<CODE>patch46.gz</CODE>' in <CODE>/usr/src</CODE>. <CODE>cd</CODE> to
+<CODE>/usr/src</CODE>  and do a `<CODE>zcat patch46.gz | patch -p0</CODE>'
+(or `<CODE>patch -p0 &lt; patch46</CODE>'
+if the patch isn't compressed). You'll see things whizz by
+(or flutter by, if your
+system is that slow) telling you that it is trying to apply hunks,
+and whether it succeeds or not. Usually, this action goes by too quickly for
+you to read, and you're not too sure whether it worked or not, so you might
+want to use the <CODE>-s</CODE> flag to <CODE>patch</CODE>, which tells <CODE>patch</CODE>
+to only report error messages (you don't get as much of the ``hey, my
+computer is actually doing something for a change!'' feeling, but you may
+prefer this..). To look for
+parts which might not have gone smoothly, cd to <CODE>/usr/src/linux</CODE>  and
+look for files with a <CODE>.rej</CODE> extension. Some versions of <CODE>patch</CODE>
+(older versions which may have been compiled with on an inferior
+filesystem) leave the rejects with a <CODE>#</CODE> extension. You can use
+`<CODE>find</CODE>' to look for you;
+<PRE>
+    find .  -name '*.rej' -print
+</PRE>
+
+prints all files who live in the current directory or any subdirectories with
+a <CODE>.rej</CODE> extension to the standard output.
+<P>
+<P>If everything went right, do a `<CODE>make clean</CODE>', `<CODE>config</CODE>',
+and `<CODE>dep</CODE>' as described in sections 3 and 4.
+<P>
+<P>There are quite a few options to the <CODE>patch</CODE> command. As mentioned
+above, <CODE>patch -s</CODE>
+will suppress all messages except the errors. If you keep your kernel
+source in some other place than <CODE>/usr/src/linux</CODE>, <CODE>patch -p1</CODE>
+(in that directory) will patch things cleanly. Other <CODE>patch</CODE> options are
+well-documented in the manual page.
+<P>
+<P>
+<H2><A NAME="ss6.2">6.2 If something goes wrong </A>
+</H2>
+
+<P>
+<P>(Note: this section refers mostly to quite old kernels)
+<P>
+<P>The most frequent problem that used to arise was when a patch modified
+a file called `<CODE>config.in</CODE>' and it didn't look quite right,
+because you changed the options to suit your machine. This has been
+taken care of, but one still might encounter it with an older release.
+To fix it, look at the <CODE>config.in.rej</CODE>  file, and see what remains
+of the original patch.
+The changes will typically be marked with `<CODE>+</CODE>' and `<CODE>-</CODE>'
+at the beginning of the
+line. Look at the lines surrounding it, and remember if they were set to
+`<CODE>y</CODE>' or `<CODE>n</CODE>'. Now, edit <CODE>config.in</CODE>, and change
+`<CODE>y</CODE>' to `<CODE>n</CODE>' and `<CODE>n</CODE>' to `<CODE>y</CODE>'
+when appropriate. Do a
+<PRE>
+    patch -p0 &lt; config.in.rej
+</PRE>
+
+and if it reports that it
+succeeded (no fails), then you can continue on with a configuration and
+compilation. The <CODE>config.in.rej</CODE> file will remain, but you can get
+delete it.
+<P>
+<P>If you encounter further problems, you might have installed a patch out
+of order. If patch says `<CODE>previously applied patch detected: Assume
+-R?</CODE>', you are probably trying to apply a patch which is below your current
+version number; if you answer `<CODE>y</CODE>', it will attempt to degrade
+your source, and will most likely fail; thus, you will need to get a whole new
+source tree (which might not have been such a bad idea in the first place).
+<P>
+<P>To back out (unapply) a patch, use `<CODE>patch -R</CODE>' on the original patch.
+<P>
+<P>The best thing to do when patches really turn out wrong is to start over
+again with a clean, out-of-the-box source tree (for example, from one
+of the <CODE>linux-x.y.z.tar.gz</CODE>  files), and start again.
+<P>
+<P>
+<H2><A NAME="ss6.3">6.3 Getting rid of the .orig files </A>
+</H2>
+
+<P>
+<P>After just a few patches, the <CODE>.orig</CODE>  files will start to pile up. For
+example, one 1.1.51 tree I had was once last cleaned out at 1.1.48.
+Removing the .orig files saved over a half a meg.
+<PRE>
+    find .  -name '*.orig' -exec rm -f {} ';'
+</PRE>
+
+will take care of it for you. Versions of <CODE>patch</CODE> which use
+<CODE>#</CODE> for rejects use a tilde instead of <CODE>.orig</CODE>.
+<P>There are better ways to get rid of the <CODE>.orig</CODE> files, which
+depend on GNU <CODE>xargs</CODE>:
+<PRE>
+    find .  -name '*.orig' | xargs rm
+</PRE>
+
+or the ``quite secure but a little more verbose'' method:
+<PRE>
+    find . -name '*.orig' -print0 | xargs --null rm --
+</PRE>
+<P>
+<P>
+<H2><A NAME="ss6.4">6.4 Other patches </A>
+</H2>
+
+<P>
+<P>There are other patches (I'll call them ``nonstandard'') than the
+ones Linus distributes. If you apply these, Linus' patches may not work
+correctly and you'll have to either back them out, fix the source or
+the patch, install a new source tree, or a combination of the above. This
+can become very frustrating, so if you do not want to modify the source (with
+the possibility of a very bad outcome), back
+out the nonstandard patches before applying Linus', or just install a new
+tree. Then, you can see
+if the nonstandard patches still work. If they don't, you are either
+stuck with an old kernel, playing with the patch or source to
+get it to work, or waiting (possibly begging) for a new version of
+the patch to come out.
+<P>
+<P>How common are the patches not in the standard distribution? You will
+probably hear of them. I used to use the noblink patch 
+for my virtual consoles because I hate blinking cursors (This patch
+is (or at least was) frequently updated for new kernel releases.). With
+most newer device drivers being developed as loadable modules, though, the
+frequecy of ``nonstandard'' patches is decreasing significantly.
+<P>
+<P>
+<HR>
+<A HREF="Kernel-HOWTO-7.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Kernel-HOWTO-5.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Kernel-HOWTO.html#toc6"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

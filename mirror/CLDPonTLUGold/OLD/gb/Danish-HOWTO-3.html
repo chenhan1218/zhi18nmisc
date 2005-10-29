@@ -1,0 +1,272 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="LinuxDoc-Tools 0.9.16">
+ <TITLE>在Linux下使用丹麦语/其他国际语言 HOWTO: 设定显示和应用程式</TITLE>
+ <LINK HREF="Danish-HOWTO-4.html" REL=next>
+ <LINK HREF="Danish-HOWTO-2.html" REL=previous>
+ <LINK HREF="Danish-HOWTO.html#toc3" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Danish-HOWTO-4.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="Danish-HOWTO-2.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="Danish-HOWTO.html#toc3"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s3">3.</A> <A HREF="Danish-HOWTO.html#toc3">设定显示和应用程式</A></H2>
+
+<P>大部份的应用程式必须被编译为 ``8-bit-clean'' 才能成功使用欧洲的字元, 有些甚至还需要额外的一些修改.</P>
+
+
+<H2><A NAME="ss3.1">3.1</A> <A HREF="Danish-HOWTO.html#toc3.1">在控制台中载入 ISO-8859-1 字型</A>
+</H2>
+
+<P>在 shell 提示字元后执行以下指令:
+<PRE>
+setfont lat1u-16.psf
+</PRE>
+</P>
+<P>在 Red Hat Linux 5.2 或更新的版本下, 你可以在档案 <CODE>/etc/sysconfig/i18n</CODE> 中加入下列句子:
+<PRE>
+SYSFONT=lat1u-16.psf
+SYSTERM=linux
+</PRE>
+
+由于 Red Hat Linux 5.2 的 <CODE>ncurses</CODE> 包裹中有 bug, 你得把档案 <CODE>/etc/profile.d/lang.sh</CODE> 中的 ``linux-lat'' 改为 ``linux''.
+Red Hat Linux 6.0 则没有此问题.</P>
+
+<H2><A NAME="ss3.2">3.2</A> <A HREF="Danish-HOWTO.html#toc3.2">欧元符号</A>
+</H2>
+
+<P>丹麦字元集里新增了一个符号: 欧元符号 (欧洲货币联盟的新币值).
+新的字元集叫作 ISO-8859-15, 也就是 latin0 (或 latin9) 以取代原先的 ISO-8859-1 (latin1).
+为取得 latin0 支援, 你必须使用 
+<A HREF="ftp://ftp.freshmeat.net/pub/euro-patch/">EURO</A> 包裹.
+这个包裹中包含字型和 keymap.</P>
+
+<H2><A NAME="ss3.3">3.3</A> <A HREF="Danish-HOWTO.html#toc3.3">Linux 环境下可显示的字元</A>
+</H2>
+
+<P>在字元提示输入 <CODE>dumpkeys -l | less</CODE> 即可知道哪些字元是可用的.
+你可以依 
+<A HREF="Danish-HOWTO-2.html#loadkbd">载入 keytable</A> 中所述的将它对应到你的键盘.</P>
+
+<H2><A NAME="apps"></A> <A NAME="ss3.4">3.4</A> <A HREF="Danish-HOWTO.html#toc3.4">特定应用程式中的国际字元集</A>
+</H2>
+
+<P>某些应用程式需要特殊的设定. 本节旨在叙述设定的方法.</P>
+<P>
+<DL>
+<DT><B><CODE>bash</CODE>:</B><DD><P>在档案 <CODE>~/.inputrc</CODE> 中加入:
+<PRE>
+set meta-flag on
+set convert-meta off
+set output-meta on
+</PRE>
+</P>
+
+<DT><B><CODE>elm</CODE>:</B><DD><P>在档案 <CODE>~/.elm/elmrc</CODE> 中加入以下定义:
+<PRE>
+charset = iso-8859-1
+displaycharset = iso-8859-1
+textencoding = 8bit
+</PRE>
+</P>
+<P>某些版本 <CODE>elm</CODE> 不接受这样的设定. 若使用<CODE>metamail</CODE>, 则可以在 <CODE>elm</CODE> 中得到部份的 <B>MIME</B> 支援.</P>
+
+<DT><B><CODE>emacs</CODE>:</B><DD><P>在档案 <CODE>~/.emacs</CODE> 或整个系统的初始设定档 (通常是 <CODE>/usr/lib/emacs/site-lisp/default.el</CODE> 或 <CODE>/usr/share/emacs/site-lisp/default.el</CODE>)
+中加入以下行列:
+<PRE>
+(standard-display-european t)
+(set-input-mode (car (current-input-mode))
+        (nth 1 (current-input-mode))
+        0) 
+</PRE>
+</P>
+<P>若你使用 GNU emacs v19.30 以上的版本, 或是 XFree86 v3.1.2 以上的版本, 在 GNU emacs 里你应该可以使用死键 (对我而言, 两者都没问题);
+因此你将不需要特地去找像是有 ``electric keys'' 设定的 elisp 包裹.
+如果你想要在 emacs 中使用欧洲键盘设定, 却不打算升级, 你最好从 
+<A HREF="ftp://sunsite.auc.dk/pub/emacs/auctex/ftp/auctex/">SunSite DK</A> 下载 <CODE>remap</CODE> 包裹.
+除此之外, <CODE>iso-acc.elc</CODE> 及 <CODE>iso-trans.elc</CODE> 这两个包含 emacs 的包裹也有类似的功能, 只是没有那么强大.</P>
+
+<DT><B><CODE>groff</CODE>:</B><DD><P>若你想要 ISO-8859-1 的文字输出, 执行指令
+<PRE>
+groff -Tlatin1 &lt;your_groff_input_file>
+</PRE>
+</P>
+<P>请注意: 要让 latin1 的字元在 <CODE>man</CODE> (不要移除 <CODE>-mandoc</CODE> 的 switch) 成功运作, 必须在 <CODE>/etc/man.config</CODE> 中执行这项变更.</P>
+
+
+<DT><B><CODE>ispell</CODE> --- 丹麦语拼字检查:</B><DD><P>首先, 确定你安装的是版本 3.1.20 而不是 4.0 的 <CODE>ispell</CODE>.
+后者不但过时, 而且设计很糟糕.
+你可以从 
+<A HREF="ftp://sunsite.auc.dk/pub/gnu/">the GNU archive</A>
+下载 <CODE>ispell</CODE>, 并从
+<A HREF="http://www.sslug.dk/ispell/idanish/dansk.html">SSLUG</A> 取得丹麦语字典. 
+依照档案中的编译指示去做, 就应该不会有问题.
+(警告: 在为编译作变数定义时, 如果你的 Linux 是 Sys V typs OS, 你必须定义 <CODE>USG</CODE> 这个变数以告知 ispell.)</P>
+<P>为 <CODE>ispell</CODE> 安装好字典后, 你可以执行以下指令来做一个丹麦语档案的拼字检查:
+<PRE>
+ispell -d danish -T latin1 -w "□□□" &lt;你的丹麦语文字档> 
+</PRE>
+</P>
+<P>(注, 给非丹麦语读者: 你可以在 <CODE>ispell</CODE> 的资源档案 <CODE>Where</CODE> 中找到大部份西方语文的字典.)</P>
+
+<DT><B><CODE>joe</CODE>:</B><DD><P>执行指令
+<PRE>
+joe -asis
+</PRE>
+
+或在档案 <CODE>~/.joerc</CODE> 中加入:
+<PRE>
+-asis
+</PRE>
+</P>
+<P>连字号 ( - ) 一定要放在第一行里! </P>
+
+<DT><B><CODE>kermit</CODE>:</B><DD><P>我能做到最好的地步是, 在档案 <CODE>~/.kermrc</CODE> 中加入:
+<PRE>
+set terminal bytesize 8
+set command bytesize 8
+set file bytesize 8
+set language danish
+set file character-set latin1-iso
+set transfer character-set latin1-iso
+set terminal character-set latin1-iso
+</PRE>
+</P>
+<P>我觉得应该不只要设定这些变数, 但我不知道还有哪些.
+如果你的远端系统是以 DOS 或 OS/2 做根据的, 你必须做以上的设定.</P>
+
+
+<DT><B><CODE>less</CODE>:</B><DD><P>设定环境变数:
+<PRE>
+LESSCHARSET=latin1
+</PRE>
+
+如果你的系统支援区域化资料库 (locale), 就不需要做这项更改, 只需要设定 <CODE>LANG</CODE>, <CODE>LC_CTYPE</CODE> 或 <CODE>LC_ALL</CODE> 
+(请参见 
+<A HREF="Danish-HOWTO-5.html#locale">在 libc 5.4.x 以上版本中支援区域化资料库 (locale)</A>.)</P>
+
+<DT><B><CODE>ls</CODE>:</B><DD><P>执行指令
+<PRE>
+ls -N
+</PRE>
+
+或是
+<PRE>
+ls --8bit
+</PRE>
+</P>
+
+<DT><B><CODE>lynx</CODE>:</B><DD><P>在档案 <CODE>~/.lynxrc</CODE> 中加入定义:
+<PRE>
+character_set=ISO Latin 1
+</PRE>
+</P>
+<P>你也可以在 <CODE>lynx</CODE> 的 <CODE>Options</CODE> 选单中做出同样结果的设定. 
+键入 `o' 并设定相关选项. </P>
+
+<DT><B><CODE>man</CODE>:</B><DD><P>请参见本节中的 <CODE>groff</CODE> 部分.</P>
+
+<DT><B><CODE>metamail</CODE>:</B><DD><P>设定环境变数:
+<PRE>
+MM_CHARSET=ISO-8859-1
+</PRE>
+</P>
+
+<DT><B><CODE>nn</CODE>:</B><DD><P>在档案 <CODE>~/.nn/init</CODE> 中加入:
+<PRE>
+set data-bits 8
+</PRE>
+</P>
+
+<DT><B><CODE>pine</CODE>:</B><DD><P>在档案 <CODE>~/.pinerc</CODE> 中加入定义:
+<PRE>
+character-set=ISO-8859-1
+</PRE>
+</P>
+<P>你也可以在 <CODE>pine</CODE> 的 <CODE>Setup</CODE>, <CODE>Config</CODE> 选单选项中做出相同结果的设定.
+另外, 你也可以放心地在选单中选择 <CODE>enable-8bit-esmtp-negotiation</CODE> 和 <CODE>enable-8bit-nntp-posting</CODE> (for news).</P>
+
+<DT><B><CODE>rlogin</CODE>:</B><DD><P>执行指令
+<PRE>
+rlogin -8 foo.bar.dk
+</PRE>
+</P>
+
+<DT><B><CODE>sendmail</CODE>:</B><DD><P>在档案 <CODE>/etc/sendmail.cf</CODE> 中加入 (或去掉注解符号):
+<PRE>
+O SevenBitInput=False
+O EightBitMode=pass8
+O DefaultCharSet=iso-8859-1
+</PRE>
+</P>
+
+<DT><B><CODE>tcsh</CODE>:</B><DD><P>在档案 <CODE>/etc/csh.login</CODE> 或 <CODE>~/.tcshrc</CODE> 中加入:
+<PRE>
+setenv LANG C
+</PRE>
+</P>
+<P>事实上, 你只需要定义 <CODE>LANG</CODE> 或 <CODE>LC_CTYPE</CODE> 这两个环境变数的其中一个. 
+变数的值无关紧要. 请阅读 <CODE>tcsh</CODE> man page 以获得更多资讯.</P>
+
+<DT><B><CODE>telnet</CODE>:</B><DD><P>在档案 <CODE>~/.telnetrc</CODE> 中, 为"每一个"你想要使用 <CODE>telnet</CODE> 登入的 host 加入以下句子:
+<PRE>
+&lt;hostname> set outbinary true
+</PRE>
+</P>
+<P>例如:
+<PRE>
+localhost set outbinary true
+foo.bar.dk set outbinary true
+</PRE>
+</P>
+<P>
+<A NAME="latex"></A> </P>
+<DT><B>TeX/LaTeX:</B><DD><P>在使用 TeX/LaTeX 时,会碰到个问题是: 你希望能在 LaTeX 中使用特殊字元, 又不希望 LaTeX 
+在每个章节的开头加入像 "Chapter'' 之类的英文字, 也不想要使用英文的文字排版.</P>
+<P>在 LaTeX2e 下, 你汇入的档案的 header 应该会看起来像这样:
+<PRE>
+\documentclass[a4paper]{article}
+
+\usepackage[latin1]{inputenc}
+\usepackage{t1enc}
+\usepackage[danish]{babel}
+</PRE>
+</P>
+<P>第一个 <CODE>usepackage</CODE> 的句子确保 LaTeX 会正确解读欧洲字元, 因此, 你不必特地使用 escape 字元来输入欧洲字元.
+第二个 <CODE>usepackage</CODE> 的句子并非必要, 但若要使用新的 EC 字型 (以前被称作 DC 字型), 则建议加入.
+第三个 <CODE>usepackage</CODE> 的句子定义若干丹麦语的文字排版.</P>
+<P>所有主要的 Linux 版本都包含 <B>teTeX</B> 包裹.
+若要设定 teTex, 你必须执行命令稿 (script) <CODE>texconfig</CODE>. 
+在此你可选择丹麦语的连字符号 (dansk: ``orddeling''), 为 <CODE>dvips</CODE> 和 <CODE>xdvi</CODE> 设定 A4 纸张大小等等.</P>
+<P>所有够新的 Linux 版本都包含 LaTeX2e, 但在比较老旧的系统里, 你使用的可能是 LaTeX 2.09. 
+如果是这样的话, 你可以用 
+<PRE>
+\documentstyle[a4,isolatin]{article}
+</PRE>
+
+来支援 ISO-8859-1 字元和欧洲纸张大小规格. 
+但我建议你最好要求系统 administrator 升级到 LaTeX2e.</P>
+<P>你可以从任一 
+<A HREF="ftp://sunsite.auc.dk/pub/tex/ctan/">CTAN servers</A>
+网站下载 <CODE>isolatin.sty</CODE>.</P>
+<P>某些人偏好使用特殊模式下的 emacs, 因为可以将"特殊"字母转变成 TeX escape 码.
+这个方法已经不适用了.</P>
+
+<DT><B><CODE>tin</CODE>:</B><DD><P>在你的档案 <CODE>~/.tin/headers</CODE> 中加入:
+<PRE>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+</PRE>
+</P>
+<P>如此一来, 你就可以在讯息中使用丹麦字元.</P>
+</DL>
+</P>
+
+<HR>
+<A HREF="Danish-HOWTO-4.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="Danish-HOWTO-2.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="Danish-HOWTO.html#toc3"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

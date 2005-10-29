@@ -1,0 +1,581 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux From Scratch: Installing Network Daemons</TITLE>
+ <LINK HREF="Linux-From-Scratch-HOWTO-11.html" REL=next>
+ <LINK HREF="Linux-From-Scratch-HOWTO-9.html" REL=previous>
+ <LINK HREF="Linux-From-Scratch-HOWTO.html#toc10" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Linux-From-Scratch-HOWTO-11.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Linux-From-Scratch-HOWTO-9.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Linux-From-Scratch-HOWTO.html#toc10"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s10">10. Installing Network Daemons</A> </H2>
+
+<H2><A NAME="ss10.1">10.1 Setting up SMTP</A>
+ </H2>
+
+<H3>Creating groups and user </H3>
+
+<P>Create the groups needed by Sendmail by running:
+<P>
+<PRE>
+groupadd -g 1 bin
+groupadd -g 2 kmem
+groupadd -g 3 mail
+useradd -u 1 -g bin -d /bin -s /bin/sh bin
+ 
+</PRE>
+<H3>Creating directory </H3>
+
+<P>Outgoing mail processed by Sendmail is put in the /var/spool/mqueue directory.
+Incoming mail is forwarded to Procmail by Sendmail so we need to have an incoming
+mail directory as well which is /var/mail. We'll create these directories and
+give them the proper permissions:
+<P>
+<PRE>
+mkdir /var/spool
+mkdir /var/mail
+cd /var/spool; ln -s ../mail mail
+chmod 700 /var/spool/mqueue
+chmod 775 /var/mail
+chgrp mail /var/mail
+chmod 1777 /tmp
+ 
+</PRE>
+<H3>Installing Sendmail </H3>
+
+<P>
+<UL>
+<LI>Unpack the Sendmail archive and install it by running:</LI>
+</UL>
+<P>
+<PRE>
+cd src
+./Build; ./Build install
+ 
+</PRE>
+<H3>Configuring Sendmail </H3>
+
+<P>Configuring Sendmail isn't as easily said as done. There are a lot of things
+you need to consider while configuring Sendmail and I can't take everything
+into account. That's why at this time we'll create a very basic and standard
+setup. If you want to tweak Sendmail to your own liking, go right ahead, but
+this is not the right article. You could always use your existing /etc/sendmail.cf
+(or /etc/mail/sendmail.cf) file if you need to use certain features.
+<P>
+<UL>
+<LI>Go to the cf directory</LI>
+<LI>Create a new file <CODE>cf/lfs.mc</CODE> containing the following:</LI>
+</UL>
+<P>
+<PRE>
+OSTYPE(LFS)
+FEATURE(nouucp)
+define(`LOCAL_MAILER_PATH', /usr/bin/procmail)
+MAILER(local)
+MAILER(smtp)
+ 
+</PRE>
+<P>
+<UL>
+<LI>Create an empty file <CODE>ostype/LFS.m4</CODE> by running <CODE>touch ostype/LFS.m4</CODE></LI>
+<LI>Compile the lfs.mc file by running <CODE>m4 m4/cf.m4 cf/lfs.mc &gt; cf/lfs.cf</CODE></LI>
+<LI>Copy the cf/lfs.cf to <CODE>/etc/sendmail.cf</CODE></LI>
+<LI>Create an empty /etc/aliases file by running <CODE>touch /etc/aliases</CODE></LI>
+<LI>Initialize this (empty) alias database by running <CODE>sendmail -v -bi</CODE></LI>
+</UL>
+<H3>Installing Procmail </H3>
+
+<P>
+<UL>
+<LI>Unpack the Procmail archive and install it by running:</LI>
+</UL>
+<P>
+<PRE>
+make; make install; make install-suid
+ 
+</PRE>
+<H3>Creating /etc/init.d/sendmail bootscript </H3>
+
+<P>
+<UL>
+<LI>Create a new file <CODE>/etc/init.d/sendmail</CODE> containing the following:</LI>
+</UL>
+<P>
+<PRE>
+#!/bin/sh
+# Begin /etc/init.d/sendmail
+ 
+check_status()
+{
+  if [ $? = 0 ]
+  then
+    echo "OK"
+  else
+    echo "FAILED"
+  fi
+}
+ 
+case "$1" in
+  start)
+    echo -n "Starting Sendmail..."
+    start-stop-daemon -S -q -o -x /usr/sbin/sendmail -- -bd
+    check_status
+    ;;
+ 
+  stop)
+    echo -n "Stopping Sendmail..."
+    start-stop-daemon -K -q -o -p /var/run/sendmail.pid
+    check_status
+    ;;
+ 
+  reload)
+    echo -n "Reloading Sendmail configuration file..."
+    start-stop-daemon -K -q -s 1 -p /var/run/sendmail.pid
+    check_status
+    ;;
+ 
+  restart)
+    echo -n "Stopping Sendmail..."
+    start-stop-daemon -K -q -o -p /var/run/sendmail.pid
+    check_status
+ 
+    sleep 1
+ 
+    echo -n "Starting Sendmail..."
+    start-stop-daemon -S -q -o -x /usr/sbin/sendmail -- -bd
+    check_status
+    ;;
+ 
+  *)
+    echo "Usage: $0 {start|stop|reload|restart}"
+    exit 1
+    ;;
+ 
+esac
+ 
+# End /etc/init.d/sendmail
+ 
+</PRE>
+<H3>Setting up permissions and symlinks </H3>
+
+<P>
+<UL>
+<LI>Set the proper permissions by running <CODE>chmod 755 /etc/init.d/sendmail</CODE></LI>
+<LI>Create the proper symlinks by running:</LI>
+</UL>
+<P>
+<PRE>
+cd /etc/init.d/rc2.d; ln -s ../init.d/sendmail S20sendmail
+cd ../rc0.d; ln -s ../init.d/sendmail K20sendmail
+cd ../rc6.d; ln -s ../init.d/sendmail K20sendmail
+ 
+</PRE>
+<H2><A NAME="ss10.2">10.2 Setting up FTP</A>
+ </H2>
+
+<H3>Creating groups and users </H3>
+
+<P>
+<UL>
+<LI>Create the necessary groups by running:</LI>
+</UL>
+<P>
+<PRE>
+groupadd -g 65534 nogroup
+groupadd -g 4 ftp
+ 
+</PRE>
+<P>
+<UL>
+<LI>Create the necessary users by running:</LI>
+</UL>
+<P>
+<PRE>
+useradd -u 65534 -g nogroup -d /home nobody
+useradd -u 4 -g ftp -s /bin/sh -m ftp
+ 
+</PRE>
+<H3>Installing Proftpd </H3>
+
+<P>
+<UL>
+<LI>Unpack the Proftpd archive and install it by running:</LI>
+</UL>
+<P>
+<PRE>
+./configure
+make; make install
+ 
+</PRE>
+<H3>Creating the /etc/init.d/proftpd bootscript </H3>
+
+<P>
+<UL>
+<LI>Create a new file <CODE>/etc/init.d/proftpd</CODE> containing the following:</LI>
+</UL>
+<P>
+<PRE>
+#!/bin/sh
+# Begin /etc/init.d/proftpd
+ 
+check_status()
+{
+  if [ $? = 0 ]
+  then
+    echo &quot;OK&quot;
+  else
+    echo &quot;FAILED&quot;
+  fi
+}
+ 
+case &quot;$1&quot; in
+  start)
+    echo -n &quot;Starting Pro FTP daemon...&quot;
+    start-stop-daemon -S -q -o -x /usr/sbin/proftpd
+    check_status
+    ;;
+ 
+  stop)
+    echo -n &quot;Stopping Pro FTP daemon...&quot;
+    start-stop-daemon -K -q -o -x /usr/sbin/proftpd
+    check_status
+    ;;
+ 
+  restart)
+    echo -n &quot;Stopping Pro FTP daemon...&quot;
+    start-stop-daemon -K -q -o -x /usr/sbin/proftpd
+    check_status
+ 
+    sleep 1
+ 
+    echo -n &quot;Starting Pro FTP daemon...&quot;
+    start-stop-daemon -S -q -o -x /usr/sbin/proftpd
+    check_status
+    ;;
+ 
+  *)
+    echo &quot;Usage: $0 {start|stop|restart}&quot;
+    ;;
+ 
+esac
+ 
+# End /etc/init.d/proftpd
+ 
+</PRE>
+<H3>Setting up permissions and symlinks </H3>
+
+<P>
+<UL>
+<LI>Set the proper permissions by running <CODE>chmod 755 /etc/init.d/proftpd</CODE></LI>
+<LI>Create the necessary symlinks by running:</LI>
+</UL>
+<P>
+<PRE>
+cd /etc/rc2.d; ln -s ../init.d/proftpd S40proftpd
+cd ../rc0.d; ln -s ../init.d/proftpd K40proftpd
+cd ../rc6.d; ln -s ../init.d/proftpd K40proftpd
+ 
+</PRE>
+<H2><A NAME="ss10.3">10.3 Setting up HTTP</A>
+ </H2>
+
+<H3>Installing Apache </H3>
+
+<P>
+<UL>
+<LI>Unpack the Apache archive and install it by running:</LI>
+</UL>
+<P>
+<PRE>
+./configure
+make; make install
+ 
+</PRE>
+<H3>Configuring Apache </H3>
+
+<P>There's not much that needs to be configured. The only thing we need to
+do is to add the /usr/apache/man path to /usr/share/misc/man.conf
+<P>
+<UL>
+<LI>Edit the /usr/share/misc/man.conf file</LI>
+<LI>Add this line underneath the other lines that start with MANPATH: <EM>MANPATH
+/usr/apache/man</EM></LI>
+</UL>
+<H3>Creating /etc/init.d/apache bootscript </H3>
+
+<P>
+<UL>
+<LI>Create a new file <CODE>/etc/init.d/apache</CODE> containing the following:</LI>
+</UL>
+<P>
+<PRE>
+#!/bin/sh
+# Begin /etc/init.d/apache
+ 
+case &quot;$1&quot; in
+  start)
+    echo -n &quot;Starting Apache HTTP daemon...&quot;
+    /usr/apache/bin/apachectl start
+    ;;
+ 
+  stop)
+    echo -n &quot;Stopping Apache HTTP daemon...&quot;
+    /usr/apache/bin/apachectl stop
+    ;;
+ 
+  restart)
+    echo -n &quot;Restarting Apache HTTP daemon...&quot;
+    /usr/apache/bin/apachectl restart
+    ;;
+ 
+  force-restart)
+    echo -n &quot;Stopping Apache HTTP daemon...&quot;
+    /usr/apache/bin/apachectl stop
+ 
+    sleep 1
+ 
+    echo -n &quot;Starting Apache HTTP daemon...&quot;
+    /usr/apache/bin/apachectl start
+    ;;
+ 
+  *)
+    echo &quot;Usage: $0 {start|stop|restart|force-restart}&quot;
+    ;;
+ 
+esac
+ 
+# End /etc/init.d/apache
+ 
+</PRE>
+<H3>Setting up permissions and symlinks </H3>
+
+<P>
+<UL>
+<LI>Set the proper permissions by running <CODE>chmod 755 /etc/init.d/apache</CODE></LI>
+<LI>Create the necessary symlinks by running:</LI>
+</UL>
+<P>
+<PRE>
+cd /etc/rc2.d; ln -s ../init.d/apache S50apache
+cd ../rc0.d; ln -s ../init.d/apache K50apache
+cd ../rc6.d; ln -s ../init.d/apache K50apache
+ 
+</PRE>
+<H2><A NAME="ss10.4">10.4 Setting up Telnet</A>
+ </H2>
+
+<H3>Installing telnet daemon + client </H3>
+
+<P>
+<UL>
+<LI>Unpack the Netkit-telnet archive and install it by running:</LI>
+</UL>
+<P>
+<PRE>
+./configure
+make; make install
+ 
+</PRE>
+<H3>Creating the /etc/inetd.conf configuration file </H3>
+
+<P>
+<UL>
+<LI>Create a new file <CODE>/etc/inetd.conf</CODE> containing the following:</LI>
+</UL>
+<P>
+<PRE>
+# Begin /etc/inetd.conf
+ 
+telnet stream tcp nowait root /usr/sbin/in.telnetd
+ 
+# End /etc/inetd.conf
+ 
+</PRE>
+<H3>Creating the /etc/init.d/inetd bootscript </H3>
+
+<P>
+<UL>
+<LI>Create a new file <CODE>/etc/init.d/inetd</CODE> containing the following:</LI>
+</UL>
+<P>
+<PRE>
+#!/bin/sh
+# Begin /etc/init.d/inetd
+ 
+check_status()
+{
+  if [ $? = 0 ]
+  then
+    echo &quot;OK&quot;
+  else
+    echo &quot;FAILED&quot;
+  fi
+}
+ 
+case &quot;$1&quot; in
+  start)
+    echo -n &quot;Starting Internet Server daemon...&quot;
+    start-stop-daemon -S -q -o -x /usr/sbin/inetd
+    check_status
+    ;;
+ 
+  stop)
+    echo -n &quot;Stopping Internet Server daemon...&quot;
+    start-stop-daemon -K -q -o -p /var/run/inetd.pid
+    check_status
+    ;;
+ 
+  reload)
+    echo -n &quot;Reloading Internet Server configuration file...&quot;
+    start-stop-daemon -K -q -s 1 -p /var/run/inetd.pid
+    check_status
+    ;;
+ 
+  restart)
+    echo -n &quot;Stopping Internet Server daemon...&quot;
+    start-stop-daemon -K -q -o -p /var/run/inetd.pid
+    check_status
+ 
+    sleep 1
+ 
+    echo -n &quot;Starting Internet Server daemon...&quot;
+    start-stop-daemon -S -q -o -x /usr/sbin/inetd
+    check_status
+    ;;
+ 
+  *)
+    echo &quot;Usage: $0 {start|stop|reload|restart}&quot;
+    ;;
+ 
+esac
+ 
+# End /etc/init.d/inetd
+ 
+</PRE>
+<H3>Setting up permissions and symlinks </H3>
+
+<P>
+<UL>
+<LI>Set the proper permissions by running <CODE>chmod 755 /etc/init.d/inetd</CODE></LI>
+<LI>Create the necessary symlinks by running</LI>
+</UL>
+<P>
+<PRE>
+cd /etc/rc2.d; ln -s ../init.d/inetd S30inetd
+cd ../rc0.d; ln -s ../init.d/inetd K30inetd
+cd ../rc6.d; ln -s ../init.d/inetd K30 inetd
+ 
+</PRE>
+<H2><A NAME="ss10.5">10.5 Setting up PPP</A>
+ </H2>
+
+<H3>Configuring the Kernel </H3>
+
+<P>Before you can logon to the Internet, the kernel must be ppp-aware. You
+can accomplish this by compiling ppp-support directly into the kernel, or compiling
+the ppp drivers are modules which you load when you need them. Whatever you
+prefer, do it now by re-configuring the kernel if necessary. If your LFS kernel
+is already ppp-aware than you don't have to re-configure the kernel.
+<H3>Creating group </H3>
+
+<P>
+<UL>
+<LI>Create the daemon group by running <CODE>groupadd -g7 daemon</CODE> </LI>
+</UL>
+<H3>Installing PPP </H3>
+
+<P>
+<UL>
+<LI>Unpack the PPP archive and install it by running:</LI>
+</UL>
+<P>
+<PRE>
+./configure
+make; make install
+ 
+</PRE>
+<H3>Creating /etc/resolv.conf </H3>
+
+<P>
+<UL>
+<LI>Create a new file <CODE>/etc/resolv.conf</CODE> containing the following:</LI>
+</UL>
+<P>
+<PRE>
+# Begin /etc/resolv.conf
+ 
+nameserver &lt;IP address of your ISP's primary DNS server&gt;
+nameserver &lt;IP address of your ISP's secundary DNS server&gt;
+ 
+# End /etc/resolv.conf
+ 
+</PRE>
+<H3>Creating /etc/ppp/peers/provider </H3>
+
+<P>
+<UL>
+<LI>Create the <CODE>/etc/ppp/peers</CODE> directory</LI>
+<LI>Create a new file <CODE>/etc/ppp/peers/provider</CODE> containing the following:</LI>
+</UL>
+<P>
+<PRE>
+# Begin /etc/ppp/peers/provider
+ 
+noauth
+connect "/usr/sbin/chat -v -f /etc/chatscripts/provider"
+/dev/ttyS1
+115200
+defaultroute
+noipdefault
+ 
+# End /etc/ppp/peers/provider
+ 
+</PRE>
+<H3>Creating /etc/chatscripts/provider </H3>
+
+<P>
+<UL>
+<LI>Create the <CODE>/etc/chatscripts</CODE> directory</LI>
+<LI>Create a new file <CODE>/etc/chatscripts/provider</CODE> containing the following:</LI>
+</UL>
+<P>
+<PRE>
+# Begin /etc/chatscripts/provider
+ 
+ABORT BUSY
+ABORT "NO CARRIER"
+ABORT VOICE
+ABORT "NO DIALTONE"
+ABORT "NO ANSWER"
+"" ATZ
+OK ATDT &lt;ISP's phonenumber&gt;
+TIMEOUT 35
+CONNECT ''
+TIMEOUT 10
+ogin: \q&lt;username&gt;
+TIMEOUT 10
+assword: \q&lt;mysecretpassword&gt;
+ 
+# End /etc/chatscripts/provider
+ 
+</PRE>
+<H3>Note on password authentication </H3>
+
+<P>As you see from the sample scripts (these are the actual scripts I use
+when I'm not using X) above I logon to my ISP using this chatscripts in stead
+of authenticating via pap or chap. Though my ISP supports pap, I choose to
+do it this slightly different way which has it's disadvantages and advantages.
+In my case the advantages outweigh the disadvantages. This way I have more
+control over my logon procedure and I can see closer what is happening when.
+<P>For example most times when I connect I have a window running <CODE>tail -f /var/log/syslog</CODE>
+so I can keep an eye on when (with my provider it's mostly 'if') things like
+the username and password are sent.
+<HR>
+<A HREF="Linux-From-Scratch-HOWTO-11.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Linux-From-Scratch-HOWTO-9.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Linux-From-Scratch-HOWTO.html#toc10"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

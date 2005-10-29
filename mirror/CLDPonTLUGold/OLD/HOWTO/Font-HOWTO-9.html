@@ -1,0 +1,200 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Font HOWTO: TeX / LaTeX</TITLE>
+ <LINK HREF="Font-HOWTO-10.html" REL=next>
+ <LINK HREF="Font-HOWTO-8.html" REL=previous>
+ <LINK HREF="Font-HOWTO.html#toc9" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Font-HOWTO-10.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Font-HOWTO-8.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Font-HOWTO.html#toc9"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s9">9. TeX / LaTeX</A></H2>
+
+<H2><A NAME="ss9.1">9.1 A Quick Primer on LaTeX/TeX fonts</A>
+</H2>
+
+<P>Adding fonts to TeX and LaTeX is a somewhat complex procedure. However, like
+a lot of things, it's easy if you know how to do it.
+Some fonts are distributed in metafont format, and some in Type1 format. 
+Usually, the Type1 formats are more easily available. However, metafont fonts have 
+the distinct advantage that they can adjust their shape at different sizes,
+while Type1 and TrueType fonts at different point sizes are simply magnified
+or reduced versions of precisely the same shape. The main reason why this feature
+is desirable is that ideally, fonts should be ( relatively ) wider at smaller
+sizes and narrower at larger sizes.
+<P>For this discussion, we focus on Type1 fonts, since they are more widely
+available, and more problematic to install.
+<P>Here's a quick primer on LaTeX fonts.         LaTeX uses the following 
+types of font files for handling Type1 fonts:
+<UL>
+<LI> <CODE>.pl</CODE> -- property list. This is a human readable version of a 
+tex font metric file.</LI>
+<LI> <CODE>.vpl</CODE> -- virtual property list. Human readable version of a 
+virtual font file.</LI>
+<LI> <CODE>.fd</CODE> -- font definition. Used to define a <EM>family</EM> of
+fonts.</LI>
+<LI> <CODE>.tfm</CODE>  -- tex font metric. This is a metric file, as explained
+in the glossary. It is completely analogous to the <CODE>.afm</CODE> files used
+by Type1 fonts. TeX needs the font metrics to properly layout the page.</LI>
+<LI> <CODE>.vf</CODE> -- virtual font. These files contain encoding details, and
+act as interpreters. TeX treats them as fonts. For example, 
+Imagine that there's some wacky font foobar-exp.pfb which consists 
+of a few ( say 20 ) alternate characters, and there's a virtual font 
+which uses a few of these alternate characters ( and it gets the
+rest of the characters from font foobar.pfb ).
+Dvips might say
+``I want character 65 of virtual font foo.vf''. Dvips knows that 65 is always
+an ``a'' in TeX's scheme. Then the virtual font maps TeX's request to 
+a request for character 14 of the Type1 font foobar.pfb ( which might 
+be the alternate ``a'' in the Type1 font foobar.pfb ). The virtual font 
+mechanism is very flexible and allows fonts to be constructed from many 
+different font files. This is useful when using fonts such as adobe's
+``expert'' fonts.</LI>
+<LI> <CODE>.pk</CODE> -- a device dependent bitmap font. These are usually constructed
+on an as-needed basis ( they are renderings of Type1 and metafont fonts ). 
+They are typically high resolution ( about 300-1200dpi ),
+and are intended to be rendered on a printer. Because of their high resolution,
+and the fact that each point size of each font requires a <CODE>.pk</CODE> file,
+they require a lot of disk space, so they are cached, but not stored.</LI>
+<LI><CODE>.mf</CODE> -- metafont files. Metafont is a graphics programming language
+widely used for font design ( though it can also be used for graphics ). 
+It has many advantages over TrueType and Type1 schemes. However, it's main
+weakness is that it is not as ubiquitous as TrueType or Type1 ( and it is also
+not terribly well suited to WYSIWYG publishing. Of course, this isn't a 
+major disadvantage when TeX is your typesetting system. )
+</LI>
+</UL>
+<P>
+<P>It's good to know your way around the TeX directory structure. Here are
+the main directories you'll need to know about:
+<UL>
+<LI> <CODE>$TEXMF/fonts</CODE>  -- the main font directory</LI>
+<LI> <CODE>$TEXMF/fonts/type1</CODE> -- the type1 font directory</LI>
+<LI> <CODE>$TEXMF/fonts/type1/foundry</CODE> -- the directory for the shape files in a given foundry</LI>
+<LI> <CODE>$TEXMF/fonts/type1/foundry/fontname</CODE> -- contains the font called <EM>name</EM>. 
+The <EM>name</EM> is usually plain English, and needn't follow TeX's cryptic
+naming scheme for fonts.</LI>
+<LI> <CODE>$TEXMF/fonts/afm/foundry/fontname</CODE> -- the directory containing the <CODE>afm</CODE>
+files corresponding to the font <CODE>name</CODE> belonging to foundry <CODE>foundry</CODE>.</LI>
+<LI>  <CODE>$TEXMF/fonts/tfm/foundry/fontname</CODE> -- analogous to the <CODE>afm</CODE> directory,
+but contains <CODE>tfm</CODE> files instead.</LI>
+<LI><CODE>$TEXMF/fonts/vf/foundry/fontname</CODE> -- similar to the above, but contains the virtual fonts.</LI>
+<LI><CODE>$TEXMF/fonts/source/foundry/fontname</CODE> -- similar to the above, but contains metafont files.</LI>
+<LI><CODE>$TEXMF/dvips/config/psfonts.map</CODE> -- fontmap file for dvips. This file is similar
+in both function and format to ghostscript's Fontmap file.</LI>
+<LI><CODE>$TEXMF/tex/latex/psnfss</CODE> -- this is where all the font definition files go.</LI>
+</UL>
+<P>
+<H2><A NAME="ss9.2">9.2 Adding Type1 fonts</A>
+</H2>
+
+<H3>Naming the fonts</H3>
+
+<P>First, you need to appropriately name your fonts.
+See the fontinst documentation on your system for instructions 
+on how to name fonts ( it should be fontinst subdirectory of the
+directory containing your tetex documentation ).
+To make a long story very short, the naming scheme is 
+<CODE>FNW{V}E{n}</CODE> where:
+<UL>
+<LI>F is a one-letter abbreviation for the foundry ( m = monotype, p = adobe, 
+b = bitstream, f = free )</LI>
+<LI>N is a two letter abbreviation for the font name 
+( for example, ag = ``avant garde'' )</LI>
+<LI>W is the font weight ( r = regular, b = bold, l = light d = demibold )</LI>
+<LI>V is an optional slope variant ( i = italic , o = oblique )</LI>
+<LI>E is an abbreviation for the encoding ( almost always <CODE>8a</CODE> which is 
+adobe standard encoding ).</LI>
+<LI>N is an optional width variant ( n = narrow )</LI>
+</UL>
+
+For example, the font Adobe Garamond demibold is <CODE>pgad8a</CODE>.
+<H3>Creating the virtual fonts and tex font metrics</H3>
+
+<P>Now you can run <CODE>fontinst</CODE> as follows:
+<PRE>
+        latex `kpsewhich fontinst.sty`
+        
+</PRE>
+
+then you type at the prompt:
+<PRE>
+        \latinfamily{font_name}{}\bye
+        
+</PRE>
+
+where <CODE>font_name</CODE> is the first three letters of your 
+font file name ( for example, <CODE>pad</CODE> for adobe garamond ).
+Now <CODE>fontinst</CODE> will generate a number of files -- 
+font description files, property list files and virtual property
+list files. It also generates a lot of <CODE>.mtx</CODE> files. These
+are created by <CODE>fontinst</CODE>, but you don't need to use them.
+You need to convert the property lists and virtual property lists
+to metrics and virtual fonts. This is done using the utilities 
+<CODE>vptovf</CODE> and <CODE>pltotf</CODE>.
+<PRE>
+        for X in *.pl; do pltotf $X; done
+        for X in *.vpl; do vptovf $X; done
+        
+</PRE>
+
+Then remove the old <CODE>vpl</CODE>, <CODE>pl</CODE> and <CODE>mtx</CODE> files.
+<H3>Configure dvips</H3>
+
+<P>You will need to edit your dvips config file, <CODE>psfonts.map</CODE>.
+The best way to explain the format of the file is to give an example.
+<PRE>
+        
+     marr8r          ArialMT &lt;8r.enc &lt;farr8a.pfa
+     marbi8r         Arial_BoldItalicMT &lt;8r.enc &lt;farbi8a.pfa
+     marb8r          Arial_BoldMT &lt;8r.enc &lt;farb8a.pfa
+     marri8r         Arial_ItalicMT &lt;8r.enc &lt;farri8a.pfa
+     marr8rn         Arial_Narrow &lt;8r.enc &lt;farr8an.pfa
+        
+</PRE>
+
+The <CODE>8r.enc</CODE> is simply there to inform dvips of the encoding scheme 
+used ( in all our examples, it's 8r, because of the way <CODE>fontinst</CODE> 
+constructs the virtual fonts ). The leftmost column is the font name TeX
+uses. The second column is the real name of the font, which is hardcoded
+into the font file ( this name can be 
+deduced by opening the <CODE>afm</CODE> file in a text editor, and looking 
+for the <CODE>FontName</CODE> directive ). The last column is the filename 
+of the shape file corresponding with the font. It is not necessary to
+provide a directory path -- tex knows where to look.
+<H3>Test the font</H3>
+
+<P>Try running latex on a document like this:
+<PRE>
+\documentclass{article}
+\begin{document}
+        \usefont{T1}{pga}{m}{n}\selectfont
+        \huge
+        Testing a new font \dots the quick red fox jumped over the lazy brown dogs
+\end{document} 
+         
+</PRE>
+
+where you replace <CODE>pga</CODE> with the outline of your font.
+If this works, you are almost done. All you have to do now is put all the 
+files in the right directories ( as explained in the primer ), then 
+run 
+<PRE>
+         texconfig rehash
+         
+</PRE>
+
+so that tex can update the directory lists.
+<H3>Create a .sty file</H3>
+
+<P>You may want to create a .sty file so that you can more easily use 
+fonts. Use the files in <CODE>$TEXMF/tex/latex/psnfss</CODE> as a template.
+<HR>
+<A HREF="Font-HOWTO-10.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Font-HOWTO-8.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Font-HOWTO.html#toc9"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

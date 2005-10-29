@@ -1,0 +1,166 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" content="text/html; charset=big5">
+<TITLE>Linux Quota mini-HOWTO 中譯版</TITLE>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+<PRE>
+
+                        LINUX MODEM SHARING MINI-HOWTO
+   
+   
+   Author:  Friedemann Baitinger,  baiti@toplink.net
+   last update:
+   
+   V1.01, 11/02/97 source now in HTML format, added a reference on where
+                   to get 'cu', also added a reference on where to get
+                   mserver. '-s' parameter added to 'cu' example.
+   
+   V1.00, 06/12/97 Initial release
+   
+
+  Translator: LI SHIN_CHIN, idyllic@bubble.pisces.com.tw 05/11/98
+  ________________________________________________________________________
+
+
+ 1. 簡介
+
+     這個 mini-HOWTO 是描述在 TCP/IP 網路上的 Linux system 如何
+     設定和別的系統共同分享裝在 Linux system 上的 MODEM.
+
+     譯者按：也就是在 TCP/IP 網路上如何把裝在 LINUX 上的一台
+             數據機分享給別的機器(如 Win95/NT)，讓這些機器以
+             為在自己這部機器上也裝上了一台數據機.
+             另外本篇文章只提到 Windows 上的設定方法，如果你
+             需要的是這以外的其它 OS  可能這篇文章就幫不上你
+             的忙了.
+
+ 2. 伺服器端
+
+     這是假設在 Linux 伺服器上是下面這兩種其中之一：
+
+     a) 一台接在 /dev/ttyS x 上的 MODEM
+
+     b) 或是在 /dev/ttyI x 上接有整合數位網路(ISDN)之 MODEM
+  
+     以下五行用 perl script 所寫的是先前我所能想到的方法
+   
+       $ cat /usr/sbin/modemd
+   
+       #!/usr/bin/perl
+       select((select(STDOUT), $| = 1)[$[]);
+       select((select(STDIN), $| = 1)[$[]);
+       exec 'cu -s 115200 -l /dev/ttyS1';
+       die '$0: Cant exec cu: $!\n';
+
+     如果有一客戶端連接到適當的連接埠，則 INETD process 會啟動
+     MODEM DAEMON. modemd ( MODEM DAEMON ) 只是簡單的使用 'cu'
+     指令把標準輸入及標準輸出和 socket handle 連接起來. 然後讓
+     'cu' 來實際控制 MODEM，說到這兒如果你沒有 'cu' 這個指令，
+     你通常都可以在 'UUCP' package 中找到它.
+   
+     你也必須修改 INETD 的設定，把 MODEM DAEMON 加入其中，
+     通常這個設定檔都會放在 /etc/inetd.conf ，如：
+
+       #
+       # modem daemon
+       #
+       modem stream tcp nowait root /usr/sbin/tcpd /usr/sbin/modemd   /dev/ttyS1
+
+     為了能使它可以運作，也必須在 '/etc/services' 裡加上：
+
+       modem           2006/tcp        modemd
+
+     在這個例子中我們把連接埠 2006 用 modemd 來當做連結的代號.
+     其中的埠數 ( portnumber ) 你可以任意指定所有還未被用過的埠
+     數 (portnumber). 在這些都完成後，你也需要讓 inetd process
+     重新啟動.
+  
+       $ ps |grep inetd
+       194  ?  S     0:00 /usr/sbin/inetd
+   
+       kill -HUP 194
+   
+     現在你的伺服器端已經可以接受客戶端的要求及服務，你可以用
+     下面的方法檢查一下：
+
+       $ telnet localhost modem
+   
+       Trying 127.0.0.1...
+       Connected to localhost.
+       Escape character is '^]'.
+   
+     你現在可以連上你的 modem ，也可以用一些 'AT' 指令來確認一下：
+   
+       atz
+       atz
+       OK
+   
+       ati1
+       ati1
+       Linux ISDN
+       OK
+   
+       ^]
+       telnet>quit
+       $
+
+     你除了可以用 Perl Script 來當 modem server 外，另外也有個程式
+     'mserver' 可以在ftp://ftp.innet.be/pub/staff/carl/ 這裡找到，
+     此外你也可以用 'archie' 或是其它的搜尋引擎來找到這個程式.
+
+ 3. 客戶端
+
+     在這文章中我將僅描述 Windows 上的設定 . 此外 Client PC 的
+  　 COM-port 也需要被重導到 TCP/IP 通訊協定上，我所能找到最好用的
+     程式是位在 'Tactical Software' 的 'DialOut/IP' (For Windows
+     3.1 and Windows 95 ，Windows 3.1 版的可以在 Windows NT [ run 
+     as 16-bits application ] 下執行，32-bit For Windows NT 的版本
+     已經在 1997夏 過期了).
+
+     DialOut/IP 會使用新加的 Virtual Com-port 來連上 MODEM，
+     Ｗindows 中的程式可以使用這個 Virtual COM-port 就如分享出來的
+     MODEM 是直接接在這台機器上頭. 許多客戶端程式 (包括 Windows 95
+     的撥號網路) 都可以像真的有一台 MODEM 接在它上頭一樣的去使用，
+     除了一些傳真的應用程式或是其它需要直接存取 UART 控制線 ( UART
+     control lines ) . DialOut/IP 可以被設定成提供 Telnet 的通訊協
+     定，但是這個特性只能應用在某一些 modem pool 的產品上 . 這篇文
+     章將不會告訴你如何對 Linux 做設定 .  注意，雖然它是如此命名，
+     DialOut/IP 也可以被應用程式拿來接收撥進來的電話(incoming
+     calls).
+    
+     在 www.tactical-sw.com 有一頁提供你下載僅可使用一至二週的全功
+     能版本，安裝及設定是由設定程式處理，詳細的安裝放在 README.TXT
+     裡頭 .  當你執行 DialOut/IP，你必須輸入分享出來的 modem 的 IP
+     address 和埠數 (port number).
+   
+     DialOut/IP 是個僅被允許一台 modem 所使用的商業產品， 也就是你
+     所付出的代價依你所使用的 sharing modem 數量而定，使用執照
+     (license)中說你可以安裝在所用可以存取 shared modem 的個人電腦
+     上.
+
+ 4. 安全問題
+
+     如果在你的區域網路中你只有一台 modem 來分享給所有機器，那麼就
+     沒什麼安全上的問題可以顧慮了.  然而，如果你的區域網路上有一台
+     或多台的機器是如上所述的被我們設定成 modem server  且也接上了
+     internet ，那安全上的問題就必須考量了. 否則任何人都可以用
+     "telnet your_host modem" 指令隨意撥一通國際長途電話.
+
+     我建議你為了要保護你的 modem  server 被非法的存取你最好安裝以
+     及設定 tcp-wrappers 來防止.
+
+ 5. 例子
+
+     我用上述的步驟 (2) 及 (3) 設定連接在我的 Linux machine 的 
+     modem 以在我的 Windows 95 ThinkPad 上執行 Quicken  和處理
+     一些家庭業務 ( homebanking ). 在這例子中 'modem' 並不是代
+     表一台真的 modem，它是在  ISDN-So  卡上摸擬出來的 modem，
+     Quicken 只用到一個 COM port，但不曉得所連接到這個
+     COM port  的設備實際上是在我的乙太網路上的另一端上 . 它也
+     不知道他並不是台類比數據機而是一個剛好了解 'AT' 指今的
+     ISDN 裝置.
+
+</PRE>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>
+

@@ -1,0 +1,219 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Kernel HOWTO 中译版: 一些陷阱</TITLE>
+ <LINK HREF="Kernel-HOWTO-8.html" REL=next>
+ <LINK HREF="Kernel-HOWTO-6.html" REL=previous>
+ <LINK HREF="Kernel-HOWTO.html#toc7" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Kernel-HOWTO-8.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Kernel-HOWTO-6.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Kernel-HOWTO.html#toc7"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="pitfalls"></A> <A NAME="s7">7. 一些陷阱</A></H2>
+
+<P>
+<P>
+<H2><A NAME="ss7.1">7.1 make clean </A>
+</H2>
+
+<P>如果你的新核心会做一些真的很奇怪的事，有可能是因为在编译核心前你忘了做清除 <CODE>make clean</CODE>．
+症状从你的核心不正常地崩溃到奇怪的输出入问题，一直到可怜的执行效率等等不一而足，可以是任何事．
+最好也要确定你有做 <CODE>make dep</CODE>．
+<P>
+<H2><A NAME="ss7.2">7.2 巨大或缓慢的核心</A>
+</H2>
+
+<P>如果你的核心占用了大量的记忆体，或者它真的是很大很大，也或者是即使用你全新的 786DX6/440 来编译却都还像是永远编译不完的话，
+那麽有可能是因为你配置了太多不必要的东西(设备驱动程式，档案系统等等)．
+如果你不会用到某些东西，那就不要配置它，因为它真的会占用记忆体．
+核心过於臃肿最明显的症状就是发生记忆体与磁碟之间异常大量的资料交换．
+如果你不是用那种声音听起来好像是喷射机降落的旧型 Fujitsu Eagles 硬碟，检查一下你的核心配置．
+<P>你可以找出你机器上全部记忆体的数量，然後减掉 <CODE>/proc/meminfo</CODE> 里面的 ``total mem'' 或 `<CODE>free</CODE>' 指令所得的记忆体数量来得知核心使用了多少记忆体．
+你也可以执行 `<CODE>dmesg</CODE>' (或者也可以查看核心的记录档，它一定在会你的系统里)．看起来就像这一行：
+<P><CODE>Memory: 15124k/16384k available (552k kernel code, 384k reserved, 324k data)</CODE>
+<P>我的 386 (配置很少垃圾)显示如下：
+<P><CODE>Memory: 7000k/8192k available (496k kernel code, 384k reserved, 312k data)</CODE>
+<P>如果你`必须'得到一大型核心但系统却不让你做，你可以试试 `<CODE>make bzimage</CODE>'．
+你可能必须安装新版的 LILO 来做这件事．
+<P>
+<H2><A NAME="ss7.3">7.3 核心无法编译</A>
+</H2>
+
+<P>如果它没有被编译，那麽可能是有个修补档失败了，或者是你从某个地方拿到的原始程式码有问题．
+也有可能是因为你的 gcc 版本不正确或坏掉了(例如含入档有错误)．
+确定 Linus 在 <CODE>README</CODE> 里所描述的符号链结都有正确建立．
+一般说来，如果核心没能编译，这表示在某些地方有严重的错误，重新安装某些工具可能是必须的．
+<P>或者可能你用 ELF 编译器 (gcc 2.6.3 或以後的) 来编译 1.2.x 的核心．
+如果编译过程中你得到一大堆的 <CODE>xxxx undefined</CODE> 的讯息，这可能是你的问题．
+修正的方法大部份都很简单．将这几行加到 <CODE>arch/i386/Makefile</CODE> 的顶端:
+<CODE>arch/i386/Makefile</CODE>:
+<PRE>
+AS=/usr/i486-linuxaout/bin/as
+LD=/usr/i486-linuxaout/bin/ld -m i386linux
+CC=gcc -b i486-linuxaout -D__KERNEL__ -I$(TOPDIR)/include
+</PRE>
+
+然後重新执行 <CODE>make dep</CODE> 与 <CODE>zImage</CODE>．
+<P>在少数情况下，gcc 可能会由於硬体问题而当掉．错误讯息会像 ``xxx exited with signal 15'' 之类的，而且会看起来很奇怪．
+我本来不想提这点的，不过在我身上也发生过一次 - 我有一些坏的 cache 记忆体，编译器时常会随机地当掉．
+如果你有此问题的话先试著重新安装 gcc．如果你将外部 cache 关掉，减少一些 RAM 之後核心就编译成功了，你大概只会觉得可疑．
+<P>告诉人们他的硬体有问题常会使人困扰．不过，这不是我发明的．
+这是一个 FAQ -- 可以在 <CODE>
+<A HREF="http://www.bitwizard.nl/sig11/">http://www.bitwizard.nl/sig11/</A></CODE> 找到．
+<P>
+<H2><A NAME="ss7.4">7.4 新版的核心似乎不能启动</A>
+</H2>
+
+<P>你没有执行 LILO ，或是没有正确的配置它．有一次我曾经碰到的问题是出在配置档里，
+我用了 `<CODE>boot = /dev/hda1</CODE>' 而不是 `<CODE>boot = /dev/hda</CODE>'
+(这在刚开始时真的是很讨厌，但是一旦你有了一个可以用的配置档，应该不需要去再去改变它)．
+<P>
+<H2><A NAME="ss7.5">7.5 你忘了执行 LILO，或系统根本不能启动</A>
+</H2>
+
+<P>噢！现在最好的办法是用磁片启动，并且准备另一张可以启动的磁片(像是`<CODE>make zdisk</CODE>'时做的磁片)．
+你得知道你的根目录(<CODE>/</CODE>)所在的分割区以及它的格式(second extended, minix 等等)．
+在下面的例子中，你也得知道你的 <CODE>/usr/src/linux</CODE> 原始程式码在那个分割区，它的格式，以及它一般会挂在那儿．
+<P>在这个例子中， 根目录 <CODE>/</CODE> 是 <CODE>/dev/hda1</CODE>，而持有 <CODE>/usr/src/linux</CODE> 的分割区是 <CODE>/dev/hda3</CODE>，一般会挂在 <CODE>/usr</CODE> 下．
+它们都是 second extended 档案系统．可以运作的核心映像叫做 <CODE>zImage</CODE> ，放在 <CODE>/usr/src/linux/arch/i386/boot</CODE> 底下．
+<P>这个主意是这样的，假若有一个可以运作的核心映像叫做 <CODE>zImage</CODE>，可能可以把它用在新的磁片上．
+另外一个不一定会更好的变通办法(这跟你的系统怎麽组成的有关)在说明这个例子之後会讨论到．
+<P>首先，从 boot/root 磁片或者是急救磁片开机，然後将持有可运作核心的分割区挂上来：
+<P>
+<PRE>
+    mkdir /mnt
+    mount -t ext2 /dev/hda3 /mnt
+</PRE>
+<P>如果 <CODE>mkdir</CODE> 指令显示该目录已经存在，忽略掉不必理会它．
+现在，<CODE>cd</CODE> 到持有可运作核心的地方．注意:
+<PRE>
+/mnt + /usr/src/linux/arch/i386/boot - /usr = /mnt/src/linux/arch/i386/boot
+</PRE>
+
+把一张格式化过的磁片放进 ``A:'' 磁碟机(确定不是你的 boot/root 磁片!)，
+把映像档倾倒到磁片里去，然後配置你的根目录分割区:
+<P>
+<PRE>
+    cd /mnt/src/linux/arch/i386/boot
+    dd if=zImage of=/dev/fd0
+    rdev /dev/fd0 /dev/hda1
+</PRE>
+<P><CODE>cd</CODE> 到根目录 <CODE>/</CODE> 并且卸下标准 <CODE>/usr</CODE> 分割区:
+<P>
+<PRE>
+    cd /
+    umount /mnt
+</PRE>
+<P>你现在应该可以从这张磁片正常的开机了．在这次开机後不要忘记执行 lilo (或是其它你曾经做错的什麽事)!
+<P>如同前面曾经提过的，还有另外一种很普遍的变通方式．
+如果情况是你有一个可以运作的核心在放在 <CODE>/</CODE> (例如 <CODE>/vmlinuz</CODE>)，你也可以使用它．
+假定所有的条件都跟上面的例子一样，而我的核心映像是 <CODE>/vmlinuz</CODE>，只要对上面的例子做这些改变:
+把 <CODE>/dev/hda3</CODE> 改成 <CODE>/dev/hda1</CODE> (<CODE>/</CODE> 分割区)，
+把 <CODE>/mnt/src/linux</CODE> 改成 <CODE>/mnt</CODE>，并且把 <CODE>if=zImage</CODE> 改成 <CODE>if=vmlinuz</CODE>．
+至於前面有关注意如何推导出 <CODE>/mnt/src/linux/arch/i386/boot</CODE> 的那个部分可以忽略．
+<P>将 LILO 使用在大的硬碟上(超过 1024 磁柱)可能会有问题．
+请参见 LILO mini-HOWTO 或其它文件的说明．
+<P>
+<H2><A NAME="ss7.6">7.6 系统表示 `warning: bdflush not running' </A>
+</H2>
+
+<P>这可以算是一个相当严重的问题．从 1.0 版以後的核心开始(大概是在 1994 年四月二十日左右)，
+有个会周期性地更新档案系统缓冲区的程式叫做 `<CODE>update</CODE>' 被升级或取代掉了．
+取得 `<CODE>bdflush</CODE>' 的原始程式码(你应该可以从你取得核心的地方找到)，
+然後编译它(你可能会希望在旧版的核心下执行编译及安装)．
+它会以 `<CODE>update</CODE>' 为名安装它自己并且在重开机以後，新核心应该会运作良好．
+<P>
+<H2><A NAME="ss7.7">7.7 系统说 undefined symbols 而且无法编译</A>
+</H2>
+
+<P>你可能有一 ELF 编译器(gcc 2.6.3 或以後的)而且是 1.2.x (或更早的)核心原始码．
+一般修正的方法是将这几行加到 <CODE>arch/i386/Makefile</CODE> 的顶端:
+<P>
+<PRE>
+AS=/usr/i486-linuxaout/bin/as
+LD=/usr/i486-linuxaout/bin/ld -m i386linux
+CC=gcc -b i486-linuxaout -D__KERNEL__ -I$(TOPDIR)/include
+</PRE>
+<P>这会以 a.out 程式库来编译 1.2.x 核心．
+<P>
+<H2><A NAME="ss7.8">7.8 无法让我的 IDE/ATAPI CD-ROM 正常工作</A>
+</H2>
+
+<P>很奇怪，一大堆人无法让他们的 ATAPI 光碟机工作，可能是因为有太多事容易出错．
+<P>你的光碟机是在一特别 IDE 界面上的唯一设备，它必须被调整为 ``master'' 或 ``single''．
+这可能是最常见的错误．
+<P>Creative Labs 现在将 IDE 界面放到他们音效卡里．
+然而，这将导致一个有趣的问题，虽然有些人只有一个 IDE 界面，许多人在主机板上有两个内建的 IDE 界面(通常在 IRQ15)，
+因此一解决的办法是将声霸卡的界面调成第三个 IDE (有人告诉我是 IRQ11)．
+<P>这在 1.2.x 的 Linux 核心上会有问题，因为它不支援第三个 IDE 界面(从 1.3.x 系列已开始支援，但它还在发展中，而且不会自动侦测)．
+要解决此问题，你有一些选择．
+<P>如果你已经有第二个 IDE 埠，如果你没用它或没有两部设备在上面的话就有机会．
+将 ATAPI 光碟机从音效卡上拿下来并放到第二个界面上．然後你可以关掉音效卡上的界面，这就可以省下一个 IRQ．
+<P>如果你没有第二个 IDE 界面，调整音效卡的界面(不是音效卡的音效部份)到第二界面用的 IRQ15，这样应该会动．
+<P>如果因为某些理由非得使用``第三个''界面不可，或是有其它问题，
+取得 1.3.x 的核心(例如 1.3.57 就有)，阅读 <CODE>drivers/block/README.ide</CODE> 档案．
+那里有更多的资讯说明．
+<P>
+<H2><A NAME="ss7.9">7.9 系统显示关於 obsolete routing requests 的奇怪讯息</A>
+</H2>
+
+<P>取得新版的 <CODE>route</CODE> 程式及其它与 route 有关的程式．
+<CODE>/usr/include/linux/route.h</CODE> (这是 <CODE>/usr/src/linux</CODE> 下的一个档案)已经做了修改．
+<P>
+<H2><A NAME="ss7.10">7.10 防火墙功能无法在 1.2.0 上工作</A>
+</H2>
+
+<P>至少升级到 1.2.1 版．
+<P>
+<H2><A NAME="ss7.11">7.11 ``Not a compressed kernel Image file'' (非压缩核心映像档)</A>
+</H2>
+
+<P>不要用在 <CODE>/usr/src/linux</CODE> 产生的 <CODE>vmlinux</CODE> 做为你的启动核心映像;
+<CODE>[..]/arch/i386/boot/zImage</CODE> 才是正确的．
+<P>
+<H2><A NAME="ss7.12">7.12 升级至 1.3.x 後在控制台终端机上的问题</A>
+</H2>
+
+<P>将控制台设定档 <CODE>/etc/termcap</CODE> 中的 <CODE>dumb</CODE> 改为 <CODE>linux</CODE>．
+你可能会必须增加一项 terminfo．
+<P>
+<H2><A NAME="ss7.13">7.13 核心升级後似乎无法编译东西</A>
+</H2>
+
+<P>Linux 的核心原始程式码包含了许多的含入档(就是用 <CODE>.h</CODE> 结尾的档案)必须为标准的 <CODE>/usr/include</CODE> 所参考．
+它们通常用这种方法被参考(其中 <CODE>xyzzy.h</CODE> 是在 <CODE>/usr/include/linux</CODE> 下):
+<PRE>
+    #include &lt;linux/xyzzy.h>
+</PRE>
+
+正常情况下，在 <CODE>/usr/include</CODE> 下会有一叫做 <CODE>linux</CODE> 的连结到你的核心原始码的 <CODE>include/linux</CODE> 目录(一般系统在 <CODE>/usr/src/linux/include/linux</CODE>)．
+如果这个连结没有了，或指到错误的地方，大部份的东西都将无法编译．
+如果你觉得核心原始码占了太多的空间而砍掉它，这显然会引发问题．
+另一个可能的错误是它的档案权限; 如果你的 <CODE>root</CODE> 预设不让其它使用者看到他的档案，
+而且你解开核心原始码时没有加上 <CODE>p</CODE> (保留档案模式)选项，其它使用者也会无法使用 C 编译器．
+虽然你可以用 <CODE>chmod</CODE> 指令来修正，不过更容易的方法是重新解开含入档．
+你可以一开始你解开整个原始码的同样方法，不过多加了一个参数:
+<PRE>
+    blah# tar zxvpf linux.x.y.z.tar.gz linux/include
+</PRE>
+
+请注意: 如果 <CODE>/usr/src/linux</CODE> 连结不在的话 ``<CODE>make config</CODE>'' 会重建之．
+<P>
+<H2><A NAME="ss7.14">7.14 增加上限</A>
+</H2>
+
+<P>下面一些□例指令告诉你如何增加核心提供的上限:
+<PRE>
+echo 4096 > /proc/sys/kernel/file-max
+echo 12288 > /proc/sys/kernel/inode-max
+echo 300 400 500 > /proc/sys/vm/freepages
+</PRE>
+<P>
+<HR>
+<A HREF="Kernel-HOWTO-8.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Kernel-HOWTO-6.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Kernel-HOWTO.html#toc7"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

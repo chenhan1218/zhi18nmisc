@@ -1,0 +1,251 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>C++ Programming HOW-TO: Threads in C++</TITLE>
+ <LINK HREF="C++Programming-HOWTO-24.html" REL=next>
+ <LINK HREF="C++Programming-HOWTO-22.html" REL=previous>
+ <LINK HREF="C++Programming-HOWTO.html#toc23" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="C++Programming-HOWTO-24.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="C++Programming-HOWTO-22.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="C++Programming-HOWTO.html#toc23"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s23">23. Threads in C++</A></H2>
+
+<P>
+<UL>
+<LI> IBM pthread User Guide, Thread concepts, API reference
+<A HREF="http://www.as400.ibm.com/developer/threads/uguide/document.htm">http://www.as400.ibm.com/developer/threads/uguide/document.htm</A>
+and mirror site is at
+<A HREF="http://java.icmc.sc.usp.br/library/books/ibm_pthreads/document.htm">IBM main site</A>
+<P>
+</LI>
+<LI> QpThread Library for C++ provides object oriented framework in C++
+for threads and Unix signals on top of system level threads (currently POSIX Threads) 
+<A HREF="http://lin.fsid.cvut.cz/~kra/index.html">http://lin.fsid.cvut.cz/~kra/index.html</A>
+<P>
+</LI>
+<LI> ThreadJack supports Java-like multi-thread programming
+model with platform independent C++ class library
+<A HREF="http://www.esm.co.jp/divisions/open-sys/ThreadJack/index-e.html">http://www.esm.co.jp/divisions/open-sys/ThreadJack/index-e.html</A>
+and here is the
+<A HREF="http://www.esm.co.jp/divisions/open-sys/ThreadJack/source-dl-e.html">download-site</A>
+<P>
+</LI>
+<LI> APE is the "APE Portable Environment" and class libraries for 
+writing portable threaded servers in C++, under UNIX (pthread) and Win32 API's.
+APE provides portable class abstraction for threads, sockets, file handling, and
+synchronization objects. The goal of APE is to make writing threaded
+servers in C++ both practical and convient, even for small 
+and simple projects, and hence simplicity and low runtime overhead 
+are design goals 
+<A HREF="http://www.voxilla.org/projects/projape.html">http://www.voxilla.org/projects/projape.html</A>
+<P>
+</LI>
+<LI> Portabale Thread Lib 
+<A HREF="http://www.media.osaka-cu.ac.jp/~k-abe/PTL">http://www.media.osaka-cu.ac.jp/~k-abe/PTL</A>
+<P>
+</LI>
+<LI> Thread-Recyling in C++ 
+<A HREF="http://www.sigs.de/html/kuhlmann.html">http://www.sigs.de/html/kuhlmann.html</A></LI>
+</UL>
+<H2><A NAME="ss23.1">23.1 Threads Tutorial</A>
+</H2>
+
+<P>
+<UL>
+<LI> You can download all the tutorials in one file from
+<A HREF="http://www.aldev.8m.com/cppsrc.html">aldev-site</A>
+<P>
+</LI>
+<LI> Threads tutorial is at 
+<A HREF="http://www.math.arizona.edu/swig/pthreads/threads.html">http://www.math.arizona.edu/swig/pthreads/threads.html</A>
+<P>
+</LI>
+<LI> HERT tutorial at 
+<A HREF="http://www.hert.org/docs/tutorials">http://www.hert.org/docs/tutorials</A>, go here to
+search for "Threads".
+<P>
+</LI>
+<LI> Intro to threads at 
+<A HREF="http://www2.linuxjournal.com/lj-issues/issue61/3138.html">linuxjournal</A>
+<P>
+</LI>
+<LI>North Arizona Univ 
+<A HREF="http://www.cse.nau.edu/~mc8/Thread/Contents.html">NAU</A>
+<P>
+</LI>
+<LI> Posix threads 
+<A HREF="http://users.actcom.co.il/~choo/lupg/tutorials/multi-thread/multi-thread.html">Acctcom multi-thread</A></LI>
+</UL>
+<H2><A NAME="ss23.2">23.2 Designing a Thread Class in C++</A>
+</H2>
+
+<P>This section is written by 
+<A HREF="mailto:ryte@geocities.com">Ryan Teixeira</A>
+and the document is located
+<A HREF="http://www.geocities.com/SiliconValley/Heights/6038/dthreads.html">here</A>
+.
+<H3>Introduction</H3>
+
+<P>Multi threaded programming is becomming ever more popular. This section 
+presents a design for a C++ class that will encapsulate the threading
+mechanism. Certain aspects of thread programming, like mutexes and semaphores 
+are not discussed here. Also, operating system calls to manipulate threads are 
+shown in a generic form.
+<H3>Brief Introduction To Threads</H3>
+
+<P>To understand threads one must think of several
+programs running at once. Imagine further 
+that all these programs have access to the same set of
+global variables and function calls.  
+Each of these programs would represent a thread of
+execution and is thus called a thread.  
+The important differentiation is that each thread does not have to wait 
+for any other thread to proceed. All the threads proceed 
+simultaneously. To use a metaphor, they are like runners 
+in a race, no runner waits for another runner. They
+all proceed at their own rate.
+<P>Why use threads you might ask. Well threads can often
+improve the performance of an application and they do not incur 
+significant overhead to implement. They effectively give 
+good bang for a buck. Imagine an image server program
+that must service requests for images.  
+The program gets a request for an image from another program. It must 
+then retieve the image from a database and send it to the program that
+requested it. If the server were implemented in a single threaded 
+approach, only one program could request at a time. When it was busy 
+retrieving an image and sending it to a requestor, it could not 
+service other requests. Of course one could still implement such a system without
+using threads. It would be a challenge though. Using threads, one can very
+naturally design a system to handle multiple requests. A simple approach
+would be to create a thread for each request received. The main 
+thread would create this thread upon receipt of a request. The thread
+would then be responsible for the conversation with the client
+program from that point on. After retrieving the image, the thread would 
+terminate itself. This would provide a smooth system 
+that would continue to service requests even though it
+was busy serviceing other requests at the same time.
+<H3>Basic Approach</H3>
+
+<P>The create a thread, you must specify a function that will become the entry 
+point for the thread. At the operating system level, this is a
+normal function. We have to do a few tricks to wrap a C++ class around it 
+because the entry function cannot be a normal member function 
+of a class. However, it can be a static member function of a class. This is 
+what we will use as the entry point. There is a gotcha here though.
+Static member functions do not have access to the this pointer of 
+a C++ object. They can only access static data. Fortunately, 
+there is way to do it. Thread entry point functions take a void * 
+as a parameter so that the caller can typecast any data and pass in to 
+the thread. We will use this to pass this to the static function. The static 
+function will then typecast the void * and use it to call a non 
+static member function.
+<H3>The Implementation</H3>
+
+<P>It should be mentioned that we are going to discuss a thread class with 
+limited functionality. It is possible to do more with threads
+than this class will allow.
+<P>
+<HR>
+<PRE>
+class Thread
+{
+   public:
+      Thread();
+      int Start(void * arg);
+   protected:
+      int Run(void * arg);
+      static void * EntryPoint(void*);
+      virtual void Setup();
+      virtual void Execute(void*);
+      void * Arg() const {return Arg_;}
+      void Arg(void* a){Arg_ = a;}
+   private:
+      THREADID ThreadId_;
+      void * Arg_;
+
+};
+
+Thread::Thread() {}
+
+int Thread::Start(void * arg)
+{
+   Arg(arg); // store user data
+   int code = thread_create(Thread::EntryPoint, this, &amp; ThreadId_);
+   return code;
+}
+
+int Thread::Run(void * arg)
+{
+   Setup();
+   Execute( arg );
+}
+
+/*static */
+void * Thread::EntryPoint(void * pthis)
+{
+   Thread * pt = (Thread*)pthis;
+   pthis->Run( Arg() );
+}
+
+virtual void Thread::Setup()
+{
+        // Do any setup here
+}
+
+virtual void Thread::Execute(void* arg)
+{
+        // Your code goes here
+}
+</PRE>
+<HR>
+<P>It is important to understand that we are wrapping a C++ object 
+around a thread. Each object will provide an interface to a single thread. The
+thread and the object are not the same.  
+The object can exist without a thread. In this implementation, the
+thread does not actually exist until the Start function is called.
+<P>Notice that we store the user argument in the class.
+This is necessary because we need a place to store it temporarily until the thread is
+started. The operating system thread call allows us to pass an argument but we have used it to
+pass the this pointer. So we store the real user argument in the class itself and when the
+execute function is called it can get access to the argument.
+<P><B>Thread(); </B>
+This is the constructor. 
+<P><B>int Start(void * arg); </B>
+This function provides the means to create the thread
+and start it going. The argument arg provides a way for user data to be passed into the
+thread. Start() creates the thread by calling the operating system thread creation function.
+<P><B>int Run(void * arg); </B>
+This is a protected function that should never be
+tampered with.
+<P><B>static void * EntryPoint(void * pthis); </B>
+This function serves as the entry point to the thread.
+It simply casts pthis to Thread * and 
+<P><B>virtual void Setup(); </B>
+This function is called after the thread has been
+created but before Execute() is called. If you override this function, remember to call the
+parent class Execute().
+<P><B>virtual void Execute(void *); </B>
+You must override this function to provide your own
+functionality.
+<H3>Using The Thread Class</H3>
+
+<P>To use the thread class, you derive a new class. you
+override the Execute() function where you provide your own functionality. You may override
+the Setup() function to do any start up 
+duties before Execute is called. If you override
+Setup(), remember to call the parent class Setup().
+<H3>Conclusion</H3>
+
+<P>This section presented an implementation of a thread class written in C++. 
+Of course it is a simple approach but it provides a sound foundation
+upon which to build a more robust design. 
+<P>If you have comments or suggestions, email to 
+<A HREF="mailto:ryte@geocities.com">Ryan Teixeira</A><HR>
+<A HREF="C++Programming-HOWTO-24.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="C++Programming-HOWTO-22.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="C++Programming-HOWTO.html#toc23"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

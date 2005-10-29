@@ -1,0 +1,213 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>PPP HOWTO 中译版: 以手动方式建立 PPP 连结</TITLE>
+ <LINK HREF="PPP-HOWTO-15.html" REL=next>
+ <LINK HREF="PPP-HOWTO-13.html" REL=previous>
+ <LINK HREF="PPP-HOWTO.html#toc14" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="PPP-HOWTO-15.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="PPP-HOWTO-13.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="PPP-HOWTO.html#toc14"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="manual"></A> <A NAME="s14">14. 以手动方式建立 PPP 连结</A></H2>
+
+<P>现在你已经建立你的 <CODE>/etc/ppp/options</CODE> 以及 <CODE>/etc/resolv.conf</CODE> 档案（以及，如果有需要，还有 <CODE>/etc/ppp/pap|chap-secrets</CODE> 档案），你可以藉由手动设立 PPP 连线来测试这些设定（一旦我们使手动连线能运作，我们将会自动化该过程）．
+<P>
+<P>要做这件事，你的通讯软体必须能在不重置你的数据机的情况下结束．
+Minicom 可以做到 － <CODE>ALT Q</CODE> （或者在比较旧的 minicom  版本是使用 <CODE>CTRL A Q</CODE>）．
+<P>
+<P>确定你以 root 签入．
+<P>
+<P>启动你的通讯软体（像是 minicom），拨接到 PPP 伺服器并且像平常一样的签入．
+如果你需要发出某个指令来起动伺服端上的 PPP，那麽就做吧．你将会看见你以前看过的垃圾．
+<P>
+<P>如果你使用 PAP 或 CHAP 的话，那麽只是连线到远端系统应该就会起动在远端上的 PPP 而且你将在没有签入的情况下就见到这些垃圾（虽然这在某些伺服器上不会发生 - 试著按下 <B>Enter</B> 看看能否看到这些垃圾）．
+<P>
+<P>现在，在不要重置数据机的情况下结束通讯软体(在 minicom 使用 <CODE>ALT Q</CODE> 或 <CODE>CTL A Q</CODE>)并且在 Linux 的提示符号下（以 root 的身分）键入
+<P>
+<HR>
+<PRE>
+pppd -d -detach /dev/ttySx 38400 &amp;
+</PRE>
+<HR>
+<P>
+<P><CODE>-d</CODE> 这个选项开启侦错功能 － ppp 连线起动时的”交谈”将会记录到你的系统记录里去 － 如果你遇上麻烦这会很有用的．
+<P>
+<P>你数据机的灯现在应该要闪烁，因为要建立 PPP 连线．PPP 连线的建立将会花点时间．
+<P>
+<P>此时你可以观察 PPP 界面，藉由发出这个指令
+<P>
+<HR>
+<PRE>
+ifconfig
+</PRE>
+<HR>
+<P>
+<P>在你所拥有的任何乙太网路以及回授设备之外，你应该会看见像这样的资讯:
+<HR>
+<PRE>
+ppp0     Link encap:Point-Point Protocol
+         inet addr:10.144.153.104  P-t-P:10.144.153.51 Mask:255.255.255.0
+         UP POINTOPOINT RUNNING  MTU:552  Metric:1
+         RX packets:0 errors:0 dropped:0 overruns:0
+         TX packets:0 errors:0 dropped:0 overruns:0
+</PRE>
+<HR>
+<P>
+<P>其中
+<UL>
+<LI>inet addr:10.144.153.10 是该连结中你这端的 IP 号码．</LI>
+<LI>P-t-P:10.144.153.5 是伺服端的 IP 号码．</LI>
+</UL>
+<P>(自然， ifconfig 不会报告这些 IP 号码，而是你的 PPP 伺服器上使用的．)
+<P>
+<P>注意:  ifconfig 也告诉你该连结已经起动并且正在执行!
+<P>
+<P>如果没有 ppp 装置列出或得到的是像这样的资讯:
+<P>
+<HR>
+<PRE>
+ppp0     Link encap:Point-Point Protocol
+         inet addr:0.0.0.0  P-t-P:0.0.0.0  Mask:0.0.0.0
+         POINTOPOINT  MTU:1500  Metric:1
+         RX packets:0 errors:0 dropped:0 overruns:0
+         TX packets:0 errors:0 dropped:0 overruns:0
+</PRE>
+<HR>
+<P>
+<P>你的 PPP 连线并没有建立... 参阅稍後有关错误排除的章节!
+<P>
+<P>你还可以看到这部远端机器(及其後的)的递送路径．要做到这点，下这个指令
+<P>
+<HR>
+<PRE>
+route -n
+</PRE>
+<HR>
+<P>
+<P>你应该看到像这样的:-
+<P>
+<HR>
+<PRE>
+Kernel routing table
+Destination     Gateway         Genmask         Flags MSS    Window Use Iface
+10.144.153.3    *               255.255.255.255 UH    1500   0        1 ppp0
+127.0.0.0       *               255.0.0.0       U     3584   0       11 lo
+10.0.0.0        *               255.0.0.0       U     1500   0       35 eth0
+default         10.144.153.3    *               UG    1500   0        5 ppp0
+</PRE>
+<HR>
+<P>
+<P>特别注意这里，我们有两个项目指到我们的 ppp 装置．
+<P>
+<P>第一项是主机递送(以 H 旗号表示)并且允许我们看到这部我们正在连接的主机 - 但再来就没有了．
+<P>
+<P>第二项是预设递送路径(由 pppd 的 <CODE>defaultroute</CODE> 选项所建立的)．
+这份递送路径告诉我们的 Linux PC 将任何不在内部乙太网路的封包送到那里 - 到我们指定的网路 - 也就是到 PPP 伺服器本身．
+而 PPP 伺服器有责任为我们将封包递送到网际网路并将回应的封包送回给我们．
+<P>
+<P>如果你在递送表格中没看到两个项目，有些事不对劲．
+特别是如果你的系统记录(syslog)显示一讯息告诉你 pppd 无法取代已存在的预设递送路径，那麽你已有一预设递送路径指向你的乙太网路界面 - 
+而这<B>必须</B>由指定的网路递送来取代: <B>你只能有一个预设递送路径!!!</B>
+<P>
+<P>你必须检查一下你系统的起始档案以找出预设递送是在那里建立的(这是由 <CODE>route add default...</CODE> 指令指定的)．
+将它改成像这样的 <CODE>route add net...</CODE>．
+<P>
+<P>现在藉由 ifconfig 之输出所回报的 IP 号码来 'ping' 一下该伺服器以测试这个连结，像这样
+<P>
+<HR>
+<PRE>
+ping 10.144.153.51
+</PRE>
+<HR>
+<P>
+<P>你应该会接收到像这样的输出
+<P>
+<HR>
+<PRE>
+PING 10.144.153.51 (10.144.153.51): 56 data bytes
+64 bytes from 10.144.153.51: icmp_seq=0 ttl=255 time=328.3 ms
+64 bytes from 10.144.153.51: icmp_seq=1 ttl=255 time=190.5 ms
+64 bytes from 10.144.153.51: icmp_seq=2 ttl=255 time=187.5 ms
+64 bytes from 10.144.153.51: icmp_seq=3 ttl=255 time=170.7 ms
+</PRE>
+<HR>
+<P>
+<P>这将会一直列印下去 － 按下 <CODE>CTRL C</CODE> 终止它，那时你将会接收到更多讯息:
+<P>
+<HR>
+<PRE>
+--- 10.144.153.51 ping statistics ---
+4 packets transmitted, 4 packets received, 0% packet loss
+round-trip min/avg/max = 170.7/219.2/328.3 ms
+</PRE>
+<HR>
+<P>
+<P>到目前都很好．
+<P>
+<P>现在试著藉由名称 ping 某台主机（不是 PPP  伺服器它自己的名称，而是在另一个地方的一台你知道可能已经起动而且正在运作的主机）．例如
+<P>
+<HR>
+<PRE>
+ping sunsite.unc.edu
+</PRE>
+<HR>
+<P>
+<P>这时会有一点停顿，因为 Linux  从你在 <CODE>/etc/resolv.conf</CODE> 里指定的 DNS 取得你要 'ping' 的完整主机名称所对应的 IP 位址 － 所以不要担心（但是你将会看见你的数据机灯号闪烁）．
+在短暂的时间後你将会接收到像这样的输出
+<P>
+<HR>
+<PRE>
+ PING sunsite.unc.edu (152.2.254.81): 56 data bytes
+64 bytes from 152.2.254.81: icmp_seq=0 ttl=254 time=190.1 ms
+64 bytes from 152.2.254.81: icmp_seq=1 ttl=254 time=180.6 ms
+64 bytes from 152.2.254.81: icmp_seq=2 ttl=254 time=169.8 ms
+64 bytes from 152.2.254.81: icmp_seq=3 ttl=254 time=170.6 ms
+64 bytes from 152.2.254.81: icmp_seq=4 ttl=254 time=170.6 ms
+</PRE>
+<HR>
+<P>
+<P>再一次，藉由按下 <CODE>CTRL C</CODE> 终止输出并取得统计资料...
+<P>
+<HR>
+<PRE>
+--- sunsite.unc.edu ping statistics ---
+5 packets transmitted, 5 packets received, 0% packet loss
+round-trip min/avg/max = 169.8/176.3/190.1 ms
+</PRE>
+<HR>
+<P>
+<P>如果你没有收到任何回应，试著 ping 一下你的 ISP 提供的 DNS 的 IP 位址．
+如果你从这里得到肯定的结果，那麽看起来问题在你的 <CODE>/etc/resolv.conf</CODE> 档案里．
+<P>
+<P>如果这样会没有结果，问题出在网路递送上，或者是你的 ISP 在将封包递送回给你时出了问题．
+检查上面的递送表格，如果没问题，和你的 ISP 联络．一个测试 ISP 的好方法是用另一种作业系统来连接．
+如果这样就可以动，那麽问题就在你这边．
+<P>
+<P>如果一切正常，藉由键入这个指令终止该连线
+<P>
+<HR>
+<PRE>
+ppp-off
+</PRE>
+<HR>
+<P>
+<P>一段短暂的停顿之後，数据机应该会自己挂断电话
+<P>
+<P>如果这个指令无法动作的话，那麽不是关掉你的数据机就是起动你的通讯软体并且以 <CODE>+++</CODE> 中断数据机然後当你接收到数据机的 OK 提示时以 <CODE>ATH0</CODE> 挂断电话．
+<P>
+<P>你可能也得清除 pppd 所建立的锁定档
+<HR>
+<PRE>
+rm -f /var/lock/LCK..ttySx
+</PRE>
+<HR>
+<P>
+<HR>
+<A HREF="PPP-HOWTO-15.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="PPP-HOWTO-13.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="PPP-HOWTO.html#toc14"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

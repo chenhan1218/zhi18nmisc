@@ -1,0 +1,88 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>The teTeX HOWTO: Linux-teTeX 部份指導: 用 dvips 混合文與圖</TITLE>
+ <LINK HREF="TeTeX-HOWTO-7.html" REL=next>
+ <LINK HREF="TeTeX-HOWTO-5.html" REL=previous>
+ <LINK HREF="TeTeX-HOWTO.html#toc6" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="TeTeX-HOWTO-7.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="TeTeX-HOWTO-5.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="TeTeX-HOWTO.html#toc6"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="dvips"></A> <A NAME="s6">6. 用 <CODE>dvips</CODE> 混合文與圖</A></H2>
+
+<P>大體上，這節中的方法，可用於任何 TeX 或LaTeX 文件中，混合編排本文和圖形。 和最其他的 TeX 組件一樣，teTeX 預先設定使用Computer Modern fonts 。當用 Type 1 scalable fonts 或用畫圖的方式列印文件時，字型和描圖的方法，就是 <CODE>dvips</CODE>要作的事。 <CODE>dvips</CODE> 能使用點距陣型的Computer Modern fonts 或向量型的Type 1 scalable　 fonts 或兩者混合使用。首先，讓我們著重於圖形的列印和預覽。
+<P>你或許會依照這個程序，在 LaTeX 文件的前文中，使用：
+<PRE>
+\includepackage{graphics}
+</PRE>
+
+這指令要LaTeX在文件裡加入 <CODE>graphics.sty</CODE> 的指令集，其中有一些的命令可以用來畫圖，但是不管有沒有使用 <CODE>dvips</CODE>，在　plain-TeX　中這些命令可能不能用。這兩者最顯著的差別，在輸入文件時，後者會遺漏圖形。
+<P>因此，我們將會著重於 LaTeX　使用 <CODE>graphics.sty</CODE> 指令集。你可能須要看一看原始的 TeX 輸入，teTeX　不包含這部分，但是它會在下列網址中提供：
+<PRE>
+~CTAN/macros/latex/packages/graphics/grfguide.tex.
+</PRE>
+
+teTeX　和一般 TeX 一樣會輸出 <CODE>.dvi</CODE> 檔，這樣有一個理由，就是為了正常的輸出文件，而必須依照順序把Type 1 fonts 包括進來。如果要用LaTeX 的 <CODE>grfguide.tex,</CODE> ，請參考下一節。現在我們將會使用 <CODE>dvips</CODE>來處理輸出。
+<P>檔案 <CODE>grfguide.dvi</CODE> 位於目錄
+<PRE>
+texmf/doc/latex/graphics
+</PRE>
+
+輸出 <CODE>grfguide.dvi</CODE> 的第一個步驟，是將它翻譯成Postscript ，正如 <CODE>dvips</CODE> 的名字，這就是它的目的。呼叫 <CODE>dvips</CODE>, 有許多方法，但是最簡單的是：
+<PRE>
+dvips -f -r &lt;grfguide.dvi >grfguide.ps
+</PRE>
+
+<CODE>dvips</CODE> 中  <CODE>-f</CODE>選項，當作過濾器，由標準的輸入讀入，並由標準的輸出寫出來， <CODE>dvips</CODE> 的預設標準的輸出為<CODE>lpr</CODE>。
+<P>如果你能利用<CODE>lpr</CODE>，直接由印表機列印Postscript 檔，則只要輸入：
+<PRE>
+dvips -r grfguide.dvi
+</PRE>
+
+<CODE>-r</CODE> 選項，則要dvips 依相反順序輸出結果，那麼由印表機印出來時，文件正好由前至後，按照順序排好，就依你的輸出設備，決定要不要使用這選項。
+<P><CODE>dvips</CODE> 和 metafont 會依編譯成dvi  時，<CODE>dvilj2</CODE>是否有必要的字型，自動決定要不要產生<CODE>grfguide.dvi.</CODE>需要的新的字型。之後，就會從預備好的輸出設備，輸出由 <CODE>dvips</CODE> 轉成的 Postscript 檔。
+<P>如果你夠幸運 ( 或富有 ) ，已經有一部Postscript的印表機，就能夠直接列印 <CODE>grfguide.ps</CODE> 。你能藉由使用 <CODE>lpr</CODE> 送到印表機的輸出。如果你的印表機軟體安裝不正確，也能使用下列命令列印：
+<PRE>
+cat grfguide.ps >/dev/lp0
+</PRE>
+
+但是不建議使用這方法。
+<P>這是手動呼叫 Ghostscript 運作的標準的程序：第一步是呼叫 Ghostscript  進入命令模式，像這樣：
+<PRE>
+gs -help | less
+</PRE>
+
+你將會看見支援的輸出設備目錄，和其他的命令。選擇和你的印表機最相配的輸出設備。通常我都輸出黑白的文章，因此選擇<CODE>cdjmono</CODE> 驅動程式，作為彩色 Deskjet  的黑白模式的驅動程式。
+<P>我會使用這樣的命令：
+<PRE>
+gs -dNOPAUSE -sDEVICE=cdjmono -sOutputFile=/tmp/gs.out grfguide.ps -c quit
+</PRE>
+
+這將會在 <CODE>/tmp</CODE>目錄裡產生HP 相容的輸出。使用一個目錄像 <CODE>/tmp,</CODE>，是一個好的主意，因為 <CODE>gs</CODE> 牽涉到使用權的問題，而且你當然不能 ( 也不應該 ) 以
+<CODE>root</CODE> 的身份，進入系統使用。現在你能使用下列命令列印檔案：
+<PRE>
+lpr /tmp/gs.out
+</PRE>
+
+明顯地，這些能被寫成一個shell 檔來使用。在我的系統上，我就寫了二個簡單的 shell     檔， <CODE>pv</CODE> 和 <CODE>pr,</CODE> ，輸出Postscript檔案到顯示器或印表機。不使用 X 視窗，也可以預覽結果，但是並不理想，所以想要好好預覽結果，最好安裝 XFree86 。
+<P>因為一些 <CODE>gs</CODE> 命令列的選項會告訴 Ghostscript 到那個程式庫 ，去找Postscript 的部分程式碼，所以命令列的選項次序非常重要的。
+<P>還記得 <CODE>grfguide.dvi</CODE> 會請求使用Computer Modern 點距陣字和Type 1向量字型，如果你能混合使用這兩種字型，你就成了一個TeX 專家了。
+<P>
+<H2><A NAME="ss6.1">6.1 如果我的印表機不被支援，怎麼辦？</A>
+</H2>
+
+<P>teTeX 系統的DVI 輸出驅動程式，只有幾個選擇： <CODE>dvips</CODE>，HP 雷射印表機，就沒別的。如果你有一部不是 HP LaserJet 相容的印表機，你有二個選擇：使用 <CODE>dvips</CODE>和 Ghostscript ，這是我所能推薦的，或者找一下其他的 dviware 來源。
+<P>只有幾個 DVI 驅動程式，被移植到Linux ，並預先編譯成二進位的執行檔，可以在下列網址找到： 
+<A HREF="ftp://sunsite.unc.edu/pub/Linux/apps/tex/dvi/">ftp://sunsite.unc.edu/pub/Linux/apps/tex/dvi/</A>.
+<P>這些 dviware 的程式，主要由猶他大學的檔案庫維護，如果在那裡，找不到一個支援你的印表機，那很可能就是它不存在。你也能藉由那裡提供的樣本， <EM>自己</EM>寫 DVI 驅動程式，程式庫的網址為：
+<A HREF="ftp://ftp.math.utah.edu/pub/tex/dvi/">ftp://ftp.math.utah.edu/pub/tex/dvi/</A>.
+<P>
+<HR>
+<A HREF="TeTeX-HOWTO-7.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="TeTeX-HOWTO-5.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="TeTeX-HOWTO.html#toc6"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

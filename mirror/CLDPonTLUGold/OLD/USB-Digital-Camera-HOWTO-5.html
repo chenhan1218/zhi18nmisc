@@ -1,0 +1,127 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="LinuxDoc-Tools 0.9.16">
+ <TITLE>USB Digital Camera HOWTO: The Script Files</TITLE>
+ <LINK HREF="USB-Digital-Camera-HOWTO-6.html" REL=next>
+ <LINK HREF="USB-Digital-Camera-HOWTO-4.html" REL=previous>
+ <LINK HREF="USB-Digital-Camera-HOWTO.html#toc5" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="USB-Digital-Camera-HOWTO-6.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="USB-Digital-Camera-HOWTO-4.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="USB-Digital-Camera-HOWTO.html#toc5"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s5">5.</A> <A HREF="USB-Digital-Camera-HOWTO.html#toc5">The Script Files</A></H2>
+
+<P>下面這個script file是讀了幾個 Linux newsgroups 和很多 HOWTOs 與 manuals 
+之後寫出來的.它們都是間接或直接從別人那裡學習來的經驗.
+我非常感謝  newsgroups 裡回答我問題的人和在網路上po(張貼)這些資訊的人.</P>
+<P>如果想要開始設定,
+請使用你喜歡的 text editor 將下面的 script 設定一個名稱並且保存起來.</P>
+<H2><A NAME="ss5.1">5.1</A> <A HREF="USB-Digital-Camera-HOWTO.html#toc5.1">如果你使用user登入</A>
+</H2>
+
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+echo "Please enter a directory name for the pictures."
+read DIRPATH
+mkdir ~/picture/$DIRPATH
+su -c "/sbin/modprobe usb-storage; mount -t vfat /dev/sda1 /mnt/camera;
+/etc/rc.d/init.d/usb start;
+mv /mnt/camera/dcim/100msdcf/*.jpg ~/picture/$DIRPATH;
+umount /mnt/camera;
+chown -R your_login_name ~/picture/$DIRPATH"
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<H2><A NAME="ss5.2">5.2</A> <A HREF="USB-Digital-Camera-HOWTO.html#toc5.2">如果你使用root登入</A>
+</H2>
+
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+echo "Please enter a directory name for the pictures."
+read DIRPATH
+mkdir picture/$DIRPATH
+/sbin/modprobe usb-storage
+mount -t vfat /dev/sda1 /mnt/camera
+/etc/rc.d/init.d/usb start
+mv /mnt/camera/dcim/100msdcf/*.jpg picture/$DIRPATH;
+umount /mnt/camera
+chown -R your_login_name picture/$DIRPATH
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+<H2><A NAME="ss5.3">5.3</A> <A HREF="USB-Digital-Camera-HOWTO.html#toc5.3">Make it Executable(讓它可以執行)</A>
+</H2>
+
+<P>當你用user登入時:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+bash $dollar su -c "chmod a=r+w+x your_script_file_name"
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+<P>當你用root登入時:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+bash# chmod a=r+w+x your_script_file_name
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+<H2><A NAME="ss5.4">5.4</A> <A HREF="USB-Digital-Camera-HOWTO.html#toc5.4">script運行時都做哪些事</A>
+</H2>
+
+<P>當你運行它時, 將以DIRPATH裡的值來設定目錄.
+如果你的script_file_name = getcamJ,(J for getting the pictures with .jpg extensions) 
+指令的順序看起來就像這樣:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+bash $ getcamJ
+Please enter a directory name for the pictures.
+bash $ something
+Password: 
+bash $  your root password
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+<P>你必需以root權限來運行它.
+所以 'su' 指令加上 -c 標緻可以讓你暫時擁有另外的權限執行指令然後又回到原來的狀態.
+""能使你執行多個指令, ;分號可以讓一個指令執行後繼續下一個指令.</P>
+<P>/sbin/modprobe usb-storage: modprobe 將USB mass storage 模組和其它設備的模組掛進來.
+主要是 SCSI driver. 
+確定在 /dev 有這些:
+sda0, sda1, sda2, sda3, sda4, sdb0, sdb1, sdb2, sdb3, sdb4. 
+如果你有其它 SCSI devices,請將sda1 進行正確的設定,可能是 sdb1.</P>
+<P>將SCSI driver 載入: mount -t vfat /dev/sda1 /mnt/camera</P>
+<P>運行 USB 程式: /etc/rc.d/init.d/usb start</P>
+<P>將你的pictures 從 camera 移至你的硬碟機. mv 同時將camera上的pictures移除: 
+mv /mnt/camera/dcim/100msdcf/*.jpg picture/$DIRPATH;</P>
+<P>卸下你的 SCSI driver: umount /mnt/camera</P>
+<P>指令: chown -R your_login_name picture/$DIRPATH
+完成的時候, pictures的所有者是root/superuser, 因為你是以 root/superuser指行上述指令的(script當中使用了su指令).
+當你以user權限訪問它們的時候會有permission denied error的警告. 解決這個問題的辦法是參考有關權限設定的manual. </P>
+
+<P>在我的機器裡, USB 或 SCSI 驅動程式是以模組的形式編譯的.
+所以 script file 也是假定你的系統和我的一樣.
+如果不是, 你將要做一些修改,請閱讀有關的e manuals 和 HOWTOs. 或 向 Linux newsgroups 請教.</P>
+<HR>
+<A HREF="USB-Digital-Camera-HOWTO-6.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="USB-Digital-Camera-HOWTO-4.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="USB-Digital-Camera-HOWTO.html#toc5"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

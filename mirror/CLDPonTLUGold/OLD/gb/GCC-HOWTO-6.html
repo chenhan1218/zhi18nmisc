@@ -1,0 +1,200 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>The Linux GCC HOWTO中译版V0.2: 连结</TITLE>
+ <LINK HREF="GCC-HOWTO-7.html" REL=next>
+ <LINK HREF="GCC-HOWTO-5.html" REL=previous>
+ <LINK HREF="GCC-HOWTO.html#toc6" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="GCC-HOWTO-7.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="GCC-HOWTO-5.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="GCC-HOWTO.html#toc6"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s6">6. 连结</A></H2>
+
+<P>由於静态与共享程式库两者间不相容的格式的差异性与动词*link*过量使用於指称*编译完成後的事情*与*当编译好的程式使用时所发生的事情*这两件事上头，使得这一章节变得复杂了许多。（ and, actually, the overloading of the word `load' in a comparable but opposite sense）不过，再复杂也就是这样了，所以阁下不必过於担心。
+<P>
+<P>为了稍微减轻读者的困惑，我们称执行期间所发生的事为*动态载入*，这一主题会在下一章节中谈到。你也会在别的地方看到我把动态载入描述成*动态连结*，不过不会是在这一章节中。换句话说，这一章节所谈的，全部是指发生在编译结束後的连结。
+<P>
+<H2><A NAME="ss6.1">6.1 共享程式库 vs静态程式库</A>
+</H2>
+
+<P>建立程式的最後一个步骤便是连结；也就是将所有分散的小程式组合起来，看看是否遗漏了些什麽。显然，有一些事情是很多程式都会想做的---例如，开启档案，接著所有与开档有关的小程式就会将储存程式库的相关档案提供给你的程式使用。在一般的Linux系统上，这些小程式可以在<CODE>/lib</CODE>与<CODE>/usr/lib/</CODE>目录底下找到。
+<P>
+<A NAME="index.65"></A>  
+<A NAME="index.66"></A>  
+<P>当你用的是静态的程式库时，连结器会找出程式所需的模组，然後实际将它们拷贝到执行档内。然而，对共享程式库而言，就不是这样了。共享程式库会在执行档内留下一个记号，指明*当程式执行时，首先必须载入这个程式库*。显然，共享程式库是试图使执行档变得更小，等同於使用更少的记忆体与磁碟空间。Linux内定的行为是连结共享程式库，只要Linux能找到这些共享程式库的话，就没什麽问题；不然,Linux就会连结静态的了。如果你想要共享程式库的话，检查这些程式库（<CODE>*.sa</CODE> for a.out, <CODE>*.so</CODE> for ELF）是否住在它们该在的地方，而且是可读取的。
+<P>在Linux上，静态程式库会有类似<CODE>libname.a</CODE>这样的名称；而共享程式库则称为<CODE>libname.so.x.y.z</CODE>，此处的<CODE>x.y.z</CODE>是指版本序号的样式。共享程式库通常都会有连结符号指向静态程式库（很重要的）与相关联的<CODE>.sa</CODE>档案。标准的程式库会包含共享与静态程式库两种格式。
+<P>你可以用<CODE>ldd</CODE>（List Dynamic Dependencies）来查出某支程式需要哪些共享程式库。
+<BLOCKQUOTE><CODE>
+<PRE>
+$ ldd /usr/bin/lynx
+        libncurses.so.1 => /usr/lib/libncurses.so.1.9.6
+        libc.so.5 => /lib/libc.so.5.2.18
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>这是说在我的系统上，WWW浏览器*lynx*会依赖<CODE>libc.so.5</CODE> (the C library)与<CODE>libncurses.so.1</CODE>（终端机萤幕的控制）的存在。若某支程式缺乏独立性， <CODE>ldd</CODE>就会说‘<CODE>statically linked</CODE>’或是‘<CODE>statically linked (ELF)</CODE>’。
+<P>
+<H2><A NAME="index.69"></A> <A NAME="index.68"></A> <A NAME="index.67"></A> <A NAME="ss6.2">6.2 终极审判（‘<CODE>sin()</CODE> 在哪个程式库里？’）</A>
+   </H2>
+
+<P><CODE>nm </CODE><EM>程式库名称</EM>应该会列出此<EM>程式库名称</EM>所参考到的所有符号。这个指令可以应用在静态与共享程式库上。假设你想知道<CODE>tcgetattr()</CODE>是在哪儿定义的：你可以如此做，
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ nm libncurses.so.1 |grep tcget
+         U tcgetattr
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>*<CODE>U</CODE>*指出*未定义*---也就是说ncurses程式库有用到tegetattr()，但是并没有定义它。你也可以这样做，
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ nm libc.so.5 | grep tcget
+00010fe8 T __tcgetattr
+00010fe8 W tcgetattr
+00068718 T tcgetpgrp
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>*<CODE>W</CODE>*说明了*弱态(weak)*，意指符号虽已定义，但可由不同程式库中的另一定义所替代。最简单的*正常*定义（像是<CODE>tcgetpgrp</CODE>）是由*<CODE>T</CODE>*所标示：
+<P>
+<A NAME="index.70"></A>  
+<P>标题所谈的问题，最简明的答案便是<CODE>libm.(so|a)</CODE>了。所有定义在<CODE>&lt;math.h&gt;</CODE>的函数都保留在maths程式库内；因此，当你用到其中任何一个函数时，都需要以<CODE>-lm</CODE>的参数连结此程式库。
+<P>
+<P>
+<H2><A NAME="ss6.3">6.3 X档案？</A>
+</H2>
+
+<P><CODE>ld: Output file requires shared library `libfoo.so.1`</CODE>
+<P>
+<P> ld与其相类似的命令在搜寻档案的策略上，会依据版本的差异而有所不同，但是唯一一个你可以合理假设的内定目录便是<CODE>/usr/lib</CODE>了。如果你希望身处它处的程式库也列入搜寻的行列中，那麽你就必须以<CODE>-L</CODE>选项告知gcc或是ld。
+<P>
+<P>要是你发现一点效果也没有，就赶紧察看看那档案是不是还乖乖的躺在原地。就a.out而言，以<CODE>-lfoo</CODE>参数来连结，会驱使ld去寻找<CODE>libfoo.sa</CODE>（shared stubs）；如果没有成功，就会换成寻找<CODE>libfoo.a</CODE>（static）。就ELF而言， ld会先找<CODE>libfoo.so</CODE>，然後是<CODE>libfoo.a</CODE>。<CODE>libfoo.so</CODE>通常是一个连结符号，连结至<CODE>libfoo.so.x</CODE>。
+<P>
+<P>
+<H2><A NAME="ss6.4">6.4 建立你自己的程式库</A>
+</H2>
+
+<H3>控制版本</H3>
+
+<P>与其它任何的程式一样，程式库也有修正不完的bugs的问题存在。它们也可能产生出一些新的特点，更改目前存在的模组的功效，或是将旧的移除掉。这对正在使用它们的程式而言，可能会是一个大问题。如果有一支程式是根据那些旧的特点来执行的话，那怎麽办？
+<P>所以，我们引进了程式库版本编号的观念。我们将程式库*次要*与*主要*的变更分门别类，同时规定*次要*的变更是不允许用到这程式库的旧程式发生中断的现象。你可以从程式库的档名分辨出它的版本（实际上，严格来讲，对ELF而言仅仅是一场天大的谎言；继续读将下去，便可明白为什麽了）： <CODE>libfoo.so.1.2</CODE>的主要版本是1，次要版本是2。次要版本的编号可能真有其事，也可能什麽都没有---libc在这一点上用了*修正程度*的观念，而订出了像<CODE>libc.so.5.2.18</CODE>这样的程式库名称。次要版本的编号内若是放一些字母、底线、或是任何可以列印的ASCII字元，也是很合理的。
+<P>ELF与a.out格式最主要的差别之一就是在设置共享程式库这件事上；我们先看ELF，因为它比较简单一些。
+<P>
+<H3><A NAME="index.71"></A> ELF？它到底是什麽东东ㄋㄟ？ </H3>
+
+<P> ELF（Executable and Linking Format）最初是由USL（UNIX System 
+Laboratories）发展而成的二进位格式，目前正应用於Solaris与System V Release 4上。由於ELF所增涨的弹性远远超过Linux过去所用的a.out格式，因此GCC与C程式库的发展人士於1995年决定改用ELF为Linux标准的二进位格式。
+<P>
+<H3>怎麽又来了？</H3>
+
+<P> 这一节是来自於‘/news-archives/comp.sys.sun.misc’的文件。
+<P>
+<BLOCKQUOTE>
+ELF（“Executable Linking Format”）是於SVR4所引进的新式改良目的档格式。ELF比起COFF可是多出了不少的功能。以ELF而言，它*是*可由使用者自行延伸的。ELF视一目的档为节区（sections），如串列般的组合；而且此串列可为任意的长度（而不是一固定大小的阵列）。这些节区与COFF的不一样，并不需要固定在某个地方，也不需要以某种顺序排列。如果使用者希望补捉到新的资料，便可以加入新的节区到目的档内。ELF也有一个更强而有力的除错法式，称为DWARF（Debugging With Attribute Record Format）□目前Linux并不完全支援。DWARF DIEs（Debugging Information Entries）的连结串列会在ELF内形成 .debug的节区。DWARF DIEs的每一个 .debug节区并非一些少量且固定大小的资讯记录的集合，而是一任意长度的串列，拥有复杂的属性，而且程式的资料会以有□围限制的树状资料结构写出来。DIEs所能补捉到的大量资讯是COFF的 .debug节区无法望其项背的。（像是C++的继承图。）
+</BLOCKQUOTE>
+<P>
+<BLOCKQUOTE>
+ELF档案是从SVR4（Solaris 2.0 ？）ELF存取程式库（ELF access library）内存取的。此程式库可提供一简便快速的介面予ELF。使用ELF存取程式库最主要的恩惠之一便是，你不再需要去察看一个ELF档的qua了。就UNIX的档案而言，它是以Elf*的型式来存取；呼叫elf_open()之後，从此时开始，你只需呼叫elf_foobar()来处理档案的某一部份即可，并不需要把档案实际在磁碟上的image搞得一团乱。
+</BLOCKQUOTE>
+<P>ELF的优缺点与升级至ELF等级所需经历的种种痛苦，已在ELF-HOWTO内论及；我并不打算在这儿涂浆糊。ELF HOWTO应该与这份文件有同样的主题才是。
+<P>
+<H3>ELF共享程式库</H3>
+
+<P>若想让<CODE>libfoo.so</CODE>成为共享程式库，基本的步骤会像下面这样：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ gcc -fPIC -c *.c
+$ gcc -shared -Wl,-soname,libfoo.so.1 -o libfoo.so.1.0 *.o
+$ ln -s libfoo.so.1.0 libfoo.so.1
+$ ln -s libfoo.so.1 libfoo.so
+$ LD_LIBRARY_PATH=`pwd`:$LD_LIBRARY_PATH ; export LD_LIBRARY_PATH
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>这会产生一个名为<CODE>libfoo.so.1.0</CODE>的共享程式库，以及给予ld适当的连结（<CODE>libfoo.so</CODE>）还有使得动态载入程式（dynamic loader）能找到它（<CODE>libfoo.so.1</CODE>）。为了进行测试，我们将目前的目录加到<CODE>LD_LIBRARY_PATH</CODE>里。
+<P>
+<A NAME="index.72"></A>  
+<P>当你津津乐道於程式库制做成功之时，别忘了把它移到如<CODE>/usr/local/lib</CODE>的目录底下，并且重新设定正确的连结路径。<CODE>libfoo.so.1</CODE>与<CODE>libfoo.so.1.0</CODE>的连结会由<CODE>ldconfig</CODE>依日期不断的更新，就大部份的系统来说，ldconfig会在开机过程中执行。<CODE>libfoo.so</CODE>的连结必须由手动方式更新。如果你对程式库所有组成份子（如标头档等）的升级，总是抱持著一丝不□的态度，那麽最简单的方法就是让<CODE>libfoo.so -> libfoo.so.1</CODE>；如此一来，ldconfig便会替你同时保留最新的连结。要是你没有这麽做，你自行设定的东东就会在数日後造成<EM>千奇百怪的问题</EM>出现。到时候，可别说我没提醒你啊！
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ su
+# cp libfoo.so.1.0 /usr/local/lib
+# /sbin/ldconfig
+# ( cd /usr/local/lib ; ln -s libfoo.so.1 libfoo.so )
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H3><A NAME="index.74"></A> <A NAME="index.73"></A> 版本编号、soname与符号连结  </H3>
+
+<P>每一个程式库都有一个<EM>soname</EM>。当连结器发现它正在搜寻的程式库中有这样的一个名称，连结器便会将soname箝入连结中的二进位档内，而不是它正在运作的实际的档名。在程式执行期间，动态载入程式会搜寻拥有soname这样的档名的档案，而不是程式库的档名。因此，一个名为<CODE>libfoo.so</CODE>的程式库，就可以有一个<CODE>libbar.so</CODE>的soname了。而且所有连结到<CODE>libbar.so</CODE>的程式，当程式开始执行时，会寻找的便是<CODE>libbar.so</CODE>了。
+<P>
+<P>这听起来好像一点意义也没有，但是这一点，对於了解数个不同版本的同一个程式库是如何在单一系统上共存的原因，却是关键之钥。Linux程式库标准的命名方式，比如说是<CODE>libfoo.so.1.2</CODE>，而且给这个程式库一个<CODE>libfoo.so.1</CODE>的soname。如果此程式库是加到标准程式库的目录底下（e.g. <CODE>/usr/lib</CODE>），<CODE>ldconfig</CODE>会建立符号连结<CODE>libfoo.so.1 -> libfoo.so.1.2</CODE>，使其正确的image能於执行期间找到。你也需要连结<CODE>libfoo.so -> libfoo.so.1</CODE>，使ld能於连结期间找到正确的soname。
+<P>所以罗，当你修正程式库内的bugs，或是添加了新的函数进去（任何不会对现存的程式造成不利的影响的改变），你会重建此程式库，保留原本已有的soname，然後更改程式库档名。当你对程式库的变更会使得现有的程式中断，那麽你只需增加soname中的编号---此例中，称新版本为<CODE>libfoo.so.2.0</CODE>，而soname变成<CODE>libfoo.so.2</CODE>。紧接著，再将<CODE>libfoo.so</CODE>的连结转向新的版本；至此，世界又再度恢复了和平！
+<P>其实你<EM>不须要</EM>以此种方式来替程式库命名，不过这的确是个好的传统。ELF赋予你在程式库命名上的弹性，会使得人气喘呼呼的搞不清楚状况；有这样的弹性在，也并不表示你就得去用它。
+<P>
+<P>ELF总结：假设经由你睿智的观察发现有个惯例说：程式库主要的升级会破坏相容性；而次要的升级则可能不会；那麽以下面的方式来连结，所有的一切就都会相安无事了。
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+gcc -shared -Wl,-soname,libfoo.so.major -o libfoo.so.major.minor
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H3>a.out---旧旧的格式□</H3>
+
+<P>建立共享程式库的便利性是升级至ELF的主要原因之一。那也是说,a.out可能还是有用处在的。上ftp站去抓
+<A HREF="ftp://tsx-11.mit.edu/pub/linux/packages/GCC/src/tools-2.17.tar.gz">ftp://tsx-11.mit.edu/pub/linux/packages/GCC/src/tools-2.17.tar.gz</A>；解压缩後你会发现有20页的文件可以慢慢的读哩。我很不喜欢自己党派的偏见表现得那麽的淋璃尽致，可是从上下文间，应该也可以很清楚的嗅出我从来不拿石头砸自己的脚的脾气吧！:-)
+<P>
+<H3><A NAME="index.76"></A> <A NAME="index.75"></A> ZMAGIC vs QMAGIC  </H3>
+
+<P>QMAGIC是一种类似旧格式的a.out（亦称为ZMAGIC）的可执行档
+格式，这种格式会使得第一个分页无法map。当0-4096的□围内没有mapping存在时，则可允许NULL dereference trapping更加的容易。所产生的边界效应是你的执行档会比较小（大约少1K左右）。
+<P>只有即将作废的连结器有支援ZMAGIC，一半已埋入棺材的连结器有支援这两种格式；而目前的版本仅支援QMAGIC而已。事实上，这并没有多大的影响，那是因为目前的核心两种格式都能执行。
+<P>*file*命令应该可以确认程式是不是QMAGIC的格式的。
+<P>
+<H3>档案配置</H3>
+
+<P>一a.out(DLL)的共享程式库包含两个真实的档案与一个连结符号。就*foo*这个用於整份文件做为□例的程式库而言，这些档案会是<CODE>libfoo.sa</CODE>与<CODE>libfoo.so.1.2</CODE>；连结符号会是<CODE>libfoo.so.1</CODE>，而且会指向<CODE>libfoo.so.1.2</CODE>。这些是做什麽用的？
+<P>在编译时，<CODE>ld</CODE>会寻找<CODE>libfoo.sa</CODE>。这是程式库的*stub*档案。而且含有所有执行期间连结所需的exported的资料与指向函数的指标。
+<P>执行期间，动态载入程式会寻找<CODE>libfoo.so.1</CODE>。这仅仅是一个符号连结，而不是真实的档案。故程式库可更新成较新的且已修正错误的版本，而不会损毁任何此时正在使用此程式库的应用程式。在新版---比如说<CODE>libfoo.so.1.3</CODE>---已完整呈现时，ldconfig会以一极微小的操作，将连结指向新的版本，使得任何原本使用旧版的程式不会感到丝毫的不悦。
+<P>DLL程式库（我知道这是无谓的反覆---所以对我提出诉讼吧！）通常会比它们的静态副本要来得大多。它们是以*洞（holes）*的形式来保留空间以便日後的扩充。这种*洞*可以不占用任何的磁碟空间。一个简单的<CODE>cp</CODE>呼叫，或是使用<CODE>makehole</CODE>程式，就可以达到这样效果。因为它们的位址是固定在同一位置上，所以在建立程式库後，你可以把它们拿掉。不过，<B>千万不要试著拿掉ELF的程式库</B>。
+<P>
+<H3>``libc-lite''?</H3>
+
+<P>libc-lite是轻量级的libc版本。可用来存放在磁碟片上，也可以替大部份低微的UNIX任务收尾。它没有包含curses, dbm, termcap等等的程式码。如果你的<CODE>/lib/libc.so.4</CODE>是连结到一个lite的libc，那麽建议你以完整的版本取代它。
+<P>
+<H3>连结：常见的问题</H3>
+
+<P>把你连结时所遭遇的问题寄给我！我可能什麽事也不会做，但是只要累积了足够的数量，我会把它们写起来*。
+<P>
+<DL>
+<P>
+<DT><B>你想共享，偏偏程式却连结成静态的！</B><DD><P>
+<A NAME="index.77"></A>  
+<A NAME="index.78"></A>  
+<P>检查你提供给<CODE>ld</CODE>的连结是否正确，使ld能找到每一个对应的共享程式库，就ELF而言，这是指一个符号连结<CODE>libfoo.so</CODE>，连结至image；就a.out而言，就是<CODE>libfoo.sa</CODE>档了。很多人将ELF binutils 2.5升级至2.6之後，就产生了这个问题---早期的版本搜寻共享程式库时较有智慧，所以并没有将所有的连结建立起来。後来，为了与其它的架构相容，这项充满智慧的行为被人给删除掉了，另外，这样的*智慧*判断错误的机率相当高，所造成的麻烦比它所解决的问题还多，所以留著也是害人精；不如归去兮！
+<P>
+<DT><B>DLL的工具程式‘mkimage’找不到libgcc？ </B><DD><P>
+<A NAME="index.79"></A>  
+<P>自<CODE>libc.so.4.5.x</CODE>之後，libgcc已不再是共享的格式。因此，你必须在*<CODE>-lgcc</CODE>*出现之处以<CODE>`gcc -print-libgcc-file-name`</CODE>替代（完整的倒单引号（back-quotes））。另外，删除所有<CODE>/usr/lib/libgcc*</CODE>的档案。这点很重要哩。
+<P>
+<DT><B> <CODE>__NEEDS_SHRLIB_libc_4 multiply defined</CODE> messages </B><DD><P>是同样的问题所造成的另一种结果。
+<P>
+<DT><B> ``Assertion failure'' message when rebuilding a DLL ?</B><DD><P>这一条神秘的讯息最有可能的原因是，在原始的<CODE>jump.vars</CODE>档案内，由於保留的空间太少，以致於造成其中一个jump table slots溢满。你可以执行工具程式□由2.17.tar.gz套件所提供的‘<CODE>getsize</CODE>’命令，定出所有嫌疑犯的踪迹。可能唯一的解决方法是，解除此程式库主要的版本编号，强迫它回到不相容的年代。
+<P>
+<DT><B> <CODE>ld: output file needs shared library libc.so.4</CODE> </B><DD><P>通常这是发生在当你连结的程式库不是libc（如X程式库），而且在命令列用了<CODE>-g</CODE>的参数，却没有一并使用<CODE>-static</CODE>，所发出的错误讯息。
+<P>共享程式库的<CODE>.sa</CODE> stubs通常有一个未定义的符号<CODE>_NEEDS_SHRLIB_libc_4</CODE>；这一点可藉由<CODE>libc.sa</CODE> stub来解决，然而，以<CODE>-g</CODE>来编译时，会使得连结以<CODE>libg.a</CODE>或<CODE>libc.a</CODE>来结束；因此这个符号一直就没有解决，也就会导致上面的错误讯息了。
+<P>总之，以<CODE>-g</CODE>的旗号编译时别忘了加上<CODE>-static</CODE>，不然就别用<CODE>-g</CODE>来连结。通常，以<CODE>-g</CODE>编译各个独立的档案时，所获得的除错资讯已经足够，连结时就可以<EM>不需要</EM>它了。
+<P>
+</DL>
+<P>
+<P>
+<HR>
+<A HREF="GCC-HOWTO-7.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="GCC-HOWTO-5.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="GCC-HOWTO.html#toc6"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

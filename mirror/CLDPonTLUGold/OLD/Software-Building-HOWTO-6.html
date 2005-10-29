@@ -1,0 +1,112 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>在 Linux 下建立軟體套件: 第一個例子: Xscrabble</TITLE>
+ <LINK HREF="Software-Building-HOWTO-7.html" REL=next>
+ <LINK HREF="Software-Building-HOWTO-5.html" REL=previous>
+ <LINK HREF="Software-Building-HOWTO.html#toc6" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Software-Building-HOWTO-7.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Software-Building-HOWTO-5.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Software-Building-HOWTO.html#toc6"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s6">6. 第一個例子: Xscrabble</A></H2>
+
+<P>Matt Chapman的 <B>Xscrabble</B> 似乎像是個頗有趣的程式,
+因為我曾是個貪婪的 Scrabble<CODE>&trade;</CODE>(拼字遊戲)玩家.我下載下,解壓, 
+而且建立它以 README 檔案中的下列步驟:
+<BLOCKQUOTE><CODE>
+<PRE>
+     xmkmf
+     make Makefiles
+     make includes
+     make
+</PRE>
+</CODE></BLOCKQUOTE>
+<P><EM>當然它不能正常運作...</EM>
+<P>
+<HR>
+<PRE>
+gcc -o xscrab -O2 -O -L/usr/X11R6/lib 
+init.o xinit.o misc.o moves.o cmove.o main.o xutils.o mess.o popup.o
+widgets.o display.o user.o CircPerc.o
+-lXaw -lXmu -lXExExt -lXext -lX11 -lXt -lSM -lICE -lXExExt -lXext -lX11
+-lXpm -L../Xc -lXc
+
+BarGraf.o(.text+0xe7): undefined reference to `XtAddConverter'
+BarGraf.o(.text+0x29a): undefined reference to `XSetClipMask'
+BarGraf.o(.text+0x2ff): undefined reference to `XSetClipRectangles'
+BarGraf.o(.text+0x375): undefined reference to `XDrawString'
+BarGraf.o(.text+0x3e7): undefined reference to `XDrawLine'
+etc.
+etc.
+etc...
+</PRE>
+<HR>
+<P>我在 
+<A HREF="news://comp.os.linux.x">comp.os.linux.x</A>
+的新聞群組詢問過, 而且有些人好心的指出似乎 Xt, Xaw, Xmu, 和 X11 libs
+沒有讓連結器(linker)找得到. 嗯...
+<P>有兩個主要的 Makefiles, 而且在 <CODE>src</CODE> 目錄下的那個讓我感興趣.
+在 Makefile 一行有定義 LOCAL_LIBS 成:
+LOCAL_LIBS = $(XAWLIB) $(XMULIB) $(XTOOLLIB) $(XLIB) 這所指的 libs
+並沒有被連結器找到.
+<P>找找下個指到 LOCAL_LIBS 的地方, 我看到該在 Makerfile 的495行:
+<BLOCKQUOTE><CODE>
+<PRE>
+      $(CCLINK) -o $@ $(LDOPTIONS) $(OBJS) $(LOCAL_LIBS) $(LDLIBS)
+$(EXTRA_LOAD_FLAGS)
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>而現在 LDLIBS 是什麼呢?
+<BLOCKQUOTE><CODE>
+<PRE>
+      LDLIBS = $(LDPOSTLIB) $(THREADS_LIBS) $(SYS_LIBRARIES)
+$(EXTRA_LIBRARIES)
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>SYS_LIBRARIES 是:
+<BLOCKQUOTE><CODE>
+<PRE>
+ SYS_LIBRARIES = -lXpm -L../Xc -lXc
+</PRE>
+</CODE></BLOCKQUOTE>
+
+是個! 就是這樣遺失 libraries. 
+<P>大概連結器需要在 LOCAL_LIBS 之前看到 LDLIBS...
+所以, 第一件事要嘗試去修改 Makefile 就是改寫在495行的
+$(LOCAL_LIBS) 和 $(LDLIBS) , 所以它現在變成: 
+<BLOCKQUOTE><CODE>
+<PRE>
+        $(CCLINK) -o $@ $(LDOPTIONS) $(OBJS) $(LDLIBS) $(LOCAL_LIBS)
+$(EXTRA_LOAD_FLAGS)                          ^^^^^^^^^^^^^^^^^^^^^^^
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>在上面的改後,我試著再次執行 <B>make</B> , 瞧, 它這次可正常跑了.
+當然, Xscrabble 仍然需要一些微調(fine tuning]與玩弄(twiddling),
+像是重新命名字典以及標註某些輔助的敘述在原始碼檔案之一,
+但正因為那樣,它已給我好幾個小時的消遣.
+<P>你可以寄 e-mail 
+<A HREF="mailto:matt@belgarath.demon.co.uk">Matt Chapman</A>, 而且從他的 
+<A HREF="http://www.belgarath.demon.co.uk/programs/index.html">home  page</A>
+下載 <B>Xscrabble</B>. 
+<P>
+<P>
+<P>
+<P>
+<HR>
+<PRE>
+       Scrabble 是 Milton Bradley Co., Inc. 的註冊商標.
+</PRE>
+<HR>
+<P>
+<P>
+<P>
+<P>
+<HR>
+<A HREF="Software-Building-HOWTO-7.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Software-Building-HOWTO-5.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Software-Building-HOWTO.html#toc6"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

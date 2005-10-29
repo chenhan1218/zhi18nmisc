@@ -1,0 +1,113 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>The Linux Printing Usage HOWTO: 打印文档</TITLE>
+ <LINK HREF="Printing-Usage-HOWTO-4.html" REL=next>
+ <LINK HREF="Printing-Usage-HOWTO-2.html" REL=previous>
+ <LINK HREF="Printing-Usage-HOWTO.html#toc3" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Printing-Usage-HOWTO-4.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Printing-Usage-HOWTO-2.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Printing-Usage-HOWTO.html#toc3"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s3">3. 打印文档</A></H2>
+
+<P>本节说明在 Linux 设定中设定打印的文档类别。
+<P>
+<H2><A NAME="ss3.1">3.1 打印图像档</A>
+</H2>
+
+<P>
+<P>用打印机打印图像档通常取决于图像转换的类别和用何种打印机打印。点阵打印机一般不适合打印图像，
+因为点阵打印机无法适当处理图案。在这种情况下，如果打印机是是类似Epson 或IBM ProPrinter
+的打印机，则可将图像转换成 PostScript 格式，然後利用 Ghostscript （见下节）打印图像。
+<P>如果接连的打印机是激光打印机，打印图像就比较简单，因为多数激光打印机都于 PCL 兼容。
+如果不兼容，也可利用 <EM>NetPBM</EM> 等软件将图像转换成 PCL 格式。
+最後一种办法就是使用 Ghostscript （见下节）。
+<P>打印图像的最好办法是安装 NetPBM 和 Ghostscript 等软件，然後安装 magic filter 自动处理图像档。
+<P>
+<H2><A NAME="ss3.2">3.2 打印 PostScript 档</A>
+</H2>
+
+<P>
+<P>在有 PostScript 识别软件的打印机上打印 PostScript 档是件简单不过的事；
+只需使用 <EM>lpr</EM> 指令，其他打印工作都会由打印机自动处理。如果打印机不具备处理 PostScript
+的能力，那就得另想办法。幸好有软件可了解 PostScript 的打印需求，使多数打印机都能使用。
+在这方面，最常用的软件可能就是 Ghostscript。
+<P>Ghostscript 的任务就是将 PostScript 档中的所有排版指令转换成打印机能够执行的指令。
+利用 Ghostscript 打印 PostScript 档，可能需要利用下列指令：
+<BLOCKQUOTE><CODE>
+<PRE>
+$ gs -dSAFER -dNOPAUSE -sDEVICE=deskjet -sOutputFile=\|lpr thesis.ps
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>注意上例中事实上利用导入（ pipe ）的方式将 Ghostscript 的转换结果利用  -<B>sOutputFile</B> 
+选项导入给 <EM>lpr</EM> 打印。
+<P>利用 Ghostview 工具可在打印之前查看 X 视窗系统中利用 Ghostscript 打印 PostScript 档的情况。
+Ghostview 和Ghostscript 可从网址 
+<A HREF="ftp://prep.ai.mit.edu/pub/gnu/">ftp://prep.ai.mit.edu/pub/gnu/</A> 下载。
+<P>
+<H2><A NAME="ss3.3">3.3 打印 PDF 档</A>
+</H2>
+
+<P>
+<P>Adobe 公司为 Linux 系统编制了 Acrobat 阅读器。这个阅读器可从 Adobe 公司主页 
+<A HREF="http://www.adobe.com">http://www.adobe.com</A> 下载。同时也可使用这个阅读器的前一版本 xpdf。
+这两个打印软件均可用于 postscript 打印机。
+<P>
+<H2><A NAME="ss3.4">3.4 打印 TeX 档</A>
+</H2>
+
+<P>
+<P>打印 TeX 档的最简便方法是将其转换成 PostScript 格式，然後用 Ghostscript 打印。
+要利用这种方法打印，首先得将文档转换成一种称为 DVI （device-independent 的缩称）的格式。
+这可利用 <EM>tex</EM>(1) 指令完成。然後利用 <EM>dvips</EM> 指令将 DVI 档转换成 PostScript 档。
+指令的使用方式如下：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ tex thesis.tex
+$ dvips thesis.dvi
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>然後就可利用前面提到的指令打印最後生成的 PostScript 档。
+<P>
+<H2><A NAME="ss3.5">3.5 打印 <CODE>troff</CODE> 格式的文档</A>
+</H2>
+
+<P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ groff -Tascii thesis.tr | lpr
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>或可用下列方式：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ groff thesis.tr > thesis.ps
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>然後利用上述指令打印生成的 PostScript 档。
+<P>
+<H2><A NAME="ss3.6">3.6 打印 <CODE>man</CODE> 说明页</A>
+</H2>
+
+<P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ man man | col -b | lpr
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>man 说明页都使用 <CODE>troff</CODE> 的格式，因此在打印时得首先删除粗体、底线等格式。
+“col”软件可以完成这项工作，由于 pipe 生成的结果，因此不可用 <CODE>more</CODE> 指令。
+<P>
+<HR>
+<A HREF="Printing-Usage-HOWTO-4.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Printing-Usage-HOWTO-2.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Printing-Usage-HOWTO.html#toc3"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

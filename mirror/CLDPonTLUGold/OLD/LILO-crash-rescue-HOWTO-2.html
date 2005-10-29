@@ -1,0 +1,399 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>LILO, Linux Crash Rescue HOW-TO 中譯版: 當機回復</TITLE>
+ <LINK HREF="LILO-crash-rescue-HOWTO-3.html" REL=next>
+ <LINK HREF="LILO-crash-rescue-HOWTO-1.html" REL=previous>
+ <LINK HREF="LILO-crash-rescue-HOWTO.html#toc2" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="LILO-crash-rescue-HOWTO-3.html"><IMG SRC="next.gif" ALT="Next"></A>
+<A HREF="LILO-crash-rescue-HOWTO-1.html"><IMG SRC="prev.gif" ALT="Previous"></A>
+<A HREF="LILO-crash-rescue-HOWTO.html#toc2"><IMG SRC="toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="crash"></A> <A NAME="s2">2. 當機回復</A></H2>
+
+<P>
+<P>
+<P>
+<P>
+<H2><A NAME="tips"></A> <A NAME="ss2.1">2.1 準備工作建議 </A>
+</H2>
+
+<P>在您使用下個章節的 Tomsrtbt 軟碟或使用 RedHat 開機光碟
+(使用救援選項) 登入之後，
+您最好先備分重要的系統檔案，像 /etc/fstab、/etc/lilo.conf。
+如此在當機時或系統檔案發生問題時是、活B菕B楚﹛BBB磽野峈滿C
+<HR>
+<PRE>
+bash# cp /etc/fstab /etc/fstab.orig
+bash# cp /etc/lilo.con   etc/lilo.c，，，.orig
+bash# cp /etc/hosts /etc/hosts.orig
+bash# cp /etc/hosts.allow /etc/hosts.allow.orig
+bash# cp /etc/hosts.deny /etc/hosts.deny.orig
+bash# cp /etc/inetd.conf /etc/inetd.conf.orig
+bash# cp /etc/inittab /etc/inittab.orig
+bash# cp /etc/networks /etc/networks.orig
+</PRE>
+<HR>
+<P>
+<P>
+<P>
+<H2><A NAME="ss2.2">2.2 使用 Linux 光碟的救援模式</A>
+</H2>
+
+<P>大部份的 Linux 發行套件像是 RedHat、SUSE、Debian，
+皆有提供具有救援功能的光碟。
+您應當設定電腦的 BIOS ，使電腦能以 IDE 光碟機為第一開機裝置，以便使用這類光碟。
+設定 BIOS 時 (在開機時按 F8 鍵)，以光碟機為第一開機裝置；
+軟碟機為第二開機裝置；硬碟為第三開機裝置。
+將 Linux 光碟片放入光碟機，並重開機。
+Linux 套件將會被讀取。在提示符號 (prompt) 下選擇「救援操作」。
+在救援操作模式下，掛上 (mount) 硬碟並嘗試修復它。
+<HR>
+<PRE>
+# chroot /mnt/SYSIMAGE
+# df
+</PRE>
+<HR>
+
+使用 chroot 後，整個系統看起來就像是從硬碟開機一樣。
+您可以看到硬碟上的所有分割區，並且可以修復或回復檔案。
+<P>
+<H2><A NAME="ss2.3">2.3 回復系統的快速步驟</A>
+</H2>
+
+<P>循著這些步驟執行，以便從 LILO 或系統當機中回復。
+<P>
+<OL>
+<LI> <B>狀況 1：</B> 假如系統無法開機 -
+<P>取得並建立 tomsrtbt 開機磁片 
+<A HREF="http://www.toms.net/rb">http://www.toms.net/rb</A>，
+或 MuLinux 開機磁片 (請參考 
+<A HREF="LILO-crash-rescue-HOWTO-1.html#tiny">Tiny Linux</A>)。
+並使用 tomsrtbt 開機磁片開機。
+使用 fdisk 指令找出分割區(partitions)。
+試著找出 root 和 boot 分割區。注意！
+root 分割區自己需擁有 /boot 檔案。
+<P>Linux 的 root 分割區包含下列資料夾
+<B>bin</B>,
+<B>boot</B>,
+<B>etc</B>,
+<B>usr</B>.
+<P>Linux 的 boot 分割區則包含以下的資料夾：
+<B>vmlinuz</B>,
+<B>boot.b</B>,
+<B>chain.b</B>,
+<B>map</B>.
+<P>使用以下步驟找出 root 分割區：
+<HR>
+<PRE>
+bash# fdisk /dev/hda
+Command (m for help): m         (顯示指令的輔助選單)
+Command (m for help): p         (列出硬碟分割區)
+Command (m for help): q
+bash# mkdir /test
+bash# mount /dev/hda1 /test
+bash# ls /test
+您應該會看到 root 分割區顯示如下 -
+bin   fd    lib   mnt  proc  sbin  usr
+boot  dev   etc   home  lost+found  opt  root  tmp   var
+</PRE>
+<HR>
+
+如果此分割區並非 root 分割區，試試下個分割區 /dev/hda2 。
+持續嚐試 hda3, hda4, hda5 等，直到找出 root 分割區為止。
+如果您在 <B>hda</B> 上沒有找到 root 分割區，
+則重覆以上步驟尋找其他硬碟，像是 <B>hdb</B>、<B>hdc</B>、<B>hdd</B>等。
+<P>接下來您應找出 /boot、/usr、和 /var 分割區。
+在建立新的 lilo 配置時，這些分割區的位置是必需的。
+<P>以我的系統為例，root 分割區是在 /dev/hda4：
+<HR>
+<PRE>
+bash# mkdir /rootpart
+bash# mount /dev/hda4 /rootpart
+bash# cat /rootpart/etc/fstab
+        閱讀 fstab 的內容，並且按照 fstab 檔案掛上 (mount) 分割區。像下面這樣 -
+bash# mount /dev/hda5 /rootpart/boot
+bash# mount /dev/hda6 /rootpart/usr
+bash# mount /dev/hda7 /rootpart/var
+bash# mount /dev/hda8 /rootpart/opt
+bash# mount /dev/hda9 /rootpart/root
+bash# mount /dev/hda10 /rootpart/home
+</PRE>
+<HR>
+
+以我的系統為例，按照 fstab 所顯示，hda5 是 <B>boot</B>、hda6 是 <B>usr</B>，
+hda7 是 <B>var</B>、hda8 是 <B>opt</B>、
+hda9 是 <B>root</B>、hda10 是 <B>home</B>、而 hda11 是 windows95 (FAT16 分割區)。
+<P>編輯 /etc/fstab (不是 /rootpart/etc/fstab) 並且加入(以下程式碼範例)
+<HR>
+<PRE>
+        /dev/hda4  /rootpart           ext2 defaults 1 1
+        /dev/hda5  /rootpart/boot      ext2 defaults 1 1
+        /dev/hda6  /rootpart/usr       ext2 defaults 1 1
+        /dev/hda7  /rootpart/var       ext2 defaults 1 1
+        /dev/hda8  /rootpart/opt       ext2 defaults 1 1
+        /dev/hda9  /rootpart/root      ext2 defaults 1 1
+        /dev/hda10 /rootpart/home      ext2 defaults 1 1
+        /dev/hda11 /rootpart/win95part vfat defaults 1 1
+
+在我的電腦中，hda4 為 linux 的 root 分割區、hda5 為 boot 分割區、
+hda11 則為 windows 95 的 vfat 系統。
+
+bash# mkdir /rootpart/win95part
+bash# mount /rootpart/win95part
+        使用 fsck 或 e2fsck 指令修復有問題的分割區。
+bash# man fsck
+bash# man e2fsck
+</PRE>
+<HR>
+<P>
+</LI>
+<LI> <B>狀況 2：</B> 如果 LILO 是無效的..
+<P>依照狀況 1 的步驟來排除問題。如果無法解決，則參照以下步驟。
+在執行狀況 1 的步驟之後，您應該已經掛載上 /rootpart
+並且已經建立好 /etc/fstab 檔案。
+<P>注意：在進行以下步驟時，觀察 chroot 如何運作是很重要的。
+chroot 所使用的 <B>/sbin/lilo</B> 檔案的正確位置是在 <B>/rootpart/sbin/lilo</B>，
+而<B>不是</B>在 /sbin！！因此請不要混淆。
+<HR>
+<PRE>
+bash# mount -a 
+bash# chroot /rootpart /sbin/lilo -q
+bash# man chroot
+bash# chroot /rootpart /sbin/lilo 
+</PRE>
+<HR>
+<P>注意：使用 chroot 的新手可能會被混淆。如果 chroot 抱怨它找不到 /boot/map 檔案，
+這種情形實際上代表著它無法找到 /rootpart/boot/map。因為您使用 /rootpart
+當作 chroot 的第一引數 (first argument)，所有的化身 (references) 都指向 /rootpart。
+<P>您也可以選擇直接使用 /sbin/lilo 以代替 chroot。
+lilo 加選項 -r 實際上就和 chroot 指令是一樣的。
+<B>強烈建議</B>您使用 chroot，而不要使用 lilo -r，
+因為使用 chroot 比較方便，且較容易找出錯誤。
+<HR>
+<PRE>
+bash# man lilo
+bash# /sbin/lilo -r /rootpart
+</PRE>
+<HR>
+<P>
+</LI>
+<LI> <B>狀況 3：</B> 如果 LILO 是無效的..
+<P>如果使用狀況 1 和狀況 2 的步驟均無法解決，
+假如您有使用 'mkbootdisk' 製作過開機片(於安裝時或參考
+'man mkbootdisk'自行建立)，則使用您的開機磁片來開機並修復分割區。
+mkbootdisk 存在於 mkbootdisk*.rpm 的套件，您必須安裝它。
+(譯注：隨不同發行套件而有所差異；請洽詢您的發行套件廠商或組織)
+或者從 
+<A HREF="http://www.bootdisk.com/">http://www.bootdisk.com/</A> 取得 Linux/NT/Windows/DOS/Mac 的開機磁片。
+其他選擇 - 找 Linux 安裝光碟來使用。
+每個 Linux 套件會在光碟裡提供救援磁片的 image file，在 Linux 環境下，鍵入
+"dd if=/cdrom/disks/rescue of=/dev/fd0" 來建立救援磁片。在 DOS 環境下，
+使用 rawrite.exe (包含在 Linux 光碟裡)，鍵入 "rawrite image-name a:"
+來建立救援磁片。
+<P>
+<P>
+</LI>
+<LI> <B>狀況 4：</B> 如果以上狀況 1、2、3 的步驟皆無法解決問題，且您也沒有開機磁片
+<P>假如您有其他 linux 系統的電腦，以 root 身份登入並且執行 -
+<P>注意：如果您編譯您自己的核心(kernel)為 bzImage (例如 bzImage-2.4.4)，
+您應當使用以下方法對 vmlinuz-2.4.4 建立硬連結(hard link)。(注意
+vmlinuz 的 z，而非 vmlinux) 如果您並未做此步驟，
+則 mkbootdisk 指令可能會失敗。
+<HR>
+<PRE>
+bash# cd /boot
+bash# ls -l vmlinuz*
+bash# ln /boot/bzImage-2.4.4  /boot/vmlinuz-2.4.4
+</PRE>
+<HR>
+
+現在您已有 bzImage 和 vmlinuz，執行下列指令 -
+<HR>
+<PRE>
+bash$ man mkbootdisk
+bash# cp /etc/lilo.conf /etc/lilo-original.conf
+</PRE>
+<HR>
+
+編輯 /etc/lilo.conf 並將您在 '狀況 1' 所獲得的 root
+分割區格式填入；之後插入空白磁碟片並執行 -
+<HR>
+<PRE>
+bash# mkbootdisk --device /dev/fd0 2.2.12-20
+(譯注：2.2.12-20 為核心版本編號，請自行依照您的 linux 核心版本作改變。)
+</PRE>
+<HR>
+
+mkbootdisk 存在於 mkbootdisk*.rpm 的套件，您必須安裝它。
+(譯注：隨不同發行套件而有所差異；請洽詢您的發行套件廠商或組織)
+您必須確保將 /etc/lilo-original.conf 更改回原來的檔名 /etc/lilo.conf!! 
+再以此開機磁片進行狀況 3 的步驟。
+<P>
+</LI>
+<LI> <B>狀況 5: </B> 這是最壞的情況，希望您不會走到這個地步。
+狀況 1 到 4 已包含了絕大多數的案例，但是如果連狀況
+1、2、3、和 4 的步驟都無法解決 -
+<P><I><B>第一步： </B></I>
+使用 tomsrtbt 開機磁片開機，
+(請參考 
+<A HREF="LILO-crash-rescue-HOWTO-1.html#tiny">Tiny Linux</A>)
+掛上分割區，
+並且使用以下指令備份 root 分割區至其他還有磁碟空間的分割區 -
+<HR>
+<PRE>
+        編輯 /etc/fstab 並且寫入(以下的程式碼範例，
+        您可能必須按照您的磁碟機實際狀況作改變) -
+                /dev/hda4  /rootpart    ext2 defaults 1 1
+                /dev/hda11 /b1          vfat defaults 1 1
+bash$ mkdir /rootpart; mount /rootpart
+bash$ mkdir /b1; mount /b1
+bash$ cd /
+bash$ df 
+        查看 /b1 是否有足夠的磁碟空間，以便使用 tar 來備份 root 分割區。
+bash$ tar cvf /b1/root-hda4.tar   /rootpart
+</PRE>
+<HR>
+<P><I><B>第二步： </B></I>
+放入 Linux 光碟片，重開機並安裝 redhat linux 
+(譯注：或安裝其他 linux 發行套件)
+在 /dev/hda4 (但<B>千萬不要</B>安裝任何多餘的套件，
+您只需要安裝 root、boot 系統，和 LILO 管理者。
+也就是說，選擇最小安裝即可)。 
+安裝程式也將會安裝 LILO 在您的硬碟裡。
+現在重新啟動 linux，以 root 身份登入，並且執行 -
+<HR>
+<PRE>
+bash$ man mkbootdisk
+bash# cp /etc/lilo.conf /etc/lilo-original.conf
+</PRE>
+<HR>
+
+注意：您<B>必須</B>記得將 lilo-original.conf 複製回 lilo.conf!!
+編輯 /etc/lilo.conf 並將您在 '狀況 1' 所獲得的 root
+分割區格式填入；之後插入空白磁碟片並執行 -
+<HR>
+<PRE>
+bash# mkbootdisk --device /dev/fd0 2.2.12-20
+(譯注：2.2.12-20 為核心版本編號，請自行依照您的 linux 核心版本作改變。)
+bash# cp /etc/lilo-original.conf /etc/lilo.conf
+</PRE>
+<HR>
+
+測試此開機磁片，檢視其是否能運作，
+並將第一步中利用 tar 作備分的檔案 /b1/root-hda4.tar 回復。
+(譯注：您可使用 tar xvf 來回復。詳見 tar manpage)
+</LI>
+</OL>
+<P>
+<P>
+<P>
+<P>
+<H2><A NAME="ss2.4">2.4 預防性措施</A>
+</H2>
+
+<P>您應當採取下列的預防性措施來處理未來可能發生的問題。
+<P>
+<UL>
+<LI> 您<B>一定要</B>偶爾製作救援開機磁片，且在您改變分割區時一定要製作。
+插入空白磁碟片並執行 -
+<HR>
+<PRE>
+bash$ man mkbootdisk
+mkbootdisk 存在於 mkbootdisk*.rpm 的套件，您必須安裝它。
+(譯注：隨不同發行套件而有所差異；請洽詢您的發行套件廠商或組織)
+bash$ mkbootdisk --help
+bash$ mkbootdisk --device /dev/fd0 2.2.12-20
+(譯注：2.2.12-20 為核心版本編號，請自行依照您的 linux 核心版本作改變。)
+</PRE>
+<HR>
+
+<P>
+</LI>
+<LI> 您<B>必須</B>將分割表設定 (partition tables setup) 備份至磁片和硬碟裡。
+您也應將此設定列印並貼至電腦機殼上。
+<HR>
+<PRE>
+bash$ su - root
+bash# man fdisk
+bash# fdisk -l /dev/sda > partition_table_backup.txt
+</PRE>
+<HR>
+
+如果您需要重新分割硬碟，這樣做是非常有幫助的。
+從列印出來的分割表資料，您將會了解分割區磁柱的起始。
+回復系統時，在重新分割與格式化硬碟後，您可以利用備份資料回復原先的分割設定。
+<P>
+</LI>
+<LI>您手邊必須擁有 tomsrtbt 的開機磁片。詳見
+<A HREF="http://www.toms.net/rb">http://www.toms.net/rb</A>
+(請參考 
+<A HREF="LILO-crash-rescue-HOWTO-1.html#tiny">Tiny Linux</A>)
+<P>
+</LI>
+<LI>您手邊必須擁有 Yard 救援和開機磁片。詳見
+<A HREF="http://www.linuxlots.com/~fawcett/yard">http://www.linuxlots.com/~fawcett/yard</A>
+<P>
+</LI>
+<LI> 備分 /root 與 /boot 目錄。使用 Tomsrtbt 開機磁片開機，
+(請參考 
+<A HREF="LILO-crash-rescue-HOWTO-1.html#tiny">Tiny Linux</A>)
+並且執行 
+<HR>
+<PRE>
+bash# vi /etc/fstab
+加入以下數行 -
+                /dev/hda1 /a1 vfat defaults 1 1
+                /dev/hdb1 /b1 vfat defaults 1 1
+以我的系統為例， hda1 為 linux 之 root 分割區 '/'
+bash# cd / 
+bash# tar cvf /b1/linux-root-partition-hda1.tar  a1
+bash# tar cvf /b1/linux-boot-partition-hda1.tar  a1/boot
+</PRE>
+<HR>
+</LI>
+</UL>
+<P>
+<P>
+<P>
+<P>
+<H2><A NAME="ss2.5">2.5 移除 LILO</A>
+</H2>
+
+<P>您可以使用 DOS 啟動載入程式(boot loader)載入啟動磁區，並以之取代 LILO。
+在 MS DOS 提示符號下輸入以下指令：
+<HR>
+<PRE>
+        FDISK  /MBR
+</PRE>
+<HR>
+
+此處的 MBR 代表 "硬碟主開機記錄(Master Boot Record)"。
+<P>請參考 LILO 文件，取得其他移除 LILO 的方法；這些文件通常放在 linux 系統上的
+/usr/doc/lilo* (譯注：或者是 /usr/share/doc/lilo*)。也請參考 'man lilo'。
+<P>
+<P>
+<P>
+<P>
+<H2><A NAME="ss2.6">2.6 常犯錯誤</A>
+</H2>
+
+<P>在您更改 /etc/lilo.conf 之後，您<B>必須執行 lilo </B>，使您的改變生效。
+忘了執行是 linux 初學者很常犯的錯誤。執行 -
+<HR>
+<PRE>
+bash# lilo -v -v -v
+</PRE>
+<HR>
+<P>
+<P>
+<P>
+<P>
+<HR>
+<A HREF="LILO-crash-rescue-HOWTO-3.html"><IMG SRC="next.gif" ALT="Next"></A>
+<A HREF="LILO-crash-rescue-HOWTO-1.html"><IMG SRC="prev.gif" ALT="Previous"></A>
+<A HREF="LILO-crash-rescue-HOWTO.html#toc2"><IMG SRC="toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

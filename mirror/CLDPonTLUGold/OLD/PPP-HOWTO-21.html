@@ -1,0 +1,84 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>PPP HOWTO 中譯版: 以動態 IP 提供網際網路服務</TITLE>
+ <LINK HREF="PPP-HOWTO-22.html" REL=next>
+ <LINK HREF="PPP-HOWTO-20.html" REL=previous>
+ <LINK HREF="PPP-HOWTO.html#toc21" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="PPP-HOWTO-22.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="PPP-HOWTO-20.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="PPP-HOWTO.html#toc21"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="dynamic-server"></A> <A NAME="s21">21. 以動態 IP 提供網際網路服務</A></H2>
+
+<P>如果你使用動態的 IP 號碼（許多服務提供者也只提供動態的 IP 號碼除非你為你的連線付出更多代價），那麼你必須認識這隱含的限制．
+<P>
+<P>首先，外送服務請求將不會有問題．這是說你可以使用 sendmail 送出電子郵件，從遠端節點傳輸(ftp)檔案， 調查(finger)在其它機器上的使用者，瀏覽全球資訊網等等．
+<P>
+<P>特別是，雖然你不在線上但你可以回覆帶回你機器上的電子郵件．郵件將單純地丟在你的郵遞佇列中直到你撥回你的 ISP 再行送出．
+<P>
+<P>然而，你的機器並非一天 24 小時都連接在網際網路上，它每次連線也不會擁有相同的 IP 號碼．
+所以你不可能接得到直接寄到你機器的電子郵件，並且很難設立一台全球資訊伺服器或檔案傳輸伺服器! 
+因為網際網路與你的機器不存在一種唯一的，永久可以聯繫的關係，因為你的機器並沒有唯一的 IP 號碼(記住 - 其它的機器也會使用這些 IP 號碼，當它們撥上線時)．
+<P>
+<P>如果你設立一台 WWW（或任何其它伺服器），在網際網路上的任何人都完全不會知道除非他們知道你的機器現在正在線上以及它確實（目前）的 IP 號碼．
+他們有許多管道可以得到這項資訊，包括由你打電話給他們，寄發電子郵件告訴他們或者是在你服務提供者的帳號上巧妙地使用 ".plan" 檔案（假設你的提供者允許 shell 及 finger 存取）．
+<P>
+<P>現在，對大部分的使用者而言，這不是個問題 － 大部分人們所想要做的全部只是寄送與接收電子郵件（使用在你服務提供者上的帳號）以及連線到全球資訊網，傳輸檔案以及其它網際網路上的服務．
+如果你必須擁有由外往內的連線服務，你真的應該取得靜態的 IP 號碼．另外一種方法是研究前面提示過的方法...
+<P>
+<H2><A NAME="ss21.1">21.1 設定電子郵件</A>
+</H2>
+
+<P>即使是動態的 IP 號碼，你的確可以配置你機器上的 sendmail 來送出你在本地端寫好的任何電子郵件．
+有關 sendmail 的配置可能會是很含糊而且很困難的 － 所以這份文件不會試圖告訴你該怎麼做．
+然而，你可能應該配置你的 sendmail 以便你的網際網路服務提供者能授命你作為 "smart relay" 主機（在 <CODE>sendmail.cf</CODE> 的 <B>DS</B> 選項）．（更為詳細的配置資訊請參閱 sendmail 的文件 － 並詳閱隨附於 sendmail 的 m4 配置巨集．幾乎可以確定裡面一定有一個能符合你的需要）．
+<P>
+<P>也有一本非常好的書在講 Sendmail(O'Reilly and Associates 稱它為 '聖經')，但對大部份的使用者來說實在太過困難了!
+<P>
+<P>一旦你配置好 sendmail 後，你可能想在 PPP 連線剛一起動的時候就要 sendmail 趕快送出任何待在郵件佇列裡的訊息．
+要這麼做的話，加入這行指令
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+sendmail -q &amp;
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>到你的 <CODE>/etc/ppp/ip-up</CODE> 指令稿中(參見下面說明)．
+<P>
+<P>由外往內的電子郵件對動態的 IP 號碼而言是個問題．處理這個問題的方法是:
+<UL>
+<LI>配置你的使用者郵遞程式讓所有送出去的郵件在 "reply to" 表頭中有個在你的網際網路服務提供者上的電子郵遞位址．<BR>
+如果可以的話，你也應該將你的 FROM 地址設為你 ISP 提供的電子郵遞位址．</LI>
+<LI>使用 popclient 程式從你的服務提供者那邊擷取你的電子郵件．或者，如果你的 ISP 使用 IMAP，使用支援 IMAP 的使用者郵遞程式(例如 pine)．</LI>
+</UL>
+<P>
+<P>你可以藉由在 <CODE>/etc/ppp/ip-up</CODE> 指令稿中放入必要的指令以便在撥接時將這個過程自動化(參見下面說明)．
+<P>
+<H2><A NAME="ss21.2">21.2 設定本地的名稱伺服器</A>
+</H2>
+
+<P>雖然你大可使用在你 ISP  那裡的領域名稱伺服器，你也可以設立一台本地的暫存專用（次要）名稱伺服器，並藉由 <CODE>ip-up</CODE> 指令稿啟動．
+跑本地（暫存專用）名稱伺服器的好處是如果你在連線期間常常聯繫相同的節點那麼它可以節省你的時間（以及頻寬）．
+<P>
+<P>暫存專用名稱伺服器（在 <CODE>named.boot</CODE> 檔案裡使用一行  'forwarders' 指向你 ISPs 的 DNS）的名稱伺服器配置比較簡單． 
+O'Reilly book (DNS and Bind) 解釋所有你需要知道的東西．
+<P>
+<P>也有一份 
+<A HREF="DNS-HOWTO.html">DNS-HOWTO</A> 可以取得．
+<P>
+<P>如果你有一小型區域網路經由你的 Linux PC 取用網際網路(例如使用 IP 偽裝)，
+在本地端執行名稱伺服器(使用 forwarders 導向)會是個好主意，因為它會降低由名稱解析所佔用的網路頻寬及延遲時間．
+<P>
+<P>網路作業的一個要點: 當你要在你 ISP 的領域裡開始啟用一台次要的，暫存專用的名稱伺服器之前先詢問你的 ISP 相關的權限．
+正確配置它，你的 DNS 一點都不會造成你 ISP  的困擾，但是如果你做錯了些什麼，它可能會引起麻煩...
+<P>
+<HR>
+<A HREF="PPP-HOWTO-22.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="PPP-HOWTO-20.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="PPP-HOWTO.html#toc21"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

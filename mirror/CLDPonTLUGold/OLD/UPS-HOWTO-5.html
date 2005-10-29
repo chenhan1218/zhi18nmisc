@@ -1,0 +1,198 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>中文 UPS Howto: 自己動手指南</TITLE>
+ <LINK HREF="UPS-HOWTO-6.html" REL=next>
+ <LINK HREF="UPS-HOWTO-4.html" REL=previous>
+ <LINK HREF="UPS-HOWTO.html#toc5" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="UPS-HOWTO-6.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="UPS-HOWTO-4.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="UPS-HOWTO.html#toc5"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s5">5. 自己動手指南</A></H2>
+
+<P>這裏的討論是針對單調模式的 UPS 控制而寫就的。然而，
+大部分的過程對單調的 UPS 與聰明的 UPS 幾乎是一樣的。最大的不同在於 UPS
+監控程式 (基本上是 <CODE>powerd</CODE>) 如何與 UPS 溝通。
+<P>在開始之前，我建議以下的工作流程:
+<UL>
+<LI>略讀這篇文件。</LI>
+<LI>下載並審查所有看起來特別適合您的 UPS 的軟體。</LI>
+<LI>下載並審查所有更一般化的軟體。請注意有些較一般化的軟體事實上更為強大、
+有更好的說明文件、且比起那些較特殊的軟體更容易使用。</LI>
+<LI>如果您依然無法讓 UPS 工作，或是您的方向依舊不清楚，
+請您仔細閱讀本文，並試試做 hack 的工作 ....</LI>
+</UL>
+<P>
+<P>
+<H2><A NAME="ss5.1">5.1 您所需的工作 (總結)</A>
+</H2>
+
+<P>
+<UL>
+<LI>將您的電腦接上 UPS 。</LI>
+<LI>用特殊的訊號纜線將您的電腦的的串列阜與 UPS 連接在一起。</LI>
+<LI>在您的電腦上跑 <CODE>powerd</CODE> (或其他類似的軟體) 。</LI>
+<LI>設定您的 <CODE>init</CODE> 程式使它能在 powerfail 及 powerok 
+事件發生時做適當的處理 (例如分別啟動 <CODE>shutdown</CODE> 程序及停止正在執行的
+<CODE>shutdown</CODE> 程序)。</LI>
+</UL>
+<P>
+<H2><A NAME="ss5.2">5.2 這應該是做什麼工作的?</A>
+</H2>
+
+<P>
+<P>
+<DL>
+<DT><B>UPS 的工作</B><DD><P>當電力消失時， UPS 持續供應電腦所需的電力，
+並以送出重置訊號或是在它的控制阜上打開連接訊號以通知電腦電力消失了。
+<P>
+<DT><B>訊號纜線的工作</B><DD><P>訊號纜線是設計為當 UPS 送出重置訊號時，會使得特殊的序列阜控制接腳
+(基本上是 <CODE>DCD</CODE>) 出現高電位。
+<P>
+<DT><B>Powerd 的工作</B><DD><P><CODE>powerd</CODE> 程式負責監視序列阜。它保持著 UPS 所需而升高 / 
+降低序列阜控制接腳的高 / 低電位 (基本上， <CODE>DTR</CODE>
+接腳必須保持在高電位且關閉 UPS 的接腳必須保持在低電位) 。當 <CODE>powerd</CODE>
+發覺控制接腳變成高電位，它會在 <CODE>/etc/powerfail</CODE> 檔中寫入
+<CODE>FAIL</CODE> 這個字並送 <CODE>SIGPWR</CODE> 訊號給 <CODE>init</CODE> 行程。
+當控制接腳再次變回低電位時，它會在 <CODE>/etc/powerfail</CODE> 
+檔中寫入 <CODE>OK</CODE> 這個字並送 <CODE>SIGPWR</CODE> 訊號給 <CODE>init</CODE> 。
+<P>
+<DT><B>Init 的工作 (除上述之外它負責所有的工作)</B><DD><P>當它接到了 <CODE>SIGPWR</CODE> 訊號，它會檢查 <CODE>/etc/powerfail</CODE> 檔。
+如果裏頭是 <CODE>FAIL</CODE> 這個字眼它會執行 <CODE>/etc/inittab</CODE>
+檔中 <CODE>powerfail</CODE> 那一行的指令。如果裏頭是 <CODE>OK</CODE> 
+這個字它則執行 <CODE>inittab</CODE> 檔中 <CODE>powerokwait</CODE> 那一行的指令。
+<P>
+</DL>
+<P>
+<H2><A NAME="ss5.3">5.3 如何設定好所有的工作</A>
+</H2>
+
+<P>
+<P>以下我們假設您有一條可以和 <CODE>powerd</CODE> 正常工作的訊號纜線。
+如果您不確定您的訊號纜線是否可以工作 (或它如何工作)，請參考
+<A HREF="UPS-HOWTO-6.html#hacking">訊號纜線反向分析及修改 power.c</A>
+一節，那兒有關於少見的訊號纜線處理及重新設定 <CODE>powerd.c</CODE> 的資訊。
+<A HREF="UPS-HOWTO-6.html#hacking">訊號纜線反向分析及修改 power.c</A><@ref>serial-port序列阜接腳的指定</A> 及
+<A HREF="UPS-HOWTO-6.html#hacking">訊號纜線反向分析及修改 power.c</A><@ref>serial-port序列阜接腳的指定</A><@ref>ioctl有關讀寫 RS232</A> 這兩節也將對您有幫助。
+<P>如果您需要製作一條訊號纜線，請見 
+<A HREF="UPS-HOWTO-6.html#make-cable">如何製作訊號纜線</A> 的詳細說明，以及 
+<A HREF="UPS-HOWTO-6.html#make-cable">如何製作訊號纜線</A><@ref>ups-specificUPS 資料節選</A> 一節中有關您的 UPS 的小節。
+後者可能也包含了製造商所提供的訊號纜線的相關資訊。
+或許您應至少將 
+<A HREF="UPS-HOWTO-6.html#make-cable">如何製作訊號纜線</A><@ref>ups-specificUPS 資料節選</A><@ref>ups-specificUPS 資料節選</A>
+中所有的小節瀏覽過一遍，因為每一小節都會有一些額外的一般性資料能對您有幫助。
+<P>
+<UL>
+<LI>修改 <CODE>/etc/inittab</CODE> 檔。寫入像以下的內容:
+
+<PRE>
+# What to do when power fails (Halt system &amp; drain battery :):
+pf::powerfail:/etc/powerfailscript +5
+
+# If power is back before shutdown, cancel the running shutdown.
+pg:0123456:powerokwait:/etc/powerokscript
+   
+</PRE>
+
+</LI>
+<LI>寫 <CODE>/etc/powerfailscript</CODE> 及 <CODE>/etc/powerokscript</CODE>
+這兩個 script 檔分別在五分鐘 (或其他您喜歡的時間) 
+之內進行關機及停止任何存在的 <CODE>shutdown</CODE> 程序。
+依您所用的 <CODE>shutdown</CODE> 程式版本的不同，
+它可能會相當單簡以至於您根本不需使用 script 檔，或者是一行 <CODE>bash</CODE>
+的 script 檔像是以下這一行:
+
+<PRE>
+    kill `ps -aux | grep "shutdown" | grep -v grep | awk '{print $2}'`
+</PRE>
+
+      
+(為了避免您弄錯，上一行中第一個單引號是反向單引號，第二及第三個是單引號，
+而最後一個則為反向單引號。)
+</LI>
+<LI>用以下的命令告訴 <CODE>init</CODE> 重新讀取 <CODE>inittab</CODE> 檔中的設定:
+
+
+<PRE>
+    telinit q
+   
+</PRE>
+
+</LI>
+<LI>編諿 rc.local 檔在開機時執行 <CODE>powerd</CODE> 。其語法如下:
+
+<PRE>
+    powerd &lt;line>
+    
+</PRE>
+
+
+其中，請您自行將 <CODE>&lt;line&gt;</CODE> 這個字替換成 modem 
+所連接的序列阜名，像是 <CODE>/dev/cua1</CODE>。
+</LI>
+<LI>將電腦的序列阜與 UPS 的訊號纜線相連。請先不要將電腦的電源直接接到 
+UPS 上。
+    </LI>
+<LI>將一個光源 (如燈泡) 接到 UPS 上。
+</LI>
+<LI>執行 <CODE>powerd</CODE>。
+</LI>
+<LI>依照以下的步驟進行測試:
+<UL>
+<LI>拔掉 UPS 的插頭。
+<UL>
+<LI>檢查該燈泡是否仍然亮著。</LI>
+<LI>檢查 <CODE>/etc/powerfailscript</CODE> 是否已開始執行。</LI>
+<LI>檢查 <CODE>shutdown</CODE> 是否正在執行。</LI>
+</UL>
+</LI>
+<LI>接回 UPS 的插頭。
+<UL>
+<LI>檢查該燈泡是否仍然亮著。</LI>
+<LI>檢查 <CODE>/etc/powerokscript</CODE> 是否已開始執行。</LI>
+<LI>檢查 <CODE>/etc/powerfailscript</CODE> 是否已停止執行。</LI>
+<LI>檢查 <CODE>shutdown</CODE> 是否已停止執行。</LI>
+</UL>
+</LI>
+<LI>再次拔掉 UPS 的插頭。放著不去管它並確定電腦在一段時間後
+可以正常關機。
+</LI>
+<LI><B>危險步驟。</B> 在所有的步驟看起來都正常之後，
+將電腦電源關閉並將電腦的電源接到 UPS 上。請執行一個 script
+大約每秒鐘做一次 sync 硬碟資料回存的動作，同時也跑另一個 script
+持續以 find 指令搜尋整顆硬碟。其中第一個 script 
+是為了確保安全，而第二個則是助長電力的消耗。現在，將 UPS
+的插頭拔出，再次檢查 <CODE>shutdown</CODE> 是否已在運作，並等待一段時間。
+確定電腦在 UPS 的電力用完前完全地關機。此一步驟是很危險的，
+因為如果 UPS 的電力在電腦完成關機之前先用完了，
+您的檔案系統將會受損，且您將可能丟失一些檔案。
+您可能在進行這項測試之前會想要備份您所有的檔案，
+並將開始關機的時間設短一點以開始這項測試。</LI>
+</UL>
+</LI>
+</UL>
+<P>恭喜您! 您的 Linux 系統現在已在 UPS 的保護下，
+且它將會在電力耗盡之前安全地關機了。
+<P>
+<P>
+<H2><A NAME="ss5.4">5.4 進一步的改善</A>
+</H2>
+
+<P>
+<P>
+<UL>
+<LI>修改 <CODE>powerd.c</CODE> 使它在監視 UPS 的訊號線時能得知電池電力已弱。
+當電力微弱時，馬上進行緊急關機程序。</LI>
+<LI>修改關機程序使它在 <CODE>powerfail</CODE> 情況下關機時，
+能夠在完成所有工作之後將 UPS 關掉。</LI>
+</UL>
+<P>
+<HR>
+<A HREF="UPS-HOWTO-6.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="UPS-HOWTO-4.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="UPS-HOWTO.html#toc5"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

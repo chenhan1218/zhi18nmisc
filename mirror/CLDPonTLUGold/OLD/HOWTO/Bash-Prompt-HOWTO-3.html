@@ -1,0 +1,291 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Bash Prompt HOWTO: Bash Programming and Shell Scripts</TITLE>
+ <LINK HREF="Bash-Prompt-HOWTO-4.html" REL=next>
+ <LINK HREF="Bash-Prompt-HOWTO-2.html" REL=previous>
+ <LINK HREF="Bash-Prompt-HOWTO.html#toc3" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Bash-Prompt-HOWTO-4.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Bash-Prompt-HOWTO-2.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Bash-Prompt-HOWTO.html#toc3"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s3">3. Bash Programming and Shell Scripts</A></H2>
+
+<H2><A NAME="ss3.1">3.1 Variables</A>
+</H2>
+
+<P>I'm not going to try to explain all the details of Bash scripting in
+a section of this HOWTO, just the details pertaining to prompts.  If
+you want to know more about shell programming and Bash in general, I highly
+recommend <EM>Learning the Bash Shell</EM> by Cameron Newham and Bill
+Rosenblatt (O'Reilly, 1998).  Oddly, my copy of this book is quite frayed.
+Again, I'm going to assume that you know a fair
+bit about Bash already.  You can skip this section if you're only looking
+for the basics, but remember it and refer back if you proceed much farther.
+<P>
+<P>Variables in Bash are assigned much as they are in any programming
+language:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+testvar=5
+foo=zen
+bar="bash prompt"
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Quotes are only needed in an assignment if a space (or special character,
+discussed shortly) is a part of the variable.
+<P>
+<P>Variables are referenced slightly differently than they are assigned:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+&gt; echo $testvar
+5
+&gt; echo $foo
+zen
+&gt; echo ${bar}
+bash prompt
+&gt; echo $NotAssigned
+
+&gt; 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>A variable can be referred to as <B>$bar</B> or <B>${bar}</B>.  The
+braces are useful when it is unclear what is being referenced: if I write
+<B>$barley</B> do I mean <B>${bar}ley</B> or <B>${barley}</B>?  Note
+also that referencing a value that hasn't been assigned doesn't generate an
+error, instead returning nothing.
+<P>
+<H2><A NAME="ss3.2">3.2 Quotes and Special Characters</A>
+</H2>
+
+<P>If you wish to include a special character in a variable, you will have to
+quote it differently:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+&gt; newvar=$testvar
+&gt; echo $newvar
+5
+&gt; newvar="$testvar"
+&gt; echo $newvar
+5
+&gt; newvar='$testvar'
+&gt; echo $newvar
+$testvar
+&gt; newvar=\$testvar
+&gt; echo $newvar
+$testvar
+&gt;
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>The dollar sign isn't the only character that's special to the Bash shell,
+but it's a simple example.  An interesting step we can take to make use of
+assigning a variable name to another variable name is to use <B>eval</B>
+to dereference the stored variable name:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+&gt; echo $testvar
+5
+&gt; echo $newvar
+$testvar
+&gt; eval echo $newvar
+5
+&gt; 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Normally, the shell does only one round of substitutions on the expression
+it is evaluating: if you say <B>echo $newvar</B> the shell will only go
+so far as to determine that <B>$newvar</B> is equal to the text string
+<B>$testvar</B>, it won't evaluate what <B>$testvar</B> is equal to.
+<B>eval</B> forces that evaluation.
+<P>
+<H2><A NAME="ss3.3">3.3 Command Substitution</A>
+</H2>
+
+<P>In almost all cases in this document, I use the $(&lt;command&gt;)
+convention for command substitution: that is, 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$(date +%H%M)
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>means "substitute the output from the <B>date +%H%M</B> command here."
+This works in Bash 2.0+.  In some older versions of Bash, prior to 1.14.7,
+you may need to use backquotes (<CODE>`date +%H%M`</CODE>).  Backquotes can be
+used in Bash 2.0+, but are being phased out in favor of $(), which nests
+better.  If you're using an earlier version of Bash, you can usually
+substitute backquotes where you see $().  If the command substitution is
+escaped (ie.  \$(command) ), then use backslashes to escape BOTH your
+backquotes (ie.  \'command\' ).
+<P>
+<H2><A NAME="nonprintingchars"></A> <A NAME="ss3.4">3.4 Non-Printing Characters in Prompts</A>
+</H2>
+
+<P>Many of the changes that can be made to Bash prompts that are discussed in
+this HOWTO use non-printing characters.  Changing the colour of the prompt
+text, changing an Xterm title bar, and moving the cursor position all
+require non-printing characters.
+<P>
+<P>If I want a very simple prompt consisting of a greater-than sign and a
+space:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+[giles@nikola giles]$ PS1='&gt; '
+&gt; 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>This is just a two character prompt.  If I modify it so that it's a
+bright yellow greater-than sign (colours are discussed in their own
+section):
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+&gt; PS1='\033[1;33m&gt;\033[0m '
+&gt; 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>This works fine - until you type in a large command line.  Because the
+prompt still only consists of two printing characters (a greater-than sign
+and a space) but the shell thinks that this prompt is eleven characters
+long (I think it counts '\033' , '[1' and '[0' as one character each).  You
+can see this by typing a really long command line - you will find that the
+shell wraps the text before it gets to the edge of the terminal, and in
+most cases wraps it badly.  This is because it's confused about the actual
+length of the prompt.
+<P>
+<P>So use this instead:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+&gt; PS1='\[\033[1;33m\]&gt;\[\033[0m\] '
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>This is more complex, but it works.  Command lines wrap properly.  What's
+been done is to enclose the '\033[1;33m' that starts the yellow colour in
+'\[' and '\]' which tells the shell "everything between these escaped
+square brackets, including the brackets themselves, is a non-printing
+character."  The same is done with the '\033[0m' that ends the colour.
+<P>
+<H2><A NAME="ss3.5">3.5 Sourcing a File</A>
+</H2>
+
+<P>When a file is sourced (by typing either <B>source filename</B> or <B>.
+filename</B> at the command line), the lines of code in the file are
+executed as if they were printed at the command line.  This is particularly
+useful with complex prompts, to allow them to be stored in files and called
+up by sourcing the file they are in.
+<P>
+<P>In examples, you will find that I often include <B>#!/bin/bash</B> at the
+beginning of files including functions.  This is <B>not</B> necessary if
+you are sourcing a file, just as it isn't necessary to <B>chmod +x</B> a
+file that is going to be sourced.  I do this because it makes Vim (my
+editor of choice, no flames please - you use what you like) think I'm
+editing a shell script and turn on colour syntax highlighting.
+<P>
+<H2><A NAME="ss3.6">3.6 Functions, Aliases, and the Environment</A>
+</H2>
+
+<P>As mentioned earlier, PS1, PS2, PS3, PS4, and PROMPT_COMMAND are all stored
+in the Bash environment.  For those of us coming from a DOS background, the
+idea of tossing big hunks of code into the environment is horrifying, 
+because that DOS environment was small, and didn't exactly grow well.
+There are probably practical limits to what you can and should put in the
+environment, but I don't know what they are, and we're probably talking a
+couple of orders of magnitude larger than what DOS users are used to.  As
+Dan put it:
+<P>
+<P>"In my interactive shell I have 62 aliases and 25 functions.  My rule
+of thumb is that if I need something solely for interactive use and
+can handily write it in bash I make it a shell function (assuming
+it can't be easily expressed as an alias).  If these people are
+worried about memory they don't need to be using bash.  Bash is one
+of the largest programs I run on my linux box (outside of Oracle).
+Run top sometime and press 'M' to sort by memory - see how close
+bash is to the top of the list.  Heck, it's bigger than sendmail!
+Tell 'em to go get ash or something."
+<P>
+<P>I guess he was using console only the day he tried that: running X and X
+apps, I have a lot of stuff larger than Bash.  But the idea is the same:
+the environment is something to be used, and don't worry about overfilling
+it.
+<P>
+<P>I risk censure by Unix gurus when I say this (for the crime of
+over-simplification), but functions are basically small shell scripts that
+are loaded into the environment for the purpose of efficiency.  Quoting Dan
+again: "Shell functions are about as efficient as they can be.  It is the
+approximate equivalent of sourcing a bash/bourne shell script save that no
+file I/O need be done as the function is already in memory.  The shell
+functions are typically loaded from [.bashrc or .bash_profile] depending on
+whether you want them only in the initial shell or in subshells as well.
+Contrast this with running a shell script: Your shell forks, the child does
+an exec, potentially the path is searched, the kernel opens the file and
+examines enough bytes to determine how to run the file, in the case of a
+shell script a shell must be started with the name of the script as its
+argument, the shell then opens the file, reads it and executes the
+statements.  Compared to a shell function, everything other than executing
+the statements can be considered unnecessary overhead."
+<P>
+<P>Aliases are simple to create:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+alias d="ls --color=tty --classify"
+alias v="d --format=long"
+alias rm="rm -i"
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Any arguments you pass to the alias are passed to the command line of the
+aliased command (ls in the first two cases).  Note that aliases can be
+nested, and they can be used to make a normal unix command behave in a
+different way.  (I agree with the argument that you shouldn't use the
+latter kind of aliases - if you get in the habit of relying on "rm *" to
+ask you if you're sure, you may lose important files on a system that
+doesn't use your alias.)
+<P>
+<P>Functions are used for more complex program structures.  As a general rule,
+use an alias for anything that can be done in one line.  Functions differ
+from shell scripts in that they are loaded into the environment so that
+they work more quickly.  As a general rule again, you would want to
+keep functions relatively small, and any shell script that gets relatively
+large should remain a shell script rather than turning it into a function.
+Your decision to load something as a function is also going to depend on
+how often you use it.  If you use a small shell script infrequently, leave
+it as a shell script.  If you use it often, turn it into a function.
+<P>
+<P>To modify the behaviour of <B>ls</B>, you could do something like the
+following:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+function lf
+{ 
+    ls --color=tty --classify $*
+    echo "$(ls -l $* | wc -l) files"
+}
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>This could readily be set as an alias, but for the sake of example, we'll
+make it a function.  If you type the text shown into a text file and then
+source that file, the function will be in your environment, and be
+immediately available at the command line without the overhead of a shell
+script mentioned previously.  The usefulness of this becomes more obvious
+if you consider adding more functionality to the above function, such as
+using an if statement to execute some special code when links are found in
+the listing.
+<P>
+<P>
+<P>
+<HR>
+<A HREF="Bash-Prompt-HOWTO-4.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Bash-Prompt-HOWTO-2.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Bash-Prompt-HOWTO.html#toc3"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

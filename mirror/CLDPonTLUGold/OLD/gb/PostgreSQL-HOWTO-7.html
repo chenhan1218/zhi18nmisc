@@ -1,0 +1,378 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE> Linux 的 Database-SQL-RDBMS HOWTO 文件 (PostgreSQL 物件关联资料库系统): 快速开始指引</TITLE>
+ <LINK HREF="PostgreSQL-HOWTO-8.html" REL=next>
+ <LINK HREF="PostgreSQL-HOWTO-6.html" REL=previous>
+ <LINK HREF="PostgreSQL-HOWTO.html#toc7" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="PostgreSQL-HOWTO-8.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="PostgreSQL-HOWTO-6.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="PostgreSQL-HOWTO.html#toc7"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s7">7. 快速开始指引</A></H2>
+
+<P>请参考
+<A HREF="PostgreSQL-HOWTO-6.html#Quick-Installation">快速安装指引</A>一章。
+<H2><A NAME="ss7.1">7.1 资料库建立、丢弃、改名</A>
+</H2>
+
+<P>你可使用使用者友善的
+GUI，名为‘pgaccess’来建立和丢弃资料库，也可用指令列‘psql’工具。
+<HR>
+<PRE>
+如你以 root 身份登入，变身为用者‘postgres’∶
+# xhost + （让 pgaccess 使用显示装置）
+# su - postgres
+bash$ man createdb
+bash$ createdb mydatabase
+bash$ man psql
+bash$ psql mydatabase
+…在 psql 按上 / 下箭咀来编辑历史纪录或用 \s
+
+bash$ export DISPLAY=&lt;主机名>:0.0
+bash$ man pgaccess
+bash$ pgaccess mydatabase
+</PRE>
+<HR>
+
+你现在可以在 psql 或 pgaccess <B>高速下达</B> SQL 指令。
+<P>
+<P>要丢弃资料库的话∶
+<HR>
+<PRE>
+bash$ man dropdb
+bash$ man destroydb  （在较旧版本的 pgsql 中使用） 
+bash$ dropdb &lt;资料库名称>
+</PRE>
+<HR>
+
+也可以在一个 SQL 连接期间用以下指令消灭一个资料库∶
+<HR>
+<PRE>
+> drop database &lt;资料库名称>
+</PRE>
+<HR>
+
+要更改资料库名称，请参阅
+<A HREF="#backup_restore">备份和还原</A>一节
+<H2><A NAME="ss7.2">7.2 建立和丢弃用户</A>
+</H2>
+
+<P>要建立新用户，以 unix 用户‘postres’签入，你可用简单易用的 GUI
+工具‘pgaccess’来增减用户。 
+<HR>
+<PRE>
+bash$ man pgaccess
+bash$ pgaccess &lt;资料库名称>
+</PRE>
+<HR>
+
+击选“Users”tab，再击选 Object|New 或 Object|Delete
+<P>你也可用指令行命令稿 (script)。名为‘createuser’的命令稿启动 psql。
+<HR>
+<PRE>
+bash$ man createuser
+bash$ createuser &lt;用户名称>
+bash$ createuser -h host -p port -i userid &lt;用户名称>
+</PRE>
+<HR>
+<P>要丢弃一个 postgres 用户，使用命令稿‘destroyuser’。
+<HR>
+<PRE>
+bash$ man dropuser
+bash$ man destroyuser （在较旧版本的 pgsql 中使用） 
+bash$ destroyuser
+</PRE>
+<HR>
+<H2><A NAME="ss7.3">7.3 建立和丢弃群组</A>
+</H2>
+
+<P>目前没有简单的介面可用来设定用户群组。你要自行在 <B>pg_group</B>
+表格中插入或更新纪录。如∶
+<HR>
+<PRE>
+bash$ su - postgres
+bash$ psql &lt;资料库名称>
+…在 psql 按上 / 下箭咀来编辑历史纪录或用 \s
+
+psql=> insert into pg_group (groname, grosysid, grolist)
+psql=> values ('posthackers', '1234', '{5443, 8261}' );
+INSERT 58224
+psql=> grant insert on foo to group posthackers;
+CHANGE
+psql=>
+</PRE>
+<HR>
+
+<B>pg_group</B> 中的栏位为∶
+<B>groname</B> 群组名称。这名称必须全为字母或数字，不可有底线或标点符号。
+<P><B>grosysid</B> 群组代码。这是一个 int4，每个群组都要独一无二。
+<P><B>grolist</B> 属於此群组的 <B>pg_user</B> 代码名单。是一个 int4[]。
+<P>要删除群组∶
+<HR>
+<PRE>
+bash$ su - postgres
+bash$ psql &lt;资料库名称>
+…在 psql 按上 / 下箭咀来编辑历史纪录或用 \s
+
+
+psql=> delete from pg_group where groname = 'posthackers';
+</PRE>
+<HR>
+<H2><A NAME="ss7.4">7.4 建立、编辑和丢弃表格</A>
+</H2>
+
+<P>你可使用使用者友善的
+GUI，名为‘pgaccess’，或指令列‘psql’工具来建立、编辑和丢弃资料库表格。
+<HR>
+<PRE>
+bash$ man pgaccess
+bash$ pgaccess &lt;资料库名称>
+</PRE>
+<HR>
+
+击选 Table | New | Design 按钮。
+<HR>
+<PRE>
+bash$ man psql
+bash$ psql &lt;资料库名称>
+…在 psql 按上 / 下箭咀来编辑历史纪录或用 \s
+</PRE>
+<HR>
+
+在 psql 提示下，键入标准的 SQL 指令，如‘create table’、‘alter
+table’或‘drop table’来处理表格。
+<H2><A NAME="ss7.5">7.5 建立、编辑和丢弃表格中的纪录</A>
+</H2>
+
+<P>
+<P>你可使用使用者友善的
+GUI，名为‘pgaccess’，或指令列‘psql’工具来建立、
+编辑和丢弃资料库表格中的纪录。
+<HR>
+<PRE>
+bash$ man pgaccess
+bash$ pgaccess &lt;资料库名称>
+</PRE>
+<HR>
+
+击选 Table | &lt; 选一个表格 &gt; | Open 按钮。
+<HR>
+<PRE>
+bash$ man psql
+bash$ psql &lt;资料库名称>
+…在 psql 按上 / 下箭咀来编辑历史纪录或用 \s
+</PRE>
+<HR>
+
+在 psql 提示下，键入标准的 SQL 指令，如‘insert into table_name’、‘update
+table_name’或‘delete from table_name’来处理表格。
+<H2><A NAME="ss7.6">7.6 改变目前的资料库</A>
+</H2>
+
+<P>你可使用使用者友善的
+GUI，名为‘pgaccess’，或指令列‘psql’工具来改变目前的资料库。
+<HR>
+<PRE>
+bash$ man pgaccess
+bash$ pgaccess &lt;资料库名称>
+</PRE>
+<HR>
+
+击选 Database | Open 按钮。
+<HR>
+<PRE>
+bash$ man psql
+bash$ psql &lt;资料库名称>
+…在 psql 按上 / 下箭咀来编辑历史纪录或用 \s
+
+psql=> connect &lt;资料库名称> &lt;user>
+</PRE>
+<HR>
+<H2><A NAME="backup_restore"></A> <A NAME="ss7.7">7.7 备份与还原资料库 </A>
+</H2>
+
+<P>PostgreSQL 提供了两个工具来备份你的系统∶<B>pg_dump</B> 
+备份一个资料库，<B>pg_dumpall</B> 一次过备份所有资料库。
+<HR>
+<PRE>
+bash$ su - postgres
+bash$ man pd_dump
+bash$ pd_dump &lt;资料库名称> > database_name.pgdump
+</PRE>
+<HR>
+
+还原则∶
+<HR>
+<PRE>
+bash$ cat database_name.pgdump | psql &lt;资料库名称>
+</PRE>
+<HR>
+
+这技考可用於搬移资料库或为资料库改名。
+<P><B>警告∶</B>每个资料库都要定时备份。因为 PostgreSQL
+自行管理它在档案系统中的档案，所以不要倚赖系统备份来作资料库备份。
+没有人能保证那些档案在还原後会处於一个可用而一致的状态。
+<P><B>备份大型资料库∶</B>因为 PostreSQL
+容许表格大过系统的最大档案容量，把一个表格输出为一个档案会有问题，
+因为所产生的档案可能会超出系统的限制。因为 <B>pg_dump</B> 会写到 
+<B>stdout</B>，你可使用标准的 unix 工具来解决这可能的问题∶
+<P>使用压缩了的输出∶
+<HR>
+<PRE>
+bash$ pg_dump &lt;资料库名称> | gzip > filename.dump.gz
+</PRE>
+<HR>
+
+用以下方法重新载入∶
+<HR>
+<PRE>
+bash$ createdb &lt;资料库名称>
+bash$ gunzip -c filename.dump.gz | psql &lt;资料库名称>
+</PRE>
+<HR>
+
+或
+<HR>
+<PRE>
+bash$ cat filename.dump.gz | gunzip | psql &lt;资料库名称>
+</PRE>
+<HR>
+<P>使用 split∶
+<HR>
+<PRE>
+bash$ pg_dump &lt;资料库名称> | split -b 1m - filename.dump.
+</PRE>
+<HR>
+
+注意∶以上指令中，在 filename.dump 後有一点 (.)！！你可用以下方法重新载入∶
+<HR>
+<PRE>
+bash$ man createdb
+bash$ createdb &lt;资料库名称>
+bash$ cat filename.dump.* | pgsql &lt;资料库名称>
+</PRE>
+<HR>
+
+当然，档案名称（filename）和 <B>pg_dump</B>
+输出的内容无需和资料库名称配合。此外，还原了的资料库可有任何新名。
+因此这方法适用於为资料库改名。
+<P>要把所有 PostgreSQL 输出，使用 <B>pg_dumpall</B>
+<HR>
+<PRE>
+bash$ man pg_dumpall
+bash$ pg_dumpall -o > db.out
+要重新载入∶
+bash$ psql -e template1 &lt; db.out
+</PRE>
+<HR>
+<H2><A NAME="ss7.8">7.8 资料库保安</A>
+</H2>
+
+<P>请参阅
+<A HREF="PostgreSQL-HOWTO-10.html#security">PostgreSQL 保安</A>一节。
+<P>
+<H2><A NAME="ss7.9">7.9 线上求助</A>
+</H2>
+
+<P>你必须知道 PostgreSQL
+的线上求助设施，因为它会为你节省很多时间，让你快速取得资料。
+<P>请参阅不同指令，如 createdb、createuser 等等的线上  man pages。
+<HR>
+<PRE>
+bash$ man createdb
+</PRE>
+<HR>
+<P>也请参阅 psql 的线上求助讯息，在 psql 提示键入 \h
+<HR>
+<PRE>
+bash$ psql mydatabase
+psql> \h
+提示∶在 psql 按上 / 下箭咀来编辑历史纪录或用 \s
+</PRE>
+<HR>
+<H2><A NAME="ss7.10">7.10 建立激发 (Triggers) 和内储程序 (Stored Procedures)</A>
+</H2>
+
+<P>要建立激发或内储程序，先在你使用的资料库执行‘createlang’命令稿来安装
+‘plpgsql’。如果你想预设使用它，把它安装在‘template1’，
+因为以後建立的资料库都是 template1 的仿装品。参阅‘createlang’网页或位於 
+/usr/doc/postgresql-7.0.2/user/index.html 的 User Guide。
+<P>
+<HR>
+<PRE>
+bash$ man createlang
+bash$ createdb mydb
+bash$ export PGLIB=/usr/lib/pgsql
+bash$ createlang plpgsql mydb
+bash$ createlang plpgsql template1
+</PRE>
+<HR>
+
+也请参考 
+<A HREF="PostgreSQL-HOWTO-6.html#Examples RPM">例子 RPM</A> 
+中激发和内储程序的例子。Examples RPM 中的其中一个例子∶
+<HR>
+<PRE>
+create function tg_pfield_au() returns opaque as '
+begin
+    if new.name != old.name then
+        update PSlot set pfname = new.name where pfname = old.name;
+    end if;
+    return new;
+end;
+' language 'plpgsql';
+
+create trigger tg_pfield_au after update
+    on PField for each row execute procedure tg_pfield_au();
+</PRE>
+<HR>
+
+另一个激发程式码例子∶
+<HR>
+<PRE>
+create trigger check_fkeys_pkey_exist
+        before insert or update on fkeys
+        for each row
+        execute procedure
+        check_primary_key ('fkey1', 'fkey2', 'pkeys', 'pkey1', 'pkey2');
+</PRE>
+<HR>
+
+你必须安装 TEST 套件□ postgresql-test-7.0.2-2.rpm 和阅读在 
+/usr/lib/pgsql/test/regress/sql 中的 SQL 命令稿例子。
+<P>要显示资料库中激发的名单□
+<HR>
+<PRE>
+bash$ psql mydb
+psql=> \?
+psql=> \dS
+psql=> \d pg_trigger
+psql=> select tgname from pg_trigger order by tgname;
+</PRE>
+<HR>
+<P>要显示资料库中函数和内储程序的名单□
+<HR>
+<PRE>
+bash$ psql mydb
+psql=> \?
+psql=> \dS
+psql=> \d pg_proc
+psql=> select proname, prosrc from pg_proc order by proname;
+psql=> \df
+</PRE>
+<HR>
+<H2><A NAME="ss7.11">7.11 PostgreSQL 文件</A>
+</H2>
+
+<P>有关其他问题，请参阅 PostgreSQL 的说明书，它们的资料十分全面。PostgreSQL
+文件已在套件中。请阅读‘User's Guide’、‘Programmer's
+Guide’、‘Administrator's Guide’和其他说明书。
+<HR>
+<A HREF="PostgreSQL-HOWTO-8.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="PostgreSQL-HOWTO-6.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="PostgreSQL-HOWTO.html#toc7"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

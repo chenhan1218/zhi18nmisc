@@ -1,0 +1,343 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Antares-RAID-sparcLinux-HOWTO: Linux Configuration</TITLE>
+ <LINK HREF="Antares-RAID-sparcLinux-HOWTO-9.html" REL=next>
+ <LINK HREF="Antares-RAID-sparcLinux-HOWTO-7.html" REL=previous>
+ <LINK HREF="Antares-RAID-sparcLinux-HOWTO.html#toc8" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Antares-RAID-sparcLinux-HOWTO-9.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Antares-RAID-sparcLinux-HOWTO-7.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Antares-RAID-sparcLinux-HOWTO.html#toc8"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s8">8. Linux Configuration</A></H2>
+
+<P>
+<P>These instructions cover setting up the virtual RAID drives on RedHat Linux
+6.1. Setting it up under other Linux distributions should not be a problem.
+The same general instructions apply. 
+<P>If you are new to Linux you may want to consider installing Linux from
+scratch since the RedHat installer will do most of the configuration work for
+you. If so skip to section titled &quot;New Linux Installation.&quot; Otherwise
+go to the &quot;Existing Linux Installation&quot; section (next).
+<H2><A NAME="ss8.1">8.1 Existing Linux Installation</A>
+</H2>
+
+<P>
+<P>Follow these instructions if you already have Redhat Linux installed on
+your system and you do not want to re-install. If you are installing the RAID
+as part of a new RedHat Linux installation (or are re-installing) skip to the
+&quot;New Linux Installation&quot; section.
+<H3>QLogic SCSI Driver</H3>
+
+<P>
+<P>The driver can either be loaded as a module or compiled into your kernel.
+If you want to boot from the RAID then you may want to use a kernel with compiled
+in QLogic support (see the kernel-HOWTO available from http://www.linuxdoc.org.
+To use the modular driver become the superuser and add the following lines
+to /etc/conf.modules:
+<PRE>
+alias qlogicpti /lib/modules/preferred/scsi/qlogicpti 
+</PRE>
+<P>Change the above path to where ever your SCSI modules live. Then add the
+following line to you /etc/fstab (with the appropriate changes for device and
+mount point, see the fstab man page if you are unsure)
+<PRE>
+/dev/sdc1 /home ext2 defaults 1 2
+</PRE>
+<P>Or, if you prefer to use a SYSV initialization script, create a file called
+"raid" in the /etc/rc.d/init.d directory with the following contents (NOTE:
+while there are a few good reasons to start the RAID using a script, one of
+the aforementioned methods would be preferable):
+<PRE>
+#!/bin/bash
+</PRE>
+
+<PRE>
+case &quot;$1&quot; in
+</PRE>
+
+<BLOCKQUOTE>
+<BLOCKQUOTE><CODE>
+<PRE>
+start)
+</PRE>
+</CODE></BLOCKQUOTE>
+<BLOCKQUOTE><CODE>
+<PRE>
+echo &quot;Loading raid module&quot;
+</PRE>
+</CODE></BLOCKQUOTE>
+
+<PRE>
+/sbin/modprobe qlogicpti
+</PRE>
+
+<PRE>
+echo
+</PRE>
+
+<PRE>
+echo &quot;Checking and Mounting raid volumes...&quot;
+</PRE>
+
+<PRE>
+mount -t ext2 -o check /dev/sdc1 /home
+</PRE>
+
+<PRE>
+touch /var/lock/subsys/raid
+</PRE>
+
+
+
+<PRE>
+;;
+</PRE>
+
+<PRE>
+stop)
+</PRE>
+<BLOCKQUOTE><CODE>
+<PRE>
+echo &quot;Unmounting raid volumes&quot;
+</PRE>
+</CODE></BLOCKQUOTE>
+
+<PRE>
+umount /home
+</PRE>
+
+<PRE>
+echo &quot;Removing raid module(s)&quot;
+</PRE>
+
+<PRE>
+/sbin/rmmod qlogicpti
+</PRE>
+
+<PRE>
+rm -f /var/lock/subsys/raid
+</PRE>
+
+<PRE>
+echo
+</PRE>
+
+
+
+<PRE>
+;;
+</PRE>
+
+<PRE>
+restart)
+</PRE>
+<BLOCKQUOTE><CODE>
+<PRE>
+$0 stop 
+</PRE>
+</CODE></BLOCKQUOTE>
+
+<PRE>
+$0 start 
+</PRE>
+
+
+
+<PRE>
+;; 
+</PRE>
+
+<PRE>
+*)
+</PRE>
+<BLOCKQUOTE><CODE>
+<PRE>
+echo &quot;Usage: raid {start|stop|restart}&quot;
+</PRE>
+</CODE></BLOCKQUOTE>
+
+<PRE>
+exit 1
+</PRE>
+
+
+
+
+<PRE>
+esac
+</PRE>
+
+<PRE>
+exit 0 
+</PRE>
+</BLOCKQUOTE>
+<P>You will need to edit this example and substitute your device name(s) in
+place of /dev/sdc1 and mount point(s) in place of /home. The next step is to
+make the script executable by root by doing: 
+<PRE>
+chmod 0700 /etc/rc.d/init.d/raid
+</PRE>
+<P>Now use your run level editor of choice (tksysv, ksysv, etc.) to add the
+script to the appropriate run level.
+<H3>Device mappings</H3>
+
+<P>
+<P>Linux uses dynamic device mappings you can determine if the drives were
+found by typing:
+<PRE>
+more /proc/scsi/scsi
+</PRE>
+<P>one or more of the entries should look something like this:
+<PRE>
+Host: scsi1 Channel: 00 Id: 00 Lun: 00 
+</PRE>
+
+<PRE>
+Vendor: ANTARES Model: CX106 Rev: 0109
+</PRE>
+
+<PRE>
+Type: Direct-Access ANSI SCSI revision: 02
+</PRE>
+<P>There may also be one which looks like this:
+<PRE>
+Host: scsi1 Channel: 00 Id: 00 Lun: 07
+</PRE>
+
+<PRE>
+Vendor: ANTARES Model: CX106-SMON Rev: 0109
+</PRE>
+
+<PRE>
+Type: Direct-Access ANSI SCSI revision: 02
+</PRE>
+<P>This is the SCSI monitor communications channel which is currently un-used
+under Linux (see SMON in the advanced topics section below). 
+<P>To locate the drives (following reboot) type:
+<PRE>
+dmesg | more
+</PRE>
+<P>Locate the section of the boot messages pertaining to you SCSI devices.
+You should see something like this:
+<PRE>
+qpti0: IRQ 53 SCSI ID 7 (Firmware v1.31.32)(Firmware 1.25 96/10/15) 
+</PRE>
+
+<PRE>
+[Ultra Wide, using single ended interface]
+</PRE>
+
+<PRE>
+QPTI: Total of 1 PTI Qlogic/ISP hosts found, 1 actually in use.
+</PRE>
+
+<PRE>
+scsi1 : PTI Qlogic,ISP SBUS SCSI irq 53 regs at fd018000 PROM node ffd746e0
+ 
+</PRE>
+<P>Which indicates that the SCSI controller was properly recognized, Below
+this look for the disk section:
+<PRE>
+Vendor ANTARES Model: CX106 Rev: 0109
+</PRE>
+
+<PRE>
+Type: Direct-Access ANSI SCSI revision: 02
+</PRE>
+
+<PRE>
+Detected scsi disk sdc at scsi1, channel 0, id 0, lun 0
+</PRE>
+
+<PRE>
+SCSI device sdc: hdwr sector= 512 bytes. Sectors= 20971200 [10239
+ MB] [10.2 GB]
+</PRE>
+<P>Note the line that reads &quot;Detected scsi disk sdc ...&quot; this
+tells you that this virtual disk has been mapped to device /dev/sdc. Following
+partitioning the first partition will be /dev/sdc1, the second will be /dev/sdc2,
+etc. There should be one of the above disk sections for each virtual disk that
+was detected. There may also be an entry like the following:
+<PRE>
+Vendor ANTARES Model: CX106-SMON Rev: 0109
+</PRE>
+
+<PRE>
+Type: Direct-Access ANSI SCSI revision: 02
+</PRE>
+
+<PRE>
+Detected scsi disk sdd at scsi1, channel 0, id 0, lun 7
+</PRE>
+
+<PRE>
+SCSI device sdd: hdwr sector= 512 bytes. Sectors= 20971200 [128 MB]
+ [128.2 MB]
+</PRE>
+<P>BEWARE: this is not a drive DO NOT try to fdisk, mkfs, or mount it!! Doing
+so WILL hang your system.
+<H3>Partitioning</H3>
+
+<P>
+<P>A virtual drive appears to the host operating system as a large but otherwise
+ordinary SCSI drive. Partitioning is performed using fdisk or your favorite
+utility. You will have to give the virtual drive a disk label when fdisk is
+started. Using the choice "Custom with autoprobed defaults" seems to work
+well. See the man page for the given utility for details. 
+<H3>Installing a filesystem </H3>
+
+<P>
+<P>Installing a filesystem is no different from any other SCSI drive:
+<PRE>
+mkfs -t &lt;filesystem_type&gt; /dev/&lt;device&gt;
+</PRE>
+<P>for example:
+<PRE>
+mkfs -t ext2 /dev/sdc1
+</PRE>
+<H3>Mounting</H3>
+
+<P>
+<P>If QLogic SCSI support is compiled into you kernel OR you are loading the
+&quot;qlogicpti&quot; module at boot from /etc/conf.modules then add the
+following line(s) to the /etc/fstab:
+<PRE>
+/dev/&lt;device&gt; &lt;mount point&gt; ext2 defaults 1 1
+</PRE>
+<P>If you are using a SystemV initialization script to load/unload the module
+you must mount/unmount the drives there as well. See the example script above.
+<H2><A NAME="ss8.2">8.2 New Linux Installation</A>
+</H2>
+
+<P>
+<P>This is the easiest way to install the RAID since the RedHat installer
+program will do most of the work for you.
+<OL>
+<LI>Configure the host port, RAID sets, and spares as outlined in &quot;Onboard
+Configuration.&quot; Your computer must be on to perform this step since the
+5070 is powered from the SBUS. It does not matter if the computer has an operating
+system installed at this point all we need is power to the controller card.</LI>
+<LI>Begin the RedHat SparcLinux installation</LI>
+<LI>The installation program will auto detect the 5070 controller and load
+the Qlogic driver</LI>
+<LI>Your virtual RAID drives will appear as ordinary SCSI hard drives to be
+partitioned and formatted during the installation. NOTE: When using the graphical
+partitioning utility during the RedHat installation DO NOT designate any partition
+on the virtual drives as type RAID since they are already hardware managed
+virtual RAID drives. The RAID selection on the partitioning utilities screen
+is for setting up a software RAID.
+IMPORTANT NOTE: you may see a small SCSI
+drive ( usually ~128 MB) on the list of available drives. DO NOT select
+this drive for use. It is the SMON communication channel NOT a drive. If setup
+tries to use it it will hang the installer.</LI>
+<LI>Thats it, the installation program takes care of everything else !!</LI>
+</OL>
+<HR>
+<A HREF="Antares-RAID-sparcLinux-HOWTO-9.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Antares-RAID-sparcLinux-HOWTO-7.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Antares-RAID-sparcLinux-HOWTO.html#toc8"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

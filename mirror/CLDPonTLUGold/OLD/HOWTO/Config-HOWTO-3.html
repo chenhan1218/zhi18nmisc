@@ -1,0 +1,419 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE> Configuration HOWTO: Common Administration Tasks</TITLE>
+ <LINK HREF="Config-HOWTO-4.html" REL=next>
+ <LINK HREF="Config-HOWTO-2.html" REL=previous>
+ <LINK HREF="Config-HOWTO.html#toc3" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Config-HOWTO-4.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Config-HOWTO-2.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Config-HOWTO.html#toc3"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s3">3. Common Administration Tasks</A></H2>
+
+<P>
+<P>Here is where the fun begins. This section is rather network-centric, though
+many other tasks await you.
+<P>Networking is a vast subject which cannot be fully covered here. The
+reference is the NET-3 HOWTO, and most distributions provide documentation
+on setting up network services. Only a few points will be recalled here.
+<P>A quick to-do list for the services you may want to install: cron and timed
+tasks like calendar or reminder, Http, Samba, telnet/ssh access, anonymous
+ftp, POP/IMAP server, NFS...
+<P>
+<P>
+<H2><A NAME="ss3.1">3.1 Network Configuration</A>
+</H2>
+
+<P>
+<P>If your network card wasn't recognised at install time, don't worry: in most
+cases it's either NE2000 or 3c59x compatible. Issue the command 
+<CODE>modprobe ne</CODE> or <CODE>modprobe 3c59x</CODE> and see if the relevant
+module is loaded, then add this line in /etc/conf.modules:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+alias eth0 ne  # or 3c59x
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Now you're ready to use <CODE>netcfg</CODE> or similar tool to set up the
+network configuration. The relevant files
+are /etc/HOSTNAME, etc/hosts, 
+/etc/resolv.conf, /etc/sysconfig/network, and
+/etc/sysconfig/network-scripts/ifcfg-eth0; services should be
+started with scripts in /etc/rc.d/init.d.
+<P>This is a sample etc/hosts:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+127.0.0.1               localhost
+192.168.1.1             paleo.eocene.net        paleo
+192.168.1.2             nautilus.eocene.net     nautilus
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>This is /etc/resolv.conf:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+search df.unibo.it,eocene.net
+nameserver 195.210.91.100
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>This is /etc/sysconfig/network (Red Hat-dependent):
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+NETWORKING=false
+FORWARD_IPV4=true
+HOSTNAME=nautilus.eocene.net
+DOMAINNAME=eocene.net
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>And finally, /etc/sysconfig/network-scripts/ifcfg-eth0. This
+one, too, is Red Hat-dependent; it must be executable.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+DEVICE=eth0
+IPADDR=192.168.1.2
+NETMASK=255.255.255.0
+NETWORK=192.168.1.0
+BROADCAST=192.168.1.255
+ONBOOT=no
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Although the actual method of starting network services of your distribution
+may be much more complex, the following script should be enough to get you
+started:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#!/bin/sh
+
+# net-up.sh: set up network access
+
+DEVICE=eth0
+IPADDR=192.168.1.100
+NETMASK=255.255.255.0
+NETWORK=192.168.1.0
+GATEWAY=192.168.1.1
+
+ifconfig $DEVICE $IPADDR netmask $NETMASK up
+route add -net $NETWORK netmask $NETMASK $DEVICE
+route add default gw $GATEWAY
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>This script is handy for enabling network access when you use a rescue disk.
+Obviously, this lets you only ping, ftp and telnet to the outside; it won't
+start any daemon.
+<P>
+<P>
+<H2><A NAME="ss3.2">3.2 Network for Notebooks</A>
+</H2>
+
+<P>
+<P>When you plug the network PC card in, the script 
+/etc/pcmcia/network will be executed. All it needs is a
+properly set up /etc/sysconfig/network-scripts/ifcfg-eth0.
+<P>Setting up the network can become a bit trickier, though. In fact, you must
+provide the right settings for each network you connect to, as well as
+settings for the notebook when it's not connected.
+<P>I rolled up a rough but functional solution. I use my notebook as a
+stand-alone machine, connecting to the net via PPP; at home, IP address
+192.168.1.2; and at university, IP 137.204.x.y. So, I created a set of
+configuration files for each network; all these are kept in
+/etc/mobnet. A script is then used to select the working
+environment. For instance, this is /etc/mobnet/home.cfg:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# /etc/mobnet/home.conf
+
+HOSTNAME=nautilus.eocene.net    # complete hostname
+DOMAINNAME=eocene.net           # your domain
+IPADDR=192.168.1.2
+NETMASK=255.255.255.0
+NETWORK=192.168.1.0
+BROADCAST=192.168.1.255
+GATEWAY=192.168.1.1
+FORWARD_IPV4=true
+NAMESERVER=195.210.91.100       # required
+SEARCH=df.unibo.it,eocene.net   # optional
+SERVICES="inet httpd smb sshd"
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>This is <CODE>mnet</CODE>, the script I use to choose the network profile:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#!/bin/sh
+# mnet: script to set up the "mobile network" configuration.
+# Last modified: 15 July 2000
+
+# start or stop services
+activate_services()
+{
+  for service in $(echo $SERVICES) ; do
+    [ -x /etc/rc.d/init.d/$service ] &amp;&amp; /etc/rc.d/init.d/$service $1
+  done
+}
+
+# usage
+if [ $# = 0 ] ; then
+  echo "Usage: mnet &lt;config name>"
+  echo "Example: mnet office"
+  exit 1
+fi
+
+# check if the configuration exists
+if [ ! -e /etc/mobnet/$1.conf ]; then
+  echo "This configuration doesn't exist."
+  exit 1
+fi
+
+# read the configuration
+. /etc/mobnet/$1.conf
+
+# set up the host name
+echo $HOSTNAME > /etc/HOSTNAME
+/bin/hostname $HOSTNAME
+
+# set up the name server(s)
+cat &lt;&lt;EOF > /etc/resolv.conf
+# /etc/resolv.conf
+search $SEARCH
+nameserver $NAMESERVER
+EOF
+
+# stop previous services, if any
+if [ -f /etc/mobnet/services.prev ]; then
+  NEWSERVICES=$SERVICES
+  . /etc/mobnet/services.prev
+  activate_services stop
+  SERVICES=$NEWSERVICES
+fi
+
+if [ $1 != "none" ]; then
+# set up the network parameters
+  cat &lt;&lt;EOF > /etc/sysconfig/network
+  NETWORKING=yes
+  FORWARD_IPV4=true
+  HOSTNAME=$HOSTNAME
+  DOMAINNAME=$DOMAINNAME
+  GATEWAY=$GATEWAY
+  GATEWAYDEV=eth0
+EOF
+
+  cat &lt;&lt;EOF > /etc/sysconfig/network-scripts/ifcfg-eth0
+  DEVICE=eth0
+  IPADDR=$IPADDR
+  NETMASK=$NETMASK
+  NETWORK=$NETWORK
+  BROADCAST=$BROADCAST
+  ONBOOT=no
+EOF
+  /bin/chmod +x /etc/sysconfig/network-scripts/ifcfg-eth0
+  
+  # copy the other config files
+  /bin/cp -f /etc/mobnet/hosts.$1       /etc/hosts
+  /bin/cp -f /etc/mobnet/smb.conf.$1    /etc/smb.conf
+  
+  echo -n "Insert the network PC card and press &lt;enter> when done: "
+  read
+    
+  # OK, now start services
+  activate_services start
+  echo "SERVICES=\"$SERVICES\"" > /etc/mobnet/services.prev
+
+else # it's not "none"
+
+  cat &lt;&lt;EOF > /etc/sysconfig/network
+  NETWORKING=false
+  FORWARD_IPV4=false
+  HOSTNAME=$HOSTNAME
+  DOMAINNAME=$DOMAINNAME
+EOF
+  /bin/rm -f /etc/sysconfig/network-scripts/ifcfg-eth0*
+  /sbin/ifconfig eth0 down
+  echo "SERVICES=$SERVICES" > /etc/mobnet/services.prev
+  echo "Now you may remove the PC card."
+  exit 0
+
+fi
+
+# end of mnet.
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>As I said, it is rough and even not complete: other files may depend
+on the network, like /etc/fstab, /etc/exports, and
+/etc/printcap. Think about network printers and NFS shares.
+Feel free to adapt this bare-bone solution to your needs.
+<P>
+<P>
+<H2><A NAME="ss3.3">3.3 Sharing the Internet</A>
+</H2>
+
+<P>
+<P>One of the most useful tasks for a Linux server. Currently, most stock
+kernels come with IP firewalling, masquerading and forwarding enabled by
+default; if in doubt, consult the IP-Masquerade mini-HOWTO to learn how to
+enable them. Then install ipfwadm (kernels 2.0.x;
+<A HREF="http://www.xos.nl/linux/ipfwadm/">http://www.xos.nl/linux/ipfwadm/</A>) or ipchains (kernels 2.2.x;
+<A HREF="http://www.adelaide.net.au/~rustcorp/ipfwchains/ipfwchains.html">http://www.adelaide.net.au/~rustcorp/ipfwchains/ipfwchains.html</A>).
+Remember to enable kernel modules for the services you need, e.g. for ftp
+you'll add this line to /etc/rc.d/rc.sysconfig:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+/sbin/modprobe ip_masq_ftp
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Other modules are usually found in 
+/lib/modules/KERNEL-VERSION/ipv4.
+<P>Enabling IP masquerading for other machines in your local network is
+very simple. First, check the network initialisation scripts
+(/etc/sysconfig/network should be the right place) to see if
+they contain a line that reads <CODE>FORWARD_IPV4=true</CODE>. It's used to set
+/proc/sys/net/ipv4/ip_forward to 1 when the network subsystem
+comes up.
+<P>Add these lines to /etc/rc.d/rc.sysinit:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# default: packets cannot reach the outside
+/sbin/ipfwadm -F -p deny
+# allow all machines on the local network to reach the Internet
+/sbin/ipfwadm -F -a m -S 192.168.1.0/24 -D 0.0.0.0/0
+# alternatively, allow only these two machines
+# /sbin/ipfwadm -F -a m -S 192.168.1.100/24 -D 0.0.0.0/0
+# /sbin/ipfwadm -F -a m -S 192.168.1.101/24 -D 0.0.0.0/0
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>If you use a kernel of the 2.2.x series, use <CODE>ipfwadm-wrapper</CODE>
+instead of <CODE>ipfwadm</CODE> to get started quickly.
+More information at 
+<A HREF="http://ipmasq.cjb.net">http://ipmasq.cjb.net</A>.
+<P>Now you'll want something to let client machines dial the ISP; I use Mserver
+(
+<A HREF="http://cpwright.villagenet.com/mserver/">http://cpwright.villagenet.com/mserver/</A>). Edit
+etc/mserver.conf; the only entries that you should modify are
+``checkhost'', ``shadow'', and ``cname''. Then define your connection(s).
+Obviously, install a suitable client on the client machines.
+<P>
+<P>
+<H2><A NAME="Restricting"></A> <A NAME="ss3.4">3.4 Restricting Network Access </A>
+</H2>
+
+<P>
+<P>Let's suppose you connect to the Internet via PPP. Once you're connected,
+your machine may become vulnerable to attacks. Insert this in
+/etc/hosts.allow:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# only allow access to localhost
+ALL: 127.
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>and this in /etc/hosts.deny:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# deny access to everyone
+ALL: ALL
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>If you belong to a network with direct Internet access, you had better
+disable finger, telnet, and possibly other services for security reasons;
+use <CODE>ssh</CODE> instead of telnet. The file to edit is
+/etc/inet.conf. Alternatively, you can restrict network access
+putting this in /etc/hosts.allow:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+in.telnetd: 192.168.1., .another.trusted.network
+in.ftpd: 192.168.1., .another.trusted.network
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>and this in /etc/hosts.deny:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+in.telnetd: ALL
+in.ftpd: ALL
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>
+<H2><A NAME="ss3.5">3.5 NFS Exports</A>
+</H2>
+
+<P>
+<P> 
+<P>It is common to export home directories on the server; a problem arises
+if a user's UID and GID are not consistent across different machines.
+If user `guido' has UID/GID = 500 on <CODE>server</CODE> and UID/GID = 512 on
+<CODE>client</CODE>, a convenient configuration is this:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# /etc/exports
+/tmp            my.client.machine(rw)
+/home/guido     my.client.machine(rw,all_squash,anonuid=512,anongid=512)
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>
+<P>
+<H2><A NAME="ss3.6">3.6 Samba</A>
+</H2>
+
+<P>
+<P>Almost trivial, but there's always a little bit to do. If you want to
+connect Windows 98/NT clients, did you remember to read the docs and, in
+case, enable clear text passwords? The distribution includes .reg files for
+Win9x/NT/2000; if your clients can't connect to the Linux server, load them
+on every client.
+<P>Samba comes with a fairly complete sample /etc/smb.conf, but
+strangely it lacks a section showing how to (un)mount removable media. The
+clauses <CODE>preexec</CODE> and <CODE>postexec</CODE> do the trick:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+[cdrom]
+  comment = CD-ROM
+  path = /mnt/cdrom
+  public = yes
+  read only = yes
+; you might need to use "root preexec/postexec"
+  preexec = mount /mnt/cdrom
+  postexec = umount /mnt/cdrom
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Also: you know what Swat is, don't you? Enable it adding this line in your
+/etc/inetd.conf:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+swat      stream  tcp     nowait.400      root /usr/sbin/swat swat
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>and this in <CODE>/etc/services</CODE>:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+swat            901/tcp
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Restart <CODE>inetd</CODE> with SIGHUP, and point your browser to
+<CODE>http://localhost:901</CODE>.
+<P>
+<P>
+<HR>
+<A HREF="Config-HOWTO-4.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Config-HOWTO-2.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Config-HOWTO.html#toc3"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

@@ -1,0 +1,93 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Oracle Database HOWTO: 疑难排解</TITLE>
+ <LINK HREF="Oracle-HOWTO-9.html" REL=next>
+ <LINK HREF="Oracle-HOWTO-7.html" REL=previous>
+ <LINK HREF="Oracle-HOWTO.html#toc8" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Oracle-HOWTO-9.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Oracle-HOWTO-7.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Oracle-HOWTO.html#toc8"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s8">8. 疑难排解</A></H2>
+
+<P>这里有一些关疑难排解的提示。
+<H2><A NAME="ss8.1">8.1 我不能在 Oracle 7.2.x 中建立资料库。</A>
+</H2>
+
+<P>Oracle 7.2.x 产品错误地假设你想设定平行伺服器 (parallel server)。内置的 <CODE>init.ora</CODE> 档中有以下一句∶
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# define parallel server (multi-instance) parameters
+ifile = ora_system:initps.ora
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+
+要解决这问题只需把它变为注解∶
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# define parallel server (multi-instance) parameters
+#ifile = ora_system:initps.ora
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+<H2><A NAME="ss8.2">8.2 7.3.4.x 的 <CODE>svrmgrl</CODE> 产生 segmentation fault。</A>
+</H2>
+
+<P>有不少人报告过这问题给我。Gerald Weber <CODE>gerald_weber@master.co.at</CODE> 解决了它∶ 
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+Hi Paul,
+
+首先非常感谢你的帮助，不过，你所想到的问题全都和我所遇到的无关。
+问题出在於 iBCS 模拟器。
+似乎 Oracle 执行了一个目前版本的 iBCS 并不支援的系统设定呼叫 (sysconf-calls)。
+请看以下的 trace∶
+
+&lt;7>[22]615 sysconf(34)
+&lt;7>iBCS2 unsupported sysconf call 34
+&lt;7>[22]615 sysconf error return linux=-22 -> ibcs=22 &lt;Invalid argument>
+&lt;7>[24]615 sysconf(34)
+&lt;7>iBCS2 unsupported sysconf call 34
+&lt;7>[24]615 sysconf error return linux=-22 -> ibcs=22 &lt;Invalid argument>
+
+解决方法∶修正 iBCS 源程式码。使用以下的修正档∶
+
+
+--- sysconf.c   Sun Apr 19 19:19:15 1998
++++ sysconf.c.ori       Sun Apr 19 19:28:45 1998
+@@ -60,7 +60,6 @@
+ #define _SC_JOB_CONTROL        5
+ #define _SC_SAVED_IDS  6
+ #define _SC_VERSION    7
+-#define _SC_HACK_FOR_ORACLE 34
+
+ #define _SC_PAGESIZE   11
+
+@@ -97,11 +96,6 @@
+                case _SC_SAVED_IDS: {
+                        return (1);
+                }
+-
+-               case _SC_HACK_FOR_ORACLE: {
+-                 return (1);
+-               }
+-
+
+                case _SC_PAGESIZE: {
+                  return PAGE_SIZE;
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+<HR>
+<A HREF="Oracle-HOWTO-9.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Oracle-HOWTO-7.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Oracle-HOWTO.html#toc8"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

@@ -1,0 +1,126 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux From Scratch: Preparing the new system</TITLE>
+ <LINK HREF="Linux-From-Scratch-HOWTO-5.html" REL=next>
+ <LINK HREF="Linux-From-Scratch-HOWTO-3.html" REL=previous>
+ <LINK HREF="Linux-From-Scratch-HOWTO.html#toc4" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Linux-From-Scratch-HOWTO-5.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Linux-From-Scratch-HOWTO-3.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Linux-From-Scratch-HOWTO.html#toc4"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s4">4. Preparing the new system</A> </H2>
+
+<H2><A NAME="ss4.1">4.1 How we are going to do things</A>
+ </H2>
+
+<P>We are going to build the LFS system using an already installed Linux distribution
+such as Debian, SuSe, Slackware, Mandrake, RedHat, etc. You don't need to have
+any kind of bootdisk. We will use an existing Linux system as the base (since
+we need a compiler, linker, text editor and other tools).
+<P>If you don't have Linux installed yet, you won't be able to put this document
+to use right away. I suggest you first install a Linux distribution. It really
+doesn't matter which one you install. It also doesn't need to be the latest
+version, though it shouldn't be a too old one. If it is about a year old or
+newer it'll do just fine. You will safe yourself a lot of trouble if your normal
+system uses glibc-2.0 or newer. Libc5 can cause some problems and is not supported
+in this document as I don't have access to such a machine anymore.
+<H2><A NAME="ss4.2">4.2 Creating a new partition</A>
+ </H2>
+
+<P>Before we can build our new Linux system, we need to have an empty Linux
+partition on which we can build our new system. I recommend a partition size
+of at least 5 00 MB. You can get away with around 250MB for a bare system with
+no extra whistles and bells (such as software for emailing, networking, Internet,
+X Window System and such). If you already have a Linux Native partition available,
+you can skip this subsection.
+<P>Start the <CODE>fdisk</CODE> program (or some other fdisk program if you prefer) with
+the appropriate hard disk as the option (like /dev/hda if you want to create
+a new partition on the primary master IDE disk). Create a Linux Native partition,
+write the partition table and exit the fdisk program. If you get the message
+that you need to reboot your system to ensure that that partition table is
+updated, then please reboot your system now before continuing. Remember what
+your new partition's designation is. It could be something like hda5 (as it
+is in my case). This newly created partition will be referred to as the <EM>LFS
+partition</EM> in this document.
+<H2><A NAME="ss4.3">4.3 Creating an ext2 file system on the new partition</A>
+ </H2>
+
+<P>Once the partition is created, we have to create a new ext2 file system
+on that partition. To create a new ext2 file system we use the <CODE>mke2fs</CODE> command.
+Enter the new partition as the only option and the file system will be created.
+If your partition was hda5, you would run the command as <CODE>mke2fs /dev/hda5</CODE>
+<H2><A NAME="ss4.4">4.4 Mounting the new partition</A>
+ </H2>
+
+<P>Once we have created the ext2 file system, it is ready for use. All we
+have to do to be able to access it (as in reading from and writing date to
+it) is mounting it. If you mount it under /mnt/hda5, you can access this partition
+by going to the /mnt/hda5 directory and then do whatever you need to do. This
+document will assume that you have mounted the partition on a subdirectory
+under /mnt. It doesn't matter which subdirectory you choose (or you can use
+just the /mnt directory as the mounting point), but a good practice is to create
+a directory with the same name as the partition's designation. In my case the
+LFS partition is called hda5 and therefore I mount it on /mnt/hda5
+<P>
+<UL>
+<LI>Create the /mnt directory if it doesn't exist yet</LI>
+<LI>Create the /mnt/xxx directory where xxx is to be replaced by your LFS partition's
+designation.</LI>
+<LI>Mount the LFS partition by running: mount /dev/xxx /mnt/xxx and replace
+xxx by your LFS partition's designation.</LI>
+</UL>
+<P>This directory (/mnt/xxx) is the $LFS you have read about earlier.
+So if you read somewhere to "cp inittab $LFS/etc" you actually will type
+"cp inittab /mnt/xxx/etc" where xxx is replaced by your partition's designation.
+<H2><A NAME="ss4.5">4.5 Creating directories</A>
+ </H2>
+
+<P>Let's create the directory tree on the LFS partition according to the FHS
+standard which can be found at 
+<A HREF="http://www.pathname.com/fhs/">http://www.pathname.com/fhs/</A>. Issuing the following commands will create
+the necessary directories.
+<P>
+<PRE>
+cd $LFS
+mkdir bin boot dev etc home lib mnt proc root sbin tmp usr var
+cd $LFS/usr
+mkdir bin include lib sbin share src
+ln -s share/man man
+ln -s share/doc doc
+ln -s . local
+ln -s ../etc etc
+ln -s ../var var
+cd $LFS/usr/share
+mkdir dict doc info locale man nls misc terminfo zoneinfo
+cd $LFS/usr/share/man
+mkdir man1 man2 man3 man4 man5 man6 man7 man8
+cd $LFS/var
+mkdir lock log run spool tmp
+ 
+</PRE>
+<P>Now that the directories are created, copy the source files you have downloaded
+in chapter 3 to some subdirectory under $LFS/usr/src (you will need
+to create this subdirectory yourself).
+<H2><A NAME="ss4.6">4.6 Copying the /dev directory</A>
+ </H2>
+
+<P>We can create every single file that we need to be in the $LFS/dev
+directory using the mknod command, but that just takes up a lot of time. I
+choose to just simply copy the current /dev directory to the $LFS partition.
+Use this command to copy the entire directory while preserving original rights,
+symlinks and ownerships:
+<P>
+<PRE>
+cp -av /dev $LFS
+chown root.root $LFS/dev/*
+ 
+</PRE>
+<HR>
+<A HREF="Linux-From-Scratch-HOWTO-5.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Linux-From-Scratch-HOWTO-3.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Linux-From-Scratch-HOWTO.html#toc4"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

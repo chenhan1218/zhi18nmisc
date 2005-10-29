@@ -1,0 +1,94 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>The Linux Printing HOWTO 中文版: Ghostscript.</TITLE>
+ <LINK HREF="Printing-HOWTO-11.html" REL=next>
+ <LINK HREF="Printing-HOWTO-9.html" REL=previous>
+ <LINK HREF="Printing-HOWTO.html#toc10" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Printing-HOWTO-11.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Printing-HOWTO-9.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Printing-HOWTO.html#toc10"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s10">10. Ghostscript.</A></H2>
+
+<P>
+<A HREF="http://www.cs.wisc.edu/~ghost/">Ghostscript</A> 
+是個對 Linux 列印有著極大意義的程式. 大部份在 Unix 下列印的程式都會產生 
+PostScript, 而印表機的 PostScript 處理能力通常是價值 100 美元的選購配備.
+但是 ghostscript 卻是免費的, 而且它能將 PostScript 轉成你的印表機所用的語言.
+當它和你的 <CODE>lpd</CODE> input filter 結合之後, 你就有了一部虛擬的 PostScript 
+印表機, 而且能夠大幅簡化你的生活.
+<P>Ghostscript 有兩個版本. 商業版稱為 Aladdin Ghostscript, 個人可以自由使用, 
+但是不能隨著商業用的 Linux 發行版本散佈. Aladdin Ghostscript 通常比免費的 
+ghostscript 領先一年左右; 舉例來說, 它支援許多免費版尚未支援的彩色噴墨機.
+<P>免費版的 ghostscript 為 GNU Ghostscript, 其實就是較舊版的 Aladdin Ghostscript.
+(Aladdin 的這種安排值得我們讚賞; 應該有更多無法完全以 GPL
+來散佈原始碼的軟體廠商以這種方式支持自由軟體 (free software).
+<P>無論你用 <CODE>
+<A HREF="http://www.picante.com/~gtaylor/pht/man/gs.1.html">gs</A></CODE> 做什麼, 
+記得不要讓它能夠存取檔案 (用 <CODE>-dSAFER</CODE> 選項). PostScript 
+是個具有完整功能的語言, 而一個惡意的 PostScript 程式可以讓你吃足苦頭.
+<P>再談到 PDF, Adobe 的 Portable Document Format 實際上就是把 PostScript 
+更組織化, 加上一些擴充功能, 經過壓縮的檔案格式. Ghostscript 可以像處理 
+PostScript 般地處理 PDF. 所以你可能是你週遭第一個擁有具有處理 PDF 
+能力的印表機的人.
+<H2><A NAME="ss10.1">10.1 啟動 ghostscript</A>
+</H2>
+
+<P>典型的作法是在你的 magic filter(假如你的廠商沒有提供一個適合你用的,
+我建議 apsfilter) 中使用 ghostscript, 但是如果為了除錯, 
+直接執行通常會比較方便些.
+<P><CODE>gs -help</CODE> 會簡短地列出有用的選項以及所提供的驅動程式.
+(注意這兒所列出的僅是編譯進去的驅動程式, 而並非所有的驅動程式).
+<P>你可以用下面的方式執行 gs 來測試:
+<CODE>gs <EM>options</EM> -q -dSAFER -sOutputFile=/dev/lp1 test.ps</CODE>.
+<P>
+<H2><A NAME="ss10.2">10.2 調整 ghostscript 的輸出結果</A>
+</H2>
+
+<P>假如 gs 的輸出不能讓人滿意, 還有一些辦法.(事實上, 你可以做任何事, 
+因為你可以取得原始碼).
+<P>
+<H3>輸出的位置及大小</H3>
+
+<P>位置, 大小, 還有影像在頁面上的視覺比例是由 ghostscript 
+中的印表機驅動程式所控制的. 如果你發現列印出來太短, 太長或是大了兩倍,
+你可能會想要看一下驅動程式的原始模組並且調整任何所能想到的參數.
+不幸的是每一個驅動程式都有不同的方式, 所以我也無法告訴你如何調整,
+還好大部份的驅動程式都有還算清楚的註解.
+<P>
+<H3>Gamma, dotsizes, 等等</H3>
+
+<P>大部份的非雷射印表機因為列印的點比較大, 故會導致印出來的圖案太黑.
+假使你遇到這個問題, 你應該使用自己的轉換函數. 只要在 ghostscript 
+的 lib-dir 下建立如下的檔案, 並在呼叫 gs 
+的時候將這個檔名加在要列印的檔案之前就可以了.
+你可能會需要調整一下實際的值才能適合你的印表機. 較小的值會導致較亮的列印效果. 
+特別是當你的印表機使用 Floyd-Steinberg 演算法來混色 ( rasterize color )
+可能是比較好的選擇.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+---8&lt;---- gamma.ps ----8&lt;---
+%!
+%transfer functions for cyan magenta yellow black
+{0.3 exp} {0.3 exp} {0.3 exp} {0.3 exp} setcolortransfer
+---8&lt;------------------8&lt;---
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>你也可以調整這些值來補救印表機顏色上的問題. 假如你要這麼做, 建議你可以用 
+ghostscript 內附的 colorcir.ps ( 在 examples/ 目錄下 ) 做為測試頁.
+<P>
+<P>很多較新型的彩色噴墨印表機的驅動程式具備命令列選項,
+或是有不同的 upp 驅動程式檔來實做 gamma 及其它改變以讓印表機適應不同類型的紙張.
+在你用 Postscript 來修正問題之前, 應該先從這方面著手.
+<P>
+<HR>
+<A HREF="Printing-HOWTO-11.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Printing-HOWTO-9.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Printing-HOWTO.html#toc10"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

@@ -1,0 +1,226 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Bash Prompt HOWTO: Prompt Code Snippets</TITLE>
+ <LINK HREF="Bash-Prompt-HOWTO-12.html" REL=next>
+ <LINK HREF="Bash-Prompt-HOWTO-10.html" REL=previous>
+ <LINK HREF="Bash-Prompt-HOWTO.html#toc11" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Bash-Prompt-HOWTO-12.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Bash-Prompt-HOWTO-10.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Bash-Prompt-HOWTO.html#toc11"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s11">11. Prompt Code Snippets</A></H2>
+
+<P>This section shows how to put various pieces of information into the Bash
+prompt.  There are an infinite number of things that could be put in your
+prompt.  Feel free to send me examples, I will try to include what I think
+will be most widely used.  If you have an alternate way to retrieve a piece
+of information here, and feel your method is more efficient, please contact
+me.  It's easy to write bad code, I do it often, but it's great to write
+elegant code, and a pleasure to read it.  I manage it every once in a
+while, and would love to have more of it to put in here.
+<P>
+<P>To incorporate shell code in prompts, it has to be escaped.  Usually, this
+will mean putting it inside <CODE>\$(&lt;command&gt;)</CODE> so that the output
+of <CODE>command</CODE> is substituted each time the prompt is generated.
+<P>
+<H2><A NAME="ss11.1">11.1 Built-in Escape Sequences</A>
+</H2>
+
+<P>See 
+<A HREF="Bash-Prompt-HOWTO-2.html#bpescapes">Bash Prompt Escape Sequences</A> for a complete
+list of built-in escape sequences.  This list is taken directly from the
+Bash man page, so you can also look there.
+<P>
+<H2><A NAME="ss11.2">11.2 Date and Time</A>
+</H2>
+
+<P>If you don't like the built-ins for date and time, extracting the same
+information from the <CODE>date</CODE> command is relatively easy.  Examples
+already seen in this HOWTO include <CODE>date +%H%M</CODE>, which will put
+in the hour in 24 hour format, and the minute.  <CODE>date "+%A, %d %B
+%Y"</CODE> will give something like "Sunday, 06 June 1999".  For a full list
+of the interpreted sequences, type <CODE>date --help</CODE> or <CODE>man
+date</CODE>.
+<P>
+<H2><A NAME="ss11.3">11.3 Counting Files in the Current Directory</A>
+</H2>
+
+<P>To determine how many files there are in the current directory, put in
+<CODE>ls -l | wc -l</CODE>.  This uses <CODE>wc</CODE> wordcount to do a count of
+the number of lines (-l) in the output of <CODE>ls -l</CODE>.  It doesn't count
+dotfiles.  If you want to count only files and NOT include symbolic links
+(just an example of what else you could do), you could use <CODE>ls -l | grep
+-v ^l | wc -l</CODE>.  Here, <CODE>grep</CODE> checks for any line beginning with
+"l" (indicating a link), and discards that line (-v).
+<P>
+<H2><A NAME="ss11.4">11.4 Total Bytes in the Current Directory</A>
+</H2>
+
+<P>If you want to know how much space the contents of the current directory
+take up, you can use something like the following:
+<P>
+<HR>
+<PRE>
+# The sed command replaces all the spaces with only one space.
+# cut -d" " -f5 : -d determines a delimiter, which means that (in 
+# this case) a space begins a new column.
+# -f says to take out a certain column, in this case the fifth one
+
+let TotalBytes=0
+
+for Bytes in $(ls -l | grep "^-" | sed -e "s/ \+/ /g" | cut -d" " -f5)
+do
+   let TotalBytes=$TotalBytes+$Bytes
+done
+
+# The if...fi's give a more specific output in byte, kilobyte, megabyte, 
+# and gigabyte
+
+if [ $TotalBytes -lt 1024 ]; then
+   TotalSize=$(echo -e "scale=3 \n$TotalBytes \nquit" | bc)
+else if [ $TotalBytes -lt 1048576 ]; then
+   TotalSize=$(echo -e "scale=3 \n$TotalBytes/1024 \nquit" | bc)
+else if [ $TotalBytes -lt 1073741824 ]; then
+   TotalSize=$(echo -e "scale=3 \n$TotalBytes/1048576 \nquit" | bc)
+else
+   TotalSize=$(echo -e "scale=3 \n$TotalBytes/1073741824 \nquit" | bc)
+fi
+fi
+fi
+</PRE>
+<HR>
+<P>Code courtesy of Sam Schmit (id@pt.lu) and his uncle Jean-Paul, who ironed
+out a fairly major bug in my original code, and just generally cleaned it
+up.
+<P>
+<H2><A NAME="ss11.5">11.5 Checking the Current TTY</A>
+</H2>
+
+<P>The <CODE>tty</CODE> command returns the filename of the terminal connected to
+standard input.  This comes in two formats on the Linux systems I have
+used, either "/dev/tty4" or "/dev/pts/2".  I have taken to using a more
+general solution to this: <CODE>tty | sed -e "s:/dev/::"</CODE>, which removes
+the leading "/dev/".  Older systems
+(in my experience, RedHat through 5.2) returned only filenames in the
+"/dev/tty4" format, so I used <CODE>tty | sed -e "s/.*tty\(.*\)/\1/"</CODE>.
+<P>
+<P>An alternative method: <CODE>ps aux | grep $$ | awk '{ print $7 }'</CODE>.
+<P>
+<H2><A NAME="ss11.6">11.6 Suspended Job Count</A>
+</H2>
+
+<P>To find out how many suspended jobs you have, use <CODE>jobs | wc -l | awk
+'{print $1}'</CODE>.  <CODE>awk</CODE> is used to trim the output, which would
+otherwise include blank spaces that waste space in a prompt.  If you start
+netscape from an xterm, this will also be counted.  If you want to avoid
+that, and only count stopped jobs, use <CODE>jobs -s</CODE> instead.  Type
+<CODE>help jobs</CODE> for more info on jobs.  <CODE>jobs</CODE> will always return
+nothing to a pipe in version 2.02 of Bash: this problem is not present in
+any other version.
+<P>
+<H2><A NAME="ss11.7">11.7 Uptime and Load</A>
+</H2>
+
+<P>Current load is taken from the <CODE>uptime</CODE> command.  What I use at the
+moment is <CODE>uptime | sed -e "s/.*load average: \(.*\...\), .*\...,
+.*\.../\1/" -e "s/ //g"</CODE> which is clunky in the extreme, but works.
+Replacements welcome.  <CODE>uptime</CODE> can also be used in a very similar
+manner to find out how long the machine has been up (obviously) or how many
+users are logged in, and the data could be massaged with <CODE>sed</CODE> to
+look the way you want it to.
+<P>
+<H2><A NAME="ss11.8">11.8 Number of Processes</A>
+</H2>
+
+<P><CODE>ps ax | wc -l | tr -d " "</CODE> <EM>OR</EM> <CODE>ps ax | wc -l | awk
+'{print $1}'</CODE> <EM>OR</EM> <CODE>ps ax | wc -l | sed -e "s: ::g"</CODE>.  In
+each case, <CODE>tr</CODE> or <CODE>awk</CODE> or <CODE>sed</CODE> is used to remove
+the undesirable whitespace.
+<P>
+<H2><A NAME="ss11.9">11.9 Controlling the Width of $PWD</A>
+</H2>
+
+<P>Unix allows long file names, which can lead to the value of $PWD being very
+long.  Some people (notably the default RedHat prompt) choose to use the
+basename of the current working directory (ie. "giles" if
+$PWD="/home/giles").  I like more info than that, but it's often desirable
+to limit the length of the directory name, and it makes the most sense to
+truncate on the left.
+<P>
+<HR>
+<PRE>
+#   How many characters of the $PWD should be kept
+local pwd_length=30
+if [ $(echo -n $PWD | wc -c | tr -d " ") -gt $pwd_length ]
+then
+   newPWD="...$(echo -n $PWD | sed -e "s/.*\(.\{$pwd_length\}\)/\1/")"
+else
+   newPWD="$(echo -n $PWD)"
+fi
+</PRE>
+<HR>
+<P>
+<P>The above code can be executed as part of PROMPT_COMMAND, and the
+environment variable generated (<EM>newPWD</EM>) can then be included in
+the prompt.
+<P>
+<H2><A NAME="ss11.10">11.10 Laptop Power</A>
+</H2>
+
+<P>Again, this isn't elegant, but it works (most of the time).  If you have a
+laptop with APM installed, try <CODE>power=$(apm | sed -e "s/.*:
+\([1-9][0-9]*\)%/\1/" | tr -d " ")</CODE> executed from PROMPT_COMMAND to
+create an environment variable you can add to your prompt.  This will
+indicate percentage power remaining.
+<P>
+<H2><A NAME="ss11.11">11.11 Having the Prompt Ignored on Cut and Paste</A>
+</H2>
+
+<P>
+<P>This one is weird but cool.  Rory Toma (rory@corp.webtv.net) wrote to
+suggest a prompt like this: <CODE>: rory@demon ;</CODE> .  How is this useful?
+Well, if you type a command after the prompt (odd idea, that), you can
+triple click on that line (in Linux, anyway) to highlight the whole line,
+then paste that line in front of another prompt, and the stuff between the
+":" and the "&quot;" is ignored, like so:
+<P>
+<HR>
+<PRE>
+: rory@demon ; uptime
+  5:15pm  up 6 days, 23:04,  2 users,  load average: 0.00, 0.00, 0.00
+: rory@demon ; : rory@demon ; uptime
+  5:15pm  up 6 days, 23:04,  2 users,  load average: 0.00, 0.00, 0.00
+</PRE>
+<HR>
+<P>The prompt is a no-op, and if your PS2 is set to a space, multiple lines
+can be cut and pasted as well.
+<P>
+<H2><A NAME="title-icon-bar"></A> <A NAME="ss11.12">11.12 Setting the Window Title and Icon Title Separately</A>
+</H2>
+
+<P>A suggestion from Charles Lepple (clepple@negativezero.org) on setting the
+window title of the Xterm and the title of the corresponding icon
+separately (first check out the earlier section 
+<A HREF="Bash-Prompt-HOWTO-5.html#xterm-title-bar">Xterm Title Bar Manipulations</A>).  He uses this under WindowMaker
+because the title that's appropriate for an Xterm is usually too long for a
+64x64 icon.  "\[\e]1;icon-title\007\e]2;main-title\007\]".  He says to set
+this in the prompt command because "I tried putting the string in PS1, but
+it causes flickering under some window managers because it results in
+setting the prompt multiple times when you are editing a multi-line command
+(at least under bash 1.4.x -- and I was too lazy to fully explore the
+reasons behind it)."  I had no trouble with it in the PS1 string, but
+didn't use any multi-line commands.  He also points out that it works under
+xterm, xwsh, and dtterm, but not gnome-terminal (which uses only the main
+title).  I also found it to work with rxvt, but not kterm.
+<P>
+<P>
+<P>
+<HR>
+<A HREF="Bash-Prompt-HOWTO-12.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Bash-Prompt-HOWTO-10.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Bash-Prompt-HOWTO.html#toc11"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

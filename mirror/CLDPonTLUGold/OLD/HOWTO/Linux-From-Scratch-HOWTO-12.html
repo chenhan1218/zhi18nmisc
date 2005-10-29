@@ -1,0 +1,242 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux From Scratch: Installing X Window System</TITLE>
+ <LINK HREF="Linux-From-Scratch-HOWTO-13.html" REL=next>
+ <LINK HREF="Linux-From-Scratch-HOWTO-11.html" REL=previous>
+ <LINK HREF="Linux-From-Scratch-HOWTO.html#toc12" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Linux-From-Scratch-HOWTO-13.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Linux-From-Scratch-HOWTO-11.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Linux-From-Scratch-HOWTO.html#toc12"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s12">12. Installing X Window System</A> </H2>
+
+<H2><A NAME="ss12.1">12.1 Installing X</A>
+ </H2>
+
+<P>
+<UL>
+<LI>Unpack the X archive and install it by running:</LI>
+</UL>
+<P>
+<PRE>
+make World
+make install; make install.man
+ 
+</PRE>
+<P>During the compilation process you will encounter a few errors about the
+"makedepend" script not being able to find the stddef.h stdarg.h and float.h
+header files. The script just isn't as smart as the compiler is apparently,
+since the compilation itself does work fine without compilation errors. Though,
+creating a few temporary symlinks won't solve the problem; they only will cause
+more problems.
+<P>So you just ignore the many makedepend errors you most likely will be getting.
+Also errors similar to "pointer targets in passing arg x of somefunction differ
+in signedness". You can rewrite those files if you feel like it. I won't do
+it.
+<H2><A NAME="ss12.2">12.2 Creating /etc/ld.so.conf</A>
+ </H2>
+
+<P>Create a new file <CODE>/etc/ld.so.conf</CODE> containing the following:
+<P>
+<PRE>
+# Begin /etc/ld.so.conf
+ 
+/lib
+/usr/lib
+/usr/X11R6/lib
+ 
+# End /etc/ld.so.conf
+ 
+</PRE>
+<P>
+<UL>
+<LI>Update the dynamic loader cache by running <CODE>ldconfig</CODE></LI>
+</UL>
+<H2><A NAME="ss12.3">12.3 Creating the /usr/include/X11 symlink</A>
+ </H2>
+
+<P>
+<UL>
+<LI>In order for the pre-processor to find the X11/*.h files (which you encounter
+in #include statements in source code) create the following symlink: <CODE>ln
+-s /usr/X11R6/include/X11 /usr/include/X11</CODE></LI>
+</UL>
+<H2><A NAME="ss12.4">12.4 Creating the /usr/X11 symlink</A>
+ </H2>
+
+<P>Often software copies files to /usr/X11 so it doesn't have to know which
+release of X you are using. This symlink hasn't been created by the X installation,
+so we have to create it by ourselves.
+<P>
+<UL>
+<LI>Create the /usr/X11 symlink by running <CODE>ln -s /usr/X11R6 /usr/X11</CODE></LI>
+</UL>
+<H2><A NAME="ss12.5">12.5 Adding /usr/X11/bin to the $PATH environment variable</A>
+ </H2>
+
+<P>There are a few ways to add the /usr/X11/bin path to the $PATH environment
+variable. One way of doing so is the following:
+<P>
+<UL>
+<LI>Create a new file <CODE>/root/.bashrc</CODE> with it's contents as follows: <EM>export PATH=$PATH:/usr/X11/bin</EM></LI>
+</UL>
+<P>You need to login again for this change to become effective. Or you can
+update the path by running <CODE>export PATH=$PATH:/usr/X11/bin manually</CODE>
+<H2><A NAME="ss12.6">12.6 Configuring X</A>
+ </H2>
+
+<P>
+<UL>
+<LI>Configure the X server by running <CODE>xf86config</CODE></LI>
+</UL>
+<P>If the XF86Config file created by xf86config doesn't suffice, then you
+better copy the already existing XF86Config from your normal Linux system to
+/etc. Cases wherein you need to make special changes to the file which aren't
+supported by the xf86config program force you to do this. You can always modify
+the created XF86Config file by hand. This can be very time consuming, especially
+if you don't quite remember what needs to be changed.
+<H2><A NAME="ss12.7">12.7 Testing X</A>
+ </H2>
+
+<P>Now that X is properly configured it's time for our first test run. 
+<P>
+<UL>
+<LI>Start the X server by running <CODE>startx</CODE></LI>
+</UL>
+<P>The X server should start and display 3 xterm's on your screen. If this
+is true in your case, X is running fine.
+<H2><A NAME="ss12.8">12.8 Installing Window Maker</A>
+ </H2>
+
+<P>I choose to install Window Maker as the Window Manager. This is because
+I've used WindowMaker for quite a while now and I'm very satisfied with it.
+As usual, you don't have to do what I'm doing; install whatever you want. As
+you might know, you can install several Window Managers simultaneously and
+choose which one to start by specifying it in the $HOME/.xinitrc (or
+$HOME/.xsession in case you decide to use xdm) file.
+<H2><A NAME="ss12.9">12.9 Preparing the system for the Window Maker installation</A>
+ </H2>
+
+<H3>Installing libPropList </H3>
+
+<P>
+<UL>
+<LI>Unpack the libPropList archive and install it by running:</LI>
+</UL>
+<P>
+<PRE>
+./configure
+make; make install
+ 
+</PRE>
+<H3>Installing libXpm </H3>
+
+<P>
+<UL>
+<LI>Unpack the libXpm archive and install it by running:</LI>
+</UL>
+<P>
+<PRE>
+xmkmf; make Makefiles; make includes; make depend
+cd lib; make; make install
+cd ..; make; make install
+ 
+</PRE>
+<P>This slightly different installation is necessary due to a bug in one of
+the Makefiles. It depends on files in the lib directory which aren't installed
+yet and it's not searching for them in the lib directory, so we have to install
+those files first before compiling the actual package.
+<H3>Installing libpng </H3>
+
+<P>
+<UL>
+<LI>Unpack the libpng archive and install it by running:</LI>
+</UL>
+<P>
+<PRE>
+make -f scripts/makefile.lnx; make -f scripts/makefile.lnx install
+ 
+</PRE>
+<H3>Installing libtiff </H3>
+
+<P>
+<UL>
+<LI>Unpack the libtiff archive and install it by running:</LI>
+</UL>
+<P>
+<PRE>
+./configure
+make; make install
+ 
+</PRE>
+<H3>Installing libjpeg </H3>
+
+<P>
+<UL>
+<LI>Unpack the libjpeg archive and install it by running:</LI>
+</UL>
+<P>
+<PRE>
+./configure --enable-shared --enable-static
+make; make install
+ 
+</PRE>
+<H3>Installing libungif </H3>
+
+<P>
+<UL>
+<LI>Unpack the libungif archive and install it by running:</LI>
+</UL>
+<P>
+<PRE>
+./configure
+make; make install
+ 
+</PRE>
+<H3>Installing WindowMaker </H3>
+
+<P>
+<UL>
+<LI>Unpack the WindowMaker archive and install it by running:</LI>
+</UL>
+<P>
+<PRE>
+./configure
+make; make install
+ 
+</PRE>
+<H2><A NAME="ss12.10">12.10 Updating dynamic loader cache</A>
+ </H2>
+
+<P>
+<UL>
+<LI>Update the dynamic loader cache by running: <CODE>ldconfig</CODE></LI>
+</UL>
+<H2><A NAME="ss12.11">12.11 Configuring WindowMaker</A>
+ </H2>
+
+<P>Every user who wishes to use WindowMaker has to run the wmaker.inst script
+before he or she can use it. This script will copy the necessary files into
+the user's home directory and modify the $HOME/.xinitrc file (or create
+it if it's not there yet).
+<P>
+<UL>
+<LI>Setup WindowMaker for yourself by running <CODE>wmaker.inst</CODE></LI>
+</UL>
+<H2><A NAME="ss12.12">12.12 Testing WindowMaker</A>
+ </H2>
+
+<P>
+<UL>
+<LI>Start the X server and see if the WindowMaker Window Manager starts properly
+by running <CODE>startx</CODE></LI>
+</UL>
+<HR>
+<A HREF="Linux-From-Scratch-HOWTO-13.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Linux-From-Scratch-HOWTO-11.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Linux-From-Scratch-HOWTO.html#toc12"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

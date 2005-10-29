@@ -1,0 +1,330 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="LinuxDoc-Tools 0.9.16">
+ <TITLE>CD-Writing HOWTO: 设定你的 Linux  系统来烧录光碟</TITLE>
+ <LINK HREF="CD-Writing-HOWTO-3.html" REL=next>
+ <LINK HREF="CD-Writing-HOWTO-1.html" REL=previous>
+ <LINK HREF="CD-Writing-HOWTO.html#toc2" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="CD-Writing-HOWTO-3.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="CD-Writing-HOWTO-1.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="CD-Writing-HOWTO.html#toc2"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s2">2.</A> <A HREF="CD-Writing-HOWTO.html#toc2">设定你的 Linux  系统来烧录光碟</A></H2>
+
+
+<P>如果你成功设定你的硬体和你 Linux 系统的其馀部份， 命令  
+<CODE> cdrecord -  scanbus </CODE>  会给你看到一个可写入装置的列表。 这个
+章节的目的是要在设定你的 Linux 系统时导引你，因此最后你会看到
+如下的讯息：</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+shell&gt; cdrecord -scanbus
+Cdrecord release 1.7a1 Copyright (C) 1995-1998 J□g Schilling
+scsibus0:
+          0) 'Quantum ' 'XP34300         ' 'F76D' Disk
+          1) 'SEAGATE ' 'ST11200N        ' '8334' Disk
+          2) *
+          3) 'TOSHIBA ' 'MK537FB/        ' '6258' Disk
+          4) 'WANGTEK ' '5150ES SCSI-36  ' 'ESB6' Removable Tape
+          5) 'EXABYTE ' 'EXB-8500-85QUE  ' '0428' Removable Tape
+          6) 'TOSHIBA ' 'XM-3401TASUNSLCD' '3593' Removable CD-ROM
+          7) *
+scsibus1:
+        100) 'Quantum ' 'XP31070W        ' 'L912' Disk
+        101) *
+        102) *
+        103) 'TEAC    ' 'CD-R55S         ' '1.0H' Removable CD-ROM
+        104) 'MATSHITA' 'CD-R   CW-7502  ' '4.02' Removable CD-ROM
+        105) *
+        106) 'YAMAHA  ' 'CDR400t         ' '1.0d' Removable CD-ROM
+        107) *
+</PRE>
+<I>Listing 1: Detecting devices on your SCSI-bus</I>
+</CODE></BLOCKQUOTE>
+</P>
+<P>这个例子是由 J□g Schilling □供的，你现在会看到一共有四个可烧
+录器。虽然你现在是不能分别那一个光碟机是否为一个可写入光碟
+机，不过你可以在产品的识别号中看出它是一个唯读、可写或是可
+重写光碟机。</P>
+
+
+
+
+<H2><A NAME="ss2.1">2.1</A> <A HREF="CD-Writing-HOWTO.html#toc2.1">设定 Linux 核心</A>
+</H2>
+
+<P>一个 Linux 核心可以包含很多驱动程式和功能。你可以将那些驱动程式
+编译进核心影像中或者你可以将它们编译成模组，然后待有需要的时候
+才将它们载入核心中。而建议的方法是将必不可少的驱动程式编译进核
+心。举例，如果你有一个 IDE 的 Harddisk，那你一定将IDE Harddisk
+的驱动程式编译进核心中 ( 不要编译成模组 )。</P>
+
+
+
+<P>现存有三类的光碟烧录器：SCSI，IDE/ATAPI 和外置平行埠。表格四展示出
+怎样设定 Linux 的核心来支援这几种光碟烧录器。表格的第一列是设定选单
+，你可以在这样找到有关的设定。表格的第二列是功能说明。表格的第三列是
+模组名称。</P>
+
+<P>Y 代表是和意味著你应该把这个怪兽放入核心。M 代表模组和意味著你应该把它
+编译成模组。 Y/M 代表你可以在两者之间任择其一。空的设定就千万不要改动，
+不改动它可以令你能成功编译核心的机会增加。</P>
+
+<P>要检查那些驱动程式在你的核心中 ( 不论是静态或动态载入的 )，你可以看这个
+档案 /dev/devices 。要检查那些模组已载入，你可以用 'lsmod'。要检查有那些
+模 <I> 可以 </I> 载入的话，键入'modprobe -l'。如果你需要的模组不在你的
+系统的话，你就要重新编译核心及安装它。你可以参考 Kernel-HOWTO 来帮助你重
+新编译核心。有关怎样处理核心模组的最新资讯，可以参考 Module-HOWTO。</P>
+
+
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+Sect.  Description                 Module   SCSI  IDE   PP
+------------------------------------------------------------
+BLOCK  Enhanced IDE/MFM/RLL...                     Y      
+BLOCK  IDE/ATAPI CDROM             ide-cd        M/N/Y     
+BLOCK  SCSI hostadaptor emulation  ide-scsi        M      
+BLOCK  Loopback device             loop       M    M     M
+
+PARIDE Parallel port IDE device    paride               Y/M
+PARIDE Parallel port ATAPI CD-ROMs                       M
+PARIDE Parallel port generic ATAPI                       M
+PARIDE (select a low-level driver)                       Y
+
+SCSI   SCSI support                scsi_mod  Y/M  Y/M    
+SCSI   SCSI CD-ROM support         sr_mod    Y/M  Y/M     
+SCSI     Enable vendor-specific               Y    Y      
+SCSI   SCSI generic support        sg        Y/M  Y/M     
+SCSI   (select a low-level driver)            Y
+
+FS     ISO 9660 CDROM filesystem   iso9660    Y    Y     Y
+FS     Microsoft Joliet cdrom...   joliet     M    M     M
+</PRE>
+<I>Table 4: </I>
+</CODE></BLOCKQUOTE>
+</P>
+<P>如困你成功建立或找到所需的模组之后，你可将它们的名称加入 /etc/modules或
+由自动工具来载入它们 (kmod,kerneld)。如果你不肯定的话，请参考 Linux 套件
+中的说明档。</P>
+
+<P>"SCSI hostadaptor emulation" 这个功能在之前的版本是叫做 "SCSI emulation"
+( 大概是 2.0.36 )。如困你打开这个选项，你就要将IDE/ATAPI 光碟的驱动程式
+编译成模组。要不然你就要将它取消和使用 SCSI 的光碟驱动程式。因为 2.2 系列
+的核心已不能同时使用 IDE 和 SCSI 的驱动程式在同一个硬体上 ( 如困你是使用
+2.0.36 核心的话，请看以下的说明 )。</P>
+
+<P>Loopback device 是一个选择性的功能，它能帮你在烧录影像之前测试一下你的
+影像档。</P>
+
+<P>如果你要读取光碟，那你就需要 ISO 9660 档案系统的支援。这个驱动程式已自
+动包含RockRidge 延伸。如果你需要MS Joliet 光碟延伸，你便需要编译它为模
+组然后载入它。</P>
+
+<P>在任何的情况下你都需要一个低阶的驱动程式。低阶是指那个驱动程式会直接与硬
+体沟通。至于 SCSI 和平行埠，有很多低阶的驱动程式可用，请看以下的说明。</P>
+
+
+
+<H3>给 2.2 系统的特别提示</H3>
+
+
+<P>在核心版本 2.2.1 中，不要同时打开CONFIG_SCSI_MULTI_LUN 和ide-scsi support
+这两个选项，因为 ide-scsi 有虫而至不能这样做。无论如何，都建议大家都把核心
+升级为 2.2.5 。</P>
+
+<P>一些用户报告说已编译好的 cdrecord 和 2.2 核心有冲突。这是 Linux 核心的
+问题。解决的方法如下：</P>
+<P>
+<UL>
+<LI>你再次编译 cdrecord 以令它适应在 linux/include/scsi/sg.h 里的真正
+数值后，问题就可能解决了。
+因为 sg 使用者介面是哑的，所以那些数值一定要和核心中的数值一样才行。</LI>
+<LI>这亦可能由于 sg 驱动程式不能取得足够的记忆体来给 DMA。J□g Schillings       FTP-site : 
+<A HREF="ftp://ftp.fokus.gmd.de/pub/unix/cdrecord/alpha/">ftp://ftp.fokus.gmd.de/pub/unix/cdrecord/alpha/</A>        
+找取 sg_buffer patch 来解决这个问题。</LI>
+</UL>
+</P>
+
+<H3>给 2.0 系列的特别提示</H3>
+
+
+<P>在核心 2.0.31 以前是有很多虫引至不能读取光碟中最后一个档案。请升级到核
+心 2.0.36。</P>
+<P>对于 2.0.36 或以上的版本，你可以选择那种驱动程式(IDE or SCSI) 在那个 
+ATAPI-device上使用。更精确地说，你可以加入"SCSI emulation" 这个功能到
+你的核心中和你可以在核心命令列中给特定的 device 启动模拟 ( 在系统启动
+前或启动中 )。举例，如果你的光碟烧录器有这个 devicefile /dev/hdb，这样
+加入以下的句子 <CODE>hdb=ide-scsi</CODE>。</P>
+
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+image=/boot/zImage-2.0.36
+  label=Linux
+  read-only
+  append="hdb=ide-scsi"
+</PRE>
+<I>Listing 2: Example configuration for lilo (/etc/lilo.conf)</I>
+</CODE></BLOCKQUOTE>
+</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+linux "Linux 2.0.36" {
+        image=/boot/zImage-2.0.36
+        cmdline= root=/dev/hda5 readonly hdb=ide-scsi
+}
+</PRE>
+<I>Listing 3: Example configuration for chos (/etc/chos.conf)</I>
+</CODE></BLOCKQUOTE>
+</P>
+
+
+<H2><A NAME="ss2.2">2.2</A> <A HREF="CD-Writing-HOWTO.html#toc2.2">硬体和 devicefiles</A>
+</H2>
+
+<P>在你安装所有必需的驱动程式以后, 重新这个新核心。它应该有你在往后部份所需
+要的所有功能。 </P>
+<P>[ 如果你是 devfs 的使用者，你就不需要理会以下手动设定 device files 的步
+骤，因为 devfs 会为你办理一切的事情。]</P>
+<P>进入 <CODE>/dev</CODE> 目录然后检查一下你有没有 <I>loopback devices</I>。
+虽然这不是太大问题如果你没有这些 devices，但是有了它们就会方便一些 (请看
+3.5 )· 如果你有它们的话你会看到 <CODE>ls</CODE> 指令显示<CODE>loop0</CODE>-<CODE>loop7</CODE>：</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+shell&gt; cd /dev
+shell&gt; ls loop*
+loop0 loop1 loop2 loop3 loop4 loop5 loop6 loop7
+</PRE>
+<I>Listing: devicefiles for loopback</I>
+</CODE></BLOCKQUOTE>
+</P>
+<P>如果你没有这些 device-files 的话，你可以用<CODE>/dev/MAKEDEV</CODE>-script 
+来建立它们：</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+shell&gt; cd /dev/
+shell&gt; modprobe loop
+shell&gt; ./MAKEDEV loop
+</PRE>
+<I>Listing: commands to create loopback devices</I>
+</CODE></BLOCKQUOTE>
+</P>
+<P>如果你有<CODE>loop</CODE> 模组编译进核心，最后的指令你才可以成功执行。你在这
+里看到有关怎样处理 loop-devicefiles 的方法你同样可以应用在其他 devicefiles
+中(sg*, pg*, hd*, ...) 不过在以后的章节就不会明确说明。</P>
+
+
+<H3>IDE/ATAPI 光碟烧录器</H3>
+
+
+<P>ATAPI 代表 "SCSI 的命令在 IDE-bus 上执行"。换句话说，你的IDE/ATAPI 
+光碟烧录器会说 SCSI 协定(不过带有一些限制)，那即是它会模拟成好像一个
+SCSI光碟烧录器一样。</P>
+<P>在 Linux 底下只要你运用"SCSI (hostadaptor) emulation" 这个核心功能那你
+就可以令你的 IDE 光碟烧录器出现如同 SCSI-devices 那样。如果你使 ide-scsi
+核心模组活动起来的话，你就会好像拥有一个 SCSI 光碟烧录器那样。</P>
+
+
+<H3>SCSI 光碟烧录器</H3>
+
+
+<P>请确定你的光碟烧录器能够被你电脑的基本输入/输出系统支援。事情就变得□意思
+如果你拥有硬件而电脑又不能支援它。</P>
+<P>如困你想将你的 SCSI-drive 连接至你电脑的平行埠上的话，你需要特别的缆线
+和特别的核心驱动程式。看这个网址
+<A HREF="http://www.torque.net/parport/parscsi.html">http://www.torque.net/parport/parscsi.html</A> 以取得更多的资料。</P>
+
+<H3>一般 SCSI devices</H3>
+
+<P>/dev/sd* 和 /dev/sr* 这些 devicefiles 是用来存取 SCSI 硬碟和 SCSI 光碟
+驱动器不过 SCSI 光碟驱动器的存取只限于 block-oriented 资料传送。这使
+它们那么快速和适合于资料存储。不过驱动光碟烧录器的雷射是一件更加复杂的
+事情，而不是block-oriented 资料传送那么简单。要使 sd* 和 sr* devices 保
+持乾净和快速，一种新的装置 — <I>generic SCSI-devices</I>就衍生出来。
+因为所有对 SCSI 硬体的操作都可以透过 generic devices 来达成而它们又没有
+特定的目的所以它们就叫做 <I>generic</I>·</P>
+<P>如果你要找这些 device，你可以到 /dev 的目录：</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+shell&gt; cd /dev
+shell&gt; ls sg*
+sg0  sg1  sg2  sg3  sg4  sg5  sg6  sg7
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>如果你没有这些 device-files ，你可以在用下列的 script 来建立它们the <CODE>/dev/MAKEDEV</CODE>-script:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+shell&gt; cd /dev/
+shell&gt; ./MAKEDEV sg
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+
+
+<H3>平行埠的光碟烧录器</H3>
+
+
+<P>真对不起，我没有这方面的解决方案。 请看 
+<A HREF="http://www.torque.net/parport/paride.html">http://www.torque.net/parport/paride.html</A> 或你本区的档案/usr/src/linux/Documentation/paride.txt.</P>
+
+
+
+<H2><A NAME="ss2.3">2.3</A> <A HREF="CD-Writing-HOWTO.html#toc2.3">取得软体来烧录光碟</A>
+</H2>
+
+<P>你可以在这里找到一系列烧录光碟的软件
+<A HREF="http://www.fokus.gmd.de/research/cc/glone/employees/joerg.schilling/private/cdb.html">http://www.fokus.gmd.de/research/cc/glone/employees/joerg.schilling/private/cdb.html</A>.The CD building project for UNIX</P>
+
+<H3>命令列工具</H3>
+
+<P>你需要以下程式包之中任择其一来产生光碟原型：</P>
+<P>
+<BLOCKQUOTE>
+<A HREF="ftp://tsx-11.mit.edu/pub/linux/packages/mkisofs/">ftp://tsx-11.mit.edu/pub/linux/packages/mkisofs/</A> (mkisofs)<P>
+<A HREF="ftp://ftp.ge.ucl.ac.uk/pub/mkhfs">ftp://ftp.ge.ucl.ac.uk/pub/mkhfs</A> (mkhybrid)</P>
+</BLOCKQUOTE>
+</P>
+
+<P>视你的光碟烧录器型号而定，你需要以下其中之一个程式来将光碟原型写入： 
+<BLOCKQUOTE>
+<A HREF="ftp://ftp.fokus.gmd.de/pub/unix/cdrecord/">ftp://ftp.fokus.gmd.de/pub/unix/cdrecord/</A> (cdrecord) 
+</BLOCKQUOTE>
+</P>
+<P>千万不要相信<CODE>mkisofs</CODE> 旧的说明档，它说你需要 <CODE>cdwrite</CODE> 版本 1.5
+，你只需要 cdrecord 就好了。注意：cdrecord 所包括的 mkiosfs 有一些附加的功能·</P>
+
+
+<H3>Graphical user interfaces (optional)</H3>
+
+<P>Front-ends 在 Linux 中真的只是 front-ends。即是你仍然需要安装命令列工具，
+不过你可以用一个较好的介面而已。</P>
+<P><I>X-CD-Roast</I> 是一个在 Linux 下容易烧录光碟的程式集。它结合了 <CODE>cdrecord</CODE> 和 <CODE>mkisofs</CODE> 在一个美丽的介面以中。</P>
+<P>
+<BLOCKQUOTE>
+<A HREF="http://www.fh-muenchen.de/home/ze/rz/services/projects/xcdroast/e_overview.html">http://www.fh-muenchen.de/home/ze/rz/services/projects/xcdroast/e_overview.html</A></BLOCKQUOTE>
+</P>
+<P><I>BurnIT</I> 是一个 cdrecord, mksiofs and cdda2wav-0.95 的 JAVA front-end ，，这使它成为一个在 Unix 平台下完整的光碟烧录包装，你可以在这里取得：</P>
+<P>
+<BLOCKQUOTE>
+<A HREF="http://sunsite.auc.dk/BurnIT/">http://sunsite.auc.dk/BurnIT/</A></BLOCKQUOTE>
+</P>
+
+
+
+
+<HR>
+<A HREF="CD-Writing-HOWTO-3.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="CD-Writing-HOWTO-1.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="CD-Writing-HOWTO.html#toc2"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

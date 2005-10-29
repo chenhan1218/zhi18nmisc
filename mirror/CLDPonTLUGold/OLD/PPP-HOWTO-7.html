@@ -1,0 +1,201 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>PPP HOWTO 中譯版: 配置你的 Linux 核心</TITLE>
+ <LINK HREF="PPP-HOWTO-8.html" REL=next>
+ <LINK HREF="PPP-HOWTO-6.html" REL=previous>
+ <LINK HREF="PPP-HOWTO.html#toc7" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="PPP-HOWTO-8.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="PPP-HOWTO-6.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="PPP-HOWTO.html#toc7"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="Kernel configuration"></A> <A NAME="s7">7. 配置你的 Linux 核心</A></H2>
+
+<P>為了要能夠使用 PPP，你編譯的 Linux  核心必須包含 PPP 的支援．
+如果你還沒有 Linux  的原始程式碼請先取得 － 在 Linux  的檔案系統標準中它是放在 <CODE>/usr/src/linux</CODE> 裡面．
+<P>
+<P>檢查這個目錄 - 許多的 Linux 套件會在安裝過程中安裝此原始程式碼(檔案及次目錄)．
+<P>
+<P>在啟動時，你的 Linux 核心會印出大量的訊息．如果核心支援 PPP 的話會包含此一訊息．
+要觀看這些訊息的話，看看你的系統記錄檔或用 <CODE>dmesg | less</CODE> 指令將這些訊息顯示在螢幕上．
+如果核心支援 PPP 的話你將會看到像這樣的幾行
+<HR>
+<PRE>
+PPP Dynamic channel allocation code copyright 1995 Caldera, Inc.
+PPP line discipline registered.
+</PRE>
+<HR>
+<P>
+<P>(這是 Linux 2.0.x 系列核心的訊息)．
+<P>
+<P>Linux 核心的原始程式可以從 <CODE>sunsite.unc.edu</CODE> 或其映射節點取得．
+<P>
+<H2><A NAME="ss7.1">7.1 安裝 Linux 核心原始程式碼</A>
+</H2>
+
+<P>下面是簡短的取得及安裝 Linux 核心原始程式碼的指示．詳細的資訊可以在 
+<A HREF="Kernel-HOWTO.html">The Linux Kernel HOWTO</A> 中找到．
+<P>
+<P>
+<P>為了安裝及編譯核心，你必須以 root 的身份簽入．
+<P>
+<OL>
+<LI>切換到 <CODE>/usr/src</CODE> 目錄下<BR>
+<CODE>cd /usr/src</CODE></LI>
+<LI>檢查 <CODE>/usr/src/linux</CODE> 看看你是否已經安裝了原始程式碼．</LI>
+<LI>如果沒有的話，由 
+<A HREF="ftp://sunsite.unc.edu/pub/Linux/kernel/v2.0">Linux kernel source directory</A>
+或離你最近的映射節點取回．<BR>
+如果你想找更舊版本的核心(例如 1.2.X)，可到 
+<A HREF="ftp://sunsite.unc.edu/pub/Linux/kernel/old">Old Linux kernel source directory</A> 找找．</LI>
+<LI>選擇適當的核心 - 通常是最近的版本．取回後將此 'tar' 壓縮檔放在 <CODE>/usr/src</CODE>．<BR>
+<B>注意</B>: 一個 'tar' 檔案是一種壓縮檔 - 可能壓了許多檔案和目錄在裡頭．它相當於 DOS 下的 zip 檔案．
+</LI>
+<LI>如果你已經安裝了原始程式，但想要升級到新版的核心，你必須先移除舊的程式碼．用這個指令<BR>
+<CODE>rm -rf /usr/src/linux</CODE></LI>
+<LI>用這個指令解壓縮<BR>
+<CODE>tar xzf linux-2.0.XX.tar.gz</CODE></LI>
+<LI>然後，<CODE>cd /usr/src/linux</CODE> 並看看 README 檔．裡頭包含了完整的解釋如何配置及編譯新核心．
+仔細閱讀這個檔案(將它印出來放在手邊是個好主意，直到你已做了足夠多次知道怎麼辦)．</LI>
+</OL>
+<P>
+<H2><A NAME="ss7.2">7.2 暸解你的硬體</A>
+</H2>
+
+<P>如果你要重新編譯你的核心你<B>必須</B>知道在你 PC 裡面的界面卡／設備!!
+對於某些設備（像是音效卡）你也得知道各種設定（像是硬體中斷號碼，輸出入位址以及諸如此類的資訊）．
+<P>
+<H2><A NAME="ss7.3">7.3 編譯核心 － Linux 1.2.13 核心</A>
+</H2>
+
+<P>要開始配置程序，首先依照在解說檔裡的說明適當地安裝原始程式碼．然後以下面的指令開始核心的配置程序
+<BLOCKQUOTE><CODE>
+<PRE>
+make config
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>為了要能夠使用 PPP  ，你必須配置核心包含 PPP  的支援（使用 PPP 需要 pppd 以及核心的 PPP 支援兩者）．
+<HR>
+<PRE>
+  PPP (point-to-point) support (CONFIG_PPP) [n] y
+</PRE>
+<HR>
+<P>
+<P>根據在你 PC 裡面的硬體以及你想要的 Linux  作業系統特色回答其它的配置問題．然後繼續依照該解說檔來編譯並安裝你的新核心．
+<P>
+<P>核心 1.2.13 只要製造四個 PPP 裝置．對於多埠卡(multi-port serial cards)來說，你必須修改核心 PPP 的原始程式以便得到更多埠的支援．
+(參見隨附 PPP-2.1.2 套件而來的 README.linux 檔案說明你需要做的細節部份)．
+<P>
+<P>注意: 核心 1.2.13 的配置對話不允許你回頭 - 因此如果你在 <CODE>make config</CODE> 對話中答錯問題，用 <CODE>CTRL-C</CODE> 跳出來重新開始．
+<P>
+<H2><A NAME="ss7.4">7.4 編譯核心  - Linux 1.3.x 及 2.0.x 核心</A>
+</H2>
+
+<P>對於 Linux 2.0.x  的核心，你可以使用類似 Linux 1.2.13 的程序．
+再一次，依照在解說檔裡的說明適當地安裝原始程式碼．然後以下面的指令開始核心的配置程序
+<BLOCKQUOTE><CODE>
+<PRE>
+make config
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>然而，你也有另外的選擇
+<BLOCKQUOTE><CODE>
+<PRE>
+make menuconfig
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>這提供一個以選單為基礎配合線上輔助的配置系統，允許你在配置程序中隨意所之．
+<P>
+<P>也有一個以 X windows  為基礎的配置界面
+<BLOCKQUOTE><CODE>
+<PRE>
+make xconfig
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>你可以直接編譯 PPP  的支援到核心裡去或者是做成可載入模組．
+<P>如果你只在你 Linux  機器運作的一部份時間裡使用 PPP  的話，那麼建議你把 PPP  的支援編譯為可載入模組．
+使用 'kerneld'，你的核心將會在你開始你的 PPP  連結程序時自動載入提供 PPP  支援所需的模組．
+這節省了寶貴的記憶體空間（因為核心沒有任何一個部份可以被置換到記憶體外，但可載入模組在未使用時會自動被移除）．
+<P>
+<P>要這樣做的話，你需要打開可載入模組的支援:
+<HR>
+<PRE>
+        Enable loadable module support (CONFIG_MODULES) [Y/n/?] y
+</PRE>
+<HR>
+<P>要加入 PPP  的核心支援，回答下列這個問題:-
+<HR>
+<PRE>
+        PPP (point-to-point) support (CONFIG_PPP) [M/n/y/?]  
+</PRE>
+<HR>
+<P>
+<P>要做成可載入模組的話，回答 <B>M</B> 即可，否則就編譯成核心的一部份，回答 <B>Y</B> 就是．
+<P>
+<P>與 1.2.13 的核心不同的是，2.0.x 的核心視需要自動建立 PPP  設備並且一點都不需要去研究原始程式碼以增加可用的 PPP  設備．
+<P>
+<H2><A NAME="ss7.5">7.5 PPP-2.2 與 <CODE>/proc/net/dev</CODE> 的注意事項</A>
+</H2>
+
+<P>如果你在使用 PPP-2.2，你會發現建立 PPP 裝置的一個副作用就是如果你觀察 <CODE>/proc/net</CODE> 檔案系統看不到 PPP 的裝置，
+直到開始使用 pppd 裝置才會被建立起來:-
+<HR>
+<PRE>
+[hartr@archenland hartr]$ cat /proc/net/dev
+Inter-|   Receive                  |  Transmit
+ face |packets errs drop fifo frame|packets errs drop fifo colls carrier
+    lo:  92792    0    0    0    0    92792    0    0    0     0    0
+  eth0: 621737   13   13    0   23   501621    0    0    0  1309    0
+</PRE>
+<HR>
+<P>
+<P>一旦你有一個(或更多) PPP 服務啟動後，你會看到像這樣的項目(從一部 PPP 伺服器上取得):-
+<HR>
+<PRE>
+[root@kepler /root]# cat /proc/net/dev
+Inter-|   Receive                  |  Transmit
+ face |packets errs drop fifo frame|packets errs drop fifo colls carrier
+    lo: 428021    0    0    0    0   428021    0    0    0     0    0
+  eth0:4788257  648  648  319  650  1423836    0    0    0  4623    5
+  ppp0:   2103    3    3    0    0     2017    0    0    0     0    0
+  ppp1:  10008    0    0    0    0     8782    0    0    0     0    0
+  ppp2:    305    0    0    0    0      297    0    0    0     0    0
+  ppp3:   6720    7    7    0    0     7498    0    0    0     0    0
+  ppp4: 118231  725  725    0    0   117791    0    0    0     0    0
+  ppp5:  38915    5    5    0    0    28309    0    0    0     0    0
+</PRE>
+<HR>
+<P>
+<H2><A NAME="ss7.6">7.6 配置核心的一般考量</A>
+</H2>
+
+<P>如果你要把你的 Linux PC 設為一台 PPP  伺服器的話，那麼你必須把 IP forwarding 的支援編譯進去．
+如果你想使用 Linux 連接兩個區域網路或將區域網路連接到網際網路上的話這個選項也是需要的．
+<P>
+<P>如果你要連接一個區域網路到網際網路上（或者甚至只是連接兩個區域網路），你應該要關心安全上的問題．在核心中加入 IP firewalls 的支援可能是必須的!
+<P>
+<P>如果你想要用 IP 偽裝連接使用前述任何一個‘未連線’IP  網路號碼的區域網路那麼你也需要這個配置．
+<P>
+<P>要使用 IP 偽裝與 IP firewalling，你<B>必須</B>在 <CODE>make config</CODE> 過程中的第一個問題上回答 yes:-
+<HR>
+<PRE>
+Prompt for development and/or incomplete code/drivers (CONFIG_EXPERIMENTAL)?
+</PRE>
+<HR>
+<P>
+<P>雖然這聽起來對新使用者有些困難，許多人仍愉快地使用 Linux 2.0.X 核心的 IP 偽裝與 IP firewalling 功能而沒有問題．
+<P>
+<P>一旦你完成新核心的安裝以及重新啟動之後，你就可以開始配置並測試你的 PPP 連結．
+<P>
+<HR>
+<A HREF="PPP-HOWTO-8.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="PPP-HOWTO-6.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="PPP-HOWTO.html#toc7"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

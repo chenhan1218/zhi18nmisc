@@ -1,0 +1,62 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="LinuxDoc-Tools 0.9.16">
+ <TITLE>DNS HOWTO 中譯版: 簡介</TITLE>
+ <LINK HREF="DNS-HOWTO-3.html" REL=next>
+ <LINK HREF="DNS-HOWTO-1.html" REL=previous>
+ <LINK HREF="DNS-HOWTO.html#toc2" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="DNS-HOWTO-3.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="DNS-HOWTO-1.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="DNS-HOWTO.html#toc2"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<HR>
+<H2><A NAME="intro"></A> <A NAME="s2">2.</A> <A HREF="DNS-HOWTO.html#toc2">簡介</A></H2>
+
+<P><B>這是什麼以及這不是什麼</B></P>
+<P>首先，DNS 就是領域名稱系統(Domain Name System)．
+為機器命名的規則以及將這些名稱轉換為 IP 數字的軟體．
+這份 HOWTO 文件說明了如何用 Linux 定義這樣的對應．
+對應指的是這兩件事的聯繫，機器名稱，像 <CODE>ftp.linux.org</CODE>，
+以及機器的 IP 數字，像是 <CODE>199.249.150.4</CODE>．</P>
+<P>DNS，對新手(你；－)而言，是網路管理中比較晦暗不明的地方之一．
+這份說明文件將會試著讓幾件事情能清楚一點．它描述如何設立一個<EM>簡單</EM>的 DNS 名稱伺服器．
+開始先說明暫存專用(caching only)伺服器，然後是為一領域設立主要(primary)名稱伺服器．
+至於更複雜的設定你可以參考這份文件的 
+<A HREF="DNS-HOWTO-9.html#qanda">FAQ</A> 一節．
+不用說你將得<EM>閱讀</EM>真正的文件．
+我將會在
+<A HREF="DNS-HOWTO-10.html#bigger">最後一章</A>
+回過頭來說明這裡所謂真正的文件包含有哪些．</P>
+<P>在你可以開始進行這項工作之前你應該要先配置好你的機器以便可以從遠端簽入它以及由它對其它機器作遠端簽入，
+並且使所有各種對網路的連線都能成功地進行，尤其你應該要能夠對 <CODE>127.0.0.1</CODE> 進行遠端簽入並且進入你自己的這台機器(現在就試試!)．
+同時你也需要一份運作良好的 <CODE>/etc/host.conf</CODE>, <CODE>/etc/resolv.conf</CODE> 以及 <CODE>/etc/hosts</CODE> 檔案作為開始．
+因為我將不會在這裡解釋它們的功能．如果你還沒有完成所有這些設定並使其運作那麼 the networking/NET-2 HOWTO 會解釋如何設立它們．閱讀之．</P>
+<P>如果你使用 SLIP 或者是 PPP 那麼你得要能讓它運作．若是它還不能運作的話閱讀 
+<A HREF="PPP-HOWTO.html">PPP HOWTO</A>．</P>
+<P>當我說‘你的機器’時我的意思是你正要嘗試在上面設立 DNS  的那台機器．
+不是任何可能在你網路環境裡的其它機器．</P>
+<P>我假設你並不是處於任何會阻礙名稱查詢的防火牆後面．如果你是那麼你將會需要特別的設定，
+參見 
+<A HREF="DNS-HOWTO-9.html#qanda">FAQ</A> 一節．</P>
+<P>在 Unix 上的名稱服務是藉由一支稱為 <CODE>named</CODE> 的程式來執行的．
+這是屬於 bind 套件的一部份，這個套件是由 Paul Vixie 為網際網路軟體集團(Internet Software Consortium)所協調發展的．
+大部分的 Linux 發行套件都包含有 <CODE>named</CODE>，而且通常安裝於 <CODE>/usr/sbin/named</CODE>．
+如果你的系統有個 <CODE>named</CODE> 那麼你大概可以直接使用它；如果沒有的話那麼你可以從某個 Linux ftp 站取回一份二進位執行檔，或是從 <CODE>
+<A HREF="ftp://ftp.vix.com/pub/bind/">ftp.isc.org:/isc/bind/src/cur/</A></CODE> 目錄裡取得最新最棒的原始程式碼．
+本文件是說明 bind version 4 的．如果你安裝 version 8 你要自己想辦法．稍後有一節可能會對你有些幫助．</P>
+<P>DNS 是個以整個網路為範圍的(net-wide)資料庫．要小心你放進裡面的資料．
+如果你放些廢物進去，你，以及其它人都將會從中取出些廢物．
+保持你 DNS 的整齊一致那麼你將能從中取得良好的服務．
+學習去使用它，管理它，追查它的錯誤那麼你將會是另一個保持網路免於因為管理不善而效率低落的好管理者．</P>
+<P>在這份文件裡我斷然地敘述幾件並不完全是真實的事情(雖然它們至少有一半是真的)．
+這全都是為了簡化．如果你相信我所說的那麼這些大概就能運作．</P>
+<P><B>要訣:</B> 如果你已經擁有我要你去改變的檔案，那麼所有這些檔案都要先做備份，
+這樣一來如果經歷這些改變之後沒有東西會動的話你可以回復到你舊的，可以運作的情形．</P>
+
+<HR>
+<A HREF="DNS-HOWTO-3.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="DNS-HOWTO-1.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="DNS-HOWTO.html#toc2"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

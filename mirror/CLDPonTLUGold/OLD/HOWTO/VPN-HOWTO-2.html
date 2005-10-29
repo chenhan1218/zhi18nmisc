@@ -1,0 +1,124 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>VPN HOWTO: Theory</TITLE>
+ <LINK HREF="VPN-HOWTO-3.html" REL=next>
+ <LINK HREF="VPN-HOWTO-1.html" REL=previous>
+ <LINK HREF="VPN-HOWTO.html#toc2" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="VPN-HOWTO-3.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="VPN-HOWTO-1.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="VPN-HOWTO.html#toc2"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s2">2. Theory</A>                </H2>
+
+<H2><A NAME="ss2.1">2.1 What is a VPN?</A>
+                        </H2>
+
+<P>VPN stands for Virtual Private Network.  A VPN uses the Internet as it's
+transport mechanism, while maintaining the security of the data on the VPN.
+<H3>But really, what IS a VPN?                                </H3>
+
+<P>Well, there are several answers to that question.  It really depends on
+your network layout.  The most common configuration is to have a single
+main internal network, with remote nodes using VPN to gain full access
+to the central net.  The remote nodes are commonly remote offices or
+employees working from home.  You can also link two smaller (or even
+larger!) networks to form an even larger single network.
+<H3>So how does it work?                                </H3>
+
+<P>Put simply, to make a VPN, you create a secure tunnel between the two
+networks and route IP through it.  If I've lost you already, you should
+read 
+<A HREF="http://www.linuxdoc.org/HOWTO/Networking-Overview-HOWTO.html">The Linux Networking Overview HOWTO</A> to learn about networking
+with Linux.
+<P>Please bear with me, my ASCII art could use some work.
+<P>
+<PRE>
+                                \          \
+                 --------       /          /      --------
+   Remote ______| Client |______\ Internet \_____| Server |______ Private
+   Network      | Router |      /          /     | Router |       Network
+                 --------       \          \      --------
+                                /          /
+
+
+                         Client Router
+               ----------------------------------------------------
+              |   /->    10.0.0.0/255.0.0.0   \                    |
+  Remote      |  |-->  172.16.0.0/255.240.0.0  |--> Tunnel >---\   |
+  Network >---|--|--> 192.168.0.0/255.255.0.0 /                 |--|----> Internet
+ 192.168.12.0 |  |                                              |  |
+              |   \-----> 0.0.0.0/0.0.0.0 --> IP Masquerade >--/   |
+               ----------------------------------------------------
+
+
+                        Server Router
+             ----------------------------------------------------
+            |                   /->    10.0.0.0/255.0.0.0    \   |
+            |   /--> Tunnel >--|-->  172.16.0.0/255.240.0.0   |--|----> Private
+Internet >--|--|                \--> 192.168.0.0/255.255.0.0 /   |      Network
+            |  |                                                 |     172.16.0.0/12
+            |   \-----> 0.0.0.0/0.0.0.0 -----> /dev/null         |    192.168.0.0/16
+             ----------------------------------------------------
+</PRE>
+<P>The above diagram shows how the network might be set up.  If you don't
+know what IP Masquerade is, you probably shouldn't be here.  Go read the
+<A HREF="/HOWTO/Networking-Overview-HOWTO.html">The Linux Networking Overview HOWTO</A> and come back once you've
+figured it out.
+<P>The Client Router is a Linux box acting as the gateway/firewall for the
+remote network.  As you can see, the remote network uses the local net
+192.168.12.0.  For the sake of a simple diagram, I let out the local
+routing information in the routers.  The basic idea is to route traffic
+for all of the private networks (10.0.0.0, 172.16.0.0, and 192.168.0.0)
+through the tunnel.  The setup shown here is one way.  That is, while
+the remote network can see the private network, the private network
+cannot necessarily see the remote network.  In order for that to happen,
+you must specify that the routes are bidirectional.
+<P>From the diagram you should also note that all of the traffic coming out
+of the client router appears to be from the client router, that is, it's
+all from one IP address.  You could route real numbers from inside your
+network but that brings all sorts of security problems with it.
+<H2><A NAME="ss2.2">2.2 SSH and PPP</A>
+                        </H2>
+
+<P>The system that I describe to implement VPN uses SSH and PPP.  Basically
+I use ssh to create a tunnel connection, and then use pppd to run TCP/IP
+traffic though it. That's what makes up the tunnel.
+<P>The real trick to getting ssh and pppd to play well together is the
+utility written by Arpad Magosanyi that allows the redirection of
+standard in and standard out to a pseudo tty.  This allows pppd to talk
+through ssh as if it were a serial line.  On the server side, pppd is
+run as the users shell in the ssh session, completing the link.  After
+that, all you need to do is the routing.
+<H2><A NAME="ss2.3">2.3 Alternative VPN Systems</A>
+                        </H2>
+
+<P>There are of course other ways of setting up a VPN, here are a couple of
+other systems.
+<H3>PPTP                                </H3>
+
+<P>PPTP is a Microsoft protocol for VPN.  It is supported under Linux, but
+is known to have serious security issues.  I do not describe how to use
+it here since it is covered by the 
+<A HREF="http://www.linuxdoc.org/HOWTO/VPN-Masquerade-HOWTO.html">Linux VPN Masquerade HOWTO</A>.
+<H3>IP Sec                                </H3>
+
+<P>IP Sec is a different set of protocols from SSH.  I don't actually know
+all that much about it, so if someone wants to help me out with a
+description, I'd be most appreciative.  Again, I do not describe how to
+use it here since it is covered by the 
+<A HREF="http://www.linuxdoc.org/HOWTO/VPN-Masquerade-HOWTO.html">Linux VPN Masquerade HOWTO</A>.
+<H3>CIPE                                </H3>
+
+<P>CIPE is a kernel level network encryption system that may be better
+suited to enterprise setups.  You can find out more about it at 
+<A HREF="http://sites.inka.de/sites/bigred/devel/cipe.html">the CIPE      homepage</A>.  I plan on looking into it more, so maybe I'll have info
+about it here someday.
+<HR>
+<A HREF="VPN-HOWTO-3.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="VPN-HOWTO-1.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="VPN-HOWTO.html#toc2"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

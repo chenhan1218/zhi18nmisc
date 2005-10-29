@@ -1,0 +1,138 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Bzip2 Howto: 配合 tar來使用 bzip2</TITLE>
+ <LINK HREF="Bzip2-5.html" REL=next>
+ <LINK HREF="Bzip2-3.html" REL=previous>
+ <LINK HREF="Bzip2.html#toc4" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+<A HREF="Bzip2-5.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Bzip2-3.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Bzip2.html#toc4"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="bzip2-with-tar"></A> <A NAME="s4">4. 配合 tar來使用 bzip2</A></H2>
+
+<P>下面有三種配合 tar 使用 bzip2 的方法，也就是
+<H2><A NAME="ss4.1">4.1 容易設立:</A>
+</H2>
+
+<P>這個方法跟本就不必做設定。執行解開bzip2'd 的 tar包裹，
+在現行目錄底下有個 foo.tar.bz2，執行
+<BLOCKQUOTE><CODE>
+<PRE>
+/path/to/bzip2 -cd foo.tar.bz2 | tar xf -
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>成功了，但可能有常需輸入的小缺點。
+<P>
+<H2><A NAME="ss4.2">4.2 容易設立，容易使用，不需要 root 的特權:</A>
+</H2>
+
+<P> 感謝 
+<A HREF="mailto:leonard@sct1.is.belgacom.be">Leonard Jean-Marc</A> 貢獻這個小技巧。也謝謝 
+<A HREF="mailto:rubini@morgana.systemy.it">Alessandro Rubini</A> 從 csh裏分類
+出 bash 的。
+<P>
+<P>在你的 .bashrc裏，你可以加入像下面這行:
+<BLOCKQUOTE><CODE>
+<PRE>
+alias btar='tar --use-compress-program /usr/local/bin/bzip2 '
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>在你的 .tcshrc 或 .cshrc裏，可用下面這行相同的:
+<BLOCKQUOTE><CODE>
+<PRE>
+alias btar 'tar --use-compress-program /usr/local/bin/bzip2'
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss4.3">4.3 同樣是容易使用，但需要 root 來存取。</A>
+</H2>
+
+<P>用下面來方法來修補 gnu tar 1.12：
+<BLOCKQUOTE><CODE>
+<PRE>
+cd tar-1.12/src; patch &lt; /path/to/tar.diff
+</PRE>
+</CODE></BLOCKQUOTE>
+
+編譯、安裝它，你已準備就緒了。用"which tar" 和 "which bzip2"來確認這兩個
+tar 和 bzip2 有在你的 $PATH 裏。要使用新的 tar，只需
+<BLOCKQUOTE><CODE>
+<PRE>
+ tar xyf foo.tar.bz2
+</PRE>
+</CODE></BLOCKQUOTE>
+
+來壓縮檔案。
+<P>要製作新的壓縮檔，同樣地:
+<BLOCKQUOTE><CODE>
+<PRE>
+ tar cyf foo.tar.bz2 檔名1 檔名2 檔名3...目錄1 目錄2...
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>下面是修補的地方:
+<PRE>
+*** tar.c       Thu Jun 11 00:09:23 1998
+--- tar.c.new   Thu Jun 11 00:14:24 1998
+***************
+*** 196,201 ****
+--- 196,203 ----
+    {"block-number", no_argument, NULL, 'R'},
+    {"block-size", required_argument, NULL, OBSOLETE_BLOCKING_FACTOR},
+    {"blocking-factor", required_argument, NULL, 'b'},
++   {"bzip2", required_argument, NULL, 'y'},
++   {"bunzip2", required_argument, NULL, 'y'},
+    {"catenate", no_argument, NULL, 'A'},
+    {"checkpoint", no_argument, &amp;checkpoint_option, 1},
+    {"compare", no_argument, NULL, 'd'},
+***************
+*** 372,377 ****
+--- 374,380 ----
+                PATTERN                at list/extract time, a globbing PATTERN\n\
+    -o, --old-archive, --portability   write a V7 format archive\n\
+        --posix                        write a POSIX conformant archive\n\
++   -y, --bzip2, --bunzip2             filter the archive through bzip2\n\
+    -z, --gzip, --ungzip               filter the archive through gzip\n\
+    -Z, --compress, --uncompress       filter the archive through compress\n\
+        --use-compress-program=PROG    filter through PROG (must accept -d)\n"),
+***************
+*** 448,454 ****
+     Y  per-block gzip compression */
+
+  #define OPTION_STRING \
+!   "-01234567ABC:F:GK:L:MN:OPRST:UV:WX:Zb:cdf:g:hiklmoprstuvwxz"
+
+  static void
+  set_subcommand_option (enum subcommand subcommand)
+--- 451,457 ----
+     Y  per-block gzip compression */
+
+  #define OPTION_STRING \
+!   "-01234567ABC:F:GK:L:MN:OPRST:UV:WX:Zb:cdf:g:hiklmoprstuvwxyz"
+
+  static void
+  set_subcommand_option (enum subcommand subcommand)
+***************
+*** 805,810 ****
+--- 808,817 ----
+        case 'X':
+        exclude_option = 1;
+        add_exclude_file (optarg);
++       break;
++
++       case 'y':
++       set_use_compress_program_option ("bzip2");
+        break;
+
+        case 'z':
+</PRE>
+<P>
+<HR>
+<A HREF="Bzip2-5.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Bzip2-3.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Bzip2.html#toc4"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

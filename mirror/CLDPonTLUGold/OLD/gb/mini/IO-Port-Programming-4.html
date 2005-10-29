@@ -1,0 +1,139 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>如何在 Linux 下撰写程式来使用 I/O 埠: 高精确的时序</TITLE>
+ <LINK HREF="IO-Port-Programming-5.html" REL=next>
+ <LINK HREF="IO-Port-Programming-3.html" REL=previous>
+ <LINK HREF="IO-Port-Programming.html#toc4" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+<A HREF="IO-Port-Programming-5.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="IO-Port-Programming-3.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="IO-Port-Programming.html#toc4"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s4">4. 高精确的时序</A></H2>
+
+<H2><A NAME="ss4.1">4.1 延迟时间</A>
+</H2>
+
+<P>首先, 我会说不保证你在使用者模式 (user-mode) 中执行的行程 (process) 
+能够精确地控制时序因为 Linux 是个多工的作业环境. 你在执行中的行程 (process) 
+随时会因为各种原因被暂停大约 10 毫秒到数秒 (在系统负荷非常高的时候). 然而, 
+对於大多数使用 I/O 埠的应用而言, 这个延迟时间实际上算不了什麽. 要缩短延迟时间,
+你得使用函式 nice 将你在执行中的行程 (process ) 设定成高优先权(请参考 
+<CODE>nice(2)</CODE> 使用说明文件) 或使用即时排程法 (real-time scheduling) (请看下面). 
+<P>如果你想获得比在一般使用者模式 (user-mode) 中执行的行程 (process) 
+还要精确的时序, 有一些方法可以让你在使用者模式 (user-mode) 
+中做到 `即时' 排程的支援. Linux 2.x 版本的核心中有软体方式的即时排程支援; 
+详细的说明请参考 <CODE>sched_setscheduler(2)</CODE> 使用说明文件. 
+有一个特殊的核心支援硬体的即时排程; 详细的资讯请参考网页 
+<A HREF="http://luz.cs.nmt.edu/~rtlinux/">http://luz.cs.nmt.edu/~rtlinux/</A> 
+<P>
+<H3>休息中 (Sleeping) : <CODE>sleep()</CODE> 与 <CODE>usleep()</CODE></H3>
+
+<P>现在, 让我们开始较简单的时序函式呼叫. 想要延迟数秒的时间, 最佳的方法大概
+是使用函式 <CODE>sleep()</CODE> . 想要延迟至少数十毫秒的时间 (10 ms 似乎已是最短的
+延迟时间了), 函式 <CODE>usleep()</CODE> 应该可以使用. 这些函式是让出 CPU 的使用权
+给其他想要执行的行程 (processes)  (``自己休息去了''), 所以没有浪费掉 CPU 
+的时间. 细节请参考 <CODE>sleep(3)</CODE> 与 <CODE>usleep(3)</CODE> 的说明文件.
+<P>如果让出 CPU 的使用权因而使得时间延迟了大约 50 毫秒 (这取决於处理器与机器的速度, 
+以及系统的负荷), 就浪费掉 CPU 太多的时间, 因为 Linux 的排程器 (scheduler) 
+(单就 x86 架构而言) 在将控制权发还给你的行程 (process) 之前通常至少要花费 
+10-30 毫秒的时间. 因此, 短时间的延迟, 使用函式 <CODE>usleep(3)</CODE> 
+所得到的延迟结果通常会大於你在参数所指定的值, 大约至少有 10 ms. 
+<P>
+<P>
+<H3><CODE>nanosleep()</CODE></H3>
+
+<P>在 Linux 2.0.x 一系列的核心发行版本中, 有一个新的系统呼叫 (system call),
+<CODE>nanosleep()</CODE> (请参考 <CODE>nanosleep(2)</CODE> 的说明文件), 他让你能够
+休息或延迟一个短的时间 (数微秒或更多).
+<P>如果延迟的时间 &lt;= 2 ms, 若(且唯若)你执行中的行程 (process) 设定了软体的即时
+排程 (就是使用函式 tt/sched_setscheduler()/), 呼叫函式 <CODE>nanosleep()</CODE>  时
+不是使用一个忙碌回圈来延迟时间; 就是会像函式 <CODE>usleep()</CODE> 一样让出 CPU
+的使用权休息去了.
+<P>这个忙碌回圈使用函式 <CODE>udelay()</CODE> (一个驱动程式常会用到的核心内部的函式)
+来达成, 并且使用 BogoMips 值 (BogoMips 可以准确量测这类忙碌回圈的速度)
+来计算回圈延迟的时间长度. 其如何动作的细节请参考 
+<CODE>/usr/include/asm/delay.h</CODE>).
+<P>
+<H3>使用 I/O 埠来延迟时间</H3>
+
+<P>另一个延迟数微秒的方法是使用 I/O 埠. 就是从埠位址 0x80 输入或输出任何 byte 
+的资料 (请参考前面) 等待的时间应该几乎只要 1 微秒这要看你的处理器的型别与速度.
+如果要延迟数微秒的时间你可以将这个动作多做几次. 在任何标准的机器上输出资料到该
+埠位址应该不会有不良的後果□对 (而且有些核心的设备驱动程式也在使用他).
+<CODE>{in|out}[bw]_p()</CODE> 等函式就是使用这个方法来产生时间延迟的
+(请参考档案 <CODE>asm/io.h</CODE>).
+<P>实际上, 一个使用到埠位址□围为 0-0x3ff 的 I/O 埠指令几乎只要 1 微秒的时间,
+所以如果你要如此做, 例如, 直接使用并列埠, 只要加上几个 <CODE>inb()</CODE> 函式从该
+埠位址□围读入 byte 的资料即可.
+<P>
+<H3>使用组合语言来延迟时间</H3>
+
+<P>如果你知道执行程式所在机器的处理器型别与时钟速度, 
+你可以执行某些组合语言指令以便获得较短的延迟时间 (但是记住, 
+你在执行中的行程 (process) 随时会被暂停,  所以有时延迟的时间会比实际长). 
+如下面的表格所示, 内部处理器的速度决定了所要使用的时钟周期数;
+如, 一个 50 MHz 的处理器 (486DX-50 或 486DX2-50), 一个时钟周期要花费 1/50000000
+秒 (=200 奈秒).
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+指令          i386 时钟周期数       i486 时钟周期数
+nop                   3                   1
+xchg %ax,%ax          3                   3
+or %ax,%ax            2                   1
+mov %ax,%ax           2                   1
+add %ax,0             2                   1
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>(对不起, 我不知道 Pentiums 的资料, 或许与 i486 接近吧. 我无法在 i386 
+的资料上找到只花费一个时钟周期的指令. 如果能够就请使用花费一个时钟周期的指令,
+要不然就使用管线技术的新式处理器也是可以缩短时间的.)
+<P>上面的表格中指令 <CODE>nop</CODE> 与 <CODE>xchg</CODE> 应该不会有不良的後果. 指令最後可能会
+改变旗号暂存器的内容, 但是这没关系因为 gcc 会处理. 指令 <CODE>nop</CODE> 是个好的选择.
+<P>想要在你的程式中使用到这些指令, 你得使用 <CODE>asm(&quot;instruction&quot;)</CODE>.
+指令的语法就如同上面表格的用法; 如果你想要在单一的 <CODE>asm()</CODE> 叙述中使用多个指令,
+可以使用分号将他们隔开. 例如,
+<CODE>asm(&quot;nop ; nop ; nop ; nop&quot;)</CODE> 会执行四个 <CODE>nop</CODE> 指令, 
+在 i486 或 Pentium 处理器中会延迟四个时钟周期 (或是 i386 会延迟 12 个时钟周期).
+<P>gcc 会将 <CODE>asm()</CODE> 翻译成单行组合语言程式码, 所以不会有呼叫函式的负荷.
+<P>在 Intel x86 架构中不可能有比一个时钟周期还短的时间延迟.
+<P>
+<H3>在 Pentiums 处理器上使用函式 <CODE>rdtsc</CODE> </H3>
+
+<P>对於 Pentiums 处理器而言, 你可以使用下面的 C 语言程式码来取得自从上次重新开机
+到现在经过了多少个时钟周期:
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+   extern __inline__ unsigned long long int rdtsc()
+   {
+     unsigned long long int x;
+     __asm__ volatile (".byte 0x0f, 0x31" : "=A" (x));
+     return x;
+   }
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+<P>你可以询问参考此值以便延迟你想要的时钟周期数.
+<P>
+<H2><A NAME="ss4.2">4.2 时间的量测</A>
+</H2>
+
+<P>想要时间精确到一秒钟, 使用函式 <CODE>time()</CODE> 或许是最简单的方法.
+想要时间更精确, 函式 <CODE>gettimeofday()</CODE> 大约可以精确到微秒
+(但是如前所述会受到 CPU 排程的影响). 至於 Pentiums 处理器,
+使用上面的程式码片断就可以精确到一个时钟周期.
+<P>如果你要你执行中的行程 (process) 在一段时间到了之後能够被通知 (get a signal), 
+你得使用函式 <CODE>setitimer()</CODE> 或 <CODE>alarm()</CODE> . 
+细节请参考函式的使用说明文件.
+<P>
+<HR>
+<A HREF="IO-Port-Programming-5.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="IO-Port-Programming-3.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="IO-Port-Programming.html#toc4"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

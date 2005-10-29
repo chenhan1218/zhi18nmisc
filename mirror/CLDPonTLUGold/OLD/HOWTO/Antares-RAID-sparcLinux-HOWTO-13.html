@@ -1,0 +1,2282 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Antares-RAID-sparcLinux-HOWTO: Advanced Topics: 5070 Command Reference</TITLE>
+ <LINK HREF="Antares-RAID-sparcLinux-HOWTO-12.html" REL=previous>
+ <LINK HREF="Antares-RAID-sparcLinux-HOWTO.html#toc13" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<IMG SRC="../img/next.gif" ALT="Next">
+<A HREF="Antares-RAID-sparcLinux-HOWTO-12.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Antares-RAID-sparcLinux-HOWTO.html#toc13"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s13">13. Advanced Topics: 5070 Command Reference</A></H2>
+
+<P>
+<P>In addition to the text based GUI the RAID configuration may also be manipulated
+from the husky prompt ( the : raid; prompt) of the onboard controller. This
+section describes commands that a user can input interactively or via a script
+file to the K9 kernel. Since K9 is an ANSI C Application Programming Interface
+(API) a shell is needed to interpret user input and form output. Only one shell
+is currently available and it is called husky. The K9 kernel is modelled on
+the Plan 9 operating system whose design is discussed in several papers from
+AT&amp;T (See the &quot;Further Reading&quot; section for more information).
+K9 is a kernel targeted at embedded controllers of small to medium complexity
+(e.g. ISDN-ethernet bridges, RAID controllers, etc). It supports multiple lightweight
+processes (i.e. without memory management) on a single CPU with a non-pre-emptive
+scheduler. Device driver architecture is based on Plan 9 (and Unix SVR4) STREAMS.
+Concurrency control mechanisms include semaphores and signals. The husky shell
+is modelled on a scaled down Unix Bourne shell. 
+<P>Using the built-in commands the user can write new scripts thus extending
+the functionality of the 5070. The commands (adapted from the 5070 man pages)
+are extensive and are described below.
+<H2><A NAME="ss13.1">13.1 AUTOBOOT - script to automatically create all raid sets and scsi monitors</A>
+</H2>
+
+<P>
+<UL>
+<LI>SYNOPSIS: autoboot</LI>
+<LI>DESCRIPTION: autoboot is a husky script which is typically executed when
+a RaidRunner boots. The following steps are taken -
+<OL>
+<LI>Start all configured scsi monitor daemons (smon).</LI>
+<LI>Test to see if the total cache required by all the raid sets that are to
+boot is  not  more  than 90% of available memory.</LI>
+<LI>Start  all the scsi target daemons (stargd) and set each daemon's mode
+to &quot;spinning-up&quot; which enables it to respond to all non medium
+access commands from the host.  This  is  done  to  allow hosts to gain knowledge
+about the RaidRunner's scsi targets as quickly as possible.</LI>
+<LI>Bind into the root (ram) filesystem all unused spare backend devices.</LI>
+<LI>Build all raid sets.</LI>
+<LI>If  battery  backed-up  ram is present, check for any saved writes and
+restore them into the just built raid sets.</LI>
+<LI>Finally, set the state of all scsi target daemons to &quot;spun-up&quot;
+enabling hosts to fully access the raid set's behind them.</LI>
+</OL>
+</LI>
+</UL>
+<H2><A NAME="ss13.2">13.2 AUTOFAULT - script to automatically mark a backend faulty after a drive</A>
+ failure</H2>
+
+<P>
+<UL>
+<LI>SYNOPSIS: autofault raidset</LI>
+<LI>DESCRIPTION: autofault  is  a  husky  script  which is typically executed
+by a raid file system upon the failure of a backend of that raid set when that
+raid file system cannot use spare backends or has been configured not to use
+spare backends. After parsing it's arguments (command and environment) autofault
+issues a rconf command to mark a given backend as faulty.</LI>
+<LI>OPTIONS: 
+<UL>
+<LI>raidset: The bind point of the raid set whose backend failed.</LI>
+<LI>$DRIVE_NUMBER: The index of the backend that failed. The first backend
+in a raid set is 0. This option is passed as an environment variable.</LI>
+<LI>$BLOCK_SIZE: The  raid set's io block size in bytes. (Ignored).
+This option is passed as an environment variable.</LI>
+<LI>$QUEUE_LENGTH: The raid set's queue length. (Ignored).  This option
+is passed as an environment variable.</LI>
+</UL>
+</LI>
+<LI>SEE ALSO: rconf</LI>
+</UL>
+<H2><A NAME="ss13.3">13.3 AUTOREPAIR - script to automatically allocate a spare and reconstruct a</A>
+ raid set</H2>
+
+<P>
+<UL>
+<LI>SYNOPSIS: autorepair raidset size</LI>
+<LI>DESCRIPTION: autorepair  is  a  husky script which is typically executed
+by either a raid type 1, 3 or 5 file system upon the failure of a backend of
+that raid set.
+
+After parsing it's arguments (command and environment) autorepair gets
+a spare device from the  RaidRunner's  spares  spool.  It  then  engages  it
+in write-only mode and reads the complete raid device which reconstructs the
+data on the spare.  The read is from the raid file system  repair  entrypoint.
+Reading from  this  entrypoint  causes  a  read  of  a  block immediately
+followed by a write of that block. The read/write sequence is atomic (i.e is
+not interruptible).  Once the reconstruction has completed, a check is  made
+to ensure the spare did not fail during reconstruction and if not, the access
+mode of the spare device is set to the access mode of the raid set.  The process
+that  reads  the  repair  entrypoint  is rebuild.</LI>
+</UL>
+<P>This  device reconstruction will take anywhere from 10 minutes to one and
+a half hours depending on both the size and speed of the backends and the amount
+of activity the host is generating.
+<P>During device reconstruction, pairs of numbers will be  printed  indicating
+each  10%  of  data  reconstructed.  The pairs of numbers are separated
+by a slash character, the first number being the number of blocks reconstructed
+so far and the second being the number number of blocks to be reconstructed.
+Further status about the rebuild can be gained from running rebuild.
+<P>When the spare is allocated both the number of spares currently used on
+the backend and the spare device name is printed. The number of spares on a
+backend is referred to the depth of spares  on  the  backend. Thus  prior 
+to  re-engaging the spare after a reconstruction a check can be made to see
+if the depth is the same. If it is not, then the spare reconstruction failed
+and reconstruction using another  spare  is underway (or no spares are available),
+and hence we don't re-engage the drive.
+
+<UL>
+<LI>OPTIONS: 
+<UL>
+<LI>raidset: The bind point of the raid set whose backend failed.</LI>
+<LI>size : The size of the raid set in 512 byte blocks.</LI>
+<LI>$DRIVE_NUMBER: The  index  of  the  backend  that  failed. The first
+backend in a raid set is 0.  This option is passed as an environment variable.</LI>
+<LI>$BLOCK_SIZE: The raid set's io block size in bytes.  This option
+is passed as an environment variable.</LI>
+<LI>$QUEUE_LENGTH: The raid set's queue length.  This option is passed
+as an environment variable.</LI>
+</UL>
+</LI>
+<LI>SEE ALSO: rconf, rebuild</LI>
+</UL>
+<H2><A NAME="ss13.4">13.4 BIND - combine elements of the namespace </A>
+</H2>
+
+<P>
+<UL>
+<LI>SYNOPSIS: bind [-k] new old</LI>
+<LI>DESCRIPTION: Bind replaces the existing old file (or directory) with the
+new file (or directory). If the&quot;-k&quot; switch is given then new must
+be a kernel recognized device (file system). Section 7k of the manual pages
+documents the devices (sometimes called file systems) that can be bound using
+the &quot;-k&quot; switch.</LI>
+</UL>
+<H2><A NAME="ss13.5">13.5 BUZZER - get the state or turn on or off the buzzer </A>
+</H2>
+
+<P>
+<UL>
+<LI>SYNOPSIS: buzzer or buzzer on|off|mute</LI>
+<LI>DESCRIPTION: Buzzer will either print the state of the buzzer, turn on
+or off the buzzer or mute it. If no arguments  are  given then the state of
+the buzzer is printed, that is on or off will be printed if the buzzer is currently
+on or off respectively. If the buzzer has been muted, then you will be informed
+of this. If the buzzer has not been used since the RaidRunner has booted then
+the special state, unused, is printed. If the argument on is given the buzzer
+is turned on, if off, the buzzer is turned off. If the argument mute is given
+then the muted state of the buzzer is changed. </LI>
+<LI>SEE ALSO: warble, sos</LI>
+</UL>
+<H2><A NAME="ss13.6">13.6 CACHE - display information about and delete cache ranges</A>
+</H2>
+
+<P>
+<UL>
+<LI>SYNOPSIS: cache [-D moniker] [-I moniker] [-F]
+[-g moniker first|last] lastoffset</LI>
+<LI>DESCRIPTION: cache  will  print (to standard output) information about
+the given cache range, delete a given cache range, flush the cache or return
+the last offset of all cache ranges.</LI>
+<LI>OPTIONS
+<UL>
+<LI>-F: Flush all cache buffers to their backends (typically raid sets).</LI>
+<LI>-D moniker: Delete the cache range with moniker (name) moniker.</LI>
+<LI>-I moniker: Invalidate the cache for the given cache range (moniker). This
+is only useful for debugging or elaborate  benchmarks.</LI>
+<LI>g moniker first|last: Print either the first or last block number of a
+cache range with moniker (name) moniker.</LI>
+<LI>lastoffset: Print the last offset of all cache ranges. The last offset
+is the last block number of all cache ranges.</LI>
+</UL>
+</LI>
+</UL>
+<H2><A NAME="ss13.7">13.7 CACHEDUMP - Dump the contents of the write cache to battery backed-up ram</A>
+</H2>
+
+<P>
+<UL>
+<LI>SYNOPSIS: cachedump</LI>
+<LI>DESCRIPTION: cachedump causes all unwritten data in the RaidRunner's cache
+to be written out to the battery backed-up ram. No data will be written to
+battery backed-up ram if there is currently valid  data  already  stored there.
+This command is typically executed when there is something wrong with the data
+(or it's organization) in battery backed-up ram and you need to re-initialize
+it. cachedump will always return a NULL status.</LI>
+<LI>SEE ALSO: showbat, cacherestore</LI>
+</UL>
+<H2><A NAME="ss13.8">13.8 CACHERESTORE - Load the cache with data from battery backed-up ram</A>
+</H2>
+
+<P>
+<UL>
+<LI>SYNOPSIS: cacherestore</LI>
+<LI>DESCRIPTION: cacherestore will check the RaidRunner's battery backed-up
+ram for any data it has stored as a result of a power failure. It will copy
+any data directly into the cache. This command is typically executed automatically
+at boot time and prior to the  RaidRunner  making  it's data available to a
+host. Having successfully copied any data from battery backed-up ram into the
+cache, it flushes the cache and then re-initializes battery backed-up ram to
+indicate it holds no data. cacherestore will return a NULL status on success
+or 1 if an error occurred during the loading  (with  a message written to standard
+error).</LI>
+<LI>SEE ALSO: showbat</LI>
+</UL>
+<H2><A NAME="ss13.9">13.9 CAT - concatenate files and print on the standard output</A>
+</H2>
+
+<P>
+<UL>
+<LI>SYNOPSIS: cat [ file... ]</LI>
+<LI>DESCRIPTION: cat writes the contents of each given file, or standard input
+if none are given or when a file named `-' is given, to standard output. If
+the nominated file is a directory then the filenames contained in that directory
+are sent to standard out (one per line). More information on a file (e.g. its
+size) can be obtained by using stat. The script file ls uses cat and stat to
+produce directory listings.</LI>
+<LI>SEE ALSO echo, ls, stat</LI>
+</UL>
+<H2><A NAME="ss13.10">13.10 CMP - compare the contents of 2 files</A>
+</H2>
+
+<P>
+<UL>
+<LI>SYNOPSIS: cmp [-b blockSize] [-c count] [-e]
+[-x] file1 file2</LI>
+<LI>DESCRIPTION: cmp compares the contents of the 2 named files. If file1 is
+&quot;-&quot; then standard input is used for that file. If the files are
+the same length and contain the same val­ ues then nothing is written to standard
+output and the exit status NIL (i.e. true) is set. Where the 2 files dif­ fer,
+the first bytes that differ and the position are out­ put to standard out and
+the exit status is set to &quot;differ&quot; (i.e. false). The position is
+given by a block number (origin 0) followed by a byte offset within that block
+(origin 0). The optional &quot;-b&quot; switch allows the blockSize of each
+read operation to be set. The default blockSize is 512 (bytes). For big compares
+involving disks a relatively large blockSize may be useful (e.g. 64k). See
+suffix for allowable suffixes. The optional &quot;-c&quot; switch allows
+the count of blocks read to fixed. A value of 0 for count is interpreted as
+read to the end of file (EOF). To compare the first 64 Megabytes of 2 files
+the switches &quot;-b 64k -c 1k&quot; could be used. See suffix for allowable
+suffixes. The optional &quot;-e&quot; switch instructs ccmmpp to output to
+stan­ dard out (usually overwriting the same line) the count of blocks compared,
+each time a multiple of 100 is reached. The final block count is also output.
+The optional &quot;-x&quot; switch instructs ccmmpp to continue after a comparison
+error (but not a file error) and keep a count of blocks in error. If any errors
+are detected only the last one will be output when the command exits. If the
+&quot;-e&quot; switch is also given then the current count of blocks in error
+is output to the right of the multiple of 100 blocks compared. This command
+is designed to compare very large files. Two buffers of blockSize are allocated
+dynamically so their size is bounded by the amount of memory (i.e. RAM in the
+target) available at the time of command execution. The count could be up to
+2G. The number of bytes compared is the product of blockSize and count (i.e.
+big enough).</LI>
+<LI>SEE ALSO: suffix</LI>
+</UL>
+<H2><A NAME="ss13.11">13.11 CONS - console device for Husky</A>
+</H2>
+
+<P>
+<UL>
+<LI>SYNOPSIS: bind -k cons bind_point</LI>
+<LI>DESCRIPTION: cons  allows  an interpreter (e.g. Husky) to route console
+input and output to an appropriate device. That console input and output is
+available at bind_point in the K9 namespace. The special file cons should always
+be available.</LI>
+<LI>EXAMPLES: Husky does the following in its initialisation:
+<BLOCKQUOTE><CODE>
+<PRE>
+bind -k cons /dev/cons
+</PRE>
+</CODE></BLOCKQUOTE>
+</LI>
+</UL>
+<P>On a Unix system this is equivalent to:
+<PRE>
+bind -k unixfd /dev/cons
+</PRE>
+
+<P>On a DOS system this is equivalent to:
+<PRE>
+bind -k doscon /dev/cons
+</PRE>
+
+<P>On target hardware using a SCN2681 chip this is equivalent to:
+<PRE>
+bind -k scn2681 /dev/cons
+</PRE>
+
+
+<LI>SEE ALSO: unixfd, doscon, scn2681
+</LI>
+<H2><A NAME="ss13.12">13.12 DD - copy a file (disk, etc)</A>
+</H2>
+
+<P>
+<UL>
+<LI>SYNOPSIS: dd [if=file] [of=file] [ibs=bytes]
+[obs=bytes] [bs=bytes] [skip=blocks] [seek=blocks]
+[count=blocks] [flags=verbose]</LI>
+<LI>DESCRIPTION: dd copies a file (from the standard input to the standard
+output, by default) with a user-selectable blocksize.</LI>
+<LI>OPTIONS
+<UL>
+<LI>if=file Read from file instead of the standard input.</LI>
+<LI>of=file, Write to file instead of the standard output. </LI>
+<LI>ibs=bytes, Read given number of bytes at a time.</LI>
+<LI>obs=bytes, Write given number of bytes at a time.</LI>
+<LI>bs=bytes, Read and write given number of bytes at a time. Override ibs
+and obs.</LI>
+<LI>skip=blocks, Skip ibs-sized blocks at start of input.</LI>
+<LI>seek=blocks, By-pass obs-sized blocks at start of output.</LI>
+<LI>count=blocks, Copy only ibs-sized input blocks.</LI>
+<LI>flags=verbose, Print (to standard output) the number of blocks copied every
+ten percent of the copy. The output is of the form X/T where X is the number
+of blocks copied so far and T is the total number of blocks to copy. This option
+can only be used if both the count= and of= options  are also given.</LI>
+</UL>
+
+
+The decimal numbers given to &quot;ibs&quot;, &quot;obs&quot;, &quot;bs&quot;,
+&quot;skip&quot;, &quot;seek&quot; and &quot;count&quot; must not be
+negative. These numbers can optionally have a suffix (see suffix). dd outputs
+to standard out in all cases. A successful copy of 8 (full) blocks would cause
+the following output:
+<PRE>
+8+0 records in
+</PRE>
+
+<PRE>
+8+0 records out
+</PRE>
+</LI>
+</UL>
+<P>The number after the &quot;+&quot; is the number of fractional blocks
+(i.e. blocks that are less than the block size) involved. This number will
+usually be zero (and is otherwise when physical media with alignment requirements
+is involved).
+<P>A write failure outputting the last block on the previous example would
+cause the following output:
+<PRE>
+Write failed
+</PRE>
+
+<PRE>
+8+0 records in
+</PRE>
+
+<PRE>
+7+0 records out
+</PRE>
+
+
+<LI>SEE ALSO: suffix
+</LI>
+<H2><A NAME="ss13.13">13.13 DEVSCMP - Compare a file's size against a given value</A>
+</H2>
+
+<P>
+<UL>
+<LI>SYNOPSIS: devscmp filename size</LI>
+<LI>DESCRIPTION: devscmp will find the size of the given file and compare it's
+size in 512-byte blocks to the given size (to be in 512-byte blocks).  If the
+size of the file is less than the given value, then -1 is printed, if equal
+to then 0 is printed, and if the size of the given file is greater than the
+given size then 1 is printed. This routine is used in internal scripts to ensure
+that backends of raid sets are of an appropriate size.</LI>
+</UL>
+<H2><A NAME="ss13.14">13.14 DFORMAT- Perform formatting functions on a backend disk drive</A>
+</H2>
+
+<P>
+<UL>
+<LI>SYNOPSIS
+<UL>
+<LI>dformat -p c.s.l -R bnum</LI>
+<LI>dformat -p c.s.l -pdA|-pdP|-pdG</LI>
+<LI>dformat -p c.s.l -S [-v] [-B firstbn]</LI>
+<LI>dformat -p c.s.l -F</LI>
+<LI>dformat -p c.s.l -D file</LI>
+</UL>
+</LI>
+<LI>DESCRIPTION: In it's first form dformat will either reassign a block on
+a nominated disk drive.  via the SCSI-2 REASSIGN BLOCKS command. The second
+form will allow you to print out the current manufacturers  defect  list  (-pdP),
+the  grown defect  list (-pdG) or both defect lists (-pdA). Each printed list
+is sorted with one defect per line in Physical Sector Format - Cylinder Number,
+Head Number and Defect Sector Number. The third form causes the drive to be
+scanned in a destructive write/read/compare manner. If a  read  or write  or
+data comparison error occurs then an attempt is made to identify the bad sector(s).
+Typically the drive is scanned from block 0 to the last block on the drive.
+You can optionally give an alternative starting block number. The fourth form
+causes a low level format on the specified device. The fifth option allows
+you to download a device's microcode into the device.</LI>
+<LI>OPTIONS:
+<UL>
+<LI>-R bnum: Specify a logical block number to reassign to the drive's grown
+defect list.</LI>
+<LI>-pdA: Print both the manufacturer's and grown defect list.</LI>
+<LI>\ -pdP: Print the manufacturer's defect list.</LI>
+<LI>-pdG: Print the grown defect list.</LI>
+<LI>-S: Perform a destructive scan of the disk reporting I/O errors.</LI>
+<LI>-B firstbn: Specify the first logical block number to start a scan from.</LI>
+<LI>-v: Turn on verbose mode - which prints the current block number being
+scanned.</LI>
+<LI>-F: Issue a low-level SCSI format command to the given device. This will
+take some time.</LI>
+<LI>-D file: Download  into  the  specified device, the given file. The download
+is effected by a single SCSI Write-Buffer command in save microcode mode. This
+allows users to update  a  device's  microcode. Use this command carefully
+as you could destroy the device by loading an incorrect file.</LI>
+<LI>-p c.s.l: Identify  the disk device by specifying it's channel, SCSI ID
+(rank) and SCSI LUN provided in the format &quot;c.s.l&quot;</LI>
+</UL>
+</LI>
+<LI>SEE ALSO: Product manual for disk drives used in your RAID.</LI>
+</UL>
+<H2><A NAME="ss13.15">13.15 DIAGS - script to run a diagnostic on a given device</A>
+</H2>
+
+<P>
+<UL>
+<LI>SYNOPSIS: diags disk -C count -L length -M io-mode -T io-type -D device</LI>
+<LI>DESCRIPTION: diags is a husky script which is used to run the randio diagnostic
+on a given device. When randio is executed, it is executed in verbose mode.</LI>
+<LI>OPTIONS:
+<UL>
+<LI>disk: This is the device type of diagnostic we are to run.</LI>
+<LI>-C count: Specify the number of times to execute the diagnostic.</LI>
+<LI>-L length: Specify  the  &quot;length&quot; of the diagnostic to execute.
+This can be either short, medium or long and specified with the letter's s,
+m or l respectively. In the case of a disk, a short test will  the first 10%
+of the device, a medium the first 50% and long the whole (100%)
+of the disk.</LI>
+<LI>-M io-mode: Specify a destructive (read-write) or non-destructive (read-only)
+test.  Use either read-write or read-only.</LI>
+<LI>-T io-type: Specify a type of io - either sequential or random.</LI>
+<LI>-D device: Specify the device to test.</LI>
+</UL>
+</LI>
+<LI>SEE ALSO: randio, scsihdfs</LI>
+</UL>
+<H2><A NAME="ss13.16">13.16 DPART - edit a scsihd disk partition table</A>
+</H2>
+
+<P>
+<UL>
+<LI>SYNOPSIS: 
+<UL>
+<LI>dpart -a|d|l|m -D file [-N name] [-F firstblock] [-L
+lastblock]</LI>
+<LI>dpart -a -D file -N name -F firstblock -L lastblock</LI>
+<LI>dpart -d -D file -N name</LI>
+<LI>dpart -l -D file</LI>
+<LI>dpart -m -D file -N name -F firstblock -L lastblock</LI>
+</UL>
+</LI>
+<LI>DESCRIPTION: Each  scsihd device  (typically a SCSI disk drive) can be
+divided up into eight logical partitions. By default when a scsihd device is
+bound into the RaidRunner's file system, it has four  partitions, the  whole
+device  (raw),  typically named bindpoint/raw, the partition file (bindpoint/partition),
+the RaidRunner backup configuration file (bindpoint/rconfig), and the &quot;data&quot;
+portion of the disk (bind- point/data) which represents the whole device less
+the backup configuration area and partition file. For more information, see
+scsihdfs. If other partitions are added, then they will appear as bindpoint/partitionname.
+dpart allows you to edit or list the partition table on a scsihd device (typically
+a disk).</LI>
+<LI>OPTIONS:
+<UL>
+<LI>-a: Add a partition. When adding a partition, you need to specify the partition
+name  (-N)  and  the partition range from the first block (-F) to the last
+block (-L).</LI>
+<LI>-d: Delete a named (-N) partition.</LI>
+<LI>-l: List all partitions.</LI>
+<LI>-m: Modify an existing partition.  You  will need to specify the partition
+name (-N) and BOTH it's first (-F) and last (-L) blocknumbers even if you are
+just modifying the last block number.</LI>
+<LI>-D file: Specify the partition file to be edited. Typically, this is the
+bindpoint/partition file.</LI>
+<LI>-N name: Specify the partition name.</LI>
+<LI>-F firstblock: Specify the first block number of the partition.</LI>
+<LI>-L lastblock: Specify the last block number of the partition.</LI>
+</UL>
+</LI>
+<LI>SEE ALSO: scsihd</LI>
+</UL>
+<H2><A NAME="ss13.17">13.17 DUP - open file descriptor device</A>
+</H2>
+
+<P>
+<UL>
+<LI>SYNOPSIS: bind -k dup bind_point</LI>
+<LI>DESCRIPTION: The dup device makes a one level directory with an entry in
+that directory for every open file descriptor of the invoking K9 process. These
+directory &quot;entries&quot; are the numbers. Thus a typical process (script)
+binding a dup device would at least make these files in the namespace: &quot;bind_point/0&quot;,
+&quot;bind_point/1&quot; and &quot;bind_point/2&quot;. These would correspond
+to its open standard in, standard out and standard error file descriptors.
+A dup device allows other K9 processes to access the open file descriptors
+of the invoking process. To  do  this  the  other processes  simply  &quot;open&quot;
+the  required  dup  device directory entry whose name (a number) corresponds
+to the required file descriptor.</LI>
+</UL>
+<H2><A NAME="ss13.18">13.18 ECHO - display a line of text</A>
+</H2>
+
+<P>
+<UL>
+<LI>SYNOPSIS: echo [string ...]</LI>
+<LI>DESCRIPTION: echo writes each given string to the standard output, with
+a space between them and a newline after the last one. Note that all the string
+arguments are written in a single write kernel call. The following backslash-escaped
+characters in the strings are converted as follows:
+
+\b     backspace</LI>
+</UL>
+<P>\c     suppress trailing newline
+<P>\f     form feed
+<P>\n     new line
+<P>\r     carriage return
+<P>\t     horizontal tab
+<P>\v     vertical tab
+<P>\\     backslash
+<P>\nnn   the character whose ASCII code is nnn (octal)
+
+<UL>
+<LI>SEE ALSO: cat</LI>
+</UL>
+<H2><A NAME="ss13.19">13.19 ENV- environment variables file system</A>
+</H2>
+
+<P>
+<UL>
+<LI>SYNOPSIS: bind -k env bind_point</LI>
+<LI>DESCRIPTION: env file system associates a one level directory with the
+bind_point in the K9 namespace. Each file name in that directory is the name
+of the environment variable while the contents of the file is that variable's
+current value. Conceptually each process sees their own copy of the env file
+system.  This copy is either empty or inherited from this process's parent
+at spawn time (depending on the flags to spawn).</LI>
+</UL>
+<H2><A NAME="ss13.20">13.20 ENVIRON - RaidRunner Global environment variables - names and effects</A>
+</H2>
+
+<P>
+<UL>
+<LI>DESCRIPTION: The RaidRunner uses GLOBAL environment variables to control
+the functionality of automatic actions. GLOBAL environment variables are saved
+in the Raid configuration area so they retain their values between reboots/power
+downs. Certain RaidRunner internal run-time variables can also be set as a
+GLOBAL environment variables. See the internals manual entry for details. The
+table below describes those GLOBAL environment variables that are used by the
+RaidRunner in it's normal operation.
+<UL>
+<LI>RebuildPri
+
+This  variable,  if  set, controls the priority used when drive reconstruction
+occurs via the rebuild program. If the variable is not set then the default
+rebuild priority would be used. The variable is to be a comma separated list
+of raid set names and their  associated  rebuild  priorities  and  sleep periods
+(colon separated). The form is
+<PRE>
+Rname_1:Pri_1:Sleep_1,Rname_2:Pri_2:Sleep_2,...,Rname_N:Pri_N:Sleep_N
+</PRE>
+
+
+
+where  Pri_1  is  to  be  the priority the rebuild program runs with when
+run on raid set Rname_1, Sleep_1 is the period, in milliseconds, to sleep between
+each rebuild action on the raid set, Pri_2 is to be the priority  for  raid
+set Rname_2, and so forth.  For example, if the value of RebuildPri is
+<PRE>
+R:5:30000
+</PRE>
+
+
+
+then if a rebuild occurs (via replace, repair or autorepair) on raid set
+R then the rebuild will run with priority 5 (via the -p rebuild option) and
+will sleep 30000 milliseconds (30 seconds) between each rebuild action (specified
+via the -S rebuild option). The priority given must be valid for the rebuild
+program.
+</LI>
+<LI>BackendRanks
+
+On  certain  RaidRunner's where multiple controllers may exist, you can
+restrict a controller's access to the backend ranks of devices available. 
+For example, you may have 2 controllers and 4 ranks of backend devices. You
+can  specify that  the  first controller can only access the first two ranks
+and the second controller, the second two ranks. This variable along with other
+associated commands allows you to set up this restriction. Additionally, you
+may only have a single controller RaidRunner which is in  an  enclosure  with
+multiple  ranks.  By default  the controller will attempt to probe for all
+devices on all ranks. If you have only populated the RaidRunner with say, half
+it's possible compliment of backend devices, then the RaidRunner will still
+probe for the other  half. Setting this variable appropriately will prevent
+this un-needed (and on occasion time consuming) process. This variable takes
+the form
+<PRE>
+controller_id:ranklist controller_id:ranklist ...
+</PRE>
+
+
+
+where controller_id is the controller number (from 0 upwards) and ranklist
+is a comma list of backend ranks which the given controller will access. Note
+that the backend rank is the scsi-id of that rank. For example, on a 2 rank
+(rank 1 and 2 - i.e scsi id 1 for the first rank and scsi id 2 for the second),
+1  controller 
+
+
+This variable takes the form
+
+
+For example, on a 2 rank (rank 1 and 2 - i.e scsi id 1 for the first rank
+and scsi id 2 for the second), 1  controller RaidRunner  where  only  the 
+first  rank  has devices you could prevent the controller from attempting to
+access the (empty) second rank by setting BackendRanks to
+<PRE>
+0:1
+</PRE>
+
+
+
+Typically, you would not set this variable directly, but use supporting
+commands  to  set  it.  These  commands  are pranks and sranks. See these
+manual entries for details.
+</LI>
+</UL>
+</LI>
+<LI>RAIDn_reference_PBUFS
+
+Raid  types 3, 4 and 5 all make use of memory for temporary parity buffers
+when they need to create parity data. This memory is in addition to that allocated
+to a raid set's cache.  When a raid set is created, it  will  also  create
+a default  number  of  parity buffers (which are the same size is a raid set's
+iosize). Sometimes, if the iosize of the raid set is large there will not be
+enough memory to create this default number of parity buffers.  To overcome
+this situation, you can set GLOBAL environment variables to over-ride the
+default number of parity buffers that all raid sets of a particular type or
+a specific raid set will use. You need to set these variables before you define
+the raid set  via  agui and if you delete them and not the raid set, then the
+effect raid sets may not boot and hence will not be accessible by a host. The
+variables are of the form RAIDn_reference_PBUFS where n is the raid type (3,
+4 or 5), and reference  is the raid set's name or the string 'Default' You
+use the reference of 'Default' to specify all raid sets of a particular type.
+For example, to over-ride the number of parity buffers for a raid 5 named
+<PRE>
+: raid ; setenv RAID5_FRED_PBUFS 64
+</PRE>
+</LI>
+</UL>
+<P>To over-ride the number of parity buffers for ALL raid 3's (and set only
+72 parity buffers) set
+<PRE>
+: raid ; setenv RAID3_Default_PBUFS 128
+</PRE>
+
+<P>If you set a default for all raid sets of a particular type, but want ONE
+of them to be different then set up a  variable  for that  particular  raid
+set as it's value will over-ride the default. In the above example, where all
+Raid Type 3 will have 128 parity buffers, you could set the variable
+<PRE>
+: raid ; setenv RAID3_Dbase_PBUFS 56 
+</PRE>
+
+<P>which will allow the raid 3 raid set named 'Dbase' to have 56 parity buffers,
+but all other raid 3's defined on the RaidRunner will have 128.
+
+<UL>
+<LI>SEE ALSO: setenv, printenv, rconf, rebuild, internals</LI>
+</UL>
+<H2><A NAME="ss13.21">13.21 EXEC - cause arguments to be executed in place of this shell</A>
+</H2>
+
+<P>
+<UL>
+<LI>SYNOPSIS: exec [ arg ... ]</LI>
+<LI>DESCRIPTION: exec causes the command specified by the first arg to be executed
+in place of this shell without creating a new process.  Subsequent args are
+passed to the command specified by the first arg as its arguments. Shell redirection
+may appear and, if no other arguments are given, causes the shell input/output
+to be modified. </LI>
+</UL>
+<H2><A NAME="ss13.22">13.22 EXIT - exit a K9 process</A>
+</H2>
+
+<P>
+<UL>
+<LI>SYNOPSIS: exit [string]</LI>
+<LI>DESCRIPTION: exit has an optional string argument. If the optional argument
+is given the current K9 process is terminated with the given string as its
+exit value. (If the string has embedded spaces then the whole string should
+be a quoted_string). If no argument is given then the shell gets the string
+associated with the environment variable &quot;status&quot; and returns that
+string as the exit value. If the environment variable &quot;status&quot;
+is not found then the &quot;true&quot; exit status (i.e. NIL) is returned.</LI>
+<LI>SEE ALSO: true, K9exit</LI>
+</UL>
+<H2><A NAME="ss13.23">13.23 EXPR - evaluation of numeric expressions</A>
+</H2>
+
+<P>
+<UL>
+<LI>SYNOPSIS: expr numeric_expr ... </LI>
+<LI>DESCRIPTION: expr evaluates each numeric_expr command line argument as
+a separate numeric expression. Thus a single expression cannot contain unescaped
+whitespaces or needs to be placed in a quoted string (i.e.  between &quot;{&quot;
+and &quot;}&quot;). Arithmetic is performed on signed integers (currently
+numbers in the range from -2,147,483,648 to 2,147,483,647). Successful calculations
+cause no output (to either standard out/error or environment variables). So
+each useful numeric_expr needs to include an assignment (or op-assignment).
+Each numeric_expr argument supplied is evaluated in the order given (i.e. left
+to right) until they all evaluate successfully (returning a true status). If
+evaluating a numeric_expr fails (usually due to a syntax error) then the expr
+command fails with &quot;error&quot; as the exit status and the error message
+is written to the environment variable &quot;error&quot;.</LI>
+<LI>OPERATORS: The precedence of each operator is shown following the description
+in square brackets. &quot;0&quot; is the highest precedence. Within a single
+precedence group evaluation is left-to-right except for assignment operators
+which are right-to-left. Parentheses have higher precedence than all operators
+and can be used to change the default precedence shown below.
+
+UNARY OPERATORS</LI>
+</UL>
+<P>+ 
+<P>Does nothing to expression/number to the right.
+<P>- 
+<P>negates expression/number to the right.
+<P>! 
+<P>logically negate expression/number to the right.
+<P>~ 
+<P>Bitwise negate expression/number to the right.
+<P>BINARY ARITHMETIC OPERATORS
+<P>* 
+<P>Multiply enclosing expressions [2]
+<P>/ 
+<P>Integer division of enclosing expressions 
+<P>% 
+<P>Modulus of enclosing expressions.
+<P>+ 
+<P>Add enclosing expressions 
+<P>- 
+<P>Subtract enclosing expressions. 
+<P>&lt;&lt; 
+<P>Shift left expression _left_ by number in right expression. Equivalent
+to: left * (2 ** right)
+<P>&gt;&gt; 
+<P>Shift left expression _right_ by number in right expression. Equivalent
+to: left / (2 ** right) 
+<P>&amp; 
+<P>Bitwise AND of enclosing expressions 
+<P>^ 
+<P>Bitwise exclusive OR of enclosing expressions. [8]
+<P>| 
+<P>Bitwise OR of enclosing expressions. [9]
+<P>BINARY LOGICAL OPERATORS
+<P>These logical operators yield the number 1 for a true comparison and 0
+for a false comparison. For logical ANDs and ORs their left and right expressions
+are assumed  to be false if 0 otherwise true. Both logical ANDs and ORs evaluate
+both their left and right expressions in all case (cf. C's short-circuit action).
+<P>&lt;=
+<P>true when left less than or equal to right. [5]
+<P>&gt;=
+<P>true when left greater than or equal to right. [5]
+<P>&lt;
+<P>true when left less than right. [5]
+<P>&gt;
+<P>true when left greater than right. [5]
+<P>==
+<P>true when left equal to right. [6]
+<P>!=
+<P>true when left not equal to right. [6]
+<P>&amp;&amp;
+<P>logical AND of enclosing expressions [10]
+<P>||
+<P>logical OR of enclosing expressions [11]
+<P>ASSIGNMENT OPERATORS
+<P>In the following descriptions &quot;n&quot; is an environment variable
+while &quot;r_exp&quot; is an expression to the right. All assignment operators
+have the same precedence which is lower than all other operators. N.B. Multiple
+assignment operators group right-to-left (i.e. same as C language).
+<P>=
+<P>Assign right expression into environment variable on left.
+<P>*=
+<P>n *= r_exp is equivalent to: n = n * r_exp
+<P>/=
+<P>n /= r_exp is equivalent to: n = n / r_exp
+<P>%=
+<P>n %= r_exp is equivalent to: n = n % r_exp
+<P>+=
+<P>n += r_exp is equivalent to: n = n + r_exp
+<P>-=
+<P>n -= r_exp is equivalent to: n = n - r_exp
+<P>&lt;&lt;=
+<P>n &lt;&lt;= r_exp is equivalent to: n = n &lt;&lt; r_exp
+<P>&gt;&gt;=
+<P>n &gt;&gt;= r_exp is equivalent to: n = n &gt;&gt; r_exp
+<P>&amp;=
+<P>n &amp;= r_exp is equivalent to: n = n &amp; r_exp
+<P>|=
+<P>n |= r_exp is equivalent to: n = n | r_exp
+
+<UL>
+<LI>NUMBERS: All number are signed integers in the range stated in the description
+above. Numbers can be input in base 2 through to base 36. Base 10 is the default
+base. The default base can be overridden by:
+<OL>
+<LI>a leading &quot;0&quot; : implies octal or hexadecimal</LI>
+<LI>a number of the form _base_#_num_</LI>
+</OL>
+
+
+Numbers prefixed with &quot;0&quot; are interpreted as octal. Numbers
+prefixed with &quot;0x&quot; or &quot;0X&quot; are interpreted as hexadecimal.
+For  numbers  using the &quot;#&quot; notation the _base_ must be in
+the range 2 through to 36 inclusive. For bases greater then 10 the letters
+&quot;a&quot; through &quot;z&quot; are utilised for the extra &quot;digits&quot;.
+Upper and lower case letters are acceptable. Any single digit that exceeds
+(or is equal to) the base is consider an error. Base 10 numbers only may have
+a suffix. See suffix for a list of valid suffixes. Also note that since expr
+uses signed integers then &quot;1G&quot; is the largest magnitude number
+that can be represented with the &quot;Gigabyte&quot; suffix (assuming 32
+bit signed integers, -2G is invalid due to the order of evaluation).
+
+<UL>
+<LI>VARIABLES: The only symbolic variables allowed are K9 environment variables.
+Regardless of whether they are being read or written they should never appear
+preceded by a &quot;$&quot;. Environment variables that didn't previous
+exist that appear as left argument of an assignment are created. When a non-existent
+environment variable is read then it is interpreted as the value 0.</LI>
+<LI>EXAMPLES: Some simple examples:
+<BLOCKQUOTE><CODE>
+<PRE>
+expr {n = 1 + 2} # create n
+</PRE>
+</CODE></BLOCKQUOTE>
+
+<PRE>
+echo $n
+</PRE>
+
+<PRE>
+3
+</PRE>
+
+<PRE>
+expr {n*=2} # 3 * 2 result back into n
+</PRE>
+
+<PRE>
+echo $n
+</PRE>
+
+<PRE>
+6
+</PRE>
+
+<PRE>
+expr { k = n &gt; 5 } # 6 &gt; 5 is true so create k = 1
+</PRE>
+
+<PRE>
+echo $k
+</PRE>
+
+<PRE>
+1
+</PRE>
+
+</LI>
+<LI>NOTE: expr is a Husky &quot;built-in&quot; command. See the &quot;Note&quot;
+section in &quot;set&quot; to see the implications.</LI>
+<LI>SEE ALSO: husky, set, suffix, test</LI>
+</UL>
+
+<H2><A NAME="ss13.24">13.24 FALSE - returns the K9 false status</A>
+</H2>
+
+<P>
+<UL>
+<LI>SYNOPSIS: false</LI>
+<LI>DESCRIPTION: false does nothing other than return a K9 false status. K9
+processes return a pointer to a C string (null terminated array of characters)
+on termination. If that pointer is NULL then a true exit value is assumed while
+all other returned pointer values are interpreted  as false (with the string
+being some explanation of what went wrong). This command returns a pointer
+to the string &quot;false&quot; as its return value.</LI>
+<LI>EXAMPLE: The following script fragment will print &quot;got here&quot;
+to standard out:
+<BLOCKQUOTE><CODE>
+<PRE>
+if false then
+</PRE>
+</CODE></BLOCKQUOTE>
+
+<PRE>
+echo impossible
+</PRE>
+
+<PRE>
+else
+</PRE>
+
+<PRE>
+echo got here
+</PRE>
+
+<PRE>
+end
+</PRE>
+
+</LI>
+<LI>SEE ALSO: true</LI>
+</UL>
+
+<H2><A NAME="ss13.25">13.25 FIFO - bi-directional fifo buffer of fixed size</A>
+</H2>
+
+<P>
+<UL>
+<LI>SYNOPSIS:
+<UL>
+<LI>bind -k {fifo size} bind_point</LI>
+<LI>cat bind_point</LI>
+<LI>bind_point/data</LI>
+<LI>bind_point/ctl</LI>
+</UL>
+</LI>
+<LI>DESCRIPTION: fifo  file system associates a one level directory with the
+bind_point in the K9 namespace with a buffer size of size bytes. bind_point/data
+and bind_point/ctl are the data and control channels for the fifo. Data written
+to the bind_point/data file is available for reading from the same file in
+a first-in first-out basis. A write of x bytes to the bind_point/data file
+will either complete and and transfer all the data, or will  transfer  sufficient
+bytes until the fifo buffer is full then block until data is removed from the
+fifo buffer by reading. A read of x bytes from the bind_point/data file will
+transfer the lessor of the current amount of data in the fifo buffer or x bytes.
+A read from the bind_point/ctl will return the size of the fifo buffer and
+the current usage. The number of opens (#  Opens) is the number of processes
+that currently have the bind_point/data file open.</LI>
+<LI>EXAMPLE
+<BLOCKQUOTE><CODE>
+<PRE>
+&gt; /buffer
+</PRE>
+</CODE></BLOCKQUOTE>
+
+<PRE>
+bind -k {fifo 2048} /buffer
+</PRE>
+
+<PRE>
+ls -l /buffer
+</PRE>
+
+<PRE>
+/buffer:
+</PRE>
+
+<PRE>
+/buffer/ctl                     fifo    2 0x00000001    1 0
+</PRE>
+
+<PRE>
+/buffer/data                    fifo    2 0x00000002    1 0
+</PRE>
+
+<PRE>
+cat /buffer/ctl
+</PRE>
+
+<PRE>
+Max: 2048 Cur: 0, # Opens: 0
+</PRE>
+
+<PRE>
+echo hello &gt; /buffer/data
+</PRE>
+
+<PRE>
+cat /buffer/ctl
+</PRE>
+
+<PRE>
+Max: 2048 Cur: 6, # Opens: 0
+</PRE>
+
+<PRE>
+dd if=/buffer/data bs=512 count=1
+</PRE>
+
+<PRE>
+hello
+</PRE>
+
+<PRE>
+0+1 records in
+</PRE>
+
+<PRE>
+0+1 records out
+</PRE>
+
+<PRE>
+cat /buffer/ctl
+</PRE>
+
+<PRE>
+Max: 2048 Cur: 0, # Opens: 0
+</PRE>
+</LI>
+</UL>
+</LI>
+<LI>SEE ALSO: pipe</LI>
+</UL>
+<H2><A NAME="ss13.26">13.26 GET - select one value from list</A>
+</H2>
+
+<P>
+<UL>
+<LI>SYNOPSIS: get number [ value ... ]</LI>
+<LI>DESCRIPTION: get uses the given number to select one value from the given
+list. Indexing is origin 0 (e.g. &quot;get 0 aaa bb c&quot; returns &quot;aaa&quot;).
+If the number is out of range for an index on the given list of values then
+nothing is returned. </LI>
+</UL>
+<H2><A NAME="ss13.27">13.27 GETIV - get the value an internal RaidRunner variable</A>
+</H2>
+
+<P>
+<UL>
+<LI>SYNOPSIS: 
+<UL>
+<LI>getiv</LI>
+<LI>getiv name</LI>
+</UL>
+</LI>
+<LI>DESCRIPTION: getiv prints the current value of an internal RaidRunner variable
+or prints a list of all variables. When a variable name is given it's current
+value is printed. If no value is given the all available internal variables
+are listed.</LI>
+<LI>NOTES: As different models of RaidRunners have different internal variables
+see your RaidRunner's Hardware Reference manual for a list of variables together
+with the meaning of their values. These variables are run-time variables and
+hence revert to their default value whenever  the  RaidRunner is booted.</LI>
+<LI>SEE ALSO: setiv</LI>
+</UL>
+<H2><A NAME="ss13.28">13.28 HELP - print a list of commands and their synopses</A>
+</H2>
+
+<P>
+<UL>
+<LI>SYNOPSIS: help or ?</LI>
+<LI>DESCRIPTION: help or the question mark character - ?, will print a list
+of all commands available to the command interpreter. Along with each command,
+it's synopsis is printed.</LI>
+</UL>
+<H2><A NAME="ss13.29">13.29 HUSKY - shell for K9 kernel</A>
+</H2>
+
+<P>
+<UL>
+<LI>SYNOPSIS
+<UL>
+<LI>husky [-c command] [ file [ arg ... ] ]</LI>
+<LI>hs [-c command] [ file [ arg ... ] ]</LI>
+</UL>
+</LI>
+<LI>DESCRIPTION: husky and hs are synonyms. husky is a command language interpreter
+that executes commands read from the standard input or from a file. husky is
+a scaled down model of Unix's Bourne shell (sh). One major difference is that
+husky has no concept of current working directory. If the &quot;-c&quot;
+switch is present then the following command is interpreted by husky in a newly
+thrown shell nested in the current environment. This newly thrown shell exits
+back to the current environment when the command finishes. Otherwise if arguments
+are given the first one is assumed to be a file containing husky commands.
+Again a new shell is thrown to execute these commands. husky script files can
+access their command line arguments and the 2nd and subsequent arguments to
+husky (if present) are passed to the file for that purpose. If no arguments
+are given to husky then commands are read from standard in (and the shell is
+considered interactive).</LI>
+<LI>RETURN STATUS: husky places the K9 return status of a process (NIL if ok,
+otherwise a string explaining the error) in the file &quot;/env/status&quot;
+
+An example:
+<PRE>
+dd if=/xx
+</PRE>
+
+<PRE>
+dd: could not open /xx
+</PRE>
+
+<PRE>
+cat /env/status
+</PRE>
+
+<PRE>
+open failed
+</PRE>
+
+<PRE>
+cat /env/status
+</PRE>
+
+<PRE>
+# empty because previous &quot;cat&quot; worked
+</PRE>
+</LI>
+</UL>
+<P>As the file &quot;/env/status&quot; is an environment variable the return
+status of a command is also available in the variable $status. The exit
+status of a pipeline is the exit status of the last command in the pipeline.
+
+<UL>
+<LI>SIGNALS If an interactive shell receives an interrupt signal (i.e. K9_SIGINT
+- usually a control-C on the console) then the shell exits. The &quot;init&quot;
+process will then start a new instance of the husky shell with all the previously
+running processes (with the exception of the just killed shell) still running.
+This allows the user to kill the process that caused the previous shell problems.
+Alternatively a process that is acci­ dentally run in foreground is effectively
+put in the background by sending an interrupt signal to the shell. Note that
+this is quite different to Unix shells which would forward the signal onto
+the foreground process.</LI>
+<LI>QUOTES, ESCAPING, STRING CONCATENATION, ETC: A quoted_string (as defined
+in the grammar) commences with a &quot;{&quot; and finishes with the
+matching &quot;}&quot;. The term &quot;matching&quot;  implies  that
+all embedded &quot;{&quot; must have a corresponding embedded &quot;}&quot;
+before the final &quot;}&quot; is said to match the original &quot;{&quot;.
+A quoted_string can be spread across several lines. No command line substitution
+occurs within quoted_strings. The character for escaping the following character
+is &quot;\&quot;. If a &quot;{&quot; needs to be interpreted literally
+then it can be represented by &quot;\{&quot;. If a string containing
+spaces (whitespaces) needs to be interpreted as a single token then space
+(whitespace) can be escaped (i.e. &quot;\ &quot;).  If a &quot;\&quot;
+itself needs to be interpreted literally then it can be represented by &quot;\\&quot;.
+The string concatenation character is &quot;^&quot;. This is useful when
+a token such as &quot;/d4&quot; needs to built up by a script when &quot;/d&quot;
+is  fixed  and  the &quot;4&quot; is derived from some variable:
+<BLOCKQUOTE><CODE>
+<PRE>
+set n 4
+</PRE>
+</CODE></BLOCKQUOTE>
+
+<PRE>
+&gt; /d^$n
+</PRE>
+</LI>
+</UL>
+<P>This example would create the file &quot;/d4&quot;.
+<P>The output of another husky command or script can be made available inline
+by starting the sequence with &quot;`&quot; and finishing it with a &quot;'&quot;.
+For example:
+<PRE>
+echo {ps output follows:
+</PRE>
+
+<PRE>
+} `ps'
+</PRE>
+
+<P>This prints the string &quot;ps output follows:&quot; followed on the
+next line by the current output from the command &quot;ps&quot;. That output
+from  &quot;ps&quot;  would have its embedded newlines replaced by whitespaces.
+
+<LI>COMMAND LINE FILE REDIRECTION: 
+<UL>
+<LI>Redirection should appear after a command and its arguments in a line to
+be interpreted by husky. A special case is a line that just contains &quot;&gt;
+filename&quot; which creates the filename with zero length if it didn't previously
+exist or truncates to zero length if it did. </LI>
+<LI>Redirection of standard in to come from a file uses the token &quot;&lt;&quot;
+with the filename appearing to its right. The default source of standard in
+is the console. </LI>
+<LI>Redirection of standard out to go to a file uses the token &quot;&gt;&quot;
+with the filename appearing to its right. The default destination of standard
+out is the console. </LI>
+<LI>Redirection of standard error to go to a file uses the token &quot;&gt;[2]&quot;
+with the filename appearing to its right. The default destination of standard
+error is the console. </LI>
+<LI>Redirection of writes from within a command which uses a known file descriptor
+number (say &quot;n&quot;) to go to a file uses the token &quot;&gt;[n]&quot;
+with the filename appearing to its right.</LI>
+<LI>Redirection of read from within a command which uses a known file descriptor
+number (say &quot;n&quot;) to come from a file uses the token &quot;&lt;[n]&quot;
+with the filename appearing to its right.</LI>
+<LI>Redirection of reads and writes from within a command which uses a known
+file descriptor number (say &quot;n&quot;) to a file uses the token &quot;&lt;&gt;[n]&quot;
+with the filename appearing to its right. In order to redirect both standard
+out and standard error to the one file the form &quot; &gt; filename &gt;[2=1]&quot;
+can be used. This sequence first redirects standard  out  (i.e. file descriptor
+1) to filename and then redirects what is written to file descriptor 2 (i.e.
+standard error) to file descriptor 1 which is now associated with filename.</LI>
+</UL>
+
+<LI>ENVIRONMENT VARIABLES: Each process can access the name it was invoked
+by via the variable: &quot;arg0&quot; . The command line arguments (excluding
+the invocation name) can be accessed as a list in the variable: &quot;argv&quot;
+. The number of elements in the list &quot;argv&quot; is place in &quot;argc&quot;.
+The get command is useful for fetching individual arguments from this list.
+The pid of the current process can be fetched from the variable: &quot;pid&quot;.
+When a script launches a new process in the background then the child's pid
+can be accessed from the variable &quot;child&quot;. The variable &quot;ContollerId&quot;
+is set to the RaidRunner controller number husky is running on. Environment
+variables are a separate &quot;space&quot; for each process. Depending on
+the way a process was created, its initial set of environment variables may
+be copied from its parent process at the &quot;spawn&quot; point.
+<LI>SEE ALSO: intro
+</LI>
+</LI>
+</LI>
+<H2><A NAME="ss13.30">13.30 HWCONF - print various hardware configuration details</A>
+</H2>
+
+<P>
+<UL>
+<LI>SYNOPSIS: hwconf [-D] [-M] [-I] [-d
+[-n]] [-f] [-h] [-i -p c.s.l]
+[-m] [-p c.s.l] [-s] [-S] [-t]
+[-T] [-P] [-W]</LI>
+<LI>DESCRIPTION: hwconf prints details about the RaidRunner hardware and devices
+attached.</LI>
+<LI>OPTIONS:
+<UL>
+<LI>-h: Print  the number of controllers, host interfaces per controller, the
+number of disk channels per controller, number of ranks of disks and the details
+memory (in bytes) on each  controller.  Four memory  figures  are printed,
+the first is the total memory in the controller, next is the amount of memory
+at boot time, next is the amount currently available and lastly is the  largest
+available contiguous area of memory.  This is the default option.</LI>
+<LI>-f: Print  the  number  of  fans in the RaidRunner and then the speed for
+each fan in the system. The speeds values are in revolutions per minute (rpms).
+The fans in the system are  labeled  in  your hardware  specification sheet
+for your RaidRunner. The first speed printed from this command corresponds
+to fan number 0 on your specification sheet, the second is for fan 1, and so
+forth.</LI>
+<LI>-d: Print out information on all the disk drives on the RaidRunner.  For
+each disk on the RaidRunner, print out - the  device  name,  in  the format
+c.s.l where c is the channel, s is the SCSI ID (or rank) and l is the SCSI
+LUN of the device, the manufacturer's name (vendor id), the disk's model name
+(product id), the disk's version id, the disk serial number, the disk geometry
+- number of cylinders, heads and sectors, and the last block number on the
+disk and the block size in bytes. the disk revolution count per minute (rpm's),
+the number of notches/zones available on the drive (if any)</LI>
+<LI>-n: Print out the disk drive notch/zone tables if available.  This is a
+sub-option to the -d  option. Not  all  disks appear to correctly report the
+notch/zone partition tables.  For each notch/zone,</LI>
+<LI>the following is printed: the zone number, the zone's starting cylinder,
+the zone's starting head, the zone's ending cylinder, the zone's ending head,
+the zone's starting logical block number, the zone's ending logical block number,
+the zone's number of sectors per track</LI>
+<LI>-D: Print out the device names for all disk drives on the system.</LI>
+<LI>-I: Initialize back-end NCR SCSI chips.  This flag may be used in conjunction
+with any  other  option and  will  done first. It has an effect only the first
+call to hwconf that has not yet used a -d, -D or -I options,  or on those chips
+that have not yet had a -p on the  channel  associated  with that chip.</LI>
+<LI>-m: Print  out  major  flash and battery backed-up ram addresses (in hex).
+Additionally print out the size of the RaidRunner configuration area.  Eight
+(8) addresses are printed in order RaidRunner configuration area start and
+end addresses (FLASH RAM), RaidRunner Husky Scripts area start and end addresses
+(FLASH RAM), RaidRunner Binary Image area start and end addresses (FLASH RAM),
+RaidRunner Battery Backed-up area start and end addresses. And the size of
+the RaidRunner configuration area (in bytes) is then printed.</LI>
+<LI>-p c.s.l: Probe a single device specified by the given channel, SCSI ID
+(rank) and SCSI LUN provided in the format  &quot;c.s.l&quot;. The output
+of this command is the same as the &quot;-d&quot; option but just for the
+given device. If the device is not present then nothing will be output and
+the exit status of the  command will be 1.</LI>
+<LI>-i -p c.s.l: Re-initialize  the SCSI device driver specified by the given
+channel, SCSI ID (rank) and SCSI LUN provided in the format &quot;c.s.l&quot;.
+Typically this command is used when, on a running  RaidRunner,  a new drive
+is plugged in, and it will be used prior to the RaidRunner's next reboot.</LI>
+<LI>-M: Set  the  boottime  memory. This option is executed internally by the
+controller at boot time and has no function (or effect) executed at any other
+time.</LI>
+<LI>-s: Print the 12 character serial number of the RaidRunner.</LI>
+<LI>-S: Issue SCSI spin up commands to all backends as quickly as possible.
+This option is  intended  for use at power-on stage only.</LI>
+<LI>-t: Probe  the  temperature  monitor  returning the internal temperature
+of the RaidRunner in degrees Celsius.</LI>
+<LI>-T: Print the temperatures being recorded by the hardware monitoring daemon
+(hwmon).</LI>
+<LI>-P: For both AC and DC power supplies, print the number of each present
+and the state of each supply. The state will be printed as ok or flt depending
+on whether the PSU is working or faulty.</LI>
+<LI>-W: This  option  will  wait until all possible backends have spun up.
+It is used in conjunction with</LI>
+</UL>
+</LI>
+<LI>NOTES : The order of printing the disk information is by SCSI ID (rank),
+by channel, by SCSI LUN.</LI>
+</UL>
+<H2><A NAME="ss13.31">13.31 HWMON - monitoring daemon for temperature, fans, PSUs.</A>
+</H2>
+
+<P>
+<UL>
+<LI>SYNOPSIS: hwmon [-t seconds] [-d]</LI>
+<LI>DESCRIPTION: hwmon  is  a  hardware  monitoring  daemon.  It  periodically
+probes the status of certain elements of a RaidRunner and if an out-of-band
+occurrence happens, will cause the alarm to sound  or  light  up  fault leds
+as well as saving a message in the system log. Depending on the model of RaidRunner,
+the elements monitored are temperature, fans and power supplies. When an out-of-band
+occurrence is found, hwmon will reduce the time between probes to 5 seconds.
+If  a  buzzer is the alarm device, then the buzzer will turn on for 5 seconds
+then off for 5 seconds and repeat this cycle until the buzzer is muted or the
+occurrence is corrected.
+
+If the RaidRunner model supports a buzzer muting switch, then the buzzer
+will be muted if the switch  is pressed  during  a  cycle change as per the
+previous paragraph. When hwmon recognizes the mute switch it will beep twice.</LI>
+</UL>
+<P>Certain out-of-band occurrences can be considered to be catastrophic, meaning
+if the occurrence  remains uncorrected,  the  RaidRunner's  hardware is likely
+to be damaged. Occurrences such as total fan failure and sustained high temperature
+along with total or partial fan failure are considered  as  catastrophic. hwmon
+has  a  means  of automatically placing the RaidRunner into a &quot;shutdown&quot;
+or quiescent state where minimal power is consumed (and hence less heat is
+generated). This is  done  by  the  execution  of  the shutdown command  after
+a period of time where catastrophic out-of-band occurrences are sustained.
+This process is enabled, via the AutoShutdownSecs internal variable. See the
+internals  manual  for use of this variable. hwmon  can  be  prevented from
+starting at boot time by creating the global environment variable NoHwmon and
+setting any value to it. A warning message will be stored in the syslog.
+
+<UL>
+<LI>OPTIONS:
+<UL>
+<LI>t seconds: Specify the number of seconds to wait between probes of the
+hardware elements.  If this option is not specified, the default period is
+300 seconds.</LI>
+<LI>-d: Turn on debugging mode which can produce debugging output.</LI>
+</UL>
+</LI>
+<LI>SEE ALSO: hwconf, pstatus, syslogd, shutdown, internals</LI>
+</UL>
+<H2><A NAME="ss13.32">13.32 INTERNALS - Internal variables used by RaidRunner to change dynamics of</A>
+ running kernel</H2>
+
+<P>
+<UL>
+<LI>DESCRIPTION: Certain  run-time  features  of the RaidRunner can be manipulated
+by changing internal variables via the setiv command. The table below describes
+each changeable variable, it's effect, it's default value and range of values
+it can be set to. The  variables  below  are  run-time  features  of a RaidRunner
+and hence are always set to their default values when a RaidRunner boots. Certain
+variables can be stored as a global environment variable and will over-ride
+the  defaults  at boot time.  If you create a global environment variable of
+that variable's name with an appropriate value, it's default value will be
+over-ridden the next time the RaidRunner is re-booted. Note, that the values
+of these variables  ARE  NOT CHECKED  when set in the global environment variable
+tables and, if incorrectly set, will generate errors at boot until deleted
+or corrected.  In the table below, any variable that can have a value stored
+as a global  environment  variable is marked with (GEnv)</LI>
+<LI>write_limit: This  variable  is  the  maximum  number of 512-byte blocks
+the cache filesystem will buffer for writes. If this limit is reached all writes
+to the cache filesystem will be blocked until the cache filesystem has  written
+out (to it's backend) enough blocks to reach a low water mark - write_low_tide.
+This  variable  cannot  be  changed if battery backed-up RAM is available as
+it is tied to the amount of battery backed-up RAM available. The value of this
+variable is calculated when the cache is initialized. It's value is dependant
+on whether  battery  backed-up RAM is installed in the RaidRunner. If installed,
+the number of blocks of data that can be saved into the battery backed-up RAM
+is calculated. If no battery backed-up RAM is present, it's value is set  to
+75% of  the  RaidRunner's  memory  (expressed  in a count of 512 byte
+blocks) then adjusted to reflect the amount of cache requested by configured
+raid sets. When write_limit is changed then both write_high_tide and write_low_tide
+are  automatically  changed  to  there default values (a function of the value
+of write_limit).</LI>
+<LI>write_high_tide: This variable is a high water mark for the number of written-to
+512-byte blocks in the cache. When the number of data blocks exceeds this value,
+to avoid the cache filesystem from blocking it's front end, the  cache  flushing
+mechanism  continually  flushes the cache buffer until the amount of unwritten
+(to the backend) cache buffers is below the low water mark (write_low_tide).
+This value defaults to 75% of write_limit. This variable can have values
+ranging from write_limit down to write_low_tide. It is recommended that this
+variable not be changed.</LI>
+<LI>write_low_tide: This variable is a low water mark for when the cache flushing
+mechanism is continually  flushing  data  to  it's backend. Once  the  number
+of written-to cache blocks yet to be flushed equals or is less than this value,
+the sustained flushing is stopped. This value defaults to 25% of write_limit.
+This variable can have values ranging from write_high_tide-1 down to zero (0).
+It is recommended that this variable not be changed.</LI>
+<LI>cache_nflush: This variable is the number of cache buffers (not 512-byte
+data blocks) that the cache flushing  mechanism  will attempt to write out
+in one flush cycle. Adjusting  this  value  may improve performance on writes
+depending of the size of the cache buffers and type of disk drives used in
+the raid set backends. The default value is 128. It's value can range from
+2 to 128.</LI>
+<LI>cache_nread: This variable is the number of cache buffers (not 512-byte
+data blocks) that the cache  reading  mechanism  will attempt to read out in
+one read cycle. Adjusting  this  value  may  improve performance on reads depending
+of the size of the cache buffers and type of disk drives used in the raid set
+backends. The default value is 128. It's value can range from 2 to 128.</LI>
+<LI>cache_wlimit: This variable is the number of cache buffers (not 512-byte
+data blocks) that the cache flushing  mechanism  will attempt  coalesce  into
+a  single sequential write. It is different to cache_nflush in that cache_nflush
+is the total number of cache buffers that can be written in a single cache
+flush cycle and these buffers  can  be  non sequential  whereas  cache_wlimit
+is a limit on the number of sequential cache buffer's that can be written with
+one write. Adjusting this value may improve performance on writes depending
+of the size of the cache buffers  and  type  of disk drives used in the raid
+set backends. The default value is 128. It's value can range from 2 to 128.</LI>
+<LI>cache_fperiod (GEnv): By  default, the cache flushes any data to be written
+every 1000 milliseconds (unless it's forced to by the fact that the cache is
+getting full and then it flushes the cache and resets the timer).  You can
+vary this  flushing period  by setting this variable.  Given you have a large
+number of sustained reads and minimal writes, then you may want to delay the
+writes out of cache to the backends as long as possible. Note, that by setting
+this  to  a high value, you run the risk of loosing what you have written.
+The default value is 1000 milliseconds (i.e 1 second). It's value can range
+from 500ms to 300000ms.</LI>
+<LI>scsi_write_thru (GEnv): By  default all writes (from a host) are buffered
+in the RaidRunner's cache and are flushed to the backend disks periodically.
+When battery backed-up RAM is available then this results in the most efficient
+write  throughput. If no battery backed-up RAM is available or you do not want
+to depend on writes being saved in battery backed-up RAM in event of a power
+failure you can force the RaidRunner to write data straight thru to the  backends
+prior to returning an OK status to the host. This essentially provides a write-thru
+cache. The default value of this variable is 0 - write-thru mode is DISABLED.
+The values this variable can take are
+<UL>
+<LI>0 - DISABLE write-thru mode, or</LI>
+<LI>1 - ENABLE write-thru mode.</LI>
+</UL>
+</LI>
+<LI>scsi_write_fua (GEnv): This variable effects what is done when the FUA
+(Force Unit Access) bit is set on a SCSI WRITE-10 command. When  this  variable
+is  enabled  and a SCSI WRITE-10 command has the FUA bit set is processed
+then the data is written directly thru the cache to the backend disks. If the
+variable is disabled, then the setting of  the  FUA bit on SCSI WRITE-10 commands
+is ignored. The  default value for this variable is disabled (0) if battery
+backed-up RAM is present, or enabled (1) if battery backed-up RAM is NOT present.
+The values this variable can take are
+<UL>
+<LI>0 - IGNORE FUA bit on SCSI WRITE-10 commands, or</LI>
+<LI>1 - ACT on FUA bit on SCSI WRITE-10 commands.</LI>
+</UL>
+</LI>
+<LI>scsi_ierror (GEnv): This variable controls what is done when the RaidRunner
+receives a Initiator Detected Error message  on  a  SCSI host channel. If 
+set  (1), cause an Check Condition, If NOT set (0), follow the SCSI-2 standard
+and re-transmit the Data In / Out phase. The default value is 0. The values
+this variable can take are
+<UL>
+<LI>0 - follow SCSI-2 standard</LI>
+<LI>1 - ignore the SCSI-2 standard and cause a Check Condition.</LI>
+</UL>
+</LI>
+<LI>scsi_sol_reboot (GEnv): Determines whether to auto-detect a Solaris reboot
+and the clear any wide mode negotiations. If set (1), detect a Solaris reboot
+and clear wide mode.  If NOT set (0), follow the  SCSI-2  standard  and  not
+clear wide mode. The default value is 0. The values this variable can take
+are
+<UL>
+<LI>0 - follow SCSI-2 standard</LI>
+<LI>1 - ignore the SCSI-2 standard and clear wide mode.</LI>
+</UL>
+</LI>
+<LI>scsi_hreset (GEnv): Determines whether to issue a SCSI bus reset on host
+ports after power-on. If  set  (1), then a SCSI bus reset is done on the host
+port when starting the first smon/stargd process on that port.  If NOT set
+(0), nothing is done. The default value is 0. The values this variable can
+take are
+<UL>
+<LI>0 - don't issue SCSI bus resets on power-on.</LI>
+<LI>1 - issue SCSI bus resets on power-on when the first smon/stargd process
+is started.</LI>
+</UL>
+</LI>
+<LI>scsi_full_log (GEnv): Determines whether or not stargd reports, via syslog,
+a Reset Check condition on Read, Write,  Test  Unit  Ready and Start Stop commands.
+This reset check condition is always set when a RaidRunner boots or the raid
+detects a scsi-bus reset. Note that this variable only suppresses the logging
+of this Check condition into syslog, it does not effect the response to the
+host of this and any Check condition. If  set  (1),  then  all stargd detected
+reset Check condition error messages are logged.  If NOT set (0), these messages
+are suppressed The default value is 0. The values this variable can take are
+<UL>
+<LI>0 - suppress logging these messages</LI>
+<LI>1 - log all messages.</LI>
+</UL>
+</LI>
+<LI>scsi_ms_badpage (GEnv): Determines whether or not stargd reports, via syslog,
+that it has received a non-supported page number in a MODE SENSE  or  MODE
+SELECT command it receives from a host. Note that stargd will issue the appropriate
+Check condition to the host (&quot;Invalid Field in CDB&quot;) irrespective
+of the value of this variable. If set (1), then all stargd detected non-supported
+page numbers in MODE SENSE and MODE SELECT commands  will  be   logged.  If
+NOT set (0), these messages are suppressed The default value is 0. The values
+this variable can take are
+<UL>
+<LI>0 - suppress logging these messages</LI>
+<LI>1 - log all messages.</LI>
+</UL>
+</LI>
+<LI>scsi_bechng (GEnv): Determines  whether  or not the raid reports backend
+device parameter change errors. In a multi controller environment, backends
+are probed and some of their parameters are changed by a booting controller.
+This will  generate parameter change mode sense errors. If cleared (0), then
+all parameter change errors will NOT be logged.  If set (1), these messages
+are logged like any other backend error. The default value is 0. The values
+this variable can take are
+<UL>
+<LI>0 - suppress logging these messages</LI>
+<LI>1 - log all messages.</LI>
+</UL>
+</LI>
+<LI>scsi_dnotch (GEnv): Some disk drives take an inordinate amount of time
+to perform mode select commands.  One  set  of  information  a RaidRunner 
+will  obtain from a device backend are the disk notch pages (if present). As
+this is for information only, then to reduce the boot time of a RaidRunner
+you can request that disk notches are not obtained. If cleared (0), backend
+disk notch information is not probed for.  If set (1), then backend disk notch
+information is probed for. The default value is 1. The values this variable
+can take are:
+<UL>
+<LI>0 - don't probe for notch pages</LI>
+<LI>1 - probe for notch pages</LI>
+</UL>
+</LI>
+<LI>scsi_rw_retries (GEnv): Specify  the  number  of  read  or write retries
+to perform on a device backend before effecting an error on the given operation.
+Note that ALL retries are reported via syslog. The default value is 3. It's
+value can range from 1 to 9.</LI>
+<LI>scsi_errpage_r (GEnv): Specify the number of internal read retries that
+a disk backend is to perform before reporting an error (to  the raid). Setting
+this variable causes the Read Retry Count field in the Read-Write Error Recovery
+mode sense page. A value of -1 will cause the drive's default to be used. The
+default value is -1. It's value can range from -1 (use disk's default) or from
+0 to 255.</LI>
+<LI>scsi_errpage_w (GEnv): Specify the number of internal write retries that
+a disk backend is to perform before reporting an error (to the raid).  Setting
+this  variable  causes  the Write Retry Count field in the Read-Write Error
+Recovery mode sense page.  A value of -1 will cause the drive's default to
+be used. The default value is -1. It's value can range from -1 (use disk's
+default) or from 0 to 255.</LI>
+<LI>BackFrank: Specify the SCSI-ID of the first rank of backend disks on a
+RaidRunner.  This variable should never  be  changed and is for informative
+purposes only. The default value is dependant on the model of RaidRunner being
+run. The values this variable can take are
+<UL>
+<LI>0 - the first rank SCSI-ID will be 0</LI>
+<LI>1 - the first rank SCSI-ID will be 1</LI>
+</UL>
+</LI>
+<LI>raid_drainwait (GEnv): Specify  the  number  of  milliseconds  a  raidset
+is to delay, before draining all backend I/O's when a backend fails. Setting
+this variable to a lower value will speed up the commencement of any  error
+recovery  procedures that would be performed on a raid set when a backend
+fails. The default value is 500 milliseconds. It's value can range from 50
+to 10000 milliseconds.</LI>
+<LI>EnclosureType: Specify  the  enclosure  type a raid controller is running
+within.  This variable should never be changed and is for informative purposes
+only. The default value is dependant on the model of RaidRunner being run.
+The values this variable can take are integers starting from 0.</LI>
+<LI>fmt_idisc_tmo (GEnv): Specify the SCSI command timeout (in milliseconds)
+when a SCSI FORMAT command  is  issued  on  a  backend.  Disk drives take different
+amounts of time to perform a SCSI FORMAT command and hence a timeout is required
+to be set when the command is issued. As certain drives may take longer to
+format than the default timeout you can  change it. The default value is 720000
+milliseconds. It's value can range from 200000 to 1440000 milliseconds.</LI>
+<LI>AutoShutdownSecs (GEnv): Specify  the  number  of seconds the RaidRunner
+should monitor catastrophic hardware failures before deciding to automatically
+shutdown. A catastrophic failure is one which will cause damage to the  RaidRunner's
+hardware  if not  fixed  immediately.  Failures  like all fans failing would
+be considered catastrophic. A value of 0 seconds (the default) will disable
+this feature, that is, with the exception of  logging  the  errors,  no  action
+will occur.  See the shutdown and hwmon for further details. The default value
+is 0 seconds. It's value can range from 20 to 125 seconds.</LI>
+<LI>SEE ALSO: setiv, getiv, syslog, setenv, printenv, hwmon, shutdown</LI>
+</UL>
+<H2><A NAME="ss13.33">13.33 KILL - send a signal to the nominated process</A>
+</H2>
+
+<P>
+<UL>
+<LI>SYNOPSIS: kill [-sig_name] pid</LI>
+<LI>DESCRIPTION: kill sends a signal to the process nominated by pid. If the
+pid is a positive number then only the nominated process is signaled. If the
+pid is a negative number then the signal is sent to all processes in the same
+process group as the process with the id of -pid. The switch is optional and
+if not given a SIGTERM (software termination signal) is sent. If the sig_name
+switch is given then it should be one of the following (lower case) abbreviations.
+Only the first 3 letters need to be given for the signal name to be recognized.
+Following each abbreviation is a brief explanation and the signal number in
+brackets:
+
+null - unused signal [0]</LI>
+</UL>
+<P>hup - hangup [1]
+<P>int - interrupt (rubout) [2]
+<P>quit - quit (ASCII FS) [3]
+<P>kill - kill (cannot be caught or ignored) [4]
+<P>pipe - write on a pipe with no one to read it [5]
+<P>alrm - alarm clock [6]
+<P>term - software termination signal [7]
+<P>cld - child process has changed state [8]
+<P>nomem - could not obtain memory (from heap) [9]
+<P>You cannot kill processes whose process id is between 0 and 5 inclusive.
+These are considered sacrosanct - hyena, init and console  reader/writers.
+
+<UL>
+<LI>SEE ALSO: K9kill</LI>
+</UL>
+<H2><A NAME="ss13.34">13.34 LED- turn on/off LED's on RaidRunner</A>
+</H2>
+
+<P>
+<UL>
+<LI>SYNOPSIS: 
+<UL>
+<LI>led</LI>
+<LI>led led_id led_function</LI>
+</UL>
+</LI>
+<LI>DESCRIPTION: led uses the given led_id to identify the LED to manipulate
+based on the led_function. When no arguments are given, an internal LED register
+is printed along with the current function the onboard LEDS, led1 and led2
+are tracing. If a undefined led_id is given, the led command silently does
+nothing and returns NULL. If an incorrect number of arguments or invalid led_function
+is given a usage message is printed. Depending on the RaidRunner model the
+led_id can be one of
+<UL>
+<LI>led1 - LED1 on the RaidRunner controller itself</LI>
+<LI>led2 - LED2 on the RaidRunner controller itself</LI>
+<LI>Dc.s.l - Device on channel c, scsi id s, scsi lun l</LI>
+<LI>status - the status LED on the RaidRunner</LI>
+<LI>io - the io LED on the RaidRunner</LI>
+</UL>
+
+
+and led_function can be one of</LI>
+<LI>on - turn on the given LED</LI>
+<LI>off - turn off the given LED</LI>
+<LI>ok - set the given LED to the defined OK state</LI>
+<LI>faulty - set the given LED to the defined FAULTY state</LI>
+<LI>warning - set the given LED to the defined WARNING state</LI>
+<LI>rebuild - set the given LED to the defined REBUILD state</LI>
+<LI>tprocsw - set the given LED to trace kernel process switching</LI>
+<LI>tparity - set the given LED to trace I/O parity generation</LI>
+<LI>tdisconn - set the given LED to trace host interface disconnect activity</LI>
+<LI>pid - set the given LED to trace the process pid as it runs</LI>
+</UL>
+<P>Different models of RaidRunner have various differences in number of LED's
+and their functionality.  Depending on the type of LED, the ok, faulty, warning
+and rebuild functions perform different functions. See your RaidRunner's Hardware
+Reference manual to see what LED's exist and what different functions do.
+
+<LI>NOTES: Tracing activities can only occur on the `onboard` leds (LED1, LED2).
+<LI>SEE ALSO: lflash
+</LI>
+</LI>
+<H2><A NAME="ss13.35">13.35 LFLASH- flash a led on RaidRunner</A>
+</H2>
+
+<P>
+<UL>
+<LI>SYNOPSIS: lflash led_id period</LI>
+<LI>DESCRIPTION: lflash uses the given led_id to identify the LED to flash
+every period seconds. If a undefined led_id is given, the led command silently
+does nothing and returns NULL. Depending on the RaidRunner model the led_id
+can be one of:
+
+led1 - LED1 on the RaidRunner controller itself</LI>
+</UL>
+<P>led2 - LED2 on the RaidRunner controller itself
+<P>Dc.s.l - Device on channel c, scsi id s, scsi lun l 
+<P>status - the status LED on the RaidRunner
+<P>io - the io LED on the RaidRunner
+
+<UL>
+<LI>NOTE: The number of seconds must be greater than or equal to 2.</LI>
+<LI>SEE ALSO: led</LI>
+</UL>
+<H2><A NAME="ss13.36">13.36 LINE - copies one line of standard input to standard output</A>
+</H2>
+
+<P>
+<UL>
+<LI>SYNOPSIS: line</LI>
+<LI>DESCRIPTION: line accomplishes the one line copy by reading up to a newline
+character followed by a single K9write.</LI>
+<LI>SEE ALSO: K9read, K9write</LI>
+</UL>
+<H2><A NAME="ss13.37">13.37 LLENGTH - return the number of elements in the given list</A>
+</H2>
+
+<P>
+<UL>
+<LI>SYNOPSIS: llength list</LI>
+<LI>DESCRIPTION: llength returns the number of elements in a given list.</LI>
+<LI>EXAMPLES: Some simple examples:
+<BLOCKQUOTE><CODE>
+<PRE>
+set list D1 D2 D3 D4 D5 # create the list
+</PRE>
+</CODE></BLOCKQUOTE>
+
+<PRE>
+set len `llength $list' # get it's length
+</PRE>
+
+<PRE>
+echo $len
+</PRE>
+
+<PRE>
+5
+</PRE>
+
+<PRE>
+set list {D1 D2 D3 D4 D5} {D6 D7}  # create the
+ list
+</PRE>
+
+<PRE>
+set len `llength $list' # get it's length
+</PRE>
+
+<PRE>
+echo $len
+</PRE>
+
+<PRE>
+2
+</PRE>
+
+<PRE>
+set list {} # create an empty list
+</PRE>
+
+<PRE>
+set len `llength $list' # get it's length
+</PRE>
+
+<PRE>
+echo $len
+</PRE>
+
+<PRE>
+0
+</PRE>
+</LI>
+</UL>
+
+<H2><A NAME="ss13.38">13.38 LOG - like zero with additional logging of accesses</A>
+</H2>
+
+<P>
+<UL>
+<LI>SYNOPSIS: bind -k {log fd error_rate tag} bind_point</LI>
+<LI>DESCRIPTION: log is a special  file that when written to is a infinite
+sink of data (i.e. anything can be written to it and it will be disposed of
+quickly). When log is read it is an infinite source of zeros (i.e. the byte
+value 0). The log file will appear in the K9 namespace at the bind_point. Additionally,
+ASCII  log  data  is  written  to  the file associated with file descriptor
+fd. error_rate should be a number between 0 and 100 and is the percentages
+of errors (randomly distributed) that will be reported (as an  EIO  error)
+to  the caller. Each line written to fd will have tag appended to it. There
+is one line output to fd for each IO operation on the log special file. The
+first character output is &quot;R&quot; or &quot;W&quot; indicating a read
+or write. The second character is blank if no error was reported and &quot;*&quot;
+if one was reported.  Next  (after  a white  space)  is  a (64 bit integer)
+offset into the file of the start of the operation, followed by the size (in
+bytes) of that operation. The line finishes with the tag.</LI>
+<LI>EXAMPLE: Bind a log special file at &quot;/dev/log&quot; that writes
+log information to standard error. Each line written to standard error has
+the tag string &quot;scsi&quot; appended to it.  Approximately 30%
+of reads and writes (i.e. randomly distributed) return an EIO error to the
+caller. This is done as follows:
+<BLOCKQUOTE><CODE>
+<PRE>
+bind &quot;log 2 30 scsi&quot; /dev/log
+</PRE>
+</CODE></BLOCKQUOTE>
+
+<PRE>
+dd if=/dev/zero of=/dev/log count=5 bs=512
+</PRE>
+
+<PRE>
+W  0000000000 512        scsi
+</PRE>
+
+<PRE>
+W  0000000200 512        scsi
+</PRE>
+
+<PRE>
+W  0000000400 512        scsi
+</PRE>
+
+<PRE>
+W* 0000000600 512        scsi
+</PRE>
+
+<PRE>
+Write failed.
+</PRE>
+
+<PRE>
+4+0 records in
+</PRE>
+
+<PRE>
+3+0 records out
+</PRE>
+</LI>
+</UL>
+
+<LI>SEE ALSO: zero
+</LI>
+<H2><A NAME="ss13.39">13.39 LRANGE - extract a range of elements from the given list</A>
+</H2>
+
+<P>
+<UL>
+<LI>SYNOPSIS: lrange first last list</LI>
+<LI>DESCRIPTION: lrange returns a list consisting of elements first through
+last of list. 0 refers to the first element in the list. If first is greateR
+THAN last then the list is extracted in reverse order.</LI>
+<LI>EXAMPLES: Some simple examples:
+<PRE>
+set list D1 D2 D3 D4 D5 # create the list
+</PRE>
+
+<PRE>
+set subl `lrange 0 3 $list' # extract from indices 0 to 3
+</PRE>
+
+<PRE>
+echo $subl
+</PRE>
+
+<PRE>
+D1 D2 D3 D4
+</PRE>
+
+<PRE>
+set subl `lrange 3 1 $list' # extract from indices 3 to 1
+</PRE>
+
+<PRE>
+echo $subl
+</PRE>
+
+<PRE>
+D4 D3 D2
+</PRE>
+
+<PRE>
+set subl `lrange 4 4 $list' # extract from indices 0 to 3
+</PRE>
+
+<PRE>
+echo $subl # equivalent to get 4 $list
+</PRE>
+
+<PRE>
+D5
+</PRE>
+
+<PRE>
+set subl `lrange 3 100 $list'
+</PRE>
+
+<PRE>
+echo $subl
+</PRE>
+
+<PRE>
+D4 D5
+</PRE>
+</LI>
+</UL>
+<H2><A NAME="ss13.40">13.40 LS - list the files in a directory</A>
+</H2>
+
+<P>
+<UL>
+<LI>SYNOPSIS: ls [ -l ] [ directory... ]</LI>
+<LI>DESCRIPTION: ls lists the files in the given directory on standard out.
+If no directory is given then the root directory (i.e. &quot;/&quot;) is
+listed. Each file name contained in a directory is put on a separate line.
+Each listing has a lead-in line stating which directory is being shown. If
+there  is  more than one directory then they are listed sequentially separated
+by a blank line. If the &quot;-l&quot; switch is given then every listed
+file has data such as its length and the file system it belongs to shown on
+the same line as its name. See the stat command for more information. ls is
+not an inbuilt command but a husky script which utilizes cat and stat. The
+script source can be found in the file &quot;/bin/ps&quot;.</LI>
+<LI>SEE ALSO: cat, stat </LI>
+</UL>
+<H2><A NAME="ss13.41">13.41 LSEARCH - find the a pattern in a list </A>
+</H2>
+
+<P>
+<UL>
+<LI>SYNOPSIS: lsearch pattern list</LI>
+<LI>DESCRIPTION: lsearch returns the index of the first element in list that
+matches pattern or -1 if none. 0 refers to the first element in the list</LI>
+<LI>EXAMPLES: Some simple examples:
+<PRE>
+set list D1 D2 D3 D4 D5 # create the list
+</PRE>
+
+<PRE>
+set idx `lsearch D4 $list' # get index of D4 in list
+</PRE>
+
+<PRE>
+echo $idx
+</PRE>
+
+<PRE>
+3
+</PRE>
+
+<PRE>
+set idx `lsearch D1 $list' # get index of D1 in list
+</PRE>
+
+<PRE>
+echo $idx
+</PRE>
+
+<PRE>
+0
+</PRE>
+
+<PRE>
+set idx `lsearch D8 $list' # get index of D8 in list
+</PRE>
+
+<PRE>
+echo $idx # equivalent to get 4 $list
+</PRE>
+
+<PRE>
+-1
+</PRE>
+</LI>
+</UL>
+<H2><A NAME="ss13.42">13.42 LSUBSTR - replace a character in all elements of a list</A>
+</H2>
+
+<P>
+<UL>
+<LI>SYNOPSIS: lsubstr find_char replacement_char list</LI>
+<LI>DESCRIPTION: lsubstr returns a list replacing every find_ch character found
+in any element of the list with the replacement_char character. replacement_char
+can be NULL  which  effectively deletes all find_char characters in the list.</LI>
+<LI>EXAMPLES: Some simple examples:
+<PRE>
+set list D1 D2 D3 D4 D5 # create the list
+</PRE>
+
+<PRE>
+set subl `lsubstr D x $list' # replace all D's with x's
+</PRE>
+
+<PRE>
+echo $subl
+</PRE>
+
+<PRE>
+x1 x2 x3 x4 x5
+</PRE>
+
+<PRE>
+set subl `lsubstr D {} $list' # delete all D's
+</PRE>
+
+<PRE>
+echo $subl
+</PRE>
+
+<PRE>
+1 2 3 4 5
+</PRE>
+
+<PRE>
+set list -L -16 # create a list with embedded braces
+</PRE>
+
+<PRE>
+set subl `lsubstr {} $list' # delete all open braces
+</PRE>
+
+<PRE>
+set subl `lsubstr {} $subl' # delete all close braces
+</PRE>
+
+<PRE>
+echo $subl
+</PRE>
+
+<PRE>
+-L 16
+</PRE>
+</LI>
+</UL>
+<H2><A NAME="ss13.43">13.43 MEM - memory mapped file (system)</A>
+</H2>
+
+<P>
+<UL>
+<LI>SYNOPSIS: bind -k {mem first last [ r ]} bind_point</LI>
+<LI>DESCRIPTION: mem  allows  machine memory to be accessed as a single K9
+file (rather than a file system). The host system's memory is used starting
+at the first memory location up to and including the last memory location.
+Both first and last need to be given  in hexadecimal. If successful the mem
+file will appear in the K9 namespace at the bind_point. The stat command will
+show it as a normal file with the appropriate size (i.e. last - first + 1).
+If the optional &quot;r&quot; is given then only read-only access to the
+file is permitted. In a target environment mem can usefully associate battery
+backed-up RAM (or ROM) with the K9 namespace. In a Unix  environment  it  is
+of  limited  use (see unixfd instead). In a DOS environment it may be useful
+to access memory directly (IO space) but for accessing the DOS console see
+doscon. When mem is associated with the partition of Flash RAM that stores
+the husky scripts, which is  stored  compressed, reading from that page will
+automatically decompress and return the data as it is read. When  mem  is associated
+with the writable partitions of Flash RAM (configuration partition, husky script
+partition and main binary partition) a write to the start of any partition
+will erase that partition.</LI>
+<LI>SEE ALSO: ram</LI>
+<LI>BUGS: Only a single file rather than a file system can be bound.</LI>
+</UL>
+<H2><A NAME="ss13.44">13.44 MDEBUG - exercise and display statistics about memory allocation</A>
+</H2>
+
+<P>
+<UL>
+<LI>SYNOPSIS: mdebug [off|on|trace|p|m size|f ptr|c nel elsize|r ptr size]</LI>
+<LI>DESCRIPTION: mdebug  can  be  used to directly allocate and free memory.
+mdebug will also print (to standard output) information about the current
+state of memory allocation.  With out any given options a brief five  line
+summary of memory usage is printed, e.g.
+<BLOCKQUOTE><CODE>
+<PRE>
+: raid; mdebug
+</PRE>
+</CODE></BLOCKQUOTE>
+
+<PRE>
+Mdebug is off
+</PRE>
+
+<PRE>
+nreq-nfree=87096-82951=4145(13905745)
+</PRE>
+
+<PRE>
+size=15956672/16150000
+</PRE>
+
+<PRE>
+waste=1%/2%
+</PRE>
+
+<PRE>
+list=4251/8396
+</PRE>
+
+<PRE>
+: raid;
+</PRE>
+</LI>
+</UL>
+<P>The first line indicates the debug mode,  either off, on or trace.  The
+second line indicates the number times a request for memory is made (to Mmalloc()
+or Mcalloc() and related functions) and the  number  of times  the  memory
+allocator is called to free memory (via Mfree()).  The difference between these
+first two numbers is the total number of currently allocated blocks of memory,
+with the  number  between  the '('  and  ')'  being  the total memory requested.
+Note that the amount of memory actually assign may be more than requested.
+<P>The third line indicates the amount of memory being managed.  The second
+number is the total memory man aged (i.e. left over after loading the statically
+allocated text, data and bss space).  The first number is that left over after
+various memory allocation tables have been subtracted out from that  afore
+mention  number.  The fourth line is the total amount of extra memory assigned
+to requests in excess of the actual requested memory as compared with the totals
+on line 3.
+<P>The fifth line relates to the list of currently allocated memory.  The
+first number  is  the  number  of free entries left and the second is the maximum
+table size.  Note that the number of currently allocated blocks (third number
+on line 2) when added to the first number on line 5 gives the second number
+on line 5.
+
+<LI>OPTIONS:
+<UL>
+<LI>p: Prints the above mentioned five line summary and then the free list.</LI>
+<LI>P: Prints all the above plus dumps the list of currently allocated memory.</LI>
+<LI>PP: Prints all the above plus the free bitmap.</LI>
+</UL>
+</LI>
+<P>The  above  three  options can generate copious output and require a detailed
+knowledge of the source to understand their meaning.
+<LI>off: Turns off memory allocation debugging.  This is the default condition
+after booting.
+<LI>on: Turns on memory allocation assertion checking.
+<LI>trace: Turns on memory allocation assertion checking and traces every memory
+allocation /  deallocation.
+<LI>m: Uses Mmalloc() to allocate a block of memory of size bytes.
+<LI>f: Uses Mfree() to de-allocate a block of memory addressed by ptr.
+<LI>c: Uses  Mcalloc()  to allocate a contiguous block of memory consisting
+of nel elements each of size bytes.
+<LI>r: Uses Mrealloc() to re-allocate a block of previously allocated memory,
+ptr,  changing  the  allocated size to be size bytes.
+
+<LI>SEE ALSO: Unix man pages on malloc()
+</LI>
+</LI>
+</LI>
+</LI>
+</LI>
+</LI>
+</LI>
+</LI>
+<H2><A NAME="ss13.45">13.45 MKDIR - create directory (or directories)</A>
+</H2>
+
+<P>
+<UL>
+<LI>SYNOPSIS: mkdir [ directory_name ... ]</LI>
+<LI>DESCRIPTION: mkdir creates the given directory (or directories). If all
+the given directories can be created then NIL is returned as the status; otherwise
+the first directory that could not be created is returned (and this command
+will continue trying to create directories until the list is exhausted). A
+directory cannot be created with a file name that previously existed in the
+enclosing directory.</LI>
+</UL>
+<H2><A NAME="ss13.46">13.46 MKDISKFS - script to create a disk filesystem</A>
+</H2>
+
+<P>
+<UL>
+<LI>SYNOPSIS: mkdiskfs disk_directory_root disk_name</LI>
+<LI>DESCRIPTION: mkdiskfs  is  a  husky  script which is used to perform all
+the necessary commands to create a disk filesystem given the root of the disk
+file system and the name of the disk.</LI>
+<LI>OPTIONS : 
+<UL>
+<LI>disk_directory_root: Specify the directory root under which the disk filesystems
+are bound.  This is typically /dev/hd.</LI>
+<LI>disk_name: Specify the name of the disk in the format Dc.s.l where c is
+the channel, s is the scsi  id  (or  rank) and l is the scsi lun of the disk.
+ </LI>
+</UL>
+
+
+After parsing it's arguments mkdiskfs creates the disk filesystem's bind
+point and binds in the disk at that point. set.</LI>
+</UL>
+
+<LI>SEE ALSO: rconf, scsihdfs
+</LI>
+<H2><A NAME="ss13.47">13.47 MKHOSTFS - script to create a host port filesystem</A>
+</H2>
+
+<P>
+<UL>
+<LI>SYNOPSIS: mkhostfs controller_number host_port host_bus_directory</LI>
+<LI>DESCRIPTION: mkhostfs  is a husky script which is used to perform all the
+necessary commands to create a host port filesystem on the given RaidRunner
+controller given the root of the host port file systems and the host port 
+number.</LI>
+<LI>OPTIONS:
+<UL>
+<LI>controller_number: Specify the controller on which the host port filesystem
+is to be created.</LI>
+<LI>host_port: Specify the host port number to create the filesystem for.</LI>
+<LI>host_bus_directory: Specify the directory root under which host filesystems
+are bound. This is typically /dev/hostbus. After  parsing  it's  arguments
+mkhostfs finds out what SCSI ID the host port is to present (see hconf and
+then binds in the host filesystem. set.</LI>
+</UL>
+</LI>
+<LI>SEE ALSO: hconf, scsihpfs</LI>
+</UL>
+<H2><A NAME="ss13.48">13.48 MKRAID - script to create a raid given a line of output of rconf</A>
+</H2>
+
+<P>
+<UL>
+<LI>SYNOPSIS: mkraid `rconf -list RaidSetName'</LI>
+<LI>DESCRIPTION: mkraid  is a husky script which is used to perform all the
+necessary commands to create and enable host access to a given Raid Set. The
+arguments to mkraid is a line of output from a rconf -list  command. After
+parsing  it's  arguments mkraid  checks  to  see if a reconstruction was being
+performed when the RaidRunner was last operating, and if so, notes this.  It
+then creates the raid filesystem (see mkraidfs) and adds a cache frontend to
+the  raid filesystem.  It then creates the required host filesystems (see mkhsotfs)
+and finally, if a reconstruction had been taking place when the RaidRunner
+was last operating, it restarts a reconstruction.</LI>
+<LI>NOTE: This husky script DOES NOT enable target access (stargd) to the raid
+set it creates.</LI>
+<LI>SEE ALSO: rconf, mkraidfs, mkhostfs</LI>
+</UL>
+<H2><A NAME="ss13.49">13.49 MKRAIDFS - script to create a raid filesystem</A>
+</H2>
+
+<P>
+<UL>
+<LI>SYNOPSIS: mkraidfs -r raidtype -n raidname -b backends [-c chunk]
+[-i iomode] [-q qlen] [-v] [-C capacity]
+[-S]</LI>
+<LI>DESCRIPTION: mkraidfs is a husky script which is used to perform all the
+necessary commands to create a Raid filesystem.</LI>
+<LI>OPTIONS: 
+<UL>
+<LI>-r raidtype: Specify the raid type as raidtype for the raid set. Must be
+0, 1, 3 or 5.</LI>
+<LI>-n raidname: Specify the name of the raid set as raidname.</LI>
+<LI>-b backends: Specify the comma separated list of the raid set's backends
+in the format used by rconf.</LI>
+<LI>-c iosize: Optionally specify the IOSIZE (in bytes) of the raid set.</LI>
+<LI>-i iomode: Optionally specify the raid set's iomode - read-write, read-only,
+write-only.</LI>
+<LI>-q qlen: Optionally specify the raid set's queue length for each backend.</LI>
+<LI>-v: Enable verbose mode which prints out the main actions (binding, engage
+commands) as they are performed.</LI>
+<LI>-C capacity: Optionally specify the raid set's size in 512-byte blocks.</LI>
+<LI>-S: Optionally specify that spares pool access is required should a backend
+fail.</LI>
+</UL>
+
+
+After parsing it's arguments mkraidfs creates the Raid Set's backend filesystems,
+typically, disks  (see  mkdisfs)  taking care of failed backends.  It then
+binds in the raid filesystem and engages the backends into the filesystem.
+If spares access is requested, it enables the autorepair feature of the raid
+set.</LI>
+</UL>
+
+<LI>SEE ALSO: rconf, mkraidfs, mkhostfs, mkdiskfs, raid[0135]fs
+</LI>
+<H2><A NAME="ss13.50">13.50 MKSMON - script to start the scsi monitor daemon smon</A>
+</H2>
+
+<P>
+<UL>
+<LI>SYNOPSIS: mksmon controllerno hostport scsi_lun protocol_list</LI>
+<LI>DESCRIPTION: mksmon  is a husky script which is used to perform all the
+necessary commands to start the scsi monitor daemon smon given the controller
+number, hostport, scsi lun, and the block protocol list. Typically, mksmon,
+is run with it's arguments from the output of a mconf -list command.</LI>
+<LI>OPTIONS:
+<UL>
+<LI>controllerno: Specify the controller on which the scsi monitor daemon is
+to be run.</LI>
+<LI>hostport: Specify the host port through which the scsi monitor daemon communicates.</LI>
+<LI>scsi_lun: Specify the SCSI LUN the scsi monitor daemon is to respond to.</LI>
+<LI>protocol_list: Specify the comma separated block protocol list the scsi
+monitor daemon is to implement.</LI>
+</UL>
+
+
+After parsing it's arguments mksmon checks to see if it's already running
+and  issues  a  message  if  so  and exits. Otherwise, it creates the host
+filesystem (mkhostfs), creates a memory file and set of fifo's for smon to
+use and finally starts smon set.</LI>
+</UL>
+
+<LI><HR>
+<IMG SRC="../img/next.gif" ALT="Next">
+<A HREF="Antares-RAID-sparcLinux-HOWTO-12.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Antares-RAID-sparcLinux-HOWTO.html#toc13"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

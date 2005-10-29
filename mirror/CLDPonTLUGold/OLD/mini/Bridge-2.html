@@ -1,0 +1,148 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>橋接器的運作 mini-Howto: 一般的問題</TITLE>
+ <LINK HREF="Bridge-1.html" REL=previous>
+ <LINK HREF="Bridge.html#toc2" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+<IMG SRC="../img/next.gif" ALT="Next">
+<A HREF="Bridge-1.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Bridge.html#toc2"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s2">2. 一般的問題</A></H2>
+
+<P>
+<OL>
+<LI>
+<DL>
+<DT><B>Question</B><DD><P>我得到這個訊息
+<BLOCKQUOTE><CODE>
+<PRE>
+ioctl(SIOCGIFBR) failed: Package not installed
+        
+</PRE>
+</CODE></BLOCKQUOTE>
+
+這是什麼意思?
+<DT><B>Answer</B><DD><P>你的核心沒有橋接器的能力.
+取得到一個 2.0或者更後面的核心,
+和重新編譯啟動橋接器功能的選項 <CODE>BRIDGING</CODE>.
+</DL>
+
+</LI>
+<LI>
+<DL>
+<DT><B>Question</B><DD><P>機器在一邊不能 ping 到另外一邊!
+<DT><B>Answer</B><DD><P>
+<UL>
+<LI>你有使用 ``<CODE>brcfg -ena</CODE>' 使橋接器運作'嗎？
+(<CODE>brcfg</CODE>將說 ``<CODE>bridging is ENABLED</CODE>'')</LI>
+<LI>你有把界面放在 promiscuous(紛亂)的模式嗎?
+(使用 ``<CODE>ifconfig</CODE>''命令.
+那 ``<CODE>PROMISC</CODE>''參數應該是在
+兩個界面卡上.)</LI>
+<LI>如果正在用 multiple-media 界面卡,
+確定啟動的是正確的是那一端.
+你也許需要使用和網路界面卡附的 配置/設定 程式來做設定
+.</LI>
+</UL>
+</DL>
+
+</LI>
+<LI>
+<DL>
+<DT><B>Question</B><DD><P>我不能從橋接器上 <CODE>telnet</CODE>/<CODE>ftp</CODE>!為什麼?
+<DT><B>Answer</B><DD><P>這是因為沒有 IP 地址指定到任何的橋接器的
+界面卡.一個橋接器是一個網路的透通部分.
+</DL>
+
+</LI>
+<LI>
+<DL>
+<DT><B>Question</B><DD><P>在設定路由方面我需要做什麼?
+<DT><B>Answer</B><DD><P>無!
+整個的路由資料是由
+核心的橋接器的碼所掌握.
+靠橋接器看見那乙太網路地址他們是被學習,
+在測錯模式下使用 <CODE>brcfg</CODE>程式:
+<BLOCKQUOTE><CODE>
+<PRE>
+brcfg -deb
+        
+</PRE>
+</CODE></BLOCKQUOTE>
+</DL>
+
+</LI>
+<LI>
+<DL>
+<DT><B>Question</B><DD><P>那橋接器看起來有運作,但是為什麼 ``traceroute'' 沒有顯示那
+橋接器是路徑的一個部分?
+<DT><B>Answer</B><DD><P>由於橋接器當然的功能, ``traceroute''將不顯示
+橋接器當作路徑的一部分.一個橋接器是網路的一個透通
+組件.
+</DL>
+
+</LI>
+<LI>
+<DL>
+<DT><B>Question</B><DD><P><CODE>IP_FORWARD</CODE> 是否必要編譯到核心中呢?
+<DT><B>Answer</B><DD><P>不.核心中的橋接器的碼照料封包
+傳送.
+<CODE>IP_FORWARD</CODE>對於一個 gateway(通路閘)它要有 IP 地址
+指定到它的界面.
+</DL>
+
+</LI>
+<LI>
+<DL>
+<DT><B>Question</B><DD><P>根據那 ``<CODE>brcfg</CODE>''程式顯示,為什麼對於埠 1和埠 2 實體的
+乙太網路地址是相同的?
+他們應該是不同的嗎?
+<DT><B>Answer</B><DD><P>不.一個橋接器的每一埠是故意地是由橋接器的碼指定那相同的
+實體的乙太網路地址.
+</DL>
+
+</LI>
+<LI>
+<DL>
+<DT><B>Question</B><DD><P>當在核心中執行的一個 (make config)建造設定,橋接器的選項沒有出現
+.它是如何啟動的呢？
+<DT><B>Answer</B><DD><P>在核心配置的時候,針對以下的問題回答 'Y' , ``Prompt for
+development and/or incomplete code/drivers (CONFIG_EXPERIMENTAL) 
+[Y/n/?]''.
+</DL>
+
+</LI>
+<LI>
+<DL>
+<DT><B>Question</B><DD><P>太多集線器 (4個或者更多)一個接一個串連在一起 (連續地) 
+在一個乙太網路上造成時間回應的問題.在一個由集線器所佈建的子網中
+一個橋接器會有什麼結果?
+<DT><B>Answer</B><DD><P>一個橋接器重設 3/4/5集線器規則.一個橋接器沒有如同一個集線器所做的處理
+封包,因此沒有一個 contributor(貢獻者) 到
+在一個網路上有時間回應問題.
+</DL>
+
+</LI>
+<LI>
+<DL>
+<DT><B>Question</B><DD><P>一個橋接器界面能夠同時連接 10Mb 和 100Mb 兩個乙太網路區段?
+這樣的配置會造成高速流量的另一邊
+慢下來嗎?
+<DT><B>Answer</B><DD><P>是,一個橋接器能夠把 10 Mb 的區段和 100Mb 的區段綁在一起
+只要那網路卡在橋接器的快速網路的那一邊
+是有 100Mb 能力的 , TCP 將要照料其餘的部分.這時它發生的情形是
+從一個在 100Mb 網路的主機送封包溝通另
+一個在 10Mb 網路的主機是只有用 10Mb/s 的速度移動,其餘的 
+那網路交通在快速乙太網路是不會被拖慢.  
+</DL>
+</LI>
+</OL>
+<HR>
+<IMG SRC="../img/next.gif" ALT="Next">
+<A HREF="Bridge-1.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Bridge.html#toc2"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

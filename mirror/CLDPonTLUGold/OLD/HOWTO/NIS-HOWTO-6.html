@@ -1,0 +1,417 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>The Linux NIS(YP)/NYS/NIS+ HOWTO: What do you need to set up NIS?</TITLE>
+ <LINK HREF="NIS-HOWTO-7.html" REL=next>
+ <LINK HREF="NIS-HOWTO-5.html" REL=previous>
+ <LINK HREF="NIS-HOWTO.html#toc6" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="NIS-HOWTO-7.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="NIS-HOWTO-5.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="NIS-HOWTO.html#toc6"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s6">6. What do you need to set up NIS?</A><!--NIS!setting up--></H2>
+
+<H2><A NAME="ss6.1">6.1 Determine whether you are a Server, Slave or Client.</A>
+<!--NIS!determining system type--></H2>
+
+<P>To answer this question you have to consider two cases:
+<P>
+<OL>
+<LI>Your machine is going to be part of a network with existing NIS servers</LI>
+<LI>You do not have any NIS servers in the network yet</LI>
+</OL>
+<P>In the first case, you only need the client programs (ypbind, ypwhich,
+ypcat, yppoll, ypmatch). The most important program is ypbind. This
+program must be running at all times, which means, it should always appear
+in the list of processes. It is a daemon process and needs to
+be started from the system's startup file (eg. /etc/init.d/nis,
+/sbin/init.d/ypclient, /etc/rc.d/init.d/ypbind, /etc/rc.local).
+As soon as ypbind is running your system has become a NIS client.
+<P>In the second case, if you don't have NIS servers, then you will also
+need a NIS server program (usually called ypserv). Section
+<A HREF="NIS-HOWTO-8.html#ypserv">Setting up a NIS Server</A>  describes
+how to set up a NIS server on your Linux machine using the "ypserv"
+implementation by Peter Eriksson and Thorsten Kukuk.
+Note that from version 0.14 this implementation supports the
+master-slave concept talked about in section 4.1.
+<P>There is also another free NIS server available, called "yps", written
+by Tobias Reber in Germany which does support the master-slave concept,
+but has other limitations and isn't supported since a long time.
+<P>
+<P>
+<H2><A NAME="ss6.2">6.2 The Software</A>
+<!--NIS!library requirements--></H2>
+
+<P>The system library "/usr/lib/libc.a" (version 4.4.2 and better) or the
+shared library "/lib/libc.so.x" contain all necessary system calls to
+succesfully compile the NIS client and server software. For the
+GNU C Library 2 (glibc 2.x), you also need /lib/libnsl.so.1.
+<P>Some people reported that NIS only works with "/usr/lib/libc.a" version
+4.5.21 and better so if you want to play it safe don't use older
+libc's.  The NIS client software can be obtained from:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+  Site                  Directory                        File Name
+
+  ftp.kernel.org        /pub/linux/utils/net/NIS         yp-tools-2.2.tar.gz
+  ftp.kernel.org        /pub/linux/utils/net/NIS         ypbind-mt-1.4.tar.gz
+  ftp.kernel.org        /pub/linux/utils/net/NIS         ypbind-3.3.tar.gz
+  ftp.kernel.org        /pub/linux/utils/net/NIS         ypbind-3.3-glibc5.diff.gz
+  ftp.uni-paderborn.de  /linux/local/yp                  yp-clients-2.2.tar.gz
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Once you obtained the software, please follow the instructions which
+come with the software. yp-clients 2.2 are for use with libc4 and libc5
+until 5.4.20. libc 5.4.21 and glibc 2.x needs yp-tools 1.4.1 or later.
+The new yp-tools 2.2 should work with every Linux libc. Since there was
+a bug in the NIS code, you shouldn't use libc 5.4.21-5.4.35. Use libc
+5.4.36 or later instead, or the most YP programs will not work.
+ypbind 3.3 will work with all libraries, too. If you use gcc 2.8.x or
+greater, egcs or glibc 2.x, you should add the ypbind-3.3-glibc5.diff
+patch to ypbind 3.3. Please never use the ypbind from yp-clients 2.2.
+ypbind-mt is a new, multithreaded daemon. It needs a Linux 2.2 kernel,
+and glibc 2.1 or later.
+<P>
+<H2><A NAME="ss6.3">6.3 The ypbind daemon</A>
+<!--NIS!ypbind daemon--><!--ypbind NIS daemon--><!--daemon!ypbind--></H2>
+
+<P>After you have succesfully compiled the software you are now ready
+to install it. A suitable place for the ypbind daemon is the directory
+/usr/sbin. Some people may tell you that you don't need
+ypbind on a system with NYS. This is wrong. ypwhich and ypcat need it
+always.
+<P>You must do this as root of course. The other binaries (ypwhich,
+ypcat, yppasswd, yppoll, ypmatch) should go in a directory accessible
+by all users, normally /usr/bin.
+<P>Newer ypbind versions have a configuration file called /etc/yp.conf. You can
+hardcode a NIS server there - for more info see the manual page for ypbind(8).
+You also need this file for NYS.
+An example:
+<BLOCKQUOTE><CODE>
+<PRE>
+  ypserver voyager
+  ypserver defiant
+  ypserver ds9
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>If the system cam resolv the hostnames without NIS, you may use
+the name, otherwise you have to use the IP address. ypbind 3.3 has a bug
+and will only use the last entry (ypserver ds9 in the example). All
+other entries are ignored. ypbind-mt handle this correct and uses
+that one, which answerd at first.
+<P>It might be a good idea to test ypbind before  incorporating it in the
+startup files. To test ypbind do the following:
+<P>
+<UL>
+<LI>Make sure you have your YP-domain name set. If it is not set then
+issue the command:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+            /bin/domainname nis.domain
+        
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+where <CODE>nis.domain</CODE> should be some string _NOT_ normally
+associated with the DNS-domain name of your machine! The reason for
+this is that it makes it a little harder for external crackers
+to retreive the password database from your NIS servers. If you
+don't know what the NIS domain name is on your network, ask
+your system/network administrator.
+</LI>
+<LI>Start up "/usr/sbin/portmap" if it is not already running.
+</LI>
+<LI>Create the directory "/var/yp" if it does not exist.
+</LI>
+<LI>Start up "/usr/sbin/ypbind"
+</LI>
+<LI>Use the command "rpcinfo -p localhost" to check if ypbind
+was able to register its service with the portmapper. The
+output should look like:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+       program vers proto   port
+        100000    2   tcp    111  portmapper
+        100000    2   udp    111  portmapper
+        100007    2   udp    637  ypbind
+        100007    2   tcp    639  ypbind
+      
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+or
+
+<BLOCKQUOTE><CODE>
+<PRE>
+       program vers proto   port
+        100000    2   tcp    111  portmapper
+        100000    2   udp    111  portmapper
+        100007    2   udp    758  ypbind
+        100007    1   udp    758  ypbind
+        100007    2   tcp    761  ypbind
+        100007    1   tcp    761  ypbind
+      
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+Depending on the ypbind version you are using.
+</LI>
+<LI>You may also run "rpcinfo -u localhost ypbind". This command
+should produce something like:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+        program 100007 version 2 ready and waiting
+      
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+or
+
+<BLOCKQUOTE><CODE>
+<PRE>
+        program 100007 version 1 ready and waiting
+        program 100007 version 2 ready and waiting
+      
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+The output depends on the ypbind version you have installed.
+Important is only the "version 2" message.</LI>
+</UL>
+<P>At this point you should be able to use NIS client programs like ypcat,
+etc...  For example, "ypcat passwd.byname" will give you the entire NIS
+password database.
+<P>IMPORTANT: If you skipped the test procedure then make sure you have set
+the domain name, and created the directory
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+    /var/yp
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>This directory MUST exist for ypbind to start up succesfully.
+<P>To check if the domainname is set correct, use the /bin/ypdomainname from
+yp-tools 2.2. It uses the yp_get_default_domain() function which is more
+restrict. It doesn't allow for example the "(none)" domainname, which
+is the default under Linux and makes a lot of problems.
+<P>If the test worked you may now want to change your startupd files
+so that ypbind will be started at boot time and your system will
+act as a NIS client. Make sure that the domainname will
+be set before you start ypbind.
+<P>Well, that's it. Reboot the machine and watch the boot messages to see
+if ypbind is actually started.
+<P>
+<P>
+<H2><A NAME="ss6.4">6.4 Setting up a NIS Client using Traditional NIS</A>
+<!--NIS!client setup--></H2>
+
+<P>For host lookups you must set (or add) "nis" to the lookup order line
+in your /etc/host.conf file. Please read the manpage "resolv+.8" for
+more details.
+<P>Add the following line to /etc/passwd on your NIS clients:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
++::::::
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>You can also use the + and - characters to include/exclude or change
+users. If you want to exclude the user guest just add -guest to your
+/etc/passwd file.  You want to use a different shell (e.g. ksh) for
+the user "linux"?  No problem, just add "+linux::::::/bin/ksh"
+(without the quotes) to your /etc/passwd. Fields that you don't want
+to change have to be left empty. You could also use Netgroups for
+user control.
+<P>For example, to allow login-access only to miquels, dth and ed, and
+all members of the sysadmin netgroup, but to have the account data
+of all other users available use:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+      +miquels:::::::
+      +ed:::::::
+      +dth:::::::
+      +@sysadmins:::::::
+      -ftp
+      +:*::::::/etc/NoShell
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Note that in Linux you can also override the password field, as we did
+in this example. We also remove the login "ftp", so it isn't known any
+longer, and anonymous ftp will not work.
+<P>The netgroup would look like
+<BLOCKQUOTE><CODE>
+<PRE>
+sysadmins (-,software,) (-,kukuk,)
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>IMPORTANT: The netgroup  feature is implemented starting from libc 4.5.26.
+If you have a version of libc earlier than 4.5.26, every user in the
+NIS password database can access your linux machine if you run "ypbind" !
+<P>
+<P>
+<H2><A NAME="ss6.5">6.5 Setting up a NIS Client using NYS</A>
+<!--NYS!client setup--></H2>
+
+<P>All that is required is that the NIS configuration file
+(/etc/yp.conf) points to the correct server(s) for its information.
+Also, the Name Services Switch configuration file (/etc/nsswitch.conf)
+must be correctly set up.
+<P>You should install ypbind. It isn't needed by the libc, but the NIS(YP)
+tools need it.
+<P>If you wish to use the include/exclude user feature (+/-guest/+@admins),
+you have to use "passwd: compat" and "group: compat" in nsswitch.conf.
+Note that there is no "shadow: compat"! You have to
+use "shadow: files nis" in this case.
+<P>The NYS sources are part of the libc 5 sources. When run configure,
+say the first time "NO" to the "Values correct" question,
+then say "YES" to "Build a NYS libc from nys".
+<P>
+<H2><A NAME="ss6.6">6.6 Setting up a NIS Client using glibc 2.x</A>
+<!--NIS!client setup!using glibc 2.x--></H2>
+
+<P>The glibc uses "traditional NIS", so you need to start ypbind. The
+Name Services Switch configuration file (/etc/nsswitch.conf) must be
+correctly set up. If you use the compat mode for passwd, shadow or group,
+you have to add the "+" at the end of this files and you can use
+the include/exclude user feature. The configuration is excatly the same
+as under Solaris 2.x.
+<P>
+<H2><A NAME="ss6.7">6.7 The nsswitch.conf File</A>
+<!--nsswitch.conf file--><!--NIS!nsswitch.conf file--></H2>
+
+<P>The Network Services switch file /etc/nsswitch.conf determines the
+order of lookups performed when a certain piece of information is
+requested, just like the /etc/host.conf file which determines the way
+host lookups are performed. For example, the line
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+    hosts: files nis dns
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>specifies that host lookup functions should first look in the local
+/etc/hosts file, followed by a NIS lookup and finally through the domain
+name service (/etc/resolv.conf and named), at which point if no match
+is found an error is returned. This file must be readable for every
+user! You can find more information in the man-page nsswitch.5
+or nsswitch.conf.5.
+<P>A good /etc/nsswitch.conf file for NIS is:
+<BLOCKQUOTE><CODE>
+<PRE>
+#
+# /etc/nsswitch.conf
+#
+# An example Name Service Switch config file. This file should be
+# sorted with the most-used services at the beginning.
+#
+# The entry '[NOTFOUND=return]' means that the search for an
+# entry should stop if the search in the previous entry turned
+# up nothing. Note that if the search failed due to some other reason
+# (like no NIS server responding) then the search continues with the
+# next entry.
+#
+# Legal entries are:
+#
+#       nisplus                 Use NIS+ (NIS version 3)
+#       nis                     Use NIS (NIS version 2), also called YP
+#       dns                     Use DNS (Domain Name Service)
+#       files                   Use the local files
+#       db                      Use the /var/db databases
+#       [NOTFOUND=return]       Stop searching if not found so far
+#
+
+passwd:     compat
+group:      compat
+# For libc5, you must use shadow: files nis
+shadow:     compat
+
+passwd_compat: nis
+group_compat: nis
+shadow_compat: nis
+
+hosts:      nis files dns
+
+services:   nis [NOTFOUND=return] files
+networks:   nis [NOTFOUND=return] files
+protocols:  nis [NOTFOUND=return] files
+rpc:        nis [NOTFOUND=return] files
+ethers:     nis [NOTFOUND=return] files
+netmasks:   nis [NOTFOUND=return] files
+netgroup:   nis
+bootparams: nis [NOTFOUND=return] files
+publickey:  nis [NOTFOUND=return] files
+automount:  files
+aliases:    nis [NOTFOUND=return] files
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>passwd_compat, group_compat and shadow_compat are only supported by glibc 2.x.
+If there are no shadow rules in /etc/nsswitch.conf, glibc will use the passwd
+rule for lookups. There are some more lookup module for glibc like hesoid.
+For more information, read the glibc documentation.
+<P>
+<H2><A NAME="ss6.8">6.8 Shadow Passwords with NIS</A>
+<!--NIS!shadow passwords--></H2>
+
+<P>Shadow passwords over NIS are always a bad idea. You loose the security,
+which shadow gives you, and it is supported by only some few Linux C
+Libraries. A good way to avoid shadow passwords over NIS is,
+to put only the local system users in /etc/shadow. Remove the NIS user
+entries from the shadow database, and put the password back in passwd.
+So you can use shadow for the root login, and normal passwd for NIS
+user. This has the advantage that it will work with every NIS client.
+<P>
+<H3>Linux</H3>
+
+<P>The only Linux libc which supports shadow passwords over NIS, is the
+GNU C Library 2.x. Linux libc5 has no support for it. Linux
+libc5 compiled with NYS enabled has some code for it. But this code
+is badly broken in some cases and doesn't work with all correct
+shadow entries.
+<P>
+<H3>Solaris</H3>
+
+<P>Solaris does not support shadow passwords over NIS.
+<P>
+<H3>PAM<!--PAM!shadow passwords--></H3>
+
+<P>PAM does not support Shadow passwords over NIS, especially
+pam_pwdb/libpwdb. This is a big problem for RedHat 5.x users. If you
+have glibc and PAM, you need to change the /etc/pam.d/* entries.
+Replace all pam_pwdb rules through pam_unix_*
+modules. Due a bug in the pam_unix_auth.so module this will not always
+work.
+<P>An example /etc/pam.d/login file looks like:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#%PAM-1.0
+auth       required     /lib/security/pam_securetty.so
+auth       required     /lib/security/pam_unix_auth.so
+auth       required     /lib/security/pam_nologin.so
+account    required     /lib/security/pam_unix_acct.so
+password   required     /lib/security/pam_unix_passwd.so
+session    required     /lib/security/pam_unix_session.so
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>For auth you need to use the pam_unix_auth.so module, for account the
+pam_unix_acct.so, for password the pam_unix_passwd.so and for
+session the pam_unix_session.so module.
+<P>
+<HR>
+<A HREF="NIS-HOWTO-7.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="NIS-HOWTO-5.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="NIS-HOWTO.html#toc6"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

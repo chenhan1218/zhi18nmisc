@@ -1,0 +1,200 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>The Linux GCC HOWTO中譯版V0.2: 連結</TITLE>
+ <LINK HREF="GCC-HOWTO-7.html" REL=next>
+ <LINK HREF="GCC-HOWTO-5.html" REL=previous>
+ <LINK HREF="GCC-HOWTO.html#toc6" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="GCC-HOWTO-7.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="GCC-HOWTO-5.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="GCC-HOWTO.html#toc6"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s6">6. 連結</A></H2>
+
+<P>由於靜態與共享程式庫兩者間不相容的格式的差異性與動詞*link*過量使用於指稱*編譯完成後的事情*與*當編譯好的程式使用時所發生的事情*這兩件事上頭，使得這一章節變得複雜了許多。（ and, actually, the overloading of the word `load' in a comparable but opposite sense）不過，再複雜也就是這樣了，所以閣下不必過於擔心。
+<P>
+<P>為了稍微減輕讀者的困惑，我們稱執行期間所發生的事為*動態載入*，這一主題會在下一章節中談到。你也會在別的地方看到我把動態載入描述成*動態連結*，不過不會是在這一章節中。換句話說，這一章節所談的，全部是指發生在編譯結束後的連結。
+<P>
+<H2><A NAME="ss6.1">6.1 共享程式庫 vs靜態程式庫</A>
+</H2>
+
+<P>建立程式的最後一個步驟便是連結；也就是將所有分散的小程式組合起來，看看是否遺漏了些什麼。顯然，有一些事情是很多程式都會想做的---例如，開啟檔案，接著所有與開檔有關的小程式就會將儲存程式庫的相關檔案提供給你的程式使用。在一般的Linux系統上，這些小程式可以在<CODE>/lib</CODE>與<CODE>/usr/lib/</CODE>目錄底下找到。
+<P>
+<A NAME="index.65"></A>  
+<A NAME="index.66"></A>  
+<P>當你用的是靜態的程式庫時，連結器會找出程式所需的模組，然後實際將它們拷貝到執行檔內。然而，對共享程式庫而言，就不是這樣了。共享程式庫會在執行檔內留下一個記號，指明*當程式執行時，首先必須載入這個程式庫*。顯然，共享程式庫是試圖使執行檔變得更小，等同於使用更少的記憶體與磁碟空間。Linux內定的行為是連結共享程式庫，只要Linux能找到這些共享程式庫的話，就沒什麼問題；不然,Linux就會連結靜態的了。如果你想要共享程式庫的話，檢查這些程式庫（<CODE>*.sa</CODE> for a.out, <CODE>*.so</CODE> for ELF）是否住在它們該在的地方，而且是可讀取的。
+<P>在Linux上，靜態程式庫會有類似<CODE>libname.a</CODE>這樣的名稱；而共享程式庫則稱為<CODE>libname.so.x.y.z</CODE>，此處的<CODE>x.y.z</CODE>是指版本序號的樣式。共享程式庫通常都會有連結符號指向靜態程式庫（很重要的）與相關聯的<CODE>.sa</CODE>檔案。標準的程式庫會包含共享與靜態程式庫兩種格式。
+<P>你可以用<CODE>ldd</CODE>（List Dynamic Dependencies）來查出某支程式需要哪些共享程式庫。
+<BLOCKQUOTE><CODE>
+<PRE>
+$ ldd /usr/bin/lynx
+        libncurses.so.1 => /usr/lib/libncurses.so.1.9.6
+        libc.so.5 => /lib/libc.so.5.2.18
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>這是說在我的系統上，WWW瀏覽器*lynx*會依賴<CODE>libc.so.5</CODE> (the C library)與<CODE>libncurses.so.1</CODE>（終端機螢幕的控制）的存在。若某支程式缺乏獨立性， <CODE>ldd</CODE>就會說‘<CODE>statically linked</CODE>’或是‘<CODE>statically linked (ELF)</CODE>’。
+<P>
+<H2><A NAME="index.69"></A> <A NAME="index.68"></A> <A NAME="index.67"></A> <A NAME="ss6.2">6.2 終極審判（‘<CODE>sin()</CODE> 在哪個程式庫裡？’）</A>
+   </H2>
+
+<P><CODE>nm </CODE><EM>程式庫名稱</EM>應該會列出此<EM>程式庫名稱</EM>所參考到的所有符號。這個指令可以應用在靜態與共享程式庫上。假設你想知道<CODE>tcgetattr()</CODE>是在哪兒定義的：你可以如此做，
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ nm libncurses.so.1 |grep tcget
+         U tcgetattr
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>*<CODE>U</CODE>*指出*未定義*---也就是說ncurses程式庫有用到tegetattr()，但是並沒有定義它。你也可以這樣做，
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ nm libc.so.5 | grep tcget
+00010fe8 T __tcgetattr
+00010fe8 W tcgetattr
+00068718 T tcgetpgrp
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>*<CODE>W</CODE>*說明了*弱態(weak)*，意指符號雖已定義，但可由不同程式庫中的另一定義所替代。最簡單的*正常*定義（像是<CODE>tcgetpgrp</CODE>）是由*<CODE>T</CODE>*所標示：
+<P>
+<A NAME="index.70"></A>  
+<P>標題所談的問題，最簡明的答案便是<CODE>libm.(so|a)</CODE>了。所有定義在<CODE>&lt;math.h&gt;</CODE>的函數都保留在maths程式庫內；因此，當你用到其中任何一個函數時，都需要以<CODE>-lm</CODE>的參數連結此程式庫。
+<P>
+<P>
+<H2><A NAME="ss6.3">6.3 X檔案？</A>
+</H2>
+
+<P><CODE>ld: Output file requires shared library `libfoo.so.1`</CODE>
+<P>
+<P> ld與其相類似的命令在搜尋檔案的策略上，會依據版本的差異而有所不同，但是唯一一個你可以合理假設的內定目錄便是<CODE>/usr/lib</CODE>了。如果你希望身處它處的程式庫也列入搜尋的行列中，那麼你就必須以<CODE>-L</CODE>選項告知gcc或是ld。
+<P>
+<P>要是你發現一點效果也沒有，就趕緊察看看那檔案是不是還乖乖的躺在原地。就a.out而言，以<CODE>-lfoo</CODE>參數來連結，會驅使ld去尋找<CODE>libfoo.sa</CODE>（shared stubs）；如果沒有成功，就會換成尋找<CODE>libfoo.a</CODE>（static）。就ELF而言， ld會先找<CODE>libfoo.so</CODE>，然後是<CODE>libfoo.a</CODE>。<CODE>libfoo.so</CODE>通常是一個連結符號，連結至<CODE>libfoo.so.x</CODE>。
+<P>
+<P>
+<H2><A NAME="ss6.4">6.4 建立你自己的程式庫</A>
+</H2>
+
+<H3>控制版本</H3>
+
+<P>與其它任何的程式一樣，程式庫也有修正不完的bugs的問題存在。它們也可能產生出一些新的特點，更改目前存在的模組的功效，或是將舊的移除掉。這對正在使用它們的程式而言，可能會是一個大問題。如果有一支程式是根據那些舊的特點來執行的話，那怎麼辦？
+<P>所以，我們引進了程式庫版本編號的觀念。我們將程式庫*次要*與*主要*的變更分門別類，同時規定*次要*的變更是不允許用到這程式庫的舊程式發生中斷的現象。你可以從程式庫的檔名分辨出它的版本（實際上，嚴格來講，對ELF而言僅僅是一場天大的謊言；繼續讀將下去，便可明白為什麼了）： <CODE>libfoo.so.1.2</CODE>的主要版本是1，次要版本是2。次要版本的編號可能真有其事，也可能什麼都沒有---libc在這一點上用了*修正程度*的觀念，而訂出了像<CODE>libc.so.5.2.18</CODE>這樣的程式庫名稱。次要版本的編號內若是放一些字母、底線、或是任何可以列印的ASCII字元，也是很合理的。
+<P>ELF與a.out格式最主要的差別之一就是在設置共享程式庫這件事上；我們先看ELF，因為它比較簡單一些。
+<P>
+<H3><A NAME="index.71"></A> ELF？它到底是什麼東東ㄋㄟ？ </H3>
+
+<P> ELF（Executable and Linking Format）最初是由USL（UNIX System 
+Laboratories）發展而成的二進位格式，目前正應用於Solaris與System V Release 4上。由於ELF所增漲的彈性遠遠超過Linux過去所用的a.out格式，因此GCC與C程式庫的發展人士於1995年決定改用ELF為Linux標準的二進位格式。
+<P>
+<H3>怎麼又來了？</H3>
+
+<P> 這一節是來自於‘/news-archives/comp.sys.sun.misc’的文件。
+<P>
+<BLOCKQUOTE>
+ELF（“Executable Linking Format”）是於SVR4所引進的新式改良目的檔格式。ELF比起COFF可是多出了不少的功能。以ELF而言，它*是*可由使用者自行延伸的。ELF視一目的檔為節區（sections），如串列般的組合；而且此串列可為任意的長度（而不是一固定大小的陣列）。這些節區與COFF的不一樣，並不需要固定在某個地方，也不需要以某種順序排列。如果使用者希望補捉到新的資料，便可以加入新的節區到目的檔內。ELF也有一個更強而有力的除錯法式，稱為DWARF（Debugging With Attribute Record Format）—目前Linux並不完全支援。DWARF DIEs（Debugging Information Entries）的連結串列會在ELF內形成 .debug的節區。DWARF DIEs的每一個 .debug節區並非一些少量且固定大小的資訊記錄的集合，而是一任意長度的串列，擁有複雜的屬性，而且程式的資料會以有範圍限制的樹狀資料結構寫出來。DIEs所能補捉到的大量資訊是COFF的 .debug節區無法望其項背的。（像是C++的繼承圖。）
+</BLOCKQUOTE>
+<P>
+<BLOCKQUOTE>
+ELF檔案是從SVR4（Solaris 2.0 ？）ELF存取程式庫（ELF access library）內存取的。此程式庫可提供一簡便快速的介面予ELF。使用ELF存取程式庫最主要的恩惠之一便是，你不再需要去察看一個ELF檔的qua了。就UNIX的檔案而言，它是以Elf*的型式來存取；呼叫elf_open()之後，從此時開始，你只需呼叫elf_foobar()來處理檔案的某一部份即可，並不需要把檔案實際在磁碟上的image搞得一團亂。
+</BLOCKQUOTE>
+<P>ELF的優缺點與昇級至ELF等級所需經歷的種種痛苦，已在ELF-HOWTO內論及；我並不打算在這兒塗漿糊。ELF HOWTO應該與這份文件有同樣的主題才是。
+<P>
+<H3>ELF共享程式庫</H3>
+
+<P>若想讓<CODE>libfoo.so</CODE>成為共享程式庫，基本的步驟會像下面這樣：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ gcc -fPIC -c *.c
+$ gcc -shared -Wl,-soname,libfoo.so.1 -o libfoo.so.1.0 *.o
+$ ln -s libfoo.so.1.0 libfoo.so.1
+$ ln -s libfoo.so.1 libfoo.so
+$ LD_LIBRARY_PATH=`pwd`:$LD_LIBRARY_PATH ; export LD_LIBRARY_PATH
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>這會產生一個名為<CODE>libfoo.so.1.0</CODE>的共享程式庫，以及給予ld適當的連結（<CODE>libfoo.so</CODE>）還有使得動態載入程式（dynamic loader）能找到它（<CODE>libfoo.so.1</CODE>）。為了進行測試，我們將目前的目錄加到<CODE>LD_LIBRARY_PATH</CODE>裡。
+<P>
+<A NAME="index.72"></A>  
+<P>當你津津樂道於程式庫製做成功之時，別忘了把它移到如<CODE>/usr/local/lib</CODE>的目錄底下，並且重新設定正確的連結路徑。<CODE>libfoo.so.1</CODE>與<CODE>libfoo.so.1.0</CODE>的連結會由<CODE>ldconfig</CODE>依日期不斷的更新，就大部份的系統來說，ldconfig會在開機過程中執行。<CODE>libfoo.so</CODE>的連結必須由手動方式更新。如果你對程式庫所有組成份子（如標頭檔等）的昇級，總是抱持著一絲不茍的態度，那麼最簡單的方法就是讓<CODE>libfoo.so -> libfoo.so.1</CODE>；如此一來，ldconfig便會替你同時保留最新的連結。要是你沒有這麼做，你自行設定的東東就會在數日後造成<EM>千奇百怪的問題</EM>出現。到時候，可別說我沒提醒你啊！
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ su
+# cp libfoo.so.1.0 /usr/local/lib
+# /sbin/ldconfig
+# ( cd /usr/local/lib ; ln -s libfoo.so.1 libfoo.so )
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H3><A NAME="index.74"></A> <A NAME="index.73"></A> 版本編號、soname與符號連結  </H3>
+
+<P>每一個程式庫都有一個<EM>soname</EM>。當連結器發現它正在搜尋的程式庫中有這樣的一個名稱，連結器便會將soname箝入連結中的二進位檔內，而不是它正在運作的實際的檔名。在程式執行期間，動態載入程式會搜尋擁有soname這樣的檔名的檔案，而不是程式庫的檔名。因此，一個名為<CODE>libfoo.so</CODE>的程式庫，就可以有一個<CODE>libbar.so</CODE>的soname了。而且所有連結到<CODE>libbar.so</CODE>的程式，當程式開始執行時，會尋找的便是<CODE>libbar.so</CODE>了。
+<P>
+<P>這聽起來好像一點意義也沒有，但是這一點，對於瞭解數個不同版本的同一個程式庫是如何在單一系統上共存的原因，卻是關鍵之鑰。Linux程式庫標準的命名方式，比如說是<CODE>libfoo.so.1.2</CODE>，而且給這個程式庫一個<CODE>libfoo.so.1</CODE>的soname。如果此程式庫是加到標準程式庫的目錄底下（e.g. <CODE>/usr/lib</CODE>），<CODE>ldconfig</CODE>會建立符號連結<CODE>libfoo.so.1 -> libfoo.so.1.2</CODE>，使其正確的image能於執行期間找到。你也需要連結<CODE>libfoo.so -> libfoo.so.1</CODE>，使ld能於連結期間找到正確的soname。
+<P>所以囉，當你修正程式庫內的bugs，或是添加了新的函數進去（任何不會對現存的程式造成不利的影響的改變），你會重建此程式庫，保留原本已有的soname，然後更改程式庫檔名。當你對程式庫的變更會使得現有的程式中斷，那麼你只需增加soname中的編號---此例中，稱新版本為<CODE>libfoo.so.2.0</CODE>，而soname變成<CODE>libfoo.so.2</CODE>。緊接著，再將<CODE>libfoo.so</CODE>的連結轉向新的版本；至此，世界又再度恢復了和平！
+<P>其實你<EM>不須要</EM>以此種方式來替程式庫命名，不過這的確是個好的傳統。ELF賦予你在程式庫命名上的彈性，會使得人氣喘呼呼的搞不清楚狀況；有這樣的彈性在，也並不表示你就得去用它。
+<P>
+<P>ELF總結：假設經由你睿智的觀察發現有個慣例說：程式庫主要的昇級會破壞相容性；而次要的昇級則可能不會；那麼以下面的方式來連結，所有的一切就都會相安無事了。
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+gcc -shared -Wl,-soname,libfoo.so.major -o libfoo.so.major.minor
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H3>a.out---舊舊的格式﹏</H3>
+
+<P>建立共享程式庫的便利性是昇級至ELF的主要原因之一。那也是說,a.out可能還是有用處在的。上ftp站去抓
+<A HREF="ftp://tsx-11.mit.edu/pub/linux/packages/GCC/src/tools-2.17.tar.gz">ftp://tsx-11.mit.edu/pub/linux/packages/GCC/src/tools-2.17.tar.gz</A>；解壓縮後你會發現有20頁的文件可以慢慢的讀哩。我很不喜歡自己黨派的偏見表現得那麼的淋璃盡致，可是從上下文間，應該也可以很清楚的嗅出我從來不拿石頭砸自己的腳的脾氣吧！:-)
+<P>
+<H3><A NAME="index.76"></A> <A NAME="index.75"></A> ZMAGIC vs QMAGIC  </H3>
+
+<P>QMAGIC是一種類似舊格式的a.out（亦稱為ZMAGIC）的可執行檔
+格式，這種格式會使得第一個分頁無法map。當0-4096的範圍內沒有mapping存在時，則可允許NULL dereference trapping更加的容易。所產生的邊界效應是你的執行檔會比較小（大約少1K左右）。
+<P>只有即將作廢的連結器有支援ZMAGIC，一半已埋入棺材的連結器有支援這兩種格式；而目前的版本僅支援QMAGIC而已。事實上，這並沒有多大的影響，那是因為目前的核心兩種格式都能執行。
+<P>*file*命令應該可以確認程式是不是QMAGIC的格式的。
+<P>
+<H3>檔案配置</H3>
+
+<P>一a.out(DLL)的共享程式庫包含兩個真實的檔案與一個連結符號。就*foo*這個用於整份文件做為範例的程式庫而言，這些檔案會是<CODE>libfoo.sa</CODE>與<CODE>libfoo.so.1.2</CODE>；連結符號會是<CODE>libfoo.so.1</CODE>，而且會指向<CODE>libfoo.so.1.2</CODE>。這些是做什麼用的？
+<P>在編譯時，<CODE>ld</CODE>會尋找<CODE>libfoo.sa</CODE>。這是程式庫的*stub*檔案。而且含有所有執行期間連結所需的exported的資料與指向函數的指標。
+<P>執行期間，動態載入程式會尋找<CODE>libfoo.so.1</CODE>。這僅僅是一個符號連結，而不是真實的檔案。故程式庫可更新成較新的且已修正錯誤的版本，而不會損毀任何此時正在使用此程式庫的應用程式。在新版---比如說<CODE>libfoo.so.1.3</CODE>---已完整呈現時，ldconfig會以一極微小的操作，將連結指向新的版本，使得任何原本使用舊版的程式不會感到絲毫的不悅。
+<P>DLL程式庫（我知道這是無謂的反覆---所以對我提出訴訟吧！）通常會比它們的靜態副本要來得大多。它們是以*洞（holes）*的形式來保留空間以便日後的擴充。這種*洞*可以不佔用任何的磁碟空間。一個簡單的<CODE>cp</CODE>呼叫，或是使用<CODE>makehole</CODE>程式，就可以達到這樣效果。因為它們的位址是固定在同一位置上，所以在建立程式庫後，你可以把它們拿掉。不過，<B>千萬不要試著拿掉ELF的程式庫</B>。
+<P>
+<H3>``libc-lite''?</H3>
+
+<P>libc-lite是輕量級的libc版本。可用來存放在磁碟片上，也可以替大部份低微的UNIX任務收尾。它沒有包含curses, dbm, termcap等等的程式碼。如果你的<CODE>/lib/libc.so.4</CODE>是連結到一個lite的libc，那麼建議你以完整的版本取代它。
+<P>
+<H3>連結：常見的問題</H3>
+
+<P>把你連結時所遭遇的問題寄給我！我可能什麼事也不會做，但是只要累積了足夠的數量，我會把它們寫起來*。
+<P>
+<DL>
+<P>
+<DT><B>你想共享，偏偏程式卻連結成靜態的！</B><DD><P>
+<A NAME="index.77"></A>  
+<A NAME="index.78"></A>  
+<P>檢查你提供給<CODE>ld</CODE>的連結是否正確，使ld能找到每一個對應的共享程式庫，就ELF而言，這是指一個符號連結<CODE>libfoo.so</CODE>，連結至image；就a.out而言，就是<CODE>libfoo.sa</CODE>檔了。很多人將ELF binutils 2.5昇級至2.6之後，就產生了這個問題---早期的版本搜尋共享程式庫時較有智慧，所以並沒有將所有的連結建立起來。後來，為了與其它的架構相容，這項充滿智慧的行為被人給刪除掉了，另外，這樣的*智慧*判斷錯誤的機率相當高，所造成的麻煩比它所解決的問題還多，所以留著也是害人精；不如歸去兮！
+<P>
+<DT><B>DLL的工具程式‘mkimage’找不到libgcc？ </B><DD><P>
+<A NAME="index.79"></A>  
+<P>自<CODE>libc.so.4.5.x</CODE>之後，libgcc已不再是共享的格式。因此，你必須在*<CODE>-lgcc</CODE>*出現之處以<CODE>`gcc -print-libgcc-file-name`</CODE>替代（完整的倒單引號（back-quotes））。另外，刪除所有<CODE>/usr/lib/libgcc*</CODE>的檔案。這點很重要哩。
+<P>
+<DT><B> <CODE>__NEEDS_SHRLIB_libc_4 multiply defined</CODE> messages </B><DD><P>是同樣的問題所造成的另一種結果。
+<P>
+<DT><B> ``Assertion failure'' message when rebuilding a DLL ?</B><DD><P>這一條神秘的訊息最有可能的原因是，在原始的<CODE>jump.vars</CODE>檔案內，由於保留的空間太少，以致於造成其中一個jump table slots溢滿。你可以執行工具程式—由2.17.tar.gz套件所提供的‘<CODE>getsize</CODE>’命令，定出所有嫌疑犯的蹤跡。可能唯一的解決方法是，解除此程式庫主要的版本編號，強迫它回到不相容的年代。
+<P>
+<DT><B> <CODE>ld: output file needs shared library libc.so.4</CODE> </B><DD><P>通常這是發生在當你連結的程式庫不是libc（如X程式庫），而且在命令列用了<CODE>-g</CODE>的參數，卻沒有一併使用<CODE>-static</CODE>，所發出的錯誤訊息。
+<P>共享程式庫的<CODE>.sa</CODE> stubs通常有一個未定義的符號<CODE>_NEEDS_SHRLIB_libc_4</CODE>；這一點可藉由<CODE>libc.sa</CODE> stub來解決，然而，以<CODE>-g</CODE>來編譯時，會使得連結以<CODE>libg.a</CODE>或<CODE>libc.a</CODE>來結束；因此這個符號一直就沒有解決，也就會導致上面的錯誤訊息了。
+<P>總之，以<CODE>-g</CODE>的旗號編譯時別忘了加上<CODE>-static</CODE>，不然就別用<CODE>-g</CODE>來連結。通常，以<CODE>-g</CODE>編譯各個獨立的檔案時，所獲得的除錯資訊已經足夠，連結時就可以<EM>不需要</EM>它了。
+<P>
+</DL>
+<P>
+<P>
+<HR>
+<A HREF="GCC-HOWTO-7.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="GCC-HOWTO-5.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="GCC-HOWTO.html#toc6"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

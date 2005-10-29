@@ -1,0 +1,191 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Linux Remote-Boot mini-HOWTO:: 特殊型的 TFTP 伺服器</TITLE>
+ <LINK HREF="Remote-Boot-5.html" REL=previous>
+ <LINK HREF="Remote-Boot.html#toc6" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+<IMG SRC="../img/next.gif" ALT="Next">
+<A HREF="Remote-Boot-5.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Remote-Boot.html#toc6"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s6">6. 特殊型的 TFTP 伺服器</A></H2>
+
+<P>由於 TCP/IP BootPROM 只能支援 TFTP 通讯协定,
+而这与增强型的 TFTP 伺服器新功能息息相关.
+<P>
+<H2><A NAME="ss6.1">6.1 Bootix 的增强型 TFTP 伺服器</A>
+</H2>
+
+<P>Bootix 随著 TCP/IP BootPROM 一起发行的增强型 TFTP 伺服器,
+可以传送每个封包达 1408 位元组的资料以取代原标准的 512 位元组.
+这个是个很棒的功能你应该多加利用.
+这个伺服器程式可以在 TCP/IP BootPROM 工具程式磁片中找到, 有 Solaris,
+Windows 及  Netware NLM 版本.
+<P>
+<H2><A NAME="ss6.2">6.2 Linux 的增强型 TFTP 伺服器</A>
+</H2>
+
+<P>在 Linux 下, 可以用 Bootix/Incom 所写的 TFTP 伺服器.
+供 Linux 使用的版本已编译好,. 放在这
+<CODE>
+<A HREF="soft/incomtftpdlx.tar.gz">http://cuiwww.unige.ch/info/pc/remote-boot/soft/incomtftpdlx.tar.gz</A></CODE>
+<P>
+<H2><A NAME="ss6.3">6.3 Solaris 的 TFTP 伺服器</A>
+</H2>
+
+<P>原始的 Solaris TFTP 伺服器程式有严格的档案大小限制,
+因为它是使用 16-位元的有号整数来计算封包大小.
+Bootix 所提供的给 Solaris 的增强型 TFTP 伺服器, 就可以解决这个问题,
+以提供更快的传输速度.
+<P>不过, 不份使用者回应
+(特别是搭配 SMC9432 卡使用时) 会在启动它时产生 lock-ups 的问题.
+所以, John Martin (<CODE>j.martin@abdn.ac.uk</CODE>) 已把 Linux 的
+<CODE>tftpd</CODE> 移殖到 Solaris. 你可以在这找到 <CODE>
+<A HREF="http://www.csd.abdn.ac.uk/~jmartin/tftpd.tar.gz">http://www.csd.abdn.ac.uk/~jmartin/tftpd.tar.gz</A></CODE>.
+<P>
+<H2><A NAME="ss6.4">6.4 安全闸道器</A>
+</H2>
+
+<P>我们写了一个特殊的 TFTP 伺服器用来当成认证使用者的安全闸道器.
+这个伺服器可以在 Linux 或 Solaris 下执行, 并可以透过 Unix 的 通行密码资料库
+(NIS 及 shadow 通行密码都已能支援)
+或 Windows NT (或 Samba) 伺服器 或 Radius 伺服器.
+它放在这 <CODE>
+<A HREF="soft/stftpd.tar.gz">http://cuiwww.unige.ch/info/pc/remote-boot/soft/stdtpd.tar.gz</A></CODE>,
+有原始程式及预先编译好的可执行档.
+预先编译好的可执行档不包含 NT 通行密码的加密功能因为我们不能散布 <CODE>libdes</CODE>
+即使有满多人抱怨也一样.
+<P>为了要使用安全闸道器, 你只要对 <EM>security domains</EM> 设定档作一些设定,
+内容是指每个逻辑安全性领域是对应到哪一台认证伺服器
+( <CODE>Unix</CODE> 领域直接对应到 Unix 通行密码资料库伺服器). 以下是一个设定□例档:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+#
+# STFTPD 设定档
+#
+# 这个档案用来叙述伺服器的 "security domains".
+# 已支援两种认证伺服器 : Radius 或 winnt (winnt 包含 NT 伺服器 和 Samba)
+#
+# Radius 伺服器的设定格式
+# radius        &lt;领域名>        &lt;伺服器网路位址>         &lt;secret>
+#
+# secret 是指在你的 /etc/raddb/clients 档里头的密字组
+#
+# SMB 伺服器的设定格式
+# winnt         &lt;领域名>        &lt;伺服器网路位址>         &lt;netbiosname>
+#
+# netbiosname 是指伺服器的 NETBIOS 识别名称
+#
+# □例
+radius         sec-dom-rad     radiusserver    testing123
+winnt          sec-dom-nt1     192.168.1.1     NTserver1
+winnt          sec-dom-smb     samba           SAMBA1
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+
+记住 如果你使用了 Samba, 你必须设定 <CODE>security = user</CODE>.
+<P>你也可以提供一个哪些使用者禁止登入 (会使他们的无法通过检查)
+的列表给安全认证伺服器.
+<P>
+<H2><A NAME="ss6.5">6.5 广播型 TFTP 伺服器</A>
+</H2>
+
+<P>我们撰写了一个特殊型 TFTP 伺服器以实现自订的 TFTP 广播功能. 用这种伺服器,
+我们可以在高负载的 10 Mb 乙太网路环境下,
+以 6 Mb/s 的传输率下载映像档到 25 台用户端电脑
+(这比传统的 TFTP 传输协定来得有效率多了,
+因为它完全不须要对每个封包都做一次已收到的回应).
+这种伺服器程式可以在 Linux 或 Solaris 环境下执行.
+可以在这取用 <CODE>
+<A HREF="soft/btftpd.tar.gz">http://cuiwww.unige.ch/info/pc/remote-boot/soft/btdtpd.tar.gz</A></CODE>,
+含原始程式码及以编译好的可执行档.
+<P>因为 TCP/IP BootPROM 本身不支援这种通讯协定,
+我们的解决方法是以一个极小的 ramdisk 为基础的 Linux 系统开机,
+然後再搭配本文所谈到的工具程式: Linux 版本的 MrBatch,
+它本身就内建支援广播型 TFTP 通讯协定了.
+一个简易的批次档可以同时使所有的用户端电脑在几分钟内下载完所有的档案.
+要使用这个功能你并不需要自行安装 Linux, 除非你有相当奇特的硬体配备,
+以致无法直接使用这个套件所提供的 Kernel.
+<P>程序如下. 首先你要手动启动广播型伺服器,
+并给定参数以设定预期要开机的用户端电脑数量 (记住, 这个程序不需要天天做.
+只有在你变更了映像档内容後,
+想确定它可以直接载入到你所有的用户端电脑时才要用到). 接著,
+你把所有的用户端电脑都打开, 他们就会执行下列的 BpBatch 脚本程序:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+#
+# 这个批次档是由 BpBatch 所执行, 用以启动一个 内建 ramdisk 的 mini-linux,
+# 然後在此 Linux 环境下执行 MrBatch.
+#
+# 广播型 TFTP 通讯协定只能在 Linux 版本的 MrBatch 作动, 因为 BootPROM 本身不支援.
+#
+# 1. 设定一个极小的分割区, 用来当快取.
+setpartitions "BIGDOS:50"
+# 2. 清理 MBR.
+clean 0
+# 3. 执行一个具 initrd (Initial Ramdisk) 支援的 Linux Kernel, 并用
+#    bcastrd.gz 为 初始 ramdisk (将会被挂在 root 并透过 /linuxrc 执行).
+#    参考 initrd.txt 以获得更多关於 初始 ramdisk 的详细资料.
+#    你不需要去设定 root 装置 (第二个参数是无用的) 到 Kernel,
+#    它会自行使用 初始 ramdisk.
+linuxboot "linux.krn" "" "bcastrd.gz"
+# 4. 初始 ramdisk 会执行 dhcpd 以透过 DHCP 通讯协定来设定网路.
+#    接著它会执行 mrbatch -w bcastlx
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+
+初始 ramdisk 内含:
+<UL>
+<LI><CODE>dhcpcd</CODE>, 一个 DHCP 用户端程式用来设定网路.</LI>
+<LI><CODE>mrbatch</CODE></LI>
+<LI><CODE>linuxrc</CODE>, 一个会被 initrd 启动的档案, 用来延续启动
+<CODE>dhcpd</CODE> 及之後要用的 <CODE>MrBatch</CODE>.</LI>
+<LI><CODE>usr/lib/terminfo/l/linux</CODE>, 由 MrBatch 所使用.</LI>
+<LI><CODE>dev/*</CODE>, 执行 Linux 及 MrBatch 所需的装置.</LI>
+</UL>
+
+所有的程式都去芜存菁并编译成静态连结, 以避免使用到 <CODE>libc.so</CODE>
+因为它真的很大. 最後以 Gzip 压缩的 ramdisk 大小低於 300 KB.
+而 Kernel 本身用掉 450KB (并支援多数的网路卡及 initrd ).
+当 Linux 一启动执行, MrBatch 会被叫用并依下列的脚本程序来工作
+(你也可以根据你所需来修改):
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# 这个档案是在 MrBatch 於 初始 ramdisk bcastrd.gz 启动後执行
+# 他主要的功用是 "采广播的方式复制" 档案到快取里头
+#
+# 1. 看看详细资讯.
+showlog
+# 2. 不需要 "press a key".
+set pauselog="OFF"
+# 3. 设定分割区为他们最终值.
+#    重点: 当你要复制档案到快取区以供以後的开机使用时,
+#    你需要在以後所用到开机设定都采用一样的分割区.
+setpartitions "BIGDOS:1024"
+# 4. 清理 快取分割区.
+clean -1
+# 5. 透过 广播型 TFTP 通讯协定 (埠号 99) , 复制档案到快取区.
+#
+# 你可以照我们所写的脚本程序来用, 但你百分之百确定需要修改下面这一行 !
+# 在我们的□例下, 我们下载的档案是 mblinux.imz, 它是我们安装的 Linux 的映像档.
+copy "$BOOTP-Server-IP@99:mblinux.imz" "{:-1}mblinux.imz"
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+
+如果传输完成,
+你只须要关掉所有用户端电脑并把它们的初始开机程序脚本设定成你所喜号的选单.
+<P>
+<HR>
+<IMG SRC="../img/next.gif" ALT="Next">
+<A HREF="Remote-Boot-5.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Remote-Boot.html#toc6"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

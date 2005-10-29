@@ -1,0 +1,167 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" content="text/html; charset=gb2312">
+<TITLE>[CLDP CVS 简介</TITLE>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 4, 1);</SCRIPT>
+<pre>
+$Id: cvs.txt,v 1.4 1998/02/10 08:26:36 clkao Exp $
+
+		CVS 简介
+
+
+作者: 高嘉良 (Chia-liang Kao) &lt;<a href="mailto:clkao@cirx.org">clkao@cirx.org</a>&gt;
+
+ * 什麽是 cvs? 
+
+    cvs 是一个版本控制系统. 什麽是版本控制系统呢? 简单的说, 
+他可以记录程式码修改的过程, 有一个完整的 history.
+
+    辟如说, 当你在修改程式码的时候, 不小心写出了一个 bug, 
+但是你可能很久以後才发现多出了这个 bug, 这个时候, cvs 就能很
+有效的帮助你, 找出到底是在哪一次的修改中, 出现了这个 bug.
+
+    或许你会说, 那我每次都把程式码存起来, tar 起来不就好了, 
+当然, 你是可以这麽做, 但是这太浪费空间了! cvs 在版本更改间, 
+只储存他们的 diff 档, 这样可以很有效的省下很多空间.
+
+    再另一个场合里头, 更能显示出 cvs 的好处 -- 多人一起发展
+软体的时候. cvs 支援 remote access, user 并可以对他要修改的
+档案加上 edit 的 flag, 让别人知道他要修改这个档案了. 然而, 
+一个较大的发展团队, 一定还会需要一个 mailing list, 用来沟通.
+因为, cvs 只是一个管理 project 程式码的工具, 他并不扮演沟通
+的角色.
+    
+ * 名词
+
+    repository: 意思是仓库. 在 cvs 里头, 就是你真正存放版本
+		历史的地方.
+
+    pserver   : 这是 cvs 用来接受 remote 的 cvs command 用的.
+		cvs 有两种模式, 一种是 local, 一种是 remote.
+
+    cvsroot   : 当你使用 cvs 的时候, 必须设定 CVSROOT 这个环
+		境变数, 或是用 -d 这个选项来指定.
+
+ * 简单的例子
+  - local cvs
+    现在我正在写 cvs 的文件, 我希望用 cvs 来维护这些文件.
+    首先, 我定了一个 cvs root, 当然, 你得 mkdir
+
+    setenv CVSROOT "/home/clkao/cvsroot/"
+    cvs init
+
+    cvs init 会帮你把 cvsroot 初始化, 至於初始化哪些东西, 後面再说.
+
+    接著, 开一个要放文件的目录
+
+    mkdir /home/clkao/cvsroot/cvsdoc
+    cd /home/clkao/work
+    cvs checkout cvsdoc
+
+    你会看到下面的讯息: 
+	  cvs checkout: Updating cvsdoc
+
+    cvs checkout 会把目前最新的版本送到你现在的目录下, 当你下了
+    上面的指令後, cvs 会帮你建立 cvsdoc 这个目录.
+
+    记住, 不要自己 mkdir /home/clkao/work/cvsdoc, 每个 cvs 工作目录
+    都还会有一些其他让 cvs 参考的资讯.
+
+    接著, 进入 cvsdoc 这个目录, 编辑 cvs.doc 这个档案, 写了这些有的
+    没有的.
+
+    cvs add cvs.txt
+    cvs commit -m "Initial revision."
+
+    cvs add 会把 cvs.txt 加入 cvs 在维护的 file list.
+    cvs commit 会把现在目录下所有的东西(cvs.txt) 送到 repository.
+    -m 表示这次 commit 的 log message.
+
+    现在修改一下 cvs.txt 吧, 就像我现在又继续编辑, 继续把新
+    的内容加入 cvs.txt, 并且, 在档案的最上面加上 \$Id\$ 的字样.
+    改完之後, 再 commit 一次. (注意, 没有 '\' 喔, 这里 slash 的
+    目的是避免 cvs 也把这边的 Id 代换掉.
+
+    cvs commit -m "Adding new stuff."
+    cvs log cvs.txt
+
+    你会看到每次改的时候, 你加进去的 message. 想想, 这对写程式, 
+    发展大的 project 的人来说, 是不是一个很棒的工具呢?
+
+    cvs diff -r 1.1 -r 1.2 cvs.txt
+
+    这样会显示 1.1 和 1.2 版的 diff, 原本有 1.1 版的人, 就只需要用
+    这个 patch 就可以了!
+
+    再编辑 cvs.txt, 有没有发现最上面的 Id 变长了? 加了一代串文字, 
+    这显示这个版本的一些相关资讯.
+
+  - remote cvs
+    可是, 我现在要做的是一个大的专案啊, 上面讲的太小儿科了, 
+    而且我要让好多人一起发展这个专案呢! 
+
+    这里我举现在正要进行的 xcin-2.5 cvs 建立和使用的过程当作例子.
+
+    su root
+    检查 /etc/services 有没有这两行, 没有请加入:
+
+    cvspserver      2401/tcp   #CVS network server
+    cvspserver      2401/udp   #CVS network server
+
+    再 /etc/inetd.conf 加入:
+
+    cvspserver      stream  tcp     nowait  root \
+    /usr/bin/cvs    cvs -b /usr/bin --allow-root /export pserver
+
+    mkdir /export
+
+    adduser anoncvs, 这是要给 anonymous cvs 用的. group 为 nogroup.
+    新加一个 xcin 的 group.
+
+    adduser 参与 xcin 的帐号, 当然, 把他们的 group 设为 xcin
+
+    cvs -d /export init
+    cd /tmp/xcin-alpha, 这是原来已经存在的版本, 现在要把它放进 cvs 里头.
+    cvs import xcin-2.5 RXP XCIN_2_5_ALPHA
+
+    如此就会把 xcin-alpha 下的东西 import 进 /export/xcin-2.5 了.
+    後面的 RXP 是 vendor tag, XCIN_2_5_ALPHA 是 release tag, tag
+    的用处很大, 不过我们後面再说.
+
+    注意, 一个 user 要从远端 access 的档案, 他必须再这里拥有适当的权限.
+    譬如说, /export/xcin-2.5 的 group 应该是 xcin, 且 group writable(
+    这是 cvs default). 
+
+    现在试试看从远端存取 cvs 维护的档案.
+
+    首先, 在你的机器上建立一个工作目录, 譬如是 /home/clkao/work
+
+    cd /home/clkao/work
+    cvs -d ":pserver:clkao@cirx.org:/export" login
+    会出现 prompt 问你 password, 打进去.
+
+    cirx.org 是 repository 所在的机器.
+    当你下了 cvs login 的指令後, 这组 cvsroot 和 encrypted passwd
+    会被存在 ~/.cvspass 里头.
+
+    cvs -d ":pserver:clkao@cirx.org:/export" checkout xcin-2.5
+
+    这样就会把整套 cvs 所 maintain 的东西 checkout 出来在你的
+    机器上.
+
+    cd xcin-2.5
+
+    东看看, 西看看, 发现了一个 bug. 修改好了之後, 就 commit 出去吧.
+
+    cvs commit -m "Minor bug fix."
+
+    cvs 会搜寻所有他 maintain 的 entry, 看看哪些需要 commit 的.
+
+    这样就大概有一个 cvs 的雏形了! :) 更精采的还在後头呢!
+
+ * tag 的用途
+
+ * branch
+</pre>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

@@ -1,0 +1,160 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" content="text/html; charset=big5">
+<TITLE>Small Memory mini-HOWTO 中譯版</TITLE>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+Small Memory mini-HOWTO 中譯版 v0.1<br>
+作者: <a href="http://eddie.cis.uoguelph.ca/~tburgess">Todd Burgess</a>&lt;<a href="malito:tburgess@uoguelph.ca">tburgess@uoguelph.ca</a>&gt;
+<br>
+譯者: <a href="http://www.linuxfan.com/~ymhuang">ymhuang</a>&lt;<a href="malito:ymhuang@linuxfan.com">ymhuang@linuxfan.com</a>&gt;
+<p><p>
+
+
+<ul>
+<li>簡介<p>
+
+這份 mini HOWTO 的目的是用來描述如何在一個擁有相當小的記憶體的系統上執<br>
+行 Linux。假設購買更多的記憶體是不可行的情況下，仍然有許多方法可以讓記<br>
+憶體的使用更有效率。<p>
+
+許多 Linux 安裝套件(distribution)往往過度的膨脹以致於透支了記憶體的空<br>
+間，這些套件執行了許多平常我們並不會經常用到的服務程式及特殊功能，藉由<br>
+移除這些不必要的功能與服務可以提升真實記憶體的使用空間。<p>
+
+我的系統是 486DX2-66 的 CPU，有 12MB 的記憶體及 12MB 的 Swap 空間的電<br>
+腦，它已經愉快的執行了近三年的 Linux，也深深地希望它能執行 Linux 更多<br>
+年 :)。<p>
+</li>
+<li>Linux 核心<p>
+
+所有的安裝套件通常都安裝了包含過多我們平常用不到的功能的 Linux 核心，<br>
+如果你還沒有重新編譯一個適合你的核心，我強烈的建議你重新編譯一個，如何<br>
+重新編譯一個核心已經超過這份文件所講的範圍，但是許多 Linux 的書籍與導<br>
+引文件都有包含到這方面更詳細的資料。<p>
+
+如果你重新編譯一個核心，記得不要放進太多你所不需要用到的功能，例如：<br>
+你們之中有多少人不會用到 PLIP 的功能卻又把它編譯進你的核心之中？較小<br>
+的核心需要較少的時間讀入記憶體，同時也使用較少的記憶體及較少的 CPU 周<br>
+期。<p>
+
+另外一個有關的東西是模組(module)，我個人並不使用這些模組，因為我發現<br>
+這些模組蠻笨重，如果你使用它們並且喜愛它們，那麼它們會幫助你減輕"核心<br>
+膨脹"的現象。<p>
+</li>
+<li>虛擬終端機<p>
+
+從虛擬終端機下手是一個提昇記憶體空間的好方法，大多數的 Linux 安裝套件<br>
+大約都執行了六個左右的虛擬終端機，平均來說執行六個虛擬終端機大約需要<br>
+4MB 的記憶體空間，移除幾個虛擬終端機可以提升部份記憶體空間。<p>
+
+一般使用者只需要執行三到四個虛擬終端機就夠用了，至於你要使用<br>
+幾個虛擬終端機則視你的喜好而定，只要記得你執行越少的虛擬終端<br>
+機，你就能替你其他的應用程式取得更多的記憶體使用。<p>
+
+關於執行幾個虛擬終端機的設定檔案位於 /etc/inittab，要移除不必<br>
+要的虛擬終端機，應該執行如下步驟：<p>
+<ul>
+<li>使用任何一種文字編輯器讀取 /etc/inittab。<p>
+</li>
+<li>找到有一行文字應該長得像這樣 (尋找條件可以設為 c1)<p>
+<pre>
+c1:12345:respawn:/sbin/getty tty1 38400 linux
+</pre>
+在越高數字(例如 c6)的那行的第一列加上註解的符號 '#'，重覆<br>
+這個動作直到滿足你的需要，請記住你千萬不能全部都加上註解<br>
+的符號，因為你還需要至少一個虛擬終端機來使用。<p>
+</li>
+<li>重新啟動你的電腦使設定值能作用。<p>
+</li>
+</ul>
+<li>Daemons<p>
+
+許多 Linux 安裝套件執行了許多我們平常並不會用到的 daemons，大<br>
+多數的 daemons 都是用 Script 所啟動，這些 Script 大多由你所用<br>
+的 Linux 安裝套件所決定，Slackware 這個安裝套件將它放置在<br>
+/etc/rc.d/rc.* 這些檔案中。<p>
+
+在你對這些檔案做處理之前，如果你有 Unix shell script 程式設計<br>
+這方面的背景知識會是一項很大的資產，如果你對撰寫 Unix shell<br>
+script 毫無經驗，以下所寫的或許可以當做一份快速的簡介。<p>
+
+以下面這段程式碼為例：<p>
+<pre>
+#!/bin/sh
+echo "hello world"
+#echo "good bye cruel world"
+</pre><p>
+這段程式碼會在螢幕上顯示出 "hello world" 的字串，Shell script<br>
+程式一定要有這行 "#!/bin/sh" 在檔案的第一行，在這之後的每一行<br>
+就會像你直接在鍵盤上鍵入後，當場執行的結果(試著想像 Shell<br>
+script 就像是鍵盤的巨集指令一般)。<p>
+
+除了第一行之外的任何一行若開頭的起始是用 '#' 開始，表示這行只<br>
+是單純的註解，因為這行將不會被 shell 所執行，大部份的用來啟動<br>
+daemon 的 script 會看起來像這樣：<p>
+<pre>
+if somecondition
+  do something
+fi
+</pre><p>
+你所要做的就是把從 if 開始的敘述一直到 fi 的敘述用 '#' 標記起<br>
+來就好了。<p>
+
+如果你想要找到任何一個 daemon 是從那啟動的，你所要做的是尋找那<br>
+個 daemon 的名字所在的位置即可，如果我想要找 inetd 是從那裡啟動<br>
+的，我會這麼做：<p>
+<pre>
+% cd /etc/rc.d
+% grep -n inetd rc.*
+</pre><p>
+<ul>
+<li>inetd<p>
+
+inetd 允許使用者使用向你的機器要求像 telnet、ftp、talk 等等的服<br>
+務，如果你不想要你的系統成為一台 Server 或是不需要任何人從遠端向<br>
+你的機器要求這樣的服務，你可以移除 inetd 的啟動。<p>
+</li>
+<li>lpd<p>
+
+lpd 是一個讓你可以使用 lpr 這個指令來列印你的文件，如果你不需要<br>
+在你的 Linux 系統中列印文件，那麼你可以移除 lpd 的啟動，就算你有<br>
+一台 HP Deskjet 列表機，而且要在 Linux 下列印些文件，我強烈建議<br>
+你採用一個名為"dj-printcap"的軟體，你可以從這找到這個軟體：<br>
+<a href="ftp://sunsite.unc.edu/pub/Linux/system/Printing/dj-printcap.tar.gz">ftp://sunsite.unc.edu/pub/Linux/system/Printing/dj-printcap.tar.gz</a><p>
+</li>
+<li>nfsd and mountd<p>
+
+這兩個 daemons 是讓你的機器成為一台 NFS Server，如果你不想讓你的<br>
+Linux 系統成為一台 NFS Server，你可以放心地移除這兩個 daemons的啟<br>
+動。<p>
+</li>
+<li>portmap<p>
+
+Portmap daemon 是用來處理 RPC 服務用的，如果你的機器不是台 NFS<br>
+Server 或不想執行 RPC 程式，你可以移除 portmap 的啟動。<p>
+</li>
+<li>sendmail<p>
+
+sendmail 是另外一個需要相當大量記憶體的 daemon，如果你從不使用<br>
+你的 Linux 機器當做 Mail Server，你可以放心的移除 sendmail 的啟<br>
+動。<p>
+</li>
+<li>其他的 daemons<p>
+
+在你的系統上一定還有許多你不需要用到的 daemons 啟動，將它們移除<br>
+掉，你唯一需要留著啟動的 daemon 是 syslogd 及 klogd。<p>
+</li>
+</ul>
+<li>結論<p>
+
+幾個虛擬終端機則視你的喜好而定，只要記得你執行越少的虛擬終端<br>
+以上的這些步驟是我在我的 Linux 系統上用來節省記憶體的方法，希<br>
+望我已經提供了能讓你的 Linux 系統節省記憶體的方法。<p>
+</li>
+</ul>
+Good luck and happy hacking!<br>
+<a href="http://eddie.cis.uoguelph.ca/~tburgess">Todd Burgess</a><br>
+<a href="mailto:tburgess@uoguelph.ca">tburgess@uoguelph.ca</a><br>
+<a href="http://eddie.cis.uoguelph.ca/~tburgess">http://eddie.cis.uoguelph.ca/~tburgess</a><br>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

@@ -1,0 +1,371 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>LDAP Linux HOWTO: Database Creation and Maintenance</TITLE>
+ <LINK HREF="LDAP-HOWTO-6.html" REL=next>
+ <LINK HREF="LDAP-HOWTO-4.html" REL=previous>
+ <LINK HREF="LDAP-HOWTO.html#toc5" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="LDAP-HOWTO-6.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="LDAP-HOWTO-4.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="LDAP-HOWTO.html#toc5"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s5">5. Database Creation and Maintenance</A></H2>
+
+<P>This section tells you how to create a slapd database from scratch. There are two ways to create a database. First, you can create the database on-line using LDAP. With this method, you simply start up slapd and add entries using the LDAP client of your choice. This method is fine for relatively small databases (a few hundred or thousand entries, depending on your requirements). 
+<P>The second method of database creation is to do it off-line, using the index generation tools. This method is best if you have many thousands of entries to create, which would take an unacceptably long time using the LDAP method, or if you want to ensure the database is not accessed while it is being created. 
+<P>
+<H2><A NAME="ss5.1">5.1 Creating a Database online</A>
+</H2>
+
+<P>The OpenLDAP software package comes with an utility called ldapadd, used to add entries while the LDAP server is running. If you choose to create the Database online, you can use the ldapadd tool to add entries. After adding the first entries, you can still use ldapadd to add more entries. You should be sure to set the following configuration options on your sladp.conf file before starting slapd: 
+<P>suffix &lt;dn&gt; 
+<P>As described in the 
+<A HREF="LDAP-HOWTO-3.html#3">section 3</A>, this option says what entries are to be held by this database. You should set this to the DN of the root of the subtree you are trying to create. For example: 
+<P>suffix "o=TUDelft, c=NL" 
+<P>You should be sure to specify a directory where the index files should be created: 
+<P>directory &lt;directory&gt; 
+<P>For example: 
+<P>directory /usr/local/tudelft 
+<P>You need to make it so you can connect to slapd as somebody with permission to add entries. This is done through the following two options in the database definition: 
+<P>rootdn &lt;dn&gt; 
+<P>rootpw &lt;passwd&gt;   /* Remember to use crypto password here !!! */ 
+<P>These options specify a DN and password that can be used to authenticate as the "superuser" entry of the database (i.e., the entry allowed to do anything). The DN and password specified here will always work, regardless of whether the entry named actually exists or has the password given. This solves the chicken-and-egg problem of how to authenticate and add entries before any entries yet exist. 
+<P>If you are using SASL as a mechanism to authenticate against LDAP, the rootpw line may be discarded. Take a look on the Configuring LDAP and on the Authentication section for more details. 
+<P>Finally, you should make sure that the database definition contains the index definitions you want: 
+<P>index {&lt;attrlist&gt; | default} [pres,eq,approx,sub,none] 
+<P>For example, to index the cn, sn, uid and objectclass attributes the following index configuration lines could be used. 
+<P>index cn,sn,uid 
+<P>index objectclass pres,eq 
+<P>index default none 
+<P>Once you have configured things to your liking, start up slapd, connect with your LDAP client, and start adding entries. For example, to add a the TUDelft entry followed by a
+Postmaster entry using the ldapadd tool, you could create a file called /tmp/newentry with the contents: 
+<BLOCKQUOTE><CODE>
+<PRE>
+o=TUDelft, c=NL 
+objectClass=organization 
+description=Technical University of Delft Netherlands 
+
+cn=Postmaster, o=TUDelft, c=NL 
+objectClass=organizationalRole 
+cn=Postmaster 
+description= TUDelft postmaster - postmaster@tudelft.nl 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>and then use a command like this to actually create the entry: 
+<BLOCKQUOTE><CODE>
+<PRE>
+ldapadd -f /tmp/newentry -D "cn=Manager, o=TUDelft, c=NL" -w secret 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>The above command assumes that you have set rootdn to "cn=Manager, o=TUDelft, c=NL" and rootpw to "secret". 
+If you don't want to type the password on the command line, use the -W option for the ldapadd command instead of -w "password". You will be prompted to enter the password: 
+<BLOCKQUOTE><CODE>
+<PRE>
+ldapadd -f /tmp/newentry -D "cn=Manager, o=TUDelft, c=NL" -W 
+Enter LDAP Password: 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss5.2">5.2 Creating a Database offline</A>
+</H2>
+
+<P>The second method of database creation is to do it off-line, using the index generation tools described below. This method is best if you have many thousands of entries to
+create, which would take an unacceptably long time using the LDAP method described above. These tools read the slapd configuration file and an input LDIF file containing a text representation of
+the entries to add. 
+They produce the LDBM index files directly. There are several important configuration options you will want to be sure and set in the config file database definition first: 
+<P>suffix &lt;dn&gt; 
+<P>As described in the preceding section, this option says what entries are to be held by this database. You should set this to the DN of the root of the subtree you are trying to
+create. For example:
+<P>suffix "o=TUDelft, c=NL" 
+<P>You should be sure to specify a directory where the index files should be created: 
+<P>directory &lt;directory&gt; 
+<P>For example: 
+<P>directory /usr/local/tudelft 
+<P>Next, you probably want to increase the size of the in-core cache used by each open index file. For best performance during index creation, the entire index should fit in memory.
+If your data is too big for this, or your memory too small, you can still make it pretty big and let the paging system do the work. This size is set with the following option: 
+<P>dbcachesize &lt;integer&gt; 
+<P>For example: 
+<P>dbcachesize 50000000 
+<P>This would create a cache 50 MB big, which is pretty big (at University of Michigan, the database has about 125K entries, and the biggest index file is about 45 MB). Experiment
+with this number a bit, and the degree of parallelism (explained below), to see what works best for your system. Remember to turn this number back down once your index files are
+created and before you run slapd. 
+<P>Finally, you need to specify which indexes you want to build. This is done by one or more index options. 
+<P>index {&lt;attrlist&gt; | default} [pres,eq,approx,sub,none] 
+<P>For example: 
+<P>index cn,sn,uid pres,eq,approx 
+<P>index default none 
+<P>This would create presence, equality and approximate indexes for the cn, sn, and uid attributes, and no indexes for any other attributes. See the configuration file on 
+<A HREF="LDAP-HOWTO-3.html#3">section 3</A> for
+more information on this option. 
+<P>Once you've configured things to your liking, you create the primary database and associated indexes by running the slapadd(8) program:
+<P>slapadd -l &lt;inputfile&gt; -f &lt;slapdconfigfile&gt; [-d &lt;debuglevel&gt;] [-n &lt;integer&gt;|-b &lt;suffix&gt;]
+<P>
+<P>The arguments have the following meanings:
+<BLOCKQUOTE><CODE>
+<PRE>
+-l &lt;inputfile&gt;
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Specifies the LDIF input file containing the entries to add in text form (Take a look on the next section).
+<BLOCKQUOTE><CODE>
+<PRE>
+-f &lt;slapdconfigfile&gt;
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Specifies the slapd configuration file that tells where to create the indexes, what indexes to create, etc.
+<BLOCKQUOTE><CODE>
+<PRE>
+-d &lt;debuglevel&gt;
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Turn on debugging, as specified by &lt;debuglevel&gt;. The debug levels are the same as for slapd. See the 
+<A HREF="LDAP-HOWTO-4.html#4.1">Command-Line Options</A> section in Running slapd.
+<BLOCKQUOTE><CODE>
+<PRE>
+-n &lt;databasenumber&gt;
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>An optional argument that specifies which database to modify. The first database listed in the configuration file is 1, the second 2, etc. By default, the first ldbm database in the configuration file is used. Should not be used in conjunction with -b.
+<BLOCKQUOTE><CODE>
+<PRE>
+-b &lt;suffix&gt;
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>An optional argument that specifies which database to modify. The provided suffix is matched against a database suffix directive to determine the database number. Should not be used in conjunction with -n.
+<P>Sometimes it may be necessary to regenerate indices (such as after modifying slapd.conf(5)). This is possible using the slapindex(8) program. slapindex is invoked like this:
+<P>slapindex -f &lt;slapdconfigfile&gt; [-d &lt;debuglevel&gt;] [-n &lt;databasenumber&gt;|-b &lt;suffix&gt;]
+<P>Where the -f, -d, -n and -b options are the same as for the slapadd(1) program. slapindex rebuilds all indices based upon the current database contents.
+<P>There is another program called slapcat that is used to dump the database to an LDIF file. This can be useful when you want to make a human-readable backup of your database or when you want to edit your database off-line. The program is invoked like this:
+<P>slapcat -l &lt;filename&gt; -f &lt;slapdconfigfile&gt; [-d &lt;debuglevel&gt;] [-n &lt;databasenumber&gt;|-b &lt;suffix&gt;]
+<P>where -n or -b is used to select the database in the slapd.conf(5) specified using -f. The corresponding LDIF output is written to standard output or to the file specified using the -l option.
+<P>
+<H2><A NAME="ss5.3">5.3 More on the LDIF format</A>
+</H2>
+
+<P>The LDAP Data Interchange Format (LDIF) is used to represent LDAP entries in a simple text format. The basic form of an entry is: 
+<BLOCKQUOTE><CODE>
+<PRE>
+#comment 
+dn: &lt;distinguished name&gt; 
+&lt;attrdesc&gt;: &lt;attrvalue&gt; 
+&lt;attrdesc&gt;: &lt;attrvalue&gt; 
+... 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Lines starting with a '#' character are comments. An attribute description (attrdesc) may be a simple attribute type like cn or objectClass or 1.2.3 (an OID associated with an attribute type) or may include options such as cn;lang_en_US or userCertificate;binary.
+<P>
+<P>A line may be continued by starting the next line with a single space or tab character. For example:
+<BLOCKQUOTE><CODE>
+<PRE>
+dn: cn=Barbara J Jensen, dc=example, dc=
+ com
+cn: Barbara J
+    Jensen
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>is equivalent to:
+<BLOCKQUOTE><CODE>
+<PRE>
+dn: cn=Barbara J Jensen, dc=example, dc=com
+cn: Barbara J Jensen
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Multiple attribute values are specified on separate lines. e.g.,
+<BLOCKQUOTE><CODE>
+<PRE>
+cn: Barbara J Jensen
+cn: Babs Jensen
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>If an &lt;attrvalue&gt; contains non-printing characters or begins with a space, a colon (':'), or a less than ('&lt;'), the &lt;attrdesc&gt; is followed by a double colon and the base64 encoding of the value. For example, the value " begins with a space" would be encoded like this:
+<BLOCKQUOTE><CODE>
+<PRE>
+cn:: IGJlZ2lucyB3aXRoIGEgc3BhY2U=
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>You can also specify a URL containing the attribute value. For example, the following specifies the jpegPhoto value should be obtained from the file /path/to/file.jpeg.
+<BLOCKQUOTE><CODE>
+<PRE>
+cn:&lt; file://path/to/file.jpeg
+</PRE>
+</CODE></BLOCKQUOTE>
+
+Multiple entries within the same LDIF file are separated by blank lines. Here's an example of an LDIF file containing three entries.
+<BLOCKQUOTE><CODE>
+<PRE>
+# Barbara's Entry
+dn: cn=Barbara J Jensen, dc=example, dc=com
+cn: Barbara J Jensen
+cn: Babs Jensen
+objectClass: person
+sn: Jensen
+
+# Bjorn's Entry
+dn: cn=Bjorn J Jensen, dc=example, dc=com
+cn: Bjorn J Jensen
+cn: Bjorn Jensen
+objectClass: person
+sn: Jensen
+# Base64 encoded JPEG photo
+jpegPhoto:: /9j/4AAQSkZJRgABAAAAAQABAAD/2wBDABALD
+A4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQ
+ERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVG
+
+# Jennifer's Entry
+dn: cn=Jennifer J Jensen, dc=example, dc=com
+cn: Jennifer J Jensen
+cn: Jennifer Jensen
+objectClass: person
+sn: Jensen
+# JPEG photo from file
+jpegPhoto:&lt; file://path/to/file.jpeg
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Notice that the jpegPhoto in Bjorn's entry is base 64 encoded and the jpegPhoto in Jennifer's entry is obtained from the location indicated by the URL.
+<P>Trailing spaces are not trimmed from values in an LDIF file. Nor are multiple internal spaces compressed. If you don't want them in your data, don't put them there. 
+<P>
+<H2><A NAME="5.4"></A> <A NAME="ss5.4">5.4 The ldapsearch, ldapdelete and ldapmodify utilities</A>
+</H2>
+
+<P>ldapsearch - ldapsearch is a shell accessible interface to the ldap_search(3) library call. Use this utility to search for entries on our LDAP database backend. 
+<P>The synopsis to call ldapsearch is the following (take a look at the ldapsearch man page to see what each option mean): 
+<BLOCKQUOTE><CODE>
+<PRE>
+ldapsearch  [-n]  [-u]  [-v]  [-k]  [-K]  [-t]  [-A] [-B] [-L] [-R] [-d debuglevel] [-F sep] [-f file] 
+[-D binddn]  [-W]  [-w bindpasswd]  [-h ldaphost]  [-p ldapport]   [-b searchbase]   [-s base|one|sub] 
+[-a never|always|search|find] [-l timelimit] [-z sizelimit] filter [attrs...] 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>ldapsearch opens a connection to an LDAP server, binds, and performs a search using the filter <I>filter</I>. The filter should conform to the string representation for LDAP filters as defined in RFC 1558. If ldapsearch finds one or more entries, the attributes specified by <I>attrs</I> are retrieved and the entries and values are printed to standard output. If no attrs are listed, all attributes are returned. 
+<P>Here are some examples of use of ldapsearch:
+<BLOCKQUOTE><CODE>
+<PRE>
+ldapsearch -b 'o=TUDelft,c=NL' 'objectclass=*' 
+
+ldapsearch -b 'o=TUDelft,c=NL' 'cn=Rene van Leuken' 
+
+ldasearch -u -b 'o=TUDelft,c=NL' 'cn=Luiz Malere' sn mail 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>The -b option stands for searchbase (initial search point) and the -u option stands for userfriendly output information. 
+<P>ldapdelete - ldapdelete is a shell accessible interface to the ldap_delete(3) library call. Use this utility to delete entries on our LDAP database backend. 
+<P>The synopsis to call ldapdelete is the following (take a look at the ldapdelete man page to see what each option mean): 
+<BLOCKQUOTE><CODE>
+<PRE>
+ldapdelete   [-n]   [-v]  [-k]  [-K]  [-c]  [-d debuglevel]  [-f file]  [-D binddn]  [-W]  [-w passwd] 
+[-h ldaphost] [-p ldapport] [dn]... 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>ldapdelete opens a connection to an LDAP server, binds, and deletes one or more entries. If one or more dn arguments are provided, entries with those Distinguished Names are
+deleted. Each dn should be a string-represented DN as defined in RFC 1779. If no dn arguments are provided, a list of DNs is read from standard input (or from file if the -f flag is
+used). 
+<P>Here are some examples of use of ldapdelete: 
+<BLOCKQUOTE><CODE>
+<PRE>
+ldapdelete 'cn=Luiz Malere,o=TUDelft,c=NL' 
+
+ldapdelete -v 'cn=Rene van Leuken,o=TUDelft,c=NL' -D 'cn=Luiz Malere,o=TUDelft,c=NL' -W 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>The -v option stands for verbose mode, the -D option stands for Binddn (the dn to authenticate against) and the -W option stands for password prompt. 
+<P>ldapmodify - ldapmodify is a shell accessible interface to the ldap_modify(3) and ldap_add(3) library calls. Use this utility to modify entries on our LDAP database backend. 
+<P>The synopsis to call ldapmodify is the following (take a look at the ldapmodify man page to see what each option mean): 
+<BLOCKQUOTE><CODE>
+<PRE>
+ldapmodify   [-a]  [-b]  [-c]  [-r]  [-n]  [-v]  [-k]  [-d debuglevel]  [-D binddn]  [-W]  [-w passwd] 
+[-h ldaphost] [-p ldapport] [-f file] 
+
+ldapadd [-b] [-c] [-r] [-n] [-v]  [-k]  [-K]  [-d debuglevel]  [-D binddn]  [-w passwd]  [-h ldaphost] 
+[-p ldapport] [-f file] 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>ldapadd is implemented as a hard link to the ldapmodify tool.  When invoked as ldapadd the -a  (add  new entry) flag of ldapmodify is turned on automatically. 
+ldapmodify  opens  a  connection  to  an  LDAP server, binds, and modifies or adds entries.  The entry information is read from standard input or from file through the use of the -f
+option. 
+<P>Here are some examples of use of ldapmodify: 
+<P>Assuming that the file /tmp/entrymods exists and has the contents: 
+<BLOCKQUOTE><CODE>
+<PRE>
+dn: cn=Modify Me, o=University of Michigan, c=US 
+changetype: modify 
+replace: mail 
+mail: modme@terminator.rs.itd.umich.edu 
+- 
+add: title 
+title: Grand Poobah 
+- 
+add: jpegPhoto 
+jpegPhoto: /tmp/modme.jpeg 
+- 
+delete: description 
+- 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>The command: 
+<BLOCKQUOTE><CODE>
+<PRE>
+ldapmodify -b -r -f /tmp/entrymods 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>will  replace  the  contents  of the "Modify Me" entry's mail attribute with the value "modme@terminator.rs.itd.umich.edu", add a title of "Grand Poobah", and the contents of the file /tmp/modme.jpeg as a jpegPhoto, and completely remove the description attribute. 
+<P>The same modifications as above can be performed using the older ldapmodify input format: 
+<BLOCKQUOTE><CODE>
+<PRE>
+cn=Modify Me, o=University of Michigan, c=US 
+mail=modme@terminator.rs.itd.umich.edu 
++title=Grand Poobah 
++jpegPhoto=/tmp/modme.jpeg 
+-description 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>And plus the command bellow: 
+<BLOCKQUOTE><CODE>
+<PRE>
+ldapmodify -b -r -f /tmp/entrymods 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Assuming that the file /tmp/newentry exists and has the contents: 
+<BLOCKQUOTE><CODE>
+<PRE>
+dn: cn=Barbara Jensen, o=University of Michigan, c=US 
+objectClass: person 
+cn: Barbara Jensen 
+cn: Babs Jensen 
+sn: Jensen 
+title: the world's most famous manager 
+mail: bjensen@terminator.rs.itd.umich.edu 
+uid: bjensen 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>The command: 
+<BLOCKQUOTE><CODE>
+<PRE>
+ldapadd -f /tmp/entrymods 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>will add the entry with dn: cn=Barbara Jensen, o=University of Michigan, c=US if it's not already present. If an entry with this dn already exists, the command will point out the error and will not overwrite the entry.
+<P>Assuming that the file /tmp/newentry exists and has the contents: 
+<BLOCKQUOTE><CODE>
+<PRE>
+dn: cn=Barbara Jensen, o=University of Michigan, c=US 
+changetype: delete 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>The command: 
+<BLOCKQUOTE><CODE>
+<PRE>
+ldapmodify -f /tmp/entrymods 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>will remove Babs Jensen's entry. 
+<P>The -f option stands for file (read the modification information from a file instead of standard input), the -b option stands for binary (any values starting with a '/' on the input file
+are interpreted as binaries), the -r stands for replace (replace existing values by default). 
+<P>
+<HR>
+<A HREF="LDAP-HOWTO-6.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="LDAP-HOWTO-4.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="LDAP-HOWTO.html#toc5"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

@@ -1,0 +1,86 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Kernel HOWTO 中译版: 编译核心</TITLE>
+ <LINK HREF="Kernel-HOWTO-5.html" REL=next>
+ <LINK HREF="Kernel-HOWTO-3.html" REL=previous>
+ <LINK HREF="Kernel-HOWTO.html#toc4" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Kernel-HOWTO-5.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Kernel-HOWTO-3.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Kernel-HOWTO.html#toc4"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s4">4. 编译核心</A></H2>
+
+<P>
+<P>
+<H2><A NAME="ss4.1">4.1 清除与确认</A>
+</H2>
+
+<P>当用来进行配置的指令稿执行完成时，它会告诉你去 `<CODE>make dep</CODE>' 以及 `<CODE>clean</CODE>'．
+所以要执行`<CODE>make dep</CODE>'．这将确保所有的相依关系，例如 include files 都没问题．
+除非你的电脑真的很慢，否则它不会花太久时间的．
+完成後，在较旧版本的核心中你还应该做 `<CODE>make clean</CODE>'．
+这会清除核心编译的所有目的档以及其它东西．在重建一个核心之前<I>不要</I>忘记这个步骤．
+<P>
+<H2><A NAME="ss4.2">4.2 编译时期</A>
+</H2>
+
+<P>在完成 `<CODE>make dep</CODE>' 及 `<CODE>make clean</CODE>' 工作之後，你现在可以执行 `<CODE>make zImage</CODE>' 或 `<CODE>make zdisk</CODE>' (这部份需要长时间)．
+`<CODE>make zImage</CODE>' 将会编译核心，并且在 <CODE>arch/i386/boot</CODE> 留给你一个叫做 `<CODE>zImage</CODE>' 的档案．这就是新的压缩核心．
+`<CODE>make zdisk</CODE>' 做的事也一样，但是它会把核心放到你所希望的磁片去，只要把这张磁片放在 ``A:''．
+`<CODE>zdisk</CODE>'对於测试新核心很方便；如果它当掉(或工作不正常)，只要把磁片拿掉再用旧的核心启动即可．
+如果你意外地删除了核心或是什麽的，它也是个方便的启动办法．
+当你把一台磁碟的内容倾倒到另外一台去时，你也可以用它来安装新的系统(除了这些之外还有更多用途！)
+<P>所有近来的核心都是压缩过的，所以有个 `<CODE>z</CODE>' 在名字前面．压缩过的核心执行的时候会自动将自己解压缩．
+<P>
+<H2><A NAME="ss4.3">4.3 其他可以``make''的东西</A>
+</H2>
+
+<P>`<CODE>make mrproper</CODE>' 将会做更广泛的 `清除' 工作．
+这个动作有时候是必须的，所以你可能会希望在每次修补的时候执行它．
+`<CODE>make mrproper</CODE>' 还会将你的配置档案杀掉，所以如果你认为它重要的话应该先做一备份(在 <CODE>.config</CODE>)．
+<P>`<CODE>make oldconfig</CODE>' 会尝试由一旧的配置档案来配置你的核心．它会为你执行 `<CODE>make config</CODE>'．
+如果你还未曾编译过核心或没有旧的配置档案，那麽你可能不该做这个，因为你几乎确定会更改预设的配置．
+<P>参见可载入模组一节对 `<CODE>make modules</CODE>' 的说明．
+<P>
+<P>
+<H2><A NAME="ss4.4">4.4 安装核心</A>
+</H2>
+
+<P>在你已经获得一个看起来能够照你希望运作的新核心之後，现在是安装它的时候了．
+大部份的人使用 LILO (Linux Loader) 来做这件事．
+`<CODE>make zlilo</CODE>' 将会安装核心，然後对它执行 LILO，使你完成所有开机的准备，
+但是这只有在 LILO 已经以下列这种方式配置好的时候才可以：核心为 /vmlinuz ， lilo 在 /sbin 下，而且与你的 LILO 配置(<CODE>/etc/lilo.conf</CODE>)一致．
+<P>另一方面，你可能需要直接使用 LILO．这是一个相当容易安装的软体，然而，它的配置档常使人困扰．
+查看配置档(不是旧版的 <CODE>/etc/lilo/config</CODE> 就是新版的 <CODE>/etc/lilo.conf</CODE>)，看看里面有些什麽．
+它看起来像这样子的东西：
+<P>
+<PRE>
+    image = /vmlinuz
+        label = Linux
+        root = /dev/hda1
+        ...
+</PRE>
+<P>首先，`<CODE>image =</CODE>' 设定为已经安装的核心．大部份的人似乎都用 <CODE>/vmlinuz</CODE>．
+`<CODE>label</CODE>' 则是给 lilo 用来决定现在要启动的是那个核心或作业系统，
+而 `<CODE>root</CODE>' 则是这个特别的作业系统的根目录 <CODE>/</CODE>．
+备份一份旧的核心，然後将你做的 <CODE>zImage</CODE> 拷贝进去(例如，如果你用 `<CODE>/vmlinuz</CODE>' 的话，就像这样 `<CODE>cp zImage /vmlinuz</CODE>')．
+然後，执行 `<CODE>lilo</CODE>'，但是在较旧的系统上，你可能必须执行 <CODE>/etc/lilo/install</CODE> 或甚至是 <CODE>/etc/lilo/lilo -C /etc/lilo/config</CODE>．
+<P>如果你想知道更多有关於 LILO 的配置，或是你并没有 LILO 但是你想要安装的话，
+从你喜欢的 ftp 节点取得最新的版本然後依说明行事．
+<P>要能够从硬碟启动你的旧核心其中之一的话(这是另一个在新核心出状况的情况下保护你自己的方法)，
+把 LILO 配置档中所有的(包括) `<CODE>image = xxx</CODE>' 拷贝到档案的最底端，
+然後把 `<CODE>image = xxx</CODE>' 改成 `<CODE>image = yyy</CODE>' 其中的 `<CODE>yyy</CODE>' 是你备份旧核心所存档的名字．
+接著，把 `<CODE>label = zzz</CODE>' 改成像是 `<CODE>label = linux-backup</CODE>' 然後重新执行 <CODE>lilo</CODE>．
+你可能得要加上一行 `<CODE>delay=x</CODE>'，其中的 x 是以十分之一秒为单位的时间，
+这是告诉 LILO 在启动前先等一下，所以你可以中断它的执行(例如用 shift 键)．
+然後键入所备份的启动映像之 label (在发生了某些令人不愉快的事情的情况下)．
+<P>
+<HR>
+<A HREF="Kernel-HOWTO-5.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Kernel-HOWTO-3.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Kernel-HOWTO.html#toc4"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

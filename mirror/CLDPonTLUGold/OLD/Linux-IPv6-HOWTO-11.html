@@ -1,0 +1,719 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="LinuxDoc-Tools 0.9.16">
+ <TITLE>Linux IPv6 HOWTO: 核心設定 in /proc-filesystem</TITLE>
+ <LINK HREF="Linux-IPv6-HOWTO-12.html" REL=next>
+ <LINK HREF="Linux-IPv6-HOWTO-10.html" REL=previous>
+ <LINK HREF="Linux-IPv6-HOWTO.html#toc11" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Linux-IPv6-HOWTO-12.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="Linux-IPv6-HOWTO-10.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="Linux-IPv6-HOWTO.html#toc11"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s11">11.</A> <A HREF="Linux-IPv6-HOWTO.html#toc11">核心設定 in /proc-filesystem</A></H2>
+
+<H2><A NAME="ss11.1">11.1</A> <A HREF="Linux-IPv6-HOWTO.html#toc11.1">怎樣進入 /proc-filesystem</A>
+</H2>
+
+<H3>使用 "cat"和 "echo"</H3>
+
+<P>使用 "cat"和 "echo" 是進入 /proc-filesystem的最簡單方法.
+但必需具備下面幾個條件:</P>
+<P>
+<UL>
+<LI>在核心中打開 /proc-filesystem 支持, 在編譯的時候可以通過 CONFIG_PROC_FS=y 做到.</LI>
+<LI>/proc-filesystem 已經掛進系統,可以用以下的方法測試:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# mount | grep "type proc"
+none on /proc type proc (rw)
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</LI>
+<LI>您必需知道對/proc-filesystem 的各種操作.</LI>
+</UL>
+</P>
+<P>通常/proc/sys/* 都是可寫的, 其它的都是只讀或只提供相關資訊.</P>
+<H3>得到一個值</H3>
+
+<P>可以使用 "cat" 得到一個值.
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# cat /proc/sys/net/ipv6/conf/all/forwarding
+0
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<H3>設定一個值</H3>
+
+<P>可以使用 "echo" 設定一個值.
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# echo "1" >/proc/sys/net/ipv6/conf/all/forwarding
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<H3>使用 "sysctl"</H3>
+
+<P>使用 "sysctl" 設定核心是當前流行的方法, 您也能用.
+如果/proc-filesystem 沒有掛進來, 那麼您只可以訪問/proc/sys/* </P>
+<P>"sysctl"程式在"procps"安裝包中.(Red Hat Linux systems)</P>
+
+<P>sysctl-interface 需要在核心中進行激活, 在編譯的時候可以通過以下選項完成:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+CONFIG_SYSCTL=y
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+
+<H3>設定一個值</H3>
+
+<P>A new value can be set (if entry is writable):
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# sysctl -w net.ipv6.conf.all.forwarding=1
+net.ipv6.conf.all.forwarding = 1
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+<P>在 "=" 兩邊不能出現spaces符號,也不能像下面那樣一次設定多個值:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# sysctl -w net.ipv4.ip_local_port_range="32768 61000"
+net.ipv4.ip_local_port_range = 32768 61000
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+<H3>另外</H3>
+
+<P>sysctl使用 "/" 代替 "." 詳細資訊請看sysctl的manpage</P>
+<P>提示:快速查找設定的資訊,可以聯合使用帶"-a"的grep.</P>
+
+<H2><A NAME="ss11.2">11.2</A> <A HREF="Linux-IPv6-HOWTO.html#toc11.2">/proc-filesystems 裡的數值類型.</A>
+</H2>
+
+<P>
+<UL>
+<LI>BOOLEAN: simple a "0" (false) or a "1" (true)</LI>
+<LI>INTEGER: an integer value, can be unsigned, too</LI>
+<LI>more sophisticated lines with several values: sometimes a header line is displayed also, if not, have a look into the kernel source to retrieve information about the meaning of each value...</LI>
+</UL>
+</P>
+<H2><A NAME="ss11.3">11.3</A> <A HREF="Linux-IPv6-HOWTO.html#toc11.3">Entries in /proc/sys/net/ipv6/</A>
+</H2>
+
+<H3>conf/default/*</H3>
+
+<P>Change the interface-specific default settings</P>
+<H3>conf/all/*</H3>
+
+<P>改變所有 interface-specific 設定.</P>
+
+<P>除了: "conf/all/forwarding" 它有不同的含義.</P>
+
+<H3>conf/all/forwarding</H3>
+
+<P>
+<UL>
+<LI>Type: BOOLEAN</LI>
+</UL>
+</P>
+<P>在兩個界面之間進行global IPv6 forwarding  (數據包轉寄.)</P>
+<P>IPv6 當中您不能單獨控制一個設備的 forwarding (數據包轉寄).
+forwarding  的控制由IPv6-netfilter 完成.
+當值為"0"時 數據包轉寄的能力被關閉,數據包不會離開各自的界面(包括物理/虛擬)比如 tunnel.
+當值為"1"時 數據包轉寄的能力被開啟.</P>
+
+<H3>conf/interface/*</H3>
+
+<P>改變單個界面的設定.
+依據local forwarding 是 enabled 或 not.</P>
+<H3>accept_ra</H3>
+
+<P>
+<UL>
+<LI>Type: BOOLEAN</LI>
+<LI>默認值: enabled if local forwarding is disabled. disabled if local forwarding is enabled.</LI>
+</UL>
+</P>
+<P>接受IPv6路由廣告.並且根據得到的信息自動設定.</P>
+<H3>accept_redirectsc</H3>
+
+<P>
+<UL>
+<LI>Type: BOOLEAN</LI>
+<LI>Functional default: enabled if local forwarding is disabled. disabled if local forwarding is enabled.</LI>
+</UL>
+</P>
+<P>接受IPv6路由器的重定向.</P>
+
+
+<H3>autoconf</H3>
+
+<P>
+<UL>
+<LI>Type: BOOLEAN</LI>
+<LI>Default: TRUE</LI>
+</UL>
+</P>
+<P>設定本地連結地址使用L2硬體地址. 它依據界面的L2-MAC address自動產生一個地址如:"fe80::201:23ff:fe45:6789"</P>
+
+<H3>dad_transmits</H3>
+
+<P>
+<UL>
+<LI>Type: INTEGER</LI>
+<LI>Default: 1</LI>
+</UL>
+</P>
+<P>發送重複地址嗅探的總數.</P>
+
+<H3>forwarding</H3>
+
+<P>
+<UL>
+<LI>Type: BOOLEAN</LI>
+<LI>Default: FALSE if global forwarding is disabled (default), otherwise TRUE</LI>
+</UL>
+</P>
+<P>設定主機/路由的interface-specific動作.</P>
+<P>注意:推薦所有interface(界面)使用相同的設定.混合路由器/主機的想法真是難得.
+<UL>
+<LI>Value FALSE: By default, Host behaviour is assumed. This means:
+<UL>
+<LI> IsRouter 標緻沒有在Neighbour Advertisements當中.</LI>
+<LI> 當需要的時候就發送路由請求.</LI>
+<LI> 如果accept_ra是TRUE (default), 接受路由廣告.</LI>
+<LI> 如果accept_redirects 是 TRUE (default), 接受重定向.</LI>
+</UL>
+</LI>
+<LI>Value TRUE: 如果具備本地forwarding(轉寄),路由器動作為假定.這和上面的情況相反:
+
+<UL>
+<LI> IsRouter 標緻存在於Neighbour Advertisements當中.</LI>
+<LI> 不發送路由請求.</LI>
+<LI> 忽略路由廣告.</LI>
+<LI> 忽略重定向.</LI>
+</UL>
+
+</LI>
+</UL>
+</P>
+
+<H3>hop_limit</H3>
+
+<P>
+<UL>
+<LI> Type: INTEGER</LI>
+<LI> Default: 64</LI>
+</UL>
+</P>
+<P>缺省hop限制.</P>
+
+
+<H3>mtu</H3>
+
+<P>
+<UL>
+<LI> Type: INTEGER</LI>
+<LI> Default: 1280 (IPv6 要求的最小值)</LI>
+</UL>
+</P>
+<P>缺省最大傳輸單元.</P>
+
+
+<H3>router_solicitation_delay</H3>
+
+<P>
+<UL>
+<LI> Type: INTEGER</LI>
+<LI> Default: 1</LI>
+</UL>
+</P>
+<P>在發送路由請求之前界面的等待時間(秒).</P>
+
+
+<H3>router_solicitation_interval</H3>
+
+<P>
+<UL>
+<LI> Type: INTEGER</LI>
+<LI> Default: 4</LI>
+</UL>
+</P>
+<P>在每個路由請求之間的等待時間(秒).</P>
+
+
+<H3>router_solicitations</H3>
+
+<P>
+<UL>
+<LI> Type: INTEGER</LI>
+<LI> Default: 3</LI>
+</UL>
+</P>
+<P>假定沒有路由的情況下發送的請求個數.</P>
+
+<H3>neigh/default/*</H3>
+
+<P>Change default settings for neighbor detection and some special global interval and threshold values:</P>
+
+<H3>gc_thresh1</H3>
+
+<P>
+<UL>
+<LI> Type: INTEGER</LI>
+<LI> Default: 128</LI>
+</UL>
+</P>
+
+<P>More to be filled.</P>
+
+
+<H3>gc_thresh2</H3>
+
+<P>
+<UL>
+<LI> Type: INTEGER</LI>
+<LI> Default: 512</LI>
+</UL>
+</P>
+
+<P>More to be filled.</P>
+
+<H3>gc_thresh3</H3>
+
+<P>
+<UL>
+<LI> Type: INTEGER</LI>
+<LI> Default: 1024</LI>
+</UL>
+</P>
+
+<P>芳鄰列印表大小的調節項.</P>
+<P>如果您有許多界面,或路由表現反常 試著增大數值. Or if a running Zebra (routing daemon) reports:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+ZEBRA: netlink-listen error: No buffer space available, type=RTM_NEWROUTE(24), seq=426, pid=0
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+
+<H3>gc_interval</H3>
+
+<P>
+<UL>
+<LI> Type: INTEGER</LI>
+<LI> Default: 30</LI>
+</UL>
+</P>
+
+<P>More to be filled.</P>
+
+<H3>neigh/interface/*</H3>
+
+<P>Change special settings per interface for neighbor detection.</P>
+
+<H3>anycast_delay</H3>
+
+<P>
+<UL>
+<LI> Type: INTEGER</LI>
+<LI> Default: 100</LI>
+</UL>
+</P>
+
+<P>More to be filled.</P>
+
+
+<H3>gc_stale_time</H3>
+
+<P>
+<UL>
+<LI> Type: INTEGER</LI>
+<LI> Default: 60</LI>
+</UL>
+</P>
+
+<P>More to be filled.</P>
+
+
+<H3>proxy_qlen</H3>
+
+<P>
+<UL>
+<LI> Type: INTEGER</LI>
+<LI> Default: 64</LI>
+</UL>
+</P>
+
+<P>More to be filled.</P>
+
+
+<H3>unres_qlen</H3>
+
+<P>
+<UL>
+<LI> Type: INTEGER</LI>
+<LI> Default: 3</LI>
+</UL>
+</P>
+
+<P>More to be filled.</P>
+
+
+<H3>app_solicit</H3>
+
+<P>
+<UL>
+<LI> Type: INTEGER</LI>
+<LI> Default: 0</LI>
+</UL>
+</P>
+
+<P>More to be filled.</P>
+
+
+<H3>locktime</H3>
+
+<P>
+<UL>
+<LI> Type: INTEGER</LI>
+<LI> Default: 0</LI>
+</UL>
+</P>
+
+<P>More to be filled.</P>
+
+
+<H3>retrans_time</H3>
+
+<P>
+<UL>
+<LI> Type: INTEGER</LI>
+<LI> Default: 100</LI>
+</UL>
+</P>
+
+<P>More to be filled.</P>
+
+
+<H3>base_reachable_time</H3>
+
+<P>
+<UL>
+<LI> Type: INTEGER</LI>
+<LI> Default: 30</LI>
+</UL>
+</P>
+
+<P>More to be filled.</P>
+
+
+<H3>mcast_solicit</H3>
+
+<P>
+<UL>
+<LI> Type: INTEGER</LI>
+<LI> Default: 3</LI>
+</UL>
+</P>
+
+<P>More to be filled.</P>
+
+
+<H3>ucast_solicit</H3>
+
+<P>
+<UL>
+<LI> Type: INTEGER</LI>
+<LI> Default: 3</LI>
+</UL>
+</P>
+
+<P>More to be filled.</P>
+
+
+<H3>delay_first_probe_time</H3>
+
+<P>
+<UL>
+<LI> Type: INTEGER</LI>
+<LI> Default: 5</LI>
+</UL>
+</P>
+
+<P>More to be filled.</P>
+
+<H3>proxy_delay</H3>
+
+<P>
+<UL>
+<LI> Type: INTEGER</LI>
+<LI> Default: 80</LI>
+</UL>
+</P>
+<P>More to be filled.</P>
+
+
+<H3>route/*</H3>
+
+<P>設定global(全局)路由</P>
+
+<H3>flush</H3>
+
+<P>Removed in newer kernel releases - more to be filled.</P>
+
+<H3>gc_interval</H3>
+
+<P>
+<UL>
+<LI> Type: INTEGER</LI>
+<LI> Default: 30</LI>
+</UL>
+</P>
+<P>More to be filled.</P>
+
+
+<H3>gc_thresh</H3>
+
+<P>
+<UL>
+<LI> Type: INTEGER</LI>
+<LI> Default: 1024</LI>
+</UL>
+</P>
+<P>More to be filled.</P>
+
+
+<H3>mtu_expires</H3>
+
+<P>
+<UL>
+<LI> Type: INTEGER</LI>
+<LI> Default: 600</LI>
+</UL>
+</P>
+<P>More to be filled.</P>
+
+
+<H3>gc_elasticity</H3>
+
+<P>
+<UL>
+<LI> Type: INTEGER</LI>
+<LI> Default: 0</LI>
+</UL>
+</P>
+<P>More to be filled.</P>
+
+
+
+<H3>gc_min_interval</H3>
+
+<P>
+<UL>
+<LI> Type: INTEGER</LI>
+<LI> Default: 5</LI>
+</UL>
+</P>
+<P>More to be filled.</P>
+
+<H3>gc_timeout</H3>
+
+<P>
+<UL>
+<LI> Type: INTEGER</LI>
+<LI> Default: 60</LI>
+</UL>
+</P>
+<P>More to be filled.</P>
+
+<H3>min_adv_mss</H3>
+
+<P>
+<UL>
+<LI> Type: INTEGER</LI>
+<LI> Default: 12</LI>
+</UL>
+</P>
+<P>More to be filled.</P>
+
+
+<H3>max_size</H3>
+
+<P>
+<UL>
+<LI> Type: INTEGER</LI>
+<LI> Default: 4096</LI>
+</UL>
+</P>
+<P>More to be filled.</P>
+
+
+<H2><A NAME="ss11.4">11.4</A> <A HREF="Linux-IPv6-HOWTO.html#toc11.4">IPv6-related entries in /proc/sys/net/ipv4/</A>
+</H2>
+
+<P>目前(直到IPv4全部成為核心模組),一些開關也可以為IPv6所使用.</P>
+
+<H3>ip_*</H3>
+
+<H3>ip_local_port_range</H3>
+
+<P>也可以為IPv6使用.</P>
+
+<H3>tcp_*</H3>
+
+<P>也可以為IPv6使用.</P>
+
+<H3>ICMP_*</H3>
+
+<P>不能為IPv6使用.
+激活 ICMPv6 比率限制 rate limting  (極力推薦,因為它有抵禦 ICMPv6 網路風暴的能力) netfilter-v6 rules must be used.</P>
+
+<H3>其它</H3>
+
+<P>不知道, 不能為IPv6使用吧.</P>
+
+
+<H2><A NAME="ss11.5">11.5</A> <A HREF="Linux-IPv6-HOWTO.html#toc11.5">IPv6-related entries in /proc/net/</A>
+</H2>
+
+<P>這個地方是只讀的, 您不能通過 "sysctl" 得到資訊,可以使用 "cat"</P>
+<H3>if_inet6</H3>
+
+<P>每一行地址包含多個值.</P>
+<P>這裡IPv6地址是用特殊的格式列印的,例子只列印環繞interface(界面)含義在下面</P>
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# cat /proc/net/if_inet6
+00000000000000000000000000000001 01 80 10 80 lo
++------------------------------+ ++ ++ ++ ++ ++
+|                                |  |  |  |  |
+1                                2  3  4  5  6
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<P>1. 地址用32個不包含":"的十六進制列印.</P>
+<P>2. 連結的設備數值(interface index)使用十六進制列印.</P>
+<P>3. 前綴的長度使用十六進制列印.</P>
+<P>4. Scope value (see kernel source " include/net/ipv6.h" and "net/ipv6/addrconf.c" for more)</P>
+<P>5. Interface flags (see "include/linux/rtnetlink.h" and "net/ipv6/addrconf.c" for more)</P>
+<P>6. 設備名.</P>
+
+<H3>ipv6_route</H3>
+
+<P>每一行地址包含多個值.</P>
+<P>這裡IPv6地址是用特殊的格式列印的,例子只列印環繞interface(界面)含義在下面</P>
+
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# cat /proc/net/ipv6_route
+00000000000000000000000000000000 00 00000000000000000000000000000000 00
++------------------------------+ ++ +------------------------------+ ++
+|                                |  |                                |
+1                                2  3                                4
+? 00000000000000000000000000000000 ffffffff 00000001 00000001 00200200 lo
+? +------------------------------+ +------+ +------+ +------+ +------+ ++
+? |                                |        |        |        |        |
+? 5                                6        7        8        9        10
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<P>1. IPv6目標網路用32個不包含":"的十六進制列印.</P>
+<P>2. IPv6prefix(前綴)的長度使用十六進制列印.</P>
+<P>3. IPv6來源網路用32個不包含":"的十六進制列印.</P>
+<P>4. IPv6來源prefix(前綴)的長度使用十六進制列印.</P>
+<P>5. IPv6下一個hop(躍點)用32個不包含":"的十六進制列印.</P>
+<P>6. Metric in hexadecimal</P>
+<P>7. Reference counter</P>
+<P>8. Use counter</P>
+<P>9. Flags(標緻)</P>
+<P>10.Device name</P>
+
+<H3>sockstat6</H3>
+
+<P>每一行地址包含多個值.</P>
+<P>IPv6 sockets統計:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# cat /proc/net/sockstat6
+TCP6: inuse 7 
+UDP6: inuse 2 
+RAW6: inuse 1 
+FRAG6: inuse 0 memory 0
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+
+ tcp6
+To be filled.
+
+ udp6
+To be filled.
+
+ igmp6
+To be filled.
+
+ raw6
+To be filled.
+
+ ip6_flowlabel
+To be filled.
+
+ rt6_stats
+To be filled.
+
+ snmp6
+
+Type: One line per SNMP description and value
+
+SNMP statistics, can be retrieved via SNMP server and related MIB table by network management software.
+
+ ip6_tables_names
+Available netfilter6 tables
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+
+
+<HR>
+<A HREF="Linux-IPv6-HOWTO-12.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="Linux-IPv6-HOWTO-10.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="Linux-IPv6-HOWTO.html#toc11"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

@@ -1,0 +1,384 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>The Linux Sound HOWTO -- Linux 音效指引: 安裝</TITLE>
+ <LINK HREF="Sound-HOWTO-5.html" REL=next>
+ <LINK HREF="Sound-HOWTO-3.html" REL=previous>
+ <LINK HREF="Sound-HOWTO.html#toc4" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Sound-HOWTO-5.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Sound-HOWTO-3.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Sound-HOWTO.html#toc4"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s4">4. 安裝</A></H2>
+
+<P>
+<P>
+<P>要在Linux下支援音效，必須先進行以下步驟:
+<P>
+<OL>
+<LI>安裝音效卡</LI>
+<LI>設定隨插即用(Plug and Play)(如果可以/需要的話)</LI>
+<LI>建造核心，使之支援音效</LI>
+<LI>建造設備檔</LI>
+<LI>啟動Linux核心，並測試</LI>
+</OL>
+<P>如果您使用 Red Hat Linux，裡面有個公用程式叫 <CODE>sndconfig</CODE>，
+在多數情形下能自動偵測您的音效卡，並設定所需的設定檔，載入所需的驅動程式。
+如果您使用 Red Hat 我建議您試試它。 如果它成功了，本章後面的指示就可以跳過。
+<P>如果 <CODE>sndconfig</CODE> 失敗了，或您使用別的發行套件，
+或您想要經由手動設定更進一步了解整個運作過程，底下將會詳加解說每一步驟。
+<P>
+<H2><A NAME="ss4.1">4.1 安裝音效卡</A>
+</H2>
+
+<P>
+<P>
+<P>按照說明書的指示，安裝硬體，或是請廠商來裝。
+<P>
+<P>舊的音效卡通常有開關或跳線，以設定IRQ，DMA通道等，請把這些設定記下來。
+如果您不確定要怎麼調，就照出廠值。
+可能的話，避免和其它設備(如網路卡，SCSI卡，
+平行及串列埠)相衝。
+<P>
+<P>若您在DOS下有使用音效卡，通常應該設成和DOS下一樣。 不過有些情況下(特別是PnP的
+卡)也可能要設成和DOS不一樣的值。 這時可能要實驗一下。
+<P>
+<H2><A NAME="ss4.2">4.2 設定隨插即用</A>
+</H2>
+
+<P>
+<P>現在多數音效卡用隨插即用協定來設定 I/O 位址，中斷及 DMA 通道號碼。
+如果您使用的是設定值固定的或是有跳線調整的，那麼您可以跳過這一節。
+<P>在 2.2 版核心中，仍然還沒有完全支援隨插即用。 較好的解決之道是使用許多 Linux
+發行套件中所附 isapnp 工具(或您也可以從 Red Hat 的網站
+<A HREF="http://www.redhat.com/">http://www.redhat.com/</A>下載)。
+<P>首先查看您的 Linux 安裝套件中的文件。 它可能早幫您設定好隨插即用了，
+或者可能和底下講的略有不同。 如果您要手動設定，isapnp 工具的細節可以在 man
+page 中找到。 簡單的說，您要經歷的程序有:
+<P>
+<UL>
+<LI>使用 <CODE>pnpdump</CODE> 來抓取所有您的隨插即用設備的可能設定，把結果存成
+/etc/isapnp.conf。
+</LI>
+<LI>由其中選擇和其它設備不相衝突的設定，並將在
+/etc/isapnp.conf 中的相對應行設成有效行(uncomment)。
+別忘了把接近檔尾的<CODE>(ACT Y)</CODE>前的註解符號消掉。
+</LI>
+<LI>確定開機時會執行到 <CODE>isapnp</CODE>，這通常由開機執行的命令稿之一完成。
+重開機或手動執行 <CODE>isapnp</CODE>。
+</LI>
+</UL>
+<P>如果為了一些理由您無法或不想使用 isapnp 工具，還有幾種選擇。 如果您在
+Microsoft Windows 95 或 98，您可以利用裝置管理員來設定卡，然後用 loadlin
+暖開機進入 Linux。 確定 Linux 及 Windows 使用相同的設定參數。
+<P>如果您在 DOS 下使用這片卡，您可以用 SoundBlaster16 PnP 卡附的 <CODE>icu</CODE>
+公用程式，然後用 LOADLIN 暖開機進 Linux。 一樣，確定 DOS 和 Linux
+用一樣的設定。
+<P>有些音效卡驅動程式需要軟體來初始化卡的隨插即用功能。
+請看卡的驅動程式的說明文件得到更詳細資訊。
+<P>
+<H2><A NAME="ss4.3">4.3 設定核心</A>
+</H2>
+
+<P>
+<P>
+<P>安裝時您用的是預先編譯過的核心，它們通常是不支援音效的。 所以最好自己編譯適合自
+己用的核心。 而且，您也可能想要藉此來升級到更新版的核心，或是縮小核心體積，增加
+可用的記憶體。 然後，當您的音效卡能使用後，您可能想重建核心，
+把音效驅動程式做成模組。
+<P>
+<P>在如何建造核心方面，您應該參考
+<A HREF="http://metalab.unc.edu/LDP/HOWTO/Kernel-HOWTO.html">Linux Kernel HOWTO</A>。 我在這裡只提和音效卡相關的部份。
+(譯注: 中文版在
+<A HREF="http://www.linux.org.tw/CLDP/Kernel-HOWTO.html">http://www.linux.org.tw/CLDP/Kernel-HOWTO.html</A><P>
+<P>如果您還沒有編譯核心，加入音效支援的經驗，先讀一下核心驅動程式裡的相關文件
+(特別是關於您的音效卡的部份)是個不錯的主意。
+這些檔案可以在核心文件目錄中找到，通常在
+/usr/src/linux/Documentation/sound。 如果沒有這個目錄，
+您可能還在使用非常舊的核心，或是根本沒裝核心原始碼。
+<P>
+<P>照一般造核心的程序來就好。 目前設定核心有三種介面可選擇。 用 "make xconfig
+" 可叫出在X11下的圖形設定介面; 用 "make menuconfig" 則是文字
+模式的選單介面; 最原始的方法，則是用 "make config"，提供了簡單的文
+字問答介面。
+<P>
+<P>當設定核心時，在選擇您的音效卡及驅動程式選項時會有很多選擇。
+在設定工具中的線上求助應該可以為您解釋每一個選項是什麼。 依照您所知的，
+選擇最適當的選項。 
+<P>在設定完所有選項後，您應該照 Kernel HOWTO 來重新編譯並安裝核心。
+<P>
+<H2><A NAME="ss4.4">4.4 建立設備檔</A>
+</H2>
+
+<P>
+<P>
+<P>為了正常的操作，必須為各音效設備建立設備檔。 正常狀況下在您裝 Linux 時就已經
+建好了，可以用下列的命令快速檢查一下。 如果輸出結果和下面很像(日期不一樣
+沒關係)，那麼設備檔差不多是設定正確了。
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+% ls -l /dev/sndstat
+crw-rw-rw-   1 root     root      14，  6 Apr 25  1995 /dev/sndstat
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>注意有了正確的設備檔並不保證一切完美了。 在設備能用以前，還是要先載入或加進
+核心驅動程式(稍後再詳述)。
+<P>在極少數情況，如果您確信設備檔設錯，您可以重建它們。 多數 Linux
+發行套件有有個 <CODE>/dev/MAKEDEV</CODE> 命令稿可以用來做這事。
+<P>
+<H2><A NAME="ss4.5">4.5 起動Linux及測試</A>
+</H2>
+
+<P>
+<P>
+<P>您至此應該可以準備起動新核心，測試驅動程式了。 照著您平時安裝及重啟動新核心的步
+驟去做(當然，保留一份舊核心以防萬一)。
+<P>
+<P>在起動中，檢查一下有沒有類似以下的訊息:(如果訊息捲動太快，您可以用<CODE>dmesg</CODE>
+命令回過來查看。)
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+Sound initialization started
+&lt;Sound Blaster 16 (4.13)> at 0x220 irq 5 dma 1,5
+&lt;Sound Blaster 16> at 0x330 irq 5 dma 0
+&lt;Yamaha OPL3 FM> at 0x388
+Sound initialization complete
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>這應該和您的音效卡及跳線設定(如果有的話)一致。
+<P>
+<P>如果您用可載入模組，以上訊息就不會顯示出來(除非您載入它時，用
+<CODE>insmod sound trace_init=1</CODE>)
+<P>
+<P>當音效驅動程式載入核心中時，應該會顯示<CODE>Sound initialization started</CODE>
+及<CODE>Sound initialization complete</CODE>訊息。 如果沒有，表示音效驅
+動程式沒有載入，這時您應該檢查一下目前起動的核心有沒有加入音效驅動程式支援。
+<P>
+<P>如果在<CODE>Sound initialization started</CODE>及
+<CODE>Sound initialization complete</CODE>間沒有印出什麼東西，
+那表示沒有偵測到音效設備。 這最可能的原因是您沒有使用
+正確的驅動程式，卡沒被支援，I/O位址不對或您用了還沒有設定過的 PnP 卡。
+<P>
+<P>驅動程式起動中亦可能印出錯誤及警告訊息。 在設定完驅動程式後，重啟動時，注意這
+些訊息。
+<P>
+<P>再來是檢查/dev/sndstat設備檔。
+讀取這個狀態檔可以得知額外的資訊，
+或是音效卡驅動程式是不是正確啟動了。 輸出範例如下:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+% cat /dev/sndstat
+Sound Driver:3.5.4-960630 (Sat Jan 4 23:56:57 EST 1997 root,
+Linux fizzbin 2.0.27 #48 Thu Dec 5 18:24:45 EST 1996 i586)
+Kernel: Linux fizzbin 2.0.27 #48 Thu Dec 5 18:24:45 EST 1996 i586
+Config options: 0
+
+Installed drivers: 
+Type 1: OPL-2/OPL-3 FM
+Type 2: Sound Blaster
+Type 7: SB MPU-401
+
+Card config: 
+Sound Blaster at 0x220 irq 5 drq 1,5
+SB MPU-401 at 0x330 irq 5 drq 0
+OPL-2/OPL-3 FM at 0x388 drq 0
+
+Audio devices:
+0: Sound Blaster 16 (4.13)
+
+Synth devices:
+0: Yamaha OPL-3
+
+Midi devices:
+0: Sound Blaster 16
+
+Timers:
+0: System clock
+
+Mixers:
+0: Sound Blaster
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>以上的命令也可能回報錯誤訊息。 "No such file or directory" 表示您還
+沒建設備檔(參考4.3節)。 "No such device" 表示音效程式沒有載入，或沒
+有連結進核心裡。 請回到 4.2 節以修正之。
+<P>
+<P>如果 <CODE>/dev/sndstat</CODE> 檔中，在"Card config:"段的幾行寫在括號裡 (就像"
+(SoundBlaster at 0x220 irq 5 drq 1,5)")，它表示設備已經設定了，但是沒有偵
+測到。
+<P>
+<P>現在您應該可以試試放簡單的音效檔了。 抓範例音效檔，把它丟到設備檔來檢查。
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+% cat endoftheworld >/dev/dsp
+% cat crash.au >/dev/audio
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>(確定您沒有省略掉大於符號)
+<P>
+<P>注意，在平時用<CODE>cat</CODE>不是放音效檔的貼切方法，這只是為了檢查罷了。
+去抓合適的放音程式(後面詳述)可以做得更好。
+<P>
+<P>只有在 /dev/sndstat 內的 audio devices
+這段至少列出一個設備的情形下，
+以上命令才會有效。 如果這段沒列出任何東西，您應該檢查一下為何設備沒偵測到。
+<P>
+<P>如果以上命令回報"I/O error"，您可以用 "dmesg"命令檢查
+核心訊息的尾部，在那很可能會有印出錯誤訊息，而且經常是 "Sound: DMA (output)
+timed out - IRQ/DRQ config error?"。 這個訊息是指驅動程式沒有從音效卡得到應
+該發生的中斷。 最有可能的原因是，IRQ 和 DMA 的設定沒有作用。 
+解決這問題的最好方法就是土法煉鋼，把所有這張卡能設到的 DMA 和 IRQ 搭配都試試看。
+<P>
+<P>另一種可能原因是驅動程式和卡不相容。 這幾乎一定是所謂 "聲霸卡(Pro/16)相容卡
+" 和聲霸卡驅動程式搭不起來。 這種狀況下您要找出和您的卡能搭配的驅動程式才
+行。(例如，可以投書到comp.os.linux.hardware討論區問問)
+<P>
+<P>一些音效範例檔可在
+<A HREF="ftp://tsx-11.mit.edu/pub/linux/packages/sound/snd-data-0.1.tar.Z">ftp://tsx-11.mit.edu/pub/linux/packages/sound/snd-data-0.1.tar.Z</A>
+抓到。
+<P>
+<P>現在您可以試試錄音了。 如果您的卡有錄音能力，您可以用以下命令來快速測試一下:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# 從麥克風錄進 4 秒聲音
+EDT% dd bs=8k count=4 &lt; /dev/audio >sample.au
+4+0 records in
+4+0 records out
+# 把剛剛錄的放出來
+% cat sample.au > /dev/audio
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>顯然您必需要有連接音效卡的麥克風，還要對著它講話，才能試出有沒有效。 您也許也需
+要弄到一個混音程式，設定麥克風為輸入裝置，並設定其錄音的增益。
+<P>
+<P>如果以上測試都通過了，您就有理由相信音效D/A及A/D硬體和軟體都很正常。 如果您碰到
+問題，參考下一小節。
+<P>
+<H2><A NAME="ss4.6">4.6 問題與解決</A>
+</H2>
+
+<P>
+<P>
+<P>如果您進行了以上部驟，仍然有問題，那麼可以檢查幾個地方。 這些檢查由簡單到複雜
+依序排列，如果檢查出問題，先解決，再進行下一道檢查。
+<P>
+<H3>第一步: 確定您用您自己編譯的核心起動。</H3>
+
+<P>
+<P>
+<P>您可以用核心的日期戳記來識別是不是您編譯的那個有支援音效的核心。 您可以用
+<CODE>uname</CODE>命令來作:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+% uname -a
+Linux fizzbin 2.2.4 #1 Tue Mar 23 11:23:21 EST 1999 i586 unknown
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>或顯示/proc/version檔內容:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+% cat /proc/version
+Linux version 2.2.4 (root@fizzbin) (gcc version 2.7.2.3) #1 Tue Mar 23 11:23:21 
+EST 1999
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>如果日期戳記不是您編譯核心的時間，那您用了舊的核心。 您真的重開機了嗎? 如果您用
+LILO，是不是有重裝呢(平常用lilo)? 如果是軟碟起動，您真的
+做了新開機片，並用它開機嗎?
+<P>
+<H3>第二步: 確定核心音效驅動程式有編進去。</H3>
+
+<P>
+<P>
+<P>最簡單的方法就是前面提過的，檢查 "/dev/sndstat"的輸出。 如果有地方不對，
+那麼核心設定或建立一定有問題。 再重新設定及建立，安裝新核心的程序。
+<P>
+<H3>第三步: 核心起動時有偵測到您的音效卡嗎?</H3>
+
+<P>
+<P>
+<P>確定核心啟動時您的卡有被偵測到。 您應該看過開機訊息了，如果它捲得過快，您通常可
+用 <CODE>dmesg</CODE> 命令叫回來:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+% dmesg
+</PRE>
+</CODE></BLOCKQUOTE>
+
+或
+<BLOCKQUOTE><CODE>
+<PRE>
+% tail /var/adm/messages
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>如果您的卡沒偵測到，就是某一處出問題。 確定那張卡真的裝了。 如果那張卡在DOS下工
+作得很好，那您就有理由相信硬體是正常的。 不是您把音效卡設錯型式，下錯參數，就是
+您的音效卡和核心音效驅動程式不相容。
+<P>
+<P>一種可能就是需要特殊DOS驅動程式來驅動的"相容"卡。 試著起動 DOS，載入
+廠商給的驅動程式，然後按<CODE>Control-Alt-Delete</CODE>暖開機進Linux。 確定卡的I/O位
+址，DMA及IRQ設定都和DOS一樣。 讀在音效驅動程式原始碼中的
+Readme.cards 檔以得到關於設定您的這型卡的提示訊息。
+<P>
+<P>如果您的卡並沒有在本文件中列出，可能是Linux驅動程式沒支援的關係。 您可以參考本文
+末的參考文獻來求助。
+<P>
+<H3>第四步: 您能從dsp設備讀出資料嗎?</H3>
+
+<P>
+<P>
+<P>試試用前面提過的 <CODE>dd</CODE> 命令讀取 /dev/audio。
+這個命令應該不會有錯誤才對。
+<P>
+<P>如果不行，那可能是 IRQ/DMA 衝到，或某種硬體不相容(設備不為 Linux 支援，或用錯驅
+動程式)。
+<P>
+<P>還有一個少見的可能是不良的硬體。 可能的話，在DOS下測試一下，消去這種可能性。
+<P>
+<H3>要是這些都沒用呢?</H3>
+
+<P>
+<P>
+<P>如果您還是有問題，這裡提供最後幾招試試:
+<P>
+<UL>
+<LI>小心重讀這份HOWTO文件</LI>
+<LI>讀本文件後列的參考文獻，及相關的核心原始碼中的文件。</LI>
+<LI>到 <CODE>comp.os.linux</CODE> 或其它Usenet討論區
+(comp.os.linux.hardware 是個好地方; 因為這兒灌水量多，
+最好在標題欄註明 "sound"，這樣適合的專家才會找到它。)</LI>
+<LI>用Web/Usenet搜尋引擎，加上有智慧的搜尋條件，很快就能找到很好的結果。 
+一個好選擇是
+<A HREF="http://www.altavista.digital.com">http://www.altavista.digital.com</A>。</LI>
+<LI>用最新的Linux核心。(但是只在最後關頭才用，最新的發展用核心可能很不穩)</LI>
+<LI>發封信給音效驅動程式作者</LI>
+<LI>發封信給Sound HOWTO的作者</LI>
+<LI>叫出emacs，輸入<CODE>Esc-x doctor</CODE> :-)</LI>
+</UL>
+<P>
+<P>(譯注: 當然最後一項是開玩笑的)
+<P>
+<HR>
+<A HREF="Sound-HOWTO-5.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Sound-HOWTO-3.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Sound-HOWTO.html#toc4"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

@@ -1,0 +1,77 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Linux ADSM Mini-Howto: 安裝 ADSM客戶端</TITLE>
+ <LINK HREF="ADSM-Backup-4.html" REL=next>
+ <LINK HREF="ADSM-Backup-2.html" REL=previous>
+ <LINK HREF="ADSM-Backup.html#toc3" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+<A HREF="ADSM-Backup-4.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="ADSM-Backup-2.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="ADSM-Backup.html#toc3"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s3">3. 安裝 ADSM客戶端</A></H2>
+
+<P>SCO二進位元檔的是由三個 tar 檔案提供的,或者由磁碟提供.改變路徑到
+根目錄,根據你的政策設定你的 umask ,然後
+在一個目錄解開他們 (譬如 根目錄).在目錄 /tmp,你會
+找到一個程序檔;執行它
+<P>這時你要必須手動編輯 <CODE>/usr/adsm/dsm.sys</CODE>
+<CODE>/usr/adsm/dsm.opt</CODE>.
+在 <CODE>dsm.sys</CODE>,重要的行數詳細說明如下:
+<DL>
+<DT><B>Servername</B><DD><P>The name of the server(伺服器名稱)
+<DT><B>TCPServeraddress</B><DD><P>伺服器 DNS 全名
+<DT><B>NODename</B><DD><P>你的自己的主機名
+</DL>
+
+In <CODE>dsm.opt</CODE>,你必須要詳細說明
+<DL>
+<DT><B>Server</B><DD><P>如同前面的描述
+<DT><B>Followsymbolic</B><DD><P>要或不要跟隨符號連接點 (一般來說，不是一個好主意)
+<DT><B>SUbdir</B><DD><P>支援子目錄 (你通常需要它)
+<DT><B>domain</B><DD><P>檔案系統備份
+</DL>
+<P>這時你要必須創造一個 SCO-相容的 <CODE>/etc/mnttab</CODE>
+從你的 <CODE>/etc/fstab</CODE>.你可以使用下列各項 Perl 程序檔,
+<CODE>fstab2mnttab</CODE>,對於這.
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+#!/usr/bin/perl
+
+$mnttab_struct = "a32 a32 I L";
+open(MTAB, "/etc/mtab") || die "Cannot open /etc/mtab: $!\n";
+open(MNTTAB, ">/etc/mnttab") || die "Cannot open /etc/mnttab: $!\n";
+
+while(&lt;MTAB>) {
+    next if /pid/;
+    chop;
+    /^(\S*)\s(\S*)\s(\S*)\s.*$/;
+    $device = $1;
+    $mountpt = $2;
+    $fstype = $3;
+    if($fstype ne "nfs" &amp;&amp; $fstype ne "proc") {
+        $mnttab_rec =
+            pack($mnttab_struct, $device, $mountpt, 0x9d2f, time());
+        syswrite(MNTTAB, $mnttab_rec, 72);
+        print "Made entry for: $device $mountpt $fstype\n";
+    }
+}
+
+close(MNTTAB);
+exit 0;
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+
+針對這些客戶端你不需要安裝任何的共享程式庫;
+每件事是鏈接到固定程序庫.
+<P>
+<HR>
+<A HREF="ADSM-Backup-4.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="ADSM-Backup-2.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="ADSM-Backup.html#toc3"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

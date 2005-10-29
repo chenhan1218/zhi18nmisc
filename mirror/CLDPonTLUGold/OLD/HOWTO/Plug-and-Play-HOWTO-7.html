@@ -1,0 +1,128 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE> Plug-and-Play-HOWTO : What Is My Current Configuration? </TITLE>
+ <LINK HREF="Plug-and-Play-HOWTO-8.html" REL=next>
+ <LINK HREF="Plug-and-Play-HOWTO-6.html" REL=previous>
+ <LINK HREF="Plug-and-Play-HOWTO.html#toc7" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Plug-and-Play-HOWTO-8.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Plug-and-Play-HOWTO-6.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Plug-and-Play-HOWTO.html#toc7"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="current_config"></A> <A NAME="s7">7. What Is My Current Configuration? </A></H2>
+
+<P> Here "configuration" means the assignment of PnP bus-resources
+(addresses, IRQs, and DMAs).  There are two parts to this question for
+each device.  Each part should have the same answer.
+<OL>
+<LI> What is the configuration of the device driver software?
+I.e.: What does the driver think the hardware configuration is?</LI>
+<LI> What configuration (if any) is set in the device hardware?</LI>
+</OL>
+<P>Of course the configuration of the device hardware and its driver
+should be the same (and it normally is).  But if things are not
+working right, it could be because there's a difference.  This means
+the the driver has incorrect information about the actual
+configuration of the hardware.  This spells trouble.  If the software
+you use doesn't adequately tell you what's wrong (or automatically
+configure it correctly) then you need to investigate how your hardware
+devices and their drivers are configured.  While Linux device drivers
+should "tell all" in some cases it's not easy to determine what has
+been set in the hardware.
+<P>Another problem is that when you view configuration messages on the
+screen, it's sometimes not clear whether the reported configuration is
+that of the device driver, the device hardware, or both.  If the
+device driver is assigned a configuration and then checks the hardware
+out to see if it's configured the same, then the configuration
+reported by the driver should be that of both the hardware and the
+driver. 
+<P>But some drivers which don't do this may accept a configuration that
+doesn't check out.  For example, "setserial" will accept a
+configuration that doesn't check out and thus may only be telling you
+the configuration of the driver and not the hardware.
+<P>
+<H2><A NAME="boot_time_msgs"></A> <A NAME="ss7.1">7.1 Boot-time Messages </A>
+</H2>
+
+<P> Some info on configuration may be obtained by reading the messages
+from the BIOS and Linux that appear on the screen when you first start
+the computer.  These messages often flash by too fast to read but once
+they stop type Shift-PageUp a few times to scroll back to them.  To
+scroll forward thru them type Shift-PageDown.  Typing "dmesg" at any
+time to the shell prompt will show only the Linux kernel messages and
+miss some of the most important ones (including ones from the BIOS).
+The messages from Linux may sometimes only show what the device driver
+thinks the configuration is, perhaps as told it via an incorrect
+configuration file.  
+<P>The BIOS messages will show the actual hardware configuration at that
+time, but isapnp, or pci utilities, or device drivers may change it
+later.  The BIOS messages are displayed first before the ones from
+Linux.  As an alternative to eventually using Shift-PageUp to read
+them, try freezing them by hitting the "Pause" key.  Press any key to
+resume.  But once the messages from Linux start to appear, it's too
+late to use "Pause" since it will not freeze the messages from Linux.
+<P>
+<H2><A NAME="ss7.2">7.2 How Are My Device Drivers Configured? </A>
+</H2>
+
+<P> There may be a programs you can run from the command line (such as
+"setserial" for serial ports) to determine this.   The /proc directory
+tree is useful.  It seems that there are many files buried deep in
+this tree that contain bus-resource info.  Only a couple of them will
+be mentioned here.  /proc/ioports shows the I/O addresses that the
+drivers use (or try if it's wrong).  They might not be set this way in
+hardware.
+<P>/proc/interrupts shows only interrupts currently in use.  Many
+interrupts that have been allocated to drivers don't show at all since
+they're not currently being used.  For example, even though your
+floppy drive has a floppy disk in it and is ready to use, the
+interrupt for it will not show unless its in use.  Again, just because
+an interrupt shows up here doesn't mean that it exists in the
+hardware.  A clue that it doesn't exist in hardware will be if it
+shows that 0 interrupts have been issued by this interrupt.  Even if
+it shows some interrupts have been issued there is no guarantee that
+they came from the device shown.  It could be that some other device
+which is not currently in use has issued them.  A device not in use (per
+the kernel) may still issue some interrupts for various reasons.
+<P>
+<H2><A NAME="ss7.3">7.3 How Are My Hardware Devices Configured? </A>
+</H2>
+
+<P> It's easy to find out what bus-resources have been assigned to
+devices on the PCI bus with the "lspci" or "scanpci" commands.  For
+for kernels &lt; 2.2: see <CODE>/proc/pci</CODE> or <CODE>/proc/bus/pci</CODE>
+for later kernels.  Note that IRQs for <CODE>/proc/pci</CODE> are in
+hexadecimal.  Don't bother trying to decipher
+<CODE>/proc/bus/pci/devices</CODE> since "lspci" will do that for you.  
+<P>For the ISA bus you may try running <CODE>pnpdump --dumpregs</CODE>
+but it's not a sure thing.  The results may be seem cryptic but they
+can be deciphered.  Don't confuse the read-port address which
+<CODE>pnpdump</CODE> "tries" (and finds something there) with the I/O address
+of the found device.  They are not the same.  To try to find missing
+hardware on the ISA bus (both PnP and legacy) try the program
+"scanport" but be warned that it might hang your PC.  It will not show
+the IRQ nor will it positively identify the hardware.
+<P>Messages from the BIOS at boot-time tell you how the hardware
+configuration was then.  If only the BIOS does the configuring, then
+it should still be the same.  Messages from Linux may be from drivers
+that used kernel PnP functions to inspect and/or set bus-resources.
+These should be correct, but beware of messages that only show what is
+in some configuration file (what the driver thinks).  Of course, if
+the device works fine, then it's likely configured the same as the
+driver.
+<P>Some people use Windows to see how bus-resources have be set up.
+Unfortunately, since the hardware forgets its bus-resource
+configuration when powered down, the configuration may not be the same
+under Linux.  It sometimes turns out the same, but Windows and Linux
+do not necessarily use the same logic in configuring.  Many devices
+have bus-resource preferences that are often adhered to by both Linux
+and Windows.  But don't count on devices being configured the same.
+<P>
+<HR>
+<A HREF="Plug-and-Play-HOWTO-8.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Plug-and-Play-HOWTO-6.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Plug-and-Play-HOWTO.html#toc7"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

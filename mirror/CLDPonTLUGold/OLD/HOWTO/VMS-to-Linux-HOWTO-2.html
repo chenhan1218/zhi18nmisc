@@ -1,0 +1,261 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>From VMS to Linux HOWTO: Short Intro </TITLE>
+ <LINK HREF="VMS-to-Linux-HOWTO-3.html" REL=next>
+ <LINK HREF="VMS-to-Linux-HOWTO-1.html" REL=previous>
+ <LINK HREF="VMS-to-Linux-HOWTO.html#toc2" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="VMS-to-Linux-HOWTO-3.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="VMS-to-Linux-HOWTO-1.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="VMS-to-Linux-HOWTO.html#toc2"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="Short Intro"></A> <A NAME="s2">2. Short Intro </A></H2>
+
+<P>
+<P>This is what you absolutely need to know before logging in the first
+time. Relax, it's not much.
+<P>
+<H2><A NAME="ss2.1">2.1 Files</A>
+</H2>
+
+<P>
+<P>
+<UL>
+<LI> Under VMS filenames are in the form <CODE>filename.extension;version</CODE>.
+Under Linux, the version number doesn't exist (big limitation, but see
+Section 
+<A HREF="VMS-to-Linux-HOWTO-10.html#Numbered Backups Under Linux">Numbered Backups Under Linux</A>); the filename
+has normally a limit of 255 characters and can have as many dots as you
+like. Example of filename: <CODE>This.is_a_FILEname.txt</CODE>.
+</LI>
+<LI> Linux distinguishes between upper case and lower case characters: 
+<CODE>FILENAME.txt</CODE> and <CODE>filename.txt</CODE> are two different files; 
+<CODE>ls</CODE> is a command, <CODE>LS</CODE> is not.
+</LI>
+<LI> A filename starting with a dot is a `hidden' file (that is, 
+it won't normally show up in dir listings), while filenames ending with a 
+tilde '<CODE>~</CODE>' represent backup files.
+
+</LI>
+</UL>
+<P>Now, a table to sum up how to translate commands from VMS to Linux:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+
+VMS                                     Linux
+---------------------------------------------------------------------
+
+$ COPY file1.txt file2.txt              $ cp file1.txt file2.txt
+$ COPY [.dir]file.txt []                $ cp dir/file.txt .
+$ COPY [.dir]file.txt [-]               $ cp dir/file.txt ..
+$ DELETE *.dat;*                        $ rm *dat
+$ DIFF file1 file2                      $ diff -c file1 file2
+$ PRINT file                            $ lpr file
+$ PRINT/queue=queuename file            $ lpr -Pprintername file
+$ SEARCH *.tex;* "geology"              $ grep geology *tex
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>For other examples involving directories, see below; for details about
+protections, ownership, and advanced topics, see Section 
+<A HREF="VMS-to-Linux-HOWTO-8.html#Advanced Topics">Advanced Topics</A>.
+<P>
+<H2><A NAME="ss2.2">2.2 Directories</A>
+</H2>
+
+<P>
+<P>
+<UL>
+<LI> Within the same node and device, directories names under VMS are in
+the form <CODE>[top.dir.subdir]</CODE>; under Linux, <CODE>/top/dir/subdir/</CODE>. On
+the top of the directory tree lies the so--called `root directory' called
+<CODE>/</CODE>; underneath there are other directories like <CODE>/bin</CODE>,
+<CODE>/usr</CODE>, <CODE>/tmp</CODE>, <CODE>/etc</CODE>, and others.
+</LI>
+<LI> The directory <CODE>/home</CODE> contains the so--called users' `home
+directories': e.g. <CODE>/home/guido</CODE>, <CODE>/home/warner</CODE>, and so on.
+When a user logs in, they start working in their home dir; it's the
+equivalent of <CODE>SYS$LOGIN</CODE>. There's a shortcut for the home
+directory: the tilde '<CODE>~</CODE>'. So, <CODE>cd ~/tmp</CODE> is the same
+as, say, <CODE>cd /home/guido/tmp</CODE>.
+</LI>
+<LI> Directory names follow the same rules as file names. Furthermore,
+each directory has two special entries: one is <CODE>.</CODE> and refers to the
+directory itself (like <CODE>[]</CODE>), and <CODE>..</CODE> that refers to the parent
+directory (like <CODE>[-]</CODE>).
+</LI>
+</UL>
+ 
+<P>And now for some other examples:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+
+VMS                                     Linux
+---------------------------------------------------------------------
+
+$ CREATE/DIR [.dirname]                 $ mkdir dirname
+$ CREATE/DIR [.dir1.dir2.dir3]          $ mkdirhier dir1/dir2/dir3
+   n/a                                  $ rmdir dirname
+                                        (if dirname is empty)
+                                        $ rm -R dirname
+$ DIRECTORY                             $ ls
+$ DIRECTORY [...]file.*;*               $ find . -name "file*"
+$ SET DEF SYS$LOGIN                     $ cd
+$ SET DEF [-]                           $ cd ..
+$ SET DEF [top.dir.subdir]              $ cd /top/dir/subdir
+$ SET DEF [.dir.subdir]                 $ cd dir/subdir
+$ SHOW DEF                              $ pwd
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>For protections, ownership, and advanced topics, see Section 
+<A HREF="VMS-to-Linux-HOWTO-8.html#Advanced Topics">Advanced Topics</A>.
+<P>
+<H2><A NAME="ss2.3">2.3 Programs</A>
+</H2>
+
+<P>
+<P>
+<UL>
+<LI> Commands, compiled programs, and shell scripts (VMS' `command 
+files') don't have sort of mandatory extensions like <CODE>.EXE</CODE> or <CODE>.COM</CODE> 
+and can be called whatever you like. Executable files are marked by an 
+asterisk '<CODE>*</CODE>' when you issue <CODE>ls -F</CODE>.
+</LI>
+<LI> To run an executable file, just type its name (no <CODE>RUN
+PROGRAM.EXE</CODE> or <CODE>@COMMAND</CODE>). Caveat: it's essential that the file be
+located in a directory included in the <EM>path of executables</EM>, which is a
+list of directories. Typically, the path includes dirs like <CODE>/bin</CODE>,
+<CODE>/usr/bin</CODE>, <CODE>/usr/X11R6/bin</CODE>, and others. If you write your
+own programs, put them in a directory you have included in the path (see how
+in Section 
+<A HREF="VMS-to-Linux-HOWTO-9.html#Configuring">Configuring</A>). As an alternative,
+you may run a program specifying its complete path: e.g.,
+<CODE>/home/guido/data/myprog</CODE>; or <CODE>./myprog</CODE>, if the current
+directory isn't in the path.
+</LI>
+<LI> Command switches are obtained with <CODE>/OPTION=</CODE> under VMS, and
+with <CODE>-switch</CODE> or <CODE>--switch</CODE> under Linux, where <CODE>switch</CODE> is a
+letter, more letters combined, or a word. In particular, the switch <CODE>-R</CODE>
+(recursive) of many Linux commands performs the same action as <CODE>[...]</CODE>
+under VMS;
+</LI>
+<LI> You can issue several commands on the command line:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+$ command1 ; command2 ; ... ; commandn
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI> Most of the flexibility of Linux comes from two features awkwardly
+implemented or missing in VMS: I/O redirection and piping. (I have been told
+that recent versions of DCL support redirection and piping, but I don't have
+that version.) Redirection is a side feature under VMS (remember
+the switch <CODE>/OUTPUT=</CODE> of many commands), or a fastidious process,
+like:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+$ DEFINE /USER SYS$OUTPUT OUT 
+$ DEFINE /USER SYS$INPUT IN
+$ RUN PROG
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+which has the simple Linux (UNIX) equivalent:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+$ prog &lt; in > out
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+Piping is not readily available under VMS, but has a key role under UNIX. A
+typical example:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+$ myprog &lt; datafile | filter_1 | filter_2 >> result.dat 2> errors.log &amp;
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+which means: the program <CODE>myprog</CODE> gets its input from the file
+<CODE>datafile</CODE> (via <CODE>&lt;</CODE>), its output is piped (via <CODE>|</CODE>) to
+the program <CODE>filter_1</CODE> that takes it as input and processes it, the
+resulting output is piped again to <CODE>filter_2</CODE> for further processing, the
+final output is appended (via <CODE>&gt;&gt;</CODE>) to the file <CODE>result.dat</CODE>,
+and error messages are redirected (via <CODE>2&gt;</CODE>) onto the file
+<CODE>errors.log</CODE>. All this in background (<CODE>&amp;</CODE> at the end of the
+command line). More about this in Section 
+<A HREF="VMS-to-Linux-HOWTO-11.html#Examples">Examples</A>.
+</LI>
+</UL>
+ 
+<P>For multitasking, `queues', and the like, see Section 
+<A HREF="VMS-to-Linux-HOWTO-8.html#Advanced Topics">Advanced Topics</A>.
+<P>
+<H2><A NAME="Quick Tour"></A> <A NAME="ss2.4">2.4 Quick Tour </A>
+</H2>
+
+<P>
+<P>Now you are ready to try Linux out. Enter your login name and password
+<EM>exactly</EM> as they are. For example, if your login name and password are
+<CODE>john</CODE> and <CODE>My_PassWd</CODE>, <EM>don't</EM> type <CODE>John</CODE> or <CODE>my_passwd</CODE>.
+Remember, UNIX distinguishes between capital and small letters.
+<P>Once you've logged in, you'll see a prompt; chances are it'll be something
+like <CODE>machinename:$</CODE>. If you want to change the prompt or make
+some programs start automatically, you'll have to edit a `hidden' file
+called <CODE>.profile</CODE> or <CODE>.bash_profile</CODE> (see example in Section 
+<A HREF="VMS-to-Linux-HOWTO-9.html#Configuring">Configuring</A>). This is the equivalent of
+<CODE>LOGIN.COM</CODE>.
+<P>Pressing ALT--F1, ALT--F2, ... ALT--F6 switches between `virtual consoles'. 
+When one VC is busy with a full--screen application, you can flip over to 
+another and continue to work. Try and log in to another VC.
+<P>Now you may want to start X Window System (from now on, X). X is a graphic
+environment very similar to DECWindows---actually, the latter derives from
+the former. Type the command <CODE>startx</CODE> and wait a few seconds; most likely
+you'll see an open <CODE>xterm</CODE> or equivalent terminal emulator, and possibly
+a button bar. (It depends on how your sysadm configured your Linux box.)
+Click on the desktop (try both mouse buttons) to see a menu.
+<P>While in X, to access the text mode (`console') sessions press
+CTRL--ALT--F1 ... CTRL--ALT--F6. Try it. When in console, go back to X 
+pressing ALT--F7. To quit X, follow the menu instructions or press 
+CTRL--ALT--BS.
+<P>Type the following command to list your home dir contents, including the 
+hidden files:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ ls -al
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Press SHIFT--PAG UP to back-scroll. Now get help about the <CODE>ls</CODE> command 
+typing:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ man ls
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>pressing 'q' to exit. To end the tour, type <CODE>exit</CODE> to quit your session.
+If now you want to turn off your PC, press CTRL--ALT--DEL and wait a few
+seconds (<EM>never</EM> switch off the PC while in Linux! You could damage the
+filesystem.)
+<P>If you think you're ready to work, go ahead, but if I were you I'd jump 
+to Section 
+<A HREF="VMS-to-Linux-HOWTO-8.html#Advanced Topics">Advanced Topics</A>.
+<P>
+<P>
+<HR>
+<A HREF="VMS-to-Linux-HOWTO-3.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="VMS-to-Linux-HOWTO-1.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="VMS-to-Linux-HOWTO.html#toc2"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

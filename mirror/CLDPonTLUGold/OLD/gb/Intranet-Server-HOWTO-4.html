@@ -1,0 +1,436 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE> Linux Intranet 伺服器 HOWTO (内部网路伺服器HOWTO): 连上 Linux 伺服器</TITLE>
+ <LINK HREF="Intranet-Server-HOWTO-5.html" REL=next>
+ <LINK HREF="Intranet-Server-HOWTO-3.html" REL=previous>
+ <LINK HREF="Intranet-Server-HOWTO.html#toc4" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Intranet-Server-HOWTO-5.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Intranet-Server-HOWTO-3.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Intranet-Server-HOWTO.html#toc4"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s4">4. 连上 Linux 伺服器</A></H2>
+
+<P>请参考在  
+<A HREF="Intranet-Server-HOWTO-1.html#Intro">Introduction</A> 章节□的图示，那□有被使用的定址方案。 Workstation 1
+(W/S1) 在网路  172.16.0.0 上并且可以直接存取到 Linux 伺服器。而 Workstation 2 (W/S2) 在网路 172.17.0.0 上
+且需要使用通讯闸(路由器) 172.17.0.254 来存取 Linux 机器。这个通讯闸资讯只有在建构 W/S2 这个客户端时
+才需要。Netware 会把通讯闸当成'ip_router'。
+<P>
+<P>我使用 W/S2 来描述客户端的设定。 要设定 W/S1 只需将位址 172.17.0.5 改变为 172.16.0.5 并且
+不要管所有与通讯闸／路由器的连结。
+<P>如果你没有路由器，现在可以跳过这章节
+<UL>
+<LI>
+<A HREF="#SetupNW">Setup Netware Server</A> 如果你使用 Netware 伺服器。</LI>
+<LI>
+<A HREF="#MSClient">Setup MS Windows Client</A> 如果你使用 Microsoft Client。</LI>
+</UL>
+<P>
+<H2><A NAME="ss4.1">4.1 设定 Linux 伺服器</A>
+</H2>
+
+<P><B>如果你没有router的话，可以跳过这一章。</B>
+<P>你必须建构 Linux  伺服器去办识路由器来让 Workstation 2 与 Web 伺服器相连接。为了
+设立 Linux 伺服器你必须签入成为 root。在伺服器的命令列提示下执行
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+   route add gw default 172.16.0.254
+</PRE>
+</CODE></BLOCKQUOTE>
+
+要在每一次你开启这台Linux 伺服器时使用这个通讯闸的话，只要修改 <CODE>/etc/rc.d/rc.inet1</CODE> 将
+含有通讯闸定义的那行更改成 <CODE>GATEWAY = "172.16.0.254"</CODE>即可。请得前面没有注解符号哦 !
+<P>或者是: 你可以由另一边的路由器来改变网路。例如
+<BLOCKQUOTE><CODE>
+<PRE>
+   route add -net 172.17.0.0 gw 172.16.0.254
+</PRE>
+</CODE></BLOCKQUOTE>
+
+想每一次开机时使用这条通道请将这个命令加入你的 <CODE>/etc/rc.d/rc.local</CODE> 档案□。
+<P>
+<P>
+<H2><A NAME="SetupNW"></A> <A NAME="ss4.2">4.2 建定 Netware 伺服器</A>
+</H2>
+
+<P>为了能够设定 Netware 伺服器， 你需要有 Supervisor 允许权或至少也要
+有控制台 Console 的操作权。 如果这些你都没有，请问你们的网路管理员
+看看是否能帮你做设定。 在伺服器上打入以下命令或是将它们包含到 AUTOEXEC.ncf
+档□即可开启网路上的 Ethernet_II 的 frame 类型。
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+   load NE2000 frame=Ethernet_II name=IPNET
+   load TCPIP
+   bind IP to IPNET addr=172.16.0.2 mask=FF.FF.FF.0
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>在载入 NE2000  的驱动程式时， 你也许需要依照你的机器的建构来指定插
+槽或板子的号码。 (例如: load NE2000 slot=3 frame=.....)
+<P>
+<H2><A NAME="NWClient"></A> <A NAME="ss4.3">4.3 设定 Netware 客户端</A>
+</H2>
+
+<P>在一台电脑上， 你可以选择使用 Win3.1、WFWG 或是 Win95。 如果你使用
+Microsoft  或 Novell  的 32 位元客户端程式， 对於在 Win95 或早期的
+windows 上的安装步骤就不同了。如果你要使用 16 位元的客户端程式，那
+麽那些步骤就一样了。 你可以参考 Windows 3.x 安装指示。关於在 Win95
+上面安装  32 位元客户端程式， 请跳到 
+<A HREF="#NWWin95">  安 装Windows 95</A>。
+<P>
+<H3><A NAME="NWWin"></A> Windows 3.x</H3>
+
+<P>如果你使用 Win3.1 或 WFWG。你就可以安装 Netware Client (VLMs) 以及
+和 TCP/IP 磁片放在一起的其他档案，如下
+<P>
+<P>TCPIP.exe、VTCPIP.386、WINSOCK.dll 和 WLIBSOCK.dll
+<P>附带一提 WINSOCK.dll  档案与 Win95 及 Trumpet 内所提供的那个是不同
+的。  安装有支援  windows  的  Netware  Client。  将  VTCPIP.386、
+WINSOCK.dll 及 WLIBSOCK.dll 拷贝到 SYSTEM 目录内，TCPIP.exe 拷贝到
+NWCLIENT 目录内。现在修改放在 NWCLIENT 内的 STARTNET.bat
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+   lsl
+   ne2000     ---> 你的网路卡驱动程式
+   c:\windows\odihlp.exe     ---->如果你使用 WFWG 的话
+   ipxodi
+   tcpip        ---> 增加这一行
+   nwip         ---> 如果你使用 Netware/IP 的话
+   vlm
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>建立一个子目录 (如 ) <CODE>\NET\TCP</CODE>， 从你的 Linux 伺
+服器的 <CODE>/etc</CODE> 目录或是你的 Netware 伺服器的 <CODE>SYS: ETC</CODE>
+内拷贝 HOSTS、 NETWORKS、PROTOCOLS 以及 SERVICES 。 经由修改拷贝的
+HOSTS 档案来增加一行给你的新 Linux 伺服器。 这样可以使你使用你的网
+页浏览器看你的 Linux 伺服器时由 <CODE>http://172.16.0.1/</CODE> 改为
+<CODE>http://linux.mydomain/</CODE>。
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+   127.0.0.1      localhost
+   172.16.0.1      linux.mydomain
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>修改在 NWCLIENT 目录内的 NET.cfg 档案
+<BLOCKQUOTE><CODE>
+<PRE>
+   Link Driver NE2000
+       port 300
+       int 3
+       MEM D0000
+       FRAME Ethernet_802.2
+
+; ---- 增加这几行 ----
+
+      FRAME Ethernet_II
+
+   Protocol TCPIP
+      PATH TCP_CFG C:\NET\TCP
+      ip_address  172.17.0.5
+      ip_netmask  255.255.255.0
+      ip_router   172.17.0.254     ---> 如果你必须使用你的通讯闸才能连接到你的HTTP 伺服器才需加上这行
+
+   Link Support
+      MemPool 6192       ---> 最小值是 1024。可试看看不同的值
+      Buffers 10 1580    ---> 这也可以自己调整
+
+;---------------------------------
+; 如果你使用 Netware/IP ，可以加入这几行
+;
+   NWIP
+      NWIP_DOMAIN_NAME  mydomain
+      NSQ_BROADCAST   ON
+      NWIP1_1 COMPATIBILITY   OFF
+      AUTORETRIES     1
+      AUTORETRY SECS  10
+
+</PRE>
+</CODE></BLOCKQUOTE>
+
+编修 WINDOWS 目录内的 SYSTEM.ini 档案并为 VTCPIP.386加上这一行。
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+   [386Enh]
+   .....
+   network=*vnetbios, vipx.386, vnetware.386, VTCPIP.386
+   .....
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>重新开机，执行 STARTNET.bat。 现在你可以使用你最喜欢的网页浏览器来
+存取你的网页了。  如果你使用  Trumpet  Winsock  的话，  你不需签入
+Netware □面以及执行 TCPMAN。
+<P>
+<H3><A NAME="NWWin95"></A> Windows 95</H3>
+
+<P>本章节解释如何在 Win95 上安装 32 位元的客户端程式。 首先你必须安装
+下列的软体
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+   Client for Netware Networks (来自 Microsoft 或 Novell都可以)
+   Microsoft TCP/IP Protocol
+   Network Adapter
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>要安装这些项目，按我的电脑→控制台→网路，按新增。现在你应该是在
+一个显示客户端、介面卡、协定及服务的视窗□。
+安装 the Client for Netware Networks:
+<BLOCKQUOTE><CODE>
+<PRE>
+  1. 在客户端按(滑鼠)两下
+  2. 在 Microsoft 或 Novell 上按一下
+  3. 在 Client for Netware Networks 按两下
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>安装 TCP/IP 协定:
+<BLOCKQUOTE><CODE>
+<PRE>
+  1. 在协定上按两下
+  2. 按 Microsoft 一下
+  3. 按 TCP/IP 两下
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Windows 95 本身会自动安装几个不同的协定。指向他们并按移除钮将他们移除。一般来说
+Win95 会安装 Microsoft NetBeui 协定以及IPX/SPX 相容协定。你可以删除 NetBEUI 协定，
+但如果你想签入到 Netware 伺服器，那你会需要 IPX/SPX 协定。
+<P>按 TCP/IP 一下设定它， 按内容，按 IP 位址一栏
+<BLOCKQUOTE><CODE>
+<PRE>
+  在 &quot;指定 IP 位址 &quot; 对话盒中输入你的 IP 位址 172.17.0.5
+  在子网路庶罩对话话中输入 255.255.255.0
+</PRE>
+</CODE></BLOCKQUOTE>
+
+选取通讯闸
+<BLOCKQUOTE><CODE>
+<PRE>
+  在新闸道对话盒□输入你的通讯闸(路由器)位址 172.17.0.254
+  按新增钮
+</PRE>
+</CODE></BLOCKQUOTE>
+
+现在通讯闸位址应该在通讯闸对话盒内了。按确定
+<P>你会看到要你重新启动系统的讯息，照做，现在你应该可以使用浏览器连接到你的 HTTP 伺服器。
+<P>
+<H2><A NAME="MSClient"></A> <A NAME="ss4.4">4.4 设定 Microsoft Client</A>
+</H2>
+
+<P>如果你使用 Microsoft Client 来存取你的网路，那麽这章即在说明如何安
+装 TCP/IP 到
+<P>
+<UL>
+<LI>
+<A HREF="#MSWFWG">Windows for Workgroups (WFWG)</A></LI>
+<LI>
+<A HREF="#MSWin95">Windows 95</A></LI>
+<LI>
+<A HREF="#MSWinNT">Windows NT 4.0</A></LI>
+</UL>
+
+<B>  附注:  </B>  要让你的网页浏览器或所有的内部网路命令在看你的
+Linux   伺服器时是以   <CODE>http:  //linux.mydomain/</CODE>    来代替
+<CODE>http://172.16.0.1/</CODE>。 你可以经由修改 <CODE>hosts</CODE> 档案来
+增加一行给你的新 Linux 伺服器。 你当然也可以增加更多的条目给每一个
+你的其他的主机 hosts (Netware、 Unix、 WinNT)。 Windows 家族会把它的
+HOSTS 档案放在   <CODE>\WINDOWS</CODE>  或 <CODE>\WINDOWS\SYSTEM</CODE> 内，
+端看它的版本。修改这个档案并加上一行到你的 Linux 伺服器成为：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+   127.0.0.1      localhost
+   172.16.0.1     linux.mydomain
+
+   172.16.0.2     netware.mydomain
+   172.16.0.3     winNT.mydomain
+   172.16.0.5     ws_1
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H3><A NAME="MSWFWG"></A> Windows for Workgroups</H3>
+
+<P>本章在解释如何在 WFWG 上安装 32bit 的客户端。首先你必须下载由 Microsoft 所提供的Windows版 TCP/IP 驱动程式
+最新的版本是 3.11b ，你可以由 
+<A HREF="ftp://ftp.microsoft.com">ftp://ftp.microsoft.com</A> 或是
+其他网站□下载 <CODE>tcp32b.exe</CODE>。请确定你在□试载入TCP/IP-32bit的驱动程式前载入Win32s 。
+<P>将 TCP/IP 档案展开到临时存放目录□ (如 <CODE>C:\TEMP</CODE>)，检查你的 <CODE>\WINDOWS\SYSTEM</CODE>
+目录□有否 <CODE>OEMSETUP.INF</CODE>。如果有，改它们的名字。现在从 TEMP 目录□拷贝 <CODE>OEMSETUP.INF</CODE> 档
+到 <CODE>\WINDOWS\SYSTEM</CODE> 目录。如果你已载入其他的 TCP/IP 堆叠到你的系统了，请
+在你继续前移除它们。
+<P>开启网路设定或是 Windows 设定/更改网路设定
+<BLOCKQUOTE><CODE>
+<PRE>
+    按一下 Networks 钮
+    按一下 Install Microsoft Windows Network.
+      选择支 support for additional networks (如果需要的话)
+    按确定
+</PRE>
+</CODE></BLOCKQUOTE>
+
+系统会提示你需要选择一个适当的网路卡。如果没有提示的话，那麽你应该
+<BLOCKQUOTE><CODE>
+<PRE>
+     按一下 Adapter 钮
+         选择一张卡 (如 NE2000)
+         按确定
+     按一下 Protocol 钮
+         选择 MS TCP/IP-32 协定
+         按确定
+</PRE>
+</CODE></BLOCKQUOTE>
+
+系统会提示要你建构 TCP/IP 协定的一堆资料。在任何时候您想要重新建构
+这项资料，你可以选择 TCP/IP 协定後，再按一下内容即可做修改。
+<BLOCKQUOTE><CODE>
+<PRE>
+   在 IP 位址对话盒□输入 172.17.0.5
+   在子网路遮罩对话盒内输入 255.255.255.0
+   在内定通讯闸对话盒中输入你的通讯闸 (router) 位址为 172.17.0.254
+</PRE>
+</CODE></BLOCKQUOTE>
+
+按确认。你会看到一个重新启动的讯息。顺著意做，你现在起就可以使用浏
+览器来连接到你的 HTTP 伺服器了。
+<P>
+<H3><A NAME="MSWin95"></A> Windows 95</H3>
+
+<P>本章节解释如何在 Win95 上安装 32 位元的微软客户端程式。 首先你必须
+安装下列的软体
+<BLOCKQUOTE><CODE>
+<PRE>
+   Client for Microsoft Networks
+   Microsoft TCP/IP Protocol
+   Network Adapter
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>要安装这些项目，在按两下我的电脑→控制台→网路，按增加。你现在会在
+一个显示著客户端程式、控制卡、协定以及服务项目的一个视窗上。要安装
+微软网路客户端程式:
+<BLOCKQUOTE><CODE>
+<PRE>
+  1. 在 Client 项目上按两下
+  2. 按一下 Microsoft
+  3. 在 Client for Microsoft Networks项目上按两下
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>安装 TCP/IP 协定:
+<BLOCKQUOTE><CODE>
+<PRE>
+  1. 在 Protocol 上按两下
+  2. 按一下 Microsoft
+  3. 在 TCP/IP 上按两下
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Windows 95 内定会自动地安装数个协定在□头。 只要在按一下它们，再按
+下移走按钮即可将它们移走。 典型地 Win95  会安装 Microsoft  NetBeui
+协定。
+<P>建定 TCP/IP 请在 TCP/IP 上按一下，按下内容，按下  IP 位址的表格:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+  在 &quot; 指定一个 IP 位址 &quot; 上键入你的 IP 位址;
+                        方块内为 172.17.0.5
+  在子网路遮罩方块内键入 255.255.255.0
+</PRE>
+</CODE></BLOCKQUOTE>
+
+选取 Gateway 的表格:
+<BLOCKQUOTE><CODE>
+<PRE>
+  在新通讯闸方块内键入你的通讯闸(转送器)位址成为 172.17.0.254
+  按下新增按钮
+</PRE>
+</CODE></BLOCKQUOTE>
+
+现在通讯闸位址应该会出现在已安装的通讯闸方块内。按下确认钮。
+<P>你会看到一个重新启动的讯息。顺著意做，你现在起就可以使用浏览器来连
+接到你的 HTTP 伺服器了。
+<P>
+<H3><A NAME="MSWinNT"></A> Windows NT</H3>
+
+<P>本章节解释如何在 WinNT 4.0 上安装 TCP/IP 客户端程式。 开始→控制台
+→网路
+<BLOCKQUOTE><CODE>
+<PRE>
+    选择控制卡表格
+        按下新增来增加一个新的控制卡 (如果你没有半个的话)
+</PRE>
+</CODE></BLOCKQUOTE>
+
+系统会提示要你选一个适当的网路控制卡－选一个合适的。接著加入协定。
+<BLOCKQUOTE><CODE>
+<PRE>
+    选择协定表格
+        按新增
+        选择 TCP/IP 协定
+        按确认
+</PRE>
+</CODE></BLOCKQUOTE>
+
+系统会提示要你建构 TCP/IP 协定的一堆资料。在任何时候您想要重新建构
+这项资料，你可以选择 TCP/IP 协定後，再按一下内容即可做修改。
+<BLOCKQUOTE><CODE>
+<PRE>
+   选择 IP 位址表格
+      在'指定 IP 位址'项目上打勾
+      在 IP 位址对话盒□输入 172.17.0.5
+      在子网路遮罩对话盒内输入 255.255.255.0
+      在内定通讯闸对话盒中输入你的通讯闸 (router) 位址为 172.17.0.254
+</PRE>
+</CODE></BLOCKQUOTE>
+
+按确认。你会看到一个重新启动的讯息。顺著意做，
+你现在起就可以使用浏览器来连接到你的 HTTP 伺服器了。
+<P>
+<H2><A NAME="MacClient"></A> <A NAME="ss4.5">4.5 在 Macintosh 内设立 TCP/IP</A>
+</H2>
+
+<P>如果你使用 Macintosh 做为存取你的网路的。 那麽，本章就是在说明如何
+在 PowerMac 上安装 MacTCP。
+<P><B>附记: </B>要让你在使用 WWW 浏览器时及所有的内部网路命令时使用 <CODE>http://linux.mydomain/</CODE>
+来代替 <CODE>http://172.16.0.1/</CODE> 来连上伺服器。你需要修改
+<CODE>hosts</CODE> 档。它的格式和使用 Unix 上的不同。 Mac 的hosts 档是以 RFC-1035为主。你可以加上你的
+其他主机 (Netware, Unix, WinNT)。 MacOS 将它的 HOSTS 档放在
+<CODE>System folder</CODE>的<CODE>Preferences folder</CODE> 之下。修改这个档案并为你的
+Linux 伺服器加上：
+<BLOCKQUOTE><CODE>
+<PRE>
+  linux.mydomain    A  172.16.0.1
+
+  netware.mydomain  A  172.16.0.2
+  winNT.mydomain    A  172.16.0.3
+  ws_1              A  172.16.0.5
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H3><A NAME="MacTCP"></A> MacTCP</H3>
+
+<P>这一章节旨在说明如何安装 MacTCP。 首先， 你必须先从 Apple 那儿下载
+MacTCP 档案或是从网际网路的连结 CD 来安装它。 要建构 MacTCP， 请在
+Apple  Menu/ Control  Panels/  TCP/IP  □按一下老鼠键， 在萤幕□改
+'Connect  via: ' 的值成为  'Ethernet'。
+<P>改变 'Configure'
+设定成为 'Manually' 
+<BLOCKQUOTE><CODE>
+<PRE>
+  在 IP address 对话盒□输入 172.17.0.5
+  在 Subnet Mask 对话盒□输入 255.255.255.0
+  在通讯闸□输入你的通讯闸 (路由器) 位址为 172.17.0.254
+</PRE>
+</CODE></BLOCKQUOTE>
+
+按确认。你现在起就可以使用浏览器来连接到你的 HTTP 伺服器了。
+<P>
+<P>
+<HR>
+<A HREF="Intranet-Server-HOWTO-5.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Intranet-Server-HOWTO-3.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Intranet-Server-HOWTO.html#toc4"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

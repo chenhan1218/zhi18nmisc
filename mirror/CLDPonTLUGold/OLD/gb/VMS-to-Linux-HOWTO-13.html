@@ -1,0 +1,124 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>如何从 VMS 转移到 Linux (From VMS to Linux HOWTO): 在 Linux 上读取 VMS 的磁带</TITLE>
+ <LINK HREF="VMS-to-Linux-HOWTO-14.html" REL=next>
+ <LINK HREF="VMS-to-Linux-HOWTO-12.html" REL=previous>
+ <LINK HREF="VMS-to-Linux-HOWTO.html#toc13" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="VMS-to-Linux-HOWTO-14.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="VMS-to-Linux-HOWTO-12.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="VMS-to-Linux-HOWTO.html#toc13"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s13">13. 在 Linux 上读取 VMS 的磁带</A></H2>
+
+<P>
+<P>(以下这段是由 Mike Miller 先生所著)
+<P>
+<H2><A NAME="ss13.1">13.1 简介</A>
+</H2>
+
+<P>
+<P>有时候您可能需要读由 VMS 做出来的磁带（或是为了让 VMS 的机器和 *nix 系统可以读取的磁带），
+大致上，对 DECFILES11A 磁带并不会太难。
+<P>或许您曾读过 Linux 的 mini-HOWTO, 但是，我相信，我在这里提及的一些观念也是和任何一种 *nix 系统。
+我曾经在 Linux, HP, Sun and DEC *nix 等系统中试过。比较不一样的地方是，每种作业系统对装置名称（device names）可能会有所不同，
+而 mt 在指明装置名称(device name)的时候，其选项(options)也可能因作业系统而异。
+例如：在 Linux 上是 mt -f ，但是在 HPUX 9 上却是 mt -t。
+<P>
+<P>注意 - 我只以 Exabyte 8mm SCSI tape drives 实作过，如果您已经读过其他的格式，
+请让我知道，我将会把她增加到这份 Note 中。
+<P>
+<P>
+<H2><A NAME="ss13.2">13.2 一些基本常识</A>
+</H2>
+
+<P>
+<P>当读取 VMS 由 ``copy'' 指令作成的磁带时，（或是看起来像是由 copy 指令作成的磁带），
+您必须要知道，每个实际的档案将会分成三的档案存放在磁带上，分别是“档头(header)”, “资料(data)”, 和“档尾(trailer)”。
+其中档头(header) 和 档尾(trailer)存放著档案的讯息，和在 VMS 上的位置。而资料(data)当然就是存放原来的资料啦！
+这些档案都可以由 dd 这个指令从磁带(tape)上萃取出来。
+由 mt 指令，可以将磁带转到所需要的位置。
+<P>□例：我有一个连续存放著档案的磁带。最前面两个在 VMS 上的档名为 ce66-2.evt 和 ce66-3.evt 
+磁带的标签(label)是 c66a2。
+<P>如果我执行下列指令：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+> dd if=$TAPE bs=16k of=header1
+> dd if=$TAPE bs=16k of=data1
+> dd if=$TAPE bs=16k of=trailer1
+> dd if=$TAPE bs=16k of=header2
+> dd if=$TAPE bs=16k of=data2
+> dd if=$TAPE bs=16k of=trailer2
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>我 dd 了六个档案：header1, data1, trailer1, header2, data2 和 trailer2.  
+使用语法如下：if="input file", bs="block size" 和 of="output file".  
+TAPE 这个便是须视您的机器上的装置名称而定，例如：如果您在 Linux 上使用 SCSI 的磁带装置，
+您的装置名称可能是 /dev/nts0 。
+<P>如果您想要读第二个档案，不是第一个。您不在意档头(header)，而且您想要使用原来的档名，您可以这麽作：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+> mt -f $TAPE fsf 4
+> dd if=$TAPE bs=16k of=ce66-2.evt
+> mt -f $TAPE fsf 1
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>注意 “4” - 跳过第一个档案所附属的三个档案，所以下一比（第二笔）的档头将会是从第四笔开始。
+第二个 mt 为跳过第二笔档案的档尾(tailer)并且指到下一笔档案(第三笔资料的档头)。
+当然，您也可以使用 mt 使磁带快转(bsf), 倒转(rewind)，或是 磁头归位(offline, rewoffl).
+<P>
+<H2><A NAME="ss13.3">13.3 更多细节</A>
+</H2>
+
+<P>
+<P>档头(header) 和 档尾(trailer) 包含了给 VMS 储存档案的一些讯息，例如区块大小(block size)。
+同时她们也包含了档案名称，方便您建立 Script 档来自动读取档案或是搜寻特定的档案。
+然而，在磁带上的第一个档头档(header file)，和其他磁带上的档头档有些许的差异。
+<P>对於在磁带上的第一个档案(假设为 header1)，最前面的四个字元将会是 "VOL1" ，其後伴随著版本名称(volume name)。
+本例中，header1 的最初内容应该是 "VOL1C66A2"。随後是一个字串"HDR1" ，表示这是一个档头档(header file)。
+然後才是档案名称(file name)。本例中，她会是 "HDR1CE66-2.EVT"。下一个栏位又是版本名称(volume name)。
+<P>对於其他的不是磁带上第一个档头档的档头档，最初的 VOL1 栏位将不会存在。
+其他的栏位就和前面所介绍的第一个档头档的结构一模一样。另一个比较有用的栏位是第七个栏位。
+她是以 "DECFILES11A" 为结尾。她必须存在，用还确认 DEC Files11A standard.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       field     initial header         subsequent headers
+       =====     =============          ==================
+         1       VOL1 + volume name     HDR1 + file name
+         2       3HDR1 + file name      volume name
+         3       volume name            
+
+         6                              ...DECFILES11A
+         7      ...DECFILES11A
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>其他更详细的档头和档尾的结构，请参考 DEC FILES11A 的说明文件。
+(on the orange/grey wall - ask your local VMS folks :-).
+<P>
+<P>
+<H2><A NAME="ss13.4">13.4 区块大小的建议(Block Size)</A>
+</H2>
+
+<P>
+<P>在例子中，我使用的区块大小是 16K。在 *nix 系统上，磁碟上的档案并没有和区块大小有关连，
+然而，在 VMS 上，每一个档案都有一个明确的区块大小(block size)。也就是说，在 Linux 端，
+区块大小并没多太大的关系，除非当不容易从磁带中读出档案的时候。如果您找不到区块大小(block size)，
+您可以试著在磁碟装置上，用 `mt -f $TAPE setblk 0' 来设定硬体的区块大小。
+用 setblk 选项的萃取的形式可能会随著 mt 的版本不同而有所不一样，
+您的磁带装置的硬体界面，还有您喜爱的 *nix 系统也想相当的关系。
+<P>(感谢 Wojtek Skulski (
+<A HREF="skulski@nsrlc6.nsrl.rochester.edu">skulski@nsrlc6.nsrl.rochester.edu</A>) 
+提出 setblk 相关部份.)
+<P>
+<P>
+<HR>
+<A HREF="VMS-to-Linux-HOWTO-14.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="VMS-to-Linux-HOWTO-12.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="VMS-to-Linux-HOWTO.html#toc13"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

@@ -1,0 +1,320 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>烧制一个RedHat的CD之mini-HOWTO: 混合更新</TITLE>
+ <LINK HREF="RedHat-CD-HOWTO-6.html" REL=next>
+ <LINK HREF="RedHat-CD-HOWTO-4.html" REL=previous>
+ <LINK HREF="RedHat-CD-HOWTO.html#toc5" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="RedHat-CD-HOWTO-6.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="RedHat-CD-HOWTO-4.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="RedHat-CD-HOWTO.html#toc5"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="sec-updates"></A> <A NAME="s5">5. 混合更新</A></H2>
+
+<P>
+<P>为了混合更新，你需要由一个从一台Linux机器上拥有对发行目录的写权限， 以及安装一个
+<A HREF="http://www.rpm.org">rpm</A> 。这里需要进行三步工作。
+<P>
+<OL>
+<LI>更改文件保护模式</LI>
+<LI>更换更新的RPM包</LI>
+<LI>产生hdlist文件</LI>
+</OL>
+<P>If you maintain a mirror of the <CODE>updates</CODE> directory, you can at any time
+produce a CD including the current updates by repeating these steps.
+<P>如果你在 <CODE>updates</CODE> 目录维护一个镜象的话，那么你可以在任何时候通过重复这些步骤制作CD。
+<P>
+<H2><A NAME="ss5.1">5.1 更改文件保护模式</A>
+</H2>
+
+<P>
+<P>
+<P>在安装过程中，有些文件直接从从CD运行。但是不幸的是，FTP程序并不是总是保留被复制的文件和目录的保护模式。这样，就有必要确定程序是否有程序、SHELL脚本和共享库执行权限，这需要在目录被烧制到CD之前完成。通过运行在发行版的本地拷贝的 <CODE>updatePerm</CODE> 脚本可以做到这一点：
+<P>
+<HR>
+<PRE>
+#!/bin/bash
+
+RHVERSION=6.0
+
+LIST=/tmp/er3hd3w25
+CDDIR=/jaz/redhat-${RHVERSION}
+
+# Find all directories, and make sure they have +x permission
+find $CDDIR -type d -exec chmod -c 755 {} \;
+
+# Find all files that are executables, shell or perl scripts
+find $CDDIR -type f | file -f - | grep -v RPM \
+   | egrep -i 'executable|perl|bourne|shell' | cut -f1 -d: > $LIST
+
+# Find shared libraries
+find $CDDIR -name \*.so >> $LIST
+
+# Make them executable
+while read file
+do
+   if [ ! -x $file ] ; then
+      chmod -c 755 $file
+   fi
+done &lt; $LIST
+
+/bin/rm $LIST
+
+exit 0
+</PRE>
+<HR>
+<P>
+<H2><A NAME="ss5.2">5.2 更换更新的RPM包</A>
+</H2>
+
+<P>
+<P>下面的这个脚本叫做 <CODE>updateCD</CODE> ，其功能为从更新目录中复制所有的文件到 RPMS 目录。这个脚本用了一些巧妙的RPM技巧来确定在UPDATES目录下的哪个包更新。就的包被移到 <CODE>${OLD}</CODE> 目录中。
+<P>
+<HR>
+<PRE>
+#! /bin/bash
+# This script updates rpms in a RedHat distribution found in $RPMDIR.
+# The old rpms will be placed in $OLDDIR.
+# The new rpms should be located in $UPDDIR.
+# The new images are in $IMGDIR
+# The images to be updated are in $OMGDIR 
+# The architechture is $ARCH.
+
+RHVERSION=6.0
+ARCH=i386
+
+CDDIR=/jaz/redhat-${RHVERSION}
+RPMDIR=${CDDIR}/${ARCH}/RedHat/RPMS
+UPDDIR=${CDDIR}/updates/${ARCH}
+IMGDIR=${CDDIR}/updates/images/${ARCH}
+OMGDIR=${CDDIR}/${ARCH}/images
+OLDDIR=${CDDIR}/old
+
+if [ ! -d $OLDDIR ] ; then
+   echo making directory $OLDDIR
+   mkdir $OLDDIR
+fi
+
+allow_null_glob_expansion=1
+
+for rpm in ${UPDDIR}/*.rpm ; do
+  NAME=`rpm --queryformat "%{NAME}" -qp $rpm`
+  unset OLDNAME
+  for oldrpm in ${RPMDIR}/${NAME}*.rpm ; do
+    if [ `rpm --queryformat "%{NAME}" -qp $oldrpm` = "$NAME" ]; then
+      OLDNAME=$oldrpm;
+      break
+    fi
+  done
+  if [ -z "$OLDNAME" ]; then 
+    echo $NAME is new
+    cp -pv $rpm $RPMDIR
+  else
+    if [ `basename $rpm` != `basename $OLDNAME` ]; then
+      mv $OLDNAME $OLDDIR
+      cp -pv $rpm $RPMDIR
+    fi
+  fi
+done
+
+
+# Copy new boot image files to the right place...
+for newfile in ${IMGDIR}/* ; do
+  file=${OMGDIR}/$(basename ${newfile})
+  if [ $newfile -nt $file ] ; then 
+     cp -pv $newfile $file
+  fi
+done
+
+exit 0
+</PRE>
+<HR>
+<P>
+<P>
+<H3>RedHat 6.0的重要注意事项：</H3>
+
+<P>
+<P>一些RPM包，特别是kernel和kernel-smp包，需要文件名但不是在包名中包括文件的平台名称，例如，“kernel”包需要如下所示：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ 
+kernel-2.2.5-22.i386.rpm
+kernel-2.2.5-22.i586.rpm
+kernel-2.2.5-22.i686.rpm
+</PRE>
+</CODE></BLOCKQUOTE>
+ 
+<P>但是对于所有这三个执行rpm -qp 返回的都是"kernel"作为包名。
+<P>如你所看到，这种情况“迷惑”了 updateCD 脚本，其结果是只有最后一个得到正确的拷贝。先前的两个虽然被拷贝了，但是被移到了 $OLD 目录中。另外，RedHat还应当给予其不同的名称。现在最好的解决办法就是在运行了updateCD 之后手工地移动这些包。（感谢Kyle B. Ferrio kyle@U.Arizona.EDU)
+<P>Joshua Sarro &lt;mthed@shore.net&gt; 提供了一个PERL脚本叫做updateMirror.pl可以用来处理这种情况。你可以从
+<A HREF="http://imsb.au.dk/~mok/linux/doc/updateMirror.pl">http://imsb.au.dk/~mok/linux/doc/updateMirror.pl</A>获得这个脚本。
+<P>
+<P>
+<H2><A NAME="sec-new-hdlist"></A> <A NAME="ss5.3">5.3 创建一个新的hdlist文件</A>
+</H2>
+
+<P>
+<P>
+<P>当从CD安装的时候，CD中的安装程序需要依靠文件<CODE>RedHat/base/hdlist</CODE> 来描述哪个包可以在CD中获得。<CODE>hdlist</CODE> 文件可以通过程序<CODE>misc/src/install/genhdlist</CODE>所创建。这个程序必须有以发行本的根目录到其的绝对路径作为唯一参数运行。以下是<CODE>updateHdlist</CODE> ，用于调用这个程序。
+<P>
+<HR>
+<PRE>
+#!/bin/bash
+
+RHVERSION=6.0
+ARCH=i386
+
+echo generating hdlist...
+CDDIR=/jaz/redhat-${RHVERSION}
+GENHDDIR=${CDDIR}/${ARCH}/misc/src/install
+
+chmod u+x ${GENHDDIR}/genhdlist
+chmod 644 ${CDDIR}/${ARCH}/RedHat/base/hdlist
+${GENHDDIR}/genhdlist ${CDDIR}/${ARCH} || echo "*** GENHDLIST FAILED ***"
+
+exit 0
+</PRE>
+<HR>
+<P>
+<P>注意：当在<CODE>RedHat/RPMS</CODE>混合了更新之后，你的发行版的拷贝不再是一个RED HAT发行版站点的镜象。事实上，它更新！这样，如果你试图镜象这个发行版，已经被更新的旧版本的RPM将被再一次下载，而更新的版本将被删除。
+<P>
+<P>
+<P>
+<H3>RedHat 5.2的重要注意事项</H3>
+
+<P>
+<P>
+<P>如果用RedHat version 5.2 或者更早的版本发行，如果在 <CODE>RedHat/RPMS</CODE> 包含了<EM>非</EM> RPM文件的话，
+<CODE>genhdlist</CODE>将会崩溃！这会导致一些问题。因为在5.2的版本中，在 <CODE>RedHat/RPMS</CODE> 中有一些非RPM文件叫做<CODE>ls-lR</CODE>以及<CODE>ls-lR.gz</CODE> ，这样，你必须从这个目录中移除所有的非RPM文件。或者，你可以使用下列的一个补丁于 <CODE>misc/src/install/genhdlist.c</CODE> ，然后从新编译。这个补丁可以似得<CODE>genhdlist</CODE> 忽略任何非RPM的文件。
+<P>
+<HR>
+<PRE>
+*** genhdlist.c.orig    Fri Nov 27 12:08:13 1998
+--- genhdlist.c Fri Nov 27 12:08:20 1998
+***************
+*** 12,23 ****
+--- 12,26 ----
+  
+  #define FILENAME_TAG 1000000
+  
++ /* Not used apparently...
++ 
+  int tags[] =  { RPMTAG_NAME, RPMTAG_VERSION, RPMTAG_RELEASE, RPMTAG_SERIAL,
+                RPMTAG_FILENAMES, RPMTAG_FILESIZES, RPMTAG_GROUP,
+                RPMTAG_REQUIREFLAGS, RPMTAG_REQUIRENAME, RPMTAG_REQUIREVERSION,
+                RPMTAG_DESCRIPTION, RPMTAG_SUMMARY, RPMTAG_PROVIDES,
+                RPMTAG_SIZE, RPMTAG_OBSOLETES };
+  int numTags = sizeof(tags) / sizeof(int);
++ */
+  
+  int main(int argc, char ** argv) {
+      char buf[300];
+***************
+*** 26,34 ****
+--- 29,39 ----
+      struct dirent * ent;
+      int fd, rc, isSource;
+      Header h;
++     /* not used 
+      int count, type;
+      int i;
+      void * ptr;
++     */
+  
+      if (argc != 2) {
+        fprintf(stderr, "usage: genhdlist &lt;dir>\n");
+***************
+*** 74,79 ****
+--- 79,85 ----
+  
+            rc = rpmReadPackageHeader(fd, &amp;h, &amp;isSource, NULL, NULL);
+  
++           if (!rc) {
+            headerRemoveEntry(h, RPMTAG_POSTIN);
+            headerRemoveEntry(h, RPMTAG_POSTUN);
+            headerRemoveEntry(h, RPMTAG_PREIN);
+***************
+*** 110,115 ****
+--- 116,122 ----
+            headerWrite(outfd, h, HEADER_MAGIC_YES);
+            headerFree(h);
+            close(fd);
++           }
+        }
+  
+        errno = 0;
+</PRE>
+<HR>
+<P>
+<H2><A NAME="sec-comps"></A> <A NAME="ss5.4">5.4 comps 文件</A>
+</H2>
+
+<P>
+<P>
+<P>comps 文件定义了包如何在安装的时候捆绑在一起，在RED HAT发行版中，根据他们提供的功能，例如：
+<P>
+<UL>
+<LI>Printer Support</LI>
+<LI>X Window System</LI>
+<LI>GNOME</LI>
+<LI>KDE</LI>
+<LI>Mail/WWW/News Tools</LI>
+<LI>...</LI>
+<LI>Kernel Development</LI>
+<LI>Extra Documentation</LI>
+</UL>
+<P>有时候在安装的过程中，用户被提示"Components to install"，有的包被预先选择，而有的包则没有，在组件列表中的最后一个项目叫做“everything”。根据RED HAT的稳当，选择所有的的包大概需要接近1G的自由磁盘空间。
+<P>
+<P>在对话框中，还有一个选项允许用户确切地选择需要安装的包。手工定制安装或者在组件列表中选择“everyting”是你除了修改<CODE>RedHat/base/comps</CODE> file之外唯一可以使你的包被安装的办法。
+<P>
+<P><CODE>comps</CODE> 文件的格式现在用一个头描述组件的格式，然后是一个空行。
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+0.1
+&lt;empty line>
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>在这个之后，组件被列出，用空行分离。
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+&lt;component 1>
+&lt;empty line>
+&lt;component 2>
+&lt;empty line>
+.
+.
+&lt;component n>
+&lt;empty line>
+EOF
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>每个组件有如下的定义：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+(0|1) (--hide)? &lt;name>
+&lt;RPM 1>
+&lt;RPM 2>
+...
+&lt;RPM n>
+end
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>在每个组件的名称，给出0或者1。1表示这个组件被默认的选取，而0则相反。选项"--hide" 表示你看不到该条目，除非你选择“专家(expert)”安装。第一个组件被称为“BASE”，这是一个特别的组件。因此它<EM>必须</EM> 而且不在对话框里出现。（这意味著你不能去初这个基本的安装）。
+<P>
+<P>然后跟著的是属于该组件的RPM包的列表，注意<EM>在RPM文件中</EM> 存放的是包名，而<EM>不是</EM>包的文件名的任何一个部分（尽管经常是一样的）
+<P>
+<P>通过将你的包加入到 <CODE>comps</CODE>文件中，你可以定制你自己的发行版本，同时确认你的包被默认地安装。有一件需要注意的事情是你的包的相互依赖性。但是在这里，你的就是你的！:-)。有一个警告：当心不要添加或者移除文件中的空格。检查已存在的<CODE>comps</CODE> 文件。（制作原文件的一个拷贝），然后看它是如何被做成的。（或者检查<CODE>i386/misc/src/install/pkgs.c</CODE> 查看文件是如何被分解的细节）
+<P>
+<P>
+<HR>
+<A HREF="RedHat-CD-HOWTO-6.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="RedHat-CD-HOWTO-4.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="RedHat-CD-HOWTO.html#toc5"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

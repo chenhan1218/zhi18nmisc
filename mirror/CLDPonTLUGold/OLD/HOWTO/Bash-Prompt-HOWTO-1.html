@@ -1,0 +1,194 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Bash Prompt HOWTO: Introduction and Administrivia</TITLE>
+ <LINK HREF="Bash-Prompt-HOWTO-2.html" REL=next>
+
+ <LINK HREF="Bash-Prompt-HOWTO.html#toc1" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Bash-Prompt-HOWTO-2.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<IMG SRC="../img/prev.gif" ALT="Previous">
+<A HREF="Bash-Prompt-HOWTO.html#toc1"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s1">1. Introduction and Administrivia</A></H2>
+
+<H2><A NAME="ss1.1">1.1 Requirements</A>
+</H2>
+
+<P>You will need Bash.  The default version for most distributions is either
+1.14.7, or 2.0.x.  1.14.7 was the standard for years, but is slowly being
+replaced.  I've been using Bash 2.0.x for quite a while now, but almost all
+code presented here should work under 1.14.7.  If I'm aware of a problem,
+I'll mention it.  You can check your Bash version by typing <CODE>echo
+$BASH_VERSION</CODE> at the prompt.  On my machine, it responds with
+<CODE>2.03.6(1)-release</CODE>.
+<P>
+<P>Shell programming experience would be good, but isn't essential: the more
+you know, the more complex the prompts you'll be able to create.  I assume
+a basic knowledge of shell programming and Unix utilities as I go through
+this tutorial.  However, my own shell programming skills are limited, so I
+give a lot of examples and explanation that may appear unnecessary to an
+experienced shell programmer.
+<P>
+<H2><A NAME="ss1.2">1.2 How To Use This Document</A>
+</H2>
+
+<P>I include a lot of examples and explanatory text.  Different parts will be
+of varying usefulness to different people.  This has grown long enough that
+reading it straight through would be difficult - just read the sections you
+need, backtrack as necessary.
+<P>
+<H2><A NAME="ss1.3">1.3 Translations</A>
+</H2>
+
+<P><EM>Japanese:</EM> 
+<A HREF="http://www.jf.linux.or.jp/JF/JF-ftp/other-formats/Bash-Prompt/Bash-Prompt-HOWTO.html">http://www.jf.linux.or.jp/JF/JF-ftp/other-formats/Bash-Prompt/Bash-Prompt-HOWTO.html</A>,
+provided by Akira Endo, 
+<A HREF="mailto:akendo@t3.rim.or.jp">akendo@t3.rim.or.jp</A>.  
+<P>
+<P><EM>German:</EM> translation is in progress by Thomas
+Keil, 
+<A HREF="mailto:thomas@h-preissler.de">thomas@h-preissler.de</A>.  
+<P>
+<P><EM>Italian:</EM> by Daniel Dui, 
+<A HREF="ddui@iee.org">ddui@iee.org</A>,
+available at 
+<A HREF="http://www.crs4.it/~dui/linux.html">http://www.crs4.it/~dui/linux.html</A>.
+<P>
+<P><EM>Portugese:</EM> translation is in progress by Mário Gamito, 
+<A HREF="mario.gamito@mail.telepac.pt">mario.gamito@mail.telepac.pt</A>.
+<P>
+<P>
+<P><EM>Spanish:</EM> translation by Iosu Santurtún 
+<A HREF="iosu@bigfoot.com">iosu@bigfoot.com</A> at 
+<A HREF="http://mipagina.euskaltel.es/iosus/linux/Bash-Prompt-HOWTO.html">http://mipagina.euskaltel.es/iosus/linux/Bash-Prompt-HOWTO.html</A>.
+<P>
+<P><EM>Dutch:</EM> translation is in progress by Ellen Bokhorst 
+<A HREF="elboh@gironet.nl">elboh@gironet.nl</A>, and it will be available
+at 
+<A HREF="http://www.nl.linux.org/doc/HOWTO">http://www.nl.linux.org/doc/HOWTO</A>.
+<P>
+<P><EM>Chinese:</EM> translation in progress by Allen Huang 
+<A HREF="lancelot@tomail.com.tw">lancelot@tomail.com.tw</A>.  I will
+include a URL when I have it.
+<P>
+<P>Many thanks to all of them!  URLs will be included as they're available.
+<P>
+<P>If you are working on a translation, please notify me - especially if it's
+available at a linkable URL.  Thanks.
+<P>
+<H2><A NAME="ss1.4">1.4 Problems</A>
+</H2>
+
+<P>This is a list of problems I've noticed while programming prompts.  Don't
+start reading here, and don't let this list discourage you -
+these are mostly quite minor details.  Just check back if you run into
+anything odd.
+<P>
+<UL>
+<LI>Many Bash features (such as math within $(()) among others) are
+compile time options.  If you're using a binary distribution such as comes
+with a standard Linux distribution, all such features should be compiled
+in.  But if you're working on someone else's system, this is worth keeping
+in mind if something you expected to work doesn't.  Some notes about this
+in <EM>Learning the Bash Shell</EM>, p.260-262.
+</LI>
+<LI>The terminal screen manager "screen" doesn't always get along with
+ANSI colours.  I'm not a screen expert, unfortunately.  My current version
+of screen (3.7.6-1, an RPM package) seems to work well in all cases, but
+I've seen occasions where screen reduced all prompt colours to the standard
+foreground colour in X terminals.  This doesn't appear to be a problem on
+the console.
+</LI>
+<LI>Xdefaults files can override colours.  Look in ~/.Xdefaults for
+lines referring to XTerm*background and XTerm*foreground (or possibly
+XTerm*Background and XTerm*Foreground).
+</LI>
+<LI>One of the prompts mentioned in this document uses the output of
+"jobs" - as discussed at that time, "jobs" output to a pipe is broken in
+Bash 2.02.
+</LI>
+<LI>ANSI cursor movement escape sequences aren't all implemented in all X
+terminals.  That's discussed in its own section.
+</LI>
+<LI>Some nice looking pseudo-graphics can be created by using a VGA font
+rather than standard Linux fonts.  Unfortunately, these effects look awful
+if you don't use a VGA font, and there's no way to detect within a term
+what kind of font it's using.
+</LI>
+<LI>Bash 2.0+ is out, and it incorporates some new features, and changes
+some behaviour.  Things that work under 1.14.7 don't necessarily work the
+same under 2.0+, or vice versa.
+</LI>
+</UL>
+<P>
+<H2><A NAME="ss1.5">1.5 Send Me Comments and Suggestions</A>
+</H2>
+
+<P>This is a learning experience for me.  I've come to know a fair bit about
+what can be done to create interesting and useful Bash Prompts, but I need
+your input to correct and improve this document.  I've tried to check
+suggestions I make against different versions of Bash (2.0x and 1.14.7),
+but let me know of any incompatibilities you find.
+<P>
+<P>The latest version of 
+this document should always be available at
+<A HREF="http://www.interlog.com/~giles/bashprompt/">http://www.interlog.com/~giles/bashprompt/</A>.  Please check this
+out, and feel free to e-mail me at 
+<A HREF="mailto:giles@interlog.com">giles@interlog.com</A> with 
+suggestions.
+<P>
+<P>I use the Linux Documentation Project HOWTOs almost exclusively in the HTML
+format, so when I convert this from SGML (its native format), HTML is the
+only format I check thoroughly.  If there are problems with other formats,
+I may not know about them, and I'd appreciate a note about them.
+<P>
+<H2><A NAME="ss1.6">1.6 Credits</A>
+</H2>
+
+<P>In producing this document, I have borrowed heavily from the work of
+the Bashprompt project at 
+<A HREF="http://bash.current.nu/">http://bash.current.nu/</A>.  Other
+sources used include the <EM>xterm Title mini-HOWTO</EM> by
+Ric Lister, available at 
+<A HREF="http://sunsite.unc.edu/LDP/HOWTO/mini/Xterm-Title.html">http://sunsite.unc.edu/LDP/HOWTO/mini/Xterm-Title.html</A>, 
+<EM>Ansi Prompts</EM> by Keebler, available at 
+<A HREF="http://www.ncal.verio.com/~keebler/ansi.html">http://www.ncal.verio.com/~keebler/ansi.html</A>, <EM>How to make
+a Bash Prompt Theme</EM> by Stephen Webb, available at
+<A HREF="http://bash.current.nu/bash/HOWTO.html">http://bash.current.nu/bash/HOWTO.html</A>, and <EM>X ANSI Fonts</EM>
+by Stumpy, available at 
+<A HREF="http://home.earthlink.net/~us5zahns/enl/ansifont.html">http://home.earthlink.net/~us5zahns/enl/ansifont.html</A>.
+<P>
+<P>Also of immense help were several conversations and e-mails from Dan,
+an ex-co-worker at Georgia College &amp; State University, whose knowledge 
+of Unix far exceeds mine.  He's given me several excellent suggestions,
+and ideas of his have led to some interesting prompts.
+<P>
+<P>Three books that have been very useful while programming prompts are
+<EM>Linux in a Nutshell</EM> by Jessica Heckman Perry (O'Reilly, 1997),
+<EM>Learning the Bash Shell</EM> by Cameron Newham and Bill Rosenblatt
+(O'Reilly, 2nd. ed., 1998) and <EM>Unix Shell Programming</EM> by Lowell
+Jay Arthur (Wiley, 1986.  This is the first edition, the fourth came out in
+1997).
+<P>
+<H2><A NAME="ss1.7">1.7 Copyright and Disclaimer</A>
+</H2>
+
+<P>This document is copyright 1998-1999 by Giles Orr.  You are encouraged to
+redistribute it.  You may not modify this document (see the section on
+contacting me: I incorporate most changes recommended by readers).  Please
+contact me if you're interested in doing a translation.
+<P>
+<P>This document is available for free, and, while I have done the best I can
+to make it accurate and up to date, I take no responsibility for any
+problems you may encounter resulting from the use of this document.
+<P>
+<P>
+<P>
+<HR>
+<A HREF="Bash-Prompt-HOWTO-2.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<IMG SRC="../img/prev.gif" ALT="Previous">
+<A HREF="Bash-Prompt-HOWTO.html#toc1"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

@@ -1,0 +1,212 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Sound Blaster AWE 32/64 音效卡 HOWTO: 测试安效驱动程式</TITLE>
+ <LINK HREF="Soundblaster-AWE-5.html" REL=next>
+ <LINK HREF="Soundblaster-AWE-3.html" REL=previous>
+ <LINK HREF="Soundblaster-AWE.html#toc4" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+<A HREF="Soundblaster-AWE-5.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Soundblaster-AWE-3.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Soundblaster-AWE.html#toc4"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s4">4. 测试安效驱动程式</A></H2>
+
+<P>
+<P>
+<H2><A NAME="ss4.1">4.1 <CODE>/proc/devices, /dev/sndstat</CODE></A>
+</H2>
+
+<P>
+<P>如果你有内建的音效支援，你会在开机时收到一些有用的资讯。如果你的音效支援是安装成可载入式模组的，
+你也可以用下列方式得到一些资讯 (或许要先用 <CODE>modprobe -r sound</CODE> 将音效移除)。
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# modprobe -a sound trace_init=1
+Sound initialization started
+
+&lt;Sound Blaster 16 (4.13)> at 0x220 irq 5 dma 1,5
+&lt;Sound Blaster 16> at 0x330 irq 5 dma 0
+&lt;Yamaha OPL3 FM> at 0x388
+Sound initialization complete
+AWE32 Sound Driver v0.3.3e (DRAM 2048k)
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>如果你有 <CODE>/proc</CODE> 虚拟档案系统，你可以用下列方法看到第二个设备
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# cat /proc/devices
+Character devices:
+[...]
+14 sound
+[...]
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>接下来请认认你在 <CODE>/dev/</CODE> 下有个已正确安装的设备。详情请看 Sound HOWTO 。
+然後执行 <CODE>/dev/sndstat</CODE> 可查询音效模组的状态。
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# cat /dev/sndstat
+Sound Driver:3.5.4-960630 (Sat Oct 11 19:35:14 CEST 1997 root,
+Linux flora 2.0.29 #1 Sat Oct 11 19:12:56 CEST 1997 i586 unknown)
+Kernel: Linux flora 2.0.29 #1 Sat Oct 11 19:36:23 CEST 1997 i586
+Config options: 0
+
+Installed drivers:
+Type 1: OPL-2/OPL-3 FM
+Type 2: Sound Blaster
+Type 7: SB MPU-401
+
+Card config:
+Sound Blaster at 0x220 irq 5 drq 1,5
+SB MPU-401 at 0x330 irq 5 drq 0
+OPL-2/OPL-3 FM at 0x388 drq 0
+
+Audio devices:
+0: Sound Blaster 16 (4.13)
+
+Synth devices:
+0: Yamaha OPL-3
+1: AWE32 Driver v0.3.3e (DRAM 2048k)
+
+Midi devices:
+0: Sound Blaster 16
+
+Timers:
+0: System clock
+
+Mixers:
+0: Sound Blaster
+1: AWE32 Equalizer
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>如果你没有像这样的输出，也许在你的建构□有问题，继续找看看哪儿不能动，再回来
+<A HREF="Soundblaster-AWE-3.html#isapnp">Getting Started</A>，检查每一项。
+<P>
+<P>
+<H2><A NAME="ss4.2">4.2 输出－ Raw Audio Device</A>
+</H2>
+
+<P>
+<P>去取得一个 <CODE>.au</CODE> 档 (Sun workstation) 或样本档案，然後这样做：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# cat bell.au > /dev/audio
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>resp.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# cat sample > /dev/dsp
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>你会应该可以由 <CODE>Audio Device 0: Sound Blaster 16 (4.3)</CODE>听到这个档案的内容。
+<P>
+<P>
+<H2><A NAME="ss4.3">4.3 输出 - OPL-2/OPL-3 Synthesis</A>
+</H2>
+
+<P>
+<P>如果你要使用 OPL-2/OPL-3 FM 合成器在你的音效卡上拨放 MIDI档案，请试看看
+<CODE>playmidi</CODE> 这个程式(请看附录 B)。使用方法如下
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# playmidi -f dance.mid
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>或是
+<P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# playmidi -4 dance.mid
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>前场会给你 OPL-2，後场会给你 OPL-3 MIDI 音乐。 如果你觉得这些声音听来很逊，
+不要怪 playmidi，那是因为 FM 合成器听起来很差啦。
+<P>您可以想像一下你只有一个 OSS/Free 音效驱动程式：那就是你所能得到的 MIDI音乐的品质了。
+(与软体合成不同)。幸运的是，你有 SB AWE，你还可以使用 Wave Table 以及 AWE Sound Driver Extension了。
+<P>
+<P>
+<H2><A NAME="ss4.4">4.4 输出 - Wave Table Synthesis</A>
+</H2>
+
+<P>
+<P>在 AWE Driver Extension □有个很特别的工具程式 (<CODE>awesfx</CODE>) 可用来使用 EMU 8000 Wave Table 合成器。
+首先，你必须从你的音效卡□载入 Sound Font Bank －就算你想使用 ROM 的取样 ! 你可以从你的 Windows 的
+安装中取得这个档 －寻找附加档名为 <CODE>*.sfb</CODE> 或 <CODE>*.sf2</CODE>的档案。
+<P>ROM 取样可以使用 <CODE>SYNTHGM.SBK</CODE>来载入， 真实的取样放在 <CODE>SYNTHGS.SBK</CODE> 及 <CODE>SYNTHMT.SBK</CODE>
+以及 <CODE>SAMPLE.SBK</CODE>□。你也可以从 ftp或 www 来取得其他的 Sound Font Banksvia ，可以试试
+Creative Labs 的 EMU 的网页， 有个 Chaos 取样，他们真的很棒 (请检查 AWE 驱动程式网站)。
+<P>试看看载入标准的 GM (ROM) set ，使用
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# sfxload -i synthgm.sbk
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>然後拨放个伴随著你的 SB AWE 的 midi 档案：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# drvmidi dance.mid
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>
+<H2><A NAME="mixing"></A> <A NAME="ss4.5">4.5 混音</A>
+</H2>
+
+<P>
+<P>取得你最喜欢的混音器程式并执行它。在同一时间拨放一个音效取样以及两个 MIDI 档样本，
+然後试试混音器的设定。 拨一会儿，很容易的。以下有他们被称呼的设备列表：
+<P>
+<DL>
+<DT><B>Yamaha OPL-3</B><DD><P>Synth 或 FM
+<DT><B>AWE32 Driver</B><DD><P>Synth 或 FM (有人知道混音器是 a mixer were the last
+two are separated from each other?)
+<DT><B>Sound Blaster 16 (4.13)</B><DD><P>PCM 或 DSP
+<DT><B>PC Speaker (still alive)</B><DD><P>Spkr
+</DL>
+<P>还有一些与 CD ROM 相关的混音器，可能连接著音效卡的有 Master Volume, Bass, Treble 和不同
+输入轨道的录音高低。 你可以指定哪些轨道应该被录音下来。
+<P>
+<H2><A NAME="ss4.6">4.6 输入－使用Raw Audio Device来取样</A>
+</H2>
+
+<P>
+<P>你可以录下不同的音源：相连的 CD ROM、与 <CODE>mic</CODE> 相连的麦克风，以及与 <CODE>line in</CODE>
+相连接的任何音源。将混音器设定在适当的位置。拨放一个声音并将它录音成一个档案，再由
+Raw Audio Device来读取，例如：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# cdplay
+# dd bs=8k count=5 &lt;/dev/dsp >music.au
+5+0 records in
+5+0 records out
+# cat music.au >/dev/dsp
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>从输入设备来录音以及拨放 5 秒的声音。
+<P>
+<H2><A NAME="ss4.7">4.7 MIDI 埠</A>
+</H2>
+
+<P>
+<P>抱谦，目前还没有关於 MIDI 埠的资讯!
+<P>
+<HR>
+<A HREF="Soundblaster-AWE-5.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Soundblaster-AWE-3.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Soundblaster-AWE.html#toc4"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

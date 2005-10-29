@@ -1,0 +1,75 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Linux+FreeBSD mini-HOWTO 中譯版: 架構檔案系統</TITLE>
+ <LINK HREF="Linux+FreeBSD-6.html" REL=next>
+ <LINK HREF="Linux+FreeBSD-4.html" REL=previous>
+ <LINK HREF="Linux+FreeBSD.html#toc5" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+<A HREF="Linux+FreeBSD-6.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Linux+FreeBSD-4.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Linux+FreeBSD.html#toc5"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s5">5. 架構檔案系統</A></H2>
+
+<H2><A NAME="ss5.1">5.1 在 Linux 中架構 UFS 檔案系統</A>
+</H2>
+
+<P>不幸的, Linux 核心對 UFS 的支援有問題. 當你試著去架構 UFS 檔案系統時, 只會得到一些錯誤訊息(檔案系統事實上已經被架上去了, 但你卻不能讀到任何東西).
+所幸 Linux 2.0.xx  核心 (xx&lt;30) 有一個新 (ALPHA) 版本的 UFS 檔案系統支援, 在 
+<A HREF="ftp://sunsite.unc.edu/pub/Linux/ALPHA/ufs/">SunSite</A>.
+這被稱為 <B>U2FS</B>, 而目前的版本是 <CODE>u2fs-0.4.3.tar.gz</CODE>. 
+<B>U2FS</B> 是用下列的方式來安裝(假設<CODE>u2fs-0.4.3.tar.gz</CODE> 是存放在<CODE>/usr/src</CODE>): 
+<BLOCKQUOTE><CODE>
+<PRE>
+cd /usr/src
+tar xvzf u2fs-0.4.3.tar.gz
+patch -p0 -E &lt; u2fs-0.4.3.patch
+</PRE>
+</CODE></BLOCKQUOTE>
+ 
+<P>Linux  2.0.31 或更新的核心(<CODE>u2fs-0.4.4.tar.gz</CODE>), 與最新的 2.1.xx 核心適用的 <B>U2FS</B>版本, 可以在 
+<A HREF="http://www.image.dk/~nkbj/u2fs/">這個網站</A> 找到.
+現在你必須重新建立支援 <B>U2FS 檔案系統</B> 和 <B>BSD disklabel</B> 的核心. 
+參考 
+<A HREF="Linux+FreeBSD-3.html#installlinux">安裝和準備 Linux</A> 來得到更多的資料. 當使用<B>U2FS</B>時, 你可以忽略核心的 <B>UFS 檔案系統</B> 支援. 
+當完成新的核心安裝後, 你可以使用如下列的指令來架構你的 UFS 檔案系統(所有在 FreeBSD slice 中的切割, 除了 swap 切割.
+<BLOCKQUOTE><CODE>
+<PRE>
+mount -t u2fs /dev/hda8 /mnt
+</PRE>
+</CODE></BLOCKQUOTE>
+ 
+這個 UFS 支援是唯讀的. 那即是你可以自UFS 檔案系統中讀取,但你不能對其作寫入.
+<H2><A NAME="ext2fs"></A> <A NAME="ss5.2">5.2 在 FreeBSD上架構 ext2fs 檔案系統</A>
+</H2>
+
+<P>要在 FreeBSD 中架構 ext2fs 檔案系統, 你要先建立一個支援 ext2f 的核心. 
+請參照 FreeBSD 的文件來明白如何進行. 
+放這幾行 
+<BLOCKQUOTE><CODE>
+<PRE>
+options "EXT2FS"
+</PRE>
+</CODE></BLOCKQUOTE>
+ 
+在你新核心的設定檔中.
+在完成使用新的核心來開機後, 你可以用下列這幾行來架構你的 ext2fs 檔案系統
+<BLOCKQUOTE><CODE>
+<PRE>
+mount -t ext2fs /dev/wd0s3 /mnt
+</PRE>
+</CODE></BLOCKQUOTE>
+ 
+注意: 你不能把 ext2fs 檔案系統架構在 FreeBSD 的延伸切割中.
+<P>基於 FreeBSD 的某些錯誤, 你必須在關閉 FreeBSD <EM>前</EM>卸下所有的 ext2fs 檔案系統.
+如果你在有 ext2fs 檔案系統未卸下前就關閉 FreeBSD, FreeBSD 便不能 sync UFS 檔案系統.
+這會導致FreeBSD下次啟動時 <CODE>fsck</CODE> 被執行. 這個錯誤據報告說已在``-current" 發展樹中被修正. 
+<P>
+<HR>
+<A HREF="Linux+FreeBSD-6.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Linux+FreeBSD-4.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Linux+FreeBSD.html#toc5"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

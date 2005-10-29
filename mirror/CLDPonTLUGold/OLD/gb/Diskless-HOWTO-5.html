@@ -1,0 +1,300 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>无磁碟 Linux Mini Howto: 基本概念</TITLE>
+ <LINK HREF="Diskless-HOWTO-6.html" REL=next>
+ <LINK HREF="Diskless-HOWTO-4.html" REL=previous>
+ <LINK HREF="Diskless-HOWTO.html#toc5" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Diskless-HOWTO-6.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Diskless-HOWTO-4.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Diskless-HOWTO.html#toc5"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s5">5. 基本概念</A></H2>
+
+<P>基本概念如下：个人电脑会经由 bootp 协定从启动伺服器中来取得它的 IP 位址。
+用 0.0.0.0 为初始 IP 位址，而它的核心程式会经由 tftp 协定。
+<BLOCKQUOTE>跳过区段的启动
+(经由路由器router) 并不是个简单问题，所以，不是将伺服器以及无磁碟机的机器放置在同一个网路
+区段，就只有建构一个 UDP 辅助位址在你的 router 到伺服器的位址上。细节请参考你的 router
+产器手册。</BLOCKQUOTE>
+<P>以下是我们的步骤
+<P>
+<H2><A NAME="ss5.1">5.1 设定个人电脑</A>
+</H2>
+
+<P>取得 nfsboot 套件 (可从你较喜欢的 linux mirror 镜射站的 <CODE>/pub/Linux/system/Linux-boot</CODE>
+目录取得)。它包含了一个给 wd8013卡可直接烧录用的 booteprom 映像档。
+<P>还有其他方法可以准备个人电脑部份:
+<UL>
+<LI>如果你的机器并不是没有磁碟的，那麽你可以使用小小的 DOS 程式或</LI>
+<LI>含有同样套件的二进位软体映像档。</LI>
+</UL>
+如果你选择的是第二者，你必须使用 dd 命令来将这个映像档写入一张软碟片□。
+<P>这个映像档包含了 bootp 以及 tftp 客户端程式。
+你也需要准备一个 linux 核心程式码，它含有 nfs-root 选项。
+<UL>
+<LI>如果你使用最新的稳定核心程式，如 linux-1.2.13，那麽你需要使用包含在 nfsbootk套件内的　patch 修补核心程式。
+<BLOCKQUOTE>参考 patch(1)</BLOCKQUOTE>
+</LI>
+<LI>如果你想要用最新的，但却不是很稳的 linux-1.3.x 系列核心，那麽你就需要建构 nfs-root 这选项。</LI>
+</UL>
+
+随便你要不要建构区块设备 (软碟机或硬碟机) 的支援，但你必须建构 tcp/ip 支援、 wd 乙太网路卡支援、
+nfs 档案系统支援。然後重新编译核心程式。
+<P>
+<P>
+<H2><A NAME="ss5.2">5.2 在伺服器上设定 bootpd</A>
+</H2>
+
+<P>它可以在 <CODE>bootpd-2.4.tar.gz</CODE>套件中找到
+(可从你较喜欢的 linux mirror 镜射站的 <CODE>/pub/Linux/system/Network/boot.net</CODE> 目录内)。取得这个套件，
+编译并安装它。如果你其他的 Unix 机器也是用 Slackware Linux 的，那麽标准的供应版本就
+有 bootpd 了，所以你可以跳过这部份。 daemon 可以直接发出命令来执行
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+        bootpd -s
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+
+或是使用 inetd，但你需修改：
+<UL>
+<LI> /etc/inetd.conf 在这些条列中移除 # 号
+
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# tftp   dgram   udp     wait    root    /usr/sbin/in.tftpd     tftpd /export
+# bootps dgram   udp     wait    root    /usr/sbin/in.bootpd    bootpd
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>在 /etc/services 中插入或是移除备注符号：
+
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+bootps          67/tcp          # BOOTP server
+tftp            69/udp          # TFTP server
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>重新启动 inetd ，使用
+
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+        kill -HUP &lt;process id of inetd>.
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</LI>
+</UL>
+<P>
+<H2><A NAME="ss5.3">5.3 在伺服器上建构 bootpd</A>
+</H2>
+
+<P>由先， bootpd 有个叫 bootptab 的建构档，它通常被放在 /etc 内。你必须修改
+它，加上你的无磁碟机器的闸道 IP 位址、 dns 伺服器，以及乙太网路位址(es)。
+□例如下 /etc/bootptab:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+
+global.prof:\
+        :sm=255.255.255.0:\
+        :ds=192.168.1.5:\
+        :gw=192.168.1.19:\
+        :ht=ethernet:\
+        :bf=linux:
+machine1:hd=/export/root/machine1:tc=global.prof:ha=0000c0863d7a:ip=192.168.1.140:
+machine2:hd=/export/root/machine2:tc=global.prof:ha=0800110244e1:ip=192.168.1.141:
+machine3:hd=/export/root/machine3:tc=global.prof:ha=0800110244de:ip=192.168.1.142:
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+<P>global.prof 是 host 项目的一般样本，其中
+<UL>
+<LI>sm 栏包含子网路遮罩</LI>
+<LI>ds 栏包含网域名称伺服器的位址</LI>
+<LI>gw 栏包含内定闸道位址 gateway</LI>
+<LI>ht 栏包含网路媒介硬体种类</LI>
+<LI>bf 栏包含启动档档名</LI>
+</UL>
+<P>之後，每一台机器应该有下面这行
+<UL>
+<LI>首栏包含主机名称</LI>
+<LI>hd 栏包含启动档案的目录</LI>
+<LI>全区样本应该被包含到 tc 栏，</LI>
+<LI>ha 栏包含乙太网路卡的硬体位址</LI>
+<LI>ip 栏包含被分配的的 IP 位址</LI>
+</UL>
+<P>
+<P>
+<H2><A NAME="ss5.4">5.4 了解 tftp</A>
+</H2>
+
+<P>TFTP (<CODE>Trivial File Transfer Protocol</CODE>) 是一个档案传输协定，就像 ftp 一样，但
+它比比较简化，因此可以容易地在 EPROM □来编码。 TFTP 的使用方法有二种：
+<UL>
+<LI> 简单的 tftp: 表示客户端可以存取你的整个档案系统。虽然较简单但却开了一个安全大洞
+(任何人都可以经由 tftp 来拿到你的密码)。</LI>
+<LI> 安全的 tftp: tftp 伺服器会使用chroot.2 系统呼叫来改变它自己的根目录。任何在新目录以
+外的事件都完全无法存取。因为 chroot 目录变成新的根目录， 硬碟在 bootptab 整档时必须反应
+这个新的处境。例如：当我们使用不安全的 tftp 时， hd 栏包含了启动目录的完整路径，
+： <CODE>/export/root/machine1</CODE>。
+当使用安全的 tftp 时， /export 被当成根目录，而 /export 变成 / ，且 hd 栏就变成 <CODE>/root/machine1</CODE>了。</LI>
+</UL>
+
+几乎每一个 Unix 实作都包含 tfpt 伺服器，也许你并不需要自己安装一个。
+<P>
+<H2><A NAME="ss5.5">5.5 在远端伺服器上设定一个小型的 Linux 建构 </A>
+</H2>
+
+<P>这包含 Slackware供应版内的 a, ap, n, 及 x 部份。要安装更多的套件也可以；但
+是上面的套件已足够一个无磁碟 X 终端机的需求了。首先你需要一个已在运转的
+Linux 系统。在远端机器□找一个磁碟空间并 export 它成为可读写并挂上它到
+Linux 机器的档案系统上的某一处 (例如 /mnt)。开始 Linux 设定并改变root 选项从 /
+变为 /mnt。然後设立如上面所说的套件，如果你只是要执行一个无磁碟的 Linux 那
+麽就不需要做其他改变。另一方面，如果你计画使用超过一个以上的无磁碟机器，
+那麽上面的设定就需要些许的修改，因为有些档案以及目录必须只有机器本身使用。
+我们可以以移开 /usr 目录(它包含非私人的资料)的方式跳过这个问题，
+然後建立一个分开的子目录给每一个无磁碟机器。例如，如果 /export/linux/machine1 被挂在
+/mnt 上，那麽在初始设定後目录结构会像这样
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+/export/linux/machine1/bin
+/export/linux/machine1/sbin
+/export/linux/machine1/lib
+/export/linux/machine1/etc
+/export/linux/machine1/var
+/export/linux/machine1/usr
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+<P>改变後你会有
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+/export/linux/machine1/bin
+/export/linux/machine1/sbin
+/export/linux/machine1/lib
+/export/linux/machine1/etc
+/export/linux/machine1/var
+/export/linux/usr
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+<P>现在为其他的机器建立目录。从现在开始我们假设你的无磁碟机器分别叫做 machine1、machine2、 machine3等等；
+使用以下的 bash 命令手稿来设立其他的目录
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+ 
+        cd /export/linux
+        for x in machine2 machine3 ; do
+                mkdir $x; cd $x
+                (cd ../machine1; tar cf - *) | tar xvf -
+        done
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+       
+<P>然後做下列的 export:
+<UL>
+<LI>/export/linux/usr                 唯读（对每个使用者）</LI>
+<LI>/export/liunx/machine1            只有对 machine1 有 rw,root 权利。</LI>
+<LI>/export/liunx/machine2            只有对 machine2 有 rw,root 权利。</LI>
+<LI>/export/liunx/machine3            只有对 machine3 有 rw,root 权利。</LI>
+</UL>
+
+如下
+<BLOCKQUOTE>下面□列是依照  SunOs 4.1.3 的 exports 档案的语法来做</BLOCKQUOTE>
+:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+ 
+# This file is /etc/export
+# for remote linux X terminals by Buci
+# this line is only once
+/export/root/usr             -access=linuxnet
+# these lines once for every host
+/export/root/machine1       rw=machine1,root=machine1
+/export/root/machine2       rw=machine2,root=machine2
+/export/root/machine3       rw=machine3,root=machine3
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+       
+请不要忘了执行 exportfs -a
+<P>
+<H2><A NAME="ss5.6">5.6 建构 tftp 伺服器</A>
+</H2>
+
+<P>
+<P>现在该是建构 tftp 伺服器的时候了。如果你不需要一个安全的 tftp 那很简单，
+因为你的客户端已经可以从 /export 目录来启动。
+<P>如果一个安全的 tftp 被采用，那麽你可以在 /tftpboot 目录下做个完整的
+/export/linux 目录结构。 (用一个实体核心程式及连结给其他机器的符号连结)，
+或是让 /export 目录成为安全的 tftpd 的根目录。或者如果你有一另外的
+tftpboot 目录，那麽，同样地，你只需要原来的目录结构，然後用一个实体核心程式来
+符号连结其他机器) 。 你可以执行下列命令来完成这个设定：
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+      mkdir -p /tftpboot/export/linux/machine1
+      cd /tftpboot/export/linux/machine1
+      cp /export/linux/machine1/&lt;name of the kernel> . 
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+<P>然後执行下面：
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+      mkdir -p /tftpboot/export/linux/machine2
+      cd ../machine2 
+      ln -s ../machine2/&lt;name of the kernel> 
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss5.7">5.7 最後工作</A>
+</H2>
+
+<P>
+<P>最後，你必须插入
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+   /sbin/mount nfs_server:/export/linux/usr /usr
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+<P>到
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+   /export/linux/&lt;machinex>/etc/rc.d/rc.S
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+<P>的第一行。在这□ &lt;machinex&gt; 指的是 machine1, machine2等等。
+<P>
+<HR>
+<A HREF="Diskless-HOWTO-6.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Diskless-HOWTO-4.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Diskless-HOWTO.html#toc5"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

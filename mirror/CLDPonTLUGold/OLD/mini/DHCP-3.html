@@ -1,0 +1,577 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>DHCP mini-HOWTO (DHCPd/DHCPcd): 設定用戶端</TITLE>
+ <LINK HREF="DHCP-4.html" REL=next>
+ <LINK HREF="DHCP-2.html" REL=previous>
+ <LINK HREF="DHCP.html#toc3" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+<A HREF="DHCP-4.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="DHCP-2.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="DHCP.html#toc3"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s3">3. 設定用戶端</A></H2>
+
+<H2><A NAME="ss3.1">3.1 下載用戶端的監控程式</A>
+</H2>
+
+<P>
+<P><B>核心 2.0.x </B>
+<P>
+<P>
+<P>不論你使用的是哪一種 Linux 的發行版本，你都必需下載用戶端的監控程式。你所需要
+下載的程式套件稱為 dhcpcd ，目前的版本編號是 0.70。你可在
+<A HREF="ftp://metalab.unc.edu/pub/Linux/system/network/daemons/dhcpcd-0.70.lsm">此處</A> 閱讀到這個套件的內容說明。
+(ftp://metalab.unc.edu/pub/Linux/system/network/daemons/dhcpcd-0.70.lsm)
+<P>
+<P>
+<P><B>核心 2.2.x </B>
+<P>
+<P>
+<P>由於在核心 2.1.x 和 2.2.x 中 ipv4 的網路程式套件曾被修改過（例如，它會在許多
+欄位設定預設值）dhcpcd 無法正常運作。除非你使用的是 RedHat 6.x（它目前提供了 
+dhcpcd 1.3.x 和 2.2.x 的核心）否則你就必須下載另一個版本的 dhcpcd（即 1.3.x）
+來使用，這是 Sergei Viznyuk <CODE>sergei@phystech.com</CODE> 為了避免上述問題所
+修改的版本。你可以在以下幾個地方取得：
+<P>
+<P>
+<P>
+<UL>
+<LI>
+<A HREF="ftp://phystech.dyn.ml.org/pub/">ftp://phystech.dyn.ml.org/pub/</A></LI>
+<LI>
+<A HREF="http://www.cps.msu.edu/~dunham/out/dhcpcd-1.3.6.tar.gz">http://www.cps.msu.edu/~dunham/out/dhcpcd-1.3.6.tar.gz</A></LI>
+</UL>
+<P>
+<P>
+<P>接下來所做的說明都是以此為基本的原則。
+<P>
+<H2><A NAME="ss3.2">3.2 安裝在 Slackware 之上</A>
+</H2>
+
+<P>
+<P>你可以從任何 Metalab 的“鏡射”(mirror）站台或以下幾個地方，下載最新的 DHCPcd 
+程式套件：
+<P>
+<UL>
+<LI>
+<A HREF="ftp://ftp.cdrom.com/pub/linux/metalab/system/network/daemons/">ftp://ftp.cdrom.com/pub/linux/metalab/system/network/daemons/</A></LI>
+<LI>
+<A HREF="ftp://metalab.unc.edu/pub/Linux/system/network/daemons">ftp://metalab.unc.edu/pub/Linux/system/network/daemons</A></LI>
+<LI>
+<A HREF="ftp://ftp.kobe-u.ac.jp/pub/PC-UNIX/Linux/network/dhcp">ftp://ftp.kobe-u.ac.jp/pub/PC-UNIX/Linux/network/dhcp</A>
+（主站台在日本）
+</LI>
+</UL>
+<P>
+<P>
+<P>下載最新版本的 dhcpcd.tar.gz 最新版本
+<P>
+<UL>
+<LI>將 dhcpcd.tar.gz 解開
+
+<P>
+<P><CODE>tar -zxvf dhcpcd-0.70.tar.gz</CODE>
+<P>
+</LI>
+<LI>切換至套件解開後的子目錄裡，並編譯 dhcpcd 程式 
+
+<P><CODE>cd dhcpcd-0.70</CODE>
+<P><CODE>make</CODE>
+<P>
+</LI>
+<LI>安裝套件 (你必須以 root 的身份執行以下的命令)
+
+<P><CODE>make install</CODE>
+<P>
+</LI>
+</UL>
+<P>這個命令會建立 /etc/dhcpc 這個子目錄，DHCPcd 套件會把 DHCP 的資訊儲存在該處，
+並且將 dhcpcd 程式檔複製到 /usr/sbin 這個子目錄裡。
+<P>為能夠在開機時，系統設定初值期間，使用 DHCP 的功能，請做如下的設定：
+<P><CODE>cd /etc/rc.d</CODE>
+<P><CODE>mv rc.inet1 rc.inet1.OLD</CODE>
+<P>
+<P>上面的動作會將舊有的網路初值設定“命令稿”(script）移轉至 rc.inet1.OLD。接下來，
+你必須建立新的 rc.inet1 命令稿。下面的程式碼包含了必需的設定內容：
+<P>
+<HR>
+<PRE>
+#!/bin/sh
+#
+# rc.inet1      這個 shell 的命令稿會在開機時處理 INET 系統的基本設定。      
+
+HOSTNAME=`cat /etc/HOSTNAME` # 這個命令或許不是必需的，但是我還是
+                             # 將它保留了下來。
+
+# 附接上 loopback（繞回）裝置。
+/sbin/ifconfig lo 127.0.0.1
+/sbin/route add -net 127.0.0.0 netmask 255.0.0.0 lo
+
+# 若你有乙太網路的連線，則使用下面的命令來設定 eth0 界面。
+# 若你只有 loopback 或 SLIP 的連線，則不要在這個檔案裡使用下面的命令。 
+
+/usr/sbin/dhcpcd
+</PRE>
+<HR>
+<P>存檔案之後請將電腦重新開機。
+<P>
+<P>
+<P>當你完成以上的動作後，請跳至 
+<A HREF="#nameserver">最後的步驟</A><P>
+<H2><A NAME="ss3.3">3.3 安裝在 RedHat 5.x 和 RedHat 6.x 之上</A>
+</H2>
+
+<P>
+<P>DHCPcd 的設定在 RedHat 5.0 與以上的版本其實很容易。你所要作的事情，就是啟動
+“控制台”(Control Panel)，請輸入
+<P>
+<P>
+<P><CODE>control-panel</CODE>
+<P>
+<P>
+<P>
+<UL>
+<LI> 選取 Network Configuration 的圖像</LI>
+<LI> 以滑鼠單擊 Interfaces 欄標</LI>
+<LI> 以滑鼠單擊 Add 按鈕</LI>
+<LI> 選用 Ethernet 項目</LI>
+<LI> 在 Edit Ethernet/Bus Interface 對話框中勾選 <B>"Activate interface at boot time"</B>
+項目以及選取 <B>DHCP</B> 做為 <B>Interface configuration protocol</B> 項目的
+輸入。</LI>
+</UL>
+<P>
+<P>
+<P>當你完成以上的動作後，請跳至 
+<A HREF="#nameserver">最後的步驟</A><P>
+<P>
+<H2><A NAME="ss3.4">3.4 在 RedHat 4.x 與 Caldera OpenLinux 1.1 上的設定</A>
+</H2>
+
+<P>
+<P>DHCPcd 在標準的 RedHat 版本中是以 RPM 的包裝方式來發行的，你可以在其所發行的 
+CD-ROM 上的 RPMS 目錄中找到它，或到下面的網址下載：
+<P>
+<P>
+<P>
+<A HREF="ftp://ftp.redhat.com/pub/redhat/redhat-4.2/i386/RedHat/RPMS/dhcpcd-0.6-2.i386.rpm">ftp://ftp.redhat.com/pub/redhat/redhat-4.2/i386/RedHat/RPMS/dhcpcd-0.6-2.i386.rpm</A><P>
+<P>
+<P>然後安裝它，如下所示：
+<P><CODE>rpm -i dhcpcd-0.6-2.i386.rpm</CODE>
+<P>
+<P>
+<P>或者，你可以按照 Slackware 那節所描述的方法，編譯一個屬於你自己的版本。
+<P>
+<P>
+<P><CODE>感謝 nothing nothing@cc.gatech.edu 提供以下的資訊給我</CODE>
+<P>
+<HR>
+<PRE>
+我把靜態的 ip 位址或網域名稱，從檔案 /etc/resolv.conf 中移除。但是，我留下了
+search 和 nameserver 的設定行（因為某些原因我的 dhcpcd 伺服器不會產生檔案 
+/etc/dhcpc/resol.conf，所以我必須使用靜態的 /etc/resolv.conf）。
+
+在檔案 /etc/sysconfig/network 裡，我移除了 HOSTNAME 與 GATEWAY 的設定行。但是，
+我保留了其它的設定行（NETWORKING﹑DOMAINNAME﹑GATEWAYDEV）。
+
+在檔案 /etc/sysconfig/network-scripts/ifcfg-eth0 裡，我移除了 IPADDR﹑NETMASK﹑
+NETWORK﹑和 BROADCAST 等設定行。但是，我保留了 DEVICE 和 ONBOOT 的設定行，並將
+BOOTPROTO 的設定行，修改成 BOOTPROTO=dhcp。
+
+最後儲存檔案，並將電腦重新開機。
+</PRE>
+<HR>
+<P>當你完成以上的動作後，請跳至 
+<A HREF="#nameserver">最後的步驟</A><P>
+<H2><A NAME="ss3.5">3.5 安裝在 Debian 之上</A>
+</H2>
+
+<P>
+<P>你可以在下面的網址找到以 deb 方式包裝的 DHCPcd 程式套件：
+<P>
+<P>
+<P><CODE>
+<A HREF="ftp://ftp.debian.org/debian/dists/slink/main/binary-i386/net/dhcpcd_0.70-4.deb">ftp://ftp.debian.org/debian/dists/slink/main/binary-i386/net/dhcpcd_0.70-4.deb</A></CODE>
+<P>或者，你可以按照 Slackware 那節所描述的方法來安裝。
+<P>要安裝這個 deb 包裝的程式套件，請輸入：
+<P><CODE>dpkg -i /where/ever/your/debian/packages/are/dhcpd*deb</CODE>
+<P>
+<P>
+<P>你幾乎不必做任何的 DHCPcd 設定，因為：
+<CODE>From: Heiko Schlittermann (heiko@os.inf.tu-dresden.de)</CODE>
+<P>
+<P>
+<P>這個 dhcpcd 的程式套件如同其它的 debian 套件一樣，會將啟動命令稿安裝在
+/etc/init.d/&lt;package_name&gt; 之上，此處為 /etc/init.d/dhcpcd，並將
+之鏈結到各個 /etc/rc?.d/ 目錄中。
+<P>
+<P>
+<P>在 /etc/rc?.d/ 目錄中所存放的各類檔案，是開機時所執行的命令稿。
+<P>
+<P>
+<P>
+<P>如果你在安裝後不想重新開機，你應該考慮使用人工啟動“監控程式”(daemon) 的方式：
+<P>
+<P><CODE>/etc/init.d/dhcpcd start</CODE>
+<P>當你完成以上的動作後，請跳至 
+<A HREF="#nameserver">最後的步驟</A><P>
+<H2><A NAME="ss3.6">3.6 在 LinuxPPC 與 MkLinux 上的設定</A>
+</H2>
+
+<P>
+<P>下面這節是 R. Shapiro 撰寫的。
+<P>
+<P>
+<P>由 Yoichi Hariguchi 所發展的版本 0.65 和 0.7 的 dhcpcd 程式應該可以在使用核心
+2.1.24 的 LinuxPPC 與 MkLinux 上正常執行，但是，你必須注意以下幾個要點：
+<P>
+<P>
+<P>* 如果你想要或需要，透過原始程式碼來建立可執行的檔案，請注意，ppc linux 上的
+編譯器會將 'char' 假定為 'unsigned char'，但是，Hariguchi 的原始程式碼確將
+'char' 假定為 'signed char'。所以，要透過原始程式碼來產生執行檔，你必須編輯
+Makefile，讓 CFLAGS 中包含 "-fsigned-char" 這個選項。
+<P>
+<P>
+<P>* 目前 linuxppc [就是所謂的 linux-pmac] 平臺上最穩定的版本是 2.1.24，需要的話
+可到下面的網址取得 dhcpcd 的修正碼：
+<A HREF="http://www.cro.net/~vuksan/dhcppatch">2.1 版的修正碼</A>
+(http://www.cro.net/&nbsp;vuksan/dhcppatch)。
+mklinux 平臺上所發行的 DR2.1 和 DR3.0 這兩個版本，採用的是 2.0 的核心 (2.0.33)
+，所以，不必使用這個修正碼，但是，即使安裝了這個修正碼也沒有什麼傷害。請注意
+，linuxppc 安裝光碟片上 dhcpcd 程式的 rpm 包裝裡，並不包含這個 2.1 修正碼，因此
+，它在 linuxppc 平臺上無法正常運作，反倒是，可以在 mklinux 平臺上正常執行。
+<P>
+<P>
+<P>
+<P>* 當我們使用 linuxppc 平臺的 2.1.24 核心時，在 dhcpcd 程式啟動之後，你會看到
+一個簡短的路由器警告訊息。你可以忽略它。
+<P>
+<P>
+<P>* Hariguchi 的 dhcpcd 程式會花一些時間，大約是 30 秒，來完成它初次連接伺服器和
+設定路由的動作。當我們使用的是 linuxppc 平臺的 2.1.24 核心時，上述的警告訊息，
+只是在說明，路由已經設定完成了。
+<P>
+<P>
+<P>對於比較新版的 linuxppc 核心而言，由 Hariguchi 所發展的 dhcpcd 程式都無法使用
+：此時你 <B>必須</B> 改採 Sergei Viznyuk 所發展的版本（目前的發行版本為 1.3.9
+）。麻煩的是 Viznyuk 的 dhcpcd 程式是以 glibc 2 為函式庫來發展的，然而 linuxppc 
+2.1.1xx 卻不使用這個函式庫。結果，編譯程式需要用到一些技巧 - 相關的細節請與我
+聯絡。一旦程式編譯好之後，它就能夠在較新版的核心上正常運作了（在 linuxppc 的
+2.1.24 版本或 MkLinux 的部分版本上還是不行）。
+<P>
+<P>
+<P>現在我們來討論 Viznyuk 所發展的 dhcpcd 程式，我手上有一個 Viznyuk 版的 dhcpcd
+（v1.3.7）執行檔，可以在最近發行的 linuxppc 核心：2.1.102﹑103﹑115﹑和 119，上
+執行，並且已經完成測試。你應該可以透過原始程式碼來產生執行檔，但是，我不知道實際
+的細節。Viznyuk 版的 dhcpcd 無法在 2.1.24 的核心上運作，然而修補過的 Hariguchi 
+版的 dhcpcd 程式卻可以正常使用。要編譯 Hariguchi 版的 dhcpcd 程式就容易多了。
+<P>
+<P>
+<P>摘要整理如下：
+<P>
+<P>
+<P>
+<HR>
+<PRE>
+MkLinux：  Hariguchi： 可用； Viznyuk： 不可用
+2.1.24：   Hariguchi： 如果修正過，可以正常使用（產生執行檔很容易）； Viznyuk： 不可用
+2.1.102+： Hariguchi： 不可用； Viznyuk： 可用（產生執行檔需要技巧） 
+</PRE>
+<HR>
+<P>
+<P>
+<P>請注意，Viznyuk 版的 dhcpcd 會把資料直接寫到 /etc/resolv.conf 裡（寫入之前會先
+備份舊有的檔案），因此你不必再自己從 /etc/dhcpc 複製或鏈結相關的資訊。同時也請
+注意它通常會把執行檔放到 /sbin 目錄中而不是放到 /usr/sbin 裡，所以它的命令列選
+項與 Hariguchi 版本之間會有一點不同。若你使用 ifup 來啟動 dhcpcd ，則 ifup 這個
+命令稿也必須做一些小的修正。
+<P>
+<P>
+<P>若你想要取得給 linuxppc 使用的預先編譯好之 dhcpcd 程式，請寄信到
+<P>
+<P>
+<P>
+<A HREF="mailto:reshapiro@mediaone.net">reshapiro@mediaone.net</A>。
+<P>我也提供了二元碼的 RPMs 包裝檔：
+<P>
+<P>
+<P>
+<A HREF="ftp://ftp.linuxppc.org//pub/linuxppc/contrib/linuxppc-R4/RPMS/">ftp://ftp.linuxppc.org//pub/linuxppc/contrib/linuxppc-R4/RPMS/</A><P>請不要使用該目錄之下的 dhcpcd-1.3.8-2.ppc.rpm 檔案，它已經停止維護了。可靠的版
+本是 dhcpcd-0.70-0.ppc.rpm（給 linuxppc 2.1.24 使用的）以及 dhcpcd-1.3.8-3.ppc.rpm 
+（給 linuxppc 2.1.102 和以上的版本使用的）。版本 1.3.9 的 rpm 包裝檔近期內應該
+會提供出來。同時我還依照版本 0.65 和 0.70（由 Hariguchi 所發展）的方式對版本 1.3.9 
+（由 Viznyuk 所發展） 做了一些修改（就是 附加上 -c 的命令列選項）。（請注意，標
+準的 Viznyuk dhcpcd 並不包含這樣的內容。）
+<P>
+<P>
+<H2><A NAME="ss3.7">3.7 “記號環”（Token Ring）網路</A>
+</H2>
+
+<P>
+<P>若你嘗試在“記號環”網路上執行 dhcpcd 程式，將無法正常運作。以下是
+Henrik Stoerner <CODE>(henrik_stoerner@olicom.dk)</CODE> 提供給我的解決方案。
+<P>
+<P>
+<P>問題出在 dhcpcd 只認識“乙太網路”（ Ethernet）卡。若它發現到“記號環”網路卡
+，則它會拒絕做任何的事情，並且報告說“界面不是乙太網路”。
+<P>
+<P>
+<P>解決方案就是使用一個簡單的修正碼來變更 dhcpcd 的原始程式碼。我已經將此修正碼
+放在一個小型的網頁上，並提供 RedHat 的 RPM 包裝檔和一個預先編譯好的二元檔：
+<A HREF="http://eolicom.olicom.dk/~storner/dhcp/">http://eolicom.olicom.dk/~storner/dhcp/</A><P>
+<P>
+<P>這個修正碼已經送到了 dhcpcd 的維護者手上了，因此，它有希望被未來發行的 dhcpcd 
+版本所採用。
+<P>
+<H2><A NAME="nameserver"></A> <A NAME="ss3.8">3.8 最後，請完成以下的動作</A>
+</H2>
+
+<P>
+<P>在你的機器重新開機之後，你應該設定網路的界面。請輸入：
+<P><CODE>ifconfig</CODE>
+<P>你應該會看到如下的內容
+<P>
+<HR>
+<PRE>
+lo        Link encap:Local Loopback  
+          inet addr:127.0.0.1  Bcast:127.255.255.255  Mask:255.0.0.0
+          UP BROADCAST LOOPBACK RUNNING  MTU:3584  Metric:1
+          RX packets:302 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:302 errors:0 dropped:0 overruns:0 carrier:0 coll:0
+
+eth0      Link encap:Ethernet  HWaddr 00:20:AF:EE:05:45
+          inet addr:24.128.53.102  Bcast:24.128.53.255  Mask:255.255.254.0
+          ^^^^^^^^^^^^^^^^^^^^^^^
+          UP BROADCAST NOTRAILERS RUNNING MULTICAST  MTU:1500  Metric:1
+          RX packets:24783 errors:1 dropped:1 overruns:0 frame:1
+          TX packets:11598 errors:0 dropped:0 overruns:0 carrier:0 coll:96
+          Interrupt:10 Base address:0x300 
+</PRE>
+<HR>
+<P>
+<P>
+<P>如果，你在 inet addr 之後看到一些正常的數字，這表示你已經設定好了。如果，你看到
+的是 0.0.0.0 也不要絕望，它只是 dhcpcd 在取得 IP 位址前暫時的設定值。如果，過了
+幾分鐘之後，你仍然看到 0.0.0.0 ，請參考 
+<A HREF="#troubleshooting">疑難排除</A>
+。DHCPcd 是一個“監控程式”(daemon)，所以只要你的機器還活著，它將會持續保持執行
+的狀態。它每三小時會與 DHCP 伺服器再聯絡一次，嘗試續約 IP 位址的租期。它會將所
+有的訊息記錄在 syslog 檔案中（在 Slackware 上，為 /var/adm/syslog；在 RedHat/OpenLinux
+上，為 /var/log/syslog）。
+<P>
+<P>
+<P>最後要做一件事。你必須指定名稱伺服器。有兩個方式可以完成這個步驟，你可以要求網路
+服務供應商，告知名稱伺服器的 IP 位址，然後再將此位址填入 /etc/resolv.conf 檔中
+，或者，你也可以讓 DHCPcd 從 DHCP 伺服器取得資料，然後在 /etc/dhcpc 目錄下產生
+檔案 resolv.conf。我決定使用 DHCPcd 來產生檔案 resolv.conf 的內容，方法如下：
+<P>
+<P>
+<P>備份舊的 /etc/resolv.conf 檔案
+<P><CODE>mv /etc/resolv.conf /etc/resolv.conf.OLD</CODE>
+<P>如果目錄 /etc/dhcpc 不存在，你可以自行產生此目錄
+<P><CODE>mkdir /etc/dhcpc</CODE>
+<P>然候將 /etc/resolv.conf 以“符號鏈結”至 /etc/dhcpc/resolv.conf
+<P><CODE>ln -s /etc/dhcpc/resolv.conf /etc/resolv.conf</CODE>
+<P>
+<P> 如果這個方式無法正常運作，請嘗試使用下面的方法
+（下面這個修正方法是 nothing@cc.gatech.edu 所建議的，其內容修改自 Henrik Stoerner
+所提供的修正方法）
+<P> 
+<P>
+<A NAME="error3"></A> <P>我還必須執行下面這個步驟，只因為我的 dhcpcd 不會產生檔案 /etc/dhcpc/resolv.conf
+。我在 /etc/sysconfig/network-scripts/ifup 檔案中，做了以下的修改（雖然改的不是
+很好，但是它已經可以為我解決這個問題了）：
+<P>
+<P>
+<P>
+<P>
+<HR>
+<PRE>
+elif [ "$BOOTPROTO" = dhcp -a "$ISALIAS" = no ]; then
+    echo -n "Using DHCP for ${DEVICE}... "
+    /sbin/dhcpcd -c /etc/sysconfig/network-scripts/ifdhcpc-done ${DEVICE}
+    echo "echo \$$ > /var/run/dhcp-wait-${DEVICE}.pid; exec sleep 30" | sh
+
+    if [ -f /var/run/dhcp-wait-${DEVICE}.pid ]; then
+        ^^^^
+        echo "failed."
+        exit 1
+</PRE>
+<HR>
+<P>我把它修改成：
+<P>
+<HR>
+<PRE>
+elif [ "$BOOTPROTO" = dhcp -a "$ISALIAS" = no ]; then
+    echo -n "Using DHCP for ${DEVICE}... "
+    /sbin/dhcpcd
+    echo "echo \$$ > /var/run/dhcp-wait-${DEVICE}.pid; exec sleep 30" | sh
+
+    if [ ! -f /var/run/dhcp-wait-${DEVICE}.pid ]; then
+        ^^^^^^
+       echo "failed."
+       exit 1
+</PRE>
+<HR>
+<P>
+<P>
+<P><B>注意</B> ! (bang) 這個符號
+<CODE>if [ ! -f /var/run/dhcp-wait-${DEVICE}.pid ];</CODE>
+<P>
+<P>
+<P>
+<P>
+<P>總算大功告成，可以坐下來享受成果了 :-)。
+<H2><A NAME="ss3.9">3.9 其它注意事項</A>
+</H2>
+
+<P>
+<P>以下的步驟不是絕對必要，但是對某些人而言，可能就派得上用場。
+<P><B>a) </B>如果，你只是偶爾才會有網路連線的需求，你可以使用命令列的方式來啟動
+dhcpcd（要完成這個步驟，你必須擁有 root 的身份）：
+<P>
+<P><CODE>/usr/sbin/dhcpcd</CODE>
+<P>當你想要關掉網路，請輸入
+<P><CODE>/usr/sbin/dhcpcd -k</CODE>
+<P>
+<P>
+<H2><A NAME="troubleshooting"></A> <A NAME="ss3.10">3.10 疑難排除</A>
+</H2>
+
+<P>
+<P>如果，你按照了上述的步驟，卻仍然無法存取網路，很可能是因為：
+<P>
+<P>
+<P><B>I. 你的網路卡設定不正確。 </B>
+<P>
+<P>在開機的過程中，你機器將會偵測你的網路卡，並且應該會顯示下面幾行的訊息內容：
+<P>
+<HR>
+<PRE>
+eth0: 3c509 at 0x300 tag 1, 10baseT port, address  00 20 af ee 11 11, IRQ 10.
+3c509.c:1.07 6/15/95 becker@cesdis.gsfc.nasa.gov
+</PRE>
+<HR>
+<P>如果，你的 Linux 系統不會出現上面這個訊息，這表示，你的網路卡可能無法被辨識。假
+使，你使用的是一般的乙太網路卡（NE2000 相容），你應該會拿到一片 DOS 工具磁片，你
+可以用它來設定網路卡。嘗試設定各個 IRQs 值，一直到 Linux 可以辨識到你的網路卡（
+IRQ 的值設定通常為 9,10,12）。
+<P>
+<P>
+<P><B>II. 所使用的 DHCP 伺服器支援 RFC 1541 標準/我的 DHCP 伺服器是  Windows NT</B>
+<P>
+<P>嘗試執行 dhcpcd ，請輸入
+<P><CODE>dhcpcd -r</CODE>
+<P>使用 ifconfig 來檢查看看，是否你的網路界面已經設定好了（最初你所看到的是 
+Inet.addr=0.0.0.0，你得等待幾秒的設定時間）。
+<P>
+<P>如果這個方法可以解決你的問題，則你應該在相關的開機命令稿中加上 "-r" 選項，譬如
+將 <CODE>/sbin/dhcpcd</CODE> 修改成 <CODE>/sbin/dhcpcd -r 。</CODE>
+<P>
+<P>
+<P>以 RedHat 為例，你必須編輯 /etc/sysconfig/network-scripts/ifup 這個命令稿，並
+將它修改成：
+<P>
+<HR>
+<PRE>
+        IFNAME=$[ {DEVICE} \
+        "/sbin/dhcpcd -r -c /etc/"- etc etc.    
+</PRE>
+<HR>
+<P>
+<P>
+<P><B>III. 在開機期間會產生錯誤訊息 "Using DHCP for eth0 ... failed"，但是，系統
+卻能正常運作。</B>
+<P>
+<P>
+<P>你很可能使用的是 RedHat 的系統，而且，你並未仔細地按照說明操作 :-)。你在 if 敘述
+中遺漏了 ! (bang) 這個符號。跳到 
+<A HREF="#error3">此處</A> ，檢視如何來修正
+它。
+<P>
+<P>
+<P><B>IV. 我的網路卡運作了幾分鐘之後，便沒有反應了。</B>
+<P>
+<P>
+<P>可能是 gated（“閘道監控程式”(gateway daemon)） 所回報的資訊，弄亂了 Linux 
+主機的路由，才會造成這樣的問題。檢查是否 gated 正在執行中：
+<P>
+<P>
+<P><CODE>ps -auxww | grep gate</CODE>
+<P>
+<P>
+<P>如果真的是這樣，你可以使用 RedHat 的 RPM 管理程式將它移除，或是手動將它從 
+/etc/rc.d/ 中移除。
+<P>
+<P>
+<P><B>V.在開機時可以辨識到我的乙太網路卡，但是，在我的訊息記錄中，仍然會出現 "NO
+DHCPOFFER" 的訊息。同時，這個狀況也會發生在我的 PCMCIA 乙太網路卡上。</B>
+<P>
+<P>
+<P>你必須確定，網路卡使用的是 10BaseT 連接埠（就像電話線的插座)。你最好檢查一下，
+開機時網路卡的設定，到底是使用那個連接埠。例如：
+<P>
+<HR>
+<PRE>
+eth0: 3c509 at 0x300 tag 1, 10baseT port, address  00 20 af ee 11 11, IRQ 10.
+                            ^^^^^^^^^^^^
+3c509.c:1.07 6/15/95 becker@cesdis.gsfc.nasa.gov
+</PRE>
+<HR>
+<P>
+<P>
+<P>我曾聽過使用膝上型電腦的人抱怨，他們使用 PCMCIA 工具（特別是 ifport）將連接埠設
+定為 10Base2 (“細同軸線網路”(thinnet)），也會有這樣的問題。如果你不想重新設定
+網路卡和重開機。你必須確定你使用的是 10BaseT 的連線。
+<P>
+<P>
+<P><B>VI. 沒有伺服器回應我 DHCP 用戶端的廣播要求（由 Peter Amstutz 提供）</B>
+<P>
+<P>
+<P>在某些系統上，你的廣播要求中必須包含你機器的主機名稱。以 dhcpcd 為例，你可以執行
+'dhcpcd -h foohost'。或許，你可以使用你在網路上的帳戶名稱，來做為該主機名稱。
+<P>
+<P>
+<P><B>VII. 我已經按照所有的步驟完成了設定，但是，我的機器仍然無法連線。</B>
+<P>
+<P>
+<P>“纜線數據機”（cable modem）通常會記住你網路卡的乙太網路位址，所以，若你要連接
+新的電腦或更換網路卡，你必須以某種方法來“教導”你的 cable modem 認得新的電腦/網路
+卡。通常你可以先關掉 cable modem ，電腦開機後再使用 cable modem，或是以電話請求
+技術的支援，告知對方你的電腦已經更換了網路卡。 
+<P>
+<P>
+<P>你的防火牆規則（ipfwadm 的規則）不允許埠編號 67/68（ DHCP 使用來散佈設定資訊）
+的流量。請仔細檢查你的防火牆規則。
+<P>
+<P>
+<P><B>VIII. 我使用的是 MediaOne Express 所提供的服務，但是我仍然無法連線。</B> 
+<P>
+<P>
+<P>原因可能是 MediaOne 在 DHCP 中附加了不應該出現的訊息。一般相信，如今這已不再
+是個問題，但是你卻無法使用它，你可以朝這方面來檢查。如果你（不）幸使用的是 
+Windows NT，此時，如果你使用“事件檢視器”（Event Viewer），你將會看到如下的
+警示訊息。
+<P>
+<P>
+<P>DHCP 接收到一個未知的長度為 005 的 067 選項。原始的選項資料如下所示。
+<P><CODE>0000: 62 61 73 69 63            basic</CODE>
+<P>
+<P>如果你遇到這樣的問題，請到 
+<A HREF="ftp://vanbuer.ddns.org/pub/">ftp://vanbuer.ddns.org/pub/</A> 下載修正
+的二元碼或取得原始碼。
+<P>
+<P>
+<P>
+<P>
+<P>
+<P>
+<P>
+<P>
+<HR>
+<A HREF="DHCP-4.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="DHCP-2.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="DHCP.html#toc3"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

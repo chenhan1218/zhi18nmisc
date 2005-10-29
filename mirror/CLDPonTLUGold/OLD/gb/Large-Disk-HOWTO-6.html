@@ -1,0 +1,101 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Large Disk mini-HOWTO 中译版: 结论</TITLE>
+ <LINK HREF="Large-Disk-HOWTO-5.html" REL=previous>
+ <LINK HREF="Large-Disk-HOWTO.html#toc6" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<IMG SRC="img/next.gif" ALT="Next">
+<A HREF="Large-Disk-HOWTO-5.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Large-Disk-HOWTO.html#toc6"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s6">6. 结论</A></H2>
+
+<P>这到底意谓著什麽? 对 Linux  的使用者而言只有一件事: 就是他们必须得确保 LILO 以及 fdisk  使用正确的 geometry , 其中'正确'的定义对 fdisk 而言是与其它在同一个磁碟上的作业系统所使用的 geometry 相同, 而对 LILO 而言是能够在启动时期成功地与 BIOS 交谈的 geometry．(这两者通常相符．)
+<P>fdisk 如何得知该 geometry ? 它询问核心, 使用 <CODE>HDIO_GETGEO</CODE> ioctl．但使用者可以交谈式地或在指令列上重定 geometry．
+<P>LILO  如何得知该 geometry ? 它询问核心, 使用 <CODE>HDIO_GETGEO</CODE> ioctl．
+但使用者可以用 `<CODE>disk=</CODE>' 选项重定．也可以给 LILO 一个 <CODE>linear</CODE> 选项, 如此它将在其 map  档中储存 LBA  位址以取代 CHS  位址, 并且在启动时期找出该 geometry 来使用(藉由 INT 13 功能呼叫 8 来询问磁碟的 geometry)．
+<P>核心如何知道该怎麽回答? 首先, 使用者可能以 `<CODE>hd=</CODE><I>cyls</I><CODE>,</CODE><I>heads</I><CODE>,</CODE><I>secs</I>' 指令列选项明确地指定 geometry, 否则核心将询问硬体．
+<P>
+<H2><A NAME="ss6.1">6.1 IDE 细节</A>
+</H2>
+
+<P>让我详细说明．IDE 驱动程式有四个关於 geometry 的资讯来源．第一个(G_user)是使用者在指令列上所指定的．
+第二个(G_bios)是 BIOS 的固定磁碟参数表(只用於第一及第二个磁碟), 在系统启动时, 切换至 32 位元模式之前读入．
+第三个(G_phys)及第四个(G_log) 是由 IDE  控制器传回, 作为对 IDENTIFY 指令的回应 -  它们是 '实体的' 以及 '目前逻辑上的' geometries．
+<P>另一方面, 对於 geometry 驱动程式需要两个值: 其中之一是 G_fdisk, 由 <CODE>HDIO_GETGEO</CODE> ioctl  传回, 另一个是 G_used , 这是执行输出／入时实际使用的．
+如果给定 G_user 则 G-fdisk  以及 G_used 两者都会设为 G_user, 当此资讯是根据 CMOS 所提供时则设为 G_bios , 其它情形设为 G_phys．如果 G_log  看起来合理则 G_used 就设为 G_log．
+不然, 如果 G_used  不合理而 G_phys 看起来合理那麽 G_used 就设为 G_phys．此处的'合理'代表磁头数在 1-16 的□围内．
+<P>换个方式说: 指令列选项大於 BIOS , 并且决定 fdisk  看到的样子, 但如果它指定转换的 geometry(磁头数大於 16),  则核心会藉由 IDENTIFY 指令的输出重定它．
+<P>
+<H2><A NAME="ss6.2">6.2 SCSI 细节</A>
+</H2>
+
+<P>在 SCSI 方面情况有一点点不同, 因为 SCSI 指令已经使用逻辑区块号码, 所以 'geometry' 对实际的输出／入完全没关系．
+然而, 分割区的格式仍然是相同的, 所以 fdisk  必须得捏造些 geometry , 并且也在此使用 <CODE>HDIO_GETGEO</CODE> - 真的, fdisk 不会分辨 IDE  以及 SCSI 磁碟．
+你可以从下面的详细描述见到各种驱动程式捏造一些个不同的 geometry ．真是, 一团混乱．
+<P>如果你没有使用 DOS  或这类系统, 那麽避免使用所有额外的转换设定, 可能的话, 尽管使用 64 磁头, 每磁轨 32 磁区 (良好的, 方便每磁簇 1 MB), 如此当你把磁碟从一个控制器换到另一个去时不会遇到任何问题．
+某些 SCSI 磁碟驱动程式 (aha152x,pas16,ppa,qlogicfas,qlogicisp)非常在意与 DOS  的相容性而不允许只有 Linux  的系统使用超过  8 GB 的容量, 这是只臭□．
+<P>真实的 geometry 是什麽? 最简单的答案是没有这种东西．如果真有的话, 你不会想知道, 而且的的确确从不, 永不需告诉 fdisk  或是 LILO 或核心有关它的事．这绝对是 SCSI 控制器与磁碟之间的事．
+让我重覆这句话: 只有蠢蛋会告诉 fdisk/LILO/Kernel SCSI 磁碟真实的 geometry ．
+<P>但如果你好学且坚持, 可以问磁碟机自己．有个重要指令 READ CAPACITY 将会传回磁碟的总容量, 而且有个 MODE SENSE 指令  Rigid Disk Drive Page(page 04) 会传回磁簇以及磁头的数目(这是不能改变的资讯), 而在 Format Page(page 03)有每磁区的位元组, 以及每磁轨的磁区数．
+这数字一般与 notch  有关, 而且每磁轨的磁区数是变动的 -  外围的磁轨拥有比内圈磁轨多的磁区．Linux 程式 scsiinfo 会给予这项资讯．
+其中有许多繁琐的细节, 而且很明白的, 没有人(也许甚至是作业系统)需要使用这项资讯．
+还有, 因为我们只关心 fdisk  以及 LILO , 一般得到的回答像 C/H/S=4476/27/171 - 这样的值 fdisk  根本不能使用, 因为分割表只保留 10resp. 8resp. 6 bits  给 C/H/S．
+<P>那核心之 <CODE>HDIO_GETGEO</CODE> 从何处取得其资讯? 嗯, 不是从 SCSI 控制器, 就是推论猜测．
+有些驱动程式似乎认为我们想知道 '真相' , 但我们当然只想知道 DOS  或 OS/2 FDISK (或 Adaptec AFDISK 等等)所用的．
+<P>注意, Linux fdisk 需要磁头数 H  以及每磁轨磁区数 S  以便转换 LBA 磁区号码成为 c/h/s  位址, 但磁簇数 C  在此转换中并未扮演什麽角色．
+有些驱动程式使用 (C,H,S) = (1023,255,63)  来表示磁碟容量至少为 1023*255*63 个磁区．这是不幸的, 因为这不能显示实际的大小, 而且将限制大部份版本之 fdisk  的使用者其磁碟最大到 8 GB - 现今实际的限制．
+<P>在下面的描述中, M 表示磁碟的全部容量, 而 C,H,S  是磁簇, 磁头以及每磁轨磁区数．如果我们把 C  当作 M/(H*S) 那给 H,S 就可以满足．
+<P>依预设, H=64, S=32.
+<P>
+<DL>
+<DT><B>aha1740, dtc, g_NCR5380, t128, wd7000:</B><DD><P>H=64, S=32.
+<P>
+<DT><B>aha152x, pas16, ppa, qlogicfas, qlogicisp:</B><DD><P>H=64, S=32 除非 C > 1024, 此情况下 H=255, S=63, C = min(1023, M/(H*S)).
+(故 C 被截断, 且 H*S*C 不是磁碟容量的近似值. 这将会混摇淆大部份版本的 fdisk.)
+<I>ppa.c</I> 程式码使用 M+1 取代 M 并认为这是因为在 <I>sd.c</I> 里的一只臭□使 M 的值少一．
+<P>
+<DT><B>advansys:</B><DD><P>H=64, S=32 除非 C &gt; 1024 而且还开启 BIOS 中的 `&gt; 1 GB' 选项, 此情况下
+H=255, S=63.
+<P>
+<DT><B>aha1542:</B><DD><P>询问控制器使用两种可能的 schemes 中的那一种, 并且使用 H=255, S=63 或
+H=64, S=32. 前者有个启动讯息 "aha1542.c: Using extended bios translation".
+<P>
+<DT><B>aic7xxx:</B><DD><P>H=64, S=32 除非 C &gt; 1024, 而且还给了 "extended" 启动参数, 或在 SEEPROM 或 BIOS
+设了 `extended' 位元, 此情况下 H=255, S=63.
+<P>
+<DT><B>buslogic:</B><DD><P>H=64, S=32 除非 C &gt;= 1024, 而且还启动控制器的扩充转换, 此情况下若 M &lt;
+2^22 则 H=128, S=32; 否则 H=255, S=63. 然而, 选择 (C,H,S) 之後, 读入分割表,
+若三种可能的 (H,S) = (64,32), (128,32), (255,63) 中 endH=H-1
+的值看来可行则使用该对 (H,S) , 并印出启动讯息 "Adopting Geometry from Partition Table".
+<P>
+<DT><B>fdomain:</B><DD><P>从 BIOS Drive Parameter Table 找出 geometry 资讯, 或从分割表读取并使用 H=endH+1,
+S=endS 给第一个分割区, 若非空, 或使用 H=64, S=32 for M &lt; 2^21 (1 GB), H=128, S=63 for M &lt;
+63*2^17 (3.9 GB) and H=255, S=63 otherwise.
+<P>
+<DT><B>in2000:</B><DD><P>使用 (H,S) = (64,32), (64,63), (128,63), (255,63) 中第一个让 C &lt;= 1024 的.
+此情况下, 在 1023 截掉 C .
+<P>
+<DT><B>seagate:</B><DD><P>从磁碟读取 C,H,S. (真诚实!) 如果 C 或 S 太大, 放入 S=17, H=2 并倍增 H 直到
+C &lt;= 1024. 这表示 H 将为 0 如果 M &gt; 128*1024*17 (1.1 GB). 这是只臭□.
+<P>
+<DT><B>ultrastor and u14_34f:</B><DD><P>三种对应之一 ((H,S) = (16,63), (64,32), (64,63)) 根据控制器的对应模式而定.
+<P>
+</DL>
+
+如果驱动程式没有指定 geometry , 我们就回到使用分割表或磁碟总容量来推断猜测．
+<P>仔细看看分割表．因为依惯例分割区在磁簇边界结束, 我们可以为任何分割区定 end=(endC,endH,ednS) , 只要放入 H = <CODE>endH+1</CODE> 及 S = <CODE>endS</CODE>．
+(记得磁区由 1 起算．)更明确地的说．如果有个不是空的分割区, 则以最大的 <CODE>beginC</CODE> 计．
+对於此分割区, 看看 <CODE>end+1</CODE>, 计算加上 <CODE>start</CODE> 以及 <CODE>length</CODE> 并且假设此分割区在某磁簇边界结束．
+如果两个值都相符, 或 <CODE>endC</CODE> = 1023 且 <CODE>start+length</CODE> 是 <CODE>(endH+1)*endS</CODE>  的倍数, 那麽假定此分割区真的是在磁簇边界, 并放入 H = <CODE>endH+1</CODE> 以及 S = <CODE>endS</CODE>．
+如果不对, 不是因为没有分割区, 就是因为它们的大小很奇怪, 那麽只看磁碟容量 M．
+演算法: 放入 H = M/(62*1024)(无条件进位),S = M/(1024*H)(无条件进位), C = M/(H*S)(无条件舍去)．这能产生一 (C,H,S) 其中 C 最大 1024 而 S 最大 62．
+<P>
+<HR>
+<IMG SRC="img/next.gif" ALT="Next">
+<A HREF="Large-Disk-HOWTO-5.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Large-Disk-HOWTO.html#toc6"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

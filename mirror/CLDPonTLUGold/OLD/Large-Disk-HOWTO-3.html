@@ -1,0 +1,46 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Large Disk mini-HOWTO 中譯版: 磁碟 geometry 以及分割區</TITLE>
+ <LINK HREF="Large-Disk-HOWTO-4.html" REL=next>
+ <LINK HREF="Large-Disk-HOWTO-2.html" REL=previous>
+ <LINK HREF="Large-Disk-HOWTO.html#toc3" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Large-Disk-HOWTO-4.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Large-Disk-HOWTO-2.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Large-Disk-HOWTO.html#toc3"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s3">3. 磁碟 geometry 以及分割區</A></H2>
+
+<P>如果你的磁碟上有好幾種作業系統, 每一種使用一個或多個分割區．那麼對於分割區位於何處不同的看法可能導致災難性的後果．
+<P>MBR 中包含一個分割表描述<I>分割區</I>(主分割區: primary) 在那裡．有四個表格給四個主要分割區使用, 它們看起來像
+<BLOCKQUOTE><CODE>
+<PRE>
+struct partition {
+        char active;    /* 0x80: bootable, 0: not bootable */
+        char begin[3];  /* CHS for first sector */
+        char type;
+        char end[3];    /* CHS for last sector */
+        int start;      /* 32 bit sector number (counting from 0) */
+        int length;     /* 32 bit number of sectors */
+};
+</PRE>
+</CODE></BLOCKQUOTE>
+
+(其中 CHS 是磁簇／磁頭／磁區: Cylinder/Head/Sector 的縮寫)
+<P>因此, 有項資訊是重覆的: 分割區的位置可以由 24 位元的 <CODE>begin</CODE> 以及 <CODE>end</CODE> 欄位, 和 32 位元的 <CODE>start</CODE> 以及 <CODE>length</CODE> 欄位給定．
+<P>Linux 只使用 <CODE>start</CODE> 以及 <CODE>length</CODE> 欄位, 故最多可以處理包含 2^32 個磁區的分割區, 也就是, 最大 2 TB 的分割區．這是現今磁碟機的兩百倍, 所以也許足夠往後十年的需求．
+<P>不幸的是, BIOS INT13  呼叫使用三個位元組的 CHS  編碼,  10 個位元作為磁簇號碼, 8 個位元作為磁頭號碼, 及 6  個位元作為磁軌上的磁區號碼．
+可能的磁簇號碼是 0-1023,  可能的磁頭號碼是 0-255, 而磁軌上可能的磁區號碼為 1-63(是的, 磁軌上的磁區是由 1 起算, 不是 0)．
+以這 24 位元最多可以定址 8455716864 個位元組(7.875 GB), 這是 1983 年磁碟機的兩百倍．
+<P>更不幸的是, 標準的 IDE  介面容許 256  個磁區／磁軌, 65536 個磁簇以及 16 個磁頭．它自己本身可以存取 2^37 = 137438953472  個位元組(128 GB), 但是加上 BIOS 方面 63 個磁區與 1024 個磁簇的限制後只剩 528482304 個位元組(504 MB)可以定址的到．
+<P>這不足以應付現今的磁碟, 人們使用各種硬體或軟體上的方法來克服．
+<P>
+<P>
+<HR>
+<A HREF="Large-Disk-HOWTO-4.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Large-Disk-HOWTO-2.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Large-Disk-HOWTO.html#toc3"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

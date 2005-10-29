@@ -1,0 +1,323 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" content="text/html; charset=gb2312">
+<TITLE>NFS-Root-Client Mini-Howto 中译版</TITLE>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+<PRE>
+
+   NFS-Root-Client Mini-Howto
+   [1]Ofer Maor, [2]oferm@hcs.co.il
+   V4.1, 02 February 1999
+
+   这份 Mini-Howto, 其目的在说明, 当伺服器使用 NFS Root 挂载客
+   户端时, 如何在伺服器上, 建立客户端的根目录. 这份 Howto (HTML 
+   or Text) 的最新版, 位于 URL:
+   [3]http://www.hcs.co.il/oferm/NFS-Root-Client/
+ 1. Copyright
+
+   (c) 1996 Ofer Maor (oferm@hcs.co.il)
+
+   Unless otherwise stated, Linux HOWTO documents are copyrighted by
+   their respective authors. Linux HOWTO documents may be reproduced and
+   distributed in whole or in part, in any medium physical or electronic,
+   as long as this copyright notice is retained on all copies. Commercial
+   redistribution is allowed and encouraged; however, the author would
+   like to be notified of any such distributions.
+
+   All translations, derivative works, or aggregate works incorporating
+   any Linux HOWTO documents must be covered under this copyright notice.
+   That is, you may not produce a derivative work from a HOWTO and impose
+   additional restrictions on its distribution. Exceptions to these rules
+   may be granted under certain conditions; please contact the Linux
+   HOWTO coordinator at the address given below.
+
+   In short, we wish to promote dissemination of this information through
+   as many channels as possible. However, we do wish to retain copyright
+   on the HOWTO documents, and would like to be notified of any plans to
+   redistribute the HOWTOs.
+
+   If you have questions, please contact Ofer Maor ([4]oferm@hcs.co.il),
+   the author of this mini-HOWTO, or Greg Hankins, the Linux HOWTO
+   coordinator, at [5]gregh@sunsite.unc.edu via email, or at +1 404 853
+   9989.
+
+   If you have anything to add to this Mini-Howto, Please mail the author
+   (Ofer Maor, [6]oferm@hcs.co.il
+   ), with the information. Any new relevant information would be
+   appreciated.
+
+   1.1. 感谢
+
+   对于 NFS-Root Howto 的作者, Andreas Kostyrca ([7]andreas@medman.ag.or.at), 
+   我想向他表达谢意. 第一步, 要建立由 NFS Root 所挂载的客户端,
+   在此处, 他的 Mini-Howto 帮助了我. 我的 Mini-Howto 并非尝试去取
+   代他的工作, 而是在这过程中, 运用我的经验, 去提升它.
+
+   我还想感谢 Mark Kushinsky ([8]mark026@ibm.net), 他润饰了这份 Howto 的
+   英文和拼字, 使它更容易读.
+
+   2. 前言
+
+   有些人, 想用 NFS Root 挂载, 来建立其客户端的目录, 这份 Mini-Howto,
+   正是为了帮助这些人而写的. 请注意, 这工作有许多方法可以达成, 端视
+   你的需求与目的而定. 假如客户端彼此独立, 且每个客户端各自有用户
+   群和管理员, 那么, 不和其他客户端, 分享重要的目录, 将是必需的. 
+   另一方面, 倘若客户端, 计划用于多种用户, 并且全都由同一人管理 
+   (例如电脑课), 这种情形, 为了容易管理, 尽可能要使愈多档案能够分
+   享. 这份 Howto 将焦点于第二种情况.
+
+   2.1. 概论
+
+   当建立客户端的根目录, 并尝试去降到最小尺寸时, 我们主要焦点
+   于, 哪个档案可以分享, 或者可从伺服器挂上. 在这份 Howto 中, 我
+   将依自己的经验, 对客户端的组态 (configuration), 提出建议. 但在
+   我们开始前,  请注意:
+
+     * 这份 Mini-Howto 并没有实际说明, 如何挂载 NFS Root.
+       如果你需要这方面的进一步资讯, 请参考 NFS-Root Mini-Howto.
+
+     * 我客户端的组态, 大多基础于 mounts 和 symbolic links. 这些 
+       symbolic links, 大部份可取代为 hardlinks. 选择哪种则随个人
+       喜好. 而在 mount 和 symbolic link 之间, 放置 hardlink 作联系, 
+       这样有其优点, 但或许会发生混淆. 一个档案, 除非它的 hardlinks 
+       全都移除了, 否则将无法删掉. 因此, 当你更新了某个档, 该档
+       的 hardlinks 仍会指到旧的版本, 为了避免这情形, 你必须非常
+       小心, 并要维系好, 你所放置的每个连结.
+
+     * 从伺服器挂上资讯的方式, 有两种. 第一种 (最普遍), 是将整个
+       伺服器的根目录, 挂在本地端的目录下, 然后只改路径, 或直接
+       连结相关的目录. 就我而言, 我不喜欢把伺服器的 root partitions 
+       挂到客户端上. 因此, 这份 Howto 建议一种方式, 把伺服器上相
+       关的目录, 挂到系统适当的位置.
+
+     * 这份 Howto 立论于, 我在 Slackware 3.1 based distribution 之上, 
+       建立客户端目录的经验. 对其他使用者来说, 可能会有地方不
+       同 (尤其是 rc.* 这些档), 然而观念应该仍旧不变.
+
+   3. 建立客户端的根目录
+
+   3.1. 建立目录树
+
+   最初, 你需要建立目录本身的架构. 我把所有的客户端, 建在 
+    /clients/hostname 之下, 我拿它用于下面的例子. 不过, 这目录
+   也可改为其他路径. 接著第一阶段, 是在这根目录下, 建立相
+   关的目录. 你应该建立下列目录:
+    bin, dev, etc, home, lib, mnt, proc, sbin, server, tmp, usr, var
+
+   以及其他, 你可能想置于系统上的目录.
+
+   local, proc, dev 这些目录, 每台机器要各自一份, 而其馀目录, 
+   则是部分的, 或完整的, 和其他客户端共享.
+
+   3.2. 建立开机所需, 最小的档案系统
+
+   3.2.1. 建立 dev 目录.
+
+   尽管目录 dev 可以共享, 但最好还是为每个客户端, 各自建一个. 
+   你可以用合适的 MAKEDEV scripts, 来建客端的 dev目录, 不过大
+   多数情况, 直接从伺服器复制, 比较简单: 
+    cp -a /dev /clients/hostname
+
+   你应记住, /dev/mouse, /dev/cdrom, /dev/modem 是 symbolic links, 
+   将连结至实际的设备, 因此, 你应确保, 它们连结正确, 而符合客户端
+   的硬体.
+
+   3.2.2. 复制所需的执行档.
+
+   尽管我们从伺服器, 挂载每件东西, 但最低限度, 我们还是需要把
+   些东西, 拷到客户端. 首先, 我们需要 "初始", 在初始化之前, 系统
+   不可能跑任何东西 (虽然作者费了许多工夫, 才发现到这件事 ;-). 
+   所以第一, 你应该把 /sbin/init 复制到客户端的目录 sbin 下, 这么一
+   来, 便会执行 rc.S, 接著, 你应复制 /bin/sh 到客户端的目录 bin 下. 
+   还有, 为了挂载所有东西, 你需要把 /sbin/mount 拷到客户端的目
+   录 sbin 下. 假设你 rc.S 的第一行是 mount -av, 那这就是最低限度
+   了. 然而, 我建议再多拷些档: update, ls, rm, cp, umount, 如此一来, 
+   客户端挂载时若出问题, 就有基本工具可用了. 假如你选择在挂载
+   前启动 swap, 那你还应复制执行档 swapon.
+
+   因为这些执行档, 多数预设为动态连结, 所以你也需复制等份的 /lib:
+    cp -a /lib/ld* /lib/libc.* /lib/libcursses.* /client/hostname/lib
+
+   应考虑, 若不用复制, 而是 hardlink 至执行档本身的情形. 请读我
+   对这所作的评语, 在这份 Howto 的 2.1 节.
+
+   请注意, 上述所有资料, 是假设开机时, 网路组态的参数已传给核
+   心. 如果你打算用 rarp 或 bootp 的话, 与这些相关的执行档, 你也
+   可能需要.
+
+   一般而言, 你需要的档案, 最少要使你能设定网路以及跑 rc.S, 直
+   到开始挂上档案系统的其他部分. 确定你检查过, 你的 /etc/init 以
+   及 rc.S 档, 确定它们没有任何的 "惊喜", 这是指, 在第一次挂载前, 
+   发生存取其他档案的状况. 然而, 倘若你真的发现有这样的档, 你可
+   以也拷过来, 或是从你的 init 档和 rc.S 档, 移除相关的部分.
+
+   3.2.3. 目录 var
+
+   大多数情况下, 目录 var 应该, 每个客户端各别一份. 可是, 目
+   录 var 的资料大多都能共享. 请在伺服器的目录下, 建一目录, 
+   称作 var. 我们将在那, 挂上伺服器的 var 目录. 要建立本地端的 
+   var 目录, 直接键入:
+    cp -a /var /clients/hostname/
+
+   现在, 你可选择, 何者要区隔开, 何者要共享. 要共享的目录或档案, 
+   只要先从客户端的 var 目录中, 把它移除, 再把它 symbolic link 至目
+   录 /server/var. 不过请注意, 你应该 symbolic link 至 /server/var 或
+   ../server/var, 而非 /clients/hostname/server/var, 因为这么做, 当根目录
+   (指 /clients/hostname/) 更动后, 将会失效.
+
+   一般而言, 我建议隔开 /var/run, /var/lock, /var/spool, /var/log.
+
+   3.2.4. 其馀的目录
+
+     * etc 在下节有完整说明.
+     * mnt 与 proc 用于本地端. 
+     * usr 和 home 仅为挂载点 (mount points).
+     * tmp 随你决定. 你可以为每个客户端, 各别建立不同的 tmp 目录, 
+        也可以建些 /clients/tmp 目录, 然后把它挂到每个客户端的 /tmp 
+        之下. 我建议你为每个客户端, 各别提供一 tmp 目录.
+
+   3.3. 建立 etc 目录, 并设定客户端的组态
+
+   请注意 - 本节是谈, 建立目录 etc, 此目录大多共享于客户端之
+   间. 假如你那些无磁碟的客户端, 各有不同的系统管理员, 那最好
+   为每个客户端, 各自设立一 etc 目录.
+
+   3.3.1. 建立多个客户端共用的 etc 目录
+
+   虽然我们隔开客户端之间的 etc 目录, 不过我们仍想在那, 分享
+   大部分的档案. 一般而言, 我认为, 和伺服器的 /etc 目录, 共享 etc 
+   档, 这样不好, 因此我建议, 开个目录 /clients/etc, 容纳客户端所
+   需的资讯. 这样一开始, 只要把伺服器的 etc 目录内容, 复制到 
+   /clients/etc 目录下即可.
+
+   你应该把所有非硬体规格的组态档, 如 motd, issue 等, 全都加
+   进这个目录, 而不应加入会随客户端硬体而异的档案. (例如, initab 
+   或是 fstab)
+
+   最重大的改变, 是在你的 rc.d 目录里. 首先, 你应该调整 rc.inet1, 
+   以适宜于你本地端的设定. 我透过 LILO/Loadlin, 把我网路组态的
+   所有参数, 都传给核心, 因此我几乎移除了 rc.inet1 档的每一行. 
+   唯一留下的, 是 localhost 的 ifconfig 和 route. 假如你是用 rarp 或
+   是 bootp, 那你就必须视情况而改.
+
+   其次, 你应该编辑你的 rc.S 档. 首先, 移除所有会导致 fsck 检查
+   的部分, 这是因为伺服器开机时, 会启动 fsck. 接著, 你应该把挂
+   载你 fstab 的那一行找出来. 这应该看起来像:
+    mount -avt nonfs
+
+   -t nonfs 在这, 是因为正常的客户端, 先跑 rc.S, 紧接著以 rc.inet1 
+  来组设 Ethernet. 由于这会导致, 不挂载任何的 NFS partitions, 
+  所以这行应该删掉. 因此, 把它改成 mount -av. 倘若你需要跑 
+   rarp/bootp 来设定你网路的组态, 那就在挂载前, 在 rc.S 作这件事
+   (或者从 rc.S 呼叫适当的 script), 并且确定你磁碟的 bin 和 sbin 
+  目录, 提供所需的档案.
+
+   执行完 mount -av, 你就有个运作中的档案系统了. 建个一般的 
+   fstab, 这样稍后你便可, 把它复制到每个客户端. 你的 fstab 应该
+   看起来像:
+    server:/clients/hostname    /               nfs     default  1 1
+    server:/bin                 /bin            nfs     default  1 1
+    server:/usr                 /usr            nfs     default  1 1
+    server:/sbin                /sbin           nfs     default  1 1
+    server:/home                /home           nfs     default  1 1
+    server:/lib                 /lib            nfs     default  1 1
+    server:/clients/etc         /server/etc     nfs     default  1 1
+    server:/clients/var         /server/var     nfs     default  1 1
+    none                        /proc           proc    default  1 1
+
+   请注意, 关键字 default 或许不会有效于所有不同版本的挂载. 你
+   可以把它更改为 rw 或 ro, 或者移除全部的 default 1 1.
+
+   再者, 确定你伺服器的 /etc/exports, 看起来像:
+    /clients/hostname   hostname.domainname(rw,no_root_squash)
+    /clients/etc        hostname.domainname(ro,no_root_squash)
+    /clients/var        hostname.domainname(ro,no_root_squash)
+    /usr                hostname.domainname(ro,no_root_squash)
+    /sbin               hostname.domainname(ro,no_root_squash)
+    /bin                hostname.domainname(ro,no_root_squash)
+    /lib                hostname.domainname(ro,no_root_squash)
+    /home               hostname.domainname(rw,no_root_squash)
+
+   对每台主机而言, 第一行应该各自独立, 除此之外, 其他行可替换
+   为主机遮罩 (hostmask), 使你所有的主机都能相契 (如 pc*.domain - 
+   然而要记住, * 只能代换没有句点的字串). 我建议你, 让大部分的
+   目录唯读, 不过这由你决定. no_root_squash 将确保使用者 root, 
+   在客户端上, 对于 nfsd 实际也有 root 权限. 请查证 man exports(5). 
+   假如你要让使用者, 也能从客户端执行 passwd, 那请确定 /etc 可读
+   可写 (rw) 而非唯读 (ro). 不过, 这并不明智.
+
+   请注意另一件, 有关档案 rc.S 的事. 在 Slackware 执行 rc.S, 预设
+   会每次都建立新的 /etc/issue 和 /etc/motd. 假如这些档从伺服器
+   挂载为唯读 (ro), 那这个功能一定要停用, 而且我建议, 在任何情
+   况都应停用.
+
+   最后, 如果你伺服器, 要和客户端一样, 拥有相同的使用者资料
+   库 (userbase), 你应在下列两种方式作选择, 1) 使用 NIS (Yellow 
+   Pages - 请参考 yp-howto), 这样, 接收自 NIS 伺服器之故, 每个客户
+   端都会各自有 /etc/passwd 以及 /etc/group. 2) 大多数情况, 简单
+   的 symbolic link 就够了. 因此, 你需要 hardlink /clients/etc/passwd 
+   到 /etc/passwd, 或者你喜欢用 symbolic link 的话, 那就把 /etc/passwd 
+   连结到 /clients/etc/passwd (反过来说, 这是因为客户端并不挂载伺
+   服器的 etc 目录). 至于 /etc/group, 方法也一样.
+
+   3.3.2. 建立单一客户端专用的 etc 目录
+
+   一般而言, 在客户端的 etc 中, 档案大部分应该 symbolic link 到 
+   目录 /server/etc. 然而, 有些档案应随每台硬体的差异, 而彼此不同, 
+   而有些只在载入核心时才用到. 目录 etc 中, 你最少需要的档, 如
+   下:
+    resolv.conf
+    hosts
+    inittab
+    rc.d/rc.S
+    fstab
+
+   既然这五个档, 在所有客户端都可以相同, 你可以直接把它们 
+   hardlink, 或者再复制一次. 不过, rc.S 与 fstab 两档, 最好是每
+   个客户端各复制一份. 你还需要每个客户端, 各自一份 etc/HOSTNAME. 
+   我个人是建议, 所有的 rc.d 档, 每个客户端都要各自有一份, 因为
+   组态和硬体可能彼此相异.
+
+   为每个客户端, 把适当的 swap 行, 加入其 fstab 档:
+    /dev/swap_partition                 swap    swap    default  1 1
+
+   客户端其馀的 /etc 档, 你可以 hardlink 到档案 /clients/etc/*, 或
+   把它们 symbolic link 到 /server/etc (这是 /clients/etc/ 的挂载点).
+
+   确定你的主机能正确的 resolve, 无论是透过 named 还是 etc/hosts. 
+   在 etc/hosts 中记录伺服器的 IP, 而不倚赖 resolve, 这方式不错. 假如
+   你只倚赖 named 的 resolve, named 出了个问题, 将使你客户端无法
+   开机.
+
+   3.4. 开机
+
+   现在, 你该作的就是, 开机, 十指交叉, 期望每件事都正常运作 :-).
+
+   4. 建立更多的客户端
+
+   如果你已跟著我的指示, 作到这里, 那这应该很简单 - cd 到 /clients, 
+   键入:
+    cp -a hostname1 hostname2
+
+   然后, 确定你检查了这几点:
+
+   rc.d/* 档符合软硬体组态
+   etc/HOSTNAME 正确, fstab 的 swap 行正确, dev/mouse, dev/modem, 
+   dev/cdrom 这三个的 symbolic links 正确.
+
+   祝你好运....
+
+References
+
+   1. http://www.hcs.co.il/oferm/
+   2. mailto:oferm@hcs.co.il
+   3. http://www.hcs.co.il/oferm/NFS-Root-Client/
+   4. mailto:oferm@hcs.co.il
+   5. mailto:gregh@sunsite.unc.edu
+   6. mailto:oferm@hcs.co.il
+   7. mailto:andreas@medman.ag.or.at
+   8. mailto:mark026@ibm.net
+
+</PRE>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

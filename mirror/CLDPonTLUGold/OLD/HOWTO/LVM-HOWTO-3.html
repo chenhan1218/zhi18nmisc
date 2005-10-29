@@ -1,0 +1,300 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Logical Volume Manager HOWTO: Basic principles</TITLE>
+ <LINK HREF="LVM-HOWTO-4.html" REL=next>
+ <LINK HREF="LVM-HOWTO-2.html" REL=previous>
+ <LINK HREF="LVM-HOWTO.html#toc3" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="LVM-HOWTO-4.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="LVM-HOWTO-2.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="LVM-HOWTO.html#toc3"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s3">3. Basic principles</A></H2>
+
+<P>Ok, don't let this scare you off, but LVM comes with a lot of jargon which
+you should understand lest you endanger your filesystems.
+<P>We start at the bottom, more or less.
+<P>
+<DL>
+<DT><B>The physical media</B><DD><P>You should take the word 'physical' with a grain of salt, though we will
+initially assume it to be a simple hard disk, or a partition. Examples,
+/dev/hda, /dev/hda6, /dev/sda. You can turn any consecutive number of blocks
+on a block device into a ...
+<DT><B>Physical Volume (PV)</B><DD><P>A PV is nothing more than a physical medium with some administrative data
+added to it - once you have added this, LVM will recognise it as a holder
+of ...
+<DT><B>Physical Extents (PE)</B><DD><P>Physical Extents are like really big blocks, often with a size of megabytes.
+PEs can be assigned to a...
+<DT><B>Volume Group</B><DD><P>A VG is made up of a number of Physical Extents (which may have come from
+multiple Physical Volumes or hard drives).  While it may be tempting to
+think of a VG as being made up of several hard drives (/dev/hda and /dev/sda
+for example), it's more accurate to say that it contains PEs which are provided
+by these hard drives.
+<P>>From this Volume Group, PEs can be assigned to a ...
+<DT><B>Logical Volume (LV)</B><DD><P>Yes, we're finally getting somewhere. A Logical Volume is the end result of
+our work, and it's there that we store our information. This is equivalent to
+the historic idea of partitions.
+<P>As with a regular partition, on this Logical Volume you would typically build
+a ...
+<DT><B>Filesystem</B><DD><P>This filesystem is whatever you want it to be: the standard ext2,
+ReiserFS, NWFS, XFS, JFX, NTFS, etc...  To the linux kernel, there is
+no difference between a regular partition and a Logical Volume.
+</DL>
+<P>I've attempted some ASCII art which may help you visualise this.
+<P>
+<PRE>
+A Physical Volume, containing Physical Extents:
+
+  +-----[ Physical Volume ]------+
+  | PE | PE | PE | PE | PE | PE  |
+  +------------------------------+
+
+A Volume Group, containing 2 Physical Volumes (PVs) with 6 Physical Extents:
+
+  +------[ Volume Group ]-----------------+
+  |  +--[PV]--------+  +--[PV]---------+  | 
+  |  | PE | PE | PE |  | PE | PE | PE  |  |
+  |  +--------------+  +---------------+  |
+  +---------------------------------------+ 
+
+We now further expand this:
+
+  +------[ Volume Group ]-----------------+
+  |  +--[PV]--------+  +--[PV]---------+  |
+  |  | PE | PE | PE |  | PE | PE | PE  |  |
+  |  +--+---+---+---+  +-+----+----+---+  |
+  |     |   |   | +-----/     |    |      |
+  |     |   |   | |           |    |      |
+  |   +-+---+---+-+      +----+----+--+   |
+  |   |  Logical  |      |  Logical   |   |
+  |   |  Volume   |      |   Volume   |   |
+  |   |           |      |            |   |
+  |   |  /home    |      |    /var    |   |
+  |   +-----------+      +------------+   |
+  +---------------------------------------+
+</PRE>
+<P>This shows us two filesystems, spanning two disks. The /home filesystem
+contains 4 Physical Extents, the /var filesystem 2.
+<P>bert hubert is writing 
+<A HREF="http://ds9a.nl/lvm-viewer">a tool</A> to
+represent LVM more visually, a 
+<A HREF="http://ds9a.nl/lvm-howto/screenshot.gif">screenshot</A> is provided. Looks better
+than the ASCII art.
+<P>
+<H2><A NAME="ss3.1">3.1 Show &amp; Tell</A>
+</H2>
+
+<P>Ok, this stuff is hard to assimilate ('We are LVM of Borg...'), so here is a
+very annotated example of creating a Logical Volume. Do NOT paste this
+example onto your console because you WILL destroy data, unless it happens
+that on your computer /dev/hda3 and /dev/hdb2 aren't used. 
+<P>When in doubt, view the ASCIIgram above.
+<P>You should first set the partition types of /dev/hda3 and /dev/hdb2 to 0x8e,
+which is 'Linux LVM'. Please note that your version of fdisk may not yet know
+this type, so it will be listed as 'Unknown':
+<P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# fdisk /dev/hda
+
+Command (m for help): p
+
+Disk /dev/hda: 255 heads, 63 sectors, 623 cylinders
+Units = cylinders of 16065 * 512 bytes
+
+   Device Boot    Start       End    Blocks   Id  System
+/dev/hda1             1         2     16033+  83  Linux
+/dev/hda2             3       600   4803435   83  Linux
+/dev/hda3           601       607     56227+  83  Linux
+/dev/hda4           608       614     56227+  83  Linux
+
+Command (m for help): t
+Partition number (1-4): 3
+Hex code (type L to list codes): 8e
+
+Command (m for help): p
+
+Disk /dev/hda: 255 heads, 63 sectors, 623 cylinders
+Units = cylinders of 16065 * 512 bytes
+
+   Device Boot    Start       End    Blocks   Id  System
+/dev/hda1             1         2     16033+  83  Linux
+/dev/hda2             3       600   4803435   83  Linux
+/dev/hda3           601       607     56227+  8e  Unknown
+/dev/hda4           608       614     56227+  83  Linux
+
+Command (m for help): w
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>We do the same for /dev/hdb2, but we don't display it here. This is needed
+so that LVM is able to reconstruct things should you lose your
+configuration.
+<P>Now, this shouldn't be necessary, but some computers require a reboot at
+this point. So if the following examples don't work, try rebooting.
+<P>We then create our Physical Volumes, like this:
+<BLOCKQUOTE><CODE>
+<PRE>
+# pvcreate  /dev/hda3
+pvcreate -- physical volume "/dev/hda3" successfully created
+# pvcreate  /dev/hdb2
+pvcreate -- physical volume "/dev/hdb2" successfully created
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>We than add these two PVs to a Volume Group called 'test':
+<BLOCKQUOTE><CODE>
+<PRE>
+# vgcreate test /dev/hdb2 /dev/hda3
+vgcreate -- INFO: using default physical extent size 4 MB
+vgcreate -- INFO: maximum logical volume size is 255.99 Gigabyte
+vgcreate -- doing automatic backup of volume group "test"
+vgcreate -- volume group "test" successfully created and activated
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>So we now have an empty Volume Group, let's examine it a bit:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# vgdisplay -v test
+--- Volume group ---
+VG Name               test
+VG Access             read/write
+VG Status             available/resizable
+VG #                  0
+MAX LV                256
+Cur LV                0
+Open LV               0
+MAX LV Size           255.99 GB
+Max PV                256
+Cur PV                2
+Act PV                2
+VG Size               184 MB
+PE Size               4 MB
+Total PE              46
+Alloc PE / Size       0 / 0
+Free  PE / Size       46 / 184 MB
+
+--- No logical volumes defined in test ---
+
+
+--- Physical volumes ---
+PV Name (#)           /dev/hda3 (2)
+PV Status             available / allocatable
+Total PE / Free PE    13 / 13
+
+PV Name (#)           /dev/hdb2 (1)
+PV Status             available / allocatable
+Total PE / Free PE    33 / 33
+</PRE>
+</CODE></BLOCKQUOTE>
+
+Lots of data here - most of it should be understandable by now. We see that
+there are no Logical Volumes defined, so we should work to remedy that. We
+try to generate a 50 megabyte volume called 'HOWTO' in the Volume
+Group 'test':
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# lvcreate -L 50M -n HOWTO test 
+lvcreate -- rounding up size to physical extent boundary "52 MB"
+lvcreate -- doing automatic backup of "test"
+lvcreate -- logical volume "/dev/test/HOWTO" successfully created
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Ok, we're nearly there, let's make a filesystem:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# mke2fs /dev/test/HOWTO 
+mke2fs 1.18, 11-Nov-1999 for EXT2 FS 0.5b, 95/08/09
+Filesystem label=
+OS type: Linux
+Block size=1024 (log=0)
+Fragment size=1024 (log=0)
+13328 inodes, 53248 blocks
+2662 blocks (5.00%) reserved for the super user
+First data block=1
+7 block groups
+8192 blocks per group, 8192 fragments per group
+1904 inodes per group
+Superblock backups stored on blocks: 
+        8193, 24577, 40961
+
+Writing inode tables: done                            
+Writing superblocks and filesystem accounting information: done
+# mount /dev/test/HOWTO /mnt
+# ls /mnt
+lost+found
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>And we're done! Let's review our Volume Group, because it should be filled
+up a bit by now:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# vgdisplay test -v
+--- Volume group ---
+VG Name               test
+VG Access             read/write
+VG Status             available/resizable
+VG #                  0
+MAX LV                256
+Cur LV                1
+Open LV               1
+MAX LV Size           255.99 GB
+Max PV                256
+Cur PV                2
+Act PV                2
+VG Size               184 MB
+PE Size               4 MB
+Total PE              46
+Alloc PE / Size       13 / 52 MB
+Free  PE / Size       33 / 132 MB
+
+--- Logical volume ---
+LV Name               /dev/test/HOWTO
+VG Name               test
+LV Write Access       read/write
+LV Status             available
+LV #                  1
+# open                1
+LV Size               52 MB
+Current LE            13
+Allocated LE          13
+Allocation            next free
+Read ahead sectors    120
+Block device          58:0
+
+
+--- Physical volumes ---
+PV Name (#)           /dev/hda3 (2)
+PV Status             available / allocatable
+Total PE / Free PE    13 / 13
+
+PV Name (#)           /dev/hdb2 (1)
+PV Status             available / allocatable
+Total PE / Free PE    33 / 20
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Well, it is. /dev/hda3 is completely unused, but /dev/hdb2 has 13 Physical
+Extents in use.
+<H2><A NAME="ss3.2">3.2 Active and Inactive: kernel space and user space</A>
+</H2>
+
+<P>As with all decent operating systems, Linux is divided in two parts: kernel
+space and user space. Userspace is sometimes called userland, which would
+also be a good name for a theme park, 'Userland'.
+<P>Discovery, creation and modification of things pertaining to Logical Volume
+Management is done in user space, and then communicated to the kernel. Once
+a volume group or logical volume is reported to the kernel, it is
+called 'Active'. Certain changes can only be performed when an entity is
+active, others only when it is not.
+<P>
+<HR>
+<A HREF="LVM-HOWTO-4.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="LVM-HOWTO-2.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="LVM-HOWTO.html#toc3"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

@@ -1,0 +1,275 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Database-SQL-RDBMS HOW-TO document for Linux (PostgreSQL Object Relational Database System): Security of Database </TITLE>
+ <LINK HREF="PostgreSQL-HOWTO-12.html" REL=next>
+ <LINK HREF="PostgreSQL-HOWTO-10.html" REL=previous>
+ <LINK HREF="PostgreSQL-HOWTO.html#toc11" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="PostgreSQL-HOWTO-12.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="PostgreSQL-HOWTO-10.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="PostgreSQL-HOWTO.html#toc11"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="security"></A> <A NAME="s11">11. Security of Database </A></H2>
+
+<P>Database security is addressed at several levels:
+<UL>
+<LI> Database file protection. All files stored within the database are 
+protected from reading by any account other than the <I>postgres</I>
+superuser account</LI>
+<LI> Connections from a client to the database server are, by default,
+allowed only via an local UNIX socket, not via TCP/IP sockets. The back-end
+must be started with the -i option to allow nonlocal clients to connect.</LI>
+<LI> Client connections can be restricted by IP address and/or username
+via the <B>pg_hba.conf</B> file in <B>$PG_DATA</B>.</LI>
+<LI> Client connections may be authenticated via other external packages.</LI>
+<LI> Each user in Postgres is assigned an username and (optionally) a password.
+By default, users do not have write access to databases they did not create.</LI>
+<LI> Users may be assigned to groups, and table access may be restricted based
+on group priveleges.</LI>
+</UL>
+<H2><A NAME="ss11.1">11.1 User Authentication</A>
+</H2>
+
+<P>Authentication is the process by which the backend server and postmaster 
+ensure that the user requesting access to data is in fact who he/she 
+claims to be. All users who invoke Postgres are checked against the contents
+of the <B>pg_user</B> class to ensure that they are authorized to do so. However,
+verification of the user's actual identity is performed in a variety 
+of ways: 
+<UL>
+<LI> <B>From the user shell:</B> A backend server started from an user shell 
+notes the user's (effective) user-id before performing a 
+<B>setuid</B> to the user-id of user <B>postgres</B>. The effective user-id is used as
+the basis for access control checks. No other authentication is conducted. </LI>
+<LI> <B>From the network:</B> If the Postgres system is built as distributed, access to the 
+Internet TCP port of the postmaster process is available to anyone. The DBA
+configures the <B>pg_hba.conf</B> file in the <B>$PGDATA</B> directory to specify what 
+authentication system is to be used according to the host making the connection
+and which database it is connecting to. 
+See <B>pg_hba.conf(5)</B> (man 5 pg_hba.conf) 
+for a description
+of the authentication systems available. Of course, host-based authentication 
+is not fool-proof in Unix, either. It is possible for determined intruders
+to also masquerade the origination host. Those security issues are beyond
+the scope of Postgres.</LI>
+</UL>
+<H2><A NAME="ss11.2">11.2 Host-Based Access Control</A>
+</H2>
+
+<P>Host-based access control is the name for the basic controls PostgreSQL
+exercises on what clients are
+allowed to access a database and how the users on those clients must 
+authenticate themselves.
+Each database system contains a file named <B>pg_hba.conf</B>, in its 
+<B>$PGDATA</B> directory, which controls who 
+can connect to each database.
+Every client accessing a database must be covered by one of the 
+entries in <B>pg_hba.conf</B>. Otherwise all
+attempted connections from that client will be rejected with a
+<B>"User authentication failed"</B> error message.
+<P>See online man page of <B>pg_hba.conf(5)</B> (man 5 pg_hba.conf).
+<P>The general format of the <B>pg_hba.conf</B> file is of a set of records, one
+per line. Blank lines and lines
+beginning with a hash character ("#") are ignored. A record is made up of
+a number of fields which
+are
+separated by spaces and/or tabs.
+<P>Connections from clients can be made using Unix domain sockets or Internet
+domain sockets (ie.
+TCP/IP). Connections made using Unix domain sockets are controlled using
+records of the following
+format:
+<HR>
+<PRE>
+local database authentication method
+</PRE>
+<HR>
+
+where
+<P><B>database</B> specifies the database that this record applies to. The value 
+<B>all</B> specifies that it applies to
+all databases.
+<P><B>authentication method</B> specifies the method an user must use to authenticate
+themselves when
+connecting to that database using Unix domain sockets. The different 
+methods are described
+below.
+<P>Connections made using Internet domain sockets are controlled using 
+records of the following format.
+<P>
+<HR>
+<PRE>
+host database TCP/IP-address TCP/IP-mask authentication method
+</PRE>
+<HR>
+<P>The <B>TCP/IP</B> address is <I>logically and'ed</I> to both the specified TCP/IP mask
+and the TCP/IP address of the
+connecting client. If the two resulting values are equal then the record 
+is used for this connection. If a
+connection matches more than one record then the earliest one in the
+file is used. Both the TCP/IP
+address and the TCP/IP mask are specified in dotted decimal notation.
+If a connection fails to match any record then the reject authentication 
+method is applied (see 
+<A HREF="#auth_method">Authentication Methods</A>).
+<H2><A NAME="auth_method"></A> <A NAME="ss11.3">11.3 Authentication Methods </A>
+</H2>
+
+<P>The following authentication methods are supported for both Unix and TCP/IP domain sockets:
+<UL>
+<LI> <B>trust</B>
+The connection is allowed unconditionally.</LI>
+<LI> <B>reject</B>
+The connection is rejected unconditionally.</LI>
+<LI> <B>crypt</B>
+The client is asked for a password for the user. This is sent encrypted (using crypt(3)) and compared
+against the password held in the pg_shadow table. If the passwords match, the connection is allowed.</LI>
+<LI> <B>password</B>
+The client is asked for a password for the user. This is sent in clear and compared against the
+password held in the <B>pg_shadow</B> table. If the passwords match, the connection is allowed. An
+optional password file may be specified after the password keyword which is used to match the
+supplied password rather than the <B>pg_shadow</B> table. See <B>pg_passwd</B>.</LI>
+</UL>
+<P>The following authentication methods are supported for TCP/IP domain sockets only:
+<UL>
+<LI> <B>krb4</B>
+Kerberos V4 is used to authenticate the user.</LI>
+<LI> <B>krb5</B>
+Kerberos V5 is used to authenticate the user.</LI>
+<LI> <B>ident</B>
+The ident server on the client is used to authenticate the user (RFC 1413). An optional map name
+may be specified after the <B>ident</B> keyword which allows ident user names to be mapped onto Postgres
+user names. Maps are held in the file <B>$PGDATA/pg_ident.conf</B>.</LI>
+</UL>
+<P>Here are some examples:
+<HR>
+<PRE>
+# Trust any connection via Unix domain sockets.
+local   trust
+# Trust any connection via TCP/IP from this machine.
+host    all 127.0.0.1   255.255.255.255     trust
+# We don't like this machine.
+host    all 192.168.0.10    255.255.255.0       reject
+# This machine can't encrypt so we ask for passwords in clear.
+host    all 192.168.0.3 255.255.255.0       password
+# The rest of this group of machines should provide encrypted passwords.
+host    all 192.168.0.0 255.255.255.0       crypt
+</PRE>
+<HR>
+<H2><A NAME="ss11.4">11.4 Access Control</A>
+</H2>
+
+<P>Postgres provides mechanisms to allow users to limit the access to their data that is provided to other
+users.
+<UL>
+<LI> <B>Database superusers</B>
+Database super-users (i.e., users who have <B>pg_user.usesuper</B> set) silently bypass all of the access
+controls described below with two exceptions: manual system catalog updates are not permitted if the
+user does not have <B>pg_user.usecatupd</B> set, and destruction of system catalogs (or modification of their
+schemas) is never allowed.</LI>
+<LI> <B>Access Privilege</B>
+The use of access privilege to limit reading, writing and setting of rules on 
+classes is covered in SQL <B>grant/revoke(l)</B>.</LI>
+<LI> <B>Class removal and schema modification</B>
+Commands that destroy or modify the structure of an existing class, such as alter, drop table, and
+drop index, only operate for the owner of the class. As 
+mentioned above, these operations are never 
+permitted on system catalogs. </LI>
+</UL>
+<H2><A NAME="ss11.5">11.5 Secure TCP/IP Connection via SSH</A>
+</H2>
+
+<P>You can use <B>ssh</B> to encrypt the network connection between clients and a Postgres server. Done properly,
+this should lead to an adequately secure network connection.
+<P>The documentation for <B>ssh</B> provides most of the information to get started. Please refer to
+<A HREF="http://www.heimhardt.de/htdocs/ssh.html">http://www.heimhardt.de/htdocs/ssh.html</A> for better insight.
+A step-by-step explanation can be done in just two steps.
+<P><B>Running a secure tunnel via ssh: </B>
+A step-by-step explanation can be done in just two steps.
+<UL>
+<LI> Establish a tunnel to the back-end machine, like this:
+<HR>
+<PRE>
+ssh -L 3333:wit.mcs.anl.gov:5432 postgres@wit.mcs.anl.gov
+</PRE>
+<HR>
+</LI>
+<LI> The first number in the <B>-L</B> argument, <B>3333</B>, is the port number of your end of the tunnel. The
+second number, <B>5432</B>, is the remote end of the tunnel -- the port number your backend is using.
+The name or the address in between the port numbers belongs to the server machine, as does the
+last argument to <B>ssh</B> that also includes the optional user name. Without the user name, <B>ssh</B> will try 
+the name you are currently logged on as on the client machine. You can use any user name the
+server machine will accept, not necessarily those related to postgres.</LI>
+<LI> Now that you have a running <B>ssh</B> session, you can connect a postgres client to your local host at the
+port number you specified in the previous step. If it's <B>psql</B>, you will need another shell because the
+shell session you used in step 1 is now occupied with <B>ssh</B>.
+<HR>
+<PRE>
+psql -h localhost -p 3333 -d mpw
+</PRE>
+<HR>
+</LI>
+<LI> Note that you have to specify the <B>-h</B> argument to cause your client to use the TCP socket instead
+of the Unix socket. You can omit the port argument if you chose <B>5432</B> as your end of the tunnel.</LI>
+</UL>
+<H2><A NAME="ss11.6">11.6 Kerberos Authentication</A>
+</H2>
+
+<P>Kerberos is an industry-standard secure authentication system suitable for distributed computing over a
+public network.
+<P><B>Availability: </B>
+The Kerberos authentication system is not distributed with Postgres. Versions of Kerberos are typically
+available as optional software from operating system vendors. In addition, a source code distribution may
+be obtained through MIT Project Athena.
+<P>
+<HR>
+<PRE>
+Note: You may wish to obtain the MIT version even if your vendor provides a version, since
+some vendor ports have been deliberately crippled or rendered non-interoperable with the MIT
+version.
+</PRE>
+<HR>
+<P>Inquiries regarding your Kerberos should be directed to your vendor or MIT Project Athena. Note that
+FAQLs (Frequently-Asked Questions Lists) are periodically posted to the Kerberos mailing list (send mail
+to subscribe), and USENET news group.
+<P><B>Installation: </B>
+Installation of Kerberos itself is covered in detail in the Kerberos Installation Notes . Make sure that the
+server key file (the <B>srvtab</B> or <B>keytab</B>) is somehow readable by the Postgres account.
+Postgres and its clients can be compiled to use either Version 4 or Version 5 of the MIT Kerberos
+protocols by setting the KRBVERS variable in the file <B>src/Makefile.global</B> to the appropriate value. You
+can also change the location where Postgres expects to find the associated libraries, header files
+and its   
+own server key file.
+After compilation is complete, Postgres must be registered as a Kerberos service. See the Kerberos
+Operations Notes and related manual pages for more details on registering services.
+<P><B>Operation: </B>
+After initial installation, Postgres should operate in all ways as a normal Kerberos service. For details on
+the use of authentication, see the <I>PostgreSQL User's Guide</I> reference sections for <B>postmaster</B> and <B>psql</B>.
+<P>In the Kerberos Version 5 hooks, the following assumptions are made about user and service naming(also, see Table below):
+<UL>
+<LI> User principal names (anames) are assumed to contain the actual Unix/Postgres user name in the
+first component.</LI>
+<LI> The Postgres service is assumed to be have two components, the service name and a hostname,
+canonicalized as in Version 4 (i.e., with all domain suffixes removed).</LI>
+</UL>
+<P>
+<HR>
+<PRE>
+                Table: Kerberos Parameter Examples
+ ------------------------------------------------------
+ Parameter      Example
+ ------------------------------------------------------
+ user           frew@S2K.ORG
+ user           aoki/HOST=miyu.S2K.Berkeley.EDU@S2K.ORG
+ host           postgres_dbms/ucbvax@S2K.ORG 
+ ------------------------------------------------------
+</PRE>
+<HR>
+<HR>
+<A HREF="PostgreSQL-HOWTO-12.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="PostgreSQL-HOWTO-10.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="PostgreSQL-HOWTO.html#toc11"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

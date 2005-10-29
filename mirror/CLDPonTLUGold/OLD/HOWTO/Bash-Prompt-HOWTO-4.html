@@ -1,0 +1,201 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Bash Prompt HOWTO: External Commands</TITLE>
+ <LINK HREF="Bash-Prompt-HOWTO-5.html" REL=next>
+ <LINK HREF="Bash-Prompt-HOWTO-3.html" REL=previous>
+ <LINK HREF="Bash-Prompt-HOWTO.html#toc4" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Bash-Prompt-HOWTO-5.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Bash-Prompt-HOWTO-3.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Bash-Prompt-HOWTO.html#toc4"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s4">4. External Commands</A></H2>
+
+<H2><A NAME="ss4.1">4.1 PROMPT_COMMAND</A>
+</H2>
+
+<P>Bash provides another environment variable called <B>PROMPT_COMMAND</B>.
+The contents of this variable are executed as a regular Bash command 
+just before Bash displays a prompt.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+[21:55:01][giles@nikola:~] PS1="[\u@\h:\w]\$ "
+[giles@nikola:~] PROMPT_COMMAND="date +%H%M"
+2155
+[giles@nikola:~] d
+bin   mail
+2156
+[giles@nikola:~] 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>What happened above was that I changed PS1 to no longer include the
+<CODE>\t</CODE> escape sequence, so the time was no longer a part of the
+prompt.  Then I used <CODE>date +%H%M</CODE> to display the time in a format
+I like better.  But it appears on a different line than the prompt.
+Tidying this up using <CODE>echo -n ...</CODE> as shown below works with 
+Bash 2.0+, but appears not to work with
+Bash 1.14.7: apparently the prompt is drawn in a different way, and the
+following method results in overlapping text.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+2156
+[giles@nikola:~] PROMPT_COMMAND="echo -n [$(date +%H%M)]"
+[2156][giles@nikola:~]$
+[2156][giles@nikola:~]$ d
+bin   mail
+[2157][giles@nikola:~]$ unset PROMPT_COMMAND
+[giles@nikola:~]
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P><CODE>echo -n ...</CODE> controls the output of the <CODE>date</CODE> command and
+supresses the trailing newline, allowing the prompt to appear all on one
+line.  At the end, I used the <CODE>unset</CODE> command to remove the
+PROMPT_COMMAND environment variable.
+<P>
+<P>
+<H2><A NAME="ss4.2">4.2 External Commands in the Prompt</A>
+</H2>
+
+<P>You can use the output of regular Linux commands directly in the prompt as
+well.  Obviously, you don't want to insert a lot of material, or it will
+create a large prompt.  You also want to use a <B>fast</B> command,
+because it's going to be executed every time your prompt appears on the
+screen, and delays in the appearance of your prompt while you're working
+can be very annoying.  (Unlike the previous example that this closely
+resembles, this does work with Bash 1.14.7.)
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+[21:58:33][giles@nikola:~]$ PS1="[\$(date +%H%M)][\u@\h:\w]\$ "
+[2159][giles@nikola:~]$ ls
+bin   mail
+[2200][giles@nikola:~]$
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>It's important to notice the backslash before the dollar sign of the
+command substitution.  Without it, the external command is executed exactly
+once: when the PS1 string is read into the environment.  For this prompt,
+that would mean that it would display the same time no matter how long the
+prompt was used.  The backslash protects the contents of $() from immediate
+shell interpretation, so "date" is called every time a prompt is generated.
+<P>
+<P>Linux comes with a lot of small utility programs like <B>date</B>,
+<B>grep</B>, or <B>wc</B> that allow you to manipulate data.  If you
+find yourself trying to create complex combinations of these programs
+within a prompt, it may be easier to make an alias, function, or shell
+script of your own, and call it from the prompt.  Escape sequences are
+often required in bash shell scripts to ensure that shell variables are
+expanded at the correct time (as seen above with the date command): this is
+raised to another level within the prompt PS1 line, and avoiding it by
+creating functions is a good idea.
+<P>
+<P>An example of a small shell script used within a prompt is given below:
+<P>
+<HR>
+<PRE>
+#!/bin/bash
+#     lsbytesum - sum the number of bytes in a directory listing
+TotalBytes=0
+for Bytes in $(ls -l | grep "^-" | cut -c30-41)
+do
+    let TotalBytes=$TotalBytes+$Bytes
+done
+TotalMeg=$(echo -e "scale=3 \n$TotalBytes/1048576 \nquit" | bc)
+echo -n "$TotalMeg"
+</PRE>
+<HR>
+<P>
+<P>I have at times kept this both as a function, or as a shell script in my
+~/bin directory, which is on my path.  Used in a prompt:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+[2158][giles@nikola:~]$ PS1="[\u@\h:\w (\$(lsbytesum) Mb)]\$ "
+[giles@nikola:~ (0 Mb)]$ cd /bin
+[giles@nikola:/bin (4.498 Mb)]$
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss4.3">4.3 What to Put in Your Prompt</A>
+</H2>
+
+<P>You'll find I put username, machine name, time, and current directory name
+in most of my prompts.  With the exception of the time, these are very
+standard items to find in a prompt, and time is probably the next most
+common addition.  But what you include is entirely a matter of personal
+taste.  Here are examples from people I know to help give you ideas.
+<P>
+<P>Dan's prompt is minimal but very effective, particularly for the way he
+works.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+[giles@nikola:~]$ cur_tty=$(tty | sed -e "s/.*tty\(.*\)/\1/")
+[giles@nikola:~]$ echo $cur_tty
+p4
+[giles@nikola:~]$ PS1="\!,$cur_tty,\$?\$ "
+1095,p4,0$ 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>Dan doesn't like that having the current working directory can resize the
+prompt drastically as you move through the directory tree, so he keeps
+track of that in his head (or types "pwd").  He learned Unix with csh and
+tcsh, so he uses his command history extensively (something many of us
+weened on Bash do not do), so the first item in the prompt is the history
+number.  The second item is the significant characters of the tty (the
+output of "tty" is cropped with sed), an item that can be useful to
+"screen" users.  The third item is the exit value of the last
+command/pipeline (note that this is rendered useless by any command
+executed within the prompt - you could work around that by capturing it to
+a variable and playing it back, though).  Finally, the "\$" is a dollar
+sign for a regular user, and switches to a hash mark ("#") if the user is
+root.
+<P>
+<P>Torben Fjerdingstad (tfj@fjerdingstad.dk) wrote to tell me that he often
+suspends jobs and then forgets about them.  He uses his prompt to remind
+himself of suspended jobs:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+[giles@nikola:~]$ function jobcount {
+&gt; jobs|wc -l| awk '{print $1}'
+&gt; }
+[giles@nikola:~]$ export PS1='\W[`jobcount`]# '
+giles[0]# man ls &amp;
+[1] 4150
+
+[1]+  Stopped (tty output)    man ls
+giles[1]#
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>Torben uses <B>awk</B> to trim the whitespace from the output of wc,
+while I would have used sed or tr - not because they're better, but because
+I'm more familiar with them.  There are probably other ways as well.
+Torben also surrounds his PS1 string in single quotes, which prevent Bash
+from immediately interpreting the backquotes, so he doesn't have to escape
+them as I have mentioned.
+<P>
+<P><B>NOTE:</B> There is a known bug in Bash 2.02 that causes the
+<B>jobs</B> command (a shell builtin) to return nothing to a pipe.  If
+you try the above under Bash 2.02, you will always get a "0" back
+regardless of how many jobs you have suspended.  This problem is 
+fixed in 2.03.
+<P>
+<P>
+<P>
+<P>
+<HR>
+<A HREF="Bash-Prompt-HOWTO-5.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Bash-Prompt-HOWTO-3.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Bash-Prompt-HOWTO.html#toc4"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

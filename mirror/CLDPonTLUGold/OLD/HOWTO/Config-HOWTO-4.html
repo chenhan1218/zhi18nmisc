@@ -1,0 +1,1214 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE> Configuration HOWTO: Software Configuration </TITLE>
+ <LINK HREF="Config-HOWTO-5.html" REL=next>
+ <LINK HREF="Config-HOWTO-3.html" REL=previous>
+ <LINK HREF="Config-HOWTO.html#toc4" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Config-HOWTO-5.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Config-HOWTO-3.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Config-HOWTO.html#toc4"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="config"></A> <A NAME="s4">4. Software Configuration </A></H2>
+
+<P>
+<P>These are the the configuration files we are going to custimise: 
+/etc/profile /etc/bashrc <CODE>.bashrc</CODE>
+<CODE>.bashrc .bash_profile .bash_logout .inputrc .less .lessrc .xinitrc </CODE>
+<CODE>.fvwmrc .fvwm2rc95 .Xmodmap .Xmodmap.num .Xdefaults .jedrc </CODE>
+<CODE>.abbrevs.sl .joerc .emacs </CODE>.
+Don't add users until you have completed your system configuration; you'll
+put the dot files in /etc/skel.
+<P>
+<P>
+<H2><A NAME="ss4.1">4.1 bash(1)</A>
+</H2>
+
+<P>
+<P>Arguably, the most important piece of software after the kernel. To tailor
+the behaviour of <CODE>bash</CODE>, these are the main files to edit:
+<P>
+<UL>
+<LI> /etc/bashrc contains system wide aliases and functions;
+</LI>
+<LI> /etc/profile contains system wide environment stuff and
+startup programs;
+</LI>
+<LI> <CODE>$HOME/.bashrc</CODE> contains user aliases and functions;
+</LI>
+<LI> <CODE>$HOME/.bash_profile</CODE> contains user environment 
+stuff and startup programs;
+</LI>
+<LI> <CODE>$HOME/.inputrc</CODE> contains key bindings and other bits.
+</LI>
+</UL>
+<P>Examples of these files are shown below. First, the most important:
+/etc/profile. It's used to configure a lot of features in your
+Linux box, as you will see in the following sections. Please look out for
+reverse quotes!
+<P>
+<HR>
+<PRE>
+# /etc/profile
+
+# System wide environment and startup programs
+# Functions and aliases go in /etc/bashrc
+
+# This file sets up the following features and programs:
+# path, prompts, a few environment variables, colour ls, less,
+# rxvt, Backspace key behaviour, xterm title.
+#
+# Users can override these settings and/or add others in their
+# $HOME/.bash_profile
+
+# first: root or normal user? Set PATH and umask accordingly. Note that the
+# PATH is normally set by login(1), but what if you access the machine
+# via ssh?
+
+if [ $(id -gn) = $(id -un) -a $(id -u) -gt 14 ]; then
+  umask 002  # normal user
+  PATH="/usr/local/bin:/bin:/usr/bin:."
+else
+  umask 022  # root
+  PATH="/sbin:/bin:/usr/sbin:/usr/bin"
+fi
+
+# Now extend the PATH.
+PATH="$PATH:/usr/X11R6/bin:$HOME/bin:." # !!! Beware of ./ !!!
+
+# notify the user: login or non-login shell. If login, the prompt is
+# blue; otherwise, magenta. Root's prompt is red.
+# See the Colour-ls mini HOWTO for an explanation of the escape codes.
+USER=$(whoami)
+if [ $LOGNAME = $USER ] ; then
+  COLOUR=44  # blue
+else
+  COLOUR=45  # magenta
+fi
+
+if [ $USER = 'root' ] ; then
+  COLOUR=41  # red
+  PATH="$PATH:/usr/local/bin" # my choice
+fi
+
+ESC="\033"
+PROMPT='\h'    # hostname
+STYLE='m'      # plain
+# PROMPT='\u'  # username
+# STYLE=';1m'  # bold
+PS1="\[$ESC[$COLOUR;37$STYLE\]$PROMPT:\[$ESC[37;40$STYLE\]\w\\$ "
+PS2="> "
+
+# Ulimits: no core dumps, max file size 200 Mb.
+ulimit -c 0 -f 200000
+
+# a few variables
+USER=$(id -un)
+LOGNAME=$USER
+MAIL="/var/spool/mail/$USER"  # sendmail, postfix, smail
+# MAIL="$HOME/Mailbox"        # qmail
+NNTPSERVER=news.myisp.it      # put your own here
+VISUAL=jed
+EDITOR=jed
+HOSTNAME=$(/bin/hostname)
+HISTSIZE=1000
+HISTFILESIZE=1000
+export PATH PS1 PS2 USER LOGNAME MAIL NNTPSERVER
+export VISUAL EDITOR HOSTNAME HISTSIZE HISTFILESIZE
+
+# enable colour ls
+eval $(dircolors /etc/DIR_COLORS -b)
+export LS_OPTIONS='-s -F -T 0 --color=yes'
+
+# customize less
+LESS='-M-Q'
+LESSEDIT="%E ?lt+%lt. %f"
+LESSOPEN="| lesspipe.sh %s"
+LESSCHARDEF=8bcccbcc13b.4b95.33b. # show colours in ls -l | less
+# LESSCHARSET=latin1
+PAGER=less
+export LESS LESSEDIT LESSOPEN VISUAL LESSCHARDEF PAGER
+
+# you might need this to fix the backspace key in rxvt/xterm
+stty erase ^H  # alternative: ^?
+
+# set xterm title: full path
+case $TERM in
+  xterm*|rxvt)
+    PROMPT_COMMAND='echo -ne "\033]0;${USER}@${HOSTNAME}: ${PWD}\007"'
+    ;;
+esac      
+
+for i in /etc/profile.d/*.sh ; do
+  if [ -x $i ]; then
+    . $i # beware - variables and aliases might get overridden!
+  fi
+done
+
+# call fortune, if available 
+if [ -x /usr/games/fortune ] ; then
+echo ; /usr/games/fortune ; echo 
+fi
+</PRE>
+<HR>
+<P>This is a sample /etc/bashrc:
+<P>
+<HR>
+<PRE>
+# /etc/bashrc
+
+# System wide functions and aliases
+# Environment stuff goes in /etc/profile
+# Insert PS1 definitions here if you experience problems.
+
+export CDPATH="$CDPATH:~"
+
+# common aliases
+alias cp='cp -i'
+alias l=less
+alias ls="ls $LS_OPTIONS"
+alias mv='mv -i'
+alias rm='rm -i'
+alias rmbk='/bin/rm -f .*~ *~ *aux *bak *log *tmp 2> /dev/null'
+alias u='cd ..'
+alias which="type -path"
+alias x=startx
+
+# A few useful functions
+c ()    # cd to the new directory and list its contents
+{
+  cd $1 ; ls
+}
+
+inst()  # Install a .tar.gz archive in current directory
+{
+  if [ $# != 0 ]; then tar zxvf $1; fi
+}
+
+cz()    # List the contents of a .zip archive
+{
+  if [ $# != 0 ]; then unzip -l $*; fi
+}
+
+ctgz()  # List the contents of a .tar.gz archive
+{
+  for file in $* ; do
+    tar ztf ${file}
+  done
+}
+
+tgz()   # Create a .tgz archive a la zip.
+{
+  if [ $# != 0 ]; then
+    name=$1.tar; shift; tar -rvf ${name} $* ; gzip -9 ${name}
+  fi
+}
+
+crpm()  # list information on an .rpm file
+{
+  if [ $# != 0 ]; then rpm -qil $1 | less; fi
+}
+</PRE>
+<HR>
+<P>This is a sample <CODE>.bashrc</CODE>:
+<P>
+<HR>
+<PRE>
+# $HOME/.bashrc
+# Source global definitions
+
+if [ -f /etc/bashrc ]; then
+  . /etc/bashrc
+fi
+
+# this is needed to notify the user that they are in non-login shell
+if [ "$GET_PS1" = "" ] ; then
+  COLOUR=45; ESC="\033"; STYLE=';1m';  # STYLE='m'
+  USER=$(whoami)
+  export PS1="\[$ESC[$COLOUR;37$STYLE\]$USER:\[$ESC[37;40$STYLE\]\w\\$ "
+fi
+
+# personal aliases
+alias backup='tar -Mcvf /dev/fd0'
+alias dial='eznet up myisp'
+alias f='cd ~/fortran'
+alias hangup='eznet down'
+alias lyx='lyx -width 580 -height 450'
+alias restore='tar -M -xpvf /dev/fd0'
+
+# personal functions
+xj()    # Launch xjed and a file in background
+{
+  xjed $1 &amp;
+}
+</PRE>
+<HR>
+<P>This is a sample <CODE>.bash_profile</CODE>:
+<P>
+<HR>
+<PRE>
+# $HOME/.bash_profile
+
+# User specific environment and startup programs
+# This file contains user-defined settings that override
+# those in /etc/profile
+
+# Get user aliases and functions
+if [ -f ~/.bashrc ]; then
+  GET_PS1="NO"  # don't change the prompt colour
+  . ~/.bashrc
+fi
+    
+# set a few `default' directories
+export CDPATH="$CDPATH:$HOME:$HOME/text:$HOME/text/geology"
+</PRE>
+<HR>
+<P>This is a sample <CODE>.inputrc</CODE>:
+<P>
+<HR>
+<PRE>
+# $HOME/.inputrc
+
+# key bindings
+"\e[1~": beginning-of-line
+"\e[3~": delete-char
+"\e[4~": end-of-line
+# (F1 .. F5) are "\e[[A" ... "\e[[E"
+"\e[[A": "info \C-m"
+
+set bell-style visible          # please don't beep
+set meta-flag On                # allow 8-bit input (i.e, accented letters)
+set convert-meta Off            # don't strip 8-bit characters
+set output-meta On              # display 8-bit characters correctly
+set horizontal-scroll-mode On   # scroll long command lines
+set show-all-if-ambiguous On    # after TAB is pressed
+</PRE>
+<HR>
+<P>To make the backspace and delete keys work correctly in <CODE>xterm</CODE> and
+other X11 applications, the following is also needed:
+<P>
+<UL>
+<LI> put this in your <CODE>.xinitrc</CODE>:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+usermodmap=$HOME/.Xmodmap
+xmodmap $usermodmap
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI> then your <CODE>.Xmodmap</CODE> will contain:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+keycode 22 = BackSpace
+keycode 107 = Delete
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+this fixes the console. To fix <CODE>xterm</CODE>:
+</LI>
+<LI> put this in your <CODE>.Xdefaults</CODE>:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+xterm*VT100.Translations: #override &lt;Key>BackSpace: string(0x7F)\n\
+        &lt;Key>Delete:        string(0x1b) string("[3~")\n\
+        &lt;Key>Home:          string(0x1b) string("[1~")\n\
+        &lt;Key>End:           string(0x1b) string("[4~")\n\
+        Ctrl&lt;Key>Prior:     string(0x1b) string("[40~")\n\
+        Ctrl&lt;Key>Next:      string(0x1b) string("[41~")
+
+nxterm*VT100.Translations: #override &lt;Key>BackSpace: string(0x7F)\n\
+        &lt;Key>Delete:        string(0x1b) string("[3~")\n\
+        &lt;Key>Home:          string(0x1b) string("[1~")\n\
+        &lt;Key>End:           string(0x1b) string("[4~")\n\
+        Ctrl&lt;Key>Prior:     string(0x1b) string("[40~")\n\
+        Ctrl&lt;Key>Next:      string(0x1b) string("[41~")
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+</UL>
+<P><CODE>rxvt</CODE> is a wee bit more complicated, as some compile--time options
+influence its behaviour. See the above /etc/profile.
+<P>More info in <CODE>bash</CODE>(1) and <CODE>readline</CODE>(3) man pages.
+<P>Don't expect every application to work correctly! If you run <CODE>joe</CODE> in
+<CODE>xterm</CODE>, for instance, some keys won't work; the same holds for some 
+versions of <CODE>rxvt</CODE>.
+<P>
+<P>
+<H2><A NAME="ss4.2">4.2 I18n</A>
+</H2>
+
+<P>
+<P>(This section doesn't apply to native English speakers.)
+<P>A.k.a. ``internationalisation''. Gasp. This long word means ``to adapt Linux
+to your local conventions: language, format of date, currency etc.''.
+<P>Although Red Hat has its own method for setting up i18n
+(/etc/sysconfig/i18n), you may want to
+enable your language only in some cases. I, for one, enabled i18n in
+<CODE>kdm</CODE> (via <CODE>kdmconfig</CODE>) and <CODE>xfce</CODE>, but want to read
+English messages when I work in console or xterm.
+<P>Consider these lines:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+LANG=it # choose your language: fr, de, es, ...
+LANGUAGE=it
+LC_ALL=it
+export LANG LANGUAGE LC_ALL
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>If you insert them in your <CODE>.xinitrc</CODE> or <CODE>.xsession</CODE> just
+before the line that starts the window manager, you'll get internationalised
+messages - including those in xterms started from within the window manager.
+But if you'd rather get English messages, set the language to ``en'' and put
+the same lines in <CODE>.bash_profile</CODE>.
+<P>
+<P>
+<H2><A NAME="ss4.3">4.3 ls(1)</A>
+</H2>
+
+<P>
+<P><CODE>ls</CODE> can display directory listings using colours to highlight
+different file types. To enable this feature, you just need a couple of
+lines in /etc/profile as seen above. However, this won't work 
+with old versions of <CODE>rxvt</CODE>; use some flavour of <CODE>xterm</CODE>
+instead. It looks like some old <CODE>rxvt</CODE>s have a bug that prevents them
+from inheriting the environment correctly in some circumstances.
+<P>
+<P>
+<H2><A NAME="ss4.4">4.4 less(1)</A>
+</H2>
+
+<P>
+<P>With this excellent pager you can browse not only plain text files, but also
+gzip compressed, tar and zip archives, man pages, and what have you. Its
+configuration involves a few steps:
+<P>
+<UL>
+<LI> to use it with the movement keys, have this plain ASCII 
+file <CODE>.lesskey</CODE> in your home directory:
+
+ 
+
+<BLOCKQUOTE><CODE>
+<PRE>
+^[[A   back-line
+^[[B   forw-line
+^[[C   right-scroll
+^[[D   left-scroll
+^[OA   back-line
+^[OB   forw-line
+^[OC   right-scroll
+^[OD   left-scroll
+^[[6~  forw-scroll
+^[[5~  back-scroll
+^[[1~  goto-line
+^[[4~  goto-end
+^[[7~  goto-line
+^[[8~  goto-end
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+then run the command <CODE>lesskey</CODE>. (These are escape sequences for
+vt100-like terminals.) This creates a binary file <CODE>.less</CODE>
+containing the key bindings.
+
+</LI>
+<LI> write the following file as /usr/bin/lesspipe.sh:
+
+<HR>
+<PRE>
+#!/bin/sh
+# This is a preprocessor for 'less'.  It is used when this environment
+# variable is set:   LESSOPEN="|lesspipe.sh %s"
+
+lesspipe() {
+  case "$1" in
+  *.tar) tar tf $1 2>/dev/null ;; # View contents of .tar and .tgz files
+  *.tgz|*.tar.gz|*.tar.Z|*.tar.z) tar ztf $1 2>/dev/null ;;
+  *.Z|*.z|*.gz) gzip -dc $1  2>/dev/null ;; # View compressed files correctly
+  *.bz2) bzip2 -dc $1  2>/dev/null ;;
+  *.zip) unzip -l $1 2>/dev/null ;; # View archives
+  *.arj) unarj -l $1 2>/dev/null ;;
+  *.rpm) rpm -qpil $1 2>/dev/null ;;
+  *.cpio) cpio --list -F $1 2>/dev/null ;;
+  *.1|*.2|*.3|*.4|*.5|*.6|*.7|*.8|*.9|*.n|*.l|*.man) FILE=`file -L $1`
+    FILE=`echo $FILE | cut -d ' ' -f 2`
+    if [ "$FILE" = "troff" ]; then
+      groff -s -p -t -e -Tascii -mandoc $1
+    fi ;;
+  *) file $1 | grep text > /dev/null ;
+    if [ $? = 1 ] ; then # it's not some kind of text
+      strings $1
+    fi ;;
+  esac
+}
+
+lesspipe $1
+</PRE>
+<HR>
+
+
+then make it executable with <CODE>chmod 755 lesspipe.sh</CODE>.
+</LI>
+<LI> put the variables that affect <CODE>less</CODE> in
+/etc/profile as seen above.
+</LI>
+</UL>
+<P>
+<P>
+<H2><A NAME="ss4.5">4.5 Editor</A>
+</H2>
+
+<P>
+<P>Only the most popular will be covered here.
+<P>
+<P>
+<H3>emacs(1)</H3>
+
+<P>
+<P>I rarely use <CODE>emacs</CODE>, so I have only a couple of tips for you.
+Some <CODE>emacs</CODE> distributions don't come preconfigured for colours and
+syntax highlighting. Put this in your <CODE>.emacs</CODE>:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+(global-font-lock-mode t)
+(setq font-lock-maximum-decoration t)
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>This only works in X11. Moreover, to enable accented characters you'll add
+this line:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+(standard-display-european 1)
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>I'll leave it to you to peruse all of <CODE>emacs</CODE>' documentation to find
+out how to tailor it to your needs---potentially, it can take months of 
+hacking.  The Dotfile generator (Section 
+<A HREF="Config-HOWTO-5.html#Config sw">Configuration Software</A>) is a good helping hand.
+<P>
+<P>
+<H3>joe(1)</H3>
+
+<P>
+<P>Some versions of <CODE>joe</CODE> don't work with colours in console, and some
+special keys don't work either. A quick and dirty (and inelegant) solution
+to the former problem is this:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+~$ export TERM=vt100
+~$ joe myfile
+   (edit your file)
+~$ export TERM=linux
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>To make the special keys work, all you have to do is edit <CODE>.joerc</CODE>,
+<CODE>.jstarrc</CODE> or your favourite emulation; you can start from the
+system-wide config files in /usr/lib/joe. Look for the fourth
+section (key bindings). This enables Home and End:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+bol ^[ [ 1 ~    Go to beginning of line
+eol ^[ [ 4 ~    Go to end of line
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Find out the desired ESC sequences typing <CODE>cat</CODE> followed by the
+special keys.
+<P>
+<P>
+<H3><A NAME="jed"></A> jed(1) </H3>
+
+<P>
+<P>This is my favourite editor: it does what I need, it's lighter and easier to
+configure than <CODE>emacs</CODE>, and emulates other editors quite well.
+Many users at my university use <CODE>jed</CODE> to emulate <CODE>EDT</CODE>, VMS'
+system editor.
+<P><CODE>jed</CODE>'s configuration files are <CODE>.jedrc</CODE> and 
+/usr/lib/jed/lib/*; the former can be adapted from
+<CODE>jed.rc</CODE> in the latter directory. 
+<P>
+<UL>
+<LI> if <CODE>xjed</CODE> apparently doesn't recognise the DEL key, add or
+comment out these lines in your <CODE>.jedrc</CODE>:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+#ifdef XWINDOWS
+  x_set_keysym (0xFFFF, 0, "\e[3~");
+  setkey (``delete_char_cmd'', "\e[3~");
+#endif
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI> to make <CODE>jed</CODE> emulate <CODE>EDT</CODE> (or other editors) all you
+have to do is edit a couple of lines in <CODE>.jedrc</CODE>. If you want the
+numeric keypad `<CODE>+</CODE>' to delete words instead of a single character,
+add this in <CODE>.jedrc</CODE>:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+unsetkey("\eOl");
+unsetkey("\eOP\eOl");
+setkey("edt_wdel", "\eOl");
+setkey("edt_uwdel", "\eOP\eOl");
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+after the line that reads <CODE>() = evalfile("edt")</CODE> (or similar);
+</LI>
+<LI> to make <CODE>xjed</CODE> use the numeric keypad for <CODE>EDT</CODE>
+emulation, insert the following in <CODE>.Xmodmap</CODE>:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+keycode 77  = KP_F1
+keycode 112 = KP_F2
+keycode 63  = KP_F3
+keycode 82  = KP_F4
+keycode 86  = KP_Separator
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI> colour customization for <CODE>xjed</CODE> is done adding lines like these 
+in <CODE>.Xdefaults</CODE>:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+xjed*Geometry: 80x32+150+50
+xjed*font: 10x20
+xjed*background: midnight blue
+# and so on...
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI> the ``abbreviation'' feature is an invaluable timesaver. Write a file
+like the following as <CODE>$HOME/.abbrevs.sl</CODE> (you can change this
+name by inserting <CODE>variable Abbrev_File = "/usr/lib/jed/abbrev.sl";</CODE>
+in <CODE>.jedrc</CODE>):
+
+<BLOCKQUOTE><CODE>
+<PRE>
+create_abbrev_table ("Global", "0-9A-Za-z");
+define_abbrev ("Global", "GG", "Guido Gonzato");
+create_abbrev_table ("TeX", "\\A-Za-z0-9");
+define_abbrev ("TeX", "\\beq", "\\begin{equation}");
+define_abbrev ("TeX", "\\eeq", "\\end{equation}");
+% and so on...
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+and type <CODE>ESC x abbrev_mode</CODE> to enable it. To enable the abbreviation
+by default, add entries like these to your <CODE>.jedrc</CODE>:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+define text_mode_hook ()
+{
+  set_abbrev_mode (1);
+}
+%
+define fortran_hook ()
+{
+  set_abbrev_mode (1);
+  use_abbrev_table ("Fortran");
+}
+% and so on...
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+</UL>
+<P>
+<P>
+<H2><A NAME="ss4.6">4.6 pine(1)</A>
+</H2>
+
+<P>
+<P>Edit the global configuration in /usr/lib/pine.conf, taking
+care at least of the following fields: <CODE>user-domain</CODE>,
+<CODE>smtp-server</CODE>, and <CODE>nntp-server</CODE>. Note that
+<CODE>inbox-path</CODE> depends on your MTA: if you use <CODE>sendmail</CODE> or
+<CODE>postfix</CODE>, that'll be <CODE>var/spool/mail/$USER</CODE>; with Qmail,
+/home/$USER/Mailbox (but root will use
+/var/qmail/alias/Mailbox.
+<P>
+<P>
+<H2><A NAME="ss4.7">4.7 minicom(1)</A>
+</H2>
+
+<P>
+<P>Users can't use <CODE>minicom</CODE> unless a global configuration has been made
+by root. Remember to make it.
+<P>
+<P>
+<H2><A NAME="ss4.8">4.8 efax(1)</A>
+</H2>
+
+<P>
+<P>This package is probably the most convenient for simple sending/receiving of
+faxes. You'll have to tailor the script /usr/bin/fax or
+(mandrake) /etc/fax.config; easy job,
+but a couple of quirks caused me quite a headache:
+<P>
+<UL>
+<LI> to find out whether your modem is class 1, 2, or 2.0, use minicom or
+similar program to issue the command <CODE>at+fclass=?</CODE>. The reply may be
+like <CODE>0,1,2</CODE>; 1 and 2 are the classes supported by your modem;
+</LI>
+<LI> DIALPREFIX: chances are that simply putting `<CODE>T</CODE>' or 
+`<CODE>P</CODE>' won't work in some countries-in Italy, at least. Put
+`<CODE>ATDT</CODE>' or `<CODE>ATDP</CODE>' instead;
+</LI>
+<LI> INIT and RESET: these strings contain the initialisers `<CODE>-i</CODE>'
+and `<CODE>-k</CODE>', needed by <CODE>efax</CODE>. If you want to add an AT command, 
+add it to the appropriate string leaving out `<CODE>AT</CODE>' and preceding the 
+rest with either `<CODE>-i</CODE>' or `<CODE>-k</CODE>'. Example: to add the
+`<CODE>ATX3</CODE>' command to INIT, you'll append `<CODE>-iX3</CODE>'.
+</LI>
+</UL>
+<P>That done, there are a few permissions to fix to enable non-root users to
+send and receive faxes. The directories /var/lock and 
+/var/spool/fax must be writable. To do so, create the 
+group <CODE>faxusers</CODE>, add users to it, then type:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+~# chown root.faxusers /var/lock
+~# mkdir /var/spool/fax # if it doesn't exist yet
+~# chown root.faxusers /var/spool/fax; chmod g+w /var/spool/fax
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>As a normal user, you'll issue <CODE>newgrp faxusers</CODE> before sendig a fax.
+<P>
+<P>
+<H2><A NAME="ss4.9">4.9 Ghostscript</A>
+</H2>
+
+<P>
+<P>This essential tool suffers from a small snag. Owing to to the well-known
+export regulations in the USA, the utility <CODE>pdf2ps</CODE> doesn't work with
+encrypted .pdf files. Never mind: point your browser to
+<A HREF="http://www.ozemail.com.au/~geoffk/pdfencrypt">http://www.ozemail.com.au/~geoffk/pdfencrypt</A>, download the file
+<CODE>pdf_sec.ps</CODE> and replace the file with the same name that
+comes with the Ghostscript distribution.
+<P>
+<P>
+<H2><A NAME="ss4.10">4.10 TeX and Friends</A>
+</H2>
+
+<P>
+<P>The ``root'' of a TeX system is the directory $TEXMF, which is
+/usr/share/texmf in teTeX; other distributions may differ
+(search for ``texmf'' on your system). You normally add stuff or fiddle with
+files therein.
+<P>
+<P>
+<H3>Expanding $TEXINPUTS</H3>
+
+<P>
+<P>
+<P>To include PostScript figures or TeX files that reside in subdirectories, it
+is convenient to expand TeX's search path to include subdirectories. Put
+this command in your .bash_profile:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+export TEXINPUTS="$HOME/mylib::./figures"
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>which makes TeX search in <CODE>$HOME/mylib</CODE> <EM>before</EM> the default
+directories, and the directory <CODE>./figures</CODE> <EM>afterwards</EM>.
+<P>
+<P>
+<H3>Hyphen Patterns</H3>
+
+<P>
+<P>To configure the hyphenation pattern for your language, edit the file
+$TEXMF/tex/generic/config/language.dat, then do:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+~# texconfig init ; texconfig hyphen
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Even if you don't write in English, don't remove the entry ``english''; TeX
+pukes without it.
+<P>
+<P>
+<H3>Dvips</H3>
+
+<P>
+<P>To tailor <CODE>dvips</CODE>, the file to edit is 
+$TEXMF/dvips/config/config.ps. Be aware that the fields 
+regarding the default resolution also affect <CODE>xdvi</CODE>'s behaviour;
+if you experience annoying attempts to create fonts each time you run it,
+put the line
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+XDvi*mfmode:
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>in your <CODE>.Xdefault</CODE>. This should help.
+<P>
+<P>
+<H3>Adding LaTeX Packages</H3>
+
+<P>
+<P>Additional LaTeX packages are available from your nearest CTAN
+(Comprehensive TeX Archive Network) mirror site, e.g.
+<A HREF="ftp://ftp.dante.de/pub/tex">ftp://ftp.dante.de/pub/tex</A>. Unpack the package
+under $TEXMF/tex/latex.
+<P>If no .sty file exist, run the command <CODE>latex newstyle.ins</CODE> or
+<CODE>latex newstyle.dtx</CODE> to create it, then run the command
+<CODE>texhash</CODE> so that teTeX recognises the new package.
+<P>
+<P>
+<H2><A NAME="ss4.11">4.11 Avoid PPProblems!</A>
+</H2>
+
+<P>
+<P>I'll take it for granted that your kernel has PPP + TCP/IP support compiled
+in, that loopback is enabled, and that you already have the <CODE>pppd</CODE>
+package correctly installed and, if you will, set uid root. Obviously, your
+ISP must support PPP.
+<P>There are now two ways to get PPP to work: a) manual configuration, and b) a
+configuration program that automagically sees to it. Whichever option you
+choose, have the following information on hand:
+<P>
+<UL>
+<LI> your ISP's telephone number;
+</LI>
+<LI> your ISP's name, mail and news server address;
+</LI>
+<LI> your ISP's domain;
+</LI>
+<LI> your username and password.
+</LI>
+</UL>
+<P>Manual configuration is a drudgery. It's about editing files and writing
+scripts; not too much work, but it's easy to make mistakes and newcomers are
+often intimidated. The PPP HOWTO is there for you. Alternatively, there are
+tools that ask for the information above and do all the work.
+<P>Gnome and KDE include, respectively, <CODE>gnome-ppp</CODE> and <CODE>kppp</CODE>
+which are easy enough to set up. Alternatively, I suggest that you have a
+look at a couple of tty--based tools, <CODE>wvdial</CODE> and <CODE>eznet</CODE>.
+You feed them your ISP's phone number, your username, your password, and
+you're in business. Their home pages are
+at  
+<A HREF="http://www.worldvisions.ca/wvdial">http://www.worldvisions.ca/wvdial</A> and
+<A HREF="http://www.hwaci.com/sw/eznet">http://www.hwaci.com/sw/eznet</A>. Both are great, but I prefer
+the latter.
+<P>
+<P>
+<H3>A Quick Start with eznet</H3>
+
+<P>
+<P>First of all, create an /etc/resolv.conf like this:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+nameserver w.x.y.z
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>where you'll insert the address of your ISP's nameserver. To create an
+account with <CODE>eznet</CODE>, issue the following command:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#~ eznet add service=YOUR_ISP user=NAME password=PASSWORD phone=PHONE
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>which creates the file /var/eznet/eznet.conf, owned by root.root
+with permissions 600; chmod it to 666 if you want it to be world readable.
+Now dial your ISP with <CODE>eznet up YOUR_ISP</CODE>. If the modem keeps
+waiting for the dial tone and won't connect, then try this command:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#~ eznet change YOUR_ISP init0=atx3
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>To hang up, the command is <CODE>eznet down</CODE>. That's all!
+<P>
+<P>
+<H3>A Quick Start with wvdial</H3>
+
+<P>
+<P><CODE>wvdial</CODE>'s setup is even shorter. Type <CODE>wvdialconf
+/etc/wvdial.conf</CODE>, then edit the resulting file to include your
+username, password, and phone number. Try it out with <CODE>wvdial</CODE>, and
+keep your fingers crossed. To hang up, stop it with Ctrl-C.
+<P>
+<P>
+<H2><A NAME="ss4.12">4.12 POP Client</A>
+</H2>
+
+<P>
+<P>To retrieve your mail from a POP3 server, you need a POP client. Most such
+clients require that you run an MTA like <CODE>sendmail</CODE>, <CODE>qmail</CODE>
+or <CODE>postfix</CODE>; a bit of an overkill on low-spec machines. However,
+there are clients that work without an MTA. The first kind is well
+represented by <CODE>fetchmail</CODE>; the second by <CODE>fetchpop</CODE> or
+<CODE>frenchie</CODE>. Sites: 
+<A HREF="ftp://metalab.unc.edu/pub/Linux/system/mail/pop">ftp://metalab.unc.edu/pub/Linux/system/mail/pop</A>, 
+<A HREF="http://www.lowcountry.com/~jscottb/tcltk.shtml">http://www.lowcountry.com/~jscottb/tcltk.shtml</A>.
+<P>To configure these clients:
+<P>
+<UL>
+<LI> <CODE>fetchpop</CODE>: the first time you run it, you'll be prompted for 
+some information. Answer the questions and you're set. <CODE>fetchpop</CODE>
+must be used with the <CODE>-r</CODE> switch if your ISP's POP3 server doesn't
+implement the command LAST properly. 
+</LI>
+<LI> <CODE>frenchie</CODE>: as above, edit
+&nbsp;/.frenchie/frenchierc;
+</LI>
+<LI> <CODE>fetchmail</CODE>: adapt this sample <CODE>.fetchmailrc</CODE>:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+# $HOME/.fetchmailrc
+poll mbox.myisp.com with protocol pop3;
+  user john there with password _Loo%ny is john here 
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+One user reported that adding ``smtphost localhost'' to the second line
+improved performance dramatically.
+
+You must set the permissions to this file with the command 
+<CODE>chmod 600 .fetchmailrc</CODE>, otherwise <CODE>fetchmail</CODE> will rightly
+refuse to start. This example is very basic; there are endless possibilities 
+of configuration. Check out at 
+<A HREF="http://www.ccil.org/~esr/fetchmail">http://www.ccil.org/~esr/fetchmail</A>.
+</LI>
+</UL>
+<P>
+<P>
+<H2><A NAME="ss4.13">4.13 Basic Mail Filtering</A>
+</H2>
+
+<P>
+<P>You will want to protect yourself from spam or huge mail messages. There
+are two cases: 1) permanent connection to the net, 2) a POP link. In the
+first case, you can write a <CODE>.procmailrc</CODE> file, while in the second
+there are tools for checking the mail prior to fetching it.
+<P>A very simple <CODE>.procmailrc</CODE> that defines a few rules:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# $HOME/.procmailrc
+
+MAILDIR=$HOME/mail # make sure it exists
+
+# Store messages directed to the "foo" mailing list to $HOME/mail/foo
+:0
+* ^To:.*foo
+foo
+
+# Discard messages that are not explicitly sent to me or to one of the
+# mailling lists I subscribed to.
+:0
+* !^TO(guido|jed|lugvr|ldp|nobody)
+/dev/null
+
+# ditto, for messages larger than 50k.
+:0
+* > 50000
+/dev/null
+</PRE>
+</CODE></BLOCKQUOTE>
+<P><CODE>man procmailex</CODE> for further examples.
+<P>POP users will want to use <CODE>poppy</CODE>, a useful Perl script for checking
+the mail before fetching it. Get it from
+<A HREF="ftp://metalab.unc.edu/system/mail/pop">ftp://metalab.unc.edu/system/mail/pop</A>.
+<P>
+<P>
+<H2><A NAME="ss4.14">4.14 X Window System (XFree86)</A>
+</H2>
+
+<P>
+<P>
+<H3>Setting Up the X Server</H3>
+
+<P>
+<P>Come on, it's no longer as difficult as it used to be... All major
+distributions include a tool for setting up X11 (e.g.
+<CODE>XConfigurator</CODE>, <CODE>sax</CODE>, <CODE>XF86Setup</CODE>, or at least
+<CODE>xf86config</CODE>). X configuration is virtually automatic these days, but
+a few video cards may cause a headache.
+<P>First of all, check out at the XFree86 site 
+(
+<A HREF="http://www.xfree86.org">http://www.xfree86.org</A>) whether your video card is supported.
+If so, then try this procedure:
+<P>
+<UL>
+<LI> install the plain VGA server;
+</LI>
+<LI> go to 
+<A HREF="ftp://ftp.XFree86.org/pub/XFree86/current/binaries">ftp://ftp.XFree86.org/pub/XFree86/current/binaries</A>, cd to
+the proper Linux subdirectory, and download the archives
+<CODE>X_version_bin.tgz</CODE>, <CODE>X_version_set.tgz</CODE>, and all the servers.
+Amongst other programs, the first archive contains the most up-to-date
+<CODE>SuperProbe</CODE>;
+</LI>
+<LI> unpack <CODE>X_version_bin.tgz</CODE> to a temporary directory, cd to it, 
+and run <CODE>./SuperProbe</CODE>. If your video card is recognised, chances are
+that you'll be able to set it up. Otherwise, hard luck;
+</LI>
+<LI> install the servers and <CODE>X_version_set.tgz</CODE> from
+/usr/X11R6/, then run  <CODE>XF86Setup</CODE>. 
+</LI>
+</UL>
+<P>This has always worked for me, but your mileage may vary. Please note that
+most times X11 won't start because you chose wrong specs for your monitor!
+Start with conservative settings, i.e. 800x600 and 256 colours,
+then pump it up. <EM>Warning</EM>: these operations are dangerous and your
+monitor might be damaged!
+<P>If your card isn't supported, you can either: 1) wait for the next version of
+XFree86; 2) buy a commercial X server; 3) buy a supported video card.
+<EM>Quartum non datur.</EM>
+<P>
+<P>
+<H3>Keypad</H3>
+
+<P>
+<P>We have seen above how to make a few special keys work. The sample file 
+<CODE>.Xmodmap</CODE> works well if you want to use Xjed, but it makes the keypad
+unusable. You'll then need another config file, which we'll call
+<CODE>.Xmodmap.num</CODE>:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+! Definitions can be found in &lt;X11/keysymdef.h>
+
+keycode 77  = Num_Lock
+keycode 112 = KP_Divide
+keycode 63  = KP_Multiply
+keycode 82  = KP_Subtract
+keycode 86  = KP_Add
+keycode 79  = KP_7
+keycode 80  = KP_8
+keycode 81  = KP_9
+keycode 83  = KP_4
+keycode 84  = KP_5
+keycode 85  = KP_6
+keycode 87  = KP_1
+keycode 88  = KP_2
+keycode 89  = KP_3
+keycode 90  = KP_0
+keycode 91  = KP_Decimal
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Make sure that your /etc/X11/XF86Config does not contain
+these three lines:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+  ServerNumLock
+  Xleds
+  XkbDisable
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>and in case, comment them out. To re-enable the keypad, you'll issue the
+command <CODE>xmodmap .Xmodmap.num</CODE>.
+<P>
+<P>
+<H3>Graphical Login with xdm</H3>
+
+<P>
+<P>To be greeted by a graphical login, edit the file /etc/inittab, 
+which should include a line like this:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+x:5:respawn:/usr/bin/X11/xdm -nodaemon # also kdm or gdm
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>where 5 is the runlevel corresponding to X11. Modify the line that defines
+the default runlevel (usually 2 or 3), changing it as above:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+id:5:initdefault:
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>The number of colours is specified in /etc/X11/xdm/Xserver:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+:0 local /usr/X11R6/bin/X :0 -bpp 16 vt07  # first X server, 65k colours
+:1 local /usr/X11R6/bin/X :1 -bpp 32 vt08  # second X server, true colour
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>If you already have <CODE>.xinitrc</CODE>, copy it to <CODE>.xsession</CODE> and
+make the latter executable with <CODE>chmod +x .xsession</CODE>. Now issue the
+command <CODE>telinit 5</CODE> and you're in business.
+<P>
+<P>
+<H3>Window Manager</H3>
+
+<P>
+<P>Once X works, there are endless possibilities of configuration; it depends
+on the window manager you use, there are tens to choose from. Mostly, it's
+all down to editing one or more ASCII files in your home directory; in other
+cases you don't have to edit a thing, and use an applet or even a menu.
+<P>Some examples:
+<P>
+<UL>
+<LI> <B>the fvwm family</B>: copy /etc/X11/fvwm/system.fvwmrc
+(or similar) to your home using the appropriate name, browse it and start
+experimenting. You may waste a lot of time before you get the precise look
+and feel you like;
+</LI>
+<LI> <B>WindowMaker</B>: it has several config files that live under
+<CODE>$HOME/GNUstep</CODE>, and a cool configuration applet;
+</LI>
+<LI> <B>KDE</B>, <B>Gnome</B>, <B>xfce</B> and others: nothing to 
+edit manually here, everything can be done via the menu.
+</LI>
+</UL>
+<P>In short: if you don't mind editing config file, choose something like
+<CODE>icewm</CODE>, <CODE>fvwm*</CODE>, <CODE>blackbox</CODE> etc; if you do mind, the
+choice is currently restricted to KDE, Gnome, WindowMaker, and Xfce. Email
+me if I'm wrong.
+<P>It's important to have a good <CODE>.xinitrc</CODE>. An example:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#!/bin/sh
+# $HOME/.xinitrc
+
+usermodmap=$HOME/.Xmodmap
+xmodmap $usermodmap
+
+xset s noblank  # turn off the screen saver
+xset s 300 2    # screen saver start after 5 min
+xset m 10 5     # set mouse acceleration
+
+rxvt -cr green -ls -bg black -fg white -fn 7x14 \
+  -geometry 80x30+57+0 &amp;
+
+if [ "$1" = "" ] ; then  # default
+  WINMGR=wmaker
+else
+  WINMGR=$1
+fi
+
+$WINMGR
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Although it doesn't appear to be strictly required, make
+it executable with <CODE>chmod +x .xinitrc</CODE>.
+<P>The <CODE>.xinitrc</CODE> above lets you choose the window manager: try 
+<BLOCKQUOTE><CODE>
+<PRE>
+$ startx startkde # or other w.m.
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>
+<H3>Defaults for X11 Apps</H3>
+
+<P>
+<P>Find out where the app-defaults directory is (it should be 
+/usr/X11R6/lib/X11/app-defaults). Several apps keep a
+configuration file there.
+<P>
+<P>
+<H3>Adding Fonts</H3>
+
+<P>
+<P>Recent versions of XFree86 (say, &gt; 3.3.4) use an X Font Server that
+supports PostScript Type 1 and True Type fonts natively, so you can use the
+wealth of fonts available on the net. There's a simple procedure to follow.
+<P>Suppose that you download a Type 1 font collection, e.g. Freefont
+(
+<A HREF="ftp://ftp.gimp.org/pub/gimp/fonts/freefonts-0.10.tar.gz">ftp://ftp.gimp.org/pub/gimp/fonts/freefonts-0.10.tar.gz</A>).
+To make it visible to the font server, unpack the archive from
+/usr/X11R6/lib/X11/fonts/. Then edit
+/etc/X11/fs/config, add an entry for the new directory, and
+restart the font server.
+<P>If you're rolling your own font collection, you'll need to supply the files 
+<CODE>fonts.dir</CODE> and <CODE>fonts.scale</CODE>; the tool to make them is
+<CODE>type1inst</CODE>, available from 
+<A HREF="http://http://goblet.anu.edu.au/~m9305357/type1inst.html">http://http://goblet.anu.edu.au/~m9305357/type1inst.html</A>.
+<P>As for the True Type fonts, group them in a directory of your choice and
+create <CODE>fonts.dir</CODE> using <CODE>ttmkfdir > fonts.dir</CODE>, included in
+the Freetype archive; 
+<A HREF="http://www.freetype.org">http://www.freetype.org</A>. Then proceed as
+above. For example, if you want to use the Windows fonts you have in, say,
+/mnt/win/windows/fonts, go to that directory, run
+<CODE>ttmkfdir</CODE>, edit /etc/X11/fs/config and restart the font
+server.
+<P>It all started from the original True Type X font server:
+<A HREF="http://http://www.dcs.ed.ac.uk/home/jec/programs/xfsft/">http://http://www.dcs.ed.ac.uk/home/jec/programs/xfsft/</A>. 
+<P>
+<P>
+<H2><A NAME="ss4.15">4.15 Users' Configurations</A>
+</H2>
+
+<P>
+<P>When you're done editing the dot files, copy them to /etc/skel
+as seen in Section 
+<A HREF="#config">Software Configuration</A>.
+<P>
+<P>
+<H2><A NAME="ss4.16">4.16 Making .rpms</A>
+</H2>
+
+<P>
+<P><CODE>rpm</CODE> is such a wonderful method of keeping packages under control
+that I'm reluctant to install .tar.gz archives but in very few special cases
+(e.g., security). Whenever you install a tarball, consider turning it into
+an .rpm archive, then reinstall it; consult the RPM HOWTO. Also, if you use
+recent <CODE>gcc</CODE> versions, it may be advisable to put this in
+your <CODE>/etc/rpmrc</CODE>:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+optflags: i386 -O2 -mpentiumpro
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>
+<H2><A NAME="ss4.17">4.17 Upgrading</A>
+</H2>
+
+<P>
+<P>If you upgrade your machine, do your backup as usual and remember to save a
+few additional files. Some could be /etc/X11/XF86Config,
+/usr/bin/fax, all the stuff in /usr/local, the
+kernel configuration, the whole /etc, and all the mail in
+/var/spool/mail.
+<P>Then it's time to upgrade (in rare cases, downgrade!) applications that your
+distribution ship with, and to add additional packages. Keep a list of these
+ones.
+<P>
+<P>
+<HR>
+<A HREF="Config-HOWTO-5.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Config-HOWTO-3.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Config-HOWTO.html#toc4"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

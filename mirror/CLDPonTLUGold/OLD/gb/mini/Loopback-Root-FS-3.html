@@ -1,0 +1,357 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>The Loopback Root Filesystem HOWTO: 如何建立绕回根目录设备</TITLE>
+ <LINK HREF="Loopback-Root-FS-4.html" REL=next>
+ <LINK HREF="Loopback-Root-FS-2.html" REL=previous>
+ <LINK HREF="Loopback-Root-FS.html#toc3" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+<A HREF="Loopback-Root-FS-4.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Loopback-Root-FS-2.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Loopback-Root-FS.html#toc3"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s3">3. 如何建立绕回根目录设备</A></H2>
+
+<P>下面将介绍如何建立绕回设备
+<P>
+<P>
+<H2><A NAME="ss3.1">3.1 需求</A>
+</H2>
+
+<P>要建立一个绕回根目录设备必须要有下列事项.
+<P>
+<P>
+<UL>
+<LI>一个可以运作的 Linux 系统</LI>
+<LI>必须能够复制一个大档案到 DOS 分割区中
+</LI>
+</UL>
+<P>最重要的是必须能存取一个安装好可运作的 Linux 系统.
+这是因为绕回设备只能在 Linux 下建立.
+也就是说你不可能从无中生有.
+而且你必须要能在这个系统上编译核心.
+<P>
+<P>当绕回设备建立之後, 这将是一个很大的档案.
+我使用了一个 80 MB 的档案, 如此我才能建立一个 X 终端机; 但如果你希望能做更多事, 这可能也不够.
+这个档案必须被复制到 DOS 分割区中, 所以网路或是一堆软碟是必须的.
+<P>
+<P>你所需要的软体包括:
+<P>
+<UL>
+<LI><CODE>LOADLIN</CODE> 1.6版以上</LI>
+<LI>任何一个支援绕回设备的 <CODE>mount</CODE> 程式</LI>
+<LI>支援所需选项的核心</LI>
+</UL>
+<P>对现在的 Linux 而言, 应该都能符合以上需求.
+<P>
+<P>
+<H2><A NAME="ss3.2">3.2 建立 Linux 核心</A>
+</H2>
+
+<P>我是用 2.0.31 版的核心来使用绕回装置, 其他版本的核心应该也可以用.
+但他们至少必须要有以下的功能.
+<P>
+<P>你必须将核心的列功能启动
+<UL>
+<LI>记忆体磁碟支援 (<CODE>CONFIG_BLK_DEV_RAM</CODE>).</LI>
+<LI>初始化记忆体 (initrd) 支援 (<CODE>CONFIG_BLK_DEV_INITRD</CODE>).</LI>
+<LI>绕回装置支援 (<CODE>CONFIG_BLK_DEV_LOOP</CODE>).</LI>
+<LI>fat 档案系统支援 (<CODE>CONFIG_FAT_FS</CODE>).</LI>
+<LI>msdos 档案系统支援 (<CODE>CONFIG_MSDOS_FS</CODE>).</LI>
+</UL>
+<P>前面二个是用来使用记忆体磁碟装置与初始化记忆体磁碟装置.
+第三个是绕回档案系统的支援,
+最後二个则是用来挂载 DOS 分割区所必须的支援.
+<P>
+<P>编译核心且不使用模组支援是最简单的选择. 但如果你希望使用模组化支援应该也是可以, 虽然我没有试过.
+如果你使用模组化支援, 你必须确定上列的选项是直接编译在核心内而不是编译成模组.
+<P>
+<P>依据核心版本的不同, 你可能需要使用一些修补.
+下面是一些简单的修补用来让核心可以将绕回装置作为根目录档案系统使用.
+<UL>
+<LI>2.0.0 版之前的核心: 我没有相关资讯.</LI>
+<LI>2.0.0 到 2.0.34 之间的核心版本: 你必须使用下列给 2.0.x 版的核心修补.</LI>
+<LI>2.0.35 到 2.0.x 之间的核心不需要修补.</LI>
+<LI>2.1.x 版的核心必须依据您的确实版本而使用下列给 2.0.x 或 2.2.x 版的核心修补.</LI>
+<LI>2.2.0 到 2.2.10 之间的核心版本: 你必须使用下列给 2.2.x 版的核心修补.</LI>
+<LI>2.3.x 版的核心: 你必须使用下列给 2.2.x 版的核心修补.</LI>
+</UL>
+<P>
+<P>对於 2.0.x 版的核心, 必须将 <CODE>"loop", 0x0700</CODE> 这一行加到 <CODE>/init/main.c</CODE> 的原始码中而成为下面的样子.
+<P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+static void parse_root_dev(char * line)
+{
+        int base = 0;
+        static struct dev_name_struct {
+                const char *name;
+                const int num;
+        } devices[] = {
+                { "nfs",     0x00ff },
+                { "loop",    0x0700 },
+                { "hda",     0x0300 },
+
+...
+
+                { "sonycd",  0x1800 },
+                { NULL, 0 }
+        };
+
+...
+
+}
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>对於 2.2.x 版的核心, 必须将 <CODE>"loop", 0x0700</CODE> 与前後各一行(共三行)加到 <CODE>/init/main.c</CODE> 的原始码中而成为下面的样子
+<P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+static struct dev_name_struct {
+        const char *name;
+        const int num;
+} root_dev_names[] __initdata = {
+#ifdef CONFIG_ROOT_NFS
+        { "nfs",     0x00ff },
+#endif
+#ifdef CONFIG_BLK_DEV_LOOP
+        { "loop",    0x0700 },
+#endif
+#ifdef CONFIG_BLK_DEV_IDE
+        { "hda",     0x0300 },
+
+...
+
+        { "ddv", DDV_MAJOR &lt;&lt; 8},
+#endif
+        { NULL, 0 }
+};
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>当核心组态设好後, 他必须被编译成 <CODE>zImage</CODE> 档 (<CODE>make zImage</CODE>).
+编译好的档案会被放在 <CODE>arch/i386/boot/zImage</CODE>.
+<P>
+<P>
+<H2><A NAME="ss3.3">3.3 建立初始化记忆体磁碟装置</A>
+</H2>
+
+<P>建立初始化记忆体磁碟最简单的方式是将它当成绕回装置挂载.
+你必须使用 root 的权限来做这件事.
+建立程序如下所示, 这些指令是在 root 的家目录 (<CODE>/root</CODE>) 中执行的.
+<P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+mkdir /root/initrd
+dd if=/dev/zero of=initrd.img bs=1k count=1024
+mke2fs -i 1024 -b 1024 -m 5 -F -v initrd.img
+mount initrd.img /root/initrd -t ext2 -o loop
+cd initrd
+[建立必须的档案]
+cd ..
+umount /root/initrd
+gzip -c -9 initrd.img &gt; initrdgz.img
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>这些指令的作用如下所述.
+<OL>
+<LI>建立一个给初始化记忆体使用的挂载点 (一个空目录).</LI>
+<LI>建立一个指定大小的空档案, 此处我建立一个 1024kB 的档案, 你必须依据你所要放置档案的量来决定这个档案的大小. (档案大小是最後一个参数)</LI>
+<LI>将这个档案格式化成 ext2 档案系统.</LI>
+<LI>将这个档案以绕回的方式挂载倒挂载点上.</LI>
+<LI>切换目录到绕回设备的挂载点中.</LI>
+<LI>建立必须的档案 (细节将在後面讨论).</LI>
+<LI>离开绕回档案所挂载的目录.</LI>
+<LI>将绕回设备卸载.</LI>
+<LI>建立一个压缩的版本以供後续使用.</LI>
+</OL>
+<P><B>初始化记忆体磁碟的内容</B>
+<P>你必须至少有下列的档案放置於初始化记忆体磁碟中, 否则将不能使用任何指令.
+<P>
+<UL>
+<LI><CODE>/linuxrc</CODE> 挂载 DOS 档案系统的指令稿. (如下所示)</LI>
+<LI><CODE>/lib/*</CODE> 程式所需要的动态连结器与函式库.</LI>
+<LI><CODE>/etc/*</CODE> 动态连结所需的快取, 虽然静态连结程式不需要, 但可以避免警告讯息.</LI>
+<LI><CODE>/bin/*</CODE> 使用者命令解译器 (此处我使用 <CODE>ash</CODE>, 因为它比 <CODE>bash</CODE> 小).
+而 <CODE>mount</CODE> 与 <CODE>losetup</CODE> 程式是用於挂载 DOS 磁碟与设定绕回装置.</LI>
+<LI><CODE>/dev/*</CODE> 必须的装置控制档, 你至少需要 <CODE>/dev/zero</CODE> 以供 <CODE>ld-linux.so</CODE> 使用, <CODE>/dev/hda*</CODE> 以挂载 DOS 磁碟, 以及 <CODE>/dev/loop*</CODE> 以挂载绕回装置.</LI>
+<LI><CODE>/mnt</CODE> 一个空的挂载点, 以供 DOS 磁碟挂载.</LI>
+</UL>
+<P>下面是我所用的起始化记忆体磁碟之内容, 所需空间约 800 kB.
+<P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+total 18
+drwxr-xr-x   2 root     root         1024 Jun  2 13:57 bin
+drwxr-xr-x   2 root     root         1024 Jun  2 13:47 dev
+drwxr-xr-x   2 root     root         1024 May 20 07:43 etc
+drwxr-xr-x   2 root     root         1024 May 27 07:57 lib
+-rwxr-xr-x   1 root     root          964 Jun  3 08:47 linuxrc
+drwxr-xr-x   2 root     root        12288 May 27 08:08 lost+found
+drwxr-xr-x   2 root     root         1024 Jun  2 14:16 mnt
+
+./bin:
+total 168
+-rwxr-xr-x   1 root     root        60880 May 27 07:56 ash
+-rwxr-xr-x   1 root     root         5484 May 27 07:56 losetup
+-rwsr-xr-x   1 root     root        28216 May 27 07:56 mount
+lrwxrwxrwx   1 root     root            3 May 27 08:08 sh -&gt; ash
+
+./dev:
+total 0
+brw-r--r--   1 root     root       3,   0 May 20 07:43 hda
+brw-r--r--   1 root     root       3,   1 May 20 07:43 hda1
+brw-r--r--   1 root     root       3,   2 Jun  2 13:46 hda2
+brw-r--r--   1 root     root       3,   3 Jun  2 13:46 hda3
+brw-r--r--   1 root     root       7,   0 May 20 07:43 loop0
+brw-r--r--   1 root     root       7,   1 Jun  2 13:47 loop1
+crw-r--r--   1 root     root       1,   3 May 20 07:42 null
+crw-r--r--   1 root     root       5,   0 May 20 07:43 tty
+crw-r--r--   1 root     root       4,   1 May 20 07:43 tty1
+crw-r--r--   1 root     root       1,   5 May 20 07:42 zero
+
+./etc:
+total 3
+-rw-r--r--   1 root     root         2539 May 20 07:43 ld.so.cache
+
+./lib:
+total 649
+lrwxrwxrwx   1 root     root           18 May 27 08:08 ld-linux.so.1 -&gt; ld-linux.so.1.7.14
+-rwxr-xr-x   1 root     root        21367 May 20 07:44 ld-linux.so.1.7.14
+lrwxrwxrwx   1 root     root           14 May 27 08:08 libc.so.5 -&gt; libc.so.5.3.12
+-rwxr-xr-x   1 root     root       583795 May 20 07:44 libc.so.5.3.12
+
+./lost+found:
+total 0
+
+./mnt:
+total 0
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>比较复杂的步骤是建立 <CODE>dev</CODE> 目录下面的装置控制档.
+你可以用 <CODE>/dev</CODE> 下面现有的装置控制档为□本, 并以 <CODE>mknod</CODE> 程式来建立他们.
+<P>
+<P><B>/linuxrc 指令档</B>
+<P>起始化记忆磁碟中的 <CODE>/linuxrc</CODE> 指令稿是用来完成挂载绕回装置所需的前置准备.
+<P>下面的□例是以 <CODE>/dev/hda1</CODE> 为 DOS 分割区, 并在成功挂载 DOS 分割区後, 将<CODE>/linux/linuxdsk.img</CODE> 设定为 <CODE>/dev/loop0</CODE> ;并将 <CODE>/linux/linuxswp.img</CODE> 设定为 <CODE>/dev/loop1</CODE>.
+<P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#!/bin/sh
+
+echo INITRD: Trying to mount /dev/hda1 as msdos
+
+if /bin/mount -n -t msdos /dev/hda1 /mnt; then
+
+   echo INITRD: Mounted OK
+   /bin/losetup /dev/loop0 /mnt/linux/linuxdsk.img
+   /bin/losetup /dev/loop1 /mnt/linux/linuxswp.img
+   exit 0
+
+else
+
+   echo INITRD: Mount failed
+   exit 1
+
+fi
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>前面的 <CODE>/dev/loop0</CODE> 装置将被挂载为根目录, 後面的 <CODE>/dev/loop1</CODE> 则将被作为记忆体置换区使用.
+<P>
+<P>如果你希望 root 以外的使用者也能写入 DOS 分颗区, 你必须改成使用 <CODE>mount -n -t msdos /dev/hda1 /mnt -o uid=0,gid=0,umask=000,quiet</CODE>.
+这会将所有对 DOS 分割区的存取对应成 root, 并且适当的设定权限.
+<P>
+<P>
+<H2><A NAME="ss3.4">3.4 建立根目录装置</A>
+</H2>
+
+<P>你所使用的根目录装置将是 <CODE>linuxdsk.img</CODE> 这个档案.
+你可以用与建立起始记忆体磁碟相同的方法建立这个档案, 所不同处仅在於必须较大, 足以容纳你要安装的程式.
+<P>
+<P>最简单的办法是将现有的 Linux 系统复制到这个档案系统中.
+当然你也可以重新安装一套新的 Linux 系统.
+<P>
+<P>假设你已经做过这些事, 你只要作一些小改变.
+<P>
+<P><CODE>/etc/fstab</CODE> 档案必须将根目录磁碟与置换区对应到你在启示记忆体磁碟中的绕回设备.
+<P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+/dev/loop0     /      ext2   defaults 1 1
+/dev/loop1     swap   swap   defaults 1 1
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>这将确保核心会使用正确的根目录装置.
+也可以用相同的方法加入置换磁碟.
+你也必须移除其他根目录磁碟与置换区的对应.
+<P>
+<P>如果你希望在 Linux 启动後能够读取 DOS 分割区, 你必须作下面这些额外的小修改.
+<P>
+<P>建立叫做 <CODE>/initrd</CODE> 的目录, 这是再绕回根目录系统挂载後, 初始记忆体磁碟挂载的地方.
+<P>建立一个符号连接 <CODE>/DOS</CODE> 指向 <CODE>/initrd/mnt</CODE>, 也就是 DOS 分割区被挂载的地方.
+<P>在 rc 档中加入类似 <CODE>mount -f -t msdos /dev/hda1 /initrd/mnt</CODE> 的指令, 以建立一个 "假的" 挂载, 如此例如 <CODE>df</CODE> 等程式才会知道这个挂载.
+如果你在 <CODE>/linuxrc</CODE> 中用不同的设定, 请自行修正以符合设定.
+<P>
+<P>由於核心在之前便会被载入, 所以你不需要在根目录装置中放置系统核心.
+但如果你使用了核心的模组, 你仍然必须将这些模组放在根目录装置中.
+<P>
+<P>
+<H2><A NAME="ss3.5">3.5 建立置换装置</A>
+</H2>
+
+<P>你所使用的置换装置将是 <CODE>linuxswap.img</CODE>.
+这个置换装置相当容易建立.
+首先如同之前的做法建立一个空档案, 然後执行 <CODE>mkswap linuxswap.img</CODE> 来格式化这个置换档.
+<P>
+<P>置换空间的大小依据个人的使用而不同, 但我建议将它设为大於 8MB, 但小於实体记忆体量.
+<P>
+<P>
+<H2><A NAME="ss3.6">3.6 建立 MSDOS 目录</A>
+</H2>
+
+<P>你所要使用的档案必须被搬移到 DOS 分割区中.
+<P>
+<P>必须被放在 <CODE>C:\LINUX</CODE> 目录下的档案包括
+<P>
+<UL>
+<LI><CODE>LINUXDSK.IMG</CODE> 作为根目录装置的影像档.</LI>
+<LI><CODE>LINUXSWP.IMG</CODE> 置换装置.</LI>
+</UL>
+<P>
+<H2><A NAME="ss3.7">3.7 建立开机软碟</A>
+</H2>
+
+<P>开机软碟的制作与标准 DOS 开机软碟相同.
+<P>在 DOS 下使用 <CODE>format a: /s</CODE> 以建立开机软碟.
+<P>
+<P>在这张软碟上, 你必须建立一个 <CODE>AUTOEXEC.BAT</CODE> 档, 如下所示.
+并且复制 Linux 系统核心与压缩过的起始记忆体磁碟档案, 以及 <CODE>LOADLIN</CODE> 执行档.
+<P>
+<UL>
+<LI><CODE>AUTOEXEC.BAT</CODE> - DOS 下的开机自动执行批次档.</LI>
+<LI><CODE>LOADLIN.EXE</CODE> - <CODE>LOADLIN</CODE> 执行档.</LI>
+<LI><CODE>ZIMAGE</CODE> - Linux 系统核心.</LI>
+<LI><CODE>INITRDGZ.IMG</CODE> - 压缩过的起始记忆体磁碟档.</LI>
+</UL>
+<P><CODE>AUTOEXEC.BAT</CODE> 仅需要下面这行.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+\loadlin \zImage initrd=\initrdgz.img root=/dev/loop0 ro
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>这会指定要用的系统核心与起始化记忆体磁碟档以及根目录磁碟的位置, 并将根目录以唯读的方式挂载.
+<P>
+<HR>
+<A HREF="Loopback-Root-FS-4.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Loopback-Root-FS-2.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Loopback-Root-FS.html#toc3"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

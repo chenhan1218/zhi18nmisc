@@ -1,0 +1,66 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE> 教堂與市集 (The Cathedral and the Bazaar) : 由 Fetchmail 學到的一些經驗 (A Few More Lessons From Fetchmail)</TITLE>
+ <LINK HREF="Cathedral-Bazaar-9.html" REL=next>
+ <LINK HREF="Cathedral-Bazaar-7.html" REL=previous>
+ <LINK HREF="Cathedral-Bazaar.html#toc8" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 4, 1);</SCRIPT>
+<A HREF="Cathedral-Bazaar-9.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Cathedral-Bazaar-7.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Cathedral-Bazaar.html#toc8"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s8">8. 由 Fetchmail 學到的一些經驗 (A Few More Lessons From Fetchmail)</A></H2>
+
+<P>在我們回頭討論一般軟體工程的議題前, 由 fetchmail 得來的一些特殊教訓值得
+深思.
+<P>Fetchmail 設定檔 (rc file) 的語法包括可要可不要的關鍵字, 這些如 ``噪音''
+般的字眼會被語法分析程式忽略, 這些字的加入, 使得設定檔的語法和英文很
+接近, 和傳統中簡潔的 ``關鍵字 -- 設定值'' 配對表示法 (把噪音字去掉就可以
+得到) 比較起來, 要來得容易閱讀.
+<P>這個教訓開始於某一個夜晚的實驗, 我注意到設定檔中的宣告語法可以組成一個
+迷你的祈使語言. (這也是為什麼我把原來 popclient 中的關鍵字 ``伺服器''
+(server) 改成 ``詢問'' (poll)).
+<P>對我而言, 如果把這個祈使語言弄得更像英文, 那會讓 fetchmail 更易於使用,
+雖然我現在信服如 Emacs, HTML, 及許多資料庫引擎制定出來的模範語言, 在 
+正常情況下我也不那麼迷英文的語法.
+<P>傳統的程式師喜歡非常精確而簡潔的設定語法, 不希望有任何冗餘在其中, 這是
+因為早期的電腦計算資源昂貴而遺留下來的觀念, 他們認為語法分析的過程要
+節約計算資源, 並要儘可能的簡單. 英文的語句大約有百分之五十的冗餘, 所以
+不利於做為設定語法.
+<P>但這並非我在正常的情況下不用英文語法的原因, 我在此提及是為了推翻像英文
+的語法不適合作設定語法的論點, 當中央處理器和記憶體都變得便宜時, 設定語法
+的簡潔已不再是我們的目標, 現在的情況是: 一個電腦語言中符合人性易於使用
+的重要性已超過節約電腦的計算資源.
+<P>然而還是有好幾個地方要小心, 其中之一是語法分析過程變得比較複雜的代價
+-- 你不會想把這個特點 (使用像英文的設定語法) 變成程式錯誤的來源及
+使用者的疑惑處. 另一個是當我們要訂出一個像英文的語言時, 通常需要做些
+修改, 表面上看起來修改過後的語法可重組出自然語言, 但可能也會因修改過
+以致於和傳統的設定語法一樣, 令人感到疑惑. (我們可以在許多所謂的第四代
+程式語言和商業用的資料庫查詢語言看到這個現象.)
+<P>Fetchmail 的控制語法看起來免除了這個問題, 因為我嚴格地限制控制語法的
+範圍, 它不是一個以通用為目的的語言, 它簡單並不很複雜, 所以在極小的英文
+子集和真正的控制語言之間的相混處很少, 我認為這裡還有一個更廣義的教訓:
+<P><B>[格言 16] 當你設計的語言不是嚴謹到 ``完全 Turing'', 你可以採用比較平易的語法.</B>
+<P><EM>16. When your language is nowhere near Turing-complete, syntactic
+sugar can be your friend.</EM>
+<P>另有一個教訓是關於含糊的保密性, 有一些 fetchmail 的使用者要我修改程式,
+以把經保密處理的通行碼儲存於設定檔內, 這樣子一來, 偷窺者就沒辦法看到
+真正的密碼了.
+<P>我並沒有這麼做, 因為這個做法並不能達到真正的安全, 能拿到讀取你設定檔
+權限的人, 也能以你的身份執行 fetchmail -- 如果你的通行密碼經保密處理
+存在設定檔中, 他們可以由 fetchmail 中取得解碼程式來得到你真正的通行密碼.
+<P>如果我把程式改成可以在 fetchmail 的設定檔中儲存保密的通行密碼, 那會給
+認為這並不難的人們對保密性的錯誤觀念. 一般的守則應該是:
+<P><B>[格言 17] 一個保密系統是否安全依存於它隱藏的秘密, 注意不要有``虛擬秘密''.</B>
+<P><EM>17. A security system is only as secure as its secret.  Beware of
+pseudo-secrets.</EM>
+<P><EM>[譯注] 以 fetchmail 為例, 隱藏的秘密是指 ``通行密碼'', ``虛擬秘密'' 是指把通行密碼編碼後存於設定檔中 .</EM> 
+<P>
+<HR>
+<A HREF="Cathedral-Bazaar-9.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Cathedral-Bazaar-7.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Cathedral-Bazaar.html#toc8"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

@@ -1,0 +1,624 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="LinuxDoc-Tools 0.9.16">
+ <TITLE>系统设置-HOWTO: 一般系统设定</TITLE>
+ <LINK HREF="Config-HOWTO-3.html" REL=next>
+ <LINK HREF="Config-HOWTO-1.html" REL=previous>
+ <LINK HREF="Config-HOWTO.html#toc2" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Config-HOWTO-3.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="Config-HOWTO-1.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="Config-HOWTO.html#toc2"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s2">2.</A> <A HREF="Config-HOWTO.html#toc2">一般系统设定</A></H2>
+
+
+
+<H2><A NAME="ss2.1">2.1</A> <A HREF="Config-HOWTO.html#toc2.1">安全问题</A>
+</H2>
+
+<P>在开始启动系统之前，首先应该决定要采用何种级别的安全规范。在作出这项决定之前，不要将电脑与网络连接。
+电脑安全是极其重要的问题，但它不属于这份 HOWTO 的讨论范围。不过，要了解电脑的安全问题可从两方面著手：“ Linux 安全管理员手册”（ Linux  Security Administrator's Guide）
+<A HREF="http://www.seifried.org/lasg">http://www.seifried.org/lasg</A>
+和“ Linux 安全手册”（ Linux  Security Guide）
+<A HREF="http://nic.com/">http://nic.com/</A> （译注：此处英文原文有漏） 
+下列步骤：使用Shadow password（Shadow Password  HOWTO ）限制网路进入机器（Section 
+<A HREF="Config-HOWTO-3.html#Restricting">限制网路进入Restricting Network Access</A>）、
+使用 Secure Shell (
+<A HREF="http://www.cs.hut.fi/ssh/">http://www.cs.hut.fi/ssh/</A>) 或使用
+Secure Remote Password (
+<A HREF="http://srp.stanford.edu/srp/">http://srp.stanford.edu/srp/</A>)。祝您好运。</P>
+
+<H2><A NAME="ss2.2">2.2</A> <A HREF="Config-HOWTO.html#toc2.2">工作日志</A>
+</H2>
+
+<P>要保证安装顺利，<EM>必须</EM>确切知道机器里安装了什么，何时作了修改，何时作了清除。因此，在动手之前，首先应该建立一本“工作日志”，纪录作为 root 的一切举动；在我的工作日志中，有一节专门纪录所有改动的系统文档、增加的 .rpms 和安装的 .tar.gz。理论上，往回追溯以往的任何改变，应该可以回复到最初原始的安装状态。</P>
+<P>千万记住，在改动任何系统文件之前，制作备份。更理想的是用 RCS；这样就能追踪以往的所有改变。作为 root，决不可随意改动系统而不加纪录。</P>
+
+<H2><A NAME="ss2.3">2.3</A> <A HREF="Config-HOWTO.html#toc2.3">键盘</A>
+</H2>
+
+
+<P>如在安装时遗漏了这一步骤，或改用了他种键盘，则需要：</P>
+<P>
+<UL>
+<LI> 从/usr/lib/kbd/keymaps/中选取适当的键盘表；例如，<CODE>it.map</CODE> 就代表义大利键盘；
+</LI>
+<LI> 编辑/etc/sysconfig/keyboard文档，使其读取：<CODE>KEYTABLE="it"</CODE>;
+</LI>
+<LI> 设定键盘的重复率和延迟时间，将以下内容加附到
+/etc/rc.d/rc.sysinit (Red Hat) 或
+/etc/rc.d/rc.boot (Caldera) 或
+/etc/rc.d/boot (S.u.S.E.):
+
+<BLOCKQUOTE><CODE>
+<PRE>
+/sbin/kbdrate -s -r 16 -d 500  # or whatever you like --或其他设定的数值
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+</UL>
+
+要载入键盘表，使用/etc/rc.d/init.d/keytable start指令。其他特殊键位将在以下各节再作说明。</P>
+<P>要在开机时自动设定 NumLock，则在/etc/rc.d/rc.sysinit中加入以下内容：</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+for tty in /dev/tty[1-9]*; do
+  setleds -D +num &lt; $tty
+done
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+
+<H2><A NAME="ss2.4">2.4</A> <A HREF="Config-HOWTO.html#toc2.4">启动和援救软片</A>
+</H2>
+
+
+<P>为刚安装好的系统，应该制作两、三张启动软片，以备不时之需。您使用的 Linux 版本可能已经包括了制作这种软片的指令，否则可用下列指令：</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#
+#
+（译注：作者似乎忘了填入指令）
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>此外，至少也要制作几片援救软片。在
+<A HREF="ftp://metalab.unc.edu/pub/Linux/system/recovery">ftp://metalab.unc.edu/pub/Linux/system/recovery</A>可找到各种援救软片；
+如果您不知道选用哪一种，我建议您试试 Tomsbtrt。</P>
+
+<H2><A NAME="ss2.5">2.5</A> <A HREF="Config-HOWTO.html#toc2.5">内核</A>
+</H2>
+
+<P>IMHO，其次首先要做的工作是编制最适合您的系统的内核。编制工作并不困难，但无论如何都先看一看/usr/src/Linux/内的<CODE>README</CODE>档或内核 HOWTO （Kernel  HOWTO ）。注意事项：</P>
+<P>
+<UL>
+<LI>仔细想清楚需要电脑完成何种工作。一次选定内核，同时作出必要的修补（patch)，远比每月作一次设置或编译一次内核来得省事；如果把 Linux 作为伺服器使用，尤应如此。不要忘记把未来可能会增加的硬件（例如，SCSI、Zip和网路卡等）都先编制在内核内；通常利用模组是最好的办法；
+
+</LI>
+<LI>如果你的电脑用 Cyrix 芯片，而内核对它的支持不足，则应作出必要修补，以便提高电脑性能。有关资料见： 
+<A HREF="http://www.Linuxhq.com/patch/20-p0591.html">http://www.Linuxhq.com/patch/20-p0591.html</A>；
+</LI>
+<LI>使用笔记型电脑的用户应改进屏幕的视觉效果。我曾经建议修补内核，但<CODE>SVGATextMode</CODE> （见 
+<A HREF="#SVGA">SVGATextMode</A>一节）可能是最理想的解决办法。不论采用何种办法，在
+<A HREF="http://www.Linuxhq.com/patch/20-p0239.html">http://www.Linuxhq.com/patch/20-p0239.html</A>可以找到大型游标的内核修补软件。
+</LI>
+<LI>此外，<EM>不要</EM>将笔记型电脑串行 PCMCIA modem/fax 卡作为模组编译；将其作为内核的一部分编译，否则，PCMCIA modem 就无法运作；
+</LI>
+<LI>如果使用 PCMCIA 卡，记住务必编译这些模组；此外，如果使用 PCMCIA 网路卡，不要忘记修改/etc/pcmcia/network.opts；
+</LI>
+<LI>如果屏幕显示来自<CODE>modprobe</CODE>的信息，指出不能确定某些模组的位置，这表示需要修改/etc/conf.modules。例如，如果不使用ipx和appletalk模组，则增加下列两行：
+
+<BLOCKQUOTE><CODE>
+<PRE>
+alias net-pf-4 off
+alias net-pf-5 off
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>为了节省下次配置和编译内核的时间，不妨将配置设定作为一个文档妥善保存。注意：
+如果内核升级，则这个配置设定档必然无用，因为它没有包含新内核的各种要素。
+</LI>
+</UL>
+</P>
+
+<H2><A NAME="ss2.6">2.6</A> <A HREF="Config-HOWTO.html#toc2.6">Sendmail停机</A>
+</H2>
+
+
+<P>有些系统的<CODE>sendmail</CODE>会使机器在启动时停顿两、三分钟。原因有二：
+（1）机器没有与网际网路直接连接；（2）直接连接网际网路，并有永久的IP地址。</P>
+<P>立即解决第一种问题的办法是确定/etc/hosts内有下列一行：
+<BLOCKQUOTE><CODE>
+<PRE>
+127.0.0.1   localhost
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>造成停顿的第二种原因是往往在/etc/hosts内有内容如下的一行：
+<BLOCKQUOTE><CODE>
+<PRE>
+127.0.0.1   localhost   your_host_name
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>可将其分成以下两行：</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+127.0.0.1    localhost
+w.x.y.z      your_host_name
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>同时请参考
+<A HREF="#Hostname">Hostname</A>一节</P>
+
+
+<H2><A NAME="ss2.7">2.7</A> <A HREF="Config-HOWTO.html#toc2.7">硬盘性能</A>
+</H2>
+
+<P>如果<EM>谨慎</EM>使用 <CODE>hdparm</CODE>(8)就会大大提高 (E)IDE 硬盘的性能。假设使用的 Linux 中没有包含这个软件，可从
+<A HREF="ftp://metalab.unc.edu/pub/Linux/system/hardware">ftp://metalab.unc.edu/pub/Linux/system/hardware</A>查找；设法在这个网址上找一个称为hdparm-X.Y.tar.gz的软件。</P>
+<P>由于使用这个软件的细节取决于硬盘的种类和控制程序，因此在此无法提出通则。使用不当，
+可能会损及文档系统，因此使用之前，务必详细阅读 man 说明。以最简单的例子而言，在/etc/rc.d/rc.sysinit内可增加一行，内容如下：</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+/sbin/hdparm -c1 /dev/hda  #  -- 假定为第一个 IDE 硬盘
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>这行提供了 (E)IDE 32-bit I/O 的支持。关于 <CODE>-m</CODE> 选项，<CODE>hdparm</CODE>的作者 Mark Lord 告诉我：</P>
+<P>
+<BLOCKQUOTE>
+(...) 如果系统内的组件是前几年的产品 [&lt; 1997]，一般都没有问题。如果是老旧的设备，可能不行（但也许没问题）。真正发生问题的是 2 - 3 年前在 486 和 （早期）586 母板上广泛使用的 CMD0646 和 RZ1000 这两种晶片。
+</BLOCKQUOTE>
+</P>
+<P>下列设置应可使用于最近的电脑：</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+/sbin/hdparm -c1 -A1 -m16 -d1 /dev/hda
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+
+<H2><A NAME="ss2.8">2.8</A> <A HREF="Config-HOWTO.html#toc2.8">并联埠 Zip 磁碟机</A>
+</H2>
+
+<P>利用最近内核（2.x.x）所带的驱动程序就可使用并联埠的 Zip 磁碟机。在设置内核时，务必加装使用 SCSI 和 SCSI 磁盘的功能。注意：打印机和 Zip 磁碟机共用并联埠时可能会发生冲突，因此最好使用内核模组设置。在
+<A HREF="http://www.torque.net/">http://www.torque.net/</A> 上还有一个代用的 <CODE>ppa</CODE> 驱动程序。</P>
+<P>Zip 磁片出售时已经格式化，其分割为 /dev/sda4。在设定 Zip 磁碟机时，在 /etc/rc.d/rc.sysinit 档中加附下列内容：</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# Enable the Zip drive  -- 设定 Zip 磁碟机
+/sbin/modprobe ppa
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Zip 磁片可在/etc/fstab中加列以下内容或通过 Mtools 在/etc/mtools.conf中增加下列内容加载：</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+drive z: file="/dev/sda4" exclusive
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>此外，<CODE>mzip</CODE>指令也可用于弹出、查询机况、读写和附加密码于 Zip 磁片；详情请查阅<CODE>man mzip</CODE>。 Mtools 的网址在
+<A HREF="http:// Linux .wauug.org/pub/knaff/mtools">http:// Linux .wauug.org/pub/knaff/mtools</A>。</P>
+
+<H2><A NAME="ss2.9">2.9</A> <A HREF="Config-HOWTO.html#toc2.9">设备驱动程序</A>
+</H2>
+
+<P>列在<CODE>/dev</CODE>中（或连接到实际设备驱动程序）的设备可能并不确切。检查滑鼠、数据机和光碟驱动程序对应的设备为何，然后作出下列设定：</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+/dev# ln -s ttyS0 mouse; ln -s ttyS1 modem; ln -s hdb cdrom; ln -s sda4 zip
+</PRE>
+</CODE></BLOCKQUOTE>
+
+在多数笔记本电脑上，鼠标的设置是/dev/psaux：在设置 X11 时应将此列入考虑。</P>
+<P>不妨将这些设置都通过 <CODE>chmod 666</CODE> 改变属性，使所有使用者均可使用这些设备。</P>
+
+
+<H2><A NAME="ss2.10">2.10</A> <A HREF="Config-HOWTO.html#toc2.10">声卡</A>
+</H2>
+
+
+<P>我只有一张旧声卡 Sound Blaster 16；即使您的声卡与我的不同，不过下列方法也可引导您如何设置声卡。</P>
+<P>我将声卡的驱动程序作为模组(<CODE>sb.o</CODE>)编入内核。然后将下列内容列入/etc/conf.modules：</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+options sb io=0x220 irq=5 dma=1 dma16=5 mpu_io=0x330
+alias sound sb
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>要启动声卡，首先运行<CODE>modprobe sound</CODE>，或者使用 RedHat 的工具<CODE>sndconfig</CODE>。</P>
+
+<H2><A NAME="ss2.11">2.11</A> <A HREF="Config-HOWTO.html#toc2.11">登录信息</A>
+</H2>
+
+<P>如要自设登录信息，首先检查/etc/rc.d/rc.local是否覆盖/etc/issue和/etc/motd的内容。（RedHat 覆盖内容）如属肯定，请打开文本编辑器。</P>
+<P>如要使登录信息带有颜色，可在<CODE>rc.local</CODE>中列入下列内容：</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# put a real escape character instead of ^[. To do this:
+# emacs: ^Q ESC   vi: ^V ESC   joe:  ` 0 2 7   jed: ` ESC
+ESC="^["  # a real escape character
+BLUE="$ESC[44;37m"
+NORMAL="$ESC[40;37m"
+CLEAR="$ESC[H$ESC[J"
+
+> /etc/issue
+echo "$CLEAR" >> /etc/issue
+echo "$BLUE   Welcome to MyServer (192.168.1.1)   " >> /etc/issue
+echo "$NORMAL " >> /etc/issue
+echo "" >> /etc/issue
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+
+<H2><A NAME="Hostname"></A> <A NAME="ss2.12">2.12</A> <A HREF="Config-HOWTO.html#toc2.12">主机名称 </A>
+</H2>
+
+<P>只运行<CODE>hostname new_host_name</CODE>指令也许不够。要解决<CODE>sendmail</CODE>死机的问题，可采用下列步骤（只适用于单机）：</P>
+<P>
+<UL>
+<LI> 编辑/etc/sysconfig/network和改变其中的主机名称（例如<CODE>new_host_name.localdomain</CODE>）；</LI>
+<LI> 相应地编辑/etc/HOSTNAME；
+</LI>
+<LI> 将新机名编入/etc/hosts；
+<BLOCKQUOTE><CODE>
+<PRE>
+127.0.0.1       localhost  new_host_name.locadomain
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+</UL>
+</P>
+
+<H2><A NAME="ss2.13">2.13</A> <A HREF="Config-HOWTO.html#toc2.13">滑鼠（Mouse）</A>
+</H2>
+
+
+<P><CODE>gpm</CODE> 的滑鼠功能对在主控台进行剪贴至为有用，也可在一些应用中使用滑鼠。在 Red Hat 系统中，检查有否一个称为<CODE>/etc/sysconfig/mouse</CODE> 的文档，内容如下：</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+MOUSETYPE="Microsoft"
+XEMU3=yes
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>此外，还得有一个<CODE>/etc/rc.d/init.d/gpm</CODE>档，其中还可设定一些指令。我设定的指令如下：
+<BLOCKQUOTE><CODE>
+<PRE>
+...
+       daemon gpm -t $MOUSETYPE -d 2 -a 5 -B 132 # two-button mouse -- 双按钮滑鼠
+...
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>显而易见，其中设置当然得与滑鼠的类型相符。在多数笔记型型电脑中， <CODE>MOUSETYPE</CODE> 应设为 <CODE>“PS/2”</CODE>。</P>
+<P>在Caldera系统中，只要在/etc/rc.d/rc.boot中加入此行即可：
+<BLOCKQUOTE><CODE>
+<PRE>
+/usr/bin/gpm
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>在S.u.S.E.中，在/etc/rc.config中加入<CODE>gpm</CODE>部分；在Debian系统中，则需修改
+/etc/gpm.conf。</P>
+<P>如果喜欢用Ctrl按钮使用主控台的菜单，则需设置<CODE>gpm-root</CODE>。修改
+/etc/gpm-root.conf中的预设菜单，然后从/etc/rc.d/rc.local启动
+<CODE>gpm-root</CODE>。</P>
+
+<H2><A NAME="ss2.14">2.14</A> <A HREF="Config-HOWTO.html#toc2.14">加载位置（Mount Points）</A>
+</H2>
+
+
+<P>为方便使用，应对软盘、其他设备和NFS的输出目录设定加载位置。例如，可采用下列办法：</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+/mnt# mkdir floppy; mkdir cdrom; mkdir win; mkdir zip; mkdir server
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>此行设定了 DOS/Win 软盘（ext2磁片）、CD-ROM、Windows 分割区、平行口 Zip 驱动器和 NFS 目录的加载位置。</P>
+<P>然后修改 <CODE>/etc/fstab</CODE> 档，并增加下列内容：</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+/dev/fd0        /mnt/floppy     auto            user,noauto 0 1
+/dev/cdrom      /mnt/cdrom      iso9660         ro,user,noauto 0 1
+/dev/zip        /mnt/zip        vfat            user,noauto,exec 0 1
+/dev/hda1       /mnt/win        vfat            user,noauto 0 1
+server:/export  /mnt/server     nfs             defaults
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>显而易见，第一栏必须使用正确的设备名称。最近发表的内核已经支持 fat32；以前的内核需要修补。修补软件可从
+<A HREF="http://bmrc.berkeley.edu/people/chaffee/fat32.html">http://bmrc.berkeley.edu/people/chaffee/fat32.html</A>取得。有关这方面的进一步资料，可查询
+<CODE>man mount</CODE>。</P>
+<P>注意第一行中的“auto”文档系统格式；这表示可加载 ext2 和 vfat（DOS/Windows）两种系统格式制作的磁片。<CODE>mtools</CODE>也是相当好用的工具。</P>
+
+<H2><A NAME="ss2.15">2.15</A> <A HREF="Config-HOWTO.html#toc2.15">lilo(8) 和 LOADLIN.EXE</A>
+</H2>
+
+
+<P>许多使用者在电脑上同时运行 Linux 和 DOS/Windows 两套操作系统，并在开机时选用其中之一；这应在安装时作出设定，如果当时没有设定，
+可采取下列办法解决。首先假定 /dev/hda1中装有 DOS/Windows， 
+/dev/hda2 中装有 Linux .</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+将 /dev/hda 作为默认设备！
+
+Command (m for help):a
+Partition number (1-4): 2
+
+Command (m for help):w
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>经过这项设定， Linux 分割区成为启动操作系统。然后在/etc/lilo.conf中作出设定：</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+boot = /dev/hda2
+compact                # may conflict with "linear"  --可能与“linear”冲突
+delay = 100            # 10 seconds  --等待10秒
+linear                 # gets rid of the "1024 cylinder" problem --解决1024磁圈的问题
+# message = /boot/bootmesg.txt  # write your own, if you will --自订开机信息
+root = current
+image = /boot/vmlinuz  # boot  Linux  by default as this entry comes first --默认的内核
+  label =  Linux 
+  read-only
+#  append="mem=128M"   # to see more memory than 64M  --如果记忆内存大于64M
+other = /dev/hda1
+  table = /dev/hda
+  label = dos
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>运行/sbin/lilo后就大功告成。由于<CODE>lilo</CODE>是安装中极其重要的部分，
+无论如何应该详细阅读有关这方面的资料。</P>
+<P>如果不打算重作设定，而要从 DOS/Windows 内启动 Linux ，可把 <CODE>LOADLIN.EXE</CODE>
+放入一个属于 DOS 路径的子目录（DOS 分割区）；然后将内核拷贝到该子目录，例如<CODE>C:\TEMP\VMLINUZ</CODE>。利用下面简单的
+<CODE>.BAT</CODE>档就可启动 Linux：</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+rem    Linux .bat
+smartdrv /C
+loadlin c:\temp\vmlinuz root=/dev/hda2 ro
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>如使用 Windows 9X，则设定这个<CODE>.BAT</CODE>档的特性，使其从 MS-DOS 状态启动。</P>
+
+<H3>安全考量</H3>
+
+
+<P>在安装 Linux 之前，先制作一张 MBR 区的备份磁片，以防不测。先运行<CODE>restorrb</CODE>（包括在<CODE>FIPS</CODE>的软件包内），
+或以下面的指令制作 Linux 的死机解救磁片：
+<BLOCKQUOTE><CODE>
+<PRE>
+rescue:
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>然后至少制作两片有<CODE>MBR</CODE>档的磁片。如果一旦故障停机，
+可用下列指令恢复原先的 MBR：
+<BLOCKQUOTE><CODE>
+<PRE>
+rescue:
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>当然，这要在<CODE>/mnt</CODE>已加载包含<CODE>MBR</CODE>的磁片。否则，利用 DOS 的解救磁片运行<CODE>FDISK /MBR</CODE>。</P>
+
+
+<H2><A NAME="ss2.16">2.16</A> <A HREF="Config-HOWTO.html#toc2.16">电子邮件</A>
+</H2>
+
+
+<P>如何阅读以 HTML 格式或含有其他各种文件格式的电子邮件呢？首先要有两个文档：/etc/mime.types
+和/etc/mailcap。第一个文档列出文件的格式及其扩展名：</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+application/postscript          ps eps
+image/jpeg                      jpe jpeg jpg
+text/html                       html
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>而第二个文档规定如何显示这种文档的格式。</P>
+<P>有时有的电子邮件使用 Microsoft Outlook 发送，其内容含有多重 MIME 格式。阅读这类电子邮件需要在etc/mailcap中加入下列两行：</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+text/plain; less %s; needsterminal
+text/html; lynx -force_html %s; needsterminal
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+
+<H2><A NAME="ss2.17">2.17</A> <A HREF="Config-HOWTO.html#toc2.17">打印机的设置</A>
+</H2>
+
+
+<P>就我所知，各种 Linux 版本均有设置打印机的工具（<CODE>printtool</CODE>，<CODE>yast</CODE>或<CODE>magicfilter</CODE>）；
+否则可用基本的手动设定。</P>
+<P>假定要用非 PostScript 打印机（也非“Windows-only”的打印机）来打印原始文件（例如 C 程序的原始码文本）和利用 GhostScript 来打印 PostScript 文档（此处假定已安装了 GhostScript）。</P>
+<P>设定打印机的步骤如下：</P>
+<P>
+<UL>
+<LI> 检查并行口的打印机：
+
+<BLOCKQUOTE><CODE>
+<PRE>
+~# echo "hello, world" > /dev/lp0
+~# echo "hello, world" > /dev/lp1
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+记下联机的打印机和端口。
+
+</LI>
+<LI> 设定两个 spool 子目录：
+
+<BLOCKQUOTE><CODE>
+<PRE>
+/var/spool/lpd/# mkdir raw; mkdir postscript
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI> 如果打印机印出的结果有“台阶”现象（多数 InkJet 打印机都有这种现象），则需要一个过滤器。试印下面两列：
+
+<BLOCKQUOTE><CODE>
+<PRE>
+~# echo "first line" > /dev/lp1 ; echo "second line" > /dev/lp1
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+如果印出的结果如下：
+
+<BLOCKQUOTE><CODE>
+<PRE>
+first line
+          second line
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+将此文档作为<CODE>/var/spool/lpd/raw/filter</CODE>保存：
+
+<BLOCKQUOTE><CODE>
+<PRE>
+#!/bin/sh
+# 这个过滤器可消除“台阶”现象
+awk '{print $0, "\r"}'
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+运行<CODE>chmod 755 /var/spool/lpd/raw/filter</CODE>使其成为可执行文档。
+</LI>
+<LI> 要制作用于PostScript仿真的过滤器，则将过滤器定名为
+/var/spool/lpd/postscript/filter:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+#!/bin/sh
+
+DEVICE=djet500
+RESOLUTION=300x300
+PAPERSIZE=a4
+SENDEOF=
+
+nenscript -TUS -ZB -p- |
+if [ "$DEVICE" = "PostScript" ]; then
+        cat -
+else
+        gs -q -sDEVICE=$DEVICE \
+                -r$RESOLUTION \
+                -sPAPERSIZE=$PAPERSIZE \
+                -dNOPAUSE \
+                -dSAFER \
+                -sOutputFile=- -
+fi
+
+if [ "$SENDEOF" != "" ]; then
+        printf "\004"
+fi
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+（上例使用 HP DeskJet 打印机。如为他种打印机，则作出相应修改。）
+</LI>
+<LI> 最后在/etc/printcap内增加下列内容：
+
+<BLOCKQUOTE><CODE>
+<PRE>
+# /etc/printcap
+lp|ps|PS|PostScript|djps:\
+        :sd=/var/spool/lpd/postscript:\
+        :mx#0:\
+        :lp=/dev/lp1:\
+        :if=/var/spool/lpd/postscript/filter:\
+        :sh:
+raw:\
+        :sd=/var/spool/lpd/raw:\
+        :mx#0:\
+        :lp=/dev/lp1:\
+        :if=/var/spool/lpd/raw/filter:\
+        :sh:
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+</UL>
+</P>
+<P>其他更为复杂或少见的打印设置，请参考 Printing-HOWTO。</P>
+<P>注意：如使用<CODE>printtool</CODE>，Printtool选取的 GSDEVICE 可以用于打印，但不一定是最好的选择。不妨对<CODE>postscript.cfg</CODE>档作些修改；例如，把 GSDEVICE 内<CODE>cdj500</CODE> 改为 <CODE>djet500</CODE>，就可加快打印的速度。</P>
+
+<H2><A NAME="SVGA"></A> <A NAME="ss2.18">2.18</A> <A HREF="Config-HOWTO.html#toc2.18">SVGATextMode </A>
+</H2>
+
+
+<P>放在
+<A HREF="ftp://tsx-11.mit.edu/pub/ Linux /sources/sbin">ftp://tsx-11.mit.edu/pub/ Linux /sources/sbin</A>上的工具软件对改变主控台的屏幕分辨率、字体和游标的形状非常有用。
+在主控台上工作时，需要使用重音字体的文字（译注：如欧洲文字）
+或需要改变笔记本电脑游标的大小都可使用这套软件。</P>
+<P>从默认的 VGA 参数开始，首先编辑/etc/TextConfig或/etc/TextMode。
+使用欧洲文字的用户应该对其中含有“LoadFont”一节感到庆幸。</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+Option "LoadFont"
+FontProg "/usr/bin/setfont"
+FontPath "/usr/lib/kbd/consolefonts"
+FontSelect "lat1u-16.psf"   8x16 9x16 8x15 9x15
+FontSelect "lat1u-14.psf"   8x14 9x14 8x13 9x13
+FontSelect "lat1u-12.psf"   8x12 9x12 8x11 9x11
+FontSelect "lat1u-08.psf"   8x8  9x8  8x7  9x7
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>完成这项设定之后，运行<CODE>SVGATextMode "80x34x9"</CODE>。如果觉得一切运行顺利，从/etc/TextMode中删除警告，并将下行写入
+etc/rc.d/rc.sysinit：</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# SVGATextMode
+/usr/sbin/SVGATextMode "80x34x9"
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>注意：方块游标只在有些模式下有效；在我的笔记本电脑上，其数值为“80x32x9”。</P>
+
+<HR>
+<A HREF="Config-HOWTO-3.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="Config-HOWTO-1.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="Config-HOWTO.html#toc2"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

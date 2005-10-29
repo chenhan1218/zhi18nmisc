@@ -1,0 +1,405 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<!-- saved from 
+url=(0055)http://www.wu-ftpd.org/HOWTO/upload.configuration.HOWTO -->
+<HTML><HEAD>
+<META content="text/html; charset=big5" http-equiv=Content-Type>
+<META content="MSHTML 5.00.2614.3500" name=GENERATOR>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 4, 1);</SCRIPT>
+<XMP> 
+Upload Configuration HOWTO v1.2
+
+(譯注︰以下為版權聲明)
+  Copyright (c) 1999,2000 WU-FTPD Development Group.  
+  All rights reserved.
+  
+  Portions Copyright (c) 1980, 1985, 1988, 1989, 1990, 1991, 1993, 1994
+    The Regents of the University of California.
+  Portions Copyright (c) 1993, 1994 Washington University in Saint Louis.
+  Portions Copyright (c) 1996, 1998 Berkeley Software Design, Inc.
+  Portions Copyright (c) 1989 Massachusetts Institute of Technology.
+  Portions Copyright (c) 1998 Sendmail, Inc.
+  Portions Copyright (c) 1983, 1995, 1996, 1997 Eric P.  Allman.
+  Portions Copyright (c) 1997 Stan Barber.
+  Portions Copyright (c) 1997 Kent Landfield.
+  Portions Copyright (c) 1991, 1992, 1993, 1994, 1995, 1996, 1997
+    Free Software Foundation, Inc.  
+ 
+  Use and distribution of this software and its source code are governed 
+  by the terms and conditions of the WU-FTPD Software License ("LICENSE").
+ 
+  If you did not receive a copy of the license, it may be obtained online
+  at http://www.wu-ftpd.org/license.html.
+ 
+  $Id: upload.configuration.HOWTO,v 1.2 2000/07/01 18:49:32 wuftpd Exp $
+
+                           Upload Configuration
+                                  HOW-TO
+
+作者︰Gregory A Lundberg    lundberg@wu-ftpd.org
+譯者︰趙平望（Pinwang Chao） tchao@worldnet.att.net
+翻譯日期︰2000年12月21日
+
+這份文件的原件存放在下列網址，可聯網下載︰
+ftp://ftp.wu-ftpd.org/pub/wu-ftpd/upload.configuration.HOWTO
+（譯注︰載于 http://www.wu-ftpd.org/HOWTO/upload.configuration.HOWTO）
+
+	在WU-FTPD強大功能的各項設置中，最常犯錯的是上載（upload）功能的設定。
+歷來，上載功能設定的問題大都與文件說明不清和使用時設置不當有關。這份文件就是
+為了解決這些問題。這份文件依據的版本是WU-FTPD 2.6.0版（譯注︰目前最新版是
+2.6.1版，但在上載設定方面沒有分別）。如果你目前運行的WU-FTPD不是2.6.0版，建
+議你立即升級；新版WU-FTPD對老版作了一些修正，增加了新功能並加強了安全措施。
+
+對匿名FTP使用者（anonymous users）上載的限製
+--------------------------------------------
+
+	在本例中，假定系統內/etc/passwd檔中關于匿名FTP使用者的設定如下︰
+
+ftp:*:95:95::/home/ftp:
+
+	如果/etc/passwd檔內沒有名稱為‘ftp’的使用者的設定，就無法使用匿名
+FTP。此外，如果/etc/ftpusers檔內有‘ftp’和‘anonymous’的設定，匿名FTP也就
+無法使用。
+
+	在/etc/ftpaccess檔內，需要設定class，以便讓使用者聯網使用匿名FTP。
+Class指令可設定如下︰
+
+class anonftp anonymous *
+
+	為了防止匿名FTP使用者設法使服務器“拒絕提供服務”（Denial of Service
+簡稱DoS），導致系統癱瘓，服務器內應建立一個特別的文檔系統（filesystem），專
+門應付這些居心不良的使用者的上載要求。這個獨立的文檔系統的作用是保護服務器，
+限製所有上載的文檔占用的空間，使這些上載的文檔不致用罄服務器內硬盤的所有空間。
+在本例中，這個文檔系統掛在/home/ftp/incoming上。
+
+	在WU-FTP的自定配置中，服務器不讓匿名FTP使用者上載任何文檔。為了安全
+起見，並免得以后忘記，應增加下列一行設定︰
+
+upload /home/ftp * no
+
+	這行設定的作用是︰“不讓任何主目錄在匿名FTP區 - /home/ftp的使用者進
+行任何上載”。我在前面曾經提到，這是WU-FTP的自定配置，不過，還是添加這行，
+以免忘記。
+
+	現在，開始作出設定，讓文檔能夠上載到incoming這個文檔系統。首先必須
+增加一行設定，使匿名使用者有上載文檔的權利。不過，我們還是不讓匿名使用者能
+夠自建目錄。（我建議決不讓匿名使用者擁有這項權利，但我也會示范如何能讓他們
+自建目錄。）作出這些設定的目的是要使服務器運作正常、安全可靠，不能讓服務器
+成為軟件盜用者的跳板。要達到這個目的，我們可以設定incoming目錄的使用權限，
+使他人無法看到目錄內存放的文件為何。對匿名使用者，可將該目錄設為僅寫
+（write-only）。
+
+	首先，建立一個FTP站的管理者，他是文檔的擁有者，但他不是root使用者，
+也不是匿名使用者。在/etc/passwd內增加下列用戶就可達到這個目的︰
+
+ftpadmin:*:96:96::/home/ftp:
+
+	設定incoming目錄的使用權限和擁有人如下︰
+
+chown ftpadmin /home/ftp/incoming
+chgrp ftpadmin /home/ftp/incoming
+chmod 3773 /home/ftp/incoming
+
+事實上，ftpadmin的權限應不僅于此，但目前只討論文檔上載的問題。
+
+	在開始允許上載之前，還必須作出決定，即上載傳送時是否允許同時自動壓
+縮文檔？在此務必注意，決不允許在上載時使用壓縮軟件tar。為此目的，在FTP目錄
+和incoming目錄內還需建立一個特別文檔‘.notar’如下︰
+
+touch /home/ftp/.notar
+chmod 0 /home/ftp/.notar
+touch /home/ftp/incoming/.notar
+chmod 0 /home/ftp/incoming/.notar
+
+	文檔長度為0的 .notar文檔會對一些網友和FTP代理服務器造成混淆，因此
+將這個文檔設為不可檢索︰
+
+noretrieve .notar
+
+現在已到了設定上載的一刻，在/etc/ftpaccess內設定如下︰
+
+upload /home/ftp /incoming yes ftpadmin ftpadmin 0440 nodirs
+
+	注意︰文檔上載的目錄相對于使用者使用FTP功能時所使用的目錄。
+
+	這行設定的作用是︰“任何主目錄在匿名FTP區 - /home/ftp的使用者可上載
+文檔到/incoming，但不得建立新目錄。所有上載的文檔均屬FTP管理者（ftpadmin）
+所有，使用權限為“僅讀”（read-only），並且不得下載”。如果上載的文檔要作為
+下載之用，最安全的辦法是FTP管理者將這些文檔移到一個公用目錄，核實文檔后再修
+改它們的使用權限。這看起來有點小題大做、過于苛刻嚴格，但從長遠來看，這是最
+妥善的辦法。
+
+	有些FTP網址不怕危險，讓匿名使用者建立目錄。我不贊成這種做法，因為允
+許匿名使用者建立目錄就無法保証FTP網址的絕對安全。如果必須提供這種權限給匿名
+使用者，則至多只允許他們能夠建立一個級別的目錄。方法是將剛才使用的上載設定
+改為如下設定︰
+
+upload /home/ftp /incoming   yes ftpadmin ftpadmin 0440 dirs 3773
+upload /home/ftp /incoming/* yes ftpadmin ftpadmin 0440 nodirs
+
+	第一行的設定允許在incoming區內建立目錄，但強製使用安全的使用權限。
+第二行的設定就不允許再另建子目錄。注意︰允許建立目錄的一個問題是無法在新建
+的目錄內自動產生‘.notar’檔，因此，手法高明的使用者就可以使用‘end-run’
+的方式，利用臨時壓縮下載文檔。
+
+	最后，由于incoming區不得用于下載，並且由于它是一個文檔系統，因此會
+有一個lost+found區；所以需要增加下列一行，務使下載不會發生︰
+
+noretrieve /home/ftp/incoming
+
+或至少增加下列設定，以免下載lost+found 內的文檔︰
+
+noretrieve /home/ftp/incoming/lost+found
+
+
+對訪客使用者（guest user）上載的限製
+------------------------------------
+
+	為訪客使用者設定FTP服務器的步驟在Guest HOWTO中有詳細說明。我在本文
+中不再贅述。如欲了解設定訪客使用者的詳細步驟，可參閱下列文件︰
+
+  ftp://ftp.fni.com/pub/wu-ftpd/guest-howto
+
+在本例中，假定在/etc/passwd檔內有類似下列兩行的設定︰
+
+dick:*:1010:1010::/home/users/./dick:/bin/sh
+jane:*:1011:1011::/home/users/./jane:/bin/sh
+
+在WU-FTP的自定配置中，服務器讓所有訪客使用者都有上載的權利。通過chroot功能，
+使用者（users）可以進入/home/users下的使用者主目錄，但無法越出這個目錄結構
+之外，進入其他使用者的目錄區。我們關心的問題是保護chroot的目錄結構，不讓其
+他使用者誤用他人的目錄區。
+
+	在最低限度的安裝中，/home/users目錄下只建立bin、etc和dev三個子目錄。
+當然，根據操作系統的不同，這個目錄下也可有其他文檔和目錄。我們不能讓使用者
+上載文檔到這個區域。就以這些目錄的使用權限而言（你不是已經設定了安全可靠的
+使用權限了嗎？），應在ftpaccess檔中設定拒絕上載的規定如下︰
+
+upload /home/users/* /    no
+upload /home/users/* /bin no
+upload /home/users/* /etc no
+upload /home/users/* /dev no
+
+	同時，我們利用noretrieve指令不讓下載，並且不要忘記在每一個目錄中建
+立“.notar”檔，以防‘end-run’。
+
+noretrieve /home/users/bin
+noretrieve /home/users/etc
+noretrieve /home/users/dev
+
+
+對真正使用者（real users）上載的限製
+------------------------------------
+
+	首先，必須指出，你的FTP網站不應有真正使用者（real users）。不過，
+比較實際的情況是唯一的真正使用者應該只是FTP網站管理者。盡管如此，真正使用
+者也只應上載到特定區域。我們以/etc/passwd中的一個真正使用者為例︰
+
+ftpadmin:*:109:109::/home/users/ftpadmin:/bin/sh
+
+	按照WU-FTP的自定配置中，服務器允許真正使用者上載文檔到FTP的任何一個
+區域。這種權利必須取消，只允許真正使用者上載到規定的目錄︰
+
+upload /home/users/ftpadmin *                      no
+upload /home/users/ftpadmin /tmp                   yes nodirs
+upload /home/users/ftpadmin /home/users/ftpadmin   yes
+upload /home/users/ftpadmin /home/users/ftpadmin/* yes
+upload /home/users/ftpadmin /home/ftp/incoming     yes ftpadmin ftpadmin 0440 nodirs
+
+
+使用統配符的注意事項
+--------------------
+
+	使用統配符（wildcard）時應特別當心,有時會不當使用下列指令︰
+
+upload /home/users/ftpadmin /home/users/ftpadmin* yes
+
+	這個指令會產生意想不到的結果。在這個例子中，本想限製ftpadmin的上載
+權利到ftpadmin的主目錄而已，但上述指令也會將文檔上載到以下各個目錄︰
+
+/home/users/ftpadmin
+/home/users/ftpadmin/mirrors
+/home/users/ftpadministration
+
+	最后這個目錄當然不是我們允許上載的目錄，因此應使用下列方法加以限製，
+首先規定如下︰
+
+upload /home/users/ftpadmin /home/users/ftpadmin   yes
+
+使文檔能上載到ftpadmin的主目錄，然后設定︰
+ 
+upload /home/users/ftpadmin /home/users/ftpadmin/* yes
+
+以便允許上載到ftpadmin下的所有子目錄。
+
+對訪客使用者和真正使用者使用umask
+----------------------------------
+
+	在多數情況下，可以允許訪客使用者和真正使用者控製他們自己擁有的文檔和
+目錄的使用權限。如上述例子所示，如果在上載的設定指令中不具體設限，則任何新建
+的文檔或目錄擁有所有權限。Umask可用來減少允許擁有的權限。
+
+	駐留程序（daemon）的指令行選項（-u）設定所有用戶的默認umask。在-u選
+項后有一個8進製權限掩碼（octal permissions mask）。這個掩碼內的位元指示駐留
+程序生成新文檔或新目錄時予以取消的權限。ftpd手冊頁對-u選項有詳細說明。
+
+	然而通用于所有用戶的－u選項時常不符需要。在ftpaccess配置文件中，可以
+利用defumask指令按類（class）控製umask。如果沒有標明用戶類，則defumask在指令
+行取代umask的-u選項。如果目前的用戶屬于用戶類內的成員，則defumask只控製這名
+用戶的umask設定。
+
+	例如，假定有若干類用戶︰
+
+class admin  real       10.0.0.0/8 127.0.0.0/8
+class local  guest      10.0.0.0/8 127.0.0.0/8
+class remote guest      *
+class anon   anonymous  *
+
+（注意︰在此例中，真正用戶只能從本地網路聯機，因為真正用戶並未歸入屬于外界
+IP地址的任何用戶類中。由于駐留程序並不將這種情況告知遠程用戶，對外界地址而
+言似乎服務器上並沒有admin用戶。他們登錄失敗的具體原因會顯示在系統日志中。）
+
+	我們可以按用戶類控製用戶的umask。例如，如果設定︰
+
+defumask 0377
+defumask 0177 admin
+defumask 0133 local remote
+
+	第一行指令在其他defumask指令不適用于目前用戶所屬的用戶類時發生作用。
+這行指令等同于對FTP駐留程序的指令行加附“-u 0377”的選項。在這種情況下，這行
+指令只適用于匿名用戶，因為所有其他用戶類均已有特別設定的默認umask數值。
+
+	第二行指令取消真正用戶（admin類內的用戶）創建的所有文檔和目錄的執行
+許可以及群組和其他用戶的讀寫權限。
+
+	最后一行指令取消訪客用戶（local 和remote類內的用戶）創建的文檔和目錄
+的執行許可以及群組和其他用戶的寫入權限。
+
+	注意︰umask適用于所有創建的文檔和目錄，但上載指令有所規定和上載指令
+具體規定的權限除外。取消執行權限會對使用新建目錄產生困難；保留執行權限是不
+安全的做法，因為這樣所有上載的文檔都有執行許可，可能會被用來作為入侵服務器
+之用。
+
+	因此，建議取消所有執行權限，但同時通知用戶用chmod增加目錄的執行許可
+權限或在創建目錄前改變umask參數。這可能增加了用戶的麻煩，但這總比系統內躲藏
+著標示可執行文檔的“特洛伊木馬”（Trojan Horse）程式等著別人觸發－可能是
+root－去運行它要好。
+
+umask和chmod指令的限製
+-----------------------
+
+	如前文所述，用戶可改變目前的umask和修改對文檔和目錄的使用權限。
+
+	顯而易見，不應讓匿名用戶擁有這項權利，甚至還應控製何種訪客用戶和真
+正用戶可以擁有這種權利。系統設定的默認數值應適用于多數網站。默認數值等同于
+下列設定（不妨加入系統的ftpaccess設置文件，以免忘記）︰
+
+chmod no  anonymous
+chmod yes real,guest
+
+umask no  anonymous
+umask yes real,guest
+
+	如果不讓本地網路之外的訪客用戶訪問服務器，可以添加下列指令︰
+
+chmod no  class=remote
+umask no  class=remote
+
+	務必在“yes”指令之前增加這兩行指令。前后次序非常重要；駐留程序會采
+用最初找到相符的設定。因此，比較妥善的辦法是改寫這些指令，首先取消一切權限，
+然后再加附允許的權限。例如︰
+
+chmod yes real,class=local
+umask yes real,class=local
+chmod no  guest,anonymous
+umask no  guest,anonymous
+
+對刪除（delete）、覆蓋（overwrite）和改名（remane）指令的限製
+------------------------------------------------------------
+
+	駐留程序也控製用戶刪除文檔、覆蓋文檔和文檔改名的權限。默認數值還是
+適用于多數情況。這些數值是︰
+
+delete no  anonymous
+delete yes real,guest
+
+rename no  anonymous
+rename yes real,guest
+
+overwrite no  anonymous
+overwrite yes real,guest
+
+	如同chmod和umask指令，也可按用戶類控製這些指令。繼續上例，這些指令
+只限于本地用戶使用︰
+
+delete    yes real,class=local
+rename    yes real,class=local
+overwrite yes real,class=local
+delete    no  guest,anonymous
+rename    no  guest,anonymous
+overwrite no  guest,anonymous
+
+按用戶類上載指令
+----------------
+
+	如同限製何種用戶能夠改變權限或刪除文檔，也能設定只適用于具體用戶類
+的上載指令。例如，根據上面各種例子的用戶類，能夠取消遠程用戶的上載權限。
+
+	例如，下面的設定可以取消遠程用戶的所有上載，只允許上載到個人使用的
+tmp目錄︰
+
+upload class=remote /home/users/* *      no
+upload class=remote /home/users/* /*/tmp yes nodirs
+
+
+自用incoming區
+---------------
+
+	使用者時常也希望在FTP網站上有屬于自己的天地。在自己的天地內有上載文
+檔的incoming區是相當方便的事。設定自用區的方法可見
+ftp://ftp.wu-ftpd.org/pub/wu-ftpd/examples/，並且除了擁有權限之外，其設定
+與公用的incoming區的設定並無分別，因此我列出設定上載的辦法。
+
+	在本例中，允許匿名用戶上載到所有自用incoming區︰
+
+upload /home/ftp            /private/*/incoming          yes * * 0440 nodirs
+upload /home/users/ftpadmin /home/ftp/private/*/incoming yes * * 0440 nodirs
+
+	此處假定Unix shell用戶在匿名網站有自用區域。這些區域由適當的擁有者所
+有，上載文檔由該名擁有者擁有。此處通配符允許匿名用戶上載文檔到自用上載目錄。
+通配符指示駐留程序設定文檔的所有權屬于上載的目錄的擁有者。
+
+	千萬記住，如果允許存在上載區域，必須注意Dos的入侵，這種手法試圖以文
+檔塞滿文件系統，然后使整個服務器停擺。因此，最好建立一個單獨的文檔系統，作為
+自用上載區域，或將自用上載區並入公共上載區內。
+
+同以前版本的不同之處
+--------------------
+
+	這份HOWTO是為WU-FTPD 2.6.0版服務器編寫的。以前的版本使用不同的上載指
+令。
+
+	有些版本的駐留程序要求第一項參數為chroot的根目錄名。這種設定可按目錄
+區控製上載，但無法按用戶類別設定不同規范。
+
+	有些版本的駐留程序要求第一項參數與用戶主目錄名相同。這種規定並不明
+確，而且時常會忘記“/./”的規定。
+
+	有些版本的駐留程序讓人摸不著頭腦，想同時采用各種上載辦法，但最后卻
+完全不顧上載規則。如果夠聰明的話，設定了各種權限卻還不知道是如何設定的。
+
+	以前的升級版本和駐留程序都允許用戶改動文檔系統。目前的版本不再讓匿
+名使用者擁有改動的權利（例如，upload,delete,rename等），除非在ftpaccess文
+檔中另有具體規定。
+
+	以前的升級版本和駐留程序都無法設定新建的目錄的使用權限。此外，還需
+要文檔和目錄的第一個參數和用戶名及群組名和擁有文檔的數目確切相符（無通配作
+用）。
+
+-- 
+
+Gregory A Lundberg              WU-FTPD Development Group
+1441 Elmdale Drive              lundberg@wu-ftpd.org
+Kettering, OH 45409-1615 USA    1-800-809-2195
+</XMP>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

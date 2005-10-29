@@ -1,0 +1,249 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>The BTTV Mini-HOWTO : System Configuration</TITLE>
+ <LINK HREF="BTTV-Mini-HOWTO-0.3-5.html" REL=next>
+ <LINK HREF="BTTV-Mini-HOWTO-0.3-3.html" REL=previous>
+ <LINK HREF="BTTV-Mini-HOWTO-0.3.html#toc4" REL=contents>
+<SCRIPT src="../../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(2, 8, 2);</SCRIPT>
+<A HREF="BTTV-Mini-HOWTO-0.3-5.html"><IMG SRC="../../img/next.gif" ALT="Next"></A>
+<A HREF="BTTV-Mini-HOWTO-0.3-3.html"><IMG SRC="../../img/prev.gif" ALT="Previous"></A>
+<A HREF="BTTV-Mini-HOWTO-0.3.html#toc4"><IMG SRC="../../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s4">4. System Configuration</A></H2>
+
+<P>
+<H2><A NAME="ss4.1">4.1 Hardware Installation</A>
+</H2>
+
+<P><EM>(Thanks to William Burrow for this section.)</EM>
+<P>If you are afraid to open the case of your computer, be sure to read over this 
+entire HOWTO first and make notes about the card, such as its tuner
+type, integrated circuit numbers, the frequencies of the crystal(s) and so on. 
+Then get someone competent to install the card for you. 
+<P>Otherwise, open the case and install the card in an available slot. Pick one 
+that supports PCI bus transfers and PCI bus mastering, if your mainboard
+is picky about this (see your mainboard's manual). You will want this for 
+overlay mode. 
+<P>For sound, there are two different ways to connect your video grabber card 
+and your sound card. One way is internal routing. Connect your CD-ROM
+audio cable to the video card sound input and the video card output to the 
+sound card CD-ROM or Tuner audio input. Another way is to connect the external
+1/8'' audio jack on the video card to the audio card's 1/8'' line audio in 
+jack. You can also just plug amplified speakers into the grabber card audio out
+if you do not have an audio card or don't want to route through the sound card. 
+(A few of the newer bt878 cards don't have any sound connector, because they
+send digital audio data across the PCI bus.  There is no support for this at
+the time of this writing.)
+<P>A video source is also handy, especially for determining if the card is 
+working or not. Many cards handle composite video in, S-Video in and, if
+equipped with a tuner, RF in. There is a separate connector for each 
+of these inputs.
+<P>
+<H2><A NAME="ss4.2">4.2 Kernel Configuration</A>
+</H2>
+
+<P>
+<P>Your kernel will need to be correctly configured to support your card.
+Most newer Linux distributions come with the necessary
+modules already compiled, so if you can find the <CODE>videodev.o</CODE>, 
+<CODE>bttv.o</CODE>, and <CODE>tuner.o</CODE> under <CODE>/lib/modules/2.x.x/misc</CODE>, 
+you should be ready to go.
+<P>
+<P>If not, you'll need to recompile your kernel with
+<P><CODE>CONFIG_VIDEO_DEV</CODE>
+<P>and
+<P><CODE>CONFIG_VIDEO_BT848</CODE>
+<P>enabled, preferably as loadable modules.  See the Linux Kernel HOWTO (
+<A HREF="http://www.linuxdoc.org/HOWTO/Kernel-HOWTO.html">http://www.linuxdoc.org/HOWTO/Kernel-HOWTO.html</A>) for details on recompiling your kernel.
+<P>
+<P>
+<H2><A NAME="ss4.3">4.3 Using the updated 0.6.x packages</A>
+</H2>
+
+<P>If you want to use the updated 0.6.x package, you should first retrieve 
+the archive from one of the sites mentioned above.  Extract it with
+<P> 
+<CODE>tar -xvzf bttv-0.6.x.tar.gz</CODE>
+<P>and change to the newly created 
+directory.  <CODE>su</CODE> to root, and type 
+<P><CODE>make</CODE>
+<P>in the main 
+directory to create the drivers.  (You can safely ignore the information 
+in the <CODE>INSTALL</CODE> file about editing makefiles, and the like, since
+we will pass this information to the driver as module parameters.) Then, type 
+<P><CODE>make install</CODE>
+<P>to install them.  Finally, run 
+<P><CODE>/sbin/depmod -a</CODE>
+<P>to update your module dependency information.
+<P>
+<H2><A NAME="ss4.4">4.4 Special files in <CODE>/dev</CODE></A>
+</H2>
+
+<P>Next, you may need to make the special character files in the <CODE>/dev</CODE>
+directory.  Type <CODE>ls /dev/video*; ls /dev/radio*</CODE> to see if these
+devices already exist.  If not, you'll need to create them.  All of the 
+files have major device number 81, and the minor device numbers depend
+on the specific device (video, radio, etc.) as well as multiple instances
+of these files.  See the Video4Linux API 
+(
+<A HREF="http://roadrunner.swansea.uk.linux.org/v4lapi.shtml">http://roadrunner.swansea.uk.linux.org/v4lapi.shtml</A>) 
+for the programming-related details.
+<P>
+<P>
+<P>There is a <CODE>MAKEDEV</CODE> script in the <CODE>driver</CODE> directory 
+of the bttv driver package which will create four video devices for 
+you.  You can also do it yourself fairly easily if you only have one video
+capture card.
+As root, type:
+<P><CODE>mknod /dev/video0 c 81 0</CODE>
+<P><CODE>chmod 666 /dev/video0</CODE>
+<P><CODE>ln -s /dev/video0 /dev/video</CODE>
+<P>
+<P><CODE>mknod /dev/radio0 c 81 64</CODE>
+<P><CODE>chmod 666 /dev/radio0</CODE>
+<P><CODE>ln -s /dev/radio0 /dev/radio</CODE>
+<P>
+<P>
+<P>There are also videotext and VBI devices which can be created if you have an
+application which needs them.  (Currently, there are only a few.)  Type:
+<P><CODE>mknod /dev/vtx0 c 81 192</CODE>
+<P><CODE>chmod 666 /dev/vtx0</CODE>
+<P><CODE>ln -s /dev/vtx0 /dev/vtx</CODE>
+<P>
+<P><CODE>mknod /dev/vbi0 c 81 224</CODE>
+<P><CODE>chmod 666 /dev/vbi0</CODE>
+<P><CODE>ln -s /dev/vbi0 /dev/vbi</CODE>
+<P>
+<P>
+<P>
+<H2><A NAME="ss4.5">4.5 Loading the Modules</A>
+</H2>
+
+<P>The bttv driver provides many different modules, with many different options,
+as described in the appendix of this document.  With so many modules 
+and options, you may wish to do this by hand until
+you get everything working.   On the off chance that this causes your box
+to crash, it wouldn't hurt to type
+<P><CODE>sync; sleep 1; sync</CODE>
+<P>to flush any dirty disk buffers before proceeding.  Then, using the 
+<CODE>insmod</CODE> command as root, try
+loading up the modules.  The first two are easy, because they don't usually need
+any options:
+<P><CODE>insmod videodev</CODE>
+<P><CODE>insmod i2c</CODE>
+<P>Now you're ready to load the bttv module itself:
+<P><CODE>modprobe bttv</CODE>
+<P>By default, the <CODE>bttv</CODE> module attempts to autodetect your card type.
+Watch <CODE>/var/log/messages</CODE> to see what it finds.  If it doesn't
+autodetect properly,
+you can add the <CODE>card=<EM>n</EM></CODE> option to the end of the previous command
+to force a card type, with 
+<CODE><EM>n</EM></CODE> chosen from the following list.  (Types 0 through 19 are provided
+in the kernel series driver, bttv-0.6.4h contains support for types 20 through 27)
+You can also add the 
+<CODE>radio=1</CODE> option if your card has FM tuner functionality.
+<P>
+<HR>
+<PRE>
+card=n          card type
+                0:  Auto-Detect
+                1:  Miro
+                2:  Hauppauge (old bt848 boards)
+                3:  STB
+                4:  Intel
+                5:  Diamond
+                6:  AVerMedia
+                7:  MATRIX Vision MV-Delta
+                8:  FlyVideo
+                9:  TurboTV
+                10: Hauppauge (new bt878 boards)
+                11: MIRO PCTV pro
+                12: Terratec/Vobis TV-Boostar
+                13: Newer Hauppauge WinCam (bt878)
+                14: MAXI TV Video PCI2
+                15: Terratec TerraTV+
+                16: Aimslab VHX
+                17: PXC200
+                18: AVermedia98
+                19: FlyVideo98 (newer FlyVideo cards)
+                20: Zoltrix TV-Max
+                21: iProTV
+                22: ADS Technologies Channel Surfer TV
+                23: Pixelview PlayTV (bt878)
+                24: Leadtek WinView 601
+                25: AVEC Intercapture
+                26: LifeView FlyKit w/o Tuner
+                27: Intel Create and Share PCI
+</PRE>
+<HR>
+<P>Next, load the tuner module, with
+<P><CODE>modprobe tuner type=<EM>n</EM></CODE>
+<P>You will probably need to dig into your case to see which tuner you have.  Some
+cards (Miro and Hauppauge) allow the tuner to be automatically detected, but 
+you may need to specify it.  The tuner should be marked with the brand name,
+and you can look at the crystals (little aluminum cans) on the board to see if
+you have an NTSC or a PAL tuner.  For PAL, the crystal is marked 28.xxxMHz 
+(where xxx are three digits). For NTSC, the canister should say 35.xxxMHz.
+Once you have identified your tuner, select the value of <CODE><EM>n</EM></CODE> from 
+the following list (types 8 and 9 are included only in bttv-0.6.4h):
+<P>
+<HR>
+<PRE>
+type=n          type of the tuner chip. n as follows:
+                0: Temic PAL tuner
+                1: Philips PAL_I tuner
+                2: Philips NTSC tuner
+                3: Philips SECAM tuner
+                4: no tuner
+                5: Philips PAL tuner
+                6: Temic NTSC tuner
+                7: Temic PAL tuner
+                8: Alps TSBH1 NTSC tuner
+                9: Alps TSBE1 PAL tuner
+</PRE>
+<HR>
+<P>
+<P>Finally, insert any sound modules you may need.  Again, you will probably
+need to take a very close look at the card to see what you've got.  
+Note that drivers for TEA6300, TDA8425, TDA9855, and DPL3518 chips are 
+only included in the 0.6.4h series driver, and are not included with 
+the current (2.2.14) kernel drivers.
+<P>
+<P><CODE>modprobe msp3400</CODE> or <CODE>tea3600</CODE> or <CODE>tda8425</CODE> or
+<CODE>tda9855</CODE> or <CODE>dpl3518</CODE>(see the appendix for details and options)
+<P>Fire up your favorite video4linux program, and see if it works.  If you
+can't change the channel, make sure you have inserted the correct tuner
+module.  If you can't hear any sound, double check the sound module, and
+make sure that the channel is not muted, if you're running the audio through
+your sound card.
+<P>
+<H2><A NAME="ss4.6">4.6 Automating the process </A>
+</H2>
+
+<P>After you know which modules and options you need, you can automate the 
+process by putting the information into <CODE>/etc/conf.modules</CODE>.  Then, running an 
+application which needs the driver will cause it to be loaded automatically. 
+I use the following:
+<P>
+<HR>
+<PRE>
+# TV
+alias   char-major-81   bttv
+pre-install bttv        modprobe -k tuner; modprobe -k msp3400
+options bttv            radio=1 card=3
+options tuner           type=2
+</PRE>
+<HR>
+
+Be sure change this to reflect the proper modules and options for your particular card.
+(Run an <CODE>/sbin/depmod -a</CODE> to make sure all your module dependency information
+is up to date, as well.)
+<P>
+<HR>
+<A HREF="BTTV-Mini-HOWTO-0.3-5.html"><IMG SRC="../../img/next.gif" ALT="Next"></A>
+<A HREF="BTTV-Mini-HOWTO-0.3-3.html"><IMG SRC="../../img/prev.gif" ALT="Previous"></A>
+<A HREF="BTTV-Mini-HOWTO-0.3.html#toc4"><IMG SRC="../../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

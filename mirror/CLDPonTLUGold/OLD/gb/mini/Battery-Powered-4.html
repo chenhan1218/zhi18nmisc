@@ -1,0 +1,281 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>使用电池供电的 Linux Mini-HOWTO (迷你HOWTO): 改变某些一般的系统设定  </TITLE>
+ <LINK HREF="Battery-Powered-5.html" REL=next>
+ <LINK HREF="Battery-Powered-3.html" REL=previous>
+ <LINK HREF="Battery-Powered.html#toc4" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+<A HREF="Battery-Powered-5.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Battery-Powered-3.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Battery-Powered.html#toc4"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="Changingsomegeneralsystemsettings"></A> <A NAME="s4">4. 改变某些一般的系统设定  </A></H2>
+
+<P>
+<P>在我拿到 Linux 并在我的笔记电脑上安装、执行後， 我发觉它会每几秒就
+会存取一次硬碟，就算并没有任何的使用者签入系统内! 这就是硬碟可能就
+从没有进入它的能源省电模式。能够减少硬碟的动作的话就可以很明显地增
+加电池的使用时间，以下是我所□集的配方。 
+<P>
+<P>我使用 RedHat 4.1 测试了所有的方法，有些建构设定的地方可能会与你所
+使用的 Linux 供应版本不同。(如果真如此，请您让我知道。)
+<P>
+<P>
+<H2><A NAME="ss4.1">4.1 crond 精灵与 atrun精灵</A>
+</H2>
+
+<P>
+<P>请检查你的 <CODE>/etc/crontab</CODE>  档案看看是否它会在每分钟动作一次
+。你会看到 <CODE>atrun</CODE> 常会出现在□面。
+<P>
+<P>使用 <CODE>at</CODE> 命令可以让你将未来要做的命令放在命令停待区内， 时间到
+了就会执行它们。 有些 Linux 系统使用自订的 <CODE>atd</CODE> 精□来做这个工
+作， 其他的 (例如 RedHat) 让 <CODE>crond</CODE>  精灵每分钟执行 <CODE>atrun</CODE>
+一次。
+<P>
+<P>大部份的系统上是否需如此做的， 因为 <CODE>at</CODE> 命令很少会依赖一定的时
+间内被执行， 因此如果你在你的 <CODE>/etc/crontab</CODE> 档案内发现下面
+这行:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# Run any at jobs every minute
+* * * * * root [ -x /usr/sbin/atrun ] &amp;&amp; /usr/sbin/atrun
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>你就可以安全地把它改成:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# Run any at jobs every hour
+00 * * * * root [ -x /usr/sbin/atrun ] &amp;&amp; /usr/sbin/atrun
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>细节请阅读 <CODE>man 5 crontab</CODE>。 有些人就算在没有执行 <CODE>crond</CODE> 精
+灵下还是可以动作，因此如果你知道你在做什麽，你可以考虑完全地把它给
+关闭掉。
+<P>
+<P>
+<H2><A NAME="ss4.2">4.2 update  / bdflush 精灵</A>
+</H2>
+
+<P>
+<P>Linux 在任何时候都在处理著很多的已开启档案的缓冲区，来做系统很确认
+档案有任何改变时能够愈快存档愈好，不然等到系统当机时已做的改变就会
+不见了。
+<P>
+<P><CODE>update</CODE> / <CODE>bdflush</CODE> 精灵就是用来照顾这件时的。(这是同一个程
+式的两个名字， 因此你可以使用两个其中的一个名字来启动这个精灵。 )
+原来的设定会让这个精灵每 5 秒钟呼叫 <CODE>flush</CODE> 以及每 30 秒钟呼叫
+<CODE>sync</CODE> 一次。
+<P>
+<P>在我的 Fujitsu 富士通磁碟上会造成不停的存取。(好像这个硬碟就算跟本
+什麽也没改变的状况下会将它的记忆体快取给清除掉。但这要看你的硬碟的
+轫体: 有些朋友告诉我说就算没有做像下面那样的修改他们的硬碟还是可以
+进入本身的省电模式下。)
+<P>
+<P>因为 Linux  并像以前那样常当机了， 我就将两个数值都改成为  3600 秒
+(=1 小时 )。这样一点也不会造成任何问题，而且原本常会有的磁碟存取动
+作就停止了。 (但是如果我的系统现在当机了，当然一定会有许多破损的档
+案了。)
+<P>
+<P>RedHat 4.1: 在 <CODE>/etc/inittab</CODE> 内，将 update 呼叫改成:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ud::once:/sbin/update -s 3600 -f 3600
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>Suse 4.4.1: <CODE>update</CODE> is called in <CODE>/sbin/init.d/boot</CODE>.
+<P>
+<P>Slackware: <CODE>update</CODE> is called in <CODE>/etc/rc.d/rc.S</CODE>.
+<P>
+<P>See <CODE>man update</CODE> for details.
+<P>
+<P>
+<H2><A NAME="ss4.3">4.3 syslogd 精灵</A>
+</H2>
+
+<P>
+<P><CODE>syslogd</CODE> 精灵负责很多在 <CODE>/var/log/</CODE> 目录内可找到的
+Linux 系统日志档案。原定 <CODE>syslogd</CODE> 会在每次有系统讯息被记录时同
+步存到日志档案内。
+<P>
+<P>你可以在 <CODE>/etc/syslog.conf</CODE> 内使用斜号 / 接在档案名称前将这
+个功能关闭。以下是我在我的系统内找到的 <CODE>syslog.conf</CODE>例子:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# Log anything (except mail) of level info or higher.
+# Don't log private authentication messages!
+*.info;mail.none;authpriv.none -/var/log/messages
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>同样的，如果当系统当机时，问题讯息是不会被存到磁碟内的。Dilemma...
+<P>
+<P>
+<H2><A NAME="ss4.4">4.4 init 命令</A>
+</H2>
+
+<P>
+<P>在开机时， 初始时的处理程式以及精灵们是经由 <CODE>init</CODE> 命令来开始执
+行的。这个命令 (又是它 ) 在每次它所建立的处理程式前会呼叫 <CODE>sync</CODE>。
+<P>
+<P>你可以在原始程式码中将这个 <CODE>sync() </CODE> 呼叫给移走，然後再重新编译
+它。
+<P>
+<P>要避免发生档案缓冲遗失的问题，你应该在你的系统的
+<CODE>/etc/rc.d/init.d/halt</CODE> 命令手稿内在卸下档案系统前加上对
+<CODE>sync</CODE> 的呼叫。
+<P>
+<P>
+<H2><A NAME="ss4.5">4.5 swap 磁区</A>
+</H2>
+
+<P>
+<P>Linux swap 磁区是用来以虚拟记忆体的方式来增加实体记忆体的空间。 这
+也是硬碟会存取的可能原因。如果你的笔记电脑已经有许多动态记忆体 RAM
+了或是你使用很简单的应用程式 (想到 <CODE>vi</CODE>)， 您可以考虑把它给关闭
+。
+<P>这当然要看你打算做什麽。4 到 8 MB 并不足够，这时你该使用 swap 磁区
+。有 8 到 16 MB 时，文字画面式的应用程式可以很好地工作，如果你能避
+免使用太多的多工功能， 你可以安全地把 swap 功能给关掉。  X-Windows
+环境需要很多的动态记忆体，你最好不要在没有 swap 下使用它，除非你有
+16MB 以上。
+<P>(附注: 我那台有  16  MB 的笔记电脑在关闭  swap  磁区下可以执行一个
+<CODE>emacs</CODE> 工作、 4 个 <CODE>bash</CODE> shells 还有编译一个核心都没有发生
+记忆体不够的情况。这对我来说就够了。)
+<P>
+<P>如果你已经安装 swap 磁区了，你可以在 <CODE>/etc/rc.d/rc.sysinit</CODE>
+内的 <CODE>swapon</CODE> 命令前加个 hash 符号即可把它给关闭。 如果你不想把
+它永远地移除，那就让系统在开机时问你是否要使用 swap 磁区。在
+<CODE>/etc/rc.d/rc.sysinit</CODE> (RedHat 4.1) 或
+<CODE>/sbin/init.d/boot</CODE> (Suse 4.4.1)□头:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+echo "Should the system use swap?"
+echo "  0: No."
+echo "  1: Yes."
+/bin/echo "Your choice: \c"
+read SWAPCHOICE
+
+case "$SWAPCHOICE" in
+    0)
+        # Do nothing.
+        echo "(Swap partitions disabled)"
+        ;;
+    *)
+        # Start up swapping.
+        echo "Activating swap partitions"
+        swapon -a
+esac
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>那麽你就可以在使用交流电源时开启 swap 磁区，而使用电池是就会关闭言
+这功能。
+<P>
+<P>
+<H2><A NAME="ss4.6">4.6 apache httpd 网页伺服器精灵 </A>
+</H2>
+
+<P>
+<P>我使用我的笔记电脑来发展、测试给网站使用的 cgi 命令手稿， 这也就是
+为什麽我在它上面架了个区域网站的原因。如果你最想做的只是有时候用来
+测试一个命令手稿或是检查某个网页而已，那麽标准的建构似乎是太多了。
+<P>
+<P>在 <CODE>httpd.conf</CODE> □，只要把 <CODE>MinSpareServers</CODE> 以及
+<CODE>StartServers</CODE> 的值改成 <CODE>1</CODE>。 这对本地端的测试站已经很够了。
+<P>
+<P>如果你想关闭网站伺服器的签入，你必须重新编译 <CODE>httpd</CODE> 精灵，细节
+请阅读文件。 
+<P>
+<P>Grant Taylor 重新编译了 apache 的签入後发觉这样子  `` 并不会让它停
+止 churning  磁碟。 所以我使用另一个， IMHO 比较好的解决方法: 我把
+apache   建构成从  inetd  来执行取代原本由自己来。  ''  细节请阅读
+<CODE>man inetd</CODE>。
+<P>
+<P>
+<H2><A NAME="TheXFree86package"></A> <A NAME="ss4.7">4.7 XFree86 套件</A>
+</H2>
+
+<P>
+<P>为笔记电脑建构 XFree86 是另一个话题了， 再次，我必须请你参考 Linux
+笔记电脑网页，在那儿你可以找到很多的协助 
+<P>
+<P>X 的控制台在空白时只会把萤幕变成黑色， 但并不是把它关掉。 就如同在
+<A HREF="Battery-Powered-3.html#sidenoteaboutconsoleblanking">  备注关於控制台变成空白 </A> 中提到的，你可以使用 <CODE>xset</CODE> 的 dpms 选项来改变它。然而，这项
+功能得看你的笔记电脑的绘图晶片以及 bios 了.
+<P>
+<P>Grant Taylor 使用以下的设定以及 <CODE>apmd</CODE> 和萤幕保护程式的协助来传
+送使他的笔记电脑进入睡眠状态。
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# Run xscreensaver with APM program
+xscreensaver -timeout 5 \
+             -xrm xscreensaver.programs:apm_standby \ 
+             -xrm xscreensaver.colorPrograms:apm_standby &amp;
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>这个 ``<CODE>apm_standby</CODE> 是个只允许特定人士来执行 <CODE>apm -S</CODE> 的
+suid perl 手稿。''
+<P>
+<P>
+<H2><A NAME="ss4.8">4.8 emacs 编辑程式</A>
+</H2>
+
+<P>
+<P>好的，  <CODE>emacs</CODE>  并非不是个编辑器，  但是个生活方式。  以下是由
+Florent Chabaud 提供的密诀: `` 如果你使用 <CODE>emacs</CODE>，也许你已发现
+到这个编辑器会做自动存档的动作， 当然这很有用而且也 <EM> 不该 </EM> 把
+它关掉，但原本内定的参数可以被修改来针对笔记电脑的使用。
+<P>
+<P>我在 <CODE>/usr/share/emacs/site-lisp/site-start.el</CODE>  档案内加入
+了下列几行:
+<P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+(setq auto-save-interval 2500)
+(setq auto-save-timeout nil)
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>这样可以关闭以时间为基准的自动存档功能，以改以每 2500 次键盘的动作
+时自动存档一次。当然，如果你正好在打一扁文件时，最後的那个参数应该
+把它减少，如果正在写程式那麽它已可满足需求了。因为每一个动作 (上、
+下、左、倒退、贴，等等......) 都列入计算， 2500 次按键盘会很快就到
+达的。''
+<P>
+<P>
+<P>
+<H2><A NAME="ss4.9">4.9 如何找出更多最佳化的方法</A>
+</H2>
+
+<P>
+<P>如果你的 Linux 系统仍旧会常去存取硬碟， 你可以使用 <CODE>ps ax</CODE> 命令
+来看看内部到底是怎麽了。这会显示出所有正在执行的程式与它们的名称，
+有时候它们会秀出每个处理中的程式之命令列参数。
+<P>
+<P>现在请阅读每个处理中的程式之 <CODE>man</CODE> 页来了解它们在做啥麽以及如何
+改变它的行为。用这个方法，你似乎可以找到大部份的处理中程式所负责的
+是什麽。你可能会发现 <CODE>strace</CODE> 是很有帮助的。
+<P>
+<P>如果你发现有哪些新方法，请你发电子邮件给我。
+<P>
+<P>
+<HR>
+<A HREF="Battery-Powered-5.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Battery-Powered-3.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Battery-Powered.html#toc4"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

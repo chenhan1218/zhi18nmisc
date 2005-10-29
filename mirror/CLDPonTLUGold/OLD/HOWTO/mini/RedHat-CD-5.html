@@ -1,0 +1,370 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Burning a RedHat CD mini-HOWTO: Incorporating the updates</TITLE>
+ <LINK HREF="RedHat-CD-6.html" REL=next>
+ <LINK HREF="RedHat-CD-4.html" REL=previous>
+ <LINK HREF="RedHat-CD.html#toc5" REL=contents>
+<SCRIPT src="../../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(2, 8, 2);</SCRIPT>
+<A HREF="RedHat-CD-6.html"><IMG SRC="../../img/next.gif" ALT="Next"></A>
+<A HREF="RedHat-CD-4.html"><IMG SRC="../../img/prev.gif" ALT="Previous"></A>
+<A HREF="RedHat-CD.html#toc5"><IMG SRC="../../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="sec-updates"></A> <A NAME="s5">5. Incorporating the updates</A></H2>
+
+<P>
+<P>To incorporate the updates, you need write access to the distribution
+directory from a Linux machine, with a working version of 
+<A HREF="http://www.rpm.org">rpm</A> installed. There are three steps
+involved:
+<P>
+<OL>
+<LI>Correct the file protection modes. </LI>
+<LI>Replace updated RPMs. </LI>
+<LI>Generate the hdlist file </LI>
+</OL>
+<P>If you maintain a mirror of the <CODE>updates</CODE> directory, you can at any time
+produce a CD including the current updates by repeating these steps.
+<P>
+<H2><A NAME="ss5.1">5.1 Correcting the file protection modes</A>
+</H2>
+
+<P>
+<P>During the installation process, some programs are run directly off the CD.
+Unfortunately, the FTP program does not always preserve the protection
+modes of the files and directories that are copied. Therefore, it is
+necessary to make sure that execute permission is given to programs, shell
+scripts and shared libraries, before the directory is burned on the
+CD. This is done by running the <CODE>updatePerm</CODE> script on your local copy of
+the distribution:
+<P>
+<HR>
+<PRE>
+#!/bin/bash
+
+RHVERSION=6.0
+
+LIST=/tmp/er3hd3w25
+CDDIR=/jaz/redhat-${RHVERSION}
+
+# Find all directories, and make sure they have +x permission
+find $CDDIR -type d -exec chmod -c 755 {} \;
+
+# Find all files that are executables, shell or perl scripts
+find $CDDIR -type f | file -f - | grep -v RPM \
+   | egrep -i 'executable|perl|bourne|shell' | cut -f1 -d: > $LIST
+
+# Find shared libraries
+find $CDDIR -name \*.so >> $LIST
+
+# Make them executable
+while read file
+do
+   if [ ! -x $file ] ; then
+      chmod -c 755 $file
+   fi
+done &lt; $LIST
+
+/bin/rm $LIST
+
+exit 0
+</PRE>
+<HR>
+<P>
+<H2><A NAME="ss5.2">5.2 Replacing the updated RPMS</A>
+</H2>
+
+<P>
+<P>The following script called <CODE>updateCD</CODE> copies all files from the update
+directory to the RPMS directory. The script uses some nifty rpm tricks to
+determine what packages in the updates directory are more recent. Older
+packages are moved to the <CODE>${OLD}</CODE> directory. 
+<P>
+<HR>
+<PRE>
+#! /bin/bash
+# This script updates rpms in a RedHat distribution found in $RPMDIR.
+# The old rpms will be placed in $OLDDIR.
+# The new rpms should be located in $UPDDIR.
+# The new images are in $IMGDIR
+# The images to be updated are in $OMGDIR 
+# The architechture is $ARCH.
+
+RHVERSION=6.0
+ARCH=i386
+
+CDDIR=/jaz/redhat-${RHVERSION}
+RPMDIR=${CDDIR}/${ARCH}/RedHat/RPMS
+UPDDIR=${CDDIR}/updates/${ARCH}
+IMGDIR=${CDDIR}/updates/images/${ARCH}
+OMGDIR=${CDDIR}/${ARCH}/images
+OLDDIR=${CDDIR}/old
+
+if [ ! -d $OLDDIR ] ; then
+   echo making directory $OLDDIR
+   mkdir $OLDDIR
+fi
+
+allow_null_glob_expansion=1
+
+for rpm in ${UPDDIR}/*.rpm ; do
+  NAME=`rpm --queryformat "%{NAME}" -qp $rpm`
+  unset OLDNAME
+  for oldrpm in ${RPMDIR}/${NAME}*.rpm ; do
+    if [ `rpm --queryformat "%{NAME}" -qp $oldrpm` = "$NAME" ]; then
+      OLDNAME=$oldrpm;
+      break
+    fi
+  done
+  if [ -z "$OLDNAME" ]; then 
+    echo $NAME is new
+    cp -pv $rpm $RPMDIR
+  else
+    if [ `basename $rpm` != `basename $OLDNAME` ]; then
+      mv $OLDNAME $OLDDIR
+      cp -pv $rpm $RPMDIR
+    fi
+  fi
+done
+
+
+# Copy new boot image files to the right place...
+for newfile in ${IMGDIR}/* ; do
+  file=${OMGDIR}/$(basename ${newfile})
+  if [ $newfile -nt $file ] ; then 
+     cp -pv $newfile $file
+  fi
+done
+
+exit 0
+</PRE>
+<HR>
+<P>
+<P>
+<H3>Important note for RedHat 6.0</H3>
+
+<P>
+<P>Certain RPMs, specifically the kernel and kernel-smp packages, include the
+platform in the filename but not in the package name.  For example, the
+"kernel" package comes in several flavors:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ 
+kernel-2.2.5-22.i386.rpm
+kernel-2.2.5-22.i586.rpm
+kernel-2.2.5-22.i686.rpm
+</PRE>
+</CODE></BLOCKQUOTE>
+ 
+<P>but for all three rpm -qp returns just "kernel" for the package name.
+<P>As you can see, this "outsmarts" the updateCD script.  The
+result is that only the last one gets properly copied.  The first two get
+copied, but are then moved to the $OLD directory! Preferably, RedHat should
+name these differently.  But for now, the easy solution is to move the
+packages by hand, after running updateCD.  (Thanks to Kyle
+B. Ferrio &lt;kyle@U.Arizona.EDU&gt;)
+<P>Joshua Sarro &lt;mthed@shore.net&gt; has contributed a perl script called
+updateMirror.pl which can deal with the situation. You can
+fetch it here: 
+<A HREF="http://imsb.au.dk/~mok/linux/doc/updateMirror.pl">http://imsb.au.dk/~mok/linux/doc/updateMirror.pl</A>.
+<P>
+<P>
+<H2><A NAME="sec-new-hdlist"></A> <A NAME="ss5.3">5.3 Generating a new hdlist file</A>
+</H2>
+
+<P>
+<P>When installing from the CD, the installation program on the CD relies on
+the file <CODE>RedHat/base/hdlist</CODE> describing what RPM
+packages are available on the CD. The <CODE>hdlist</CODE> file can be generated
+by the program <CODE>misc/src/install/genhdlist</CODE>.  This
+program must be run with the absolute path to the root of the distribution as 
+the only argument. Here is the <CODE>updateHdlist</CODE> script which calls that program:
+<P>
+<HR>
+<PRE>
+#!/bin/bash
+
+RHVERSION=6.0
+ARCH=i386
+
+echo generating hdlist...
+CDDIR=/jaz/redhat-${RHVERSION}
+GENHDDIR=${CDDIR}/${ARCH}/misc/src/install
+
+chmod u+x ${GENHDDIR}/genhdlist
+chmod 644 ${CDDIR}/${ARCH}/RedHat/base/hdlist
+${GENHDDIR}/genhdlist ${CDDIR}/${ARCH} || echo "*** GENHDLIST FAILED ***"
+
+exit 0
+</PRE>
+<HR>
+<P>NOTE: After having incorporated the updates in the main <CODE>RedHat/RPMS</CODE>
+directory, your copy of the distribution is no longer a mirror of the Red
+Hat distribution site. Actually, it is more up-to-date! Therefore, if you
+attempt to mirror the distribution, older versions of the RPM's that have
+been updated will be downloaded once more, and the updates deleted.
+<P>
+<P>
+<H3>Important note for RedHat 5.2</H3>
+
+<P>
+<P>As distributed with RedHat version 5.2 and earlier, <CODE>genhdlist</CODE>
+CRASHES if there are files in the <CODE>RedHat/RPMS</CODE> directory which are
+<EM>not</EM> RPM files!  This causes problems, because in the 5.2
+distribution, there are a couple of non-RPM files named <CODE>ls-lR</CODE> and
+<CODE>ls-lR.gz</CODE> in <CODE>RedHat/RPMS</CODE>. Therefore, you must remove all
+non-RPM files from the directory.  Alternatively, you can apply the
+following patch to <CODE>misc/src/install/genhdlist.c</CODE> and
+do a make. The patch will cause <CODE>genhdlist</CODE> to ignore any non-RPM files.
+<P>
+<HR>
+<PRE>
+*** genhdlist.c.orig    Fri Nov 27 12:08:13 1998
+--- genhdlist.c Fri Nov 27 12:08:20 1998
+***************
+*** 12,23 ****
+--- 12,26 ----
+  
+  #define FILENAME_TAG 1000000
+  
++ /* Not used apparently...
++ 
+  int tags[] =  { RPMTAG_NAME, RPMTAG_VERSION, RPMTAG_RELEASE, RPMTAG_SERIAL,
+                RPMTAG_FILENAMES, RPMTAG_FILESIZES, RPMTAG_GROUP,
+                RPMTAG_REQUIREFLAGS, RPMTAG_REQUIRENAME, RPMTAG_REQUIREVERSION,
+                RPMTAG_DESCRIPTION, RPMTAG_SUMMARY, RPMTAG_PROVIDES,
+                RPMTAG_SIZE, RPMTAG_OBSOLETES };
+  int numTags = sizeof(tags) / sizeof(int);
++ */
+  
+  int main(int argc, char ** argv) {
+      char buf[300];
+***************
+*** 26,34 ****
+--- 29,39 ----
+      struct dirent * ent;
+      int fd, rc, isSource;
+      Header h;
++     /* not used 
+      int count, type;
+      int i;
+      void * ptr;
++     */
+  
+      if (argc != 2) {
+        fprintf(stderr, "usage: genhdlist &lt;dir>\n");
+***************
+*** 74,79 ****
+--- 79,85 ----
+  
+            rc = rpmReadPackageHeader(fd, &amp;h, &amp;isSource, NULL, NULL);
+  
++           if (!rc) {
+            headerRemoveEntry(h, RPMTAG_POSTIN);
+            headerRemoveEntry(h, RPMTAG_POSTUN);
+            headerRemoveEntry(h, RPMTAG_PREIN);
+***************
+*** 110,115 ****
+--- 116,122 ----
+            headerWrite(outfd, h, HEADER_MAGIC_YES);
+            headerFree(h);
+            close(fd);
++           }
+        }
+  
+        errno = 0;
+</PRE>
+<HR>
+<P>
+<H2><A NAME="sec-comps"></A> <A NAME="ss5.4">5.4 The comps file</A>
+</H2>
+
+<P>
+<P>The comps file defines how the packages are bundled during the
+installation.  In the Red Hat distribution, this is done according to the
+functionality they provide, for example:
+<P>
+<UL>
+<LI>Printer Support</LI>
+<LI>X Window System</LI>
+<LI>GNOME</LI>
+<LI>KDE</LI>
+<LI>Mail/WWW/News Tools</LI>
+<LI>...</LI>
+<LI>Kernel Development</LI>
+<LI>Extra Documentation</LI>
+</UL>
+<P>Sometime during the installation process, the user is presented with a
+dialog called "Components to install". Some of the components have been
+preselected, and others not. The last item on the components list is called
+"Everything".  According to the Red Hat documentation, selecting every
+package will require close to 1 Gb of free disk space.
+<P>On the dialog box, there also is an option that enables the user to
+customize exactly what packages will be installed.  Customizing the
+installation by hand, or selecting "Everything" in the components list is
+the only way to have your own packages installed unless you modify the
+<CODE>RedHat/base/comps</CODE> file.
+<P>The format of the <CODE>comps</CODE> file currently starts with a
+header describing the version of the comps format, followed by an empty
+line.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+0.1
+&lt;empty line>
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>After this, the components are listed, separated by empty lines:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+&lt;component 1>
+&lt;empty line>
+&lt;component 2>
+&lt;empty line>
+.
+.
+&lt;component n>
+&lt;empty line>
+EOF
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Each component has the following definition:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+(0|1) (--hide)? &lt;name>
+&lt;RPM 1>
+&lt;RPM 2>
+...
+&lt;RPM n>
+end
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Before the name of each component, 0 or 1 is given. A value of 1 here means
+that the component is chosen by default, and 0 means it's not. The option
+"--hide" means that you will not see the entry, unless you choose "expert"
+installation. The first component is called "Base", and that is special, in
+the sense that it <EM>must</EM> be present and it does not show up in the
+dialog (you can't deselect the base installation, which makes sense...)
+<P>Next follows a list of rpm packages belonging to that component. Note that
+this is the package name stored <EM>in the rpm file</EM>, and <EM>not</EM>
+any part of the file name of the package (although it is often the same).
+<P>By adding your packages to the <CODE>comps</CODE> file, you can
+customize your own distribution, and make sure that your packages will be
+installed by default. One thing to be careful about is interdependence
+among your packages, but here, you are on your own :-) A word of warning:
+be careful not to add or remove extra whitespace in the file. Examine the
+existing <CODE>comps</CODE> file (make a copy of the original) to
+see how it's done (or check
+<CODE>i386/misc/src/install/pkgs.c</CODE> if you want to see how
+the file is parsed).
+<P>
+<HR>
+<A HREF="RedHat-CD-6.html"><IMG SRC="../../img/next.gif" ALT="Next"></A>
+<A HREF="RedHat-CD-4.html"><IMG SRC="../../img/prev.gif" ALT="Previous"></A>
+<A HREF="RedHat-CD.html#toc5"><IMG SRC="../../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

@@ -1,0 +1,150 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Linux Serial HOWTO 中译版: 我怎麽设定终端机连线到我的 PC 上?</TITLE>
+ <LINK HREF="Serial-HOWTO-8.html" REL=next>
+ <LINK HREF="Serial-HOWTO-6.html" REL=previous>
+ <LINK HREF="Serial-HOWTO.html#toc7" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Serial-HOWTO-8.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Serial-HOWTO-6.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Serial-HOWTO.html#toc7"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s7">7. 我怎麽设定终端机连线到我的 PC 上?</A></H2>
+
+<P>本节的指示能让终端机及其它电脑连上你的 Linux 机器的串列埠．
+<P>
+<H2><A NAME="ss7.1">7.1 硬体需求</A>
+</H2>
+
+<P>要确定你有一条正确的连接线．在电脑商店买的 null modem 连接线就可以胜任．
+但是它一定得要是一条 <EM>null modem</EM> 线！许多的电脑站将这类的连接线说成是串列印表接线．
+确定你是使用你的串列埠，公的 DB25 或是 DB9 接头，而不是你的并列埠(母的 DB25 或 centronics)．
+<P>     
+对 DB-25 接头而言，至少你得要有:
+<PRE>
+ 
+        PC male DB25                            Terminal DB25
+        TxD   Transmit Data         2 --> 3     RxD   Receive Data
+        RxD   Receive Data          3 &lt;-- 2  TxD   Transmit Data
+        SG    Signal Ground         7 --- 7     SG    Signal Ground
+</PRE>
+<P>如果你想要拥有流量控制以及硬体连线协商(handshaking)的话，你必须要有一条完整的 null modem 接线：
+<PRE>
+        PC male DB25                            Terminal DB25
+        TxD   Transmit Data         2 --> 3     RxD   Receive Data
+        RxD   Receive Data          3 &lt;-- 2     TxD   Transmit Data
+        RTS   Request To Send       4 --> 5     CTS   Clear To Send
+        CTS   Clear To Send         5 &lt;-- 4     RTS   Request To Send
+        DSR   Data Set Ready        6
+                                    |
+        DCD   Carrier Detect        8 &lt;-- 20    DTR   Data Terminal Ready
+        SG    Signal Ground         7 --- 7     SG    Signal Ground
+                                          6     DSR   Data Set Ready
+                                          |
+        DTR   Data Terminal Ready  20 --> 8     DCD   Carrier Detect
+</PRE>
+<P>如果你的串列埠上有一个 DB9 的接头，试试看下面这个:
+<PRE>
+        PC DB9                                  Terminal DB25 
+        RxD   Receive Data          2 &lt;-- 2  TxD   Transmit Data
+        TxD   Transmit Data         3 --> 3     RxD   Receive Data
+        SG    Signal Ground         5 --- 7     SG    Signal Ground
+</PRE>
+<P>或者，一条完整的 DB9 对 DB25 null modem 连接线：
+<PRE>
+        PC DB9                                  Terminal DB25
+        RxD   Receive Data          2 &lt;-- 2     TxD   Transmit Data
+        TxD   Transmit Data         3 --> 3     RxD   Receive Data
+                                          6     DSR   Data Set Ready
+                                          |
+        DTR   Data Terminal Ready   4 --> 8     DCD   Carrier Detect
+        GND   Signal Ground         5 --- 7     GND   Signal Ground
+        DCD   Carrier Detect        1
+                                    |
+        DSR   Data Set Ready        6 &lt;-- 20    DTR   Data Terminal Ready
+        RTS   Request To Send       7 --> 5     CTS   Clear To Send
+        CTS   Clear To Send         8 &lt;-- 4     RTS   Request To Send
+        (RI   Ring Indicator        9 not needed)
+</PRE>
+
+(没错! 第二支及第三支脚在 DB9 连接头上<EM>确实</EM>和 DB25 接头意义相反!)
+<P>如果使用的并不是完整的 null modem  连接线的话，你可能得要做下面这个欺骗的技巧:
+在你电脑这边的接头上，把 RTS 跟 CTS 接在一起，而且也把 DSR, DCD 以及 DTR 接在一起．
+用这个方法，当电脑要求一个正确的硬体连线协商信号时，它就可以得到(从它自己发出的)．
+<P>现在你已经有正确的连接线，把你的终端机连接到你的电脑上．
+如果你可以的话，告诉你的终端机忽略数据机控制信号．
+试试看用 9600 bps, 8 data bits, 1 stop bit, no parity bits 来设定终端机．
+<P>
+<H2><A NAME="ss7.2">7.2 设定 <CODE>getty</CODE></A>
+</H2>
+
+<P>在 <CODE>/etc/gettydefs</CODE> 里面增加一个给 <CODE>getty</CODE> 用来连接你终端机项目，如果还没有这项的话:
+<BLOCKQUOTE><CODE>
+<PRE>
+# 38400 bps Dumb Terminal entry
+DT38400# B38400 CS8 CLOCAL # B38400 SANE -ISTRIP CLOCAL #@S @L login: #DT38400
+
+# 19200 bps Dumb Terminal entry
+DT19200# B19200 CS8 CLOCAL # B19200 SANE -ISTRIP CLOCAL #@S @L login: #DT19200
+
+# 9600 bps Dumb Terminal entry
+DT9600# B9600 CS8 CLOCAL # B9600 SANE -ISTRIP CLOCAL #@S @L login: #DT9600
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>如果你要的话，你可以让 <CODE>getty</CODE> 在签入的标题上印出一些有趣的东西．
+在我的例子里，我印出系统名称以及串列线路．你可以加入其它的东西:
+<BLOCKQUOTE><CODE>
+<PRE>
+@B    目前的每秒位元传输率(bps, 在看到 @B 时估计的)．
+@D    现在日期, 格式 MM/DD/YY．
+@L    getty 所连接的串列线路．
+@S    系统名称．
+@T    现在时间，格式 HH:MM:SS (24 小时制)．
+@U    目前签入的使用者．这是在 /etc/utmp 档中非空 ut_name 栏位项目的计数值．
+@V    版本值，在预设档中给定的．
+如果要显示 '@' 符号的话，用 '\@' 或 '@@'．
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>当你正在编辑 <CODE>/etc/gettydefs</CODE> 时，你可以这样来检查它的语法是否正确:       
+<BLOCKQUOTE><CODE>
+<PRE>
+linux# getty -c /etc/gettydefs
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>确定没有 <CODE>getty</CODE> 或 <CODE>uugetty</CODE> 的设定档(<CODE>/etc/default/{uu}getty.ttyS</CODE><EM>N</EM> 或 <CODE>/etc/conf.{uu}getty.ttyS</CODE><EM>N</EM>)在你的终端机连接的串列埠上，
+因为这也许会干扰到在终端机上执行的 <CODE>getty</CODE>．如果有的话请移除它．
+<P>编辑你的 <CODE>/etc/inittab</CODE> 让 <CODE>getty</CODE> 在你的串列埠上执行(用你环境的正确资讯来取代 - 配置档的位置，串列埠名，速度，及预设终端机形式):
+<BLOCKQUOTE><CODE>
+<PRE>
+S1:456:respawn:/sbin/getty ttyS1 DT9600 vt100
+</PRE>
+</CODE></BLOCKQUOTE>
+
+重新起始 <CODE>init</CODE>:
+<BLOCKQUOTE><CODE>
+<PRE>
+linux# init q 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>现在你应该会在你的终端机上看到签入提示．也许你得按返回键(return)几次让终端机注意到．
+<P>
+<H2><A NAME="ss7.3">7.3 将 PC 设定成终端机的注意事项</A>
+</H2>
+
+<P>许多人将其它 PC 设定成终端机连接到 Linux 机器上．例如，旧的 8088 或是 286 PC 非常适合这个用途．
+你需要的只是一张包含适合让你的终端机-个人电脑 (Terminal-PC) 使用的 DOS 磁片，以及让你的终端机-个人电脑执行的通讯程式．
+<CODE>kermit</CODE> 在这个用途上表现得非常好．
+你可以在这台机器 <CODE>
+<A HREF="http://www.columbia.edu/kermit/">http://www.columbia.edu/kermit/</A></CODE> 上找到几乎可以让任何现存的作业系统使用的已编译的 <CODE>kermit</CODE> 版本．
+其它流行的 DOS 通讯程式像是 <CODE>telix</CODE> 以及 <CODE>procomm</CODE> 也将会有一样好的表现．
+要确定输入正确的串列埠资讯到你终端机-个人电脑的通讯设定里去．
+<P>
+<HR>
+<A HREF="Serial-HOWTO-8.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Serial-HOWTO-6.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Serial-HOWTO.html#toc7"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

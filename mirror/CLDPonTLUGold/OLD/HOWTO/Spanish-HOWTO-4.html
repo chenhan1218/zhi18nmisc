@@ -1,0 +1,181 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Spanish Linux HOWTO: Españolización de Linux</TITLE>
+ <LINK HREF="Spanish-HOWTO-5.html" REL=next>
+ <LINK HREF="Spanish-HOWTO-3.html" REL=previous>
+ <LINK HREF="Spanish-HOWTO.html#toc4" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Spanish-HOWTO-5.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Spanish-HOWTO-3.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Spanish-HOWTO.html#toc4"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s4">4. <EM>Españolización</EM> de Linux</A></H2>
+
+<P>
+<P>Uno de los aspectos más molestos es no poder escribir con naturalidad en nuestro
+idioma por falta de soporte de los caracteres especiales en el software. El juego de
+caracteres básico de ASCII
+es de 7 bits, y no incluye ni las vocales acentuadas ni nuestra maltratada 'ñ'.  Hay
+una norma ISO-8859-1 (ó ISO-Latin1) que sí que abarca todos los caracteres pero
+que sigue dando la lata en muchas tareas habituales, como el correo electrónico
+(muchos sistemas solo respetan 7 bits, por lo que textos que podemos ver correctamente
+en nuestro ordenador probablemente se visualizarán de forma lamentable cuando los enviemos a otra
+persona. A continuación se mencionan algunas de las situaciones más frecuentes y cómo
+intentar solucionarlas.
+<P>
+<H2><A NAME="ss4.1">4.1 Consola</A>
+</H2>
+
+<P>
+<P><EM> ...O cómo demonios poder usar acentos en nuestro propio ordenador</EM>
+<P>
+<P>Mediante el comando loadkeys se cargan las tablas de traducción del teclado.
+Estas tablas traducen los códigos que se generan al pulsar las teclas a los que
+reciben los programas. Los ficheros que contienen estas tablas de traducción se
+encuentran en el directorio <CODE>/usr/lib/kbd/keytables/</CODE> y el fichero que
+contiene el mapeado del teclado español se denomina <CODE>es.map</CODE>. Su objetivo es
+que si pulsamos una determinada combinación de teclas, aparezca en pantalla
+el carácter que tenemos pintado en nuestro teclado, y no su equivalente en el
+teclado que se usa en cualquier otro país.
+<P>La llamada a este comando suele ser de la forma siguiente, que aparecerá
+en el arranque por defecto (en Slackware estaría en<CODE>/etc/rc.d/rc.keymap</CODE>):
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+loadkeys /usr/lib/kbd/keytables/es.map
+</PRE>
+</CODE></BLOCKQUOTE>
+<P><EM>Nota del autor: A igual configuración de teclado, más de una vez me
+han fallado los acentos por recompilar el núcleo, pero en el momento de escribir
+estas líneas aún no he visto la causa...</EM>
+<P>
+<H2><A NAME="ss4.2">4.2 Shell bash</A>
+</H2>
+
+<P>
+<P>Para que la bash soporte el uso de vocales acentuadas asi como de la letra
+ñ basta con incluir las siguientes líneas en un fichero <CODE>.inputrc</CODE>
+(o al menos en <CODE>.bash_profile</CODE>) en tu $HOME:
+<P>
+<HR>
+<PRE>
+set meta-flag on                # conservar bit 8 en entrada de teclado
+set output-meta on      # conservar bit 8 en salida por terminal
+set convert-meta off    # no convertir secuencias de escape
+
+export LC_CTYPE=ISO_8859_1
+</PRE>
+<HR>
+<P>
+<H2><A NAME="ss4.3">4.3 Shell tcsh</A>
+</H2>
+
+<P>
+<P>Para que la tcsh soporte el uso de vocales acentuadas asi como de la letra
+ñ basta con incluir las siguientes líneas en un fichero <CODE>.tcshrc</CODE>
+(o al menos en <CODE>.login</CODE>) en tu $HOME:
+<P>
+<HR>
+<PRE>
+setenv LANG C
+setenv LC_CTYPE "iso_8859_1"
+</PRE>
+<HR>
+<P>
+<H2><A NAME="ss4.4">4.4 Algunas aplicaciones</A>
+</H2>
+
+<P>
+<P>Sería excesivamente largo detallar todas las posibilidades para trabajar
+con caracteres de 8 bits en todas las aplicaciones, utilidades, comandos
+del sistema, etc. Aquí van algunos ejemplos:
+<P>
+<DL>
+<DT><B>Editor joe</B><DD><P>Joe tiene un parámetro <CODE>-asis</CODE> para que conserve los caracteres de 8 bits.
+<DT><B>less</B><DD><P>Por defecto muestra solamente los caracteres de 7 bits (los de 8 los
+representa por su código ASCII). Ello protege
+de ver en pantalla "basura" si por error intentamos leer ficheros binarios,
+de datos, etc., pero impide ver nuestros acentos. Se puede modificar
+momentáneamente con el modificador <CODE>-r</CODE> desde la propia utilidad,
+pero sería mejor tener definida la variable de entorno <CODE>LESSCHARSET=latin1</CODE>.
+<DT><B>ls</B><DD><P>Para que muestre los caracteres especiales en los nombres de los ficheros tiene
+las opciones <CODE>-8 -N</CODE>, que se pueden añadir a la variable <CODE>LS_OPTIONS</CODE>
+que probablemente ya tengas definida por defecto.
+<DT><B>mc</B><DD><P>Este clónico Norton tiene una opción <EM>Full 8 bits</EM> del submenú
+<EM>Display bits...</EM> bajo <EM>Options</EM>.
+<DT><B>nroff, groff</B><DD><P>Dispone de una opción <CODE>-Tlatin1</CODE>
+</DL>
+<P>
+<H2><A NAME="ss4.5">4.5 Xwindow</A>
+</H2>
+
+<P>
+<P>El entorno gráfico XWindow usa para configurar el teclado un comando llamado
+<CODE>xmodmap</CODE> que tiene la misma funcion que <CODE>loadkeys</CODE> para la consola de
+texto. Ernest Artiaga (drw@portos.upc.es) preparó un fichero de configuracion
+para Xmodmap que genera los acentos con la tecla [AltGr], que entre otros sitios puede encontrar
+en 
+<A HREF="ftp://ftp.cs.us.es/pub/Linux/contrib/Xmodmap-es">ftp://ftp.cs.us.es/pub/Linux/contrib/Xmodmap-es</A>, y que podemos
+colocar como $HOME/.xmodmap para que se cargue como parte de nuestra
+configuración. Existe también una utilidad <CODE>/usr/lib/kbd/keytables/mk_modmap</CODE>
+que genera un listado para Xmodmap a partir del mapa de teclado usado por loadkeys.
+<P>De todas formas este método no es perfecto, ya que muchas aplicaciones bajo Xwindow
+tienen su propia forma de configuración o simplemente no tienen soporte para caracteres
+extendidos por lo que a veces es posible que podamos usar acentos en una ventana y no
+en la aplicación de la ventana de al lado.
+<P>
+<H2><A NAME="ss4.6">4.6 Emulador de DOS (DOSEMU)</A>
+</H2>
+
+<P>
+<P>La linea de configuración del teclado en <CODE>/etc/dosemu.conf</CODE> deberá
+incluir '<CODE>layout es-latin1</CODE>' para poder usar la 'ñ' y las aperturas
+de interrogación y admiración. Una vez hecho esto, es posible cargar la
+configuración habitual con <CODE>keyb sp</CODE> desde el propio emulador de DOS, o
+bien ejecutar '<CODE>keybes2.com</CODE>, una pequeña utilidad para el propio emulador
+disponible en varias de las direcciones habituales.
+<P>
+<H2><A NAME="ss4.7">4.7 Correo electrónico</A>
+</H2>
+
+<P>
+<P>Por último en relación con el uso del español en Linux, pero no menos
+importante, es poder leer y recibir por mensajería electrónica textos
+escritos en español sin deformar su contenido ni perder los acentos y
+símbolos propios.
+<P>El problema se reduce a lo de siempre: el uso de
+caracteres especiales no incluidos en la tipografía básica sajona requiere
+trabajar con 8 bits, pero aún hay muchos sistemas que siguen trabajando con
+7 bits, lo que trunca o deforma mensajes escritos sin las debidas precauciones.
+<P>En el estándar RFC822 que define el formato usado en los mensajes de correo
+de Internet no se permite el uso de 8 bits en las <EM>cabeceras</EM> de los mensajes,
+dejando abierta la posibilidad de 8 bits en el <EM>cuerpo</EM> del mensaje. Pero
+tampoco podemos abusar de esa posibilidad ya que no tenemos garantías de que
+lo respete cualquier sistema que pueda recibir nuestros documentos. Una solución
+cada vez más extendida, y que permite a los usuarios escribir con libertad y
+enviar prácticamente cualquier información dejando todos esos detalles al software
+de gestión del correo (tanto los <EM>agentes de usuario</EM> como los <EM>agentes de
+transporte</EM> en los servidores de correo) es mediante el estandar MIME, que
+permite <EM>codificar</EM> nuestros mensajes de 8 bits y reducirlos a caracteres
+de 7 bits que puedan pasar a través de cualquier sistema sin peligro de
+perder información. El inconveniente (cada vez menor a medida que este sistema
+se extienda más y más) es que si intentamos leer un mensaje con codificación
+MIME sin un software que no implemente este sistema y no pueda interpretarlo,
+puede que veamos "basura" intercalada con nuestro mensaje, o que incluso no
+entendamos nada de nada.
+<P>MIME deja toda la responsabilidad al software, por lo que si ambos extremos
+(remitente y destinatario) usan software compatible con MIME, el usuario
+puede enviar junto a textos simples cualquier combinación de tipos de ficheros
+(documentos generados por procesadores de textos, gráficos, sonido, video, etc). Ni siquiera
+es necesario que ambos usen el mismo software. Basta con que ambos sean capaces
+de generar la codificación durante el envío, y de interpretarla en la recepción.
+<P>
+<P>
+<HR>
+<A HREF="Spanish-HOWTO-5.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Spanish-HOWTO-3.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Spanish-HOWTO.html#toc4"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

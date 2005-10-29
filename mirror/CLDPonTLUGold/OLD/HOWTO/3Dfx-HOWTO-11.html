@@ -1,0 +1,208 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>The Linux 3Dfx HOWTO: FAQ: Troubleshooting?</TITLE>
+ <LINK HREF="3Dfx-HOWTO-10.html" REL=previous>
+ <LINK HREF="3Dfx-HOWTO.html#toc11" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<IMG SRC="../img/next.gif" ALT="Next">
+<A HREF="3Dfx-HOWTO-10.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="3Dfx-HOWTO.html#toc11"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s11">11. FAQ: Troubleshooting?</A></H2>
+
+<H2><A NAME="ss11.1">11.1 Has this hardware been tested?</A>
+</H2>
+
+<P>See hardware requirements list above. I currently do not
+maintain a conclusive list of vendors and boards, as no
+particular board specific problems have been verified.
+Currently, only 3Dfx and Quantum3D provide boards
+for testing to the developers, so Quantum3D consumer
+boards are a safe bet. Every other Voodoo Graphics (tm) based board
+should work, too. I have reports regarding the
+Orchid Righteous 3D, Guillemot Maxi 3D Gamer, and 
+Diamond Monster 3D. 
+<P>If you are a board manufacturer who wants to make
+sure his Voodoo Graphics (tm), Voodoo Rush (tm) or Voodoo 2 (tm) boards work
+with upcoming releases of Linux, Xfree86, Linux Glide
+and/or Mesa, please contact me, and I will happily forward
+your request to the persons maintaining the drivers in
+question. If you are interested in support for Linux Glide
+on other then the PC platfrom, e.g. DEC Alpha, please
+contact the maintainer of Linux Glide Daryll Strauss, at
+<A HREF="mailto:daryll@harlot.rb.ca.us">daryll@harlot.rb.ca.us</A><P>
+<P>
+<H2><A NAME="ss11.2">11.2 Failed to change I/O privilege?</A>
+</H2>
+
+<P>You need to be root, or <CODE>setuid</CODE> your
+application to run a Glide based application.
+For DMA, the driver accesses <CODE>/dev/mem</CODE>,
+which is not writeable for anybody but root,
+with good reasons. See the README in the
+Glide distribution for Linux.
+<P>
+<P>
+<H2><A NAME="ss11.3">11.3 Does it work without root privilege?</A>
+</H2>
+
+<P>There are compelling case where the setuid requirement is a
+problem, obviously. There are currently solutions in
+preparation, which require changes to the library internals
+itself. 
+<P>
+<P>
+<H2><A NAME="ss11.4">11.4 Displayed images looks awful (single screen)?</A>
+</H2>
+
+<P>If you are using the analog pass through configuration,
+the common SVGA or X11 display might look pretty bad.
+You could try to get a better connector cable than
+the one provided with the accelerator board (the
+ones delivered with the Diamond Monster 3D are
+reportedly worse then the one accompanying the
+Orchid Righteous 3D), but up to a degree there will
+inevitably be signal loss with an additional
+transmission added.
+<P>If the 640x480 full screen image created by the
+accelerator board does look awful, this might indicate
+a real hardware problem. You will have to contact
+the board manufacturer, not 3Dfx for details, as
+the quality of the video signal has nothing to do
+with the accelerator - the board manufacturer chooses
+the RAMDAC, output drivers, and other components
+responsible.
+<P>
+<P>
+<H2><A NAME="ss11.5">11.5 The last frame is still there (single or dual screen)?</A>
+</H2>
+
+<P>You terminated your application with Ctrl-C, or it
+did not exit normally. The accelerator board will
+dutifully provide the current content of the
+framebuffer as a video signal unless told otherwise.
+<P>
+<P>
+<H2><A NAME="ss11.6">11.6 Powersave kicks in (dual screen)?</A>
+</H2>
+
+<P>When you application terminates in dual screen setups,
+the accelerator board does not provide video output
+any longer. Thus powersave kicks each time. To avoid
+this, use
+<HR>
+<PRE>
+setenv SST_DUALSCREEN 1
+</PRE>
+<HR>
+<P>
+<P>
+<H2><A NAME="ss11.7">11.7 My machine seem to lock (X11, single screen)?</A>
+</H2>
+
+<P>If you are running X when calling a Glide
+application, you probably moved the mouse out
+of the window, and the keyboard inputs do
+not reach the application anymore.
+<P>If you application is supposed to run concurrently
+with X11, it is recommend to expose a full screen
+window, or use the <CODE>XGrabPointer</CODE> and 
+<CODE>XGrabServer</CODE>
+functions to redirect all inputs to the application
+while the X server cannot access the display. Note
+that grabbing all input with <CODE>XGrabPointer</CODE> and
+<CODE>XGrabServer</CODE> does not qualify as well-behaved
+application, and that your program might block the
+entire system.
+<P>If you experience this problem without running X,
+be sure that there is no hardware conflict (see below).
+<P>
+<H2><A NAME="ss11.8">11.8 My machine locks (single or dual screen)?</A>
+</H2>
+
+<P>If the system definitely does not respond to any inputs
+(you are running two displays and know about the loss
+of focus), you might experience a more or less
+subtle hardware conflict.
+See installation troubleshooting section for details.
+<P>If there is no obvious address conflict, there might
+still be other problems (below). If you are writing your
+own code the most common reason for locking is that you
+didn't snap your vertices. See the section on snapping
+in the Glide documentation.
+<P>
+<H2><A NAME="ss11.9">11.9 My machine locks (used with S3 VGA board)?</A>
+</H2>
+
+<P>It is possible you have a problem with memory
+region overlap specific to S3. There is some
+info and a patch to the so-called S3 problem
+in the 3Dfx web site, but these apply to Windows
+only. To my understanding, the cause of the problem
+is that some S3 boards (older revisions of Diamond 
+Stealth S3 968) reserve more memory space than
+actually used, thus the Voodoo Graphics (tm) has to be mapped
+to a different location. However, this has not
+been reported as a problem with Linux, and might
+be Windows-specific.
+<P>
+<P>
+<H2><A NAME="ss11.10">11.10 No address conflict, but locks anyway?</A>
+</H2>
+
+<P>If you happen to use a motherboard with non-standard
+or incomplete PCI support, you could try to 
+shuffle the boards a bit. I am running an ASUS
+TP4XE that has that non-standard modified "Media Slot",
+i.e. PCI slot4 with additional connector for
+ASUS-manufactured SCSI/Sound combo boards,
+and I experienced severe problems while running a
+Diamond Monster 3D in that slot. The system operates
+flawlessly since I put the board in one of the 
+regular slots.
+<P>
+<P>
+<H2><A NAME="ss11.11">11.11 Mesa runs, but does not access the board?</A>
+</H2>
+
+<P>Be sure that you recompiled all the libraries (including
+the toolkits the demo programs use - remember that
+GLUT does not yet support Voodoo Graphics (tm)), and that you
+removed the older libraries, run <CODE>ldconfig</CODE>,
+and/or set your <CODE>LD_LIBRARY_PATH</CODE> properly.
+Mesa supports several drivers in parallel (you could
+use X11 SHM, off screen rendering, and Mesa Voodoo at
+the same time), and you might have to create and
+switch contexts explicitely (see <CODE>MakeCurrent</CODE>
+function) if the Voodoo Graphics (tm) isn't chosen by default.
+<P>
+<P>
+<H2><A NAME="ss11.12">11.12 Resetting dual board SLI?</A>
+</H2>
+
+<P>If a Quantum 3D Obsidian board using in an SLI setup
+exits abruptly (i.e., the application crashes, or is
+aborted by user), the boards are left in an undefined
+state.  With the dual-board set, you can run a 
+program called <CODE>resetsli</CODE> to reset them. Until
+you run the <CODE>resetsli</CODE> program, you will not
+be able to re-initialize the Obsidian board.
+<P>
+<P>
+<H2><A NAME="ss11.13">11.13 Resetting single board SLI?</A>
+</H2>
+
+<P>The <CODE>resetsli</CODE> program mentioned above does not
+yet work with a single board Obsidian SLI (e.g. the
+Obsidian 100-4440SB). You will have to reboot your
+system by reset in order to reset the board.
+<P>
+<P>
+<HR>
+<IMG SRC="../img/next.gif" ALT="Next">
+<A HREF="3Dfx-HOWTO-10.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="3Dfx-HOWTO.html#toc11"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

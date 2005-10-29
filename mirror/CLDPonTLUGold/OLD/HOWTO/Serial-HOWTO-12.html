@@ -1,0 +1,92 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE> Serial HOWTO: Serial Tips And Miscellany</TITLE>
+ <LINK HREF="Serial-HOWTO-13.html" REL=next>
+ <LINK HREF="Serial-HOWTO-11.html" REL=previous>
+ <LINK HREF="Serial-HOWTO.html#toc12" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Serial-HOWTO-13.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Serial-HOWTO-11.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Serial-HOWTO.html#toc12"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s12">12. Serial Tips And Miscellany</A></H2>
+
+<H2><A NAME="ser_module"></A> <A NAME="ss12.1">12.1 Serial Module </A>
+</H2>
+
+<P> Often the serial driver is provided as a module.  Parameters may
+be supplied to certain modules in /etc/modules.conf.  Since kernel 2.2
+you don't edit this file but use the program update-modules to change
+it.  The info that is used to update modules.conf is put in
+/etc/modutils/.  The Debian/GNU Linux has a file here named
+/etc/modutils/setserial which runs the serial script in /etc/init.d/
+every time the serial module is loaded or unloaded.  When the serial
+module is unloaded this script will save the state of the module in
+/var/run/setserial.conf.  Then if the module loads again this saved
+state is restored.  When the serial module first loads at boot-time,
+there's nothing in /var/run/setserial.conf so the state is obtained
+from /etc/serial.conf.  So there are two files that save the state.
+Other distributions may do something similar.
+<P>One may modify the serial driver by editing the source code.  Much of
+the serial driver is found in the file serial.c.  For info
+regarding writing of programs for the serial port see
+Serial-Programming-HOWTO (revised in 1999 by Vern Hoxie but not at
+LDP.  Get it from 
+<A HREF="scicom.alphacdc.com/pub/linux">scicom.alphacdc.com/pub/linux</A>)
+<P>
+<H2><A NAME="ss12.2">12.2 Serial Console (console on the serial port)</A>
+</H2>
+
+<P> See the kernel documentation in: Documentation/serial-console.txt.
+Kernel 2.4+ has better documentation.  See also "Serial Console" in
+Text-Terminal-HOWTO.
+<P>
+<H2><A NAME="ss12.3">12.3 Line Drivers</A>
+</H2>
+
+<P> For a text terminal, the EIA-232 speeds are fast enough but the
+usable cable length is often too short.  Balanced technology could
+fix this.  The common method of obtaining balanced communication with
+a text terminal is to install 2@ line drivers in the serial line to
+convert unbalanced to balanced (and conversely).  They are a
+specialty item and are expensive if purchased new.
+<H2><A NAME="ss12.4">12.4 Known Defective Hardware </A>
+</H2>
+
+<H3><A NAME="8514_"></A> Avoiding IO Address Conflicts with Certain Video Boards </H3>
+
+<P> The IO address of the IBM 8514 video board (and others) is
+allegedly 0x?2e8 where ? is 2, 4, 8, or 9.  This may conflict (but
+shouldn't if the serial port is well designed) with the IO address of
+<CODE>ttyS3</CODE> at 0x02e8 if the serial port ignores the leading 0 hex
+digit when it decodes the address (many do).  That is bad news if you
+try to use <CODE>ttyS3</CODE> at this IO address.  Another story is that Linux
+will not detect your internal modem on <CODE>ttyS3</CODE> but that you can use
+<CODE>setserial</CODE> to put <CODE>ttyS3</CODE> at this address and the modem
+will work fine.
+<P>
+<H3>Problem with AMD Elan SC400 CPU (PC-on-a-chip)</H3>
+
+<P> This has a race condition between an interrupt and a status register
+of the UART.  An interrupt is issued when the UART transmitter
+finishes the transmission of a byte and the UART transmit buffer
+becomes empty (waiting for the next byte).  But a status register of
+the UART doesn't get updated fast enough to reflect this.  As a
+result, the interrupt service routine rapidly checks and determines
+(erroneously) that nothing has happened.  Thus no byte is sent to the
+port to be transmitted and the UART transmitter waits in vain for a
+byte that never arrives.  If the interrupt service routine had waited
+just a bit longer before checking the status register, then it would
+have been updated to reflect the true state and all would be OK.
+<P>There is a proposal to fix this by patching the serial driver.  But
+Should linux be patched to accommodate defective hardware, especially
+if this patch may impair performance of good hardware?
+<P>
+<HR>
+<A HREF="Serial-HOWTO-13.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Serial-HOWTO-11.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Serial-HOWTO.html#toc12"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

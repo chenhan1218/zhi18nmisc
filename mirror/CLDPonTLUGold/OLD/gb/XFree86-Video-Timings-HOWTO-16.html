@@ -1,0 +1,193 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>XFree86 Video Timings HOWTO 中文版: 绘制显示器特性</TITLE>
+ <LINK HREF="XFree86-Video-Timings-HOWTO-17.html" REL=next>
+ <LINK HREF="XFree86-Video-Timings-HOWTO-15.html" REL=previous>
+ <LINK HREF="XFree86-Video-Timings-HOWTO.html#toc16" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="XFree86-Video-Timings-HOWTO-17.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="XFree86-Video-Timings-HOWTO-15.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="XFree86-Video-Timings-HOWTO.html#toc16"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="cplot"></A> <A NAME="s16">16. 绘制显示器特性</A></H2>
+
+<P>
+<P>要绘制一份显示器模式图,你将需要gnuplot软件包(一个类UNIX操作系统下的绘图语言自由软件)和<CODE>modeplot</CODE>工具.它是一个输入命令行选项来绘制显示器特性图的shell/gnuplot脚本.
+<P>这里是<CODE>modeplot</CODE>的一份拷贝:
+<P>
+<PRE>
+#!/bin/sh
+#
+# modeplot --- 生成显示器可使用的X模式图
+#
+# 执行'modeplot -?'获知控制选项.
+#
+
+# 显示器描述.频宽以MHz为单位,行频以KHz为单位,而场频以Hz为单位.
+TITLE="Viewsonic 21PS"
+BANDWIDTH=185
+MINHSF=31
+MAXHSF=85
+MINVSF=50
+MAXVSF=160
+ASPECT="4/3"
+vesa=72.5       # VESA建议的最小刷新率
+
+while [ "$1" != "" ]
+do
+        case $1 in
+        -t) TITLE="$2"; shift;;
+        -b) BANDWIDTH="$2"; shift;;
+        -h) MINHSF="$2" MAXHSF="$3"; shift; shift;;
+        -v) MINVSF="$2" MAXVSF="$3"; shift; shift;;
+        -a) ASPECT="$2"; shift;;
+        -g) GNUOPTS="$2"; shift;;
+        -?) cat &lt;&lt;EOF
+modeplot control switches:
+
+-t "&lt;description>"   name of monitor            defaults to "Viewsonic 21PS"
+-b &lt;nn>              bandwidth in MHz           defaults to 185
+-h &lt;min> &lt;max>    min &amp; max HSF (KHz)        defaults to 31 85
+-v &lt;min> &lt;max>    min &amp; max VSF (Hz)         defaults to 50 160
+-a &lt;aspect ratio>    aspect ratio               defaults to 4/3
+-g "&lt;options>"       pass options to gnuplot
+
+The -b, -h and -v options are required, -a, -t, -g optional. You can use -g to pass a device type to gnuplot so that (for example) modeplot's output can be redirected to a printer. See gnuplot(1) for details.
+
+The modeplot tool was created by Eric S. Raymond &lt;esr@thyrsus.com> based on analysis and scratch code by Martin Lottermoser &lt;Martin.Lottermoser@mch.sni.de>
+
+This is modeplot $Revision: 1.13 $
+EOF
+                exit;;
+        esac
+        shift
+
+done
+
+gnuplot $GNUOPTS &lt;&lt;EOF
+set title "$TITLE Mode Plot"
+
+# 有魔力的数值.不幸的是特性图对它们的改变相当敏感,而对某些显示器它们不能代表实际值.我们需要纠
+# 正这些值以获得更接近的模式图.这些值是查找ModeDB数据库中大量的值而得到的.
+F1 = 1.30       # 转换水平分辨率到帧宽的倍数
+F2 = 1.05       # 转换垂直分辨率到帧高的倍数
+
+# 函数定义(乘以1.0强迫进行实数运算)
+ac = (1.0*$ASPECT)*F1/F2
+refresh(hsync, dcf) = ac * (hsync**2)/(1.0*dcf)
+dotclock(hsync, rr) = ac * (hsync**2)/(1.0*rr)
+resolution(hv, dcf) = dcf * (10**6)/(hv * F1 * F2)
+
+# 在坐标轴上放置标记
+set xlabel 'DCF (MHz)'
+set ylabel 'RR (Hz)' 6  # 在Y轴右边放置它
+
+# 生成图形
+set grid
+set label "VB" at $BANDWIDTH+1, ($MAXVSF + $MINVSF) / 2 left
+set arrow from $BANDWIDTH, $MINVSF to $BANDWIDTH, $MAXVSF nohead
+set label "max VSF" at 1, $MAXVSF-1.5
+set arrow from 0, $MAXVSF to $BANDWIDTH, $MAXVSF nohead
+set label "min VSF" at 1, $MINVSF-1.5
+set arrow from 0, $MINVSF to $BANDWIDTH, $MINVSF nohead
+set label "min HSF" at dotclock($MINHSF, $MAXVSF+17), $MAXVSF + 17 right
+set label "max HSF" at dotclock($MAXHSF, $MAXVSF+17), $MAXVSF + 17 right
+set label "VESA $vesa" at 1, $vesa-1.5
+set arrow from 0, $vesa to $BANDWIDTH, $vesa nohead # style -1
+plot [dcf=0:1.1*$BANDWIDTH] [$MINVSF-10:$MAXVSF+20] \
+  refresh($MINHSF, dcf) notitle with lines 1, \
+  refresh($MAXHSF, dcf) notitle with lines 1, \
+  resolution(640*480,   dcf) title "640x480  " with points 2, \
+  resolution(800*600,   dcf) title "800x600  " with points 3, \
+  resolution(1024*768,  dcf) title "1024x768 " with points 4, \
+  resolution(1280*1024, dcf) title "1280x1024" with points 5, \
+  resolution(1600*1280, dcf) title "1600x1200" with points 6
+
+pause 9999
+EOF
+</PRE>
+<P>一旦知道了<CODE>modeplot</CODE>和gnuplot软件包已经在适当位置,你需要下列显示器特性:
+<P>
+<UL>
+<LI>频宽(VB)</LI>
+<LI>行频范围(HSF)</LI>
+<LI>场频范围(VSF)</LI>
+</UL>
+<P>绘制程序需要进行一些不完全精确的简化假定.因此得出的图只能是一个粗略描述.这些假定是:
+<P>
+<OL>
+<LI>所有分辨率有单一的固定屏幕高宽比 AR = HR / VR .标准分辨率有 AR = 4/3 或 AR = 5/4 .<CODE>modeplot</CODE>程序默认假定4/3,但你可以替换它.</LI>
+<LI>对计算的模式,水平和垂直帧长分别是水平和垂直分辨率的固定倍数:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+        HFL = F1 * HR
+        VFL = F2 * VR
+</PRE>
+</CODE></BLOCKQUOTE>
+</LI>
+</OL>
+<P>作为一份粗略的指南,让 F1 = 1.30 而 F2 = 1.05 (查阅
+<A HREF="XFree86-Video-Timings-HOWTO-9.html#frame">frame</A>
+"计算帧的大小").
+<P>现在处理一个特殊的同步频率,行频(HSF).根据刚才提出的假定,其每个值对时钟频率DCF而言已经决定刷新率RR,也就是说,对行频(HSF)每个值有一个函数RR(DCF).这可以依下列各项得出.
+<P>刷新率等於时钟频率除以帧长的乘积:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+        RR = DCF / (HFL * VFL)          (*)
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>另一方面,水平帧长等於时钟率除以行频:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+        HFL = DCF / HSF                 (**)
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>根据上述两个假定VFL可以化为HFL:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+        VFL = F2 * VR
+            = F2 * (HR / AR)
+            = (F2 / F1) * HFL / AR      (***)
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>插入(**)和(***)到(*)我们得到:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+        RR = DCF / ((F2 / F1) * HFL**2 / AR)
+           = (F1 / F2) * AR * DCF * (HSF / DCF)**2
+           = (F1 / F2) * AR * HSF**2 / DCF
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>对於固定的HSF,F1,F2和AR,在我们的图中这是一条双曲线.对行频最小值和最大值画两条这样的曲线我们就得到了允许区域的两条边界.
+<P>穿过特性区域的直线代表特定的分辨率.这是基於(*)和第二个假定:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+        RR = DCF / (HFL * VFL) = DCF / (F1 * HR * F2 * VR)
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>通过为某人感兴趣的所有分辨率画这样的直线,他能立刻记住显示器特性范围内分辨率,时钟频率和刷新率之间可能的关系.注意这些线不依赖於显示器的特性,但确实依赖於第二个假定.
+<P><CODE>modeplot</CODE>工具提供给你容易的途径绘制特性图.运行<CODE>modeplot -?</CODE>看它的控制选项.一个典型调用类似这样:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+        modeplot -t "Swan SW617" -b 85 -v 50 90 -h 31 58
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>-b选项指定频宽;-v和-h设置行频和场频范围.
+<P>当阅读<CODE>modeplot</CODE>的输出时,始终记住它只给出近似的描述.例如,它忽视了由同步脉冲宽度的最小要求造成的水平帧长(HFL)的限制,而且它的精确度受限於两个假定的精确度.因此它不是在
+<A HREF="XFree86-Video-Timings-HOWTO-11.html#synth">汇总以上讨论</A>中出现的详细计算(涉及某些巫术)的代替品.无论如何,对於什麽模式是可能的和有哪些相关权衡,它应该给了你更好的感觉.
+<P>
+<HR>
+<A HREF="XFree86-Video-Timings-HOWTO-17.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="XFree86-Video-Timings-HOWTO-15.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="XFree86-Video-Timings-HOWTO.html#toc16"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

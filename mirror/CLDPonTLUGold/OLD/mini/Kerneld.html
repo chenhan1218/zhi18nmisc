@@ -1,0 +1,643 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+<HEAD>
+   <TITLE>Linux kerneld mini-HOWTO</TITLE>
+   <META NAME="GENERATOR" CONTENT="Mozilla/3.01Gold (X11; I; Linux 2.1.31 i486) [Netscape]">
+   <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+
+<H1>kerneld mini-HOWTO</H1>
+
+<P>1.7 版，上次由 Henrik Storner <A HREF="mailto:storner@osiris.ping.dk">(storner@osiris.ping.dk)</A>於 1997 年 7 月 19 日(storner@osiris.ping.dk) 更新。</P>
+<P> 曾達康 <A HREF="mailto:a9504480@graduate.hku.hk">(a9504480@graduate.hku.hk)</a> 於 1998 年 6 月 14 日完成翻譯。<HR></P>
+
+<H2>導言</H2>
+
+<P>此文件解釋如何使用 Linux 核心中的 kerneld 功能。它會說明：</P>
+
+<UL>
+<LI><A HREF="#Introduction">kerneld 是什麼</A> </LI>
+
+<LI><A HREF="#Why">為什麼要用它</A> </LI>
+
+<LI><A HREF="#Where">如何取得所需東西</A> </LI>
+
+<LI><A HREF="#Setup">如何設定它</A></LI>
+
+<LI><A HREF="#Configuration">如何告訴 kerneld 它不認識的模組的資料</A> </LI>
+
+<LI><A HREF="#Spying">如何偵察 kerneld (設定時可能有用)</A></LI>
+
+<LI><A HREF="#Goodies">kerneld 的特別用途</A> </LI>
+
+<LI><A HREF="#CommonProblems">常見問題及怪事</A> </LI>
+</UL>
+
+<P>此文件的最新版本可在 <A HREF="kerneld-mini-HOWTO.html">http://eolicom.olicom.dk/~storner/kerneld-mini-HOWTO.html</A> 找到。（譯按：中文版則可在 <A HREF="http://www.linux.org.tw/CLDP/mini/Kerneld.html">http://www.linux.org.tw/CLDP/mini/Kerneld.html</a> 找到）在此 mini-HOWTO 推出的正式版本期間，你可在 <A HREF="kern.html">http://eolicom.olicom.dk/~storner/kern.html</A> 找到未經組織的更新清單。
+
+</P>
+
+<H2>榮譽</H2>
+
+<P>如果你發現此文件中出現錯誤，請告訴文章的原作者。以下各人都曾對本文作出貢獻：</P>
+
+<UL>
+<LI>Bjorn Ekwall &lt;bj0rn@blox.se&gt;</LI>
+
+<LI>Ben Galliart &lt;bgallia@luc.edu&gt;</LI>
+
+<LI>Cedric Tefft &lt;cedric@earthling.net&gt;</LI>
+
+<LI>Brian Miller &lt;bmiller@netspace.net.au&gt;</LI>
+
+<LI>James C. Tsiao &lt;jtsiao@madoka.jpl.nasa.gov&gt;</LI>
+</UL>
+
+<P>我非常感謝此 mini-HOWTO 讀者寄給我們的鼓勵和提議。</P>
+<P>（譯按︰當然，如果問題出在譯文中，請通知曾達康 &lt;a9504480@graduate.hku.hk&gt;）</P>
+
+<P>
+<HR></P>
+
+<H2><A NAME="Introduction"></A>kerneld 是什麼？</H2>
+
+<P>kerneld 是由 <A HREF="mailto:bj0rn@blox.se">Bjorn Ekwall</A> 引入 1.3 版的發展核心 (development kernel) 的功能。它可在所有 2.0 及 2.1 版本的核心找到。它令模組 (modules)─即驅動程式 (device drivers)、網絡驅動器 (network drivers)、檔案系統 (filesystems)─自動在有需要時載入，而不需自行使用 modprobe 或 insmod。</P>
+
+<P>還有更有趣的東西，雖然它們尚未整合到標準的核心中︰</P>
+
+<UL>
+<LI>它可設定成不使用內定的空白畫面，而讓你選擇其他程式，使你可自選螢幕保護器 (screen saver)。</LI>
+
+<LI>和螢幕保護器相似，你可把主控台 (console) 的‘嗶’聲改為完全不同的東西…</LI>
+</UL>
+
+<P>kerneld 包括兩個獨立部分：</P>
+
+<UL>
+<LI>核心向監控程式 (daemon) 就所需模組提出要求的支援。</LI>
+
+<LI>懂找出所需模組來滿足核心要求的使用者層面 (user-level) 監控程式。</LI>
+</UL>
+
+<P>要使用 kerneld，兩個部分都要正常運作。只設定好其中一個是沒用的。</P>
+
+<P>
+<HR></P>
+
+<H2><A NAME="Why"></A>為什麼要用它？</H2>
+
+<P>有不少好理由去使用 kerneld。這裡提出的是我個人的──其他人可能有其他的理由。</P>
+
+<UL>
+<LI>如果你要為多個只有少許不同的系統（如使用不同的網絡控制卡）建立核心，你只需建立一個核心和數個模組，而不需為每個系統建立不同的核心。</LI>
+
+<LI>對開發人員而言，模組比較容易測試─你不需重新啟動電腦以載入及卸下驅動程式（這點適用於所有模組，並不限於 kerneld 載入的）。</LI>
+
+<LI>它減少核心佔用的記憶體，即你有更多記憶體供其他程式使用。核心所佔用的記憶體是 *永不* 被換出 (swap-out) 的，所以如果你的核心中有 100kB 沒用的驅動程式的話，那只是在浪費你的記憶體。</LI>
+
+<LI>有一些我要用的東西，如 ftape floppy-tape driver 或 iBCS，只以模組形式出現。但我懶得自己載入和卸下它們。</LI>
+
+<LI>Linux 發行者不再需要建立 284 個不同的開機影象 (boot images) ─使用者只載入配合其硬件的驅動程式。例如 RedHat 4.0 就使用了這方法。</LI>
+</UL>
+
+<P>當然，你也有不使用它的理由─你可能喜歡在一個核心映象 (kernel image) 中包括所有你要的驅動程式。如果是這樣，你看錯文章了。</P>
+
+<P>
+<HR></P>
+
+<H2><A NAME="Where"></A>如何取得所需東西？</H2>
+
+<P>對 kerneld 的支援始於 1.3.57 版。如果你正使用較舊的版本，你需要更新它才可用 kerneld 了。所有主要的 Linux ftp 台都有核心的原程式碼。我建議你更新至最新版本的穩定核心，2.0，目前是嵌補等級 (patch level) 2.0.29 （譯按：現時已是 2.0.35）：</P>
+
+<PRE>  <A HREF="ftp://sunsite.unc.edu/pub/Linux/kernel/v2.0">ftp://sunsite.unc.edu/pub/Linux/kernel/v2.0</A>/linux-2.0.29.tar.gz
+  <A HREF="ftp://tsx-11.mit.edu/pub/linux/sources/system/v2.0">ftp://tsx-11.mit.edu/pub/linux/sources/system/v2.0</A>/linux-2.0.29.tar.gz
+  <A HREF="ftp://ftp.funet.fi/pub/OS/Linux/PEOPLE/Linus/v2.0">ftp://ftp.funet.fi/pub/Linux/PEOPLE/Linus/v2.0</A>/linux-2.0.29.tar.gz</PRE>
+
+<P>使用者層面的監控程式包含在 modules-1.2.8 及更新的 modules-2.0 中。它們一般會和核心源程式碼在同一地點找到，而官方位置包括：</P>
+
+<PRE>  <A HREF="ftp://sunsite.unc.edu/pub/Linux/kernel/modules-2.0.0.tar.gz">ftp://sunsite.unc.edu/pub/Linux/kernel/v2.0/modules-2.0.0.tar.gz
+</A>  <A HREF="ftp://tsx-11.mit.edu/pub/linux/sources/sbin/">ftp://tsx-11.mit.edu/pub/linux/sources/sbin/modules-2.0.0.tar.gz
+</A>  <A HREF="ftp://ftp.funet.fi/pub/OS/Linux/tools/">ftp://ftp.funet.fi/pub/Linux/tools/modules-2.0.0.tar.gz</A></PRE>
+
+<P>注意：如果你想在 2.1 版的<B>開發</B>核心嘗試載入模組，你必須用最新的 modutils-（不是 modules-）。但請看 <A HREF="#2-1-problems">以下</A>有關模組和 2.1 版核心部分的問題。</P>
+
+<P>
+<HR></P>
+
+<H2><A NAME="Setup"></A>如何設定它？</H2>
+
+<P>首先要取得所需的東西：合用的核心部分及最新版的 modules-utilities。之後你要安裝 modules-utilities。十分簡單：只需把原程式碼解壓及執行 <B>make install</B>. 這樣便會編譯 genksysm, insmod, lsmod, modprobe, depmod, kerneld，及把它們安裝到 /sbin。我建議你加數行到你的開機命令手稿 (startup-script) 來完成啟動時所需的設定。如果你使用 Slackware，請把以下數行加入你的 /etc/rc.d/rc.S 檔，如果你使用 SysVinit，如 Debian, RedHat, Caldera，請把以下數行加入你的 /etc/rc.d/rc.sysinit 檔。（譯按：據我所知，RedHat 5.0的 SysVinit已加入此功能）：
+</P>
+
+<PRE><TT>        # Start kerneld - this should happen very early in the
+        # boot process, certainly BEFORE you run fsck on filesystems
+        # that might need to have disk drivers autoloaded
+        if [ -x /sbin/kerneld ]
+        then
+                /sbin/kerneld
+        fi
+
+        # Your standard fsck commands go here
+        # And you mount command to mount the root fs read-write
+
+        # Update kernel-module dependencies file
+        # Your root-fs MUST be mounted read-write by now
+        if [ -x /sbin/depmod ]
+        then
+                /sbin/depmod -a
+        fi</TT>
+</PRE>
+
+<P>第一部分啟動 kerneld。</P>
+
+<P>第二部分開始時執行 'depmod -a'。depmod 建立所有可找到的模組的清單及分析它們之間互相依賴的情況。所以，它會知道載入一個模組前是否需要先載入其他模組。</P>
+
+<P><B>注意</B>︰最新版本的 kerneld 可選擇鏈結 (link) GNU 的 dbm 程式庫 libgdbm。如果在編譯  module-utilities 時作了此抉擇，<I>找不到 libgdbm 時 kerneld 便不能啟動。</I>這很有可能當 /usr 在另一個磁碟分區 (partition)，而企圖在掛 (mount) /usr 前啟動 kerneld 時發生。建議的解決方法是把 libgdbm 從 /usr/lib 移到 /lib，或靜態連結 kerneld (link kerneld statically)。
+</P>
+
+<P> 之後，你要把核心的源程式解壓，設定及建立一個你喜歡的核心。如果你未試過這樣做，你必須閱讀在 Linux 源程式碼頂層目錄 (top directory) 中的 README 檔。在執行 <B>make config</B> 設定核心時，你要注意數條在早期出現的問題：</P>
+
+<PRE><TT>  Enable loadable module support (CONFIG_MODULES) [Y/n/?] Y</TT>
+</PRE>
+
+<P>你要選擇 loadable module support，否則根本不會有模組讓 kerneld 載入。答 Yes。 </P>
+
+<PRE><TT>  Kernel daemon support (CONFIG_KERNELD) [Y/n/?] Y</TT>
+</PRE>
+
+<P>  當然，這也是需要的，很多東西都可建立為模組。你會見到類似的問題：
+</P>
+
+<PRE><TT>  Normal floppy disk support (CONFIG_BLK_DEV_FD) [M/n/y/?] </TT>
+</PRE>
+
+<P>你可回答 'M' 來代表模組。通常只有開機時必須的驅動程式，如硬碟機驅動程式，和根目錄的檔案系統等必需建立在核心中。其他皆可建立為模組。 </P>
+
+<P>完成 'make config' 後，執行 'make dep', 'make clean', 'make zImage' 或 'make zlilo', 'make modules' 和 'make modules_install'。</P>
+
+<P>成功！</P>
+
+<P>'make zImage' 會把你的新核心映像 (kernel image) 放到 arch/i386/boot/zImage。你要把它拷貝到你放置啟動映像的地方或用 LILO 安裝它。</P>
+
+<P>想得到更多有關設定，建立及安裝核心部分的資料，請閱讀定時貼上  comp.os.linux.answers 的<A HREF="http://sunsite.unc.edu/mdw/HOWTO/Kernel-HOWTO.html">Kernel-HOWTO</A>
+，你也可在 sunsite.unc.edu 的 /pub/Linux/docs/HOWTO 找到它。（譯按：中文版可在 <A HREF="http://www.linux.org.tw/CLDP/Kernel-HOWTO.html">http://www.linux.org.tw/CLDP/Kernel-HOWTO.html</a>找到。）
+
+</P>
+
+<P>
+<HR></P>
+
+<H2><A NAME="Testing"></A>試用 kerneld</H2>
+
+<P>現在你可用新的核心部分開機。在系統啟動後，執行 'ps -ax'，你應該會見到
+kerneld 的一行：</P>
+
+<PRE><TT>    PID TTY STAT  TIME COMMAND
+     59  ?  S     0:01 /sbin/kerneld</TT>
+</PRE>
+
+<P>kerneld 其中一個好處是只要你有所需的核心及安裝好監控程式，你只需作很少設定。現在，你可嘗試用一個建立成模組的驅動程式─它多數會不需再作設定而能使用。我把軟磁碟的驅動程式建立成模組，所以我放入一只 DOS 磁碟及
+</P>
+
+<PRE><TT>  osiris:~ $ mdir a:
+   Volume in drive A has no label
+   Volume Serial Number is 2E2B-1102
+   Directory for A:/
+
+  binuti~1 gz       1942 02-14-1996  11:35a binutils-2.6.0.6-2.6.0.7.diff.gz
+  libc-5~1 gz      24747 02-14-1996  11:35a libc-5.3.4-5.3.5.diff.gz
+          2 file(s)        26689 bytes</TT>
+</PRE>
+
+<P>即是說軟磁碟的驅動程式運作正常─當我嘗試使用軟磁碟時，它被自動載入。</P>
+
+<P>要看到軟磁碟的模組真的被載入，你可執行 /sbin/lsmod，它會列出現時載入了的模組。</P>
+
+<PRE><TT>  osiris:~ $ /sbin/lsmod 
+  Module:        #pages:  Used by:
+  floppy            11    0 (autoclean)</TT>
+</PRE>
+
+<P>&quot;(autoclean)&quot; 代表如果有一分鐘沒用此模組，它就會被 kerneld 自動移走。所以，那 11 頁記憶體（44 kB，一頁等於 4kB）只會在我使用軟碟機時被佔用。如果我一分鐘不用軟碟，它會被釋放。如果你的記憶體不敷應用，這就太棒了！</P>
+
+<P>
+<HR></P>
+
+<H2><A NAME="Configuration"></A>kerneld 如何知道該載入什麼模組？</H2>
+
+<P>雖然 kerneld 本身對常用的模組有所認識，有時它會不知如何應付核心提出的要求。例如光碟機驅動程式或網絡驅動程式等可能需要超過一個模組的情形。 </P>
+
+<P>kerneld 從核心部分會收到以下種類的要求：</P>
+
+<UL>
+<LI><A HREF="#blockdev">區塊設備驅動程式 (a block-device driver)</A> </LI>
+
+<LI><A HREF="#chardev">字元設備驅動程式 (a character-device driver)</A> </LI>
+
+<LI><A HREF="#binfmt">二元格式 (a binary format)</A> </LI>
+
+<LI><A HREF="#ldisc">tty 連線規則 (a tty line discipline)</A> </LI>
+
+<LI><A HREF="#fs">檔案系統 (a filesystem)</A> </LI>
+
+<LI><A HREF="#eth0">網絡設備 (a network device)</A> </LI>
+
+<LI>網絡服務 (a network service)，如 rarp</LI>
+
+<LI><A HREF="#net-pf">網絡協定 (a network protocol)</A>，如 IPX </LI>
+</UL>
+
+<P>kerneld 從架構檔案 (configuration file) <B>/etc/conf.modules</B> 中得知有什麼模組需要載入。這裡有兩類項目：路徑 (paths)（模組檔案的位置）和代號 (aliases)（要載入什麼模組）。如果你未有此檔，你可用以下方法自己製造： </P>
+
+<PRE><TT>  /sbin/modprobe -c | grep -v '^path' &gt;/etc/conf.modules</TT>
+</PRE>
+
+<P>如果你想加多一個路徑到預定路徑中，你<U>必須包括所有現有的路徑</U>。因為在 /etc/conf.modules 裡的一個路徑項目會<U>取代 </U>所有 modprobe 內置的路徑！</P>
+
+<P>通常你是不用自己加上路徑的，因為預設的路行將己照顧到所有正常的設定。我可保證！</P>
+
+<P>另一方面，如果你只想加入代號 (alias) 或者選項 (option directive)，你在 /etc/conf.modules 的新項目會加入到 modprobe 所知的。如果你想再定義一個代號或選擇，你在 /etc/conf.modules 中的項目會凌駕預設那個。</P>
+
+<H3><A NAME="blockdev"></A>區塊設備</H3>
+
+<P>如果你執行 '/sbin/modprobe -c'，你會得到一個 kerneld 已知的模組的名單及它們所對應的要求。例如，導致載入軟碟驅動程式的要求是主號碼 (major number)
+是 2 的區塊設備。 </P>
+
+<PRE><TT>  osiris:~ $ /sbin/modprobe -c | grep floppy
+  alias block-major-2 floppy</TT>
+</PRE>
+
+<P>為什麼是 block-major-2？因為軟碟設備 /dev/fd* 的主號碼 (major number) 是 2 ，又是區塊設備。</P>
+
+<PRE><TT>  osiris:~ $ ls -l /dev/fd0 /dev/fd1
+  brw-rw-rw-   1 root     root       2,   0 Mar  3  1995 /dev/fd0
+  brw-r--r--   1 root     root       2,   1 Mar  3  1995 /dev/fd1</TT>
+</PRE>
+
+<H3><A NAME="chardev"></A>字元設備</H3>
+
+<P>字元設備的方法處理也差不多。例如 ftape floppy tape driver 的是 major-device 27：</P>
+
+<PRE><TT>  osiris:~ $ ls -lL /dev/ftape 
+  crw-rw----   1 root     disk      27,   0 Jul 18  1994 /dev/ftape</TT>
+</PRE>
+
+<P>但 kerneld 本身並不知道 ftape 驅動程式，它不會在 '/sbin/modprobe -c' 的結果中出現。</P>
+
+<P>所以，要使 kerneld 載入 ftape 驅動程式，我要加一行到 kerneld 的設定檔 /etc/conf.modules 中：</P>
+
+<PRE><TT>  alias char-major-27 ftape</TT>
+</PRE>
+
+<H3><A NAME="eth0"></A>網絡設備</H3>
+
+<P>你也可以用設備的名稱來代替那些 'char-major-xxx' 或 'block-major-yyy' 設定。這樣對網絡設備尤其有用，例如把 ne2000 網絡卡用作 eth0 可以籍此載入：</P>
+
+<PRE><TT>  alias eth0 ne</TT>
+</PRE>
+
+<P>如果你需要傳遞一些選項給你的驅動程式，例如告訴模組這網絡卡使用什麼 IRQ，你可加上如下一 'options' 行：</P>
+
+<PRE><TT>  options ne irq=5</TT>
+</PRE>
+
+<P>這樣會使 kerneld 用以下指令來載入 NE2000 驅動程式︰</P>
+
+<PRE><TT>  /sbin/modprobe ne irq=5</TT>
+</PRE>
+
+<P>當然，實際上所用的選項會因應所用模組而有所不同。</P>
+
+<H3><A NAME="binfmt"></A>二元格式</H3>
+
+<P>二元格式也以相似的方法處理。每當你嘗試執行一個核心不懂載入的程式，kerneld 便會收到一個 &quot;binfmt-xxx&quot; 的要求， xxx 是一個由檔案開頭數個字元決定的數字。使 kerneld 為 ZMAGIC (a.out) 執行檔載入 binfmt_aout 模組的設定是：</P>
+
+<PRE><TT>  alias binfmt-267 binfmt_aout</TT>
+</PRE>
+
+<P>因為 ZMAGIC 檔的幻數 (magic number) 是 267。（如果你查看 /etc/magic，你會見到 0413 這個數字，但 /etc/magic 使用八進位數 (octal numbers) 而 kerneld 使用十進數 (decimal)，而八進位的 413 即十進數的 267。）由於 a.out 格式共有三款稍為稍為不同的可執行檔 (NMAGIC, QMAGIC and ZMAGIC)，要全面支援 binfmt_aout 模組我們需要
+</P>
+
+<PRE><TT>  alias binfmt-264 binfmt_aout  # pure executable (NMAGIC)
+  alias binfmt-267 binfmt_aout  # demand-paged executable (ZMAGIC)
+  alias binfmt-204 binfmt_aout  # demand-paged executable (QMAGIC)</TT>
+</PRE>
+
+<P>kerneld 可自動辨認 a.out, Java 和 iBCS 二元格式，毋須特別設定。</P>
+
+<H3><A NAME="ldisc"></A>連線規則 (slip, cslip and ppp)</H3>
+
+<P>連線規則用 &quot;tty-ldisc-x&quot;來作要求，而 x 一般是 1 (slip) 或 3 (ppp)。kerneld 本身都認識這兩樣。</P>
+
+<P>說起 ppp，如果你想 kerneld 載入 bsd_comp 資料壓縮模組，你需要加兩行到 /etc/conf.modules 中：</P>
+
+<PRE><TT>  alias tty-ldisc-3 bsd_comp
+  alias ppp0 bsd_comp</TT>
+</PRE>
+
+<H3><A NAME="net-pf"></A>網絡協定 (IPX, AppleTalk, AX.25)</H3>
+
+<P>部分網絡協定也可以模組載入。核心要用到一個網絡家族 (network family)（如 IPX）時，會向 kerneld 作出對一個類似 &quot;net-pf-X&quot; 的要求，而 X 是一個代表所屬家族的數字。例如 net-pf-3 是 AX.25，net-pf-4 是 IPX，而 net-pf-5 是 AppleTalk。（這些數字是由 linux 源程式檔 include/linux/socket.h 中 AF_AX25, AF_IPX 的定義而來的。）故此要自動載入 IPX 模組，你要加一個類似以下的項目到 /etc/conf.modules 中：</P>
+
+<PRE><TT>  alias net-pf-4 ipx</TT>
+</PRE>
+
+<P>也請閱讀以下有關防止開機時出現關於未定義的協定的<A HREF="#CommonProblems">常見問題</A>。</P>
+
+<H3><A NAME="fs"></A>檔案系統</H3>
+
+<P>有關檔案系統的 kerneld 要求就是檔案系統的名稱。一個常見的用途是為光碟載入 isofs 的模組，例如 &quot;iso9660&quot; 檔案系統：</P>
+
+<PRE><TT>  alias iso9660 isofs</TT>
+</PRE>
+
+<P>
+<HR></P>
+
+<H2><A NAME="special-devs"></A>需要特別設定的設備</H2>
+
+<P>部分設備不只要使用代碼 (aliasing)，還要其他設定，如模組的設備 (a device to a module)。 </P>
+
+<UL>
+<LI>主數碼 10 的字元設備：<A HREF="#miscdevs">雜項設備 (The miscellaneous devices)</A> </LI>
+
+<LI><A HREF="#scsidevs">SCSI 設備</A> </LI>
+
+<LI><A HREF="#pre_post">需特別初始化 (initialization) 的設備</A>
+</LI>
+</UL>
+
+<P><BR>
+</P>
+
+<H3><A NAME="miscdevs"></A>char-major-10：滑鼠、看門狗和隨機數 (Mice, watchdogs and randomness)</H3>
+
+<P>大多數硬件設備都以主數碼分辨，例如 ftape 是 char-major-27。但如果你看看在 /dev 中主數碼是 10 的字元設備，你會見到一堆毫無關連的設備，包括：</P>
+
+<UL>
+<LI>各種各樣的滑鼠（bus mice, PS/2 mice）</LI>
+
+<LI>看門狗設備 (watchdog devices) </LI>
+
+<LI>核心的 'random' 設備</LI>
+
+<LI>APM 介面 (Advanced Power Management interface) </LI>
+</UL>
+
+<P>很明顯，這些設備是由多個不同的模組控制的。所以，這些<B>雜項設備</B>的 kerneld 設定用到主號碼<b>及</b>副號碼 (the major number and the minor number)：</P>
+
+<PRE><TT>        alias char-major-10-1 psaux     # For PS/2 mouse
+        alias char-major-10-130 wdt     # For WDT watchdog</TT>
+</PRE>
+
+<P>要用到此特性，你需要一個 1.3.82 或之後的核心部分。較舊的核心不會把副號碼傳給 kerneld，因此，kerneld 不能找出所需要的雜項設備。<BR></P>
+
+<H3><A NAME="scsidevs"></A>載入 SCSI 驅動程式： scsi_hostadapter 項目</H3>
+
+<P>SCSI 設備包括一個 SCSI 配接卡 (SCSI host adapter, 例如 Adaptec 1542)及一個所需設備（如硬碟機 (hard disk)、光碟機 (CD-ROM) 或磁帶機 (tape-drive)）的驅動程式。這全都可以模組來載入。但是，當你想存取連接到 Adaptec 卡的光碟機時，核心和 kerneld 只知道它需要載入 sr_mod 模組來支援那 SCSI 光碟機─它不知道那光碟機連接到什麼 SCSI 控制器 (SCSI controller)，所以不知道載入什麼模組來支援那光碟機。</P>
+
+<P>要解決這問題，你可加一個你的 SCSI 驅動程式的項目到你的 /etc/conf.modules 中，籍以告訴 kerneld 如何在眾多 SCSI 控制器模組中選擇：</P>
+
+<PRE><TT>        alias scd0 sr_mod               # sr_mod for SCSI CD-ROM's ...
+        alias scsi_hostadapter aha1542  # ... need the Adaptec driver</TT>
+</PRE>
+
+<P>這只適用於 1.3.82 或之後的核心。</P>
+
+<P>這方法只當你只用一個 SCSI 控制器時適用。如果你有超過一個，難度就高一點。</P>
+
+<P>一般來說，如果已經載入了一個配接器，你不能再叫 kerneld 載入另一個。你可把兩個都編譯到核心中（不用模組），或自己把模組載入。</P>
+
+<P>事實上，<i>有</i>一個方法可使 kerneld 載入多個 SCSI 驅動程式。James Tsiao 有以下提議：</P>
+
+<pre><i>
+  只要你親手建立 modules.dep 的倚賴 (dependency)，你可很輕易使
+  得 kerneld 載入第二個 SCSI 驅動程式。你只需一個類似的項目：
+  
+     /lib/modules/2.0.30/scsi/st.o: /lib/modules/2.0.30/scsi/aha1542.o
+     
+  來使 kerneld 在載入 st.o 前先載入 aha1542.o。我家中的電腦就使用
+  了幾乎相同的設定，對我所有二級 SCSI 設備 (secondary scsi devices)，
+  包括磁帶機、光碟機和其他一般的 SCSI 設備都沒問題。缺點是
+  'depmod -a' 不能自動查出這些倚賴，所以你要自己加入這些，而且不
+  可在開機時執行 'depmod -a'。但只要設定好了，kerneld 就能自動載入
+  aha1542.o。</i></pre>
+
+<p>你要知道這技考只當你有不同種類的 SCSI 設備接駁在兩個控制器時才有用，例如，把硬碟駁在其中一個，而把光碟機、磁帶或其他 SCSI 駁到另一個。</p>
+
+<br>
+
+<H3><A NAME="pre_post"></A>要載入超過一個模組時：“post-install”項目</H3>
+
+<P>有時，只把模組載入不足以使設備運作。例如，如果你把音效卡編譯為模組，你也會希望調整至適當音量。問題題你的設定在下次載入時便會失去。這裡是由 Ben Galliart (bgallia@luc.edu) 提供的秘訣：</P>
+
+<PRE><I>  最終的解決方法需要安裝 setmix-0.1
+   ( ftp://sunsite.unc.edu/pub/Linux/apps/sound/mixers/setmix-0.1.tar.gz )
+
+  之後把以下一行加到我的 /etc/conf.modules：
+       post-install sound /usr/local/bin/setmix -f /etc/volume.conf</I>
+</PRE>
+
+<P>這樣，當音效的模組載入後，kerneld 會執行 'post-install sound' 項目的指令。因此該模組會被 '/usr/local/bin/setmix -f /etc/volume.conf 指令設定好。
+</P>
+
+<P>這方法對其他模組也有用，例如 lp 模組可籍以下一句用 tunelp 程式設定好：</P>
+
+<PRE><TT>        post-install lp tunelp &lt;options&gt;</TT>
+</PRE>
+
+<P>只有 1.3.69f 版或之後的 kerneld 才支援這些選項。</P>
+
+<P><B>注意</B>: ：此 mini-HOWTO 的較舊版本曾提及一個 &quot;pre-remove&quot; 選項，讓你可在 kerneld 卸下一個模組時執行一個指令。但這從未成功，因此並不鼓勵使用。這個選項多數會在未來版本的 kerneld 中消失。所有有關模組 &quot;設定&quot; 的事情都在改變中，在你看到這文件時，可能已有所不同了。</P>
+
+<P>
+<HR></P>
+
+<H2><A NAME="Spying"></A>偵察 kerneld</H2>
+
+<P>如果你什麼方法都已試過，但仍找不出核心在要在 kerneld 做什麼，你可用一個方法找出 kerneld 收到什麼要求，從而知道該加什麼到 /etc/conf.modules。你需要 kdstat 程式。</P>
+
+<P>這個好用的程式已包括在 modules-package 中，但預定是不會編譯及安裝的。你可用以下方法建立它：</P>
+
+<PRE><TT>  cd /usr/src/modules-2.0.0/kerneld
+  make kdstat</TT>
+</PRE>
+
+<P>之後，要使 kerneld 顯示它正在做什麼，執行 
+</P>
+
+<PRE><TT>  kdstat debug</TT>
+</PRE>
+
+<P>kerneld 便會開始在主控台印出其工作的資料。當你執行所需的指令時，你會見到 kerneld 收到的要求。這些要求可放到 /etc/conf.modules 中，加上所需模組的別名 (alias)，便可使工作完成。</P>
+
+<P>要停止除錯時，執行 '/sbin/kdstat nodebug'。</P>
+
+<P>
+<HR></P>
+
+<H2><A NAME="Goodies"></A>kerneld 的特殊用途</H2>
+
+<P>我知道你想問如何設定螢幕保護程式 (screensaver) 的模組…</P>
+
+<P>modules-package 的 'kerneld/GOODIES' 目錄中有一些和螢幕保護程式及主控台嗶聲支援有關的核心修補 (kernel patches)。它們尚未在官方的核心出現。所以你要自行修正及重新編譯核心。</P>
+
+<P>要安裝修補，你要用 &quot;patch&quot; 指令：</P>
+
+<PRE><TT>  cd /usr/src/linux
+  patch -s -p1 &lt;/usr/src/modules-2.0.0/kerneld/GOODIES/blanker_patch</TT>
+</PRE>
+
+<P>之後重建安裝新核心。</P>
+
+<P>當螢幕保護程式啟動時，kerneld 會執行 &quot;/sbin/screenblanker&quot; 指令。這可以是一個執行你喜歡的螢幕保護程式的命令手稿 (shell script)。</P>
+
+<P>在核心想重繪螢幕時，它會送出一個 SIGQUIT 訊號到正執行 /sbin/screenblanker 的行程 (process)。你的命令稿或螢幕保護程式要捕捉 (trap) 這訊號及結朿。記著之後還要把螢幕還原到原本的文字模式 (text mode)。</P>
+
+<P>
+<HR></P>
+
+<H2><A NAME="CommonProblems"></A>常見問題及你可能懷疑的事情</H2>
+
+<H3>為何當我執行 ifconfig 時為何我會得到 &quot;Cannot locate module for net-pf-X&quot; 訊息</H3>
+
+<P>在核心 1.3.80 左右，網絡的程式修改至容許把通訴協定 (protocol families，如 IPX, AX.25 和 AppleTalk) 載入為模組。這導致額外的 kerneld 要求：net-pf-X，X 是一個用以辨別通訊協定的數字（參看 /usr/src/linux/include/linux/socket.h 來找出不同數字的意思）。<BR> 不幸地，ifconfig 會意外地造成這些訊息，所以很多人會在開機期間執行 ifconfig 來設定迴歸設備 (loopback device) 時收到。這些訊息並無壞處，你可在 /etc/conf.modules 中加入以下數行來避免它們：</P>
+
+<PRE><TT>        alias net-pf-3 off      # Forget AX.25
+        alias net-pf-4 off      # Forget IPX
+        alias net-pf-5 off      # Forget AppleTalk</TT>
+</PRE>
+
+<P>當然，如果你把 IPX 編譯了為模組，你不可加上和它有關的一行。<BR>
+</P>
+
+<H3>開始 Kerneld 後，啟動 PPP 連線會使我的電腦慢如蝸牛</H3>
+
+<P>已經有多個這類個案。這似乎是因為 kerneld 和部分系統用來設定和監察 PPP 連線的 <B>tkPPP script</B> 不正常地互相影嚮所致。因為那 script 在執行 ifconfig 時好像用到迴圈 (loops)。這樣會觸發 kerneld 找尋 net-pf-X 模組（見前），增加系統工作量和可能導致系統紀錄 (system log) 中出現大量 "Cannot locate module for net-pf-X" 訊息。除了不使用 tkPPP 或改用其他方法來監察連線，這問題未有其他解決方法。</P>
+
+<H3>kerneld 不載入我的 SCSI 驅動程式！</H3>
+
+<P>在你的 /etc/conf.modules 中加上一個 SCSI 配接器的項目。詳情這看之前有關 <A HREF="#scsidevs">scsi_hostadapter</A> 的部分。
+</P>
+
+<H3>modprobe 投訴 'gcc2_compiled' 未定義 (undefined)</H3>
+
+<P>這是 module-utilities 的一個錯誤。它只在使用 binutils 2.6.0.9 或更新版本時出現，而且已在 binutils 的出版說明 (release note) 中說明。所以你應該看看它。你也可更新 module-utilities，如 modules-2.0.0 來解決這問題。</P>
+
+<H3>我的音響驅動程式 (sound driver) 老是忘記音量之類設定</H3>
+
+<P>模組載入後的設定是儲存在模組之內的。所以，當 kerneld 自動卸下模組時，你所做的設定都會被忘掉，下次載入時又回復原狀。</P>
+
+<P>你可使 kerneld 在自動載入模組後執行一個程式，以作出設定。請參看<A HREF="#pre_post">以上</A>有關 'post-install' 項目的部分。</P>
+
+<H3>DOSEMU 需要一些模組，我怎樣使 kerneld 載入它們？</H3>
+
+<P>你不能。不論是官方 (official) 或開發 (development) 版的 dosemu，都不支援用 kerneld 載入 dosemu 模組。不過，如果你有 2.0.26 或更新的核心，你不再需要那些 dosemu 模組 -- 你只需要更新 dosemu 至 0.66.1 版。（譯按︰目前最新的 DOSEMU 穩定版本 (stable version) 是 0.66.7。）</P>
+
+<H3>為何會有 &quot;Ouch, kerneld timed out, message failed&quot; 這訊息？</H3>
+
+<P>當核心對 kerneld 作出要求時，它會期望在 1 秒之內得到應答 (acknowledgement)。如果 kerneld 不作出回應，這個訊息會被記錄下來 (logged)。這要求會再被提出，直到完成為止。</P>
+
+<P>這通常在系統負荷 (load) 非常高時發生。因為 kerneld 也是一個使用者行程 (user-process)，它會如其他程序般排程 (scheduling)。負荷高時，它可能來不及在核心超時 (time out) 前作出回應。</P>
+
+<P>如果這問題在負荷低時也發生，請再啟動 kerneld （殺掉 kerneld 行程，以 <TT>/usr/sbin/kerneld</TT>指令來重新開始它）。如果仍有問題，你應該寄一份錯誤報告給<A HREF="mailto:linux-kernel@vger.rutgers.edu">linux-kernel@vger.rutgers.edu</A>，但在寄出前<B>請</B>先確保你的核心和 kerneld 都是最新的。</P>
+
+<H3>mount 不等待 kerneld 載入檔案系統模組</H3>
+
+<P>已經收到一定數目有關 mount (8) 指令不等待 kerneld 載入檔案系統模組的報告。 ismod 顯示模組已被載入，如果你立刻再執行 mount 的話便會成功。這似乎是 module-utilities 1.3.69f 版中一個會影響 Debian 使用者的錯誤，使用一個新版的 module-utilities 可解決這問題。</P>
+
+<H3>kerneld 不能載入 ncpfs 模組</H3>
+
+<P>你編譯 ncpfs utilities 時要用 -DHAVE_KERNELD。請參閱 ncpfs 的 Makefile。</P>
+
+<H3>kerneld 不能載入 smbfs 模組</H3>
+
+<P>你在使用一個舊的 smbmount utilities。請從 <A HREF="ftp://tsx-11.mit.edu/pub/linux/filesystems/smbfs/">ftp://tsx-11.mit.edu/pub/linux/filesystems/smbfs/</A> 下載最新版本 (0.10 或之後)。</P>
+
+<H3>我把所有東西都編譯成模組，現在我的系統不能啟動</H3>
+
+<H3>kerneld 不能載入根檔案系統 (root filesystem) 模組。</H3>
+
+<P>你不可把<B>所有東西</B>都編譯成模組︰核心要有足夠的驅動程式以使它能掛上 (mount) 根檔案系統，和執行所有要用於啟動 kerneld 的程式。所以你不能把以下東西模組化︰</P>
+
+<UL>
+<LI>根檔案系統所在的硬碟的驅動程式</LI>
+
+<LI>根檔案系統的驅動程式</LI>
+
+<LI>init, kerneld和其他程式的二元格式載入程式 (binary format loader)</LI>
+</UL>
+
+<P>[事實上，這並不正確。新的 1.3.x 及所有 2.0.x 核心都容許 LILO 或 LOADLIN 載入初始的 ram-disk，而你可以在啟動的早期在這『磁碟』中載入模組。做法可在核心原程式碼中的 Documentation/initrd.txt 檔中可找到。] </P>
+
+<H3>kerneld 不能在啟動時載入 -- 投訴 libgdbm</H3>
+
+<P>較新版的 kerneld 要 GNU dbm 程式庫 libgdbm.so 才能執行。大多數的安裝程式都會把這檔案放在 /usr/lib，而你多數是在掛上 /usr 檔案系統前執行了 kerneld。這問題的其中一個症狀是 kerneld 在啟動時不能籍 rc-scripts 載入，但如果你在啟動系統後自己開始它，它便沒有問題。解決方法，一是把 kerneld 的啟動放在掛上 /usr 後，另一是把 gdbm 程式庫放到你的根檔案系統，如 /lib。</P>
+
+<H3>我重新設定核心至沒有 xxx 支援後出現 &quot;Cannot load module xxx&quot;</H3>
+
+<P>Slackware（其他也可能）會在安裝時籍執行 modprobe 來建立一個預設的 /etc/rc.d/rc.modules。modprode 得出來的結果會因原本的核心的設定而異。你可能在重新設定時排除了一些在 rc.modules 的模組，因此造成錯誤。你可把你在 rc.modules 中不用的模組變為注釋 (comment out)，或刪除 rc.modules，讓 kerneld 在需要模組時自行載入。</P>
+
+<H3>我重新建立了核心及模組，但在啟動時仍出現未分辨的符號 (unresolved symbol) 訊息</H3>
+
+<P>你可能在設定或建立新核心時排除了一些模組，但已不用的舊模組仍在 /lib/modules 目錄下。最簡單的解決方法是刪除你的 /lib/modules/x.y.z 目錄及在核心的源程式碼的目錄下做一次 'make modules_install'。這問題只在重新設定同一版本的核心時發生。如果你在更新核心時遇到此問題，你有其他問題。</P>
+
+<H3><A NAME="2-1-problems"></A>我安裝了 Linux 2.1 後不能載入任何模組</H3>
+
+<P>Linux 2.1 是目前的開發核心 (development kernel)。也就是說，它隨時可能出現錯誤。其中一樣大幅改變的是模組的處理方法，及核心和模組載入到什麼地方。Richard Henderson 現正負責核心的模組發展。</P>
+
+<P>總結一句，如果你想在 2.1 版核心使用模組，你要︰</P>
+
+<UL>
+<LI>閱讀 Documentation/Changes 檔案及找出更新你的系統所需的模組</LI>
+
+<LI>使用最新的 modutils，可從以下地方得到<A HREF="ftp://ftp.redhat.com/pub/alphabits/">ftp://ftp.redhat.com/pub/alphabits/</A>
+或在<A HREF="ftp://tsx-11.mit.edu/pub/linux/packages/alphabits/">ftp://tsx-11.mit.edu/pub/linux/packages/alphabits/</A> 的映像站 (mirror site)</LI>
+</UL>
+
+<P>如果你想在 2.1 版核心使用模組的話，我會建議最少使用 2.1.29 版的核心。</P>
+
+<BR>
+<H3>自選撥號 (dial-on-demand) 網絡又怎樣？</H3>
+<P>kerneld 對有需要時建立網絡連線原本有些支援。嘗試在沒有連線時傳送訊息包 (packet) 會使 kerneld 執行 <b>/sbin/request_route</b> 命令稿來建立 PPP 或 SLIP 連線。</P>
+
+<P>這並不是一個好方法。Linux 網絡發展人員 Alan Cox 在 Linux 核心的通信論壇 (Mailing List) 中批評︰
+<pre>
+  路徑要求 (request-route) 的東西是過時、不對及無用的 [...]，它已在
+  2.1.x 的源程式碼中消失。</pre>
+
+我誠心建議你從 http://www.dna.lth.se/~erics/diald.html 取 Eric Schenk 的 <a href="http://www.dna.lth.se/~erics/diald.html">diald</a> 套裝軟件來安裝，而不要使用路徑要求及 kerneld。</P>
+
+<P>
+<HR></P>
+
+<H2><A NAME="A9"></A>版權訊息</H2>
+
+<P>This document is Copyright (c) Henrik Storner, 1996, 1997.</P>
+
+<P>Unless otherwise stated, Linux HOWTO documents are copyrighted by their
+respective authors. Linux HOWTO documents may be reproduced and distributed
+in whole or in part, in any medium physical or electronic, as long as this
+copyright notice is retained on all copies. Commercial redistribution is
+allowed and encouraged; however, the author would like to be notified of
+any such distributions. </P>
+
+<P>All translations, derivative works, or aggregate works incorporating
+any Linux HOWTO documents must be covered under this copyright notice.
+That is, you may not produce a derivative work from a HOWTO and impose
+additional restrictions on its distribution. Exceptions to these rules
+may be granted under certain conditions; please contact the Linux HOWTO
+coordinator at the address given below. </P>
+
+<P>In short, we wish to promote dissemination of this information through
+as many channels as possible. However, we do wish to retain copyright on
+the HOWTO documents, and would like to be notified of any plans to redistribute
+the HOWTOs. </P>
+
+<P>If you have questions, please contact Tim Bynum, the Linux HOWTO
+coordinator, at linux-howto@sunsite.unc.edu via email.
+</P>
+
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>
+

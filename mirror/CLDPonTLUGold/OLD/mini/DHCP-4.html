@@ -1,0 +1,179 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>DHCP mini-HOWTO (DHCPd/DHCPcd): 設定 DHCP 伺服器</TITLE>
+ <LINK HREF="DHCP-3.html" REL=previous>
+ <LINK HREF="DHCP.html#toc4" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+<IMG SRC="../img/next.gif" ALT="Next">
+<A HREF="DHCP-3.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="DHCP.html#toc4"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s4">4. 設定 DHCP 伺服器</A></H2>
+
+<H2><A NAME="ss4.1">4.1 UNIX 上的 DHCP 伺服器</A>
+</H2>
+
+<P>在各種 UNIX 相容的作業系統上，有許多商業或免費的 DHCP 伺服器程式可用。其中，
+較著名的免費伺服器程式是 Paul Vixie/ISC 版的 DHCPd。目前最新的版本是 2.0（
+建議大家使用），而 3.0 版正在做 beta 階段的測試。你可以到下面的網址取得：
+<P>
+<A HREF="ftp://ftp.isc.org/isc/dhcp/">ftp://ftp.isc.org/isc/dhcp/</A><P>
+<P>
+<P>在 RedHat（版本 5.2）這個 Linux 套件中包含了有 DHCP 伺服器二元碼的 RPM 包裝。
+該 RPM 包裝的檔名為 dhcp-2.0b1pl6-2.platform.rpm。安裝時只要輸入
+<P>
+<P>
+<P><CODE>rpm -i dhcp-2.0b1pl6-2.i386.rpm</CODE>
+<P>
+<P>
+<P>若你使用上面的步驟，則你可以跳過下面的安裝說明。
+<P>
+<P>
+<P>在你下載之後，你必須將它解開。然後進入解開的目錄，輸入：
+<P><CODE>./configure</CODE>
+<P>要做好安裝前的設定工作，可能要花點時間。請隨後輸入：
+<P><CODE>make</CODE>
+<P>以及
+<P><CODE>make install</CODE>
+<P>
+<P>
+<P>
+<H2><A NAME="ss4.2">4.2 設定網路組態。</A>
+</H2>
+
+<P>
+<P>當完成安裝之後，請輸入 ifconfig -a，你將看到如下的訊息：
+<P>
+<P>
+<P>
+<HR>
+<PRE>
+eth0      Link encap:10Mbps Ethernet  HWaddr 00:C0:4F:D3:C4:62
+          inet addr:183.217.19.43  Bcast:183.217.19.255  Mask:255.255.255.0
+          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+          RX packets:2875542 errors:0 dropped:0 overruns:0
+          TX packets:218647 errors:0 dropped:0 overruns:0
+          Interrupt:11 Base address:0x210
+</PRE>
+<HR>
+<P>
+<P>
+<P>如果未顯示 MULTICAST 的訊息，你應該重新設定你的核心，加入對“多址傳播”
+（multicast）的支援。對於大多數的系統而言，你幾乎都不必如此做。
+<P>
+<P>
+<P>下個步驟是，加入 255.255.255.255 的路由。以下的說明引述自 DHCPd 程式的
+“讀我檔案”（README）：
+<P>
+<P>
+<P>“為了讓 dhcpd 能夠正確地服務過分挑剔的 DHCP 用戶端（例如，Windows 95），dhcpd 
+必須能夠送封包到 255.255.255.255 的 IP 位址上。不幸的是，Linux 會將 255.255.255.255
+做為本地子網路的廣播位址（此處為 192.5.5.223）。這將違反 DHCP 通訊協定，然而許多
+DHCP 用戶端並不受影響，有些（例如，所有 Microsoft DHCP 用戶端）卻會。有此類問題
+的用戶端，將會看不到來自伺服器的 DHCPOFFER 訊息。”
+<P>
+<P>
+<P>輸入：
+<P><CODE>route add -host 255.255.255.255 dev eth0</CODE>
+<P>如果你看到如下的訊息
+<P><CODE>"255.255.255.255: Unknown host"</CODE>
+<P>你應該將下面的資訊加入到 /etc/hosts 檔案中：
+/etc/hosts file:
+<P><CODE>255.255.255.255 all-ones</CODE>
+<P>然後，輸入：
+<P><CODE>route add -host all-ones dev eth0</CODE>
+<P>或
+<P><CODE>route add 255.255.255.0 dev eth0</CODE>
+<P>eth0 應該是你目前使用網路卡的裝置名稱。如果不是，你得配合實際情況做正確的修改。
+<P>
+<P>
+<P>
+<H2><A NAME="ss4.3">4.3 DHCPd 的選項設定</A>
+</H2>
+
+<P>
+<P>現在，你必須設定 DHCPd。為此，你必須產生或編輯 /etc/dhcpd.conf。
+<P>
+<P>
+<P>通常你所要做的是，隨機地指派 IP 位址。為此，你必須按照下面的方式來設定：
+<P>
+<P>
+<P>
+<HR>
+<PRE>
+default-lease-time 600;
+max-lease-time 7200;
+option subnet-mask 255.255.255.0;
+option broadcast-address 192.168.1.255;
+option routers 192.168.1.254;
+option domain-name-servers 192.168.1.1, 192.168.1.2;
+option domain-name "mydomain.org";
+
+subnet 192.168.1.0 netmask 255.255.255.0 {
+   range 192.168.1.10 192.168.1.100;
+   range 192.168.1.150 192.168.1.200;
+}
+</PRE>
+<HR>
+<P>
+<P>
+<P>設定的結果為，DHCP 伺服器會提供用戶端，使用範圍 192.168.1.10-192.168.1.100 或
+192.168.1.150-192.168.1.200 的 IP 位址。如果，用戶端沒有特別約定 IP 位址的租用
+時間，則釋出時間預定為 600 秒，要不然，最大（允許）的釋出時間為 7200 秒。同時
+伺服器也會“通知”用戶端，要求它使用 255.255.255.0 做為子網路遮罩，192.168.1.255
+做為廣播位址，192.168.1.254 做為路由/閘道器，並以 192.168.1.2 做為 DNS 伺服器。
+<P>
+<P>
+<P>你也可以依據用戶端的乙太網路位址，來指派特定的 IP 位址給用戶端，例如
+<P>
+<HR>
+<PRE>
+host haagen {
+   hardware ethernet 08:00:2b:4c:59:23;
+   fixed-address 192.168.1.222;
+}
+</PRE>
+<HR>
+<P>
+<P>
+<P>這個設定將會指派 IP 位址 192.168.1.222 給乙太網路位址為  08:00:2b:4c:59:23 的
+用戶端。
+<P>
+<P>
+<P>網路上 IP 位址的指定，可以採混合雙軌制，譬如，你可以讓某些電腦擁有“靜態”的
+IP 位址（例如，伺服器），而讓其它的用戶端取得“動態”的IP 位址（例如，使用膝
+上型電腦，機動的使用者）。還有其它的選項，譬如，說 wins 伺服器的位址﹑時間伺服
+器等等，如果你需要進一步瞭解的話，可以請參閱 dhcpd.conf 的說明文件。
+<P>
+<P>
+<P>
+<H2><A NAME="ss4.4">4.4 啟動伺服器</A>
+</H2>
+
+<P>
+<P>在啟動伺服器之前你只要做一件事情就行了。通常 DHCP 的安裝過程中並不會產生檔案
+dhcp.leases。伺服器 DHCPd 會使用這個檔案來儲存目前的租用資訊。該檔案採用一般
+文字的格式來儲存資料，所以在 DHCPd 操作期間你可以直接檢視它的內容。現在我們
+來產生檔案 dhcp.leases，請在命令列上輸入：
+<P><CODE>touch /etc/dhcp.leases</CODE>
+<P>這個動作將會產生一個空白的檔案（檔案的大小 = 0）。你不需要對該檔案做任何的修改
+所以它應該是空白的。若你看到一個錯誤的訊息說該檔案是空白的，你可以不理會它並且
+請繼續以下的步驟。
+<P>
+<P>現在，你可以啟用 DHCP 伺服器了。只要輸入（或將下面的敘述加到開機設定檔中）
+<P><CODE>/usr/sbin/dhcpd</CODE>
+<P>如果，你想要確定運作是否一切正常，你應該先開啟除錯模式，並把伺服器放到“幕前”
+（foreground）來執行。為此，你可以輸入
+<P><CODE>/usr/sbin/dhcpd -d -f</CODE>
+<P>然後，開啟你任何一個用戶端機器，並察看伺服器端“操作控制台”（console）的螢幕，
+你將會看到一些除錯訊息被顯示出來。
+<P>
+<P>
+<HR>
+<IMG SRC="../img/next.gif" ALT="Next">
+<A HREF="DHCP-3.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="DHCP.html#toc4"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

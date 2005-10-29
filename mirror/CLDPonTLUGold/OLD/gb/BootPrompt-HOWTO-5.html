@@ -1,0 +1,138 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>The Linux BootPrompt-HowTo 中译版: 硬碟机</TITLE>
+ <LINK HREF="BootPrompt-HOWTO-6.html" REL=next>
+ <LINK HREF="BootPrompt-HOWTO-4.html" REL=previous>
+ <LINK HREF="BootPrompt-HOWTO.html#toc5" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="BootPrompt-HOWTO-6.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="BootPrompt-HOWTO-4.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="BootPrompt-HOWTO.html#toc5"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s5">5. 硬碟机</A></H2>
+
+<P>
+<P>这一节列出所有与标准 MFM/RLL, ST-506, XT, 以及 IDE  磁碟机相关的启动参数。
+注意，IDE 以及先前的 ST-506 硬碟驱动程式都接受 `hd=' 选项。
+<P>
+<H2><A NAME="ss5.1">5.1 IDE 磁碟／光碟驱动程式参数</A>
+</H2>
+
+<P>
+<P>IDE 驱动程式接受几个参数，
+涵盖□围从磁碟规格(geometry)到先进或不良之控制器的支援。
+底下是所有可用之启动参数的摘要。
+要知道完整的细节，
+你<EM>真的</EM>应该去查阅在 <CODE>linux/Documentation</CODE>
+目录下的 <CODE>ide.txt</CODE> 档，
+这个摘要是从中摘录出来的。
+<P>
+<HR>
+<PRE>
+
+ "hdx="  从 "a" 到 "h" 所有的 "x" 都承认，像是 "hdc" 。
+ "idex=" 从 "0" 到 "3" 所有的 "x" 都承认，像是 "ide1"。
+
+ "hdx=noprobe"          : 也许的确有个磁碟在那儿，但不要去侦测
+ "hdx=none"             : 这里没有磁碟，忽略 cmos 且不要去侦测
+ "hdx=nowerr"           : 忽略这个磁碟的 WRERR_STAT 位元
+ "hdx=cdrom"            : 这里有个磁碟，而且是个光碟机
+ "hdx=cyl,head,sect"    : 这里有个磁碟，并指定磁碟规格
+ "hdx=autotune"         : 驱动程式将试著把介面速度调到支援之
+                                最快可程式化输出入(PIO) 模式
+                                ，此磁碟能接受才行。并非所有
+                                晶片组种类都有完整支援，并且
+                                很可能使旧的／奇怪的 IDE  磁
+                                碟出问题。
+ "idex=noprobe"         : 不要尝试存取／使用这个介面
+ "idex=base"            : 在指定的位址侦测介面，其中 "base"
+                                通常是 0x1f0  或是 0x170  且
+                                假设 "ctl"  是 "base"+0x206
+ "idex=base,ctl"        : 指定 base 以及 ctl
+ "idex=base,ctl,irq"    : 指定 base, ctl, 以及 irq  数值
+ "idex=autotune"        : 驱动程式将试著把介面速度调到支援之
+                                最快可程式化输出入(PIO) 模式
+                                ，此磁碟能接受才行。并非所有
+                                晶片组种类都有完整支援，并且
+                                很可能使旧的／奇怪的 IDE  磁
+                                碟出问题。
+ "idex=noautotune"      : 驱动程式将不会试著调整介面速度。除
+                                了 cmd640 之外，这是大部份晶
+                                片组的预设值。
+ "idex=serialize"       : 不重叠对(overlap) idex 及 ide(x^1)
+                                的操作
+</PRE>
+<HR>
+<P>下列参数只允许用於 ide0，
+且预设的 base, ctl 以及 ports 不能修改。
+<P>
+<HR>
+<PRE>
+
+ "ide0=dtc2278"         : 侦测／支援 DTC2278 介面
+ "ide0=ht6560b"         : 侦测／支援 HT6560B 介面
+ "ide0=cmd640_vlb"      : 使用 CMD640 晶片的 VLB  介面卡
+                          ＊必须＊加入这个参数（PCI 的则
+                          不必 -- 自动侦测）
+ "ide0=qd6580"          : 侦测／支援 qd580 介面
+ "ide0=ali14xx"         : 侦测／支援 ali14xx 晶片组 (ALI M1439/M1445)
+ "ide0=umc8672"         : 侦测／支援 umc8672 晶片组
+</PRE>
+<HR>
+<P>使用任何其它的东东都会被拒绝并得到一个 "BAD OPTION" 讯息。
+<P>
+<H2><A NAME="ss5.2">5.2 标准 ST-506 磁碟驱动程式选项(`hd=')</A>
+</H2>
+
+<P>
+<P>标准磁碟驱动程式可以接受磁碟逻辑规格参数，
+这与 IDE 驱动程式相似。注意，
+无论如何它只希望接受三个值 (C/H/S) -- 过多或过少它都会默默地忽略掉。
+同时它只接受 `hd=' 参数，像 `hda', `hdb=' 这类的在此都不被允许。
+其格式如下：
+<P>
+<HR>
+<PRE>
+        hd=cyls,heads,sects
+</PRE>
+<HR>
+<P>如果装有两个磁碟，就使用第二颗磁碟的规格重覆上述指令。
+<P>
+<H2><A NAME="ss5.3">5.3 XT Disk Driver Options (`xd=')</A>
+</H2>
+
+<P>
+<P>如果你不幸到得要使用这些旧的、8 位元、
+以惊人的 125kb/s 速度搬移资料的介面卡那麽这节是你的独门解药。
+侦测这些卡的程式码寻找从卡上安装进来的基本输出入系统，
+如果没有，就找不到你的卡。或者，如果 BIOS
+的签章字串不被认可那麽也会找不到。
+不管是那一种情况，你都得使用这种型式的启动参数：
+<P>
+<HR>
+<PRE>
+        xd=type,irq,iobase,dma_chan
+</PRE>
+<HR>
+<P>其中 <CODE>type</CODE> 值指示该介面卡的制造商，
+如下： 0=generic; 1=DTC; 2,3,4=Western Digital, 5,6,7=Seagate; 8=OMTI。
+同一家制造商种类之间的不同仅止於用来侦测的基本输出入系统字串，
+这个东东若指定 type 就会不使用。
+<P>这些值 <CODE>xd_setup()</CODE> 函式不会去检查，并且假设你输入所有共四个值。
+别让它失望。这儿有个□例使用 WD1002 控制器并关闭／拔掉基本输出入系统，
+使用‘预设的’XT 控制器参数：
+<P>
+<HR>
+<PRE>
+        xd=2,5,0x320,3
+</PRE>
+<HR>
+<P>
+<HR>
+<A HREF="BootPrompt-HOWTO-6.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="BootPrompt-HOWTO-4.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="BootPrompt-HOWTO.html#toc5"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

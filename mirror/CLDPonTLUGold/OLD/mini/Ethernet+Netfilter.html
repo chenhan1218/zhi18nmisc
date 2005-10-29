@@ -1,0 +1,447 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" content="text/html; charset=big5">
+<TITLE>Ethernet+Netfilter mini-HOWTO</TITLE>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+<H1>以太網橋+netfilter Howto</H1>
+<H2>
+<A HREF="mailto:Nils.Radtke_@_Think-Future.de">Nils Radtke</A>  v0.2, September 2002<BR>
+譯者: 
+<A HREF="mailto:yintianbao@yahoo.com.cn">尹天寶</A>  <CODE>yintianbao@yahoo.com.cn</CODE></H2>翻譯日期: 2002年11月11日 reversion 0.2
+<HR>
+<P>
+ 配置一個以太網橋讓我們有機會在一個現有網絡中透明地集成進一個調控設備。這種配置無須改變現有的網絡邏輯結構。它是通過在現有物理網絡和路由設備（連接到internet的一種硬件）之間加入以太網橋來實現的。
+<P>
+ 這份Howto也有其它<A HREF="http://www.think-future.de/DOCUMENTATION/Ethernet-Bridge-netfilter-HOWTO/other_formats/">其它格式</A>可用。推薦下載：<A HREF="http://www.think-future.de/DOCUMENTATION/Ethernet-Bridge-netfilter-HOWTO/Ethernet-Bridge-netfilter-HOWTO.tar.gz">documentation tarball</A>. 。你也可以在
+<A HREF="http://www.tldp.org/docs.html#howto">Linux Documentation Project</A>中找到它。想找其它語言版本嗎？看看這個<A HREF="http://www.think-future.de/DOCUMENTATION/Ethernet-Bridge-netfilter-HOWTO_de/">德語版</A>
+ 
+<P>
+ 歷史<BR>
+ 2002-09-19：在"相關主題"部分，關于ebtables的鏈接已經更新。添加了關于<a href="#4d">false positive&quot; br-nf debugging output</A>的備注。<BR>
+ 2002-10-08：添加了"配置實例"，在 "Setting up the routing, Ping it, Jim!" 提供了有關路由的一些線索。<BR>
+<P><H2>1.<a href="#1">介紹</a></H2><BR><P>
+<p>2.<a href="#2">必需的軟件</a><p><BR>
+<UL>
+<LI>2.1 <a href="#2a">linux內核的特性</a><BR>
+<LI>2.2 <a href="#2b">用戶空間工具：brctl</a><BR>
+</UL>
+<P>3.<a href="#3">配置linux以提供必要的服務</a><P><BR>
+<UL>
+<LI>3.1 <a href="#3a">配置網橋</a><BR>
+<LI>3.2 <a href="#3b">配置路由</a><BR>
+</UL>
+<P>4.<a href="#4">測試你的新的橋接網絡</a><P><BR>
+<UL>
+<LI>4.1 <a href="#4a">測試場景</a><BR>
+<LI>4.2 <a href="#4b">ping it ,Jim!</a><BR>
+<LI>4.3 <a href="#4c">實際的配置</a><BR>
+<LI>4.4 <a href="#4d">附記</a><BR>
+</UL>
+<P>5.<a href="#5">其它鏈接</a><P><BR>
+<UL>
+<LI>5.1 <a href="#5a">以太網橋</a><BR>
+<LI>5.2 <a href="#5b">相關主題</a><BR>
+</UL>
+<HR>
+<P> <a name="1"></a>
+<P> 以太網橋透明地將兩個或多個不同的以太網段連接在一起。 以太網橋將從一個端口進來的以太網幀分發到和網橋相連的其它端口，這一工作的完成跟人腦相似：只要知道端口的MAC地址，以太網橋就會通過這個端口將所需傳送的內容直接發到指定的以太網段，其它的網段不會受到任何影響。 
+<P>
+    以太網接口可以被加到一個現有的橋接口並成為橋接口的一個端口（邏輯上的）。
+把netfilter放在橋接口的上面以使網橋有過濾的能力。這樣，就可以實現一個透明的過濾設備。它甚至無須IP地址就可以工作。當然，出于方便維護的目的，你也可以為橋接口分配一個IP地址（為了安全，只應用SSH）。
+<P>
+     這樣做的好處是明顯的，減少了重構網絡的痛苦。用戶也不會意識到網橋的存在，但他們的對外連接可以被阻斷。而且，當用戶工作時也可不被幹擾（想想看當網絡斷開時，公司的損失有多大）。
+<P>
+ 另一種普遍情況是客戶通過一個租用的路由器連接到internet。由于服務提供商很少會將他們的出租設備的管理權限提供給客戶，所以客戶無法改變其連接配置。當然客戶會有一個正在運行著的網絡，並且想要花費最少就可以用，他也不想重新配置整個網絡環境。那麼如果用網橋的話，就可以了。
+<P>
+<HR>
+<P> <a name="2"></a>
+<P>2.必要的軟件 
+<P> 按照我們測試場景的要求，在以太網橋計算機上這些軟件是必要的。
+<P><a name="2a"></a> 
+<P>
+ 2.1 linux內核特性
+<P>
+     如果你使用的內核版本是2.4.18的話，那麼以太網橋的功能已經內置進去了。無須加補丁文件了。
+<P>
+      但是如何你打算使用netfilter功能的話，因為我們想在這台新的linux路由器/（防火牆 ）上跑iptables，那麼我們仍然需要加一個補丁，任何需要的補丁都可以在這個網站找到和下載sourceforge Ethernet Bridge homepage
+<P>
+
+<FONT SIZE=-2> 
+<PRE>
+root@bridge:~> cd /usr/src/
+root@bridge:~> wget -c http://bridge.sourceforge.net/devel/bridge-nf/bridge-nf-0.0.7-against-2.4.18.diff
+root@bridge:~> cd /usr/src/linux/
+root@bridge:~> patch -p1 -i ../bridge-nf/bridge-nf-0.0.7-against-2.4.18.diff
+</PRE>
+</FONT>
+<P>
+        按計劃我們希望網橋支持netfilter，而且我們已經給vanillal內核打上了補丁，那麼我們就要激活一些必要的內核配置項。如何構建一個自己的內核請看the CD-Net-Install-HOWTO, Toolbox，唉，可惜的是它還是只有德文版，嗯，以後有時間我再把它翻譯一下。
+<P>
+ 
+廢話少說，我們還是開始吧：
+在Code maturity level options中
+ 
+我們選中
+<PRE>
+        [*] Prompt for development and/or incomplete code/drivers
+</PRE>
+ 
+<P>
+在Loadable module support中，我們選中
+<PRE>
+        [*] Enable loadable module support  
+        [*]   Set version information on all module symbols
+        [*]   Kernel module loader
+</PRE>
+ 
+好了，到現在為止進展不錯喲，現在我們進到 Networking options 中
+選中 
+<PRE>
+        [*] Network packet filtering (replaces ipchains)
+        [*]   Network packet filtering debugging
+</PRE>
+        
+ 
+此外，在IP: Netfilter Configuration
+ 
+我們把所有的需要項都標記為模塊，現在輪到期待已久的主角出場了: 
+選中
+<PRE>
+        <M> 802.1d Ethernet Bridging
+</PRE>
+也選中 
+<PRE>
+        [*]   netfilter (firewalling) support
+</PRE>
+<P>
+<BF>注意：</BF>
+ 上面的項只在我們成功的給內核打上補丁後才會有。
+最後，我們就可以靜待成功了。
+<PRE>
+root@bridge:~> make dep clean bzImage modules modules_install
+</PRE>
+        
+等內核編譯完後，別忘了編輯/etc/lilo.conf 文件，然後做 
+<PRE>
+root@bridge:~> lilo -t
+root@bridge:~> lilo
+root@bridge:~> reboot
+</PRE>
+<P>
+<BF>提示：</BF>
+ 我們也可以將新內核標記為bridge內核，我們用vi編輯在內核源目錄中的Makefile文件，我們找到EXTRAVERSION =這一行，可以在後面加上bridge，在內核編譯後，內核的名字就是2.4.18bridge。
+ 在modules_install安裝後，我們就會在/lib/modules/2.4.18bridge目錄中找到新的模塊。
+<P>
+<HR>
+<P><a name="2b"></a> 
+<P>2.2 用戶空間工具：brctl 
+<P>
+ 當我們的內核有執行以太網橋和netfilter這兩種功能的能力後，我們就需要準備用戶空間工具brctl。brctl是用來配置網橋的工具。
+我們到這下載它download the source tarball，解包它並進入解包後的目錄
+<FONT SIZE=-2> 
+<PRE>
+root@bridge:~> wget -c http://bridge.sourceforge.net/bridge-utils/bridge-utils-0.9.5.tar.gz
+root@bridge:~> tar xvzf bridge-utils-0.9.5.tar.gz
+root@bridge:~> cd bridge-utils-0.9.5
+</PRE>
+</FONT>
+        這時，請閱讀README和doc/子目錄下的文件，然後簡單地make和copy brctl/brctl 可執行檔到/sbin/下面。
+<PRE>
+root@bridge:~> make
+root@bridge:~> cp -vi brctl/brctl /sbin/
+</PRE>
+ 
+這樣就好了，現在該去配置它了。
+<HR>
+<P><a name="3"></a> 
+<P>3 設置linux讓網橋運行 
+<P><a name="3a"></a> 
+<P>3.1 配置網橋 
+<P> 
+我們需要讓linux知道網橋，首先告訴它，我們想要一個虛擬的以太網橋接口：（這將在主機bridge上執行，不清楚的看看測試場景）
+<PRE>
+root@bridge:~> brctl addbr br0
+</PRE>
+    其次，我們不需要STP(生成樹協議)等。因為我們只有一個路由器，是絕對不可能形成一個環的。我們可以關閉這個功能。（這樣也可以減少網絡環境的數據包污染）：
+<PRE>
+root@bridge:~> brctl stp br0 off
+</PRE>
+ 
+經過這些準備工作後，我們終于可以做一些立竿見影的事了。我們添加兩個（或更多）以太網物理接口，意思是：我們將他們附加到剛生成的邏輯（虛擬）網橋接口br0上。
+<PRE>
+root@bridge:~> brctl addif br0 eth0
+root@bridge:~> brctl addif br0 eth1
+</PRE>
+現在，原來我們的兩個以太網物理接口變成了網橋上的兩個邏輯端口。那兩個物理接口過去存在，未來也不會消失。要不信的話，去看看好了。
+    .現在他們成了邏輯網橋設備的一部分了，所以不再需要IP地址。下面我們將這些IP地址釋放掉
+<PRE>
+root@bridge:~> ifconfig eth0 down
+root@bridge:~> ifconfig eth1 down
+root@bridge:~> ifconfig eth0 0.0.0.0 up
+root@bridge:~> ifconfig eth1 0.0.0.0 up
+</PRE>
+       好了！我們現在有了一個任何IP地址都沒有的box w/o了。 好了，這下如果你想通過TP配置你的防火牆或路由器的話，你就只能通過本地的控制端口了。你不會告訴我你的機器上連串行端口都沒有吧？
+<P> 
+可選：
+我們給這個新的橋接口分配一個IP地址
+<PRE>
+ root@bridge:~> ifconfig br0 10.0.3.129 up
+</PRE>
+這下我們做完了 看重要指示 
+<P><a name="3b"></a> 
+<P>3.2 配置路由 
+<P> 
+萬一我們要配置一個網關，我們要在linux內核中開啟轉發
+<PRE>
+  root@bridge:~> echo "1" > /proc/sys/net/ipv4/ip_forward
+</PRE>
+        
+我們的Box已經有一個IP地址了，但還沒有默認路由，我們現在來解決這個問題：
+<PRE>
+root@bridge:~> route add default gw 10.0.3.129
+</PRE>
+        
+這樣，我們就應該有一個可以正常工作的網關了。
+
+<HR>
+<P><a name="4"></a> 
+<P>4.測試你帶網橋的網絡 
+<P> <a name="4a"></a>4.1測試場景 
+<P>
+我們假設網絡如下：
+<PRE>
+                                                          /\
+          Ethernet           Ethernet           ATM    /-/  \
+---------          ---------          ---------     /-/      |
+|  Box  |----------|Bridge |----------|Router |-----| Inter-  \
+---------          ---------          ---------     \  net  ---|
+         ^        ^         ^        ^               \     /
+         |        |         |        |                \---/
+        eth0     eth0      eth1     if0                 ^
+         |        |         |        |                  |
+      10.0.3.2   none/10.0.3.1      195.137.15.7    anything else
+                  \         /
+                   \       /
+   ^                \-br0-/
+   |                                      ^             ^
+   |                   ^                  |             |
+   |                   |                  |             |
+  own                 own              foreign        hostile
+</PRE>
+<P>
+我們的管理權限只包括標記為OWN的機器，路由器完全不歸我們管，當然它也是在internet上的。
+那意味著，如果我們想控制在以太網上傳輸的數據，我們可以把防火牆的功能集成到網橋上。照標準做法的缺點是，你必須在你的網絡上的每台機器上都要去更改默認網關。這真的是一個讓人無法忍受的缺點，沒人想在5台以上的機器中逐個去修改默認路由。不要忘了，時間就是金錢，想著浪費掉大把的鈔票我就心痛。 另一個方法是清楚、省時，更安全的。更安全在于我們根本無須分配IP地址，沒有IP，沒有危險。至于這一理論，我們希望自己的stacks是安全的（雖然這樣的願望不一定值得信賴）。最大的優點是網橋的配置是完全透明、根本無須改變IP、MAC等等。你應選擇最適合你的方法。 
+<P> <a name="4b"></a>4.2 ping it ,jim! 
+<P>
+我們將照常配置BOX的eth0,橋的接口配置描述在SETUP中
+如果我們想要打開包轉發，可以這樣做
+<PRE>
+root@bridge:~> echo "1" > /proc/sys/net/ipv4/ip_forward
+</PRE>
+可選的，我們配置一條默認路由
+<PRE>
+root@bridge:~> route add default gw 10.0.3.129
+</PRE>
+        
+然後，我們在主機bridge上配置一些iptables的規則。
+<PRE>
+root@bridge:~> iptables -P FORWARD DROP
+root@bridge:~> iptables -F FORWARD
+root@bridge:~> iptables -I FORWARD -j ACCEPT
+root@bridge:~> iptables -I FORWARD -j LOG
+root@bridge:~> iptables -I FORWARD -j DROP
+root@bridge:~> iptables -A FORWARD -j DROP
+root@bridge:~> iptables -x -v --line-numbers -L FORWARD
+</PRE>
+        
+最後一行執行後，我們可以看到以下輸出：
+<FONT SIZE=-2> 
+<PRE>
+Chain FORWARD (policy DROP 0 packets, 0 bytes)
+num      pkts      bytes target   prot opt in     out     source   destination
+1           0        0 DROP       all  --  any    any     anywhere anywhere
+2           0        0 LOG        all  --  any    any     anywhere anywhere      LOG level warning
+3           0        0 ACCEPT     all  --  any    any     anywhere anywhere
+4           0        0 DROP       all  --  any    any     anywhere anywhere
+</PRE>
+</FONT>
+        
+LOG target通過syslogd記錄每一個包，要注意，這只是以測試為目的時，才這樣做，在正式運行環境裡要把它刪除。要不然，你會發現自己的logs被寫滿、硬盤很多空間被佔據。被別人或自己對自己的機器進行拒絕服務攻擊。 你已經知道它的可怕後果了，現在來測試這些規則集，在主機box上ping 路由器接口的IP（195.137.15.7）。
+ 
+<PRE>
+root@box:~> ping -c 3 195.137.15.7
+PING router.provider.net (195.137.15.7) from 10.0.3.2 : 56(84) bytes of data.
+--- router.provider.net ping statistics ---
+3 packets transmitted, 0 received, 100% loss, time 2020ms
+^C
+root@box:~> 
+</PRE>
+        默認地，我們將扔掉所有的包。沒有回應，也不記錄包，因為netfilter被配置為扔掉所有的包，除非我們刪除在LOG target之前的扔掉所有包的規則（規則號為1）
+<PRE>
+root@bridge:~> iptables -D FORWARD 1
+root@bridge:~> iptables -x -v --line-numbers -L FORWARD
+</PRE>
+現在規則是：
+<FONT SIZE=-2> 
+<PRE>
+Chain FORWARD (policy DROP 0 packets, 0 bytes)
+num      pkts      bytes target   prot opt in     out     source   destination
+2           0        0 LOG        all  --  any    any     anywhere anywhere      LOG level warning
+3           0        0 ACCEPT     all  --  any    any     anywhere anywhere
+4           0        0 DROP       all  --  any    any     anywhere anywhere
+</PRE>
+</FONT>
+        
+這樣任何包都可以通過。在主機BOX上ping一下試試：
+<FONT SIZE=-1> 
+<PRE>
+root@box:~> ping -c 3 195.137.15.7
+PING router.provider.net (195.137.15.7) from 10.0.3.2 : 56(84) bytes of data.
+64 bytes from router.provider.net (195.137.15.7): icmp_seq=1 ttl=255 time=0.103 ms
+64 bytes from router.provider.net (195.137.15.7): icmp_seq=2 ttl=255 time=0.082 ms
+64 bytes from router.provider.net (195.137.15.7): icmp_seq=3 ttl=255 time=0.083 ms
+ 
+--- router.provider.net ping statistics ---
+發送了3個包，受到了3個包，沒有任何丟失，time 2002ms。<BR>
+（3 packets transmitted, 3 received, 0% loss, time 2002ms）
+rtt min/avg/max/mdev = 0.082/0.089/0.103/0.012 ms
+root@box:~> 
+</PRE>
+</FONT>
+        好了，這下，路由器被激活了，連通了，可以運行了。（大概花了一整天的時間了）
+<P> 
+重要指示：
+<P> 
+ 當我們啟動橋接口時，它大概需要30秒才可工作，這是正常的，在這段時間網橋端口會學習到哪個端口有哪些MAC地址。網橋的作者，lennert在他的TODO文章中告訴我們：這30秒的學習時間將來有可能被縮短。
+<P> 
+    記住，在測試時，沒有包被轉發，也沒有ping的回應
+<P> 
+<HR>
+<a name="4c"></a>4.3 實際配置 
+<P> 
+這部分是想給你---親愛的讀者，一些提示，即按照這份HOWTO成功的做完後，你的系統看上去應該是像什麼樣子的。
+<P> 
+接口配置
+<P> 
+你用IFCONFIG命令的輸出看上去應是像這樣的：
+<PRE>
+root@bridge:~> ifconfig
+br0       Link encap:Ethernet  HWaddr 00:04:75:81:D2:1D
+          inet addr:10.0.3.129  Bcast:195.30.198.255  Mask:255.255.255.128
+          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+          RX packets:826 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:737 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:0
+          RX bytes:161180 (157.4 Kb)  TX bytes:66708 (65.1 Kb)
+ 
+eth0      Link encap:Ethernet  HWaddr 00:04:75:81:ED:B7
+          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+          RX packets:5729 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:3115 errors:0 dropped:0 overruns:0 carrier:656
+          collisions:0 txqueuelen:100
+          RX bytes:1922290 (1.8 Mb)  TX bytes:298837 (291.8 Kb)
+          Interrupt:11 Base address:0xe400
+ 
+eth1      Link encap:Ethernet  HWaddr 00:04:75:81:D2:1D
+          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+          RX packets:0 errors:0 dropped:0 overruns:1 frame:0
+          TX packets:243 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:100
+          RX bytes:342 (342.0 b)  TX bytes:48379 (47.2 Kb)
+          Interrupt:7 Base address:0xe800
+ 
+lo        Link encap:Local Loopback
+          inet addr:127.0.0.1  Mask:255.0.0.0
+          UP LOOPBACK RUNNING  MTU:16436  Metric:1
+          RX packets:1034 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:1034 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:0
+          RX bytes:82068 (80.1 Kb)  TX bytes:82068 (80.1 Kb)
+</PRE>
+路由配置
+<P>
+你用route命令的輸出看上去應是像這樣的：
+<PRE>
+root@bridge:~> route -n
+Kernel IP routing table
+Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+10.0.3.129      0.0.0.0         255.255.255.128 U     0      0        0 br0
+0.0.0.0         10.0.3.129      0.0.0.0         UG    0      0        0 br0
+root@bridge:~>
+</PRE>
+<P>
+Iptables 配置
+請看ping it ,jim!部分
+<P> <a name="4d"></a>
+<P>4.4 注意事項： 
+<P>
+明顯地，在br-nf代碼裡一定有bug:
+<PRE>
+From: Bart De Schuymer <bart.de.schuymer_@_pandora.be>
+Date: Sun, 1 Sep 2002 21:52:46 +0200
+To: Nils Radtke <Nils.Radtke_@_Think-Future.de>
+Subject: Re: Ethernet-Brigde-netfilter-HOWTO
+Nils，你好：
+</PRE>
+<P>
+[...]
+<P>
+同樣需要注意的是，把網絡包過濾調試加進br-nf補丁，通常情況下不是個好主意。它會在logs中添加大量的錯誤警告。
+<P>
+[...]
+<P>
+對于我個人而言，在我的log中從未有過此類錯誤。（Personally, I never had false positives in my log.）或許，這個BUG已經被修正了。Bart在郵件中這樣寫到：
+<P>
+<PRE>
+From: Bart De Schuymer <bart.de.schuymer_@_pandora.be>
+Date: Mon, 2 Sep 2002 18:30:25 +0200
+To: Nils Radtke <Nils.Radtke_@_Think-Future.de>
+Subject: Re: Ethernet-Brigde-netfilter-HOWTO
+</PRE>
+<P>
+在2002年9月2日，星期一，Nils在給Bart的郵件中寫到：br-nf中nf-debug代碼修訂版還會加以改進嗎？
+<P>
+我必須承認的是，最近的操作中我沒有採用任何帶netfilter debugging的內核。幾個月前肯定是有過這類的錯誤（以太網橋郵件列表中有關于這個問題貼子）。我一直沒時間去了解具體原因，也不知道現在的情形是否有所改變。我把這事列在了我的日程上了。
+[...]
+<P>
+    正如我在2002年9月19日的帖子上寫的那樣，我尚未看到任何正式的公告說明某個bug已經被修復。如果你對如何防止此類問題感興趣的話，可以經常到ethernet bridge mailinglist去看看。
+<P>
+<HR>
+<P><a name="5"></a> 
+<P>5. 相關鏈接 
+<P>
+你可以通過<A HREF="mailto:Ethernet-Bridge-netfilter-Howto_@_Think-Future.de">e-mail</A>和Howto的作者聯系.<BR>
+<A HREF="http://www.Think-Future.de/">Howto作者的主頁</A> 
+
+<P><a name="5a"></a> 
+<P>5.1 Ethernet-Bridge 
+<P>
+<UL>
+<LI><A HREF="http://www.math.leidenuniv.nl/pipermail/bridge/">以太網橋郵件列表</A> 
+<LI>用戶空間，補丁等: <A HREF="http://bridge.sourceforge.net">Home of Linux kernel Ethernet Bridge</A> 
+<LI><A HREF="http://www.tldp.org/HOWTO/BRIDGE-STP-HOWTO/index.html">Bridge-STP-HOWTO</A> 
+<LI><A HREF="http://www.think-future.de/DOCUMENTATION/Ethernet-Bridge-netfilter-HOWTO/additional_docs/Firewalling_for_Free.pdf">Firewalling for Free, Shawn Grimes</A> 
+</UL>
+
+<P><a name="5b"></a> 
+<P>5.2 相關主題 
+<P>
+	過濾以太網幀，以太網橋表:
+<UL>
+<LI><A HREF="http://sourceforge.net/projects/ebtables">ebtables, sourceforge</A>
+<LI><A HREF="http://users.pandora.be/bart.de.schuymer/ebtables/">ebtables, homepage at pandora.be</A>
+<LI><A HREF="http://users.pandora.be/bart.de.schuymer/ebtables/properties.html">ebtables, supported features</A>
+<LI><A HREF="http://users.pandora.be/bart.de.schuymer/ebtables/examples.html">basic</A>,<A HREF="http://users.pandora.be/bart.de.schuymer/ebtables/battlefield_examples.html">advanced</A>
+<LI><A HREF="http://users.pandora.be/bart.de.schuymer/ebtables/br_fw_ia/br_fw_ia.html">ebtables, in-depth documentation</A><BR>
+<LI><A HREF="http://users.pandora.be/bart.de.schuymer/ebtables/ebtables-hacking/ebtables-hacking-HOWTO.html">ebtables, Hacking HOWTO</A></LI>
+<LI>IP mode, Linux Bridge extension:  
+<CODE>
+<A HREF="http://www.linuxvirtualserver.org/~julian/#bridging">IP mode, LVS</A></CODE></LI> 
+<LI><CODE>
+<A HREF="http://www.linux-ha.org/">High-Availability Linux</A></CODE></LI>
+<LI>Linux Virtual Server: 
+<CODE>
+<A HREF="http://www.linuxvirtualserver.org/">LVS</A></CODE></LI>
+</UL>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

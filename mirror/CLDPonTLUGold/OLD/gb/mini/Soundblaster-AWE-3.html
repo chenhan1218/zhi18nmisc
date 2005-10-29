@@ -1,0 +1,227 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Sound Blaster AWE 32/64 音效卡 HOWTO: 如何安装 SB AWE 音效支援</TITLE>
+ <LINK HREF="Soundblaster-AWE-4.html" REL=next>
+ <LINK HREF="Soundblaster-AWE-2.html" REL=previous>
+ <LINK HREF="Soundblaster-AWE.html#toc3" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+<A HREF="Soundblaster-AWE-4.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Soundblaster-AWE-2.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Soundblaster-AWE.html#toc3"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s3">3. 如何安装 SB AWE 音效支援</A></H2>
+
+<P>
+<P>
+<H2><A NAME="ss3.1">3.1 你需要的东东</A>
+</H2>
+
+<P>
+<P>在 Linux 下使用 SB AWE 需要下列东东哦：
+<P>
+<UL>
+<LI>一个可使用的 Linux 系统 (例如 Debian GNU/Linux 版)，</LI>
+<LI>一个 SB AWE 32 或相容卡 (如 SB32, SB32 PnP, SB AWE64, ...)，</LI>
+<LI>Linux 核心程式的原始程式，包含音效驱动程式 OSS/Free
+(正常都会附，请查看 <CODE>/usr/src/Linux/drivers/sound/Readme</CODE>),</LI>
+<LI>还有 AWE 32 sound driver extensions.</LI>
+</UL>
+<P>如果你有个 PnP 卡，你还需要：
+<P>
+<UL>
+<LI>isapnptools 软体套件。</LI>
+</UL>
+<P>请看有关於如何取得这些程式的章节
+<A HREF="Soundblaster-AWE-6.html#sources">Sources</A>。
+<P>如果你有 Debian GNU/Linux 系统，那你需要 <CODE>kernel-source-&lt;version&gt;</CODE>, <CODE>awe-drv</CODE>
+套件，也许还需要 <CODE>isapnptools</CODE>这个，虽然并不需要但你可能想要一些  <CODE>awe-*</CODE> 套件，我
+强烈建议你采用 <CODE>kernel-package</CODE> 会更容易编译及安装核心程式。
+<P>
+<P>
+<H2><A NAME="isapnp"></A> <A NAME="ss3.2">3.2 开始吧 !</A>
+</H2>
+
+<P>
+<P>假设你已经正确地安装好音效卡到你的电脑的主机板上而且也在 DOS 以及 Windows环境上试过了。
+<P>然後，如果它是一张 PnP 卡的话我们必须在开机启动时初始化一下。请按照
+原始档套件的文件所说地去编译以及安装  <CODE>isapnptools</CODE> (或只需使用 Debian 的二进位码套件)，然後以
+root 的身份执行
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# pnpdump > /etc/isapnp.conf
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>这样会产生一个为你的 PnP 卡量身订做的建构，但它会把所有的设备都注解起来。请再
+小心地修改这个档案，如果可能的话并比较 DMA频道、IO、插断等等的设定是否与它在 DOS 或 WINDOW
+环境下不一样 (在 Win95 □，要看被介面卡所使用的资源可在 <CODE>设备管理员</CODE>下的 <CODE>资源</CODE> 看)。
+如果你遇到问题，请小心地读一下和<CODE>isapnptools</CODE> 放一起的文件。
+<P><EM>请注意:</EM> <CODE>isapnptools</CODE> 常无法侦测 SB AWE Wave Table 设备的三个 I/O 埠。
+请查明你的 <CODE>isapnp.conf</CODE> 内的 <CODE>WaveTable</CODE> 项目 against the example at the end of this HOWTO.
+如果需要的话调整一下 I/O base 位址。
+<P>
+<P><EM>注意:</EM> 根据e <CODE>isapnp-faq</CODE>，有时候 <CODE>isapnp</CODE> 会无法得知逻辑设备的数目。如果你遭遇
+到像下面的错误讯息：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+Error occurred executing request 'LD 2' on or around line...
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>那试看看加入 <CODE>(VERIFYLD N)</CODE> 到 <CODE>isapnp.conf</CODE>的上头。你必须使用至少是 1.10 版的才能这麽做。
+如果你无法使用 1.10 或是更新的版本。你也可以自已直接手动改逻辑设备的数量。
+请情请参考 <CODE>isapnp-faq</CODE> 。如果还是无法克服，请和我连络 (应该有人也会对 <CODE>isapnp</CODE> 有兴趣吧
+，我想)。
+<P><EM>小心:</EM> 请确认最後那行是 <CODE>(WAITFORKEY)</CODE>，有时候较旧的 <CODE>pnpdump</CODE>
+版本会删除它。
+<P>在文件的後面有一个<CODE>isapnp.conf</CODE> 给单个 PnP 音效卡用的样本。 (请看章节 
+<A HREF="Soundblaster-AWE-6.html#isapnpconf">Sample &lt;tt>isapnp.conf&lt;/tt></A>)。
+<P>如果你是用 Debian 系统就不用再做任何的其他调整。  <CODE>/etc/init.d/boot</CODE> 加上下面的
+命令手稿下，你就可以在开机时启动<CODE>isapnp</CODE>
+<HR>
+<PRE>
+# Configure the isa plug and play boards before loading
+# modules. Need to do this before loading modules to get
+# a chance of configuring and starting PnP boards before
+# the drivers mess all this up.
+#
+if [ -x /etc/init.d/isapnp ]
+then
+  /etc/init.d/isapnp start
+fi
+</PRE>
+<HR>
+
+where <CODE>/etc/init.d/isapnp</CODE> is
+<HR>
+<PRE>
+#! /bin/sh
+# /etc/init.d/isapnp: configure Plug and Play boards
+test -x /sbin/isapnp || exit 0
+/sbin/isapnp /etc/isapnp.conf
+exit 0
+</PRE>
+<HR>
+<P>如果你有其他的 Linux 供应商版本，你就要自已来了。我也不知道怎麽做
+(有谁愿意提供更多的资讯吗?)。只要记得 isapnp 必须在所有模组被载入 <EM>之前</EM> 就被载入了 (请看下面)。
+<P>
+<P>
+<H2><A NAME="ss3.3">3.3 编译核心程式</A>
+</H2>
+
+<P>
+<P>在编译核心程式之前，你必须有 AWE Driver Extension 套件来给音效驱动程式使用。就算你
+的核心原始程式目录□已经有 <CODE>awedrv</CODE> 延伸套件了 (请检查 <CODE>/drivers/sound/lowlevel/</CODE> 看看)，
+你可能想要升级 <CODE>awedrv</CODE> 软体。依照安装在 <CODE>awedrv</CODE> 原始目录□的指示。简单地说，你必须执行
+一个修补核心原始程式的安装命令手稿。
+<P>请小心你已经在执行完安装命令手稿後已经升级了核心原始程式了。这个命令手稿
+只是在检查看看一些特定档案是否已经有了，如果有了，它不会有任何需要的修补动作。
+你升级核心原始程式後在执行命令手稿前会被建议将 <CODE>drivers/sound/lowlevel/awe_wav.c</CODE>
+档案移除。
+<P>接下来你必须建构核心程式来支援音效。我希望你知道怎麽来编译核心程式；详情请参考
+Sound HOWTO 以及 Kernel HOWTO。到核心原始程式的目录□， (<CODE>例如 /usr/src/linux</CODE>)
+然後执行
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# make config
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>或是 <CODE>make menuconfig</CODE> 或 <CODE>make xconfig</CODE>。然後用标准的方式来
+建构你的核心程式。 利用这个机会来做个体积又小又强而有力的核心程式，特别是
+为你的系统量身订做的。记得在回答 <CODE>Enable loadable module support</CODE> 是选 <CODE>Y</CODE>，
+如果你想把音效驱动程式安装成可载入式模组的话 (如果你用的是 PnP 卡的话就 <EM>必须</EM>这麽做)
+，但我知道你也会这麽做吧！
+<P>你会在有个地方被问到是否需要音效卡支援。如果你<EM>没有</EM>  PnP卡的话
+你可以自由回答 <CODE>Y</CODE> 或 <CODE>M</CODE> ，如果你要做成模组的话而且是 PnP卡，<EM>必须</EM> 回答 <CODE>M</CODE>。
+你必须将 PnP 音效卡的支援编译成一个模组，因为在模组被载入前 PnP 卡必须先初始化。
+<P>下列的问题你应该回答 <CODE>Y</CODE>，其馀回答 <CODE>N</CODE>：
+<P>
+<HR>
+<PRE>
+Sound Blaster (SB, SBPro, SB16, clones) support (CONFIG_SB) [Y/n/?]
+Generic OPL2/OPL3 FM synthesizer support (CONFIG_ADLIB) [Y/n/?]
+/dev/dsp and /dev/audio support (CONFIG_AUDIO) [Y/n/?]
+MIDI interface support (CONFIG_MIDI) [Y/n/?]
+FM synthesizer (YM3812/OPL-3) support (CONFIG_YM3812) [Y/n/?]
+lowlevel sound driver support [Y/n/?]
+AWE32 support (CONFIG_AWE32_SYNTH) [Y/n/?]
+</PRE>
+<HR>
+<P>只有後面的是给 Wave Table 合成器用的。其馀是 OSS/Free 音效驱动程式给 SB 16 的选项。
+<P>除此之外，你必须建构音效卡 I/O 埠。可参考 <CODE>isapnp.conf</CODE> 档会给你一些提示，
+如果你有这个档的话。对我来说，下面的内定值就够了。请注意：核心程式建构命令手稿的内定值
+也有可能是错的  (特别是 <CODE>SBC_IRQ</CODE> 和 <CODE>SB_MPU_BASE</CODE> 的值对大部份的卡来说好像都错了)。
+<P>
+<HR>
+<PRE>
+I/O base for SB Check from manual of the card (SBC_BASE) [220]
+Sound Blaster IRQ Check from manual of the card (SBC_IRQ) [5]
+Sound Blaster DMA 0, 1 or 3 (SBC_DMA) [1]
+Sound Blaster 16 bit DMA (_REQUIRED_for SB16, Jazz16, SMW) 5, 6 or 7
+(use 1 for 8 bit cards) (SB_DMA2) [5]
+MPU401 I/O base of SB16, Jazz16 and ES1688 Check from manual of the card
+(SB_MPU_BASE) [330]
+SB MPU401 IRQ (Jazz16, SM Wave and ES1688) Use -1 with SB16 (SB_MPU_IRQ) [-1]
+</PRE>
+<HR>
+<P>好了，现在重新编译核心程式，Debian 的使用者要用 <CODE>kernel-package</CODE>指令。
+这个套件让我们编译核心程式就像安装 debian 的套件一样容易哦。请看
+<CODE>/usr/doc/kernel-package/</CODE>□的文件。这□有个提示：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# make-kpkg clean
+# make-kpkg -revision custom.1.0 kernel_image
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>然後 <CODE>dpkg -i /usr/src/kernel-image-2.0.29_custom.1.0_i386.deb</CODE>.
+<P>如果你的是其他的 Linux 供应商版本，请依照标准的方式来编译新的核心程式。不要忘了
+<CODE>make modules</CODE> 以及 <CODE>make modules_install</CODE>。详情请看 Sound HOWTO 或 Kernel HOWTO。
+<P>
+<P>
+<H2><A NAME="ss3.4">3.4 重开机</A>
+</H2>
+
+<P>
+<P>安装完新核心程式後，你应该重新开机 (请记得你要有个可用的开机磁片在手上)。交叉著你的手指头等一下。
+<P>如果你有个 PnP 卡，请确认在开机启动命令手稿□或是手动地执行 isapnp (像上面所提的一样)：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# /sbin/isapnp /etc/isapnp.conf
+Board 1 has Identity 74 00 00 e3 10 48 00 8c 0e:  CTL0048 Serial No 58128
+[checksum 74]
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>现在你可以安装音效驱动程式了，如果你已把它编译成一个模组：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# modprobe -a sound
+AWE32 Sound Driver v0.3.3e (DRAM 2048k)
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>如果你认为记忆体侦测有误 (有个人告诉我说他有张 AWE64 卡有 4096k，然而 ``侦测到'' 28672k !)，请升级
+<CODE>awedrv</CODE> 软体或是在 <CODE>/usr/src/linux/drivers/sound/lowlevel/awe_config.h</CODE>档案□指定记忆体，
+如：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#define AWE_DEFAULT_MEM_SIZE  4096   /* kbytes */
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>抱谦，你必须再重新编译核心程式 (也许编译这些模组就够了，但我不确定)。
+<P>如果它成功动作了，你可能希望音效模组能自动载入。你可以使用 <CODE>kerneld</CODE> (
+在 1.4章节□有说明为何这是个坏点子) 或是在你的<CODE>/etc/modules</CODE> (Debian系统) □头
+加上一行包含 <CODE>sound</CODE> 或是加上 <CODE>/sbin/modprobe -a sound</CODE> 到你的启动命令手稿□。
+<P>
+<HR>
+<A HREF="Soundblaster-AWE-4.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Soundblaster-AWE-2.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Soundblaster-AWE.html#toc3"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

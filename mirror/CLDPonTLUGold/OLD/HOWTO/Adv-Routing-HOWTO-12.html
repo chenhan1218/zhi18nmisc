@@ -1,0 +1,232 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux 2.4 Advanced Routing HOWTO: Kernel network parameters</TITLE>
+ <LINK HREF="Adv-Routing-HOWTO-13.html" REL=next>
+ <LINK HREF="Adv-Routing-HOWTO-11.html" REL=previous>
+ <LINK HREF="Adv-Routing-HOWTO.html#toc12" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Adv-Routing-HOWTO-13.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Adv-Routing-HOWTO-11.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Adv-Routing-HOWTO.html#toc12"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s12">12. Kernel network parameters</A></H2>
+
+<P>The kernel has lots of parameters which can be tuned for different
+circumstances. While, as usual, the default parameters serve 99% of
+installations very well, we don't call this the Advanced HOWTO for the fun
+of it!
+<P>The interesting bits are in /proc/sys/net, take a look there. Not everything
+will be documented here initially, but we're working on it.
+<H2><A NAME="ss12.1">12.1 Reverse Path Filtering</A>
+</H2>
+
+<P>By default, routers route everything, even packets which 'obviously' don't
+belong on your network. A common example is private IP space escaping onto
+the internet. If you have an interface with a route of 195.96.96.0/24 to it,
+you do not expect packets from 212.64.94.1 to arrive there.
+<P>Lots of people will want to turn this feature off, so the kernel hackers
+have made it easy. There are files in /proc where you can tell
+the kernel to do this for you. The method is called "Reverse Path
+Filtering". Basically, if the reply to this packet wouldn't go out the
+interface this packet came in, then this is a bogus packet and should be
+ignored.
+<P>The following fragment will turn this on for all current and future
+interfaces.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# for i in /proc/sys/net/ipv4/conf/*/rp_filter ; do
+&gt;  echo 2 > $i 
+&gt; done
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Going by the example above, if a packet arrived on the Linux router on eth1
+claiming to come from the Office+ISP subnet, it would be dropped. Similarly,
+if a packet came from the Office subnet, claiming to be from somewhere
+outside your firewall, it would be dropped also.
+<P>The above is full reverse path filtering. The default is to only filter
+based on IPs that are on directly connected networks. This is because the
+full filtering breaks in the case of asymmetric routing (where packets come
+in one way and go out another, like satellite traffic, or if you have
+dynamic (bgp, ospf, rip) routes in your network. The data comes down
+through the satellite dish and replies go back through normal land-lines).
+<P>If this exception applies to you (and you'll probably know if it does) you
+can simply turn off the rp_filter on the interface where the
+satellite data comes in. If you want to see if any packets are being
+dropped, the log_martians file in the same directory will tell
+the kernel to log them to your syslog.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# echo 1 >/proc/sys/net/ipv4/conf/&lt;interfacename>/log_martians
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>FIXME: is setting the conf/{default,all}/* files enough? - martijn
+<P>
+<H2><A NAME="ss12.2">12.2 Obscure settings</A>
+</H2>
+
+<P>Ok, there are a lot of parameters which can be modified. We try to list them
+all. Also documented (partly) in Documentation/ip-sysctl.txt.
+<P>Some of these settings have different defaults based on wether you 
+answered 'Yes' to 'Configure as router and not host' while compiling your
+kernel.
+<P>
+<H3>Generic ipv4</H3>
+
+<P>As a generic note, most rate limiting features don't work on loopback, so
+don't test them locally. The limits are supplied in 'jiffies', and are
+enforced using the earlier mentioned token bucket filter.
+<P>The kernel has an internal clock which runs at 'HZ' ticks (or 'jiffies') per
+second. On intel, 'HZ' is mostly 100. So setting a *_rate file to, say 50,
+would allow for 2 packets per second. The token bucket filter is also
+configured to allow for a burst of at most 6 packets, if enough tokens have
+been earned.
+<P>
+<DL>
+<DT><B>/proc/sys/net/ipv4/icmp_destunreach_rate</B><DD><P>If the kernel decides that it can't deliver a packet, it will drop it, and
+send the source of the packet an ICMP notice to this effect.
+<DT><B>/proc/sys/net/ipv4/icmp_echo_ignore_all</B><DD><P>Don't act on echo packets at all. Please don't set this by default, but if
+you are used as a relay in a DoS attack, it may be useful.
+<DT><B>/proc/sys/net/ipv4/icmp_echo_ignore_broadcasts [Useful]</B><DD><P>If you ping the broadcast address of a network, all hosts are supposed to
+respond. This makes for a dandy denial-of-service tool. Set this to 1 to
+ignore these broadcast messages.
+<DT><B>/proc/sys/net/ipv4/icmp_echoreply_rate</B><DD><P>The rate at which echo replies are sent to any one destination.
+<DT><B>/proc/sys/net/ipv4/icmp_ignore_bogus_error_responses</B><DD><P>FIXME: fill this in
+<DT><B>/proc/sys/net/ipv4/icmp_paramprob_rate</B><DD><P>FIXME: fill this in
+<DT><B>/proc/sys/net/ipv4/icmp_timeexceed_rate</B><DD><P>This the famous cause of the 'Solaris middle star' in traceroutes. Limits
+number of ICMP Time Exceeded messages sent. 
+<DT><B>/proc/sys/net/ipv4/igmp_max_memberships</B><DD><P>FIXME: fill this in
+<DT><B>/proc/sys/net/ipv4/inet_peer_gc_maxtime</B><DD><P>FIXME: fill this in
+<DT><B>/proc/sys/net/ipv4/inet_peer_gc_mintime</B><DD><P>FIXME: fill this in
+<DT><B>/proc/sys/net/ipv4/inet_peer_maxttl</B><DD><P>FIXME: fill this in
+<DT><B>/proc/sys/net/ipv4/inet_peer_minttl</B><DD><P>FIXME: fill this in
+<DT><B>/proc/sys/net/ipv4/inet_peer_threshold</B><DD><P>FIXME: fill this in
+<DT><B>/proc/sys/net/ipv4/ip_autoconfig</B><DD><P>FIXME: fill this in
+<DT><B>/proc/sys/net/ipv4/ip_default_ttl</B><DD><P>Time To Live of packets. Set to a safe 64. Raise it if you have a huge
+network. Don't do so for fun - routing loops cause much more damage that
+way. You might even consider lowering it in some circumstances.
+<DT><B>/proc/sys/net/ipv4/ip_dynaddr</B><DD><P>You need to set this if you use dial-on-demand with a dynamic interface
+address. Once your demand interface comes up, any local TCP sockets which haven't seen replies will be rebound to have the right address. This solves the problem that the
+connection that brings up your interface itself does not work, but the
+second try does.
+<DT><B>/proc/sys/net/ipv4/ip_forward</B><DD><P>If the kernel should attempt to forward packets. Off by default.
+<DT><B>/proc/sys/net/ipv4/ip_local_port_range</B><DD><P>Range of local ports for outgoing connections. Actually quite small by
+default, 1024 to 4999.
+<DT><B>/proc/sys/net/ipv4/ip_no_pmtu_disc</B><DD><P>Set this if you want to disable Path MTU discovery - a technique to
+determine the largest Maximum Transfer Unit possible on your path.
+<DT><B>/proc/sys/net/ipv4/ipfrag_high_thresh</B><DD><P>FIXME: fill this in
+<DT><B>/proc/sys/net/ipv4/ipfrag_low_thresh</B><DD><P>FIXME: fill this in
+<DT><B>/proc/sys/net/ipv4/ipfrag_time</B><DD><P>FIXME: fill this in
+<DT><B>/proc/sys/net/ipv4/tcp_abort_on_overflow</B><DD><P>FIXME: fill this in
+<DT><B>/proc/sys/net/ipv4/tcp_fin_timeout</B><DD><P>FIXME: fill this in
+<DT><B>/proc/sys/net/ipv4/tcp_keepalive_intvl</B><DD><P>FIXME: fill this in
+<DT><B>/proc/sys/net/ipv4/tcp_keepalive_probes</B><DD><P>FIXME: fill this in
+<DT><B>/proc/sys/net/ipv4/tcp_keepalive_time</B><DD><P>FIXME: fill this in
+<DT><B>/proc/sys/net/ipv4/tcp_max_orphans</B><DD><P>FIXME: fill this in
+<DT><B>/proc/sys/net/ipv4/tcp_max_syn_backlog</B><DD><P>FIXME: fill this in
+<DT><B>/proc/sys/net/ipv4/tcp_max_tw_buckets</B><DD><P>FIXME: fill this in
+<DT><B>/proc/sys/net/ipv4/tcp_orphan_retries</B><DD><P>FIXME: fill this in
+<DT><B>/proc/sys/net/ipv4/tcp_retrans_collapse</B><DD><P>FIXME: fill this in
+<DT><B>/proc/sys/net/ipv4/tcp_retries1</B><DD><P>FIXME: fill this in
+<DT><B>/proc/sys/net/ipv4/tcp_retries2</B><DD><P>FIXME: fill this in
+<DT><B>/proc/sys/net/ipv4/tcp_rfc1337</B><DD><P>FIXME: fill this in
+<DT><B>/proc/sys/net/ipv4/tcp_sack</B><DD><P>Use Selective ACK which can be used to signify that specific packets are
+missing - therefore helping fast recovery.
+<DT><B>/proc/sys/net/ipv4/tcp_stdurg</B><DD><P>FIXME: fill this in
+<DT><B>/proc/sys/net/ipv4/tcp_syn_retries</B><DD><P>Number of SYN packets the kernel will send before giving up on the new
+connection.
+<DT><B>/proc/sys/net/ipv4/tcp_synack_retries</B><DD><P>To open the other side of the connection, the kernel sends a SYN with a
+piggybacked ACK on it, to acknowledge the earlier received SYN. This is part
+2 of the threeway handshake. This setting determines the number of SYN+ACK
+packets send before the kernel gives up on the connection.
+<DT><B>/proc/sys/net/ipv4/tcp_timestamps</B><DD><P>Timestamps are used, amongst other things, to protect against wrapping
+sequence numbers. A 1 gigabit link might conceivably re-encounter a previous
+sequence number with an out-of-line value, because if was of a previous
+generation. The timestamp will let it recognise this 'ancient packet'.
+<DT><B>/proc/sys/net/ipv4/tcp_tw_recycle</B><DD><P>FIXME: fill this in
+<DT><B>/proc/sys/net/ipv4/tcp_window_scaling</B><DD><P>TCP/IP normally allows windows up to 65535 bytes big. For really fast
+networks, this may not be enough. The window scaling options allows for
+almost gigabyte windows, which is good for high bandwidth*delay products.
+<P>
+</DL>
+<H3>Per device settings</H3>
+
+<P>DEV can either stand for a real interface, or for 'all' or 'default'.
+Default also changes settings for interfaces yet to be created.
+<DL>
+<DT><B>/proc/sys/net/ipv4/conf/DEV/accept_redirects</B><DD><P>If a router decides that you are using it for a wrong purpose (ie, it needs
+to resend your packet on the same interface), it will send us a ICMP
+Redirect. This is a slight security risk however, so you may want to turn it
+off, or use secure redirects.
+<DT><B>/proc/sys/net/ipv4/conf/DEV/accept_source_route</B><DD><P>Not used very much anymore. You used to be able to give a packet a list of
+IP addresses it should visit on its way. Linux can be made to honor this IP
+option.
+<DT><B>/proc/sys/net/ipv4/conf/DEV/bootp_relay</B><DD><P>FIXME: fill this in
+<DT><B>/proc/sys/net/ipv4/conf/DEV/forwarding</B><DD><P>FIXME:
+<DT><B>/proc/sys/net/ipv4/conf/DEV/log_martians</B><DD><P>See the section on reverse path filters.
+<DT><B>/proc/sys/net/ipv4/conf/DEV/mc_forwarding</B><DD><P>If we do multicast forwarding on this interface
+<DT><B>/proc/sys/net/ipv4/conf/DEV/proxy_arp</B><DD><P>If you set this to 1, all other interfaces will respond to arp queries
+destined for addresses on this interface. Can be very useful when building 'ip 
+pseudo bridges'. Do take care that your netmasks are very correct before
+enabling this!
+<DT><B>/proc/sys/net/ipv4/conf/DEV/rp_filter</B><DD><P>See the section on reverse path filters.
+<DT><B>/proc/sys/net/ipv4/conf/DEV/secure_redirects</B><DD><P>FIXME: fill this in
+<DT><B>/proc/sys/net/ipv4/conf/DEV/send_redirects</B><DD><P>If we send the above mentioned redirects.
+<DT><B>/proc/sys/net/ipv4/conf/DEV/shared_media</B><DD><P>FIXME: fill this in
+<DT><B>/proc/sys/net/ipv4/conf/DEV/tag</B><DD><P>FIXME: fill this in
+<P>
+</DL>
+<P>
+<H3>Neighbor pollicy</H3>
+
+<P>Dev can either stand for a real interface, or for 'all' or 'default'.
+Default also changes settings for interfaces yet to be created.
+<DL>
+<DT><B>/proc/sys/net/ipv4/neigh/DEV/anycast_delay</B><DD><P>FIXME: fill this in
+<DT><B>/proc/sys/net/ipv4/neigh/DEV/app_solicit</B><DD><P>FIXME: fill this in
+<DT><B>/proc/sys/net/ipv4/neigh/DEV/base_reachable_time</B><DD><P>FIXME: fill this in
+<DT><B>/proc/sys/net/ipv4/neigh/DEV/delay_first_probe_time</B><DD><P>FIXME: fill this in
+<DT><B>/proc/sys/net/ipv4/neigh/DEV/gc_stale_time</B><DD><P>FIXME: fill this in
+<DT><B>/proc/sys/net/ipv4/neigh/DEV/locktime</B><DD><P>FIXME: fill this in
+<DT><B>/proc/sys/net/ipv4/neigh/DEV/mcast_solicit</B><DD><P>FIXME: fill this in
+<DT><B>/proc/sys/net/ipv4/neigh/DEV/proxy_delay</B><DD><P>FIXME: fill this in
+<DT><B>/proc/sys/net/ipv4/neigh/DEV/proxy_qlen</B><DD><P>FIXME: fill this in
+<DT><B>/proc/sys/net/ipv4/neigh/DEV/retrans_time</B><DD><P>FIXME: fill this in
+<DT><B>/proc/sys/net/ipv4/neigh/DEV/ucast_solicit</B><DD><P>FIXME: fill this in
+<DT><B>/proc/sys/net/ipv4/neigh/DEV/unres_qlen</B><DD><P>FIXME: fill this in
+<P>
+</DL>
+<P>
+<H3>Routing settings</H3>
+
+<P>
+<DL>
+<DT><B>/proc/sys/net/ipv4/route/error_burst</B><DD><P>FIXME: fill this in
+<DT><B>/proc/sys/net/ipv4/route/error_cost</B><DD><P>FIXME: fill this in
+<DT><B>/proc/sys/net/ipv4/route/flush</B><DD><P>FIXME: fill this in
+<DT><B>/proc/sys/net/ipv4/route/gc_elasticity</B><DD><P>FIXME: fill this in
+<DT><B>/proc/sys/net/ipv4/route/gc_interval</B><DD><P>FIXME: fill this in
+<DT><B>/proc/sys/net/ipv4/route/gc_min_interval</B><DD><P>FIXME: fill this in
+<DT><B>/proc/sys/net/ipv4/route/gc_thresh</B><DD><P>FIXME: fill this in
+<DT><B>/proc/sys/net/ipv4/route/gc_timeout</B><DD><P>FIXME: fill this in
+<DT><B>/proc/sys/net/ipv4/route/max_delay</B><DD><P>FIXME: fill this in
+<DT><B>/proc/sys/net/ipv4/route/max_size</B><DD><P>FIXME: fill this in
+<DT><B>/proc/sys/net/ipv4/route/min_adv_mss</B><DD><P>FIXME: fill this in
+<DT><B>/proc/sys/net/ipv4/route/min_delay</B><DD><P>FIXME: fill this in
+<DT><B>/proc/sys/net/ipv4/route/min_pmtu</B><DD><P>FIXME: fill this in
+<DT><B>/proc/sys/net/ipv4/route/mtu_expires</B><DD><P>FIXME: fill this in
+<DT><B>/proc/sys/net/ipv4/route/redirect_load</B><DD><P>FIXME: fill this in
+<DT><B>/proc/sys/net/ipv4/route/redirect_number</B><DD><P>FIXME: fill this in
+<DT><B>/proc/sys/net/ipv4/route/redirect_silence</B><DD><P>FIXME: fill this in
+</DL>
+<P>
+<P>
+<HR>
+<A HREF="Adv-Routing-HOWTO-13.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Adv-Routing-HOWTO-11.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Adv-Routing-HOWTO.html#toc12"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

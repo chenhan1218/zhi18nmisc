@@ -1,0 +1,142 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Glibc 2 HOWTO 中文版: 使用非主要的 C 函式库编译程式</TITLE>
+ <LINK HREF="Glibc2-HOWTO-7.html" REL=next>
+ <LINK HREF="Glibc2-HOWTO-5.html" REL=previous>
+ <LINK HREF="Glibc2-HOWTO.html#toc6" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Glibc2-HOWTO-7.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Glibc2-HOWTO-5.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Glibc2-HOWTO.html#toc6"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s6">6. 使用非主要的 C 函式库编译程式</A></H2>
+
+<P>
+<P>有些时候你会想要使用不同的函式库来编译你的程式，这一节会解释如何达成这个目的。
+我会使用在前两节中所使用的目录与安装名称，记得要改变这些名称以符合你的设定。
+<P>
+<H2><A NAME="ss6.1">6.1 一个关於使用非主要 C 函式库的警告</A>
+</H2>
+
+<P>在你开始编译任何会在开机时用到的程式之前，
+假如程式是动态连结，并且是在 non-root partition 被 mount 之前使用的话，
+那所有连结用的函式库都必须在 root partition 上。
+在前面的安装程序里，我们将 glibc 安装成主要的函式库，
+而旧的函式库仍然保留在 <CODE>/lib</CODE>，
+<CODE>/lib</CODE> 会在 root partition 上，
+也就是说，所有在开机时会用到的程式都能正常工作。
+然而，若你的 <CODE>/usr</CODE> 是在不同的 partition 上，
+且把 glibc 当成测试用的函式库，安装在 <CODE>/usr/i486-linuxglibc2</CODE>，
+那除非 <CODE>/usr</CODE> 已经被 mount，否则所有你用 glibc 编译的程式都将不能使用。
+<P>
+<H2><A NAME="ss6.2">6.2 用测试安装的 glibc 编译程式</A>
+</H2>
+
+<P>要用测试安装的 glibc 编译程式，
+你必须要将 include 路径重设成 glibc 的 include 路径。
+指定 &quot;-nostdinc&quot; 会取消正常 include 路径，
+而 &quot;-I/usr/i486-linuxglibc2/include&quot; 则会指到 glibc 的 include
+目录，
+你也必须要指定 gcc 标准 include 目录，
+通常是 <CODE>/usr/lib/gcc-lib/i486-linuxglibc2/2.7.2.2/include</CODE>。
+(这里假设你安装测试的函式库在 i486-linuxglibc2，
+而 gcc 的版本是 2.7.2.2)
+<P>要用测试安装的 glibc 来连结，你必须指明 gcc 设定，
+这是由 &quot;-b i486-linuxglibc2&quot; 这选项来达成。
+<P>对大部份的程式，
+你可以简单的将其加入 makefile 的
+<CODE>$CFLAGS</CODE>
+与
+<CODE>$LDFLAGS</CODE>
+选项中：
+<BLOCKQUOTE><CODE>
+<PRE>
+ CFLAGS = -nostdinc -I/usr/i486-linuxglibc2/include -I/usr/lib/gcc-lib/i486-linuxglibc2/2.7.2.2/include -b i486-linuxglibc2
+ LDFLAGS = -b i486-linuxglibc2
+ 
+</PRE>
+</CODE></BLOCKQUOTE>
+
+假如你使用 configure 这个 script，在执行 configure 之前，
+定义 shell 变数 <CODE>$CFLAGS</CODE> 与 <CODE>$LDFLAGS</CODE>
+(在 csh/tcsh 下用 env/setenv
+在 sh/bash/其它之下用 set/export)。
+这样产生的 makefile 应该会包含正确的 <CODE>$CFLAGS</CODE> 与
+<CODE>$LDFLAGS</CODE>。
+不过并非所有的 configure scrpt 都会去取得这些变数，
+所以在执行完 configure 之後，你还是要检查一下 makefile，
+假如需要的话，手动修改它。
+<P>假如你所要编译的程式只呼叫 gcc，(而不直接呼叫 cpp 或 binutils)
+你可以使用以下的 script，省去每次指定所有选项的麻烦：
+<BLOCKQUOTE><CODE>
+<PRE>
+ #!/bin/bash
+ /usr/bin/gcc -b i486-linuxglibc2 -nostdinc \
+              -I/usr/i486-linuxglibc2/include \
+              -I/usr/lib/gcc-lib/i486-linuxglibc2/2.7.2.2/include "$@"
+ 
+</PRE>
+</CODE></BLOCKQUOTE>
+
+编译时你可以使用这个 script 而不是 gcc。
+<P>
+<H2><A NAME="ss6.3">6.3 当 glibc 是主要函式库时用 libc 5 编译程式</A>
+</H2>
+
+<P>当你已经将 glibc 安装成主要的函式库之後，又想用旧的函式库来编译程式的时候，
+你必须将 include 路径重设成旧的路径。
+指定 &quot;-nostdinc&quot; 将会使预设的路径无效，
+而 &quot;-I/usr/i486-linuxlibc5/include&quot; 会将 include
+的路径指到旧函式库的 include 路径，
+你也必须要指定
+&quot;-I/usr/lib/gcc-lib/i486-linuxlibc5/2.7.2.2/include&quot;
+以含入 gcc 所需的 include 档。
+注意要视你新的目录与 gcc 版本来调整这些路径。
+<P>要用旧的 libc 来做连结，你必须指定 gcc 所用的架构。
+这是由 &quot;-b i486-linuxlibc5&quot; 这个选项所指定的。
+<P>对大部份的程式，你可以简单的将这些选项加入到 makefile 里的
+<CODE>$CFLAGS</CODE>
+与
+<CODE>$LDFLAGS</CODE>
+选项里：
+<BLOCKQUOTE><CODE>
+<PRE>
+ CFLAGS = -nostdinc -I/usr/i486-linuxlibc5/include -I/usr/lib/gcc-lib/i486-linuxlibc5/2.7.2.2/include -b i486-linuxlibc5
+ LDFLAGS = -b i486-linuxlibc5
+ 
+</PRE>
+</CODE></BLOCKQUOTE>
+
+假如你使用 configure 这个 script，
+在执行 configure 之前，
+定义 shell 变数 <CODE>$CFLAGS</CODE> 与 <CODE>$LDFLAGS</CODE>
+(在 csh/tcsh 下用 env/setenv
+在 sh/bash/或其它之下用 set/export)。
+这样产生的 makefile 应该会包含正确的 <CODE>$CFLAGS</CODE> 与
+<CODE>$LDFLAGS</CODE>。
+不过并非所有的 configure scrpt 都会去取得这些变数，
+所以在执行完 configure 之後，你还是要简检查一下 makefile，
+假如需要的话，手动修改它。
+<P>假如你所要编译的程式只呼叫 gcc，(而不直接呼叫 cpp 或 binutils)
+你可以使用以下的 script，省去每次指定所有选项的麻烦：
+<BLOCKQUOTE><CODE>
+<PRE>
+ #!/bin/bash
+ /usr/bin/gcc -b i486-linuxlibc5 -nostdinc \
+              -I/usr/i486-linuxlibc5/include \
+              -I/usr/lib/gcc-lib/i486-linuxlibc5/2.7.2.2/include "$@"
+ 
+</PRE>
+</CODE></BLOCKQUOTE>
+
+编译时你可以使用这个 script 而不是 gcc。
+<P>
+<P>
+<HR>
+<A HREF="Glibc2-HOWTO-7.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Glibc2-HOWTO-5.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Glibc2-HOWTO.html#toc6"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

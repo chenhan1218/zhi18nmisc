@@ -1,0 +1,103 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="LinuxDoc-Tools 0.9.16">
+ <TITLE>The Linux Bootdisk HOWTO: 問題解決 -- Troubleshooting, or The Agony of Defeat</TITLE>
+ <LINK HREF="Bootdisk-HOWTO-8.html" REL=next>
+ <LINK HREF="Bootdisk-HOWTO-6.html" REL=previous>
+ <LINK HREF="Bootdisk-HOWTO.html#toc7" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Bootdisk-HOWTO-8.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="Bootdisk-HOWTO-6.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="Bootdisk-HOWTO.html#toc7"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s7">7.</A> <A HREF="Bootdisk-HOWTO.html#toc7">問題解決 -- Troubleshooting, or The Agony of Defeat</A></H2>
+
+<P>
+<A NAME="Troubleshooting"></A> 
+<!--
+Troubleshooting
+-->
+</P>
+<P>當建造 bootdisks 時，開始的幾次嘗試結果常常是無法開機。建造一張 root disk 的一般方法是組合來自你現有系統的元件 (compnents) ，接著嘗試與得到這個以磁片為基礎的系統 (diskette-based system) ，直到它在 console 上顯示訊息。一旦它開始與你交談，這場戰鬥就結束一半了，因為你可以了解它在抱怨什麼，而且你可以解決個別的問題直至系統能平順地運作。如果系統停止運作而沒有任何說明，要找到這原因會是一件困難的事。為了讓系統能啟動到能與你交談的階段，這需要使用到好幾種元件，而且這些元件要經過正確地組態。以下是調查系統無法與你交談之問題的建議程序：</P>
+<P>
+<UL>
+<LI> 你會看到一行訊息像這樣：
+<PRE>
+kernel panic: VFS: Unable to mount root fs on XX:YY
+</PRE>
+
+這是常見的問題，而它只有一些原因。首先，請根據 device code 清單檢查 device <EM>XX:YY</EM> ；它是正確的 root device 嗎 ?如果不是，那你可能沒有做過 <CODE>rdev -R</CODE> ，或者是你是對錯誤的 image 執行rdev -R。如果 device code 是正確的，那麼請仔細地檢查被編譯到你 kernel 內的 device 驅動程式。請確定它有內建軟碟片、 ext2 filesystem 支援。
+</LI>
+<LI> 如果你看到許多錯誤訊息像是：
+<PRE>
+end_request: I/O error, dev 01:00 (ramdisk), sector NNN
+</PRE>
+
+這是 ramdisk driver 所報告的 I/O 錯誤訊息，可能是因為 kernel 正嘗試寫入超越了設備的結尾。你的 ramdisk 因為太小而不能持有你的 root filesystem 。請檢查你的 bootdisk kernel 的初始化訊息，找一行像是：
+<PRE>
+        Ramdisk driver initialized : 16 ramdisks of 4096K size
+</PRE>
+
+請針對 root filesystem<EM> 未經壓縮的 </EM>size檢查上述的 size 。如果 ramdisks 不夠大，那就讓它更大吧。
+</LI>
+<LI> 請檢查 root disk 實際上有包含你所認為應該被包含的目錄。 Copy 到錯誤的 level 是容易犯的錯誤，以致於到最後在你的 root 磁碟片上，你會有像是 /rootdisk/bin 的目錄，而非 /bin。
+</LI>
+<LI> 請檢查是否有 /lib/libc.so ，而它是否有與你硬碟內 /lib 目錄中所顯示之相同 link 。
+</LI>
+<LI> 請檢查你既存系統 /dev 目錄內的 symbolic links 是否同時也存在於你的 root 磁碟片 filesystem 上，在此，那些 links 是連往你已包括在你 root 磁碟片上的 devices 。尤其是在很多情況下， /dev/console links是最基本的。
+<!--
+device (dev) directory
+-->
+
+</LI>
+<LI> 請檢查你是否已包括了 /dev/tty1, /dev/null, /dev/zero,
+/dev/mem, /dev/ram 與 /dev/kmem 這些檔案。
+</LI>
+<LI> 請檢查你的 kernel 組態設定 - 對於直到登錄點 (login point) 所需之所有資源的支援必須被內建，不能使用模組。所以 <EM>ramdisk 與 ext2 支援必須被內建 </EM> 。
+</LI>
+<LI> 請檢查你的 kernel root device 與 ramdisk 設定是否正確。</LI>
+</UL>
+</P>
+<P>以上已經涵蓋一般部分，以下是一些更特定的檔案與檢查項目：</P>
+<P>
+<OL>
+<LI> 請確定 <CODE>init</CODE> 是以 /sbin/init 或 /bin/init 的形式被包括進來。並且確認它是可執行的。
+</LI>
+<LI> 請執行 <CODE>ldd init</CODE> 以檢查 init 的函式庫。通常這個就是 libc.so ，但是請無論如何還是檢查一下。請確定你已放入了必備的函式庫與 loaders。
+</LI>
+<LI> 請確定你把正確的 loader 給你的函式庫 -- ld.so 是給 a.out 而 ld-linux.so 是給 ELF 。 
+<!--
+loaders
+-->
+
+</LI>
+<LI> 請針對 <CODE>getty</CODE> (或某種類似 <CODE>getty</CODE> 的程式，諸如 <CODE>agetty</CODE>, <CODE>mgetty</CODE> 或 <CODE>getty_ps</CODE>)的呼叫，檢查你bootdisk filesystem上的 /etc/inittab。請針對你硬碟的 inittab 檢查兩次。再檢查你所使用的程式的 man pages 以確定這些是有意義的。 inittab 可能是最詭異的部分，因為它的語法與內容，依據所使用的 init 程式與系統本質而有所不同。解決的唯一之道就是去閱讀 <CODE>init</CODE> 與 <CODE>inittab</CODE> 的man pages，然後再正確地做出既存系統開機時所做的事。請檢查以確定 /etc/inittab 有一個系統初始化的記錄 (entry) 。它應該包括一個指令以執行必定存在的系統初始化 script 。
+</LI>
+<LI> 如同 <CODE>init</CODE> ，對你的 <CODE>getty</CODE> 執行 <CODE>ldd</CODE> 以了解它需要什麼，同時確定必備的函式庫檔案與 loaders 是否被放入你的 root filesystem 。
+</LI>
+<LI> 請確認你已放入一個 shell 程式 (e.g., <CODE>bash</CODE> or <CODE>ash</CODE>)，它能夠執行你所有的 rc scripts 。
+<!--
+shells
+-->
+
+</LI>
+<LI> 如果在你的救援磁片上，有一個 /etc/ld.so.cache 的檔案，請重新製作 (remake) 它。</LI>
+</OL>
+</P>
+<P>如果 <CODE>init</CODE> 啟動，但是你卻得到一行訊息像是：
+<PRE>
+        Id xxx respawning too fast: disabled for 5 minutes  
+</PRE>
+
+它是來自於 <CODE>init</CODE> ，通常指出 <CODE>getty</CODE> 或 <CODE>login</CODE> 被終結只要 init 啟動。請檢查 <CODE>getty</CODE> 與 <CODE>login</CODE> 的可執行檔與相依的函式庫。請確定在 /etc/inittab 內的呼叫 (invocations) 是正確的。如果你得到來自 <CODE>getty</CODE> 的奇怪訊息，它可能是指 /etc/inittab 內的呼叫格式是錯誤的。</P>
+<P>如果你得到一個 login 提示 (prompt) ，然後你輸入一個有效的 login name ，但是系統卻立即提示你要輸入另一個 login name ，那麼這個問題可能是出在 PAM 或 NSS 。請看 
+<A HREF="Bootdisk-HOWTO-4.html#PAMandNSS">PAM and NSS</A> 這一節。問題也可能是你使用 shadow passwords 而你卻沒有 copy /etc/shadow 到你的 bootdisk 上。</P>
+<P>如果你嘗試去執行某個可執行檔，諸如 <CODE>df</CODE> ，而這個執行檔是在你的救援磁片上，執行時卻出現像這樣的訊息： <CODE>df: not found</CODE> ，這時請檢查兩件事：(1)請確定包含二進位檔的目錄有設定在你的 PATH ，(2)請確定你有程式所需的函式庫 (與 loaders)。</P>
+
+<HR>
+<A HREF="Bootdisk-HOWTO-8.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="Bootdisk-HOWTO-6.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="Bootdisk-HOWTO.html#toc7"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

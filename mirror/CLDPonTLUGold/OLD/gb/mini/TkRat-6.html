@@ -1,0 +1,113 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>TkRat 说明文件: 自动将信件排序到信件夹□</TITLE>
+ <LINK HREF="TkRat-7.html" REL=next>
+ <LINK HREF="TkRat-5.html" REL=previous>
+ <LINK HREF="TkRat.html#toc6" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+<A HREF="TkRat-7.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="TkRat-5.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="TkRat.html#toc6"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s6">6. 自动将信件排序到信件夹□</A></H2>
+
+<P>
+<P>假如你像我一样,每天有大约 1,5000 封信. 每次你下载你的信件後,你必须要在所有的信件中找你特别有兴趣的信件
+有了 Procmail ,这再也不会是一个问题了
+Procmail 的功用像是这样:
+Procmail 检视每一封所下载的信件,然後根据你所定的规则做一连串的处理,
+举例说明,假若说我每天都从一个信件串列收到 200 封信 (在这个例子中,我正在使用 linux-foo 信件串列) 我宁愿这些信被自动过滤後分到 foo-list 的信箱也不愿全部都直接进主要的信箱
+第一步是从信件信串列中找一封信当作样本,并且 检视信件的标头,
+我开始注意到一个字串,每个从信件串列来的信件都有这样的一行,
+Sender: owner-linux-foo@bar.foogers.com
+现在我能告诉 procmail 把每封含有这一行的信件放进特定的信件夹
+透过一个叫 ".procmailrc" 的档案可以达成以上的方法.
+我会用我偏好的文字编辑器在我的目录下开一个新的文字档叫 ".procmailrc",
+这个档案看起来像是这样:
+<HR>
+<PRE>
+LOGFILE=$HOME/.pmlog
+MAILDIR=$HOME/mail
+VERBOSE
+
+# linux-foo list
+:0 Hw
+* ^.*[Ss]ender: owner-linux-foo@bar.foogers.edu
+foo-list
+
+# if it got to this point, put it in my new mail folder
+:0 Hw
+newmail
+</PRE>
+<HR>
+<P>检视 "[Ss]ender" 这行, 你会注意到那行是所有从信件串列来的信件所共同拥有的特徵
+这一段落是在说明 procmail 看到一封有像是上面所说的信头,会把它放进 "foo-list" 的信件夹□
+下一段是说明假如这封信件比对不到上面的规则,就把它放进 newmail,
+现在,每当我收到我的好朋友 EJ 的来信时, 我要把它放到一个信件夹叫 "EJ"
+我会在我的 procmailrc 档□建立一个新的段落,像是下面这样:
+<HR>
+<PRE>
+LOGFILE=$HOME/.pmlog
+MAILDIR=$HOME/mail
+VERBOSE
+ 
+# linux-foo list
+:0 Hw
+* ^.*[Ss]ender: owner-linux-foo@bar.foogers.edu
+foo-list
+
+# Message from EJ!
+:0 Hw
+* ^.*[Ff]rom: ej@mypal.com
+ej
+ 
+# if it got to this point, put it in my new mail folder
+:0 Hw
+newmail
+</PRE>
+<HR>
+<P>注意到为 EJ 所加新的这段, 当一封信件在 From 的栏位有这样的 E-Mail address ,它会自动的放进我的 "ej" 的信件夹
+现在,假设有一些俗啦不断的寄 E-Mail 来烦我们, 我一点也不想收到这些信件, 但俗啦很坚持, procmail 再一次的又救了我们
+所以,假设说我再也不想看到任何 Bill Gates 寄来的信, 我们可以设定一个方法来删除所有他寄来的信,注意我的新的 procmailrc:
+<HR>
+<PRE>
+
+LOGFILE=$HOME/.pmlog
+MAILDIR=$HOME/mail
+VERBOSE
+ 
+# Is it coming from Bill Gates?  If yes, DELETE IT!!!
+:0 Hw
+* ^.*[Ff]rom: bgates@microsoft.com
+/dev/null
+
+# linux-foo list
+:0 Hw
+* ^.*[Ss]ender: owner-linux-foo@bar.foogers.edu
+foo-list
+ 
+# Message from EJ!
+:0 Hw
+* ^.*[Ff]rom: ej@mypal.com
+ej
+ 
+# if it got to this point, put it in my new mail folder
+:0 Hw
+newmail
+</PRE>
+<HR>
+<P>现在我有一个相当棒的 procmailrc 档，我们来检视 procmail　在每一封信进来的时候做了什麽．
+首先，它检查这封信件看看它是不是从　"bgates@microsoft.com" 所寄来的．　假若是的话，删除它，完工
+假如这封信件通过了第一个检查，它会看看信件是不是在信头有这串字 "owner-linux-foo@bar.foogers.edu" 如果是的话，它会把信放到 "foo-list" 信件夹□，就完工了．
+假如这封信件还是通过了，它会检查信是不是EJ 寄来的．如果是它会把信放到 "ej" 信件夹□．
+现在，如果这封信通过了所有的检查，信会被放到我的 newmail 信件夹
+<P>一旦你有了这些信件夹并且 procmail　也适当的过滤这些信件，你能回到 TkRat, "Admin - New/Edit Folder" 然後为每一档建立一个信件夹．它们是位於 /home/username/mail/foldername 
+<P>
+<HR>
+<A HREF="TkRat-7.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="TkRat-5.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="TkRat.html#toc6"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

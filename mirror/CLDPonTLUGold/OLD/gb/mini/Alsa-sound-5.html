@@ -1,0 +1,272 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Alsa-sound-mini-HOWTO: 测试及使用</TITLE>
+ <LINK HREF="Alsa-sound-6.html" REL=next>
+ <LINK HREF="Alsa-sound-4.html" REL=previous>
+ <LINK HREF="Alsa-sound.html#toc5" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+<A HREF="Alsa-sound-6.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Alsa-sound-4.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Alsa-sound.html#toc5"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s5">5. 测试及使用</A></H2>
+
+<P>现在应该是试试驱动程式是不是真能用的时候了. 接者就是使用它.
+<H2><A NAME="ss5.1">5.1 /proc 档案系统</A>
+</H2>
+
+<P>您可以在 /proc 目录下找到很多关於您的系统的有用资讯. /proc
+是一个"虚拟的"档案系统, 意即它并非真正存在,
+而是和您正在执行的各程序间的连结. 要让 /proc 可用, 您需要将它编译进核心.
+多数 Linux 安装套件已将它设为预设值, 但如果您重编译并且并没有将 /proc
+包进来, 那麽在 /proc 下将什麽也没有.
+<P>/proc/modules 记载了关於载入的模组的资讯. 当 ALSA 音效驱动程式载入後, 如果您
+打入 cat /proc/modules, 应该看到像这样的东西:
+<BLOCKQUOTE><CODE>
+<PRE>
+snd-pcm1-oss      4            0
+snd-sb16          1            1
+snd-sb-dsp        4    [snd-sb16]      0
+snd-pcm1          4    [snd-pcm1-oss snd-sb-dsp]      0
+snd-pcm           3    [snd-pcm1-oss snd-sb16 snd-sb-dsp snd-pcm1]    0
+snd-mixer         3    [snd-pcm1-oss snd-sb16 snd-sb-dsp]      1
+snd-mpu401-uart   1    [snd-sb16]      0
+snd-midi          4    [snd-sb16 snd-sb-dsp snd-mpu401-uart]   0
+snd-opl3          1    [snd-sb16]      0
+snd-synth         1    [snd-sb16 snd-opl3]     0
+snd-timer         1    [snd-opl3]      0
+snd               8    [snd-pcm1-oss snd-sb16 snd-sb-dsp snd-pcm1 snd-pcm snd-mixer snd-mpu401-uart snd-midi snd-opl3 snd-synth snd-timer]    0
+</PRE>
+</CODE></BLOCKQUOTE>
+
+如果在安装驱动程式时有哪步搞错了, 您仍能看到一堆 "snd" 设备, 但没有音效支援.
+<P>例如说(请千万不要照著下面下命令, cs4236 驱动程式需要参数):
+<BLOCKQUOTE><CODE>
+<PRE>
+win3:~# modprobe snd-card-cs4236
+/lib/modules/2.0.35/misc/snd-card-cs4236.o: init_module: Device or resource busy
+snd-mixer: Device or resource busy
+win3:~# cat /proc/modules
+snd-cs4236        2           0
+snd-cs4231        3    [snd-cs4236]    0
+snd-timer         1    [snd-cs4231]    0
+snd-pcm1          4    [snd-cs4236 snd-cs4231] 0
+snd-mixer         3    [snd-cs4236 snd-cs4231] 0
+snd-pcm           3    [snd-cs4236 snd-cs4231 snd-pcm1]       0
+snd-mpu401-uart   1           0
+snd-midi          4    [snd-mpu401-uart]       0
+snd-opl3          1           0
+snd-synth         1    [snd-opl3]      0
+snd-timer         1    [snd-cs4231 snd-opl3]   0
+snd               8    [snd-cs4231 snd-timer snd-pcm1 snd-mixer snd-pcm]     0
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>您可藉由看 /proc/asound/cards 内容来看音效卡是否存在. 例如:
+<BLOCKQUOTE><CODE>
+<PRE>
+bash$ cat /proc/asound/cards
+0 [card1          : SB16 - Sound Blaster 16
+                    Sound Blaster 16 at 0x220, irq 5, dma 1&amp;5
+</PRE>
+</CODE></BLOCKQUOTE>
+
+在刚刚的例子中(就是我忘了加参数的), 输出会是像:
+<BLOCKQUOTE><CODE>
+<PRE>
+win3:~# cat /proc/asound/cards
+--- no soundcards ---
+</PRE>
+</CODE></BLOCKQUOTE>
+
+若 CS4236 卡能用, 将有以下输出
+<BLOCKQUOTE><CODE>
+<PRE>
+0 [card1         ]: CS4236 - CS4237B
+                    CS4237B at 0x534, irq 7, dma 1&amp;0
+</PRE>
+</CODE></BLOCKQUOTE>
+
+如果您再三检查您的设定正确後, 仍然找不到音效卡, 那麽去看看问题解决那节.
+<P><CODE>/proc/asound/</CODE> 虚拟目录显示了关於此驱动程式的许多资讯. 请注意
+/proc/asound 在您载入第一个 ALSA 模组後才会出现. 如果没有 /proc/asound,
+那麽就是 "snd" 模组没有正确安装好. 您可以在 /proc/asound/cards
+档中找到安装好的卡, 然後在 /proc/asound/0 找到关於 0 号卡, /proc/asound/1
+中关於 1 号卡的资讯.
+<P>如果 <CODE>cat /proc/asound/</CODE> 显示像
+<BLOCKQUOTE><CODE>
+<PRE>
+      ES1370 DAC2/ADC
+      Playback isn't active.
+      Record isn't active.
+</PRE>
+</CODE></BLOCKQUOTE>
+
+这是说您的驱动程式一切都很好, 但目前并没有事做(所以一切正常).
+<P>还有第三种找音效设备的方法, 就是如果您有 OSS 相容驱动程式, 那麽就有
+/dev/sndstat 设备档. ALSA 驱动程式会体贴的提醒您不要依赖这些资讯, 它只是为跟
+OSS 相容而做的. 由 /proc/asound 可以简单的得到更好的资讯.
+<H2><A NAME="ss5.2">5.2 混音器</A>
+</H2>
+
+<P>一旦您的音效卡装好, 而 /proc 档案系统也这麽显示後, 您可以试试真正发出声音.
+首先呢, 安装公用程式套件, 或至少把 "amixer" 命令放到一些合理的地方(如
+/usr/local/bin). 先用 "amixer" 看看混音器设定. amixer
+的输出会随卡的不同而有很大变化, 我的 SoundBlaster16 显示:
+<BLOCKQUOTE><CODE>
+<PRE>
+Master         0  % (-14.00dB) : 0  % (-14.00dB)
+Bass           0  % (-14.00dB) : 0  % (-14.00dB)
+Treble         0  % (-14.00dB) : 0  % (-14.00dB)
+Synth          0  % (-62.00dB) : 0  % (-62.00dB)
+PCM            0  % (-62.00dB) : 0  % (-62.00dB)
+Line-In        0  % (-62.00dB) : 0  % (-62.00dB) Mute
+MIC            0  % (-62.00dB) : 0  % (-62.00dB) Mute
+CD             0  % (-62.00dB) : 0  % (-62.00dB) Mute
+In-Gain        0  % (-18.00dB) : 0  % (-18.00dB)
+Out-Gain       0  % (-18.00dB) : 0  % (-18.00dB)
+PC Speaker     0  % (-18.00dB) : 0  % (-18.00dB)
+</PRE>
+</CODE></BLOCKQUOTE>
+
+而我的 Crystal 4237B 的音效卡有很多其它选项:
+<BLOCKQUOTE><CODE>
+<PRE>
+Master D       0  % (-22.00dB) : 0  % (-22.00dB) Mute
+3D Center      0  % (-22.50dB) : 0  % (-22.50dB)
+3D Space       0  % (-22.50dB) : 0  % (-22.50dB) Mute
+Synth          0  % (-94.50dB) : 0  % (-94.50dB) Mute
+FM             0  % (-94.50dB) : 0  % (-94.50dB) Mute
+DSP            0  % (-94.50dB) : 0  % (-94.50dB) Mute
+PCM            0  % (-94.50dB) : 0  % (-94.50dB) Mute
+Line-In        0  % (-34.50dB) : 0  % (-34.50dB) Mute
+MIC            0  % (-22.50dB) : 0  % (-22.50dB) Mute
+CD             0  % (-34.50dB) : 0  % (-34.50dB) Mute
+Record-Gain    0  % (  0.00dB) : 0  % (  0.00dB)
+In-Gain        0  % (-18.00dB) : 0  % (-18.00dB)
+Loopback       0  % (-94.50dB) : 0  % (-94.50dB) Mute
+Mono           0  % (-45.00dB) : 0  % (-45.00dB) Mute
+Aux A          0  % (-34.50dB) : 0  % (-34.50dB) Mute
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>注意一下 "Mute" 那一栏, CS4237B 甚至连主音量也调静音了. 对 CS4237B,
+我还要先打 <CODE>amixer "master d" unmute</CODE> 以後才能发出声音. SoundBlaster
+的输出就没有静音, 不过 <CODE>amixer master 100 unmute</CODE> 会将主音量解除静音,
+还设为 100%. 您可以用数字, 或像 "mute" 及 "unmute" 的文字, 或都打,
+来控制. 打  <CODE>amixer "master d" 100; amixer pcm 100 unmute</CODE> 可以将
+CS4237B 卡的主音量设最大, 并将 PCM 音量解除静音并设为最大. 如果左右要不一样,
+可以用冒号, 如 <CODE>amixer CD 25:50</CODE>.(不, 我不晓得那一个是指左右声道,
+不过我强调一下这也和您的喇叭摆放位置有密切关系.)
+<P>您应该下 <CODE>amixer cd rec</CODE> 以将 CD 当做录音的音源. 然後後下 <CODE>amixer
+cd norec</CODE>命令解除此设定. 如果您想要经由麦克风来录些东西, 您也许可以下
+<CODE>amixer record-gain 100; amixer mic 100 rec mute</CODE>(如果不将麦克风输入
+的放音设为静音的话, 麦克风会从喇叭收到本身的信号, 会造成高音部份音量降低.)
+然而不幸的是我没能够用 amixer 来改变 3D center 及 3D space 的音量设定. 如果
+有人成功了, 请告知我. 这工作可由 alsamixer 来进行.
+<P>ALSA FAQ 上面表示可以用 <CODE>cat &lt;file> >
+/proc/asound/#/mixerC0D0</CODE> 命令来回复混音设定, 其中 &lt;file>
+的内容是由 /proc/asound/#/mixerC0D0 中取得. 我无法重现相同的结果,
+我的电脑抱怨此设备找不到.
+<H2><A NAME="ss5.3">5.3 /dev/snd/ 下的设备</A>
+</H2>
+
+<P>ALSA 驱动程式在 /dev/snd/ 目录下有自己的驱动程式. 如果您有一片音效卡,
+您可能看到以下设备:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+/dev/snd/pcmC0D0 - 这张音效卡的原生音效设备.
+/dev/snd/mixerC0D0 - 第"零"号卡的混音器设备.
+/dev/snd/controlC0D0 - 第"零"号卡的控制设备.
+</PRE>
+</CODE></BLOCKQUOTE>
+
+第一个号码是指第几号音效卡. 第二个号码是代表单卡上的设备号码. 一张有两个 PCM
+设备的音效卡应该有 pcmC0D0 及 pcmc0D1 设备.
+<P>请疝N: ALSA 的设备档名和旧版已经不一样了. 旧的 ALSA 驱动程式用
+/dev/snd/pcm00 (第一个是卡, 第二个是设备号). 如果看到本 HOWTO 中还有用旧的档名的,
+请写封 Email 给我以便更正.
+<P>现在您可以将任何您想听的音效档丢进第一片卡的 PCM 设备中了. 现在试试用 cat
+把任何文字档(或任何档案)送进 /dev/snd/pcmC0D0, 就像这样: <CODE>cat
+&lt;filename> > /dev/snd/pcmC0D0</CODE>. 其中 filename 可以是任意档案,
+只要它够大. 如果您已有现成的音效档, 也可以试试. 您也可以抓 
+<A HREF="http://www.ldp.org/sounds/english.au">http://www.ldp.org/sounds/english.au</A>. 这是 Linux Torvalds 讲 Linux
+这个字如何发音的话. 
+<P>音效设备预先被设定为 8000Hz, 8 位元. 这意味著刚提到的 "english.au"
+会发出讲话声, 而其它档可能只会发出噪音. 如果您听不到, 请检查您的喇叭, 或再执行
+amixer 一遍或去看医师(该不会是... 您的耳朵聋了!?) .
+(稍後您可以用您喜欢的播放程式如 sox 或 mpg123 , 简单的来放完全的 48KHz, 
+16 位元声音.)
+<P>如果您载入了 "snd-pcm1-oss" 模组, 您也可以利用 OSS 的相容性来存取音效卡.
+两者间有以下的对应关系:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+/dev/snd/pcmC0D0 -> /dev/audio0 (/dev/audio) -> 次编号 4
+/dev/snd/pcmC0D0 -> /dev/dsp0 (/dev/dsp) -> 次编号 3
+/dev/snd/pcmC0D1 -> /dev/adsp0 (/dev/adsp) -> 次编号 12
+/dev/snd/pcmC1D0 -> /dev/audio1 -> 次编号 4+16 = 20
+/dev/snd/pcmC1D0 -> /dev/dsp1 -> 次编号 3+16 = 19
+/dev/snd/pcmC1D1 -> /dev/adsp1 -> 次编号 12+16 = 28
+/dev/snd/pcmC2D0 -> /dev/audio2 -> 次编号 4+32 = 36
+/dev/snd/pcmC2D0 -> /dev/dsp2 -> 次编号 3+32 = 39
+/dev/snd/pcmC2D1 -> /dev/adsp2 -> 次编号 12+32 = 44
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss5.4">5.4 额外的资讯</A>
+</H2>
+
+<P>在 ALSA 驱动程式目录中的 INSTALL 档也提到了一些小技巧,
+告诉驱动程式要作何调整设定. 依照播放声音的用途, 您可能需要用这些命令.
+一般的播放程式, 如 mpg123, sox(常以 ``play'' 命令来执行), 或 X11 应用程式如
+RealPlayer都不必用到这些. 我本人也从没用过.
+<P>
+<H3>/proc/asound/#/pcm#0</H3>
+
+<P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+"Playback erase" - 清除所有关於 OSS 应用程式的额外资讯.
+"Playback &lt;app_name> &lt;fragments> &lt;fragment_size> [&lt;options>]"
+"Record erase" - 清除所有关於 OSS 应用程式的额外资讯.
+"Record &lt;app_name> &lt;fragments> &lt;fragment_size> [&lt;options>]"
+</PRE>
+</CODE></BLOCKQUOTE>
+<P><CODE>&lt;app_name></CODE> - 应用程式名称, 包含(较优先假定)或不包含路径.
+<P><CODE>&lt;fragments></CODE> - 片断(fragment)数, 给 0 则自动选择.
+<P><CODE>&lt;fragment_size></CODE> - 一个片断的 byte 数, 或 0 选择自动.
+<P><CODE>&lt;options></CODE> - 选择性的参数
+<P><CODE>WR_ONLY</CODE> - 如果有个应用程式设开启模式为O_RDWR,
+实际的权限将改为 O_WRONLY(播放), 对 Quake 等很有用...
+<P>几个□例:
+<BLOCKQUOTE><CODE>
+<PRE>
+echo "Playback x11amp 128 16384" > /proc/asound/0/pcm0o
+echo "Playback squake 0 0 WR_ONLY" > /proc/asound/0/pcm0o
+</PRE>
+</CODE></BLOCKQUOTE>
+<H3>/proc/asound/#card#/sb16</H3>
+
+<P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+"Playback 8" -> 驱动程式播放时只使用 8-bit DMA 通道.
+"Playback 16" -> 驱动程式播放时只使用 16-bit DMA 通道.
+"Playback auto" (default) -> 驱动程式自动选择(会先尝试使用 16-bit DMA 通道)
+"Record 8" -> 驱动程式录音时只使用 8-bit DMA 通道.
+"Record 16" -> 驱动程式录音时只使用 16-bit DMA 通道.
+"Record auto" (default) -> 驱动程式自动选择(会先尝试使用 16-bit DMA 通道)
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>例如: <CODE>echo "Record 16" > /proc/asound/0/sb16</CODE>
+<P>更进一步的资讯请参考 INSTALL 档.
+<HR>
+<A HREF="Alsa-sound-6.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Alsa-sound-4.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Alsa-sound.html#toc5"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

@@ -1,0 +1,364 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>ISP-Hookup-HOWTO: News 新闻讨论群</TITLE>
+ <LINK HREF="ISP-Hookup-HOWTO-6.html" REL=next>
+ <LINK HREF="ISP-Hookup-HOWTO-4.html" REL=previous>
+ <LINK HREF="ISP-Hookup-HOWTO.html#toc5" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="ISP-Hookup-HOWTO-6.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="ISP-Hookup-HOWTO-4.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="ISP-Hookup-HOWTO.html#toc5"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s5">5. News 新闻讨论群</A></H2>
+
+<H2><A NAME="ss5.1">5.1 我要如何设立一个线上新闻读取器呢 ?</A>
+</H2>
+
+<P> 只要 PPP 在运作中，就能读取<B>线上</B>的新闻群组 news。
+有许多捶手可得的程式，简单介绍两个程式：
+<!--
+rtin
+-->
+ rtin 和 
+<!--
+trn
+-->
+
+trn.
+<P>想开始读取news，一般在建构时只需设定 NNTPSERVER (通常只需在 
+<!--
+.profile
+-->
+ .profile
+档□设定一次即可一劳永逸)：
+<BLOCKQUOTE><CODE>
+<PRE>
+export NNTPSERVER=news.acme.xz
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>有些程式在要取得正确的张贴 <I>来源</I>-位址时，<I>可能会</I>要求：
+<BLOCKQUOTE><CODE>
+<PRE>
+export NNTP_INEWS_DOMAIN=acme.xz
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss5.2">5.2 我要如何设立一个离线新闻读取器呢 ?</A>
+</H2>
+
+<P> 想在离线 offline 时读取新闻群组 news 来
+减少电话帐单费用以及拥有更大的弹性，我们需要设定一或多个的 news-spool。
+这需要一些建构，当然也需使用到一定的磁碟空间，在初始化後，会产生或多或少的事，但
+隅而才需要去留意一下。
+<P>我们在这儿说明两种解决方案：
+<P>
+<H2><A NAME="ss5.3">5.3 我要如何设立 C News?</A>
+</H2>
+
+<P>这个所描述的解决方案是以 <B>C News</B> 这个新闻群组伺服器为基础，
+且使用 NNTP 协定的。
+C News 原本是以其他建构为目标的，但它也蛮符合处理我们的情况的。
+也许有人会使用较近期的 <B>INN</B> 新闻群组伺服器news server
+，但它却在资源使用上多了一些。不管任何方法，请小心 <B>不要</B> 两个都安装! 他们
+不会那麽好在一起相处的。
+<P>以 <CODE>news</CODE>为使用者来迁入系统来做为新闻群组的维护是很重要的。
+所有的建构档案都被放置在 
+<!--
+/usr/lib/news
+-->
+ /usr/lib/news□。
+要处理这个，我们可以 <CODE>su news; cd</CODE>来迁入为 <CODE>root</CODE> 来处理它。
+<P>
+<P>在建构□，最重要要的档案是：
+<P> 
+<UL>
+<LI> 
+<!--
+active
+-->
+ active 档是所有启动的新闻群组的清单。
+它可由 
+<!--
+addgroup
+-->
+ addgroup指令做更新，
+例如 <CODE>addgroup comp.os.linux.networking y</CODE>。</LI>
+<LI> 
+<!--
+organization
+-->
+ organization 档只会包含你在<I>Organization:</I>
+□所要的标题栏资料。在我们的例子□：</LI>
+</UL>
+
+<BLOCKQUOTE><CODE>
+<PRE>
+Dirk Gently's Holistic Detective Agency
+</PRE>
+</CODE></BLOCKQUOTE>
+<P> 
+<UL>
+<LI> 
+<!--
+mailname
+-->
+ mailname 在我们的例子中应该是设定
+<CODE>acme.xz</CODE>。</LI>
+<LI> 
+<!--
+whoami
+-->
+ whoami 被设定成为你在 Path:执行绪中的站台 <CODE>site</CODE>
+。
+在这□的设定中，使用 
+<!--
+newsx
+-->
+ newsx，这个名称不会离开这个机器，
+你可以将它设定成任何只要你非常认为它很特别即可。 这个例子中即 <CODE>roderick</CODE>。</LI>
+<LI>这个 
+<!--
+sys
+-->
+ sys档案控制了抓取及分配新闻群组的资讯，
+我们在此假设在你的 ISP 中，加上 <CODE>acme.xz</CODE> 到路径 Path上，这也是我们所拥有的仅有的新闻群组来源。
+上面的例子告诉我们将接受任何抵达的新闻张贴，我们将只张贴新闻到 <CODE>acme.xz</CODE> 上，这也是我们从未见过
+的，而它是我们原本张贴在我们自己的网站上的。在这个简化的设立中，我们假设所有的群组都从单一源头而来。
+<CODE>/all</CODE> 表示供应商版， <B>必须</B> 将它们包含进去。字元 <CODE>F</CODE> 表示
+(指出) 向外的新闻文章会被□集成档案。</LI>
+</UL>
+
+<BLOCKQUOTE><CODE>
+<PRE>
+ME:all/all::
+acme/acme.xz:all,!junk/all:FL:
+</PRE>
+</CODE></BLOCKQUOTE>
+<P> 
+<UL>
+<LI> 我们必须为向外的新闻建立一个子目录，在我们的例子中：</LI>
+</UL>
+
+<BLOCKQUOTE><CODE>
+<PRE>
+mkdir /var/spool/news/out.going/acme
+</PRE>
+</CODE></BLOCKQUOTE>
+<P> 
+<UL>
+<LI> 
+<!--
+mailpaths
+-->
+ mailpaths 是做为被管制的新闻群组的控制，虽然
+这个工作通常是由 ISP 来做的。</LI>
+</UL>
+<P>C News 需要每天一定程度的维护，但也可只用一次一劳永逸的方法        ，
+那就是以 <CODE>news</CODE>的身份，经由 <CODE>crontab -e</CODE>  命令
+即可达成。建议设立的步骤如下，你可以照你的需要来调整：
+<BLOCKQUOTE><CODE>
+<PRE>
+# 维护进来和出去的批次资料
+10,40 *  * * * /usr/lib/newsbin/input/newsrun
+
+# 每天停止 C News 一次
+30 0  * * * /usr/lib/newsbin/expire/doexpire
+
+# 如有需要，监控并报告状况
+00 2  * * sat /usr/lib/newsbin/maint/addmissing
+40 3  * * * /usr/lib/newsbin/maint/newswatch
+50 3  * * * /usr/lib/newsbin/maint/newsdaily
+</PRE>
+</CODE></BLOCKQUOTE>
+
+<!--
+newsrun
+-->
+ newsrun 会移入及移出文章 (每小时二次)， 
+<!--
+doexpire
+-->
+
+doexpire 会在文章变较旧时删除它们 (每天从凌晨 00:30开始)，最後面那三个命令会
+做许多的监督与错误更正的工作。
+<P>我们还应该确认在启动机器时有些事情已经被清理乾净。以 root的身份，在
+/etc/rc.d/rc.local档□加入：
+<BLOCKQUOTE><CODE>
+<PRE>
+su news -c /usr/lib/newsbin/maint/newsboot
+</PRE>
+</CODE></BLOCKQUOTE>
+
+News 可以由 <B>NewsX</B>程式来□集。
+会从 NNTP-server 挑选资讯，这个程式可从下面位址找到：
+<P><CODE>
+<A HREF="ftp://sunsite.unc.edu/pub/Linux/system/news/transport/newsx-0.9.tar.gz">ftp://sunsite.unc.edu/pub/Linux/system/news/transport/newsx-0.9.tar.gz</A></CODE>
+Or:
+<P><CODE>
+<A HREF="ftp://ftp.sol.no/user/egilk/newsx-0.9.tar.gz">ftp://ftp.sol.no/user/egilk/newsx-0.9.tar.gz</A></CODE>
+<P>设立 <CODE>NewsX</CODE> 非常简单。
+只需很平常的步骤即可安装它：
+<BLOCKQUOTE><CODE>
+<PRE>
+make
+su
+make install
+exit
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>在这儿所大致描述的设立中，你只需以
+<!--
+addgroup
+-->
+ addgroup 命令来建立你要读取的群组
+即可。
+<P>要抓取文章时， <CODE>news</CODE> 使用者只要下达下列的命令 (假设是经由 PPP 或类似的)：
+<BLOCKQUOTE><CODE>
+<PRE>
+newsrun
+newsx acme news.acme.xz
+newsrun
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>这 <CODE>-d</CODE> 选项会在萤幕上不停地印出。详情请参阅 NewsX 文件。
+<P>NewsX 也会注意到向外张贴新闻讨论文章。
+<P>在控制新闻文章变旧时将它们丢弃的工作时，就需要 <CODE>explist</CODE> 这个档案了。
+在下面的例子中就解释了我们要做的一切事了：
+<BLOCKQUOTE><CODE>
+<PRE>
+# hold onto history lines 14 days, nobody gets &gt;120 days
+/expired/                       x       14      -
+/bounds/                        x       0-1-120 -
+
+# retain these for 2 months
+comp.sources,comp.os.linux.all  x       60      -
+
+# noise gets thrown away fast
+junk,control                    x       2       -
+
+# default:  14 days, no archive
+all                             x       14      -
+</PRE>
+</CODE></BLOCKQUOTE>
+<P><B>ALT:</B> 在一个小型的 news-spool□，通常是不太需要对新闻群组的
+<CODE>控制</CODE>的。在可能没有用处的状况下，交通流量 <B>太大</B>。
+重点是新闻张贴的文章会被取消，而新闻群组会被自动地建立。为了确认
+含有<CODE>newgroup</CODE>的控制讯息不会把我们给混乱了，有个叫
+<!--
+newgroupperm
+-->
+ newgroupperm 的档案会指定
+我们所允许的事情：
+<BLOCKQUOTE><CODE>
+<PRE>
+comp.os.linux   tale@uunet.com  yv
+all             any             nq
+</PRE>
+</CODE></BLOCKQUOTE>
+
+在这个例子□，所有在 comp.os.linux 下的合适讨论群组都会被建立 (y)，而 <CODE>news</CODE> 使用者会被
+通知 (v)。 其於的会被静静地 (q) 忽略掉 (n)。最後一行已经足够让你手动地建立所有的群组了。
+<P><B>ALT:</B> 还有一个 NewsX 的替代程式 suck。
+<P>
+<H2><A NAME="ss5.4">5.4 我要怎麽设立 Leafnode?</A>
+</H2>
+
+<P>还有一个不同的解决方案是，安装整合套件  
+<!--
+leafnode
+-->
+ leafnode。
+它能处理所有个人 news spool 的所有工作，而且很容易建构。它可经由下列位址取得：
+<P><CODE>
+<A HREF="http://www.troll.no/freebies/leafnode.html">http://www.troll.no/freebies/leafnode.html</A></CODE>
+<P>和 C News 一样，所有的 news 维护工作都应该是以 <CODE>news</CODE>使用者的身份来做：
+<P>leafnode的位置在 /usr/lib/leafnode。安装它，执行：
+<BLOCKQUOTE><CODE>
+<PRE>
+cd /usr/lib/leafnode
+tar -xzvf leafnode-0.8.tgz
+cd leafnode-0.8
+make
+su
+make install
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>注意，如果你从一个套件中安装 leafnode 的话，/usr/local/sbin 应该改成
+/usr/sbin。
+<P>像之前地，以 <CODE>root</CODE>身份来改变在 
+<!--
+/etc/inetd.conf
+-->
+ /etc/inetd.conf档
+□控制 NNTP 的那行
+<BLOCKQUOTE><CODE>
+<PRE>
+nntp  stream  tcp  nowait  news  /usr/sbin/tcpd /usr/local/sbin/leafnode
+</PRE>
+</CODE></BLOCKQUOTE>
+
+使用下面命令来启动它：
+<BLOCKQUOTE><CODE>
+<PRE>
+killall -HUP inetd
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>执行 exit回到 <CODE>news</CODE>使用者。在 
+<!--
+/usr/lib/leafnode/config
+-->
+
+/usr/lib/leafnode/config 档□改变定义  NNTP 伺服器的那行。在我们的例子中：
+<BLOCKQUOTE><CODE>
+<PRE>
+server = news.acme.xz
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>以<CODE>news</CODE>的身份下 <CODE>crontab -e</CODE> 命令後， Leafnode 就会
+自已扛起照顾自己的工作。
+<BLOCKQUOTE><CODE>
+<PRE>
+# 每天结束 Leafnode一次
+0 4 * * * /usr/local/sbin/texpire
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>News 的交换也是以 <CODE>news</CODE>使用者来完成，以下面的命令 (假设 PPP 已经架好且正执行中)：
+<BLOCKQUOTE><CODE>
+<PRE>
+/usr/local/sbin/fetch
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>想阅读新闻讨论群组的使用者可以用 <I>我要如何设立线上新闻阅读器呢?</I>内的处方来做，
+除非它们建构自己的本地端机器，例如：
+<BLOCKQUOTE><CODE>
+<PRE>
+export NNTPSERVER=localhost
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>相关资料应该都在那儿。首先，<CODE>fetch</CODE> 会传递可订阅的新闻群组的列表。
+接著 Leafnode 会监控使用者所要求的那些群组，并在<B>下次</B>它们被启动时将
+它们加进来。
+<P>注：在 NNTP 需经授权才能使用时，Leafnode 好像就无法工作了。+.LP
+<P><B>ALT:</B>有一个leafnode的替代品 nntpcache可由下面位址取得：
+<P><CODE>
+<A HREF="ftp://ftp.suburbia.net/pub/nntpcache/nntpcache.tgz">ftp://ftp.suburbia.net/pub/nntpcache/nntpcache.tgz</A></CODE>
+<B>ALT:</B> 还有个替代方案是使用与
+<!--
+slrn-pull
+-->
+ slrn-pull 套件
+一起的新闻阅读器 
+<!--
+slrn
+-->
+ slrn 。 这个新闻阅读器在被编译时
+设定好 <CODE>spool</CODE> 功能。
+<P>
+<HR>
+<A HREF="ISP-Hookup-HOWTO-6.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="ISP-Hookup-HOWTO-4.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="ISP-Hookup-HOWTO.html#toc5"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

@@ -1,0 +1,244 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux Italian-HOWTO: La tastiera </TITLE>
+ <LINK HREF="Italian-HOWTO-3.html" REL=next>
+ <LINK HREF="Italian-HOWTO-1.html" REL=previous>
+ <LINK HREF="Italian-HOWTO.html#toc2" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Italian-HOWTO-3.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Italian-HOWTO-1.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Italian-HOWTO.html#toc2"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s2">2. La tastiera </A></H2>
+
+<P>
+<P>
+<P>La gestione della tastiera di Linux è organizzata su piú ``strati'' o
+livelli di astrazione il cui numero, tre, non ci è di grande interesse.
+Quello che interessa a noi è il risultato, ovvero una gestione della
+tastiera indipendente dall'hardware (ricordo che Linux è un sistema
+operativo multipiattaforma e non funziona solo sui PC compatibili...) e
+facilmente riconfigurabile.
+<P>Infatti è sufficiente modificare l'interfaccia tra uno strato e l'altro
+per ottenere gli effetti desiderati: nel nostro caso il perfetto
+funzionamento della tastiera italiana.
+<P>
+<H2><A NAME="ss2.1">2.1 Console </A>
+</H2>
+
+<P>
+<P>Per ottenere la configurazione della tastiera italiana in console è
+sufficiente impartire il comando <CODE>loadkeys&nbsp;it.map</CODE>; questo
+comando non fa altro che caricare la tabella di descrizione della
+tastiera (<EM>keymap</EM>, appunto) <CODE>it.map</CODE> al posto di quella di
+default ``inserita'' nel kernel.
+<P>Solitamente è la procedura di installazione che si preoccupa di
+chiedere all'utente quale tastiera usare e a inserire un comando come
+quello qui sopra in uno degli script di avvio del sistema.
+<P>In Debian esiste il comando <B>kbdconfig</B> che permette di
+riconfigurare la tastiera senza editare a mano gli script di avvio, le
+altre distribuzioni avranno di sicuro sistemi simili...
+<P>Questa Keymap inoltre supporta alcune aggiunte essenziali per i
+programmatori, come le parentesi graffe, il carattere tilde e il carattere
+apice inverso ottenuti premendo rispettivamente [AltGr+8],
+[AltGr+9], [AltGr+0] e [AltGr+'].
+<P>Se si vuole indagare ulteriormente nella gestione della tastiera nella
+console Linux, si può far riferimento ai comandi (e alle rispettive
+manpage) <B>showkey(1)</B> è <B>dumpkey(1)</B>, oltre ovviamente al già
+citato <B>loadkey(1)</B>.
+<P>
+<H3>Keymap alternative </H3>
+
+<P>
+<P>Nonostante questa keymap sia già molto buona, si sta cercando di fare
+meglio; in particolare Lorenzo Maria Catucci (
+<A HREF="mailto:lorenzo@argon.roma2.infn.it">lorenzo@argon.roma2.infn.it</A>) sta lavorando a una serie di
+keymap per console e per X congruenti e possibilmente senza problemi.
+Trovate le bozze di queste keymap nel sito dell'Italian HOWTO 
+<A HREF="http://www.pluto.linux.it/~gaio/Italian-HOWTO">http://www.pluto.linux.it/~gaio/Italian-HOWTO</A>.
+<P>Nello stesso sito potete trovare inoltre delle keymap alternative che
+permettono di ``emulare'' la tastiera Amiga e cose simili...
+<P>
+<P>
+<H2><A NAME="ss2.2">2.2 XFree86 </A>
+</H2>
+
+<P>
+<P>Di recente (dalla versione 3.2 in poi...) XFree ha completamente cambiato
+la gestione della tastiera, aggiungendo una estensione che si chiama
+``XKeyboard'' (o XKBD), e qualche astrusa voce in più nel file di
+configurazione.
+Il nuovo sistema è effettivamente migliore, ma talmente configurabile
+che c'è voluto un annetto perché venisse metabolizzato e quindi
+venissero prodotte le keymap secondo queste nuove specifiche...
+<P>Il problema vero è che <B>xf86config(1)</B> non riesce più a gestire in fase
+di configurazione automatica la tastiera italiana (o meglio, per trovare uno
+straccio di riferimento all'Italia occorre muoversi per un po' tra
+complicate opzioni...), ma niente paura.
+<P>Si può benissimo completare la configurazione scegliendo una tastiera
+predefinita (come quella americana) e poi editare il file
+<CODE>/etc/X11/XF86Config</CODE> aggiungendo o modificando le informazioni:
+<P>
+<HR>
+<PRE>
+        Section "Keyboard"
+
+        [...]
+
+        LeftAlt      Meta
+        RightAlt     ModeShift
+        
+        # ovviamente se avete una tastiera W95
+        # al posto di pc102 ci va pc104 (o pc105)!
+        #
+        Protocol     "Standard"
+        XkbRules     "xfree86"
+        XkbModel     "pc102"
+        XkbLayout    "it"
+
+        EndSection
+</PRE>
+<HR>
+<P>Le prime due righe, in particolare, servono ad avvisare X che abbiamo
+intenzione di usare [AltGr] come modificatore ModeShift per
+poter utilizzare, come siamo abituati, parentesi quadre, at e diesis.
+(Non vi ricordate? Era una di quelle imbarazzanti domande che vi ha posto
+<B>xf86config(1)</B>...)
+<P>Questa definizione di tastiera è leggermente diversa (come disposizione dei
+tasti ``nascosti'') di quella in console (ad esempio le parentesi graffe sono
+ora in [AltGr+7], [AltGr+0]).
+<P>
+<H3>XF86Setup(1)            </H3>
+
+<P>
+<P>In alternativa è possibile usare il nuovo programma di configurazione di
+XFree, presente dalla versione 3.2 e seguenti, <B>XF86Setup(1)</B>;
+la configurazione di X11 è molto piú intuitiva con
+XF86Setup che con xf86config: per un novellino (ma anche non) può essere
+utile anche perché permette di controllare al volo se le impostazioni sono
+corrette (da Giovanni Bortolozzo).
+<P>Per poter utilizzare XF86Setup occorre installare il server VGA16 in aggiunta
+a quello appropriato per la propria scheda video.
+<P>
+<P>
+<H3>Backspace e Delete      </H3>
+
+<P>
+<P>Un problema noioso, che però non riguarda solo la tastiera italiana, è che in
+X gli effetti della pressione dei tasti BackSpace e Canc coincidono (ambedue
+fanno Del, ovvero cancellano il carattere sul cursore; o ambedue fanno
+BackSpace, ovvero cancellano il carattere alla sinistra del cursore, dipende
+di solito dal tasso di umidità dell'aria... ;-).
+<P>Questo è un problema comune a tutti gli utenti Linux, ed inoltre
+esistono ottimi documenti che spiegano come sistemare (o mettere una
+pezza) a questo problema; per puntatori vedi alla fine di questa
+sezione.
+<P>Questo comportamento è dovuto in maggior parte da incompatibilità
+``storiche'' tra librerie/applicazioni/metodi di programmazione, e anche
+in distribuzioni come Debian che hanno forzato una unica politica di
+accesso ai terminali (con il database <B>terminfo(5)</B>) il problema con
+alcune (vecchie) applicazioni rimane.
+<P>Insomma, è un problema <B>delle applicazioni</B> e non di Linux.
+<P>Per programmi (o sistemi) che usano ancora <B>termcap(5)</B> è molto
+probabile che occorra una correzione della definizione di xterm. Non è
+proprio il caso di inserire una cosa del genere in questo HOWTO, mal
+che vada nel sito dell'Italian-HOWTO 
+<A HREF="http://www.pluto.linux.it/~gaio/Italian-HOWTO">http://www.pluto.linux.it/~gaio/Italian-HOWTO</A>; è comunque
+piú corretto cercare una versione dell'applicazione compilata con
+terminfo oppure... cambiare applicazione! ;)
+<P>Per comprendere meglio queste cose sono letture consigliate le manpage di
+<B>termcap(5)</B> e <B>terminfo(5)</B>, oltre a quanto riportato alla fine
+di questa sezione.
+<P>
+<P>
+<H3>MetroX e tastiera italiana      </H3>
+
+<P>
+<P>Ho visto che piú persone hanno problemi con la tastiera sotto Metro-X, non so
+se intanto il problema è stato risolto, eventualmente segnalatemelo che
+elimino questa sezione.
+<P>Per risolvere in modo pulito e definitivo il problema modificate questa
+sezione del file <CODE>/etc/X11/XMetroconfig</CODE>
+<P>
+<HR>
+<PRE>
+        Section "Keyboard"
+                LeftAlt         Meta
+                RightAlt        ModeShift
+                Protocol        "Standard"
+                XkbKeymap       "xfree86(it)"   # al posto di "metro(it)"
+                XkbModel        "pc105"         # solo se avete i tasti W95
+                XkbRules        "xfree86"
+                XkbLayout       "it"
+        EndSection
+</PRE>
+<HR>
+<P>Se prima di farlo guardate alla fine del file <CODE>/var/log/Xerrors</CODE>,
+scoprirete quale è il problema: mancano i file kbd della Metro
+(da Andrea Tuccia).
+<P>
+<H3>Keymap alternative </H3>
+
+<P>
+<P>Anche qui sono state raccolte una serie di keymap alternative a quelle
+ufficiali presenti nelle distribuzioni; trovate anche queste al sito
+<A HREF="http://www.pluto.linux.it/~gaio/Italian-HOWTO">http://www.pluto.linux.it/~gaio/Italian-HOWTO</A>.
+<P>Inoltre Dino Paganello mi segnala il programma <B>xrus(1)</B> che
+permette di fare lo switch al volo tra diverse descrizioni di tastiera
+(lui lo usa per passare la volo dalla tastiera americana a quella
+italiana).
+<P>
+<P>
+<H2><A NAME="ss2.3">2.3 Per maggiori informazioni </A>
+</H2>
+
+<P>
+<P>Ulteriori informazioni, specialmente se si vuole migliorare la gestione della
+tastiera (aggiungere i tasti cursore in determinate applicazioni, macro ai
+tasti funzione, ...), si possono trovare in:
+<P>
+<UL>
+<LI>    
+<A HREF="http://sunsite.unc.edu/LDP/HOWTO/Keyboard-and-Console-HOWTO.html">Keyboard and Console HOWTO</A>.
+</LI>
+<LI>    
+<A HREF="http://sunsite.unc.edu/LDP/HOWTO/XFree86-HOWTO.html">XFree86 HOWTO</A> (anche in 
+<A HREF="http://www.pluto.linux.it/ildp/HOWTO/XFree86-HOWTO.html">versione Italiana</A>).
+</LI>
+<LI>    Esiste inoltre la <EM>kbd.FAQ</EM> contenuta nel pacchetto del
+software di gestione della tastiera, e che dovrebbe essere già
+stata installata da qualche parte nel vostro disco (di solito
+<CODE>/usr/doc/kbd</CODE>).
+        </LI>
+<LI>    Anne Baretta (
+<A HREF="mailto:anne@ibbnet.nl">anne@ibbnet.nl</A>) ha creato delle pagine per aiutare la
+configurazione di BS/DEL; non le ho guardate, ma potrebbero
+essere un buon punto di partenza.
+Le trovate su 
+<A HREF="http://www.ibbnet.nl/~anne/keyboard.html">http://www.ibbnet.nl/~anne/keyboard.html</A>
+</LI>
+<LI>    Esistono anche queste pagine (
+<A HREF="http://electron.et.tudelft.nl/~jdegoede/fixkeys.txt">http://electron.et.tudelft.nl/~jdegoede/fixkeys.txt</A>) per
+il problema BS/DEL; riporto questo URL solo per ribadire che
+questi <B>non</B> sono modi con cui è possibile affrontare (e
+tantomeno risolvere) il problema; testi del genere, che non
+hanno alla base un serio studio e soprattutto l'uso di
+terminfo, sono come una lobotomia come rimedio per il mal di
+testa.
+        
+Magari funziona ma...
+</LI>
+</UL>
+        
+<P>
+<P>
+<P>
+<P>
+<HR>
+<A HREF="Italian-HOWTO-3.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Italian-HOWTO-1.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Italian-HOWTO.html#toc2"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

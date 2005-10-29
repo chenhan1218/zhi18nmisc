@@ -1,0 +1,276 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Draft//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" content="text/html; charset=big5">
+<TITLE>Linux High Availability HOWTO: 建立冗餘網路</TITLE>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 5);</SCRIPT>
+<A HREF="High-Availability-HOWTO-7.html"><IMG SRC="prev.gif" ALT="Previous"></A>
+<A HREF="High-Availability-HOWTO-9.html"><IMG SRC="next.gif" ALT="Next"></A>
+<A HREF="High-Availability-HOWTO.html#toc8"><IMG SRC="toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s8">8. 建立冗餘網路</A></H2>
+
+<P>
+<P>
+<H2><A NAME="ss8.1">8.1 IP 地址接管 (IPAT)</A>
+</H2>
+
+<P>
+<P>客戶端機器和應用程式通常無法在運作中從幾個 IP 地址中做選擇以存取伺服器應用程式。 
+取而代之的，
+接管的節點必須提供一個功能以確保它在重新啟動企業關鍵性應用程式之前取得 well-known IP 地址。
+這個程序稱之為 IP 地址接管（ IPAT ）。它的基本運作如下。
+<P>一個在每個網路上有兩個 IP 介面的叢集節點以它服務介面上設定的開機地址及備援介面上的備援地址來開機。
+如果它是具有較高優先權的節點，一旦這個節點取得資源群組，
+服務介面將會切換到這個服務地址。
+而當一個接管的節點取得服務 IP 地址， 它的備援介面將接管這個資源群組的服務地址。
+在以下的範例中，資源群組的服務地址是<B>192.168.20.11</B>。
+<P>
+<CENTER><TABLE BORDER><TR><TD>
+介面 </TD><TD> 節點 1 （主要的） </TD><TD> 節點 2 （次要的） </TD></TR><BR><TR><TD>
+服務 </TD><TD> 192.168.20.10 </TD><TD> 192.168.20.20 </TD></TR><BR><TR><TD>
+備援 </TD><TD> 192.168.21.10 </TD><TD> 192.168.21.20 </TD></TR><BR><TR><TD>
+</TD></TR></TABLE></CENTER>
+<P>這是 Linux-HA 被啟動之前的情形。 
+兩個服務介面都位於它們個別配置的啟動地址上。
+備援介面位於它們的備援地址上。
+現在 Linux-HA 被啟動於兩個節點上，節點 1 是主要節點。
+它將取得服務地址。
+<P>
+<CENTER><TABLE BORDER><TR><TD>
+介面 </TD><TD> 節點 1 (主要的) </TD><TD> 節點 2 (次要的) </TD></TR><BR><TR><TD>
+服務 </TD><TD> <B>192.168.20.11</B> </TD><TD> 192.168.20.20 </TD></TR><BR><TR><TD>
+備援 </TD><TD> 192.168.21.10 </TD><TD> 192.168.21.20 </TD></TR><BR><TR><TD>
+</TD></TR></TABLE></CENTER>
+<P>現在讓我們想像節點 1 的服務配接卡失效。
+備援配接卡將接管服務地址 （事件 <CODE>swap_adapter</CODE>）：
+<P>
+<CENTER><TABLE BORDER><TR><TD>
+介面 </TD><TD> 節點 1 (主要的) </TD><TD> 節點 2 (次要的) </TD></TR><BR><TR><TD>
+服務 </TD><TD> </TD><TD> 192.168.20.20 </TD></TR><BR><TR><TD>
+備援 </TD><TD> <B>192.168.20.11</B> </TD><TD> 192.168.21.20 </TD></TR><BR><TR><TD>
+</TD></TR></TABLE></CENTER>
+<P>兩個節點（更精確的說：所有存活的節點）也將對 192.168.21.10 執行
+<CODE>fail_standby</CODE> 事件
+<P>而如果節點 1 失效，節點 2 將取得包括於資源群組中的服務地址：
+<P>
+<CENTER><TABLE BORDER><TR><TD>
+介面 </TD><TD> 節點 1 （主要的） </TD><TD> 節點 2 （次要的） </TD></TR><BR><TR><TD>
+服務 </TD><TD> </TD><TD> 192.168.20.20 </TD></TR><BR><TR><TD>
+備援 </TD><TD> </TD><TD> <B>192.168.20.11</B> </TD></TR><BR><TR><TD>
+</TD></TR></TABLE></CENTER>
+<P>在這個簡單的例子中我們也可以移動服務地址到節點 2 的服務配接卡，
+但是移動到備援配接卡較為簡單。
+首先，備援配接卡就不再需要了（節點 2 將對它的備援配接卡執行 
+<CODE>fail_standby</CODE> 事件，
+而且所有其他存活的節點將對這張配接卡執行相同的事件），
+其次，節點 2 也可能正在執行一個資源群組（相互接管）。
+如果服務 IP 地址總是移動到存活節點的相同的（即備援）配接卡，
+那麼移動服務 IP 地址的邏輯就得較為簡單。
+<P>四張網路配接卡來構成一個 IP 地址 HA 。哇。
+原則上，我們可以僅僅使用一張配接卡於每個節點。
+但是有兩個好理由為何我們不要這麼做。
+首先，如果一個節點的配接卡失效，無法判斷是只有配接卡或整個實體網路失效。
+其次，如果我們加入邏輯來判斷是否是配接卡或是網路失效，
+我們可能必須立即執行節點的失效接管，而這要花費比本地端配接卡失效接管還要更長的時間。
+我們想要把停機時間減到最小，記得嗎？
+但是有個方法可以降低配接卡的 overhead ：盡可能的建立相互接管。
+<P>商業的解決方案往往提供一個選項，使用 IP 別名將服務與備援地址置於同一張配接卡上。
+雖然對 Linux 而言這也是可能的，我不建議這麼做，
+a) 由於上面所述的困難和
+b) 由於 ISA 和 PCI 乙太網路配接卡的低價。
+當只使用一張配接卡完全無益時，這些價格導致潛在的爭辯。
+<P>
+<P>IPAT 有個限制。
+如果接管的節點已經接管服務地址，它在同一個子網路中會有兩個 IP 介面。（看上面最後一個例子）。
+如果來源 IP 地址對客戶端而言是很關鍵的，可能需要透過服務介面建立一個專屬的主機或網路路由。
+當使用相互接管時，這會成為一個問題。 感謝任何指教。
+<P>
+<P>
+<H2><A NAME="mac-addr-takeover"></A> <A NAME="ss8.2">8.2 MAC 地址接管</A>
+</H2>
+
+<P>
+<P>當 IPAT 發生時，客戶端機器面對相同的 IP 地址卻有不同的 MAC 地址。
+根據
+<A HREF="http://www.pmg.lcs.mit.edu/cgi-bin/rfc/view-plain?number=826">RFC 826</A> ，
+如果發生一個 ARP 請求時已有一個 IP 地址在快取中，所有的 IP 實作應該更新他們的 ARP 快取。
+如此一來，我們只要在 IPAT 之後清空接管節點的 ARP 快取並 ping 客戶端。
+ping 導致一個 ARP 請求進而更新客戶端的 ARP 快取。
+<P>執行更新客戶端 ARP 的邏輯看起來像是，
+<P>
+<UL>
+<LI>清空本地的 ARP 快取 
+</LI>
+<LI>對於客戶端列表中的每個客戶端
+
+<UL>
+<LI>經由更新 IP 介面來設定暫時的主機路由
+</LI>
+<LI>ping 客戶端
+</LI>
+<LI>刪除暫時的主機路由
+</LI>
+</UL>
+
+</LI>
+</UL>
+<P>不幸的，並非所有的 IP 堆疊都支援 RFC 826 所要求的功能，
+老舊的 Windoze 3.11 WINSOCK.DLL 就是個好（壞!）例子。
+一些 DOS 的 IP 堆疊也缺乏這方面的支援。
+<P>Unix 客戶端機器也可以透過 <CODE>inetd</CODE>
+於一個專屬的 TCP 埠上執行一個由接管的節點觸發的簡單 shell script 來更新。
+（使用 <CODE>telnet &lt;客戶端名稱&gt;
+&lt;埠號&gt;</CODE>）。
+這個 shell script 只要清空客戶端的本地 ARP 快取；無須輸入/輸出使得這個特性十分安全。
+雖然這相當簡易與直接，但我不建議這麼做，因為它需要對網路上的每個客戶端機器作額外的管理。
+<P>如果客戶端經由路由器存取伺服器，他們就不需要被更新，因為 MAC 地址只有在一個實體網路區段內有效。
+取而代之的，這個路由器將必須被更新。
+<P>這個情形也可以透過接管 MAC 地址來補救。
+對很多乙太網路卡而言這已經是可能的。唯一需要做的是，例如：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ifconfig eth1 hw ether 00:00:C0:0C:29:D0
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>它透過簡單的 ioctl 來完成；更詳細的資訊請相互參照 ifconfig man page 。
+在此運作良好。
+小心選擇未使用的硬體地址給服務介面。 
+好的範例是那些以 0xdeadbeef 開始或是以 IP 地址中的主機部份來置換最後兩個位元組等等，例如
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+192.168.20.156 -&gt; 00:C0:87:A3:01:56
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>
+<P>
+<P>
+<H2><A NAME="ss8.3">8.3 TCP vs. UDP</A>
+</H2>
+
+<P>
+<P>由於 TCP based 的伺服程式通常保存連線的內部狀態於記憶體，
+當發生失效接管時 TCP 連線會遺失
+（這也適用於 TCP based 的 proxy daemons 像 socks ）。
+使用者必須重新登入。
+反之， UDP 是無狀態的協定，使得失效接管透明地發生。
+對於這個的一個普通的例子是 NFS V2 。
+HTTP 1.0 也非常容易使用，因為連線非常短暫;
+如果連線失效，使用者熟悉的按下瀏覽器的"重新載入"按鈕...
+HTTP 1.1 可能不一樣。 
+<P>
+<H2><A NAME="ss8.4">8.4 叢集節點的生命跡象： Heartbeat</A>
+</H2>
+
+<P>
+<P>Linux-HA 將對所有的網路配接卡送出 heartbeat 封包來檢查所有的網路配接卡
+（例如：每 0.5 秒鐘）。
+Heartbeat 封包將被傳送於服務與服務配接卡之間，以及備援與備援配接卡之間。
+由於路由方面的考量，一個節點的服務 / 啟動 和備援配接卡必須位於不同的 IP （子）網路。
+這確保送到其他節點的服務 / 啟動配接卡的封包都經由本地端的服務配接卡送出。
+這同樣應用於備援配接卡。
+<P>Heartbeat 封包將透過 IP Multicast 送到所有 active 的叢集節點。
+如果不再接收到來自某一個節點的 heartbeats ，一個逾時計數器將會啟動，
+並且在錯過若干 heartbeat 封包後，這個節點就被假設為已失效。
+這將被所有存活的節點交叉檢查（ cross-checked ）以確認所有的節點對於這個失效有相同的認知。
+只有當所有存活的節點同意這是失效的一種時才會採取行動。
+<P>Heartbeat 封包將是 UDP  （ connection-less, 沒有 SYN flood
+問題）並攜帶（並且可能加密過的）關於叢集中的事件資訊的數位簽章。
+數位簽章將被用來確保叢集不會被來自外面的人欺騙。
+帶有錯誤的簽章的 heartbeat 封包將被丟棄，
+而且其他節點將被通知關於潛在的入侵嘗試（以及系統管理者）。
+至於額外的安全方面，核心中的 IP 封包過濾可能被設立為只接受來自其他 active 叢集節點的 heartbeat 封包。
+<P>其他 heartbeat / 通訊方法可能也會列入考量，例如 MPI. 
+<P>正在交換的訊息型態將是：
+<P>
+<UL>
+<LI>叢集成員：加入與離開
+</LI>
+<LI>事件偵測
+</LI>
+<LI>同步
+</LI>
+</UL>
+<P>
+<P>
+<P>
+<H2><A NAME="ss8.5">8.5 記載網路狀態</A>
+</H2>
+
+<P>
+<P>一些關於網路的基本準則：
+<P>
+<UL>
+<LI>如果單一的網路配接卡停止送出與接收 heartbeats ，
+這張配接卡就被視為失效。
+</LI>
+<LI>如果網路上所有的網路配接卡都停止送出與接收 heartbeats ，這個網路就被視為失效。
+</LI>
+<LI>如果一個節點的所有網路配接卡同時停止送出與接收，這個節點就被視為失效。
+</LI>
+</UL>
+<P>
+<P>
+<P>
+<P>
+<H2><A NAME="non-ip-heartbeat"></A> <A NAME="ss8.6">8.6 Non-IP Heartbeat</A>
+</H2>
+
+<P>
+<P>對單一機器而言， IP 子系統是個 SPOF 。
+萬一 IP 子系統故障，受影響的節點就不能再傳送與接收 heartbeat 封包。
+這可能導致兩個節點都認為另一節點是關閉的（分割的叢集）而嘗試去取得由另一節點所擁有的資源。
+<P>這可用兩種方法來避免 
+<P>
+<UL>
+<LI>執行 non-IP heartbeat 經由
+
+<UL>
+<LI>於一個點對點的 RS232 null modem 電纜上執行 plain TTY （沒有 SLIP 或 PPP ）。 
+實際上所有 PC 配備有兩個 RS232 介面
+沒有一個介面是正常地使用於 Linux-HA 節點
+（沒有 X11 ，沒有滑鼠）。 
+如果沒有足夠的 RS232 埠（滑鼠，無線電計時接收器），
+可以使用一張便宜的二或四埠的串列式 ISA 卡。
+<A HREF="mailto:alanr@bell-labs.com">Alan Robertson</A> 提示這也可以是紅外線的（ IrDA ）
+（雖然昂貴且過於強大）。
+</LI>
+<LI>SCSI Target Mode ，即橫越 SCSI 連結執行類似 RS232 的 TTY 連線；配接卡必須支援這。
+SCSI target mode 可能碰上 heartbeat 逾時，因為 SCSI 匯流排需要裁決並且可能被 initiator 使用一段很長的時間。
+較好的解決方案是只用一條 null modem 電纜連結相鄰的兩個節點。
+由於一些人們想要使用點對點的 SCSI 連線作為高速網路，
+SCSI Target Mode 目前正在進行中（請參閱
+<A HREF="http://venger.interpath.net/~jfbeam/Linux/SCSI-IP/MIRROR/">IP Encapsulation in SCSI Driver</A>。 
+根據作者， 這個 "驅動程式" 可能想像上支援在 SCSI 匯流排上移動任何型態的資料。
+")。
+</LI>
+<LI>由於沒有牽涉到裁決並且資料以 128 位元組的封包傳送，
+對於執行 heartbeats 而言 Target Mode 的 SSA 遠比 Target Mode 的 SCSI 更適合，
+也就是說 SSA 裝置驅動程式應該支援 SSA Target Mode 。
+</LI>
+</UL>
+
+
+由於 non-IP heartbeat 網路是點對點的，
+每個節點必須轉送送往本身以外的節點的訊息到這個節點。
+
+</LI>
+<LI>在每個節點上建立一個 "host ping file" ，
+內含 IP 地址或網路上其他機器的可解析名稱。
+如果懷疑 IP 子系統失效，這個檔案中列出的機器將會被 ping 。
+如果有接收到答覆，本地端的 IP 子系統是好的 ，如果沒有，就是關閉的 。
+特別當節點只有一個網路配接卡時，（對輪替資源群組而言這樣沒有意義）
+這是用來判斷網路是失效起因於配接卡或節點失效的唯一方法。 
+</LI>
+</UL>
+<P>如果一個節點發現它本地端的 IP 子系統是關閉的，它將釋放資源並和緩的停止Linux-HA 。
+<P>
+<HR>
+<A HREF="High-Availability-HOWTO-7.html"><IMG SRC="prev.gif" ALT="Previous"></A>
+<A HREF="High-Availability-HOWTO-9.html"><IMG SRC="next.gif" ALT="Next"></A>
+<A HREF="High-Availability-HOWTO.html#toc8"><IMG SRC="toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

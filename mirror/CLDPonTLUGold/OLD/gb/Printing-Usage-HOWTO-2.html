@@ -1,0 +1,181 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>The Linux Printing Usage HOWTO: 在 Linux 系统内打印文档</TITLE>
+ <LINK HREF="Printing-Usage-HOWTO-3.html" REL=next>
+ <LINK HREF="Printing-Usage-HOWTO-1.html" REL=previous>
+ <LINK HREF="Printing-Usage-HOWTO.html#toc2" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Printing-Usage-HOWTO-3.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Printing-Usage-HOWTO-1.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Printing-Usage-HOWTO.html#toc2"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s2">2. 在 Linux 系统内打印文档</A></H2>
+
+<P>本节说明在 Linux 环境中如何打印文件、检查列印队列、从列印队列删除打印任务、
+打印前文档排版和设置打印环境等。
+<P>
+<H2><A NAME="ss2.1">2.1 Linux 打印系统的演变</A>
+</H2>
+
+<P>
+<P>Linux 打印系统 - <EM>lp</EM> 系统 - 是将加利福尼亚大学校方为 UNIX 操作系统的 BSD 版编写的源代码改编而成。
+<P>
+<H2><A NAME="ss2.2">2.2 利用 <EM>lpr</EM> 打印文档</A>
+</H2>
+
+<P>
+<P>到目前为止，在 Linux 系统中打印文档的最简单方法就是将文档直接送到打印设备打印。使用 <EM>cat</EM>
+指令就是方法之一。作为 root，发送下列指令就可打印文档：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# cat thesis.txt > /dev/lp
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>在这个例子中，<CODE>/dev/lp</CODE> 是实际打印设备的符号连接 - 不论打印机是点阵列印机、激光打印机、
+排版打印机或图表打印机均可使用这个指令。（关於符号连接的进一步说明见 <EM>ln</EM>(1)）
+<P>
+<P>由于安全上的考量，只有 <CODE>root</CODE> 和属於打印监控程式的同一群组的使用者才可书写到打印机，
+使打印机进行打印。这就是必需使用 <EM>lpr</EM>、<EM>lprm</EM> 和 <EM>lpq</EM> 等指令才能使用打印机的理由。
+<P>因此，使用者必需使用 <EM>lpr</EM> 列印文档。<EM>lpr</EM> 为打印进行所有初始设定，
+然後将任务交给打印监控程序 - <EM>lpd</EM>。这个打印监控程序随即告知打印机如何打印文档。
+<P>在 <EM>lpr</EM> 执行过程中，它首先将有待打印的文档抄到一个目录（假脱机目录），
+然後让该文档留在该目录中等待 <EM>lpd</EM> 进行打印。一旦 <EM>lpd</EM> 得知有文档等待打印，
+它就自行生成一个备份（编程员称为派生（forking））。这个派生的 <EM>lpd</EM> 监控程序就会打印有待打印的文档，
+同时原 <EM>lpd</EM> 仍继续等待後面可能发出的打印指令。通过这种方式，Linux 系统可同时处理列队打印任务。
+<P>
+<P>使用 <EM>lpr</EM>(1) 指令的语法如下：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ lpr [ options ] [ filename ... ]
+#
+# (译注：$ lpr [ 选项 ] [ 文档名 ... ])
+#
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>如果 <CODE>filename （译注：文档名）</CODE>没有标示，<EM>lpr</EM> 认为将由标准输入口（通常为键盘或另一程式的输出）提供输入。通过这种方法，
+使用者可将一个程式的输出导入打印假脱机程序。例如，
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ cat thesis.txt | lpr
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>或
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ pr -l60 thesis.txt | lpr
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>均把运行的结果导入打印机印出。
+<P><EM>lpr</EM> 指令还接受各种打印选项参数，使使用者能控制打印方式。最常用的选项参数有：
+-<B>P</B>printer 指明用何种打印机、-<B>h</B> 不印突发错页、-<B>s</B> 建立符号连接，
+并且不将文档抄到假脱机目录（便于处理长文档）和 -<B>#</B>num 标明打印份数。
+具体使用 <EM>lpr</EM> 的例子如下：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ lpr -#2 -sP dj thesis.txt
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>这个指令会在假脱机目录内为称为 <EM>dj</EM> 的打印机建立一个连接 <CODE>thesis.txt</CODE> 文档的符号连接，然後由 <EM>lpd</EM> 对其进行打印。印完之後，它还会再打印一次 <CODE>thesis.txt</CODE> （译注：共印两份）。
+<P>关於 <EM>lpr</EM> 使用的所有选项参数，见 <EM>lpr</EM>(1)。
+<P>
+<H2><A NAME="ss2.3">2.3 利用 <EM>lpq</EM> 察看打印队列</A>
+</H2>
+
+<P>
+<P>使用 <EM>lpq</EM> 指令可察看当前的打印队列。如直接使用指令，不加选项参数，
+可察看默认打印机的打印队列情况。
+<P>
+<P><EM>lpq</EM> 的结果有许多用途。
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ lpq
+lp is ready and printing （译注：打印机准备打印，下面列出打印信息）
+Rank   Owner      Job  Files                            Total Size
+active mwf        31   thesis.txt                       682048 bytes
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss2.4">2.4 利用 <EM>lprm</EM> 取消打印任务</A>
+</H2>
+
+<P>
+<P>对任何一个打印系统而言，都需要有一个取消打印任务的工具软件。在 Linux 系统中，可用 <EM>lprm</EM>。
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ lprm -
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>上述指令取消使用者发出的所有打印指令。如果只要取消一个打印任务，可用 <EM>lpq</EM>
+查明打印任务编号，然後将该编号作为参数用于 <EM>lprm</EM> 指令。例如：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ lprm 31
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>取消默认打印机第 31 号打印任务 (<CODE>thesis.txt</CODE>)。
+<P>
+<H2><A NAME="ss2.5">2.5 利用 <EM>lpc</EM> 控制 lpd 程序</A>
+</H2>
+
+<P>
+<P><EM>lpc</EM>(8) 程式用来控制 lpd 提供打印的打印机。通过 lpc 程式可控制打印机的打印功能、
+打印任务列队、重新安排列队次序和提供打印机和列队状况。 lpc 多数用于设置系统时一机配置多打印机的情况。
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ lpc
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>上述指令启动 lpc 程式。在不设置任何参数的情况下，这使用户进入互动模式，此後可开始输入指令。
+使用 lpc 的另一个方式是从指令行输入参数。
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ lpc status all
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>所有可用的指令均在 <EM>lpd</EM> 的使用说明（man page）内可以查到。此处列出一些主要指令。指令中作为
+<EM>选项</EM> 列出的部分可以是打印机名（lp、print 等）或关键字 <CODE>all</CODE>，此处表示所有打印机。
+<P>
+<UL>
+<LI> disable <EM>选项</EM> -  不让打印机再接受新的打印任务</LI>
+<LI> down <EM>选项</EM> - 停止打印机的一切打印</LI>
+<LI> enable <EM>选项</EM> - 允许打印任务进入打印列队</LI>
+<LI> quit (或 exit) - 停止 lpc 运行</LI>
+<LI> restart <EM>选项</EM> - 重新开始打印机的 lpd</LI>
+<LI> status <EM>选项</EM> - 印出打印机的机况</LI>
+<LI> up <EM>选项</EM> - 重新起始并开始新的 lpd</LI>
+</UL>
+<P>
+<H2><A NAME="ss2.6">2.6 RedHat 的打印工具（printtool）</A>
+</H2>
+
+<P>RedHat 的 printtool 是一个非常好用的工具。它几乎无所不能。下文说明如何通过 RedHat 4.0 在并联埠接连
+HP LJ 4L 的方法（此法也可用于其他 RedHat 版本）。
+<P>
+<UL>
+<LI>以 root 身份登录，并启动 printtool (如果作为 su ，还记得
+SETENV DISPLAY :0.0 和 xhost + 吗?)</LI>
+<LI>按 "Add"，然後在本地打印机项按 "OK"</LI>
+<LI>填入打印机名称 (如 /dev/lp1)</LI>
+<LI>填入参数 - 选择打印机种类、分辨率和纸张大小 (ljet4、300x300 和 信纸尺寸)</LI>
+<LI>按 "OK" 一直到底，重新启动 lpd。</LI>
+</UL>
+<P>利用这种方法可为一台打印机设定多种打印方式，例如为各种打印设定不同的纸张尺寸、分辨率等。
+<P>
+<HR>
+<A HREF="Printing-Usage-HOWTO-3.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Printing-Usage-HOWTO-1.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Printing-Usage-HOWTO.html#toc2"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

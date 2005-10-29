@@ -1,0 +1,108 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>如何變更 xterm 的主題: 附錄: 其它型式終端機的溢位序列</TITLE>
+ <LINK HREF="Xterm-Title-7.html" REL=next>
+ <LINK HREF="Xterm-Title-5.html" REL=previous>
+ <LINK HREF="Xterm-Title.html#toc6" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+<A HREF="Xterm-Title-7.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Xterm-Title-5.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Xterm-Title.html#toc6"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s6">6. 附錄: 其它型式終端機的溢位序列</A></H2>
+
+<P>許多新式的終端機都衍生自 <CODE>xterm</CODE> 或 <CODE>rxvt</CODE>
+並且支援我們所使用的溢位序列. 某些專利的終端機隨著各種不同的 unix
+販賣則會使用他們字訂的溢位序列.
+<P>
+<P>
+<H2><A NAME="ss6.1">6.1 IBM <CODE>aixterm</CODE></A>
+</H2>
+
+<P><CODE>aixterm</CODE> 可以辨識出 <CODE>xterm 的溢位序列</CODE>.
+<P>
+<P>
+<H2><A NAME="ss6.2">6.2 SGI <CODE>wsh</CODE>, <CODE>xwsh</CODE> 及 <CODE>winterm</CODE></A>
+</H2>
+
+<P>這類終端機會設定 <CODE>$TERM=iris-ansi</CODE> 並採用下列的溢位序列:
+<UL>
+<LI><CODE>ESCP1.y<I>string</I>ESC\        設定視窗主題為 <I>string</I></CODE></LI>
+<LI><CODE>ESCP3.y<I>string</I>ESC\        設定圖示主題為 <I>string</I></CODE></LI>
+</UL>
+
+而 <CODE>xwsh</CODE> 完整的溢位序列可以參考 <CODE>xwsh(1G)</CODE> 的使用說明.
+<P>
+<P>Irix 的終端機支援 <CODE>xterm</CODE> 各別設定視窗與圖示主題的功能,
+但不能兩者都設定.
+<P>
+<P>
+<H2><A NAME="ss6.3">6.3 Sun <CODE>cmdtool</CODE> 及 <CODE>shelltool</CODE></A>
+</H2>
+
+<P><CODE>cmdtool</CODE> 及 <CODE>shelltool</CODE> 會設定 <CODE>$TERM=sun-cmd</CODE> 
+並採用下列的溢位序列:
+<UL>
+<LI><CODE>ESC]l<I>string</I>ESC\    設定視窗主題為 <I>string</I></CODE></LI>
+<LI><CODE>ESC]L<I>string</I>ESC\    設定圖示主題為 <I>string</I></CODE></LI>
+</UL>
+
+這些真的是很可怕的程式: 盡量別使用.
+<P>
+<P>
+<H2><A NAME="ss6.4">6.4 CDE <CODE>dtterm</CODE></A>
+</H2>
+
+<P><CODE>dtterm</CODE> 會設定 <CODE>$TERM=dtterm</CODE>, 似乎是可以識別出標準的
+<CODE>xterm</CODE> 溢位序列及 Sun <CODE>cmdtool</CODE> 的溢位序列
+(在 Solaris 2.5.1, Digital Unix 4.0, HP-UX 10.20 測試過).
+<P>
+<P>
+<H2><A NAME="ss6.5">6.5 HPterm</A>
+</H2>
+
+<P><CODE>hpterm</CODE> 會設定 <CODE>$TERM=hpterm</CODE> 並採用下列的溢位序列:
+<UL>
+<LI><CODE>ESC&amp;f0k<I>length</I>D<I>string</I>   設定視窗主題為長 <I>length</I> 的 <I>string</I></CODE></LI>
+<LI><CODE>ESC&amp;f-1k<I>length</I>D<I>string</I>  設定圖示主題為長 <I>length</I> 的 <I>string</I></CODE></LI>
+</UL>
+<P>
+<P>一個簡單的 C 語言的程式用來計算長度並回應字串, 如下:
+<BLOCKQUOTE><CODE>
+<PRE>
+#include &lt;string.h>
+int main(int argc, char *argv[])
+{
+    printf("\033&amp;f0k%dD%s", strlen(argv[1]), argv[1]);
+    printf("\033&amp;f-1k%dD%s", strlen(argv[1]), argv[1]);
+    return(0);
+}
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>我們也可以寫一個小的命令腳本程序, 用 <CODE>${#string}</CODE>
+(<CODE>zsh</CODE>, <CODE>bash</CODE>, <CODE>ksh</CODE>) 或 <CODE>${%string}</CODE>
+(<CODE>tcsh)</CODE> 的延伸功能來找出字串長度. 以下可用在 <CODE>zsh</CODE>:
+<BLOCKQUOTE><CODE>
+<PRE>
+case $TERM in
+    hpterm)
+        str="\e]0;%n@%m: %~\a"
+        precmd () {print -Pn "\e&amp;f0k${#str}D${str}"}
+        precmd () {print -Pn "\e&amp;f-1k${#str}D${str}"}
+        ;;
+esac
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>
+<P>
+<P>
+<HR>
+<A HREF="Xterm-Title-7.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Xterm-Title-5.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Xterm-Title.html#toc6"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

@@ -1,0 +1,109 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>The Linux Plug-and-Play HOWTO 中文版: Plug-and-Play (PnP) 解決方案</TITLE>
+ <LINK HREF="Plug-and-Play-HOWTO-4.html" REL=next>
+ <LINK HREF="Plug-and-Play-HOWTO-2.html" REL=previous>
+ <LINK HREF="Plug-and-Play-HOWTO.html#toc3" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Plug-and-Play-HOWTO-4.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Plug-and-Play-HOWTO-2.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Plug-and-Play-HOWTO.html#toc3"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s3">3. Plug-and-Play (PnP) 解決方案</A></H2>
+
+<H2><A NAME="ss3.1">3.1 介紹</A>
+</H2>
+
+<P>PnP 把 PnP 資源自動分配給硬件和對應的軟件. 就是,
+把設備和它們的驅動程序配對并建立通信通道. 在使用 PnP 之前, 硬件靠跳線,
+軟件靠配置文件(或類似的方法)或猜測硬件使用的資源來分配資源.
+這樣並不能總是正常工作. 
+<P>完全的 PnP (也不能總是正常工作), 需要 PnP BIOS 和操作系統的配合.
+當計算機開機時 BIOS 會運行來啟動. 假如操作系統存儲在硬盤上(通常是這樣), 那麼
+BIOS 必須了解這個硬盤. 如果硬盤是 PnP 的那麼 BIOS 會使用 PnP 方式找到它. 同樣,
+當計算機啟動時為了配置 BIOS, 顯示卡和鍵盤時必須的, 所以如果需要的話 BIOS
+必須配置這些設備.
+<P>一旦 BIOS 識別了硬盤, 顯示卡, 和鍵盤, 它就準備 'boot'(從硬盤調入操作系統).
+假如你已經告訴 BIOS 你有一個 PnP 的操作系統,
+它將做這麼多並讓操作系統完成其餘的 PnP 配置. 否則, PnP-BIOS 將完成剩餘的 PnP
+配置.
+<P>
+<H2><A NAME="ss3.2">3.2 Linux 需要 PnP </A>
+</H2>
+
+<P>Wintel(Microsoft 和 Intel) 創造了 PnP. 由于種種原因, Linux 社區有人不喜歡 PnP.
+但不管喜歡與否, 今天的硬件大部分是 PnP 的, 除了有效的處理 PnP 外, Linux 別無選擇.
+<P>
+<H2><A NAME="ss3.3">3.3 總線問題</A>
+</H2>
+
+<P>PnP 打算在任何總線上運行如 ISA,PCI. ISA 是 IBM PC 上的舊總線結構, PCI 是 Intel
+創造的新的快速的總線結構. 最終, ISA 總線將消亡. PCI
+總線結構在總線上保留了許多地址用于 PnP 配置. Linux 使用這些地址來找出你有什麼
+PnP PCI 設備並把它們的信息放在 /proc/pci '文件'中. (關于PCI總線上的非 PnP 設備,
+我不明白).
+<P>對于 ISA 總線, 由于它不是為 PnP 設計的, 設計 ISA 時沒有任何 PnP 概念,
+所以它上面沒有用于 PnP 的 I/O 地址. 結果, 在 ISA 上實現 PnP 相當復雜,它需要 PnP
+設備被指定一個臨時的'handle'(句柄)用于 PnP 配置. 分配這些 'handles' 也叫做 'isolation'.
+請看附錄中關於 
+<A HREF="Plug-and-Play-HOWTO-5.html#isolation_">Isolation</A> 的複雜描述.
+<P>
+<H2><A NAME="conf_pnp_bios"></A> <A NAME="ss3.4">3.4 設置 PnP BIOS </A>
+</H2>
+
+<P>當開機時, BIOS 比操作系統先行調入運行. 新的 BIOS 支持 PnP, 它將設置部分或所有的
+PnP 設備. 對于大多數 PnP BIOS 沒有辦法抑制 PnP 功能, 你不得不使用它.
+這兒的一些選項,在你的 BIOS 菜單中也許也有:
+<P>
+<UL>
+<LI> 
+<A HREF="#bios_pnp_os">你有一個 PnP 操作系統嗎?</A></LI>
+<LI> 
+<A HREF="#bios_resources">如何分配資源? </A></LI>
+<LI> 
+<A HREF="#bios_reset">重置配置? </A></LI>
+</UL>
+<P>
+<H3><A NAME="bios_pnp_os"></A> 你有一個 PnP 操作系統嗎? </H3>
+
+<P>假如你說'是', PnP BIOS 將用 PnP 設置硬盤, 等. 但讓操作系統完成最終配置任務. BIOS
+也許在 ISA 總線上做 
+<A HREF="Plug-and-Play-HOWTO-5.html#isolation_">Isolation</A>,
+然後讓操作系統來完成這些設備的配置.
+假如你的操作系統不做這些配置工作(一些 Linux 的補丁版本), 由于 BIOS 也許會把這些
+ISA 設備置為禁止狀態(??), 你大概不會說'是'.
+<P>假如你說沒有, BIOS 會自己做配置工作. 除你增加新的 PnP 設備外,
+它將使用它先前存儲在非揮發存儲器中的配置. 假如使用的是 Linux,
+配置不會有什麼變化. 假如使用的是 Windows 95/98 (他們是 PnP 的),
+它們可能會設置配置不同于你在 Linux 下的配置. 通常, 你可以在 Linux 啟動時運行
+isapnp 工具把 ISA 設備設置為你想要的配置. 但這對 PCI 卡沒有幫助, 不過你能用看
+/proc/pci 文件的方法來檢查它們是被如何配置的. 然後你應確保 Linux
+中驅動程序使用的配置文件("setserial", lilo.conf , 等)與此相符.
+看 
+<A HREF="Plug-and-Play-HOWTO-4.html#bios_conf">BIOS 配置 PnP</A> 得到更多的信息.
+<P>
+<H3><A NAME="bios_resources"></A> 如何分配資源? </H3>
+
+<P>這取決于你決定如何分配 IRQ 和 DMA. 設為 "auto"(自動), BIOS 將分配資源.
+如果設為 "manual"(手工), 你可以進入另一個菜單並能為 "legacy" (non-pnp)卡預留資源.
+現在 BIOS 也許或不會知道你的 legacy 卡. 假如知道卡的話, 會試圖使用 "auto".
+如果不知道的話, 需要手工為 legacy 卡預留需要的 IRQ, 讓 BIOS PnP
+配置時不使用這些資源. 假如你在 Windows 下運行 ICU 告訴 BIOS 關于你的 legacy
+卡的情況, BIOS 才會知道你的 legacy 卡的情況. BIOS
+會把這些信息存在它的非揮發存儲器中.
+<P>
+<H3><A NAME="bios_reset"></A> 重置配置? </H3>
+
+<P>這會擦除掉 BIOS 存儲在非揮發存貯器中的 PnP 設備和上面講的 legacy 卡的配置信息.
+除非你確信這些數據有誤需要重寫, 否則沒有必要這樣做.
+只有你的機器不能啟動時才需要這樣做. 假如你的 BIOS 丟失了 legacy 設備的信息,
+你需要在 Windows 下運行 ICA 來重建這些信息.
+<P>
+<HR>
+<A HREF="Plug-and-Play-HOWTO-4.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Plug-and-Play-HOWTO-2.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Plug-and-Play-HOWTO.html#toc3"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

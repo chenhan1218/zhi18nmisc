@@ -1,0 +1,60 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Kernel HOWTO 中譯版: 可載入模組</TITLE>
+ <LINK HREF="Kernel-HOWTO-10.html" REL=next>
+ <LINK HREF="Kernel-HOWTO-8.html" REL=previous>
+ <LINK HREF="Kernel-HOWTO.html#toc9" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Kernel-HOWTO-10.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Kernel-HOWTO-8.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Kernel-HOWTO.html#toc9"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s9">9. 可載入模組</A></H2>
+
+<P>可載入模組能夠節省記憶體，而且很容易設定．
+模組的範圍已經包含了檔案系統，乙太網路卡驅動程式，磁帶機，印表機驅動程式，還有更多．
+<P>
+<H2><A NAME="ss9.1">9.1 安裝模組工具</A>
+</H2>
+
+<P>模組工具可以從你取得核心的地方找到，如 <CODE>modules-x.y.z.tar.gz</CODE>;
+選擇與你目前核心版本相等或稍低的最接近的 <CODE>x.y.z</CODE>．
+用 `<CODE>tar zxvf modules-x.y.z.tar.gz</CODE>' 解開．
+<CODE>cd</CODE> 到它產生的目錄(<CODE>modules-x.y.z</CODE>)，看一下 <CODE>README</CODE>，然後按照安裝指示執行 (通常很簡單，就像 <CODE>make install</CODE> 之類的)．
+然後你在 <CODE>/sbin</CODE> 應該會有這些程式 <CODE>insmod</CODE>, <CODE>rmmod</CODE>, <CODE>ksyms</CODE>, <CODE>lsmod</CODE>, <CODE>genksyms</CODE>, <CODE>modprobe</CODE>, 以及 <CODE>depmod</CODE>．
+如果你想的話，可以用 <CODE>insmod</CODE> 裡的範例驅動程式``hw''來測試這些工具;
+參見 <CODE>INSTALL</CODE> 檔裡的細節說明．
+<P><CODE>insmod</CODE> 指令將一個模組插入運行中的核心．模組通會以 <CODE>.o</CODE> 為結尾;
+上面提到的範例程式就叫做 <CODE>drv_hello.o</CODE>，因此要插入此模組，就用 `<CODE>insmod drv_hello.o</CODE>'．
+要了解目前核心正在使用的模組，用 <CODE>lsmod</CODE> 指令．輸出看起來像這樣:
+<PRE>
+    blah# lsmod
+    Module:        #pages:  Used by:
+    drv_hello          1
+</PRE>
+
+`<CODE>drv_hello</CODE>' 是這模組的名稱，它用了一頁 (4K) 的記憶體，而且目前沒有其它的核心模組依賴於它．
+要移除此模組，用 `<CODE>rmmod drv_hello</CODE>'．注意 <CODE>rmmod</CODE> 需要的是<I>模組名稱</I>，而不是檔案名稱; 
+就是你從 <CODE>lsmod</CODE> 指令列出來的．其餘工具的作用在線上手冊中都有說明．
+<P>
+<H2><A NAME="ss9.2">9.2 與核心發行的模組</A>
+</H2>
+
+<P>在 2.0.30 版中，幾乎所有的東西都可以變成可載入模組．
+要使用可載入模組，首先確定你沒有將其配置到正常的核心裡，也就是說，在 `<CODE>make config</CODE>' 時不是回答 <CODE>y</CODE>．
+編譯新核心並用它來開機．然後，再次 <CODE>cd</CODE> 到 <CODE>/usr/src/linux</CODE>，然後執行 `<CODE>make modules</CODE>'．
+這將編譯所有你未指定在核心配置裡的模組，並將其連結到 <CODE>/usr/src/linux/modules</CODE>．
+你可以直接由此目錄使用，或是執行 `<CODE>make modules_install</CODE>' 將其安裝到 <CODE>/lib/modules/x.y.z</CODE>，其中 <CODE>x.y.z</CODE> 是核心版本．
+<P>這對處理檔案系統上特別便利．你可能並不經常使用 minix 或 MS-DOS 的檔案系統．
+例如，如果我遇到一 MS-DOS 的軟碟片，我會用 <CODE>insmod /usr/src/linux/modules/msdos.o</CODE>，並在使用完成後用 <CODE>rmmod msdos</CODE> 指令將其去掉．
+此過程大約可以節省核心 50K 左右的記憶體．對於 minix 檔案系統有一點要注意的就是，
+為了要使用``急救磁片''，你應該<I>總是</I>直接將它配置到核心中．
+<P>
+<HR>
+<A HREF="Kernel-HOWTO-10.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Kernel-HOWTO-8.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Kernel-HOWTO.html#toc9"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

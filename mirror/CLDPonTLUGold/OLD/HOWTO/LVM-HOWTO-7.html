@@ -1,0 +1,104 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Logical Volume Manager HOWTO: Making snapshots for consistent backups</TITLE>
+ <LINK HREF="LVM-HOWTO-8.html" REL=next>
+ <LINK HREF="LVM-HOWTO-6.html" REL=previous>
+ <LINK HREF="LVM-HOWTO.html#toc7" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="LVM-HOWTO-8.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="LVM-HOWTO-6.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="LVM-HOWTO.html#toc7"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s7">7. Making snapshots for consistent backups</A></H2>
+
+<P>This is one of the more incredible possibilities. Let's say you have a busy
+server, with lots of things happening. For a useful backup, you need to shut
+down a large number of programs because otherwise you end up with inconsistencies.
+<P>The canonical example is moving a file from /tmp to /root, where /root was
+being backed up first. When /root was read, the file wasn't there yet. By
+the time /tmp was backed up, the file was gone.
+<P>Another story goes for saving databases or directories. We have no clue if a
+file is in any usable state unless we give the application time to do a
+clean shutdown.
+<P>Which is where another problem pops up. We shut down out applications, make
+our backup, and restart them again. This is all fine as long as the backup
+only takes a few minutes, but gets to be real painful if it takes hours, or
+if you're not even sure how long it takes.
+<P>LVM to the rescue. 
+<P>With LVM we can make a snapshot picture of a Logical Volume which is
+instantaneous, and then mount that and make a backup of it.
+<P>Let's try this out:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# mount /dev/test/HOWTO /mnt
+# echo > /mnt/a.test.file 
+# ls /mnt/  
+a.test.file  lost+found
+# ls -l /mnt/
+total 13
+-rw-r--r--    1 root     root            1 Apr  2 00:28 a.test.file
+drwxr-xr-x    2 root     root        12288 Apr  2 00:28 lost+found
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Ok, we now have something to work with. Let's make the snapshot:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# lvcreate --size 16m --snapshot --name snap /dev/test/HOWTO
+lvcreate -- WARNING: all snapshots will be disabled if more than 16 MB are changed
+lvcreate -- INFO: using default snapshot chunk size of 64 KB
+lvcreate -- doing automatic backup of "test"
+lvcreate -- logical volume "/dev/test/HOWTO" successfully created
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>More on the '--size' parameter later. Let's mount the snapshot:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# mount /dev/test/snap /snap
+# ls /snap
+total 13
+-rw-r--r--    1 root     root            1 Apr  2 00:28 a.test.file
+drwxr-xr-x    2 root     root        12288 Apr  2 00:28 lost+found
+</PRE>
+</CODE></BLOCKQUOTE>
+
+Now we erase a.test.file from the original, and check if it's still there in
+the snapshot:
+<BLOCKQUOTE><CODE>
+<PRE>
+# rm /mnt/a.test.file
+# ls /snap
+total 13
+-rw-r--r--    1 root     root            1 Apr  2 00:28 a.test.file
+drwxr-xr-x    2 root     root        12288 Apr  2 00:28 lost+found
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Amazing Mike!
+<H2><A NAME="ss7.1">7.1 How does it work?</A>
+</H2>
+
+<P>Remember that we had to set the '--size' parameter? What really happens
+is that the 'snap' volume needs to have a copy of all blocks or 'chunks' as
+LVM calls them, which are changed in the original.
+<P>When we erased a.test.file, it's inode was removed. This caused 64 KB to be
+marked as 'dirty' - and a copy of the original data was written to the
+'snap' volume.  In this case we allocated 16MB for the snapshot, so if more
+than 16MB of "chunks" are modified, the snapshot will be deactivated.
+<P>To determine the correct size for a snapshot partition, you will have to
+guess based on usage patterns of the primary LV, and the amount of time
+the snapshot will be active.  For example, an hour-long backup in the
+middle of the night when nobody is using the system may require
+very little space.
+<P>Please note that snapshots are not persistent. If you unload LVM or reboot,
+they are gone, and need to be recreated.
+<P>
+<HR>
+<A HREF="LVM-HOWTO-8.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="LVM-HOWTO-6.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="LVM-HOWTO.html#toc7"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

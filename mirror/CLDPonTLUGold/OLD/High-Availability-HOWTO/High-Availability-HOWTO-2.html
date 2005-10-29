@@ -1,0 +1,121 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Draft//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" content="text/html; charset=big5">
+<TITLE>Linux High Availability HOWTO: 簡介</TITLE>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 5);</SCRIPT>
+<A HREF="High-Availability-HOWTO-1.html"><IMG SRC="prev.gif" ALT="Previous"></A>
+<A HREF="High-Availability-HOWTO-3.html"><IMG SRC="next.gif" ALT="Next"></A>
+<A HREF="High-Availability-HOWTO.html#toc2"><IMG SRC="toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s2">2. 簡介</A></H2>
+
+<P>
+<P>在商業的 Unix 市場中，高可用性 (HA) 是現今銷售伺服器解決方案的關鍵。
+事實上每個 Unix 供應商都有他們自己的高可用性軟體解決方案，
+以適當的價格提供顧客近乎容錯的伺服器系統。
+依照經驗法則，冗餘是用來避免整體的 IT 系統單點失效（
+<A HREF="High-Availability-HOWTO-18.html#glos-spof">SPOF</A>）， 
+一種數十年來常用於太空飛行與一般航空的方法。
+而共同的目標可以說是要隱蔽使用者遭遇突如其來的故障以便迅速的讓使用者繼續工作。
+<P>作為另一變通方案，管理者們可以建立說明萬一故障時誰該負責那些工作的行動計畫。
+但是如果沒有適當技能的人員值勤或如果操作員犯錯，你的企業就處於危險之中。
+HA 軟體藉著一組比任何手動操作員花費更短時間的可複製和可靠的方法一再的執行相同的失效接管動作的命令稿（ script ）
+和工具取代容易出錯的手動程序。
+<P>
+<P>
+<P>
+<H2><A NAME="ss2.1">2.1 誰需要高可用性系統 ?</A>
+</H2>
+
+<P>
+<P>坦白的說，任何基於一週七天，每天 24 小時營運企業，其營運不能有超過幾分鐘或可能半小時故障的人。  
+突如其來的故障會嚴重的阻礙你的營運。
+兩份由 Oracle Corp. 和 Datamation 在 1995 年的研究報告中顯示，
+因突如其來的故障而導致企業平均<EM>每小時</EM>損失 80,000 到 350,000 美元之間。
+在 1993 年世界貿易中心遭炸彈攻擊後，
+位於建築物內的 350 個企業中有 145 個必須於一年內關閉，因為他們沒有冗餘的 IT 結構。
+<P>牢記這些數字，很明顯的建立冗餘的 IT 結構比即使一個短暫的故障的風險來得便宜多了。
+尤其當考量到在相對低價的 Intel-based PC 上執行可免費取得的 POSIX-compatible Unix-like 作業系統時更是如此。
+加上管理者確切的知道額外的機器，軟體和操作員教育有<EM>多麼</EM>昂貴，
+然而突如其來的故障的成本則無法事先知道。
+<P>由於伺服器停機時間可能是突如其來的（"失效"）也可能是計畫中的（服務停機時間），
+除非明白的說明突如其來的停機時間，整份文件中我將談論 "故障（ outage ）" 。
+<P>
+<H2><A NAME="ss2.2">2.2 HA 環境中的 Linux</A>
+</H2>
+
+<P>
+<P>隨著 2.0 核心的發表， Linux 有許多 HA 軟體解決方案所需的特徵。
+然而一些額外的特徵必須被加入，而那正是這份文件所關於的。
+最關鍵的特徵是萬一發生節點失效與接管時考慮到快速檢查檔案系統的一個強固的，交易導向的檔案系統。
+日誌結構檔案系統的發展目前正在進行中 -- 請參閱
+<A HREF="High-Availability-HOWTO-7.html#filesystems">檔案系統</A> 小節以取得更多的資訊。
+<P>
+<H2><A NAME="ss2.3">2.3 識別單點失效</A>
+</H2>
+
+<P>
+<P>讓伺服器系統達到 HA 的基本準則是使用必須並且可提供得起的冗餘零件。
+就像在 RAID（獨立磁碟冗餘陣列）之中的基本想法，
+一個伺服器中的所有零件都隸屬於單點失效： CPU ，電源供應器，
+主機板，主記憶體，配接卡等等，即所有一旦失效會導致整個系統無法使用的零件。
+<P>例如在 client/server 環境中，一個伺服器系統中的單一網路卡即為這個伺服器的 
+SPOF。同樣的，連接到外部儲存系統的單一 SCSI 配接卡是 SPOF。 
+如果一群伺服器中的一整個伺服器失效，
+並且這個失效的伺服器不能被輕易且快速的由其他伺服器置換，
+那麼對這個伺服器群組或叢集而言，這個伺服器就是一個 SPOF 。
+<P>這個解決方法十分簡單：
+配接卡只要藉著在一個伺服器中設置兩張卡，
+並確認主要配接卡失效時備援配接卡會成為 active ，就可以達成冗餘。
+<P>一個伺服器內的 CPU ，電源供應器與其他零件也可以成為冗餘的，
+但是這需要不常見於 PC 環境中的特殊零件，也因此相當昂貴。
+然而，與軟體代理程式（ HA 軟體）合作，
+在一個 HA 叢集中，萬一一個節點故障兩個或更多的伺服器可被設立來相互替換。
+<P>請注意 Linux-HA 軟體本身並非客戶的可用性需求的萬能解答。
+其他部分像路由器，橋接器等也必須以冗餘方式建立。
+<P>此時，許多顧客停止考慮冗餘。
+然而，如果叢集節點都被並肩放置，電源故障或火災可能影響到兩者。
+所以，整棟建築物，一個站台或甚至一個城鎮（地震或其他的天然災害）都可能是個 SPOF ! 
+如此重大的災難 "只要" 在距離主要站台一定的距離置放備援節點來處理。
+這可能是非常昂貴的，
+因此 IT 使用者必須小心的評估他們的情況並決定保護那個 SPOF 。
+<P>
+<P>
+<H2><A NAME="ss2.4">2.4 關於商業上的解決方案</A>
+</H2>
+
+<P>
+<P>我恰好任職於 IBM 的第二級技術支援專員，
+從事於 IBM 的高可用性及叢集軟體解決方案，
+- 即於 AIX 上執行的 HACMP （ High Availability Cluster
+Multi-Processing ）。
+其他主要的  Unix 供應商像 HP ， Sun ， DEC 和其他的供應商有許多類似的軟體解決方案可用，
+但是由於我最了解 HACMP ，整份文件中我將使用它的術語 &amp; 概念。
+隨著時間的流逝，我期望熟悉其他商業上的 HA 解決方案的人們來加入。
+我的目的不是要不惜一切的保留 IBM HACMP 術語，但是請不要讓我們開始冗長的討論這 !
+<P>如果你願意，你可以查閱 "HACMP V4.2 概念 &amp; 公用程式手冊"
+（ IBM form number SC23-1938-00 ）以學習更多相關的概念。 
+<P>一般，我不認為 Linux-HA 將在近期內跟商業上的 Unix HA 解決方案實際競爭。
+這些套裝軟體已經可用很長一段時間了，並且它們大部分都十分成熟且因其穩定性而被採用。
+但，誰曉得。 最初，目標是 NT 叢集 ...
+<P>
+<P>
+<H2><A NAME="ss2.5">2.5 關於 Linux 的一般資訊</A>
+</H2>
+
+<P>
+<P>關於 Linux 的概括資訊請參閱
+<A HREF="http://www.linux.org/">Linux Home Page</A> 和
+<A HREF="http://www.li.org">Linux International</A> 網頁。
+<P>
+<P>
+<P>
+<P>
+<P>
+<HR>
+<A HREF="High-Availability-HOWTO-1.html"><IMG SRC="prev.gif" ALT="Previous"></A>
+<A HREF="High-Availability-HOWTO-3.html"><IMG SRC="next.gif" ALT="Next"></A>
+<A HREF="High-Availability-HOWTO.html#toc2"><IMG SRC="toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

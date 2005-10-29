@@ -1,0 +1,292 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>如何從 VMS 轉移到 Linux (From VMS to Linux HOWTO): 進階 </TITLE>
+ <LINK HREF="VMS-to-Linux-HOWTO-9.html" REL=next>
+ <LINK HREF="VMS-to-Linux-HOWTO-7.html" REL=previous>
+ <LINK HREF="VMS-to-Linux-HOWTO.html#toc8" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="VMS-to-Linux-HOWTO-9.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="VMS-to-Linux-HOWTO-7.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="VMS-to-Linux-HOWTO.html#toc8"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="Advanced Topics"></A> <A NAME="s8">8. 進階 </A></H2>
+
+<P>
+<P>到這個階段﹐遊戲就比較複雜了。學完這些東西﹐您就可以說﹐我懂一些 Linux 的東西 ;-)
+<P>
+<P>
+<H2><A NAME="Permissions"></A> <A NAME="ss8.1">8.1 允許權(Permissions) 及 所有權(Ownership) </A>
+</H2>
+
+<P>
+<P>檔案和目錄都有允許權(Permission) (即 VMS 上的 `protections') 和所有權(ownership), 
+這個觀念不難理解﹐因為 VMS 上也有。如果您不能執行一隻程式﹐或是您不能修改某一檔案﹐
+或是不能進入某目錄﹐這是因為您沒有被賦予使用這些資源的權力的關係（沒有允許權）﹐
+或者是這個檔案的根本就不屬於您的（沒有所有權）﹐
+讓我們看看下面的例子吧：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ ls -l /bin/ls
+-rwxr-xr-x   1 root     bin         27281 Aug 15  1995 /bin/ls*
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>第一個欄位顯示出這個檔案的使用權限 <CODE>ls</CODE> (擁有者(owner) 是 root, 
+群組(group) 是 bin). 擁有權可以分成三種模式: 擁有者(owner), 群組(group), 和 其他使用者(others)。
+（和 VMS 的 owner, group, world 相似）；有三種不同的允許權(permissions): 
+讀(read), 寫(write) (包含移除(delete)), 和執行(execute).
+<P>從左到右﹐<CODE>-</CODE> 是檔案模式 (<CODE>-</CODE> = 一般檔案(ordinary file), <CODE>d</CODE>
+= 目錄(directory), <CODE>l</CODE> = 連結(link), 等); <CODE>rwx</CODE> 是允許檔案擁有者可以對該檔案作讀﹐寫﹐和執行的動作；
+<CODE>r-x</CODE> 是允許群組使用者可以對該檔案作讀和執行的動作﹐但是不可以作寫的動作。；
+<CODE>r-x</CODE> 是限制其他的使用者對該檔案只有讀和執行的權限﹐卻沒有寫的權限。
+<P>如何改變檔案的使用權限：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ chmod &lt;whoXperm> &lt;file>
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>其中 who 是 <CODE>u</CODE> (user（使用者）, 即檔案的擁有者), <CODE>g</CODE> (群組 group), <CODE>o</CODE> (其他 other), 
+X 表示可以為 <CODE>+</CODE> 或 <CODE>-</CODE>, perm 可以為 <CODE>r</CODE> (讀 read), <CODE>w</CODE> (寫 write), 或是 
+<CODE>x</CODE> (可執行 execute). 
+舉例說明：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ chmod u+x file
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>這是針對該檔案﹐開放可執行的權限給該檔案的擁有者。可縮寫成：
+<CODE>chmod +x file</CODE>.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ chmod go-wx file
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>這是對該檔案﹐移除群組使用者和其他使用者對該檔案的“寫”的權限和“執行”的權限。
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ chmod ugo+rwx file
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>這是開放該檔案的讀﹐寫﹐和執行的權限給所有的使用者。
+<P>另一個快速表示法為使用一組數字：<CODE>rwxr-xr-x</CODE> 可以用 755 來表示 (每一位數字對應一個控制位元: <CODE>---</CODE> 表是 0, 
+<CODE>--x</CODE> 表示 1, <CODE>-w-</CODE> 表示 2...).
+<P>所以﹐rwx = 4+2+1 = 7﹐r-x = 4+0+1 = 5﹐所以﹐<CODE>rwxr-xr-x</CODE> 可以用 755 來表示。
+<P>對目錄而言﹐<CODE>rx</CODE> 表示您可以切換到該目錄： <CODE>cd</CODE> , 而
+<CODE>w</CODE> 表示您可以刪除該目錄的檔案(當然需要視該檔案的使用權限而定), 或是目錄本身. 
+這些還只是冰山的一角而已﹐想要知道更多---RMP.
+<P>如何改變檔案的擁有權：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ chown username file
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>我整理成下表：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+VMS                             Linux                   Notes
+------------------------------------------------------------------------------
+
+SET PROT=(O:RW) file.txt        $ chmod u+rw file.txt
+                                $ chmod 600 file.txt
+SET PROT=(O:RWED,W) file        $ chmod u+rwx file
+                                $ chmod 700 file
+SET PROT=(O:RWED,W:RE) file     $ chmod 755 file
+SET PROT=(O:RW,G:RW,W) file     $ chmod 660 file
+SET FILE/OWNER_UIC=JOE file     $ chown joe file
+SET DIR/OWNER_UIC=JOE [.dir]    $ chown joe dir/
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>
+<H2><A NAME="Multitasking"></A> <A NAME="ss8.2">8.2 多工(Multitasking): 程序(Processes) 和 工作(Jobs) </A>
+</H2>
+
+<P>
+<P>欲執行很多程式﹐在 Linux 上沒有所謂的 `batch queues' ; 多工其實以非常不一樣的手法處理。
+以下是一般常見的命令列：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ command -s1 -s2 ... -sn par1 par2 ... parn &lt; input > output &amp;
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>其中 <CODE>-s1</CODE>, ..., <CODE>-sn</CODE> 是該程式的參數（switch）, 
+<CODE>par1</CODE>, ..., <CODE>parn</CODE> 是程式的輸入變數(parameters).
+<P>現在讓我們來看看在 Linux 上如何多工。程序（processes）是一隻不論在前景或是背景被執行的程式。
+<P>
+<UL>
+<LI> 在背景執行程序:
+<BLOCKQUOTE><CODE>
+<PRE>
+$ progname [-switches] [parameters] [&lt; input] [> output] &amp;
+[1] 234
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+shell 會提示您該程序(process)的工作號碼（`job number'） (第一個數字; 請看下文) 
+和該程序的程序識別碼 PID (Process IDentifier). 每一個程序都有一組獨一無二的 PID.
+</LI>
+<LI> 檢視有多少 Processes 被執行：
+<BLOCKQUOTE><CODE>
+<PRE>
+$ ps -ax
+</PRE>
+</CODE></BLOCKQUOTE>
+
+這會輸出一大串正在執行的程序(processes)。
+
+</LI>
+<LI> 殺掉程序：
+<BLOCKQUOTE><CODE>
+<PRE>
+$ kill &lt;PID>
+</PRE>
+</CODE></BLOCKQUOTE>
+
+如果您不知道要如何正確的終止某一個程序﹐這時您可能就要手動把程序給殺死喔！... ;-). 
+有些時候﹐一個程序只能被下列一個指令殺死：
+
+<BLOCKQUOTE><CODE>
+<PRE>
+$ kill -15 &lt;PID>
+$ kill -9 &lt;PID>
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+</UL>
+<P>附帶一提﹐Sell 允許您停止或是暫時停止一個程序﹐將程序送到背景工作﹐或是將程序從背景帶到前景。
+在這裡﹐程序(processes)我們稱之為工作(`jobs').
+<P>
+<UL>
+<LI> 檢視有多少工作（jobs）正在執行：
+<BLOCKQUOTE><CODE>
+<PRE>
+$ jobs
+</PRE>
+</CODE></BLOCKQUOTE>
+
+工作(jobs)是由 Shell 給的工作號碼（job number）來作區別﹐注意﹐不是 PID 喔.
+</LI>
+<LI> 終止在前景工作的程序(processes):
+
+<BLOCKQUOTE><CODE>
+<PRE>
+$ CTRL-C
+</PRE>
+</CODE></BLOCKQUOTE>
+
+(不一定每一次奏效)
+</LI>
+<LI> 暫停在前景工作的程序(process):
+<BLOCKQUOTE><CODE>
+<PRE>
+$ CTRL-Z
+</PRE>
+</CODE></BLOCKQUOTE>
+
+(同上)
+</LI>
+<LI> 將暫停的程序轉換成背景工作(background jobs):
+<BLOCKQUOTE><CODE>
+<PRE>
+$ bg &lt;job>
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI> 將背景工作帶到前景:
+<BLOCKQUOTE><CODE>
+<PRE>
+$ fg &lt;job>
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI> 殺掉一個工作(job):
+<BLOCKQUOTE><CODE>
+<PRE>
+$ kill &lt;%job>
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+</UL>
+<P>
+<H2><A NAME="ss8.3">8.3 在訪檔案(files)</A>
+</H2>
+
+<P>
+<P>更多有關檔案的訊息。
+<P>
+<UL>
+<LI> <B>stdin, stdout, stderr</B>: 在 UNIX 中﹐任何一個系統元件都被視為是一個檔案。
+指令或是應用程式讀入一個所謂標準輸入的檔案（<CODE>stdin</CODE>：通常為鍵盤）﹐
+輸出結果到所謂標準輸出的檔案（<CODE>stdout</CODE> ：通成為螢幕）﹐而錯誤輸出也是輸出到一個檔案﹐
+我們稱之為 <CODE>stderr</CODE> (通常也是螢幕).
+
+使用 <CODE>&lt;</CODE> 和 <CODE>&gt;</CODE> ﹐您可以將輸出和輸入重新導向到另外一個檔案。
+然而﹐ <CODE>&gt;&gt;</CODE> 是將結果附加到檔案的檔尾﹐而不是覆蓋原來的檔案。; 
+<CODE>2&gt;</CODE> 重導錯誤訊息(stderr); 2&gt;&amp;1
+重導錯誤訊息到標準輸出, 而 1&gt;&amp;2 則是重導標準輸出到錯誤輸出。
+有一個黑洞（`black hole'）叫做 <CODE>/dev/null</CODE>: 所有導到這個檔案的東西﹐
+都將消失的無影無蹤。
+</LI>
+<LI> <B>wildcards</B>: 萬用字元 '<CODE>*</CODE>' 有相同的功能。用法: * 符合所有檔案﹐除了隱藏檔以外。
+.* 符合所有隱藏檔; *.* 符合只有一個點 '.' 在中間的檔案。跟隨著其他字元： 
+p*r 表示 `peter' 或是 `piper' 都有可能; *c* 可能符合 `picked' 或是 `peck'。
+'<CODE>%</CODE>' 換成 '<CODE>?</CODE>'。 還有另外一種萬用字元：<CODE>[]</CODE>. 用法: <CODE>[abc]*</CODE> 表示檔案必須以字元 a, b, c 最為開頭; 
+<CODE>*[I-N,1,2,3]</CODE> 表示檔案名稱由 I, J, K, L, M, N, 1, 2, 3 作為結尾。
+</LI>
+<LI> <CODE>mv</CODE> (<CODE>重新命名</CODE>) 不可以一次多個檔案。即 <CODE>mv *.xxx *.yyy</CODE> 將不會執行成功;
+</LI>
+<LI> 使用 <CODE>cp -i</CODE> 和 <CODE>mv -i</CODE> 可以提醒您是否要覆蓋以存在的檔案。
+</LI>
+</UL>
+<P>
+<P>
+<H2><A NAME="Print Queues"></A> <A NAME="ss8.4">8.4 列印佇列 </A>
+</H2>
+
+<P>
+<P>就像 VMS ﹐列印工作會先被放到佇列當中(queues)﹐當您下列印指令的時候﹐您或許會指定列表機的名稱。
+例如：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ lpr file.txt          # 這將指用到預設的列表機
+$ lpr -Plaser file.ps   # 這將使用名為 'laser' 的列表機
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>處理列印佇列(print queues), 您可能需要下列指令：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+
+VMS                                     Linux
+------------------------------------------------------------------------------
+
+$ PRINT file.ps                         $ lpr file.ps
+$ PRINT/QUEUE=laser file.ps             $ lpr -Plaser file.ps
+$ SHOW QUEUE                            $ lpq
+$ SHOW QUEUE/QUEUE=laser                $ lpq -Plaser
+$ STOP/QUEUE                            $ lprm &lt;item>
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>
+<HR>
+<A HREF="VMS-to-Linux-HOWTO-9.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="VMS-to-Linux-HOWTO-7.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="VMS-to-Linux-HOWTO.html#toc8"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

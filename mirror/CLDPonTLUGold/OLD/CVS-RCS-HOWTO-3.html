@@ -1,0 +1,160 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="LinuxDoc-Tools 0.9.16">
+ <TITLE>CVS-RCS-: 設定 CVS </TITLE>
+ <LINK HREF="CVS-RCS-HOWTO-4.html" REL=next>
+ <LINK HREF="CVS-RCS-HOWTO-2.html" REL=previous>
+ <LINK HREF="CVS-RCS-HOWTO.html#toc3" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="CVS-RCS-HOWTO-4.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="CVS-RCS-HOWTO-2.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="CVS-RCS-HOWTO.html#toc3"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<HR>
+<H2><A NAME="Setting up CVS"></A> <A NAME="s3">3.</A> <A HREF="CVS-RCS-HOWTO.html#toc3">設定 CVS </A></H2>
+
+<P>首先，你需要安裝 CVS 套件，在Redhat Linux 上請用
+<HR>
+<PRE>
+cd /mnt/cdrom/Redhat/RPMS
+rpm -i rcs*.rpm
+rpm -i cvs*.rpm
+To see the list of files installed do -
+rpm -qpl cvs*.rpm | less
+</PRE>
+<HR>
+
+然後用 j, k, CTRL+f, CTRL+D, CTRL+B, CTRL+U 或上下左右鍵, page up/down 瀏覽一下結果。
+請用 'man less' 查看 less 的用法</P>
+<P>在其他的 unix 機器上，你可能需要下載 RCS CVS 的 tar.gz 檔案，
+然後根據 README, INSTALL 檔的指示來安裝 CVS。
+請到 
+<A HREF="http://www.cyclic.com">http://www.cyclic.com</A>
+和 
+<A HREF="http://www.loria.fr/~molli/cvs-index.html">http://www.loria.fr/~molli/cvs-index.html</A></P>
+<H2><A NAME="CVS-Env"></A> <A NAME="ss3.1">3.1</A> <A HREF="CVS-RCS-HOWTO.html#toc3.1">CVS 的專有環境變數 </A>
+</H2>
+
+<P>下列的環境變數需要在 /etc/profile 檔中設定，/etc/profile 是對所有使用者都有效的內定值設定檔，
+如果沒有設定 /etc/profile，那麼你應該加這些設定到你自己的設定檔 &nbsp;/.bash_profile 內。
+<HR>
+<PRE>
+export EDITOR=/bin/vi
+export CVSROOT=/home/cvsroot
+export CVSREAD=yes
+</PRE>
+<HR>
+</P>
+<P>建造一個目錄來存你原始程式碼的儲藏櫃 (repository) 並且給予 unix group 與 user 讀寫的權力。
+(譯註:這個目錄下將會有很多你將來的原始碼。)
+<HR>
+<PRE>
+export CVSROOT=/home/cvsroot
+mkdir $CVSROOT
+chmod o-rwx $CVSROOT
+chmod ug+rwx $CVSROOT
+</PRE>
+<HR>
+
+要初始化你的 CVS ，並且從現在開始把你的原始程式碼交給 CVS 管理。請做 -
+<HR>
+<PRE>
+cvs init
+
+(譯註；這個初始化的動作在於建造一個儲藏櫃，是一個目錄$CVSROOT/。
+同時 $CVSROOT/CVSROOT 也在此時被建造，這個模組目錄下面是控制你CVS的administration files，
+裡面的檔案做一些修改後，可以使CVS更強大好用。
+$CVSROOT 下的目錄每個都是 module 的意思，一個 module 可以就是一個專案計劃。
+但也可能是你把一個計劃拆成很多 module ，不同 module 交給不同的 team 去發展。)
+
+# 一定要換到想要 CVS 控制的計劃目錄下喔
+cd $HOME/my_source_code_dir
+
+# 把整個目錄納入管理用 import 命令
+cvs import my_source_code_dir V1_0 R1_0  
+
+(譯註:其實是 cd 到你的project下後，cvs import 模組 vendor_tag release_tag，
+不一定要是目錄名稱 my_source_code_dir，vendor_tag, release_tag 只是識別用的東西，
+將來你可以用 tag 來存取你要的特定版本
+這個動作會在　$CVSROOT/　下開個" 模組 "的目錄，然後把 my_source_code_dir 整個放到 CVS 下管理，
+$HOME/my_source_code_dir 就沒用了。import 的動作是把已經寫好的一堆 code 擺進來，
+如果將來想新增檔案xxxx.c，必須先寫好xxxx.c，再用 cvs add xxxx.c)
+</PRE>
+<HR>
+</P>
+<H2><A NAME="RCS2CVS"></A> <A NAME="ss3.2">3.2</A> <A HREF="CVS-RCS-HOWTO.html#toc3.2">從 RCS 轉換到 CVS 系統 </A>
+</H2>
+
+<P>要轉換已經存在的 RCS 檔案到 CVS ，請使用下面的 script 。並確定你從你的 Linux CD-ROM 安裝了 korn shell 套件 pdksh*.rpm。</P>
+
+<P><B>注意 : <I>Korn shell /bin/ksh 在你從Linux CD-ROM 安裝 pdksh*.rpm 時就會產生</I></B>
+<HR>
+<PRE>
+#!/bin/ksh
+
+#############################################################
+# Program to Migrate the existing source code in RCS to CVS 
+#
+# Needs the korn shell RPM package  pdksh*.rpm from Linux 
+# contrib cdrom
+#############################################################
+
+#
+# rcs2cvs - convert source tree from RCS to CVS
+#
+
+# project to convert
+PROJECT='project'
+
+# current RCS root
+RCSROOT="$HOME/rcs"
+
+if cd "$RCSROOT/$PROJECT"
+then
+        cd "$RCSROOT"
+else
+        echo >&amp;2 "`basename "$0"`: can't change to RCS directory '$RCSROOT/$PROJECT'."
+        exit 1
+fi
+
+# current CVS root
+CVSROOT="$HOME/cvs"
+
+# create new CVS directory for project 'project'
+if mkdir "$CVSROOT/$PROJECT"
+then
+        :
+else
+        echo >&amp;2 "`basename "$0"`: can't create CVS directory '$CVSROOT/$PROJECT'."
+        exit 2
+fi
+
+# create CVS project tree from RCS tree
+find "$PROJECT" -type d -name RCS -print |
+while read RCS
+do
+        CVS="`dirname "$RCS"`"
+        (if cd "$RCS"
+        then
+#               if find . -type f -name '*,v' -print | cpio -pdmv "$CVSROOT/$CVS"
+                if find . -type f -print | cpio -pdmv "$CVSROOT/$CVS"
+                then
+                        :
+                else
+                        echo >&amp;2 "`basename "$0"`: can't convert RCS subdirectory '$RCSROOT/$RCS' to CVS subdirectory '$CVSROOT/$CVS'."
+                fi
+        else
+                echo >&amp;2 "`basename "$0"`: can't change to RCS subdirectory '$RCSROOT/$RCS'."
+        fi)
+done
+</PRE>
+<HR>
+
+現在 RCS 已經被改成 CVS 系統下的 'project'. 你可以開始用CVS命令來存取
+'project' 這個模組了.</P>
+<HR>
+<A HREF="CVS-RCS-HOWTO-4.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="CVS-RCS-HOWTO-2.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="CVS-RCS-HOWTO.html#toc3"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

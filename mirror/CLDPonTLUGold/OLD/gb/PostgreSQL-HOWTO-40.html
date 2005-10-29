@@ -1,0 +1,103 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE> Linux 的 Database-SQL-RDBMS HOWTO 文件 (PostgreSQL 物件关联资料库系统): 附录丁□安装 Midgard </TITLE>
+ <LINK HREF="PostgreSQL-HOWTO-39.html" REL=previous>
+ <LINK HREF="PostgreSQL-HOWTO.html#toc40" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<IMG SRC="img/next.gif" ALT="Next">
+<A HREF="PostgreSQL-HOWTO-39.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="PostgreSQL-HOWTO.html#toc40"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="midgardinstall"></A> <A NAME="s40">40. 附录丁□安装 Midgard </A></H2>
+
+<P>来自 
+<A HREF="http://www.midgard-project.org/download/binaries">http://www.midgard-project.org/download/binaries</A> 的 RPMS
+目前不包括 PostgreSQL 支援，所以你要从原始码 tar.gz 档安装。
+<P>下载 Midgard 原始码 tar.gz 档，阅读 INSTALL.REDHAT 档□
+<HR>
+<PRE>
+bash# cd midgard-lib-1.4beta6
+bash# ./configure --prefix=/usr/local --with-mysql=/usr/local --includedir=/usr/include/mysql --with-midgard=/usr/local --with-pgsql=/var/lib/pgsql --includedir=/usr/include/pgsql
+bash# make
+bash# make install
+bash# ldconfig -v | grep -i midga
+拷贝□头档，以防 make install 不这样做…
+bash# cp *.h /usr/local/include
+ 
+ 
+bash# cd ../mod_midgard-1.4beta5c
+bash# ./configure --prefix=/usr/local --with-mysql=/usr/local --includedir=/usr/include/mysql --with-midgard=/usr --with-pgsql=/var/lib/pgsql --includedir=/usr/include/pgsql
+bash# make
+bash# make install
+# 修改 apache 设定为 /usr/……
+#modify apache line to correct /usr/.....
+bash# vi /etc/httpd/conf/httpd.conf   （或在  /etc/apache/httpd.conf）
+bash# /etc/init.d/apache restart
+# 耍重新启动 apache！！！
+
+bash# cd ../midgard-php-1.4beta6
+bash# ./configure '--with-apxs' '--with-mysql' '--with-pgsql' '--with-midgard' --prefix=/usr/local --with-midgard=/usr/local
+ 
+bash# gvim Makefile
+在 INCLUDE 变数中加上 -I/usr/include/pgsql。
+
+也要如下在 $(APXS) 指令中加上 $(INCLUDE)□
+ 
+libphp3.so: mod_php3.c libmodphp3-so.a  pcrelib/libpcre.a midgard/libphpmidgard.a
+    -@test -f ./mod_php3.c || test -L ./mod_php3.c || $(LN_S) $(srcdir)/mod_php3.c ./mod_php3.c
+    -@test -f ./mod_php3.c || test -h ./mod_php3.c || $(LN_S) $(srcdir)/mod_php3.c ./mod_php3.c
+    $(APXS) -c -o libphp3.so  -I$(srcdir) $(INCLUDE) -I. -I/usr/local/include -I/usr/lib/glib/include  -Wl,'-rpath /usr/local/lib' ./mod_php3.c libmodphp3-so.a
+$(APXS_LDFLAGS)
+ 
+bash# make
+bash# make install
+# 修改 apache 设定为 /usr/……
+# 加上如下数行□
+    LoadModule php4_module        modules/libphp4.so
+            AddModule mod_php4.c
+    LoadModule php4_module        lib/apache/libphp4.so
+ 
+    &lt;IfModule mod_php4.c>
+        AddType application/x-httpd-php4 .php4
+        AddType application/x-httpd-php4 .php
+        AddType application/x-httpd-php4-source .phps
+        AddType application/x-httpd-php .php
+    &lt;/IfModule>
+ 
+bash# vi /etc/httpd/conf/httpd.conf   （或在 /etc/apache/httpd.conf）
+ 
+bash# /etc/init.d/apache restart
+# 要重新启动 apache！！！
+</PRE>
+<HR>
+<H2><A NAME="testmidgard"></A> <A NAME="ss40.1">40.1 测试 Midgard PHP 伺服器</A>
+</H2>
+
+<P>要测试安装是否成功请这样做□
+在你的文件根目录中建立一个档案。我通常称它为 info.php，并在其间加上一行∶
+<HR>
+<PRE>
+&lt;?phpinfo()?>
+</PRE>
+<HR>
+<P>在你的浏览器中载入∶http://localhost/info.php
+<P>你会见到一页漂亮的□要，列出你的设定中所有资料。
+你大概不会把这档案放在在生产用的伺服器中，但为了开发时除错和一般资料，
+它会很方便。
+<H2><A NAME="openssl"></A> <A NAME="ss40.2">40.2 保安 OpenSSL </A>
+</H2>
+
+<P>你可能要在
+<A HREF="ftp://ftp.deva.net/pub/sources/crypto/rsaref20.1996.tar.Z">ftp://ftp.deva.net/pub/sources/crypto/rsaref20.1996.tar.Z</A>
+取行 RSA 套装软件以启用 SSL 加密。也请看看 Linux 光碟的 OpenSSL
+<A HREF="http://www.openssl.org">http://www.openssl.org</A>。
+<P>如果你不想启动 SSL（或你遇到困难），下载原始码 Apache-Midgard RPM 和修改 *.spec
+档和删去 SSL，再重见 RPM。
+<HR>
+<IMG SRC="img/next.gif" ALT="Next">
+<A HREF="PostgreSQL-HOWTO-39.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="PostgreSQL-HOWTO.html#toc40"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

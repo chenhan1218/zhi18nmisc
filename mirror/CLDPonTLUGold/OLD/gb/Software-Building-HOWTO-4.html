@@ -1,0 +1,209 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>在 Linux 下建立软体套件: 克服困难</TITLE>
+ <LINK HREF="Software-Building-HOWTO-5.html" REL=next>
+ <LINK HREF="Software-Building-HOWTO-3.html" REL=previous>
+ <LINK HREF="Software-Building-HOWTO.html#toc4" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Software-Building-HOWTO-5.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Software-Building-HOWTO-3.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Software-Building-HOWTO.html#toc4"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s4">4. 克服困难</A></H2>
+
+<P>
+<P>如果用 <B>xmkmf</B> 和/或 <B>make</B> 很成功没有错误,
+你可以著手於 
+<A HREF="Software-Building-HOWTO-5.html#finalsteps">next section</A>.
+然而, 在真实生活, 很少事情在第一次就正确的工作.
+这就是当你的机智丰富时,要勇於尝试.
+<P>
+<H2><A NAME="ss4.1">4.1 连结错误</A>
+</H2>
+
+<P>
+<UL>
+<LI>如果 <B>make</B> 失败而出现有 <CODE>Link error: -lX11:
+No such file or directory</CODE>, 甚至是在使用 <B>xmkmf</B> 後.
+这可能意味著 <EM>Imake</EM> 档案没有适当地装好. 
+检查 <EM>Makefile</EM> 的第一部分有没有像这样的几行:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+LIB=            -L/usr/X11/lib
+INCLUDE=        -I/usr/X11/include/X11
+LIBS=           -lX11 -lc -lm
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+<CODE>-L</CODE> 和 <CODE>-I</CODE> 切换器(switches)会通告编译器和连结器分别去哪□寻找 <EM>library</EM> 和 <EM>include</EM> 档案.
+在这例子,  <EM>X11 libraries</EM> 应该是在 <CODE>/usr/X11/lib</CODE> 目录,
+而  <EM>X11 include 档案</EM> 应该是在 <CODE>/usr/X11/include/X11</CODE>目录.
+如果这在你的机器上是不对的, 必须改变 <EM>Makefile</EM> 而且再试试 
+<B>make</B>. 
+</LI>
+</UL>
+<P>
+<UL>
+<LI>在非常少的情况, 以 <EM>root</EM> 身分跑一下 <B>ldconfig</B> 
+也许是个答案:
+
+<B># /etc/ldconfig -n /lib</B> 将会更新共享式函式库符号连结
+(shared library symbolic links). <EM>这在正常的情形下不是需要的</EM>.
+</LI>
+</UL>
+<P>
+<UL>
+<LI>目前另一件事是如果 <B>xmkmf</B> 失败, 则试试下列 script:
+<BLOCKQUOTE><CODE>
+<PRE>
+         make -DUseInstalled -I/usr/X386/lib/X11/config
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+</UL>
+<P>
+<P>
+<P>
+<UL>
+<LI>有时原始码需要使用旧版的 X11R5 libraries 来建立.
+如果你有 R5 libs 在 /usr/X11R6/lib (当你首先在安装 Linux 时,
+你是有选择是否安装它们的), 然後你只需要确定,你有连结到软体所需要建立的地方.
+<CODE>R5 libs</CODE> 是有 <CODE>libX11.so.3.1.0</CODE>, <CODE>libXaw.so.3.1.0</CODE>, 
+和 <CODE>libXt.so.3.1.0</CODE>. 一般你需要连结至, 像是
+<B>libX11.so.3 -> libX11.so.3.1.0</B>. 
+大概软体也需要这个形式连结 <B>libX11.so -> libX11.so.3.1.0</B>.
+当然, 要将这"断掉(missing)"的连结建好, 要以 <EM>root</EM> 身分使用这指令
+<B>ln -s libX11.so.3.1.0 libX11.so</B>.
+</LI>
+</UL>
+<P>
+<P>
+<UL>
+<LI>某些套件会要求你去安装一个或以上的升级版本. 举例而言, 
+StarDivision GmbH 的 <EM>StarOffice</EM> 组件(suite)是恶名昭彰(notorious)的要求
+<CODE>libc</CODE> version 5.4.4 或更新. 以 <EM>root</EM>身分,
+你需要复制一个或以上的函式库(libraries)至合适的目录, 
+删去旧的函式库(libraries),然後重设符号连结.
+
+<B>小心: 在这要格外注意, 因为如果你弄糟, 你可能会付出你的系统不能运作的代价</B>.
+
+你通常可以找到升级的函式库(libraries)在 
+<A HREF="ftp://sunsite.unc.edu">Sunsite</A>.
+</LI>
+</UL>
+<P>
+<H2><A NAME="ss4.2">4.2 其它问题</A>
+</H2>
+
+<P>
+<P>
+<UL>
+<LI>在安装好的 <EM>Perl</EM> 或 shell script 给你一个 <CODE>No such file or directory</CODE> 错误讯息. 在这情况,检查档案权限来确定档案可执行
+以及检查档案标头是否含有使用 shell 或程式, 指明 script 所在地方.
+举例而言, script 开始如:
+<BLOCKQUOTE><CODE>
+<PRE>
+#!/usr/local/bin/perl
+</PRE>
+</CODE></BLOCKQUOTE>
+
+如果 <EM>Perl</EM> 实际装在你的 <CODE>/usr/bin</CODE> 目录,
+而不是 <CODE>/usr/local/bin</CODE> 目录, 那麽 script 无法执行.
+有两个方法来修改. script 档案标头改成 <CODE>#!/usr/bin/perl</CODE>, 
+或用符号连结至正确的目录, <B>ln -s 
+/usr/bin/perl /usr/local/bin/perl</B>. 
+</LI>
+</UL>
+<P>
+<UL>
+<LI>某些 X11 软体要求有 <CODE>Motif</CODE> 函式库(libraries)才能建立.
+而标准的 Linux 发行套件并没有安装 Motif libraries, 而且目前 Motif
+还要额外 $100-$200 的花费 (虽然免费软体
+<A HREF="http://www.lesstif.org/">Lesstif</A> 在某些场合也能够用).
+如果你需要 Motif 来建立某一套件, 但缺少 Motif libraries, 
+那麽也许可以取得 <EM>静态连结的二元码(statically linked binaries)</EM>.
+静态连结在二元码本身纳入函式库行程(library routines).
+这造成二元码档案大了许多, 但是码可在缺少该函式库的系统上执行.
+</LI>
+</UL>
+<P>
+<P>
+<UL>
+<LI>执行 <EM>configure</EM> script 会创造奇怪的 <CODE>Makefile</CODE>,
+那像是与你所要设法建立的套件亳不相干. 这表示跑著错误的 <EM>configure</EM>,
+其找到你的 path 上某处其他的 configure. 所以要下 <EM>configure</EM> 指令
+应该要下成 <B>./configure</B> 即目前目录下的.</LI>
+</UL>
+<P>
+<P>
+<UL>
+<LI>某些程式会要求有 <EM>setuid root</EM>, 为了要以有 <EM>root 权力</EM> 
+来执行. 要达成这目录的指令是 <EM>以root</EM> 下指令
+<B>chmod u+s filename</B>. (注意的是这程式已经是 <EM>root</EM> 所拥有了).
+这在设定档案权限中的 <EM>setuid</EM> bit 很有用.
+这样用在当程式在存取系统硬体,像是 modem 或 CD ROM drive, 
+或当 SVGA libs 被使在於主控台模式(console mode), 
+像是在一个特别恶名昭彰的(notorious)模拟器(emulation)套件. 
+如果程式正被 root 执行,
+但给一般使用者一个 <EM>access denied</EM> 的错误讯息, 想像就是这样造成的.
+
+<P>
+<P><B>警告:</B>   
+一个有 <EM>setuid</EM> 成 root 的程式可能提出对你的系统有安全上的风险.
+这个程式可以 root 权力来跑而所以有某些破害的潜在性. 
+在设定 <EM>setuid</EM> bit 前, 确定你知道该程式在做什麽, 必要时看一下原始码.
+<P>
+</LI>
+</UL>
+<P>
+<P>
+<H2><A NAME="ss4.3">4.3 旋扭与微调</A>
+</H2>
+
+<P>
+<P>你可能希望检查 <CODE>Makefile</CODE> 来确定有选用对你系统最佳编译选项.
+举例来说, 设定 <EM>-O2</EM> 旗标来选最高层级的最佳化而 
+<EM>-fomit-frame-pointer</EM> 旗标来造最小二元码
+(虽然 debugging 会没有打开). <B>除非你知道你在做什麽, 
+而且在任何情况下, 除非艰苦建立的工作已完成, 否则不要玩这些</B>.
+<P>
+<P>
+<P>
+<H2><A NAME="ss4.4">4.4 去哪取得进一步的协助</A>
+</H2>
+
+<P>在我的经验, 大概25%的应用程式建立"完全没有困难". 
+另外大约50%能"被说服"的建立, 要付出努力的□围从无聊到极为困难.
+那仍然表示有某些套件无论如何都无法建立. 即使那样, 那些
+Intel <CODE>ELF</CODE> 和/或 <CODE>a.out</CODE> 二元码, 也可能在
+<A HREF="ftp://sunsite.unc.edu">Sunsite</A>, 
+<A HREF="ftp://tsx-11.mit.edu">TSX-11 archive</A> 或其它地方找到.
+也许, 软体的创造者可以提供编译好的二元码给你的特别的机器使用.
+<P>
+<P><CODE>注意的是如果你取得预先编译好的二元码, 你会需要检查是否与你的系统相容:</CODE> 
+<UL>
+<LI><CODE>这二元码必须在你的 硬体上跑 (i.e., Intel x86).</CODE>       </LI>
+<LI><CODE>这二元码必须与你的核心(kernel)相容 (i.e., a.out 或 ELF).</CODE>     </LI>
+<LI><CODE>你的函式库(libraries)必须是最新的.</CODE></LI>
+</UL>
+<P>如果全都失败, 你可以在合适的 <EM>新闻群组</EM>寻求帮忙,
+像是在
+<A HREF="news://comp.os.linux.x">comp.os.linux.x</A> 或 
+<A HREF="news://comp.os.linux.development">comp.os.linux.development</A>. 万一你只是不够幸运的话,
+嘿, 试试也是有趣的.
+<P>
+<P>
+<P>
+<P>
+<P>
+<HR>
+<A HREF="Software-Building-HOWTO-5.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Software-Building-HOWTO-3.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Software-Building-HOWTO.html#toc4"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

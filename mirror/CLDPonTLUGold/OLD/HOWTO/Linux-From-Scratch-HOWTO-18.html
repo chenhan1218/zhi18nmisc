@@ -1,0 +1,172 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux From Scratch HOWTO: Configuring system for Internet</TITLE>
+ <LINK HREF="Linux-From-Scratch-HOWTO-19.html" REL=next>
+ <LINK HREF="Linux-From-Scratch-HOWTO-17.html" REL=previous>
+ <LINK HREF="Linux-From-Scratch-HOWTO.html#toc18" REL=contents>
+<A HREF="Linux-From-Scratch-HOWTO-19.html"><IMG SRC="../img/../img/../img/../img/../img/../img/next.gif" ALT="Next"></A>
+<A HREF="Linux-From-Scratch-HOWTO-17.html"><IMG SRC="../img/../img/../img/../img/../img/../img/prev.gif" ALT="Previous"></A>
+<A HREF="Linux-From-Scratch-HOWTO.html#toc18"><IMG SRC="../img/../img/../img/../img/../img/../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s18">18. Configuring system for Internet</A> </H2>
+
+<H2><A NAME="ss18.1">18.1 Configuring Kernel</A>
+ </H2>
+
+<P>Before you can logon to the Internet, the kernel must be ppp-aware. You
+can accomplish this by compiling ppp-support directly into the kernel, or compiling
+the ppp drivers are modules which you load when you need them. Whatever you
+prefer, do it now by re-configuring the kernel if necessary. If your LFS kernel
+is already ppp-aware than you don't have to re-configure the kernel.
+<H2><A NAME="ss18.2">18.2 Creating groups and directories</A>
+ </H2>
+
+<P>
+<UL>
+<LI>Create the daemon group by running <CODE>groupadd -g 5 daemon</CODE></LI>
+<LI>Create the /var/lock directory by running <CODE>mkdir /var/lock</CODE></LI>
+</UL>
+<H2><A NAME="ss18.3">18.3 Installing PPP</A>
+ </H2>
+
+<P>
+<UL>
+<LI>Unpack the PPP archive</LI>
+<LI>Configure the package by running <CODE>configure</CODE></LI>
+<LI>Compile the package by running <CODE>make</CODE></LI>
+<LI>Install the package by running <CODE>make install</CODE></LI>
+</UL>
+<H2><A NAME="ss18.4">18.4 Creating /etc/resolv.conf</A>
+ </H2>
+
+<P>
+<UL>
+<LI>Create a new file <CODE>/etc/resolv.conf</CODE> containing the following:</LI>
+</UL>
+<P>
+<PRE>
+# Begin /etc/resolv.conf
+ 
+nameserver &lt;IP address of your ISP's primairy DNS server&gt;
+nameserver &lt;IP address of your ISP's secundairy DNS server&gt;
+ 
+# End /etc/resolv.conf
+ 
+</PRE>
+<H2><A NAME="ss18.5">18.5 Creating the connect and disconnect scripts</A>
+ </H2>
+
+<P>
+<UL>
+<LI>Create a new file <CODE>/usr/bin/pon</CODE> file containing the following:</LI>
+</UL>
+<P>
+<PRE>
+#!/bin/sh
+# Begin /usr/bin/pon
+ 
+/usr/sbin/pppd call provider
+ 
+# End /usr/bin/pon
+ 
+</PRE>
+<P>
+<UL>
+<LI>Create a new file <CODE>/usr/bin/poff</CODE> file containing the following:</LI>
+</UL>
+<P>
+<PRE>
+#!/bin/sh
+# Begin /usr/bin/poff
+ 
+set -- `cat /var/run/ppp*.pid`
+ 
+case $# in
+  0)
+    kill -15 `ps axw|grep "pppd call [[allnum:]]+"|grep -v grep|awk '{print $1}'`
+    exit 0
+    ;;
+  1)
+    kill -15 $1
+    exit 0
+    ;;
+esac
+ 
+# End /usr/bin/poff
+ 
+</PRE>
+<H2><A NAME="ss18.6">18.6 Creating /etc/ppp/peers/provider</A>
+ </H2>
+
+<P>
+<UL>
+<LI>Create the <CODE>/etc/ppp/peers</CODE> directory</LI>
+<LI>Create a new file <CODE>/etc/ppp/peers/provider</CODE> containing the following:</LI>
+</UL>
+<P>
+<PRE>
+# Begin /etc/ppp/peers/provider
+ 
+noauth
+connect "/usr/sbin/chat -v -f /etc/chatscripts/provider"
+/dev/ttyS1
+115200
+defaultroute
+noipdefault
+ 
+# End /etc/ppp/peers/provider
+ 
+</PRE>
+<H2><A NAME="ss18.7">18.7 Creating /etc/chatscripts/provider</A>
+ </H2>
+
+<P>
+<UL>
+<LI>Create the <CODE>/etc/chatscripts</CODE> directory</LI>
+<LI>Create a new file <CODE>/etc/chatscripts/provider</CODE> containing the following:</LI>
+</UL>
+<P>
+<PRE>
+# Begin /etc/chatscripts/provider
+ 
+ABORT BUSY
+ABORT "NO CARRIER"
+ABORT VOICE
+ABORT "NO DIALTONE"
+ABORT "NO ANSWER"
+"" ATZ
+OK ATDT &lt;ISP's phonenumber&gt;
+TIMEOUT 35
+CONNECT ''
+TIMEOUT 10
+ogin: \q&lt;username&gt;
+TIMEOUT 10
+assword: \q&lt;mysecretpassword&gt;
+ 
+# End /etc/chatscripts/provider
+ 
+</PRE>
+<H2><A NAME="ss18.8">18.8 Note on password authentication</A>
+ </H2>
+
+<P>As you see from the sample scripts (these are the actual scripts I'm using
+myself) above I logon to my ISP using this chatscripts in stead of authenticating
+via pap or chap. Though my ISP supports pap, I choose to do it this slightly
+different way which has it's disadvantages and advantages. In my case the advantages
+outweigh the disadvantages. This way I have more control over my logon procedure
+and I can see closer what is happening when.
+<P>For example most times when I connect I have a window running <CODE>tail -f /var/log/syslog</CODE>
+so I can keep an eye on when things like the username and password are sent.
+<H2><A NAME="ss18.9">18.9 Other resources</A>
+ </H2>
+
+<P>For a far more detailed guide on how to set up Internet, I refer to Egil
+Kvaleberg's <EM>ISP-Hookup-HOWTO</EM> which is available from the LDP site at 
+<A HREF="http://www.linuxdoc.org/">http://www.linuxdoc.org/</A><HR>
+<A HREF="Linux-From-Scratch-HOWTO-19.html"><IMG SRC="../img/../img/../img/../img/../img/../img/next.gif" ALT="Next"></A>
+<A HREF="Linux-From-Scratch-HOWTO-17.html"><IMG SRC="../img/../img/../img/../img/../img/../img/prev.gif" ALT="Previous"></A>
+<A HREF="Linux-From-Scratch-HOWTO.html#toc18"><IMG SRC="../img/../img/../img/../img/../img/../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  <SCRIPT>EndPage();</SCRIPT>  <SCRIPT>EndPage();</SCRIPT>  <SCRIPT>EndPage();</SCRIPT>  <SCRIPT>EndPage();</SCRIPT>  <SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

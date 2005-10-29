@@ -1,0 +1,88 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux Laptop-HOWTO: Appendix C - NeoMagic Chip NM20xx</TITLE>
+ <LINK HREF="Laptop-HOWTO-21.html" REL=next>
+ <LINK HREF="Laptop-HOWTO-19.html" REL=previous>
+ <LINK HREF="Laptop-HOWTO.html#toc20" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Laptop-HOWTO-21.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Laptop-HOWTO-19.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Laptop-HOWTO.html#toc20"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s20">20. Appendix C - NeoMagic Chip NM20xx</A></H2>
+
+<P>
+<H2><A NAME="ss20.1">20.1 Introduction</A>
+</H2>
+
+<P>Hence the NeoMagic chipset series NM20xx is one of the most used graphic chips in laptops in our times, I will spent a few words on them. Though a long time this chip was only supported by commercial X servers, since the middle of 1998 RedHat provided a binary X server manufactured by PrecisionInsight. Since version 3.3.3 this X server is also available by XFree86.
+<P>
+<H2><A NAME="ss20.2">20.2 Textmode 100x37</A>
+</H2>
+
+<P>This chapter is a courtesy of Cedric Adjih 
+<A HREF="mailto:cedric.adjih@inria.fr">&lt; cedric.adjih@inria.fr &gt;</A>. I changed some minor parts.
+<P>An apparently little known fact about the Neomagic chipset NM20xx is that you can run text mode in 100x37 (i.e. 800x600). This text mode is very nice (as opposed to the 80x25 which is ugly). I tried this with a HP OmniBook 800 and suppose it might work with other laptops using the NeoMagic chip, too. The following that I wrote was much longer than I expected so I wrote it as a kind of mini-howto :-) :
+<P>The main problem is that is a bit difficult to set up, and if you're going wrong with SVGATextMode/restoretextmode some results on the LCD might be frightening. Although I didn't manage to break my LCD with many many attempts going wrong, DISCLAMER: THIS MIGHT DAMAGE YOUR HARDWARE. YOU HAVE BEEN WARNED. FOLLOW THE FOLLOWING INSTRUCTIONS AT YOUR OWN RISKS. I'M NOT RESPONSIBLE IF SOMETHING BAD HAPPENS.
+<P>
+<H3>Survey</H3>
+
+<P>You need to do <I>three</I> main steps:
+<OL>
+<LI>Enable Linux to boot in 800x600 textmode. The problem is that you won't see any text before the following two steps aren't done.</LI>
+<LI>Automatically run <CODE>restoretextmode</CODE> with correct register data.</LI>
+<LI>Automatically run <CODE>SVGATextMode</CODE>.</LI>
+</OL>
+<P>
+<P>
+<H3>More Details</H3>
+
+<P>All the files I have modified, are available for now at 
+<A HREF="http://starship.python.net/crew/adjih/data/cda-omni-trick.tar.gz">http://starship.python.net/crew/adjih/data/cda-omni-trick.tar.gz</A><P>
+<H3>Enabling Linux to Boot in 800x600</H3>
+
+<P>Recent kernels (2.2.x) need to be compiled with CONFIG_VIDEO_GFX_HACK defined. Default is off. (look in /usr/src/linux-2.2.x/arch/i386/boot/video.S)
+<P>This is done by passing the parameter <CODE>vga=770</CODE> to older kernels or <CODE>vga=7</CODE> to 2.2.x kernels. Example with lilo.conf:
+<P>
+<HR>
+<PRE>
+image=/boot/bzImage-modif
+label=22
+append=&quot;svgatextmode=100x37x8_SVGA&quot; #explained later
+vga=7
+read-only
+</PRE>
+<HR>
+<P>
+<H3>Running <CODE>restoretextmode</CODE> and <CODE>SVGATextMode</CODE> at Boot Time</H3>
+
+<P>You must arrange to run <CODE>restoretextmode &lt;name of some textreg.dat file&gt;</CODE> and <CODE>SVGATextMode 100x37x8_SVGA</CODE> at boot time.
+<P>An example textreg.dat for restoretextmode (obtained using <CODE>savetextmode</CODE>) is in my tar archive in tmp/, and an example /etc/TextConfig.
+<P>Since I'm lazy, I've simply put <CODE>SVGATextMode</CODE> and <CODE>restoretextmode</CODE> in the /etc/rc.boot/kbd file from my Debian/GNU Linux which get executed at boot time (also available in the tar archive).
+<P>
+<H3>Now the Key Point</H3>
+
+<P>Annoying things will be displayed if you don't use the right SVGATextMode in the right video text mode: this is why I also pass the environmental variable <CODE>&quot;svgatextmode=100x37x8_SVGA&quot;</CODE> (arbitrary name) to the kernel (using append=xxx in lilo.conf) when I also set <CODE>vga=7</CODE>: the script /etc/rc.boot/kbd tests this variable and calls <CODE>restoretextmode</CODE> and <CODE>SVGATextMode</CODE> IF AND ONLY IF.
+<P>
+<H3>Road Map</H3>
+
+<P>
+<OL>
+<LI>Recompile the kernel 2.2.x with CONFIG_VIDEO_GFX_HACK</LI>
+<LI>Insert the restoretextmode with the correct parameter in the initialisation script, with no other changes.</LI>
+<LI>Boot with normal text mode (80x25) but restoretextmode: you should see the screen going to 100x37, but with only 80x25 usable. Don't use SVGATextMode yet.</LI>
+<LI>It is much better to conditionnalize your initialize code as I did, to keep the possibility of booting in both modes: you may test this now with some reboots (starting restoretextmode or not).</LI>
+<LI>Boot with 100x37 text mode using parameter <CODE>vga=7</CODE> (lilo.conf), you should see white background at some point, but the characters will be black on black. This is ok. You'll have to reboot blindly now.</LI>
+<LI>Insert the &lt;path&gt;/SVGATextMode 100x37x8_SVGA after the restoretextmode in initialization scripts.</LI>
+<LI>Reboot with <CODE>vga=7</CODE> (lilo.conf)</LI>
+<LI>Should be OK now. Enjoy.</LI>
+</OL>
+<P>
+<HR>
+<A HREF="Laptop-HOWTO-21.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Laptop-HOWTO-19.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Laptop-HOWTO.html#toc20"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

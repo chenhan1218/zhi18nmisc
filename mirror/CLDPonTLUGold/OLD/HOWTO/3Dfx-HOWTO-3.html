@@ -1,0 +1,264 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>The Linux 3Dfx HOWTO: Installation</TITLE>
+ <LINK HREF="3Dfx-HOWTO-4.html" REL=next>
+ <LINK HREF="3Dfx-HOWTO-2.html" REL=previous>
+ <LINK HREF="3Dfx-HOWTO.html#toc3" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="3Dfx-HOWTO-4.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="3Dfx-HOWTO-2.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="3Dfx-HOWTO.html#toc3"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s3">3. Installation</A></H2>
+
+<P>Configuring Linux to support 3Dfx accelerators involves the
+following steps:
+<P>
+<OL>
+<LI>Installing the board.</LI>
+<LI>Installing the Glide distribution.</LI>
+<LI>Compiling, linking and/or running the application.</LI>
+</OL>
+<P>The next sections will cover each of these steps in detail.
+<P>
+<H2><A NAME="ss3.1">3.1 Installing the board</A>
+</H2>
+
+<P>Follow the manufacturer's instructions for installing the hardware or
+have your dealer perform the installation.
+It should not be necessary to select settings for IRQ, DMA channel,
+either Plug&amp;Pray (tm) or factory defaults should work. The
+add-on boards described here are memory mapped devices and do
+not use IRQ's. The only kind of conflict to avoid 
+is memory overlap with other devices.
+<P>As 3Dfx does not develop or sell any boards, do not contact
+them on any problems. 
+<P>
+<H3>Troubleshooting the hardware installation</H3>
+
+<P>To check the installation and the memory mapping, do 
+<CODE>cat /proc/pci</CODE>. The output should contain something like
+<HR>
+<PRE>
+  Bus  0, device  12, function  0:
+    VGA compatible controller: S3 Inc. Vision 968 (rev 0).
+      Medium devsel.  IRQ 11.  
+      Non-prefetchable 32 bit memory at 0xf4000000.
+
+  Bus  0, device   9, function  0:
+    Multimedia video controller: Unknown vendor Unknown device (rev 2).
+      Vendor id=121a. Device id=1.
+      Fast devsel.  Fast back-to-back capable.  
+      Prefetchable 32 bit memory at 0xfb000000.
+</PRE>
+<HR>
+
+for a Diamond Monster 3D used with a Diamond Stealth-64. Additionally
+a <CODE>cat /proc/cpuinfo /proc/meminfo</CODE> might be helpfull for
+tracking down conflicts and/or submitting a bug report.
+<P>With current kernels, you will probably get a boot warning
+like
+<HR>
+<PRE>
+Jun 12 12:31:52 hal kernel: Warning : Unknown PCI device (121a:1).
+Please read include/linux/pci.h 
+</PRE>
+<HR>
+
+which could be safely ignored. If you happen to have a board
+not very common, or have encountered a new revision, you should
+take the time to follow the advice in <CODE>/usr/include/linux/pci.h</CODE>
+and send all necessary information
+to
+<A HREF="mailto:linux-pcisupport@cao-vlsi.ibp.fr">linux-pcisupport@cao-vlsi.ibp.fr</A>.
+<P>If you experience any problems with the board, you should
+try to verify that DOS and/or Win95 or NT support works. You
+will probably not receive any useful response from a
+board manufacturer on a bug report or request regarding
+Linux. Having dealt with the Diamond support e-mail
+system, I would not expect useful responses for other
+operating systems either. 
+<P>
+<H3>Configuring the kernel</H3>
+
+<P>There is no kernel configuration necessary, as long as PCI
+support is enabled.
+The 
+<A HREF="http://sunsite.unc.edu/mdw/HOWTO/Kernel-HOWTO.html">Linux Kernel HOWTO</A> should be consulted for the details of
+building a kernel.
+<P>
+<P>
+<H3>Configuring devices</H3>
+
+<P>The current drivers do not (yet) require any special devices.
+This is different from other driver developments 
+(e.g. the sound drivers, where you will find 
+a <CODE>/dev/dsp</CODE> and <CODE>/dev/audio</CODE>). The
+driver uses the <CODE>/dev/mem</CODE> device which should 
+always be available. In consequence, you need to use
+<CODE>setuid</CODE> or root privileges to access the 
+accelerator board. 
+<P>
+<H2><A NAME="ss3.2">3.2 Setting up the Displays</A>
+</H2>
+
+<P>There are two possible setups with add-on boards. You
+could either pass-through the video signal from your
+regular VGA board via the accelerator board to the
+display, or you could use two displays at the same time.
+Rely to the manual provided by the board manufacturer
+for details. Both configurations have been tried with
+the Monster 3D board.
+<P>
+<H3>Single screen display solution</H3>
+
+<P>This configuration allows you to check basic operations
+of the accelerator board - if the video signal is not
+transmitted to the display, hardware failure is possible.
+<P>Beware that the video output signal might deteoriate
+significantly if passed through the video board. To
+a degree, this is inevitable. However, reviews have
+complained about below-average of the cables provided
+e.g. with the Monster 3D, and judging from the one I
+tested, this has not changed.
+<P>There are other pitfalls in single screen configurations.
+Switching from the VGA display mode to the accelerated 
+display mode will change resolution and refresh rate as
+well, even if you are using 640x480 e.g. with X11, too.
+Moreover, if you are running X11, your application is
+responsible for demanding all keyboard and mouse events,
+or you might get stuck because of changed scope and exposure
+on the X11 display (that is effectively invisible when the
+accelerated mode is used) You could use SVGA console mode
+instead of X11.
+<P>If you are going to use a single screen configuration and
+switch modes often, remember that your monitor hardware
+might not enjoy this kind of use. 
+<P>
+<P>
+<H3>Single screen dual cable setup</H3>
+
+<P>Some high end monitors (e.g. the EIZO F-784-T)
+come with two connectors, one with 5 BNC connectors
+for RGB, HSync, VSync, the other e.g. a regular VGA
+or a 13W3 Sub-D VGA.
+These displays usually also feature a front panel
+input selector to safely switch from one to the
+other. It is thus possible to use e.g. a VGA-to-BNC
+cable with your high end 2D card, and a VGA-to-13W3
+Sub-D cable with your 3Dfx, and effectively run dual
+screen on one display.
+<P>
+<P>
+<H3>Dual screen display solution</H3>
+
+<P>The accelerator board does not need the VGA input signal.
+Instead of routing the common video output through the
+accelerator board, you could attach a second monitor to
+its output, and use both at the same time. This solution
+is more expensive, but gives best results, as your main
+display will still be hires and without the signal
+quality losses involved in a pass-through solution. In
+addition, you could use X11 and the accelerated full
+screen display in parallel, for development and debugging.
+<P>A common problem is that the accelerator board will not
+provide any video signal when not used. In consequence,
+each time the graphics application terminates, the
+hardware screensave/powersave might kick in depending
+on your monitors configuration. Again, your hardware
+might not enjoy being treated like this. You should
+use
+<HR>
+<PRE>
+setenv SST_DUALSCREEN 1
+</PRE>
+<HR>
+
+to force continued video output in this setup.
+<P>
+<H2><A NAME="ss3.3">3.3 Installing the Glide distribution</A>
+</H2>
+
+<P>The Glide driver and library are provided as a single
+compressed archive. Use <CODE>tar</CODE> and <CODE>gzip</CODE>
+to unpack, and follow the instructions in the
+README and INSTALL accompanying the distribution.
+Read the install script and run it. Installation puts
+everything in /usr/local/glide/include,lib,bin and sets
+the ld.conf to look there. Where it installs and setting
+ld.conf are independent actions. If you skip the ld.conf
+step then you need the LD_LIBRARY_PATH.
+<P>You will need to install the header files in a location
+available at compile time, if you want to compile your own
+graphics applications. If you do not want to use the
+installation as above (i.e. you insist on a different
+location), make sure that any application could access
+the shared libary at runtime, or you will get a response
+like
+<CODE>can't load library 'libglide.so'</CODE>.
+<P>
+<P>
+<P>
+<H3>Using the detect program</H3>
+
+<P>There is a <CODE>bin/detect</CODE> program in the distribution
+(the source is not available). You have to run it as root,
+and you will get something like
+<HR>
+<PRE>
+slot  vendorId   devId   baseAddr0  command  description
+----  --------  ------  ----------  -------  -----------
+  00    0x8086  0x122d  0x00000000   0x0006  Intel:430FX (Triton)
+  07    0x8086  0x122e  0x00000000   0x0007  Intel:ISA bridge
+  09    0x121a  0x0001  0xfb000008   0x0002  3Dfx:video multimedia adapter
+  10    0x1000  0x0001  0x0000e401   0x0007  ???:SCSI bus controller
+  11    0x9004  0x8178  0x0000e001   0x0017  Adaptec:SCSI bus controller
+  12    0x5333  0x88f0  0xf4000000   0x0083  S3:VGA-compatible display co
+</PRE>
+<HR>
+
+as a result. If you do not have root privileges, the program will
+bail out with
+<HR>
+<PRE>
+Permission denied: Failed to change I/O privilege. Are you root?
+</PRE>
+<HR>
+
+output might come handy for a bug report as well.
+<P>
+<P>
+<P>
+<H3>Using the test programs</H3>
+
+<P>Within the Glide distribution, you will find a folder with
+test programs. Note that these test programs are under
+3Dfx copyright, and are legally available for use only
+if you have purchased a board with a 3Dfx chipset. See
+the LICENSE file in the distribution, or 
+their web site
+<A HREF="http://www.3dfx.com/">www.3dfx.com</A> for details.
+<P>It is recommend to compile and link the test programs even
+if there happen to be binaries in the distribution. Note
+that some of the programs will requires some files
+like <CODE>alpha.3df</CODE> from the distribution to be available
+in the same folder. 
+All test programs use the 640x480 screen resolution. Some
+will request a veriety of single character inputs, others
+will just state <CODE>Press A Key To Begin Test</CODE>. Beware
+of loss of input scope if running X11 on the same screen
+at the same time.
+<P>See the README.test for a list of programs, and other details.
+<P>
+<P>
+<P>
+<P>
+<P>
+<HR>
+<A HREF="3Dfx-HOWTO-4.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="3Dfx-HOWTO-2.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="3Dfx-HOWTO.html#toc3"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

@@ -1,0 +1,209 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>在 Linux 下建立軟體套件: 克服困難</TITLE>
+ <LINK HREF="Software-Building-HOWTO-5.html" REL=next>
+ <LINK HREF="Software-Building-HOWTO-3.html" REL=previous>
+ <LINK HREF="Software-Building-HOWTO.html#toc4" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Software-Building-HOWTO-5.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Software-Building-HOWTO-3.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Software-Building-HOWTO.html#toc4"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s4">4. 克服困難</A></H2>
+
+<P>
+<P>如果用 <B>xmkmf</B> 和/或 <B>make</B> 很成功沒有錯誤,
+你可以著手於 
+<A HREF="Software-Building-HOWTO-5.html#finalsteps">next section</A>.
+然而, 在真實生活, 很少事情在第一次就正確的工作.
+這就是當你的機智豐富時,要勇於嘗試.
+<P>
+<H2><A NAME="ss4.1">4.1 連結錯誤</A>
+</H2>
+
+<P>
+<UL>
+<LI>如果 <B>make</B> 失敗而出現有 <CODE>Link error: -lX11:
+No such file or directory</CODE>, 甚至是在使用 <B>xmkmf</B> 後.
+這可能意味著 <EM>Imake</EM> 檔案沒有適當地裝好. 
+檢查 <EM>Makefile</EM> 的第一部分有沒有像這樣的幾行:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+LIB=            -L/usr/X11/lib
+INCLUDE=        -I/usr/X11/include/X11
+LIBS=           -lX11 -lc -lm
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+<CODE>-L</CODE> 和 <CODE>-I</CODE> 切換器(switches)會通告編譯器和連結器分別去哪裏尋找 <EM>library</EM> 和 <EM>include</EM> 檔案.
+在這例子,  <EM>X11 libraries</EM> 應該是在 <CODE>/usr/X11/lib</CODE> 目錄,
+而  <EM>X11 include 檔案</EM> 應該是在 <CODE>/usr/X11/include/X11</CODE>目錄.
+如果這在你的機器上是不對的, 必須改變 <EM>Makefile</EM> 而且再試試 
+<B>make</B>. 
+</LI>
+</UL>
+<P>
+<UL>
+<LI>在非常少的情況, 以 <EM>root</EM> 身分跑一下 <B>ldconfig</B> 
+也許是個答案:
+
+<B># /etc/ldconfig -n /lib</B> 將會更新共享式函式庫符號連結
+(shared library symbolic links). <EM>這在正常的情形下不是需要的</EM>.
+</LI>
+</UL>
+<P>
+<UL>
+<LI>目前另一件事是如果 <B>xmkmf</B> 失敗, 則試試下列 script:
+<BLOCKQUOTE><CODE>
+<PRE>
+         make -DUseInstalled -I/usr/X386/lib/X11/config
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+</UL>
+<P>
+<P>
+<P>
+<UL>
+<LI>有時原始碼需要使用舊版的 X11R5 libraries 來建立.
+如果你有 R5 libs 在 /usr/X11R6/lib (當你首先在安裝 Linux 時,
+你是有選擇是否安裝它們的), 然後你只需要確定,你有連結到軟體所需要建立的地方.
+<CODE>R5 libs</CODE> 是有 <CODE>libX11.so.3.1.0</CODE>, <CODE>libXaw.so.3.1.0</CODE>, 
+和 <CODE>libXt.so.3.1.0</CODE>. 一般你需要連結至, 像是
+<B>libX11.so.3 -> libX11.so.3.1.0</B>. 
+大概軟體也需要這個形式連結 <B>libX11.so -> libX11.so.3.1.0</B>.
+當然, 要將這"斷掉(missing)"的連結建好, 要以 <EM>root</EM> 身分使用這指令
+<B>ln -s libX11.so.3.1.0 libX11.so</B>.
+</LI>
+</UL>
+<P>
+<P>
+<UL>
+<LI>某些套件會要求你去安裝一個或以上的升級版本. 舉例而言, 
+StarDivision GmbH 的 <EM>StarOffice</EM> 組件(suite)是惡名昭彰(notorious)的要求
+<CODE>libc</CODE> version 5.4.4 或更新. 以 <EM>root</EM>身分,
+你需要複製一個或以上的函式庫(libraries)至合適的目錄, 
+刪去舊的函式庫(libraries),然後重設符號連結.
+
+<B>小心: 在這要格外注意, 因為如果你弄糟, 你可能會付出你的系統不能運作的代價</B>.
+
+你通常可以找到升級的函式庫(libraries)在 
+<A HREF="ftp://sunsite.unc.edu">Sunsite</A>.
+</LI>
+</UL>
+<P>
+<H2><A NAME="ss4.2">4.2 其它問題</A>
+</H2>
+
+<P>
+<P>
+<UL>
+<LI>在安裝好的 <EM>Perl</EM> 或 shell script 給你一個 <CODE>No such file or directory</CODE> 錯誤訊息. 在這情況,檢查檔案權限來確定檔案可執行
+以及檢查檔案標頭是否含有使用 shell 或程式, 指明 script 所在地方.
+舉例而言, script 開始如:
+<BLOCKQUOTE><CODE>
+<PRE>
+#!/usr/local/bin/perl
+</PRE>
+</CODE></BLOCKQUOTE>
+
+如果 <EM>Perl</EM> 實際裝在你的 <CODE>/usr/bin</CODE> 目錄,
+而不是 <CODE>/usr/local/bin</CODE> 目錄, 那麼 script 無法執行.
+有兩個方法來修改. script 檔案標頭改成 <CODE>#!/usr/bin/perl</CODE>, 
+或用符號連結至正確的目錄, <B>ln -s 
+/usr/bin/perl /usr/local/bin/perl</B>. 
+</LI>
+</UL>
+<P>
+<UL>
+<LI>某些 X11 軟體要求有 <CODE>Motif</CODE> 函式庫(libraries)才能建立.
+而標準的 Linux 發行套件並沒有安裝 Motif libraries, 而且目前 Motif
+還要額外 $100-$200 的花費 (雖然免費軟體
+<A HREF="http://www.lesstif.org/">Lesstif</A> 在某些場合也能夠用).
+如果你需要 Motif 來建立某一套件, 但缺少 Motif libraries, 
+那麼也許可以取得 <EM>靜態連結的二元碼(statically linked binaries)</EM>.
+靜態連結在二元碼本身納入函式庫行程(library routines).
+這造成二元碼檔案大了許多, 但是碼可在缺少該函式庫的系統上執行.
+</LI>
+</UL>
+<P>
+<P>
+<UL>
+<LI>執行 <EM>configure</EM> script 會創造奇怪的 <CODE>Makefile</CODE>,
+那像是與你所要設法建立的套件亳不相干. 這表示跑著錯誤的 <EM>configure</EM>,
+其找到你的 path 上某處其他的 configure. 所以要下 <EM>configure</EM> 指令
+應該要下成 <B>./configure</B> 即目前目錄下的.</LI>
+</UL>
+<P>
+<P>
+<UL>
+<LI>某些程式會要求有 <EM>setuid root</EM>, 為了要以有 <EM>root 權力</EM> 
+來執行. 要達成這目錄的指令是 <EM>以root</EM> 下指令
+<B>chmod u+s filename</B>. (注意的是這程式已經是 <EM>root</EM> 所擁有了).
+這在設定檔案權限中的 <EM>setuid</EM> bit 很有用.
+這樣用在當程式在存取系統硬體,像是 modem 或 CD ROM drive, 
+或當 SVGA libs 被使在於主控台模式(console mode), 
+像是在一個特別惡名昭彰的(notorious)模擬器(emulation)套件. 
+如果程式正被 root 執行,
+但給一般使用者一個 <EM>access denied</EM> 的錯誤訊息, 想像就是這樣造成的.
+
+<P>
+<P><B>警告:</B>   
+一個有 <EM>setuid</EM> 成 root 的程式可能提出對你的系統有安全上的風險.
+這個程式可以 root 權力來跑而所以有某些破害的潛在性. 
+在設定 <EM>setuid</EM> bit 前, 確定你知道該程式在做什麼, 必要時看一下原始碼.
+<P>
+</LI>
+</UL>
+<P>
+<P>
+<H2><A NAME="ss4.3">4.3 旋扭與微調</A>
+</H2>
+
+<P>
+<P>你可能希望檢查 <CODE>Makefile</CODE> 來確定有選用對你系統最佳編譯選項.
+舉例來說, 設定 <EM>-O2</EM> 旗標來選最高層級的最佳化而 
+<EM>-fomit-frame-pointer</EM> 旗標來造最小二元碼
+(雖然 debugging 會沒有打開). <B>除非你知道你在做什麼, 
+而且在任何情況下, 除非艱苦建立的工作已完成, 否則不要玩這些</B>.
+<P>
+<P>
+<P>
+<H2><A NAME="ss4.4">4.4 去哪取得進一步的協助</A>
+</H2>
+
+<P>在我的經驗, 大概25%的應用程式建立"完全沒有困難". 
+另外大約50%能"被說服"的建立, 要付出努力的範圍從無聊到極為困難.
+那仍然表示有某些套件無論如何都無法建立. 即使那樣, 那些
+Intel <CODE>ELF</CODE> 和/或 <CODE>a.out</CODE> 二元碼, 也可能在
+<A HREF="ftp://sunsite.unc.edu">Sunsite</A>, 
+<A HREF="ftp://tsx-11.mit.edu">TSX-11 archive</A> 或其它地方找到.
+也許, 軟體的創造者可以提供編譯好的二元碼給你的特別的機器使用.
+<P>
+<P><CODE>注意的是如果你取得預先編譯好的二元碼, 你會需要檢查是否與你的系統相容:</CODE> 
+<UL>
+<LI><CODE>這二元碼必須在你的 硬體上跑 (i.e., Intel x86).</CODE>       </LI>
+<LI><CODE>這二元碼必須與你的核心(kernel)相容 (i.e., a.out 或 ELF).</CODE>     </LI>
+<LI><CODE>你的函式庫(libraries)必須是最新的.</CODE></LI>
+</UL>
+<P>如果全都失敗, 你可以在合適的 <EM>新聞群組</EM>尋求幫忙,
+像是在
+<A HREF="news://comp.os.linux.x">comp.os.linux.x</A> 或 
+<A HREF="news://comp.os.linux.development">comp.os.linux.development</A>. 萬一你只是不夠幸運的話,
+嘿, 試試也是有趣的.
+<P>
+<P>
+<P>
+<P>
+<P>
+<HR>
+<A HREF="Software-Building-HOWTO-5.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Software-Building-HOWTO-3.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Software-Building-HOWTO.html#toc4"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

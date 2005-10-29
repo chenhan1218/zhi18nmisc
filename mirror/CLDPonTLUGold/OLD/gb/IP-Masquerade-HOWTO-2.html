@@ -1,0 +1,229 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Linux IP Masquerade mini HOWTO 中译版: 背景知识</TITLE>
+ <LINK HREF="IP-Masquerade-HOWTO-3.html" REL=next>
+ <LINK HREF="IP-Masquerade-HOWTO-1.html" REL=previous>
+ <LINK HREF="IP-Masquerade-HOWTO.html#toc2" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="IP-Masquerade-HOWTO-3.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="IP-Masquerade-HOWTO-1.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="IP-Masquerade-HOWTO.html#toc2"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s2">2. 背景知识</A></H2>
+
+<P>
+<H2><A NAME="ss2.1">2.1 什麽是 IP Masquerade?</A>
+</H2>
+
+<P>IP Masquerade 是 Linux 的一项网路功能。如果一台 Linux 主机使用 IP Masquerade 功能连线到网际网路上，那麽接上它的电脑（不论是在同一个区域网路上或藉由数据机连线）也可以接触网际网路，即使它们<EM>没有获得正式指定的 IP 位址</EM>。
+<P>这使得一些电脑可以<EM>隐藏</EM>在闸道(gateway) 系统後面存取网际网路而不被发现，看起来就像只有这个系统在使用网际网路。突破设定良好的伪装(masquerade)系统之安全防护应该会比突破良好的封包过滤式防火墙(packet filter firewall)来得更加困难（假设两者之中都没有错误）。
+<P>
+<H2><A NAME="ss2.2">2.2 现况</A>
+</H2>
+
+<P>IP Masquerade 已经发展多年而趋於成熟，因此已正式并入 Linux 2.2.x 的核心中。
+从 1.3.x 版的核心开始已经内建这项支援。许多个人甚至公司正在使用它，而有满意的结果。
+<P>浏览网页以及远端签入(telnet)已经有回报表示可以在 IP Masquerade 上运作。档案传输(FTP)，网路交谈(IRC) 以及聆听 Real Audio 现在可以载入某些模组配合。其它的网路资料流音讯 (streaming audio) 像是 True Speech  以及 Internet Wave  也能运作。一些通信论坛中的使用夥伴甚至还尝试过视讯会议软体。 <CODE>Ping</CODE> 现在配合新近可以取得的网际网路控制讯息协定(ICMP)修补档也能运作。
+<P>更完整的支援软体列表请参考 4.3 节。
+<P>IP Masquerade 在数种不同的作业系统及平台上与 '客户端机器' 配合良好。
+成功的案例有使用 Unix, Windows95, Windows NT, Windows for Workgroup (with TCP/IP package), OS/2, Macintosh System's OS with Mac TCP, Mac Open Transport, DOS with NCSA Telnet package, VAX, Alpha with Linux, 甚至 Amiga with AmiTCP 或 AS225-stack 的系统。
+这列表还在不断增加当中。重点就是，只要你的系统使用 TCP/IP 协定，它就应该能和 IP Masquerade 一起工作。
+<P>
+<H2><A NAME="ss2.3">2.3 谁可以从 IP Masquerade 中获益?</A>
+</H2>
+
+<P>
+<UL>
+<LI>如果你有台连接网际网路的 Linux 主机，而且</LI>
+<LI>如果你有一些执行 TCP/IP 连接到 Linux 机器的电脑在区域网路上，以及/或是</LI>
+<LI>如果你的 Linux 主机有一个以上的数据机并且作为 PPP 或 SLIP 伺服器连接其它电脑，它们</LI>
+<LI>这些<B>其它</B>机器没有正式指定的 IP 位址。（这些机器从这里开始以後就称为<B>其它</B>机器）</LI>
+<LI>而且当然，如果你希望这些<B>其它</B>机器不必花额外的费用就能连上网际网路 :)</LI>
+</UL>
+<P>
+<H2><A NAME="ss2.4">2.4 谁不需要 IP Masquerade?</A>
+</H2>
+
+<P>
+<UL>
+<LI>如果你的机器是单独一台(stand-alone) 连接网际网路的 Linux 主机，那麽执行 IP Masquerade 没什麽意义，或者</LI>
+<LI>如果你的<B>其它</B>机器拥有正式指定的 IP 位址，那麽你就不需要 IP Masquerade</LI>
+<LI>而且当然，如果你不喜欢免费使用(free ride) 这个主意的话。</LI>
+</UL>
+<P>
+<H2><A NAME="ss2.5">2.5 IP Masquerade 是如何运作的?</A>
+</H2>
+
+<P>节自 Ken eves 的 IP Masquerade FAQ:
+<PRE>
+  这是大部分简单的设定草图:
+
+     SLIP/PPP         +------------+                         +-------------+
+     to provider      |  Linux     |       SLIP/PPP          | Anybox      |
+    &lt;---------- modem1|            |modem2 ----------- modem |             |
+      111.222.333.444 |            |           192.168.1.100 |             |
+                      +------------+                         +-------------+
+
+          上面的草图中一台安装并执行 ip_masquerading  的 Linux
+      机器使用 modem1 经由 SLIP/or/PPP  连接网际网路。它有一个
+      指定的 IP 位址 111.222.333.444。它设定 modem2 允许拨接者
+      签入并起始 SLIP/or/PPP  连结。
+
+          第二个系统（不必是执行 Linux  的系统）拨接进入 Linux
+      机器并起始 SLIP/or/PPP  连结。它在网际网路上并没有指定的
+      IP  位址所以它使用 192.168.1.100。（参阅下述）
+
+          配合 ip_masquerade  及适当递送配置(routing configured)
+      Anybox  这台机器可以跟网际网路交流就如同它真的连在上面般
+      （除了少数例外）。
+
+  节录 Pauline Middelink:
+      别忘记提到 ANYBOX 应该把 Linux  机器当作它的闸道（无论是
+      预设递送路径或只是个子网路都没关系）。如果 ANYBOX 不能够
+      这样设， Linux  机器应该为所有要递送的位址做代理位址解析
+      析协定(proxy arp) 服务，但代理位址解析的设定超过这份文件
+      的□围。
+
+  下面节录自 comp.os.linux.networking 的一篇布告并且稍加编辑以
+  符合上述□例的用词:
+
+  。我告诉 ANYBOX 这台机器跑 slip 的 linux  机器是它的闸道。
+  。当一个封包从 ANYBOX 进入 linux  机器时，它会指定新的来源埠
+    号(source port number)，把它自己的 ip 位址塞入封包的标头并
+    储存原来的。然後它将会藉由 SLIP/or/PPP  界面把修改过的封包
+    送上网际网路。
+  。当一个封包从网际网路来到 linux  机器时，如果埠号是上面指定
+    的其中一个，它将会取出原来的埠号以及 ip 位址，把它们放回封
+    包的标头，并且把封包送往 ANYBOX 。
+  。送出封包的主机将永远不知道其中的差别。
+</PRE>
+<P>
+<P><B>一个 IP Masquerading 的例子:</B>
+<P>下面的图示是典型的例子:-
+<PRE>
+
+    +----------+
+    |          |  Ethernet
+    | abox     |::::::
+    |          |2    :192.168.1.x
+    +----------+     :
+                     :   +----------+   PPP   
+    +----------+     :  1|  Linux   |   link
+    |          |     ::::| masq-gate|:::::::::// Internet
+    | bbox     |::::::   |          |
+    |          |3    :   +----------+
+    +----------+     :
+                     :
+    +----------+     :
+    |          |     :
+    | cbox     |::::::
+    |          |4    
+    +----------+  
+                
+
+    &lt;-Internal Network->
+</PRE>
+
+在这个例子中我们考虑四台电脑系统（想必遥远的右方还有些东西让你到网际网路的 IP 连线能够连接，以及一些（远超过这一页）在网际网路上你有兴趣交换资讯的东西）。
+这个 Linux 系统 <CODE>masq-gate</CODE> 是 <CODE>abox</CODE>, <CODE>bbox</CODE>, <CODE>cbox</CODE> 内部网路机器连接网际网路的伪装闸道。
+内部网路使用指定的私用(private) 网路位址，在这个案例中是 class C 网路 192.168.1.0, Linux 机器拥有位址 192.168.1.1  而其它系统也拥有此网路上的位址。
+<P>这三台机器 <CODE>abox</CODE>, <CODE>bbox</CODE> 以及 <CODE>cbox</CODE> (它们可以执行任何作业系统 － 像是 <B>Windows 95</B>, <B>Macintosh MacTCP</B> 或甚至是另一台 Linux 机器，只要它们能了解 IP)可以连线到网际网路上的其它机器去，然而这个伪装系统闸道 <CODE>masq-gate</CODE> 转换它们所有的连线所以这些连线看起来像是原本即从伪装闸道 <CODE>masq-gate</CODE> 本身发出的，而且还安排伪装连线传回的资料转回原先的系统 － 所以在内部网路上的系统看到的是直接通往网际网路的递送路径而且不知道他们的资料被伪装过。
+<P>
+<H2><A NAME="ss2.6">2.6 在 Linux 2.2.x 上使用 IP Masquerade  的需求</A>
+</H2>
+
+<P>
+<BLOCKQUOTE>
+ <B>** 请参考 
+<A HREF="http://ipmasq.cjb.net/">IP Masquerade Resource</A> 以获得最新资讯。**</B> 
+</BLOCKQUOTE>
+<P>
+<UL>
+<LI>2.2.x 版核心的原始程式码可从 
+<A HREF="http://www.kernel.org/">http://www.kernel.org/</A> 取得。<BR>
+(大部份现代的发行套件如 Red Hat 5.2 - 配备了 2.0.36 的核心 -
+已有了模组化的核心，且所有 IP Masquerade 所需的选项都已打开。
+这种情形下，已没有必要再自行编译。如果你自己升级核心，你应注意你需要什麽，在文件稍後会提到。)
+</LI>
+<LI>可载入的核心模组，最好是 2.1.121 或以後的版本<BR>
+</LI>
+<LI>设定良好的 TCP/IP 网路<BR>
+相关文件在 
+<A HREF="http://metalab.unc.edu/mdw/HOWTO/NET-3-HOWTO.html">Linux NET-3 HOWTO</A> 及 
+<A HREF="http://metalab.unc.edu/mdw/LDP/nag/nag.html">Network Administrator's Guide</A><BR>
+也请参考
+<A HREF="http://www.ecst.csuchico.edu/~dranch/LINUX/TrinityOS.wri">Trinity OS Doc</A>, 是一份非常完整的 Linux 网路参考指引。
+</LI>
+<LI>将你的 Linux 主机连上网际网路<BR>
+相关文件有
+<A HREF="http://metalab.unc.edu/mdw/HOWTO/ISP-Hookup-HOWTO.html">Linux ISP Hookup HOWTO</A>,
+<A HREF="http://metalab.unc.edu/mdw/HOWTO/PPP-HOWTO.html">Linux PPP HOWTO</A>,
+<A HREF="http://metalab.unc.edu/mdw/HOWTO/mini/DHCP.html">Linux DHCP mini-HOWTO</A> 及
+<A HREF="http://metalab.unc.edu/mdw/HOWTO/mini/Cable-Modem.html">Linux Cable Modem mini-HOWTO</A>
+</LI>
+<LI>IP Chains 1.3.8 或更新的版本。可从
+<A HREF="http://www.rustcorp.com/linux/ipchains/">http://www.rustcorp.com/linux/ipchains/</A> 取得。<BR>
+版本需求的更多资讯也在
+<A HREF="http://www.rustcorp.com/linux/ipchains/">Linux IP Firewalling Chains page</A>。
+</LI>
+<LI>其它的资讯，请见
+<A HREF="http://ipmasq.cjb.net/">Linux IP Masquerade Resource</A>
+</LI>
+</UL>
+<P>
+<H2><A NAME="ss2.7">2.7 在 Linux 2.0.x 上使用 IP Masquerade  的需求</A>
+</H2>
+
+<P>
+<BLOCKQUOTE>
+ <B>** 请参考 
+<A HREF="http://ipmasq.cjb.net/">IP Masquerade Resource</A> 以获得最新资讯。**</B> 
+</BLOCKQUOTE>
+<P>
+<P>
+<UL>
+<LI>核心 2.0.x 的原始程式码可以从这里取得
+<A HREF="http://www.kernel.org/">http://www.kernel.org/</A><BR>
+(大部份现代的发行套件如 Red Hat 5.2 - 配备了 2.0.36 的核心 -
+已有了模组化的核心，且所有 IP Masquerade 所需的选项都已打开。
+这种情形下，已没有必要再自行编译。如果你自己升级核心，你应注意你需要什麽，在文件稍後会提到。)
+</LI>
+<LI>可载入核心模组，最好是 2.0.0 或更新的版本，可以从这里取得 
+<A HREF="http://www.pi.se/blox/modules/modules-2.0.0.tar.gz">http://www.pi.se/blox/modules/modules-2.0.0.tar.gz</A><BR>
+(至少需要 modules-1.3.57)
+</LI>
+<LI>设定好的 TCP/IP 网路<BR>
+
+相关文件在 
+<A HREF="http://metalab.unc.edu/mdw/HOWTO/NET-3-HOWTO.html">Linux NET-3 HOWTO</A> 及 
+<A HREF="http://metalab.unc.edu/mdw/LDP/nag/nag.html">Network Administrator's Guide</A><BR>
+也请参考
+<A HREF="http://www.ecst.csuchico.edu/~dranch/LINUX/TrinityOS.wri">Trinity OS Doc</A>, 是一份非常完整的 Linux 网路参考指引。
+</LI>
+<LI>将你的 Linux 主机连上网际网路<BR>
+相关文件 
+<A HREF="http://metalab.unc.edu/mdw/HOWTO/ISP-Hookup-HOWTO.html">Linux ISP Hookup HOWTO</A>,
+<A HREF="http://metalab.unc.edu/mdw/HOWTO/PPP-HOWTO.html">Linux PPP HOWTO</A>,
+<A HREF="http://metalab.unc.edu/mdw/HOWTO/mini/DHCP.html">Linux DHCP mini-HOWTO</A> 及
+<A HREF="http://metalab.unc.edu/mdw/HOWTO/mini/Cable-Modem.html">Linux Cable Modem mini-HOWTO</A>
+</LI>
+<LI>Ipfwadm 2.3 或更新的版本可以从这里取得<BR>
+<A HREF="ftp://ftp.xos.nl/pub/linux/ipfwadm/ipfwadm-2.3.0.tar.gz">ftp://ftp.xos.nl/pub/linux/ipfwadm/ipfwadm-2.3.tar.gz</A> 
+在 Linux Ipfwadm  网页上有更多关於版本的资讯 
+<A HREF="http://www.xos.nl/linux/ipfwadm/">Linux IPFWADM page</A>
+</LI>
+<LI>你可以选择性地加上一些 IP Masquerade 修补档以增加其它功能。
+从这里可以取的更多资讯， 
+<A HREF="http://ipmasq.cjb.net/">IP Masquerade Resources</A> (这些修补档适用於所有的 2.0.x  核心)
+</LI>
+</UL>
+<P>
+<P>
+<HR>
+<A HREF="IP-Masquerade-HOWTO-3.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="IP-Masquerade-HOWTO-1.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="IP-Masquerade-HOWTO.html#toc2"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

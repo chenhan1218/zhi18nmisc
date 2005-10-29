@@ -1,0 +1,35 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>XFree86 Video Timings HOWTO 中文版: 计算帧的大小</TITLE>
+ <LINK HREF="XFree86-Video-Timings-HOWTO-10.html" REL=next>
+ <LINK HREF="XFree86-Video-Timings-HOWTO-8.html" REL=previous>
+ <LINK HREF="XFree86-Video-Timings-HOWTO.html#toc9" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="XFree86-Video-Timings-HOWTO-10.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="XFree86-Video-Timings-HOWTO-8.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="XFree86-Video-Timings-HOWTO.html#toc9"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="frame"></A> <A NAME="s9">9. 计算帧的大小</A></H2>
+
+<P>
+<P>警告:这种方法是为多频同步显示器研究出来的.它或许也能用於固定频率显示器,但不保证一定可以!
+<P>开始时通过点时钟(DCF)除以你可用的最高行频(HSF)来得到一个水平帧长.
+<P>例如;假设你有一块Sigma Legend SVGA卡,点时钟是65MHz,你的显示器行频是55KHz.那麽(DCF / HSF)得到的数字是1181(65MHz = 65000KHz ; 65000 / 55 = 1181).
+<P>现在是我们巫术的第一步.你要把这个数字舍入为最接近的8的倍数.对於SVGA和S3显示卡使用的VGA硬件控制器这步必须进行;它使用一个8位寄存器,再左移3位,因此实际是一个11位数字.其它类型的显示卡如ATI 8514/A也许没有这个要求,但我们不知道,而且这个修正不会有危害.所以把合用的水平帧长值向下舍入为1176.
+<P>这个数字(DCF / HSF 舍入为8的倍数)是你可用的最小水平帧长(HFL).通过设置同步脉冲产生更低的行频(HSF)你能获得更长的水平帧长(HFL)(从而,屏幕上可有更多的水平点).但代价是更低的刷新率和更易觉察的闪烁.
+<P>作为一个经验法则,水平帧总长的80%可用於水平扫描线的可视部分 --- 水平分辨率(概略而言这允许了边缘和後掠时间 --- 这是电子束从屏幕的右边缘移到下条光栅线的左边缘需要的时间).在这个例子里水平分辨率是944.
+<P>现在,要获得4:3的正常屏幕高宽比,把你的垂直分辨率设为你刚才算出的水平分辨率的3/4.对这个例子而言是708.要算出你实际的垂直帧长(VFL),把它乘以1.05得到743.
+<P>4:3不是技术上的规定;如果一个不同的比率能最好地利用你的屏幕实际尺寸的话,你完全可以使用.但4:3使从对角线长度算出帧高和帧宽变得很方便,你只要用对角线乘以0.8得到宽,乘以0.6得到高.
+<P>所以, HFL = 1176 而 VFL = 743 .用65MHz除以两者的乘积得到了一个不错的,健康的74.4Hz刷新率.好极了!优於VESA标准!启动X时你得到944x708,多於预期的800x600.完全不赖!
+<P>你甚至能更进一步地改进刷新率,达到接近76Hz,因为显示器常常以高於额定大约2KHz的频率进行行同步而且稍微降低垂直帧长(VFL)(换言之,在上例中垂直分辨率小於944的75%).但在尝试这种"过度驱动"的机动之前,如果你真的要进行,<EM>确认</EM>显示器电子枪场频能达到76Hz.(例如,流行的NEC 4D不行.它的场频(VSF)只能达到75Hz).(查阅
+<A HREF="XFree86-Video-Timings-HOWTO-12.html#overd">过度驱动你的显示器</A>获得这个问题更全面的讨论.)
+<P>迄今为止,上述内容大部分是简单的算术和关於光栅显示器的基本事实.几乎完全没有任何巫术!
+<P>
+<HR>
+<A HREF="XFree86-Video-Timings-HOWTO-10.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="XFree86-Video-Timings-HOWTO-8.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="XFree86-Video-Timings-HOWTO.html#toc9"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

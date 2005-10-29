@@ -1,0 +1,123 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>The Linux Printing HOWTO 中文版: 基本系統設定</TITLE>
+ <LINK HREF="Printing-HOWTO-8.html" REL=next>
+ <LINK HREF="Printing-HOWTO-6.html" REL=previous>
+ <LINK HREF="Printing-HOWTO.html#toc7" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Printing-HOWTO-8.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Printing-HOWTO-6.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Printing-HOWTO.html#toc7"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s7">7. 基本系統設定</A></H2>
+
+<H2><A NAME="ss7.1">7.1 傳統的 lpd 設定</A>
+</H2>
+
+<P>最基本的 lpd 設定只能讓系統佇列檔案然後列印, 而不管你的印表機能否認得這些檔案,
+可能也無法讓你產生吸引人的報表. 但無論如何, 這是跨向理解的第一步.
+所以讓我們看下去.
+<P>基本上, 要增加一個列印佇列, 你必須在 <EM>/etc/printcap</EM> 中加一筆記錄, 
+以及在 <EM>/var/spool/lpd</EM> 之下建立一個列印暫存器的工作目錄(spool 
+directory).
+<P><EM>/etc/printcap</EM> 中的記錄看起來像這個樣子:
+<BLOCKQUOTE><CODE>
+<PRE>
+# LOCAL djet500
+lp|dj|deskjet:\
+        :sd=/var/spool/lpd/dj:\
+        :mx#0:\
+        :lp=/dev/lp0:\
+        :sh:
+</PRE>
+</CODE></BLOCKQUOTE>
+
+這個例子定義了一個名為 <EM>lp</EM>, <EM>dj</EM>, 或是 <EM>deskjet</EM> 的列印暫存器,
+暫存器的工作目錄在 <EM>/var/spool/lpd/dj</EM>, 沒有單一工作大小的上限, 
+列印的裝置是 <EM>/dev/lp0</EM>, 而且不會在每一個工作之前加上標題頁
+(有著列印人的姓名之類的資料).
+<P>現在就去看看 <EM>
+<A HREF="http://www.picante.com/~gtaylor/pht/man/printcap.5.html">printcap</A></EM>.
+的線上手卌.
+<P>上面這個例子看起來非常簡單, 但是有一個問題 - 除非 DeskJet 500 
+能看懂我送出去的檔案, 否則便會印出亂碼. 舉例來說,
+假如送一個傳統的 Unix 文字檔案給 deskjet 會導致新行字元(newline)
+被逐字列印, 而得下面的結果:
+<BLOCKQUOTE><CODE>
+<PRE>
+This is line one.
+                 This is line two.
+                                  This is line three.
+</PRE>
+</CODE></BLOCKQUOTE>
+
+同樣的, 列印一個 PostScript 檔到這個列印暫存器會得到同樣階梯狀的
+PostScript 命令列表, 而不是我們需要的結果.
+<P>很顯然我們還需要些什麼, 這就是 filtering 的目的. 看過 printcap 
+線上手卌的比較細心的讀者可能已經注意到 <EM>if</EM> 及 <EM>of</EM> 
+這兩個屬性. 其中的 <EM>if</EM>, input filter 就是我們現在所需要的.
+<P>假使我們寫個短短的 shell script 叫 <EM>filter</EM> 
+使之在新行字元之前加上回車字元(carriage return), 就可以消除階梯狀. 
+所以我們必須在前面的 printcap 的記錄中加上 <EM>if</EM> 這一行:
+<BLOCKQUOTE><CODE>
+<PRE>
+lp|dj|deskjet:\
+        :sd=/var/spool/lpd/dj:\
+        :mx#0:\
+        :lp=/dev/lp0:\
+        :if=/var/spool/lpd/dj/filter:\
+        :sh:
+</PRE>
+</CODE></BLOCKQUOTE>
+
+這個短短的 filter script 可以是:
+<BLOCKQUOTE><CODE>
+<PRE>
+#!perl
+# The above line should really have the whole path to perl
+# This script must be executable: chmod 755 filter
+while(&lt;STDIN>){chop $_; print "$_\r\n";};
+# You might also want to end with a form feed: print "\f";
+</PRE>
+</CODE></BLOCKQUOTE>
+
+假如我們照上面的方法, 我們就會得到一個能正常印出普通 Unix 文字檔的列印暫存器.
+(還有其他四百萬種更好的方法來寫這個命令稿, 但是這個很適合舉例, 
+你可以自己寫一個更有效率的.)
+<P>剩下的唯一問題是只能印出純文字檔實在是不夠好 - 如果能夠印出 PostScript
+或是其它格式化的或是圖形輸出就更棒了. 這可以做的到, 也很容易做到.
+方法就是延伸前面的 filter. 如果你寫出一個能接受任意檔案格式,
+然後針對每種情況都可以產生 DeskJet 所要的資料的 filter, 
+那你就有了一個智慧型的列印暫存器.
+<P>這種 filter 稱之為 <EM>magic</EM> filter. 你無需自己寫一個, 除非你要印的東西很奇怪.
+網路上已經有很多寫好的, APS Filter 就是非常棒的一個. 也說不定你的 Linux
+發行版本(distribution) 已經包括了一個印表機設定工具使得這一切都很容易.
+<P>
+<H2><A NAME="ss7.2">7.2 檔案權限</A>
+</H2>
+
+<P>應大眾要求, 我把我系統上一些相關檔案的權限列出. 還有其它更好的設定方法,
+最好是只將執行檔設為 SGID 而不要設為 SUID root, 但這是我系統預設的設定,
+而且運作正常.(老實說, 如果你的廠商連可以運作的 lpd 都無法提供, 你就有苦頭吃了.)
+<BLOCKQUOTE><CODE>
+<PRE>
+-r-sr-sr-x   1 root     lp    /usr/bin/lpr*
+-r-sr-sr-x   1 root     lp    /usr/bin/lprm*
+-rwxr--r--   1 root     root  /usr/sbin/lpd*
+-r-xr-sr-x   1 root     lp    /usr/sbin/lpc*
+drwxrwxr-x   4 root     lp    /var/spool/lpd/
+drwxr-xr-x   2 root     lp    /var/spool/lpd/lp/
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Lpd 目前必須以 root 身份執行才能連接到低號(連接埠號低於 1024)的 lp 服務埠. 
+可能應該改成在連接後將使用者身份變成 lp 或其他身份, 但是我不認為現在有這樣做. 
+令人有些失望.
+<P>
+<HR>
+<A HREF="Printing-HOWTO-8.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Printing-HOWTO-6.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Printing-HOWTO.html#toc7"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

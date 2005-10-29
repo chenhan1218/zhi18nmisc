@@ -1,0 +1,146 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Token-Ring mini-HOWTO: 安装和设定</TITLE>
+ <LINK HREF="Token-Ring-5.html" REL=next>
+ <LINK HREF="Token-Ring-3.html" REL=previous>
+ <LINK HREF="Token-Ring.html#toc4" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+<A HREF="Token-Ring-5.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Token-Ring-3.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Token-Ring.html#toc4"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s4">4. 安装和设定</A></H2>
+
+<P>
+<DL>
+<DT><B>留意事项 :</B><DD><P>这些说明是针对 1.2 版的 token ring 支援的核心修补程式.
+如果你用 2.0 版以上的核心,你只要在重新编译目前的核心时,对支援 token
+ring 的选项选择  "<CODE>y</CODE>es" 或 "<CODE>m</CODE>odule" 即可.
+</DL>
+
+<OL>
+<LI>把 Token Ring 网路卡安装到电脑上并设定你想要使用的功能.
+最好能先在 DOS 环境下测试此卡无误後再在 Linux 上使用.
+如果它能在 DOS 下工作,那它很有可能能用相同的设定值在 Linux 跑.
+如果这是 Plug and Play (随插即用) 网路卡,当你的设定可以让它工作时,记得把设定值记下来.
+</LI>
+<LI>替你原先的系统目录作个备份.
+
+当你有需要将这修补程式从你的核心中完全移除并回到你原先的系统时,这就显得很重要.
+<BLOCKQUOTE><CODE>
+<PRE>
+cd /usr/src
+tar cvzhf linuxbak.tar.gz linux
+        
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>解压缩 Token Ring 修补程式.
+<BLOCKQUOTE><CODE>
+<PRE>
+cd /usr/src/patches/token
+gzip -d TokenRing.patch-1.2.0.gz
+        
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>替你的核心增加 TokenRing 功能.
+<BLOCKQUOTE><CODE>
+<PRE>
+cd /usr/src/linux
+patch -p1 &lt; /usr/src/patches/token/TokenRing.patch-1.2.0
+        
+</PRE>
+</CODE></BLOCKQUOTE>
+
+-或-
+<BLOCKQUOTE><CODE>
+<PRE>
+patch -p1 &lt; &lt;directory-of-patchfile>/TokenRing.patch-1.2.0
+        
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>从核心中搜寻因修补造成的 rejects (不合格) 并作适当的改变.
+<BLOCKQUOTE><CODE>
+<PRE>
+find . -name \*.rej -print
+        
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>从核心中搜寻 orig 档案并删除它们.
+<BLOCKQUOTE><CODE>
+<PRE>
+find . -name \*.orig -print | xargs rm
+        
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>编译核心.
+<DL>
+<DT><B>留意事项NOTE:</B><DD><P>如果你有 swap 分割区,请把他设成 active.
+</DL>
+
+<BLOCKQUOTE><CODE>
+<PRE>
+cd /usr/src/linux
+make config
+        
+</PRE>
+</CODE></BLOCKQUOTE>
+
+(修补程式会将以下两个选项加入 <CODE>config.in</CODE>
+<BLOCKQUOTE><CODE>
+<PRE>
+Token Ring support (CONFIG_TR) [y]
+        
+</PRE>
+</CODE></BLOCKQUOTE>
+
+(还有以下这行...)
+<BLOCKQUOTE><CODE>
+<PRE>
+IBM Tropic chipset based adaptor support (CONFIG_IBMTR) [y]
+        
+</PRE>
+</CODE></BLOCKQUOTE>
+
+<BLOCKQUOTE><CODE>
+<PRE>
+make dep
+make clean
+make zImage
+        
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>设定 LILO.
+
+首先把你核心 <CODE>vmlinuz</CODE> 改名为 <CODE>vmlinuz.old</CODE>
+再把新核心复制成 <CODE>vmlinuz</CODE>.
+就我的系统而言,复制有以下几步骤
+<BLOCKQUOTE>
+<CODE>/usr/src/linux/arch/i386/boot/zImage</CODE> to <CODE>/vmlinuz</CODE>
+并编辑 <CODE>/etc/lilo.conf</CODE> 使核心能载入.
+</BLOCKQUOTE>
+
+并在提示符号下打 "<CODE>lilo</CODE>".
+</LI>
+<LI>你现在可重新开机并使用 Token Ring 网路卡了.
+相关设定的资讯请参考套件特有段落 (distribution specific section).</LI>
+</OL>
+<HR>
+<A HREF="Token-Ring-5.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Token-Ring-3.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Token-Ring.html#toc4"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

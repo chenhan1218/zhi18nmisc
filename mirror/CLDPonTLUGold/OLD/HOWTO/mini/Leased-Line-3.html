@@ -1,0 +1,199 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Leased line Mini HOWTO: PPPD</TITLE>
+ <LINK HREF="Leased-Line-2.html" REL=previous>
+ <LINK HREF="Leased-Line.html#toc3" REL=contents>
+<SCRIPT src="../../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(2, 8, 2);</SCRIPT>
+<IMG SRC="../../img/next.gif" ALT="Next">
+<A HREF="Leased-Line-2.html"><IMG SRC="../../img/prev.gif" ALT="Previous"></A>
+<A HREF="Leased-Line.html#toc3"><IMG SRC="../../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s3">3. PPPD</A></H2>
+
+<P>You need a pppd (Point to Point Protocol Daemon) and a reasonable knowledge
+of how it works. Consult the relevant RFC's or the
+<A HREF="http://www.linuxdoc.org/HOWTO/PPP-HOWTO/">Linux PPP HOWTO</A> if necessary.
+Since you are not going to use a login procedure, you don't use (m)getty
+and you do not need a (fake) user associated with the pppd controlling your
+link. You are not going to dial so you don't need any chat scripts
+either.
+In fact, the modem circuit and configuration you have just build, are
+rather like a fully wired null modem cable. This means you have to
+configure your pppd the same way as you would with a null modem cable.
+<P>
+For a reliable link, your setup should meet the following criteria;
+
+<UL>
+<LI>Shortly after booting your system, pppd should raise the DTR signal in
+your RS232 port, wait for DCD to go up, and negotiate the link.</LI>
+<LI>If the remote system is down, pppd should wait until it is up again.</LI>
+<LI>If the link is up and then goes down, pppd should reset the modem
+(it does this by dropping and then raising DTR), and then try to
+reconnect.</LI>
+<LI>If the quality of the link deteriorates too much, pppd should reset
+the modem and then reestablish the link.</LI>
+<LI>If the process controlling the link, that is the pppd, dies, a watchdog
+should restart the pppd.</LI>
+</UL>
+
+<H2><A NAME="ss3.1">3.1 Configuration</A>
+</H2>
+
+<P>Suppose the modem is connected to COM2, the local IP address is `Loc_Ip'
+and the remote IP address is `Rem_Ip'. We want to use 576 as our MTU.
+The /etc/ppp/options.ttyS1 would now be:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+crtscts
+mru 576
+mtu 576
+passive
+Loc_Ip:Rem_Ip
+-chap
+modem
+#noauth
+-pap
+persist
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+Stuff like `asyncmap 0', `lock', `modem' and `-detach' are probably already in
+/etc/ppp/options. If not, add them to your
+/etc/ppp/options.ttyS1.
+So, if the local system is 192.168.1.1 and the remote system is 10.1.1.1,
+then /etc/ppp/options.ttyS1 on the local system would be:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+crtscts
+mru 576
+mtu 576
+passive
+192.168.1.1:10.1.1.1
+-chap
+modem
+#noauth
+-pap
+persist
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+The options.ttyS1 on the remote system would be:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+crtscts
+mru 576
+mtu 576
+passive
+10.1.1.1:192.168.1.1
+-chap
+modem
+#noauth
+-pap
+persist
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+The passive option limits the number of (re)connection attempts.
+The persist option will keep pppd alive in case of a disconnect or when it
+can't connect in the first place.
+If you telnet a lot while doing filetransfers (FTP or webbrowsing) at the
+same time, you might want to use a smaller MTU and MRU such as 296. This
+will make the remote system more responsive.
+If you don't care much about telnetting during FTP, you could set the MTU
+and MRU to 1500.
+Keep in mind though, that UDP cannot be fragmented. Speakfreely for instance
+uses 512 byte UDP packets. So the minimum MTU for speakfreely is 552 bytes.
+The noauth option may be necessary with some newer distributions.
+<H2><A NAME="ss3.2">3.2 Scripts</A>
+</H2>
+
+<H3>Starting the pppd and keeping it alive</H3>
+
+<P>You could start the pppd form a boot (rc) script. However, if you do this,
+and the pppd dies, you are without a link.
+A more stable solution, is to start the pppd from /etc/inittab;
+
+<BLOCKQUOTE><CODE>
+<PRE>
+s1:23:respawn:/usr/sbin/pppd /dev/ttyS1 115200
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+This way, the pppd will be restarted if it dies.
+Make sure you have a `-detach' option (nodetach on newer systems) though,
+otherwise inittab will start numerous instances of pppd, will complaining
+about `respawning too fast'.
+<P>Note: Some older systems will not accept the speed `115200'. In this case
+you will have to set the speed to 38400 en set the `spd_vhi' flag with
+setserial.
+Some systems expect you to use a `cua' instead of `ttyS' device.
+<H3>Setting the routes</H3>
+
+<P>The default route can be set with the defaultroute option or with the
+/etc/ppp/ip-up script;
+
+<BLOCKQUOTE><CODE>
+<PRE>
+#!/bin/bash
+case $2 in
+     /dev/ttyS1)
+          /sbin/route add -net 0.0.0.0 gw Rem_Ip netmask 0.0.0.0
+          ;;
+esac
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+Ip-up can also be used to sync your clock using netdate.
+<P>
+Of course the route set in ip-up is not necessarily the default route.
+Your ip-up sets the route to the remote network while the ip-up script on
+the remote system sets the route to your network. If your network is
+192.168.1.0 and your ppp interface 192.168.1.1, the ip-up script on the
+remote machine looks like this;
+
+<BLOCKQUOTE><CODE>
+<PRE>
+#!/bin/bash
+case $2 in
+   /dev/ttyS1)
+      /sbin/route add -net 192.168.1.0 gw 192.168.1.1 netmask 255.255.255.0
+      ;;
+esac
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+The `case $2' and `/dev/ttyS1)' bits are there in case you use more than
+one ppp link. Ip-up will run each time a link comes up, but only the part
+between `/dev/ttySx)' and `;;' will be executed, setting the right route
+for the right ttyS.
+You can find more about routing in the
+<A HREF="http://www.linuxdoc.org/HOWTO/Net-HOWTO/">Linux Networking HOWTO</A> section on routing.
+<H2><A NAME="ss3.3">3.3 Test</A>
+</H2>
+
+<P>Test the whole thing just like the modem test.
+If it works, get on your bike and bring the remote modem to the remote side
+of your link.
+If it doesn't work, one of the things you should check is the COM port
+speed;
+Apparently, a common mistake is to configure the modems with Minicom using
+one speed and then configure the pppd to use an other. This will <B>NOT</B>
+work! You have to use the same speed all of the time!
+<P>
+<HR>
+<IMG SRC="../../img/next.gif" ALT="Next">
+<A HREF="Leased-Line-2.html"><IMG SRC="../../img/prev.gif" ALT="Previous"></A>
+<A HREF="Leased-Line.html#toc3"><IMG SRC="../../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

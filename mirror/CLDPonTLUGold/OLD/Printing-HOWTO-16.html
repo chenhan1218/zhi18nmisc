@@ -1,0 +1,103 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>The Linux Printing HOWTO 中文版: 在 lpd 下使用序列式印表機</TITLE>
+ <LINK HREF="Printing-HOWTO-17.html" REL=next>
+ <LINK HREF="Printing-HOWTO-15.html" REL=previous>
+ <LINK HREF="Printing-HOWTO.html#toc16" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Printing-HOWTO-17.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Printing-HOWTO-15.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Printing-HOWTO.html#toc16"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s16">16. 在 lpd 下使用序列式印表機</A></H2>
+
+<H2><A NAME="ss16.1">16.1 設定 printcap</A>
+</H2>
+
+<P>Lpd 在 <EM>/etc/printcap</EM> 中提供了五個可以設定的屬性,
+讓你用來控制印表機所連接的序列埠的設定. 閱讀 <EM>
+<A HREF="http://www.picante.com/~gtaylor/pht/man/printcap.5.html">printcap</A></EM>
+的線上手卌(man page), 並請注意 <EM>br#</EM>, <EM>fc#</EM>, <EM>xc#</EM>,
+<EM>fs#</EM> 和 <EM>xs#</EM> 的意義. 其中最後的四個屬性是位元組列(bitmap),
+用來代表該序列埠的使用設定. 而 <EM>br#</EM> 屬性只是單純的鮑率(baud rate),
+例如 `<CODE>br#9600</CODE>'.
+<P>
+<P>要將 
+<A HREF="http://www.picante.com/~gtaylor/pht/man/stty.1.html">stty</A> 的設定轉換為
+printcap 的旗標設定(flag settings) 非常簡單. 假使你需要, 請現在就看看 stty
+的線上手卌.
+<P>
+<P>你可以用 stty 來設定印表機埠, 以便讓你可以將一個檔案 cat 到該埠,
+並且使它正確地列印出來. 這兒是我的印表埠 `<EM>stty -a</EM>' 的結果:
+<BLOCKQUOTE><CODE>
+<PRE>
+dina:/usr/users/andy/work/lpd/lpd# stty -a &lt; /dev/ttyS2
+speed 9600 baud; rows 0; columns 0; line = 0;
+intr = ^C; quit = ^\; erase = ^?; kill = ^U; eof = ^D; eol = &lt;undef>;
+eol2 = &lt;undef>; start = ^Q; stop = ^S; susp = ^Z; rprnt = ^R; werase = ^W;
+lnext = ^V; min = 1; time = 0;
+-parenb -parodd cs8 hupcl -cstopb cread -clocal -crtscts
+-ignbrk -brkint -ignpar -parmrk -inpck -istrip -inlcr 
+-igncr -icrnl ixon -ixoff -iuclc -ixany -imaxbel
+-opost -olcuc -ocrnl -onlcr -onocr -onlret -ofill -ofdel nl0 cr0 tab0 
+bs0 vt0 ff0
+-isig -icanon -iexten -echo -echoe -echok -echonl -noflsh -xcase
+-tostop -echoprt -echoctl -echoke
+</PRE>
+</CODE></BLOCKQUOTE>
+
+這裏和開機時序列埠初始化的設定方式唯一的不同在於 <CODE>-clocal</CODE>, <CODE>-crtscts</CODE>,
+和 <CODE>ixon</CODE>. 根據你的印表機的流量控制(flow control) 方式, 你的設定可能會不同.
+<P>
+<P>實際上, 你是以特殊的方式使用 stty. 因為 stty 的對象是連接在標準輸入(standard
+input) 上的終端機裝置, 你是用如上所示的 `<CODE>&lt;</CODE>' 字元, 來使得 stty
+處理所指定的序列埠.
+<P>
+<P>只要你的 stty 設定正確, `<EM>cat file > /dev/ttyS2</EM>' (在我的例子中)
+就可以將檔案送到印表機了, 請看一下這個檔案
+/usr/src/linux/include/asm-i386/termbits.h, 它包含了很多的
+#define 和一些 struct (你可能想把它 cat 到印表機 (已經可以用了吧, 對不對?),
+然後把它當做便條紙). 找到下面這一行:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+/* c_cflag bit meaning */
+#define CBAUD   0000017
+</PRE>
+</CODE></BLOCKQUOTE>
+
+這一段列出了 <EM>fc#</EM> 和 <EM>fs#</EM> 位元的意義. 你會發現到那兒的名稱
+(在鮑率之後) 和 stty 輸出的結果其中一行相符合, 我不是說這會很容易嗎?
+<P>
+<P>找到那些在你的 stty 結果中前面有減號(-) 的設定, 把那些數字(是八進位的) 加起來.
+這代表了你要清除的位元, 結果就是你的 <EM>fc#</EM> 能力. 當然你也可以直接用
+`<CODE>fc#0177777</CODE>' (我就是), 因為你將會在清除之後立刻設定這些位元.
+<P>
+<P>現在對那些在 stty 的結果中沒有減號在前面的設定 (在這一段中所列出的) 做同樣的事.
+在我的例子中, 重要的設定有  CS8 (0000060), HUPCL (0002000), 和 CREAD
+(0000200). 同時也找到代表你的鮑率的旗標 (我的是 0000015), 把它們統統加起來,
+在我的例子中會得到 0002275. 這就是你的 <EM>fs#</EM> 能力 (`<CODE>fs#02275</CODE>'
+在我的例子中運作的很好).
+<P>
+<P>用同樣的方式針對這個標題檔(include file) 中的下一段, "c_lflag bits",
+做設定和清除的動作. 在我的例子中我不需要設定任何東西, 所以只要用
+`<CODE>xc#0157777</CODE>' 和 `<CODE>xs#0</CODE>' 就可以了.
+<P>
+<H2><A NAME="ss16.2">16.2 會掉字的舊型序列式印表機</A>
+</H2>
+
+<P>Jon Luckey 指出有些具有 ten-cent
+序列介面和小緩衝區的舊型的序列式印表機, 當使用流量控制時,
+說停止就是<EM>真的</EM>表示停止. 他發現用 <CODE>
+<A HREF="http://www.picante.com/~gtaylor/pht/man/setserial.8.html">setserial</A></CODE>
+停用他的 Linux 機器的 16550 序列埠的 FIFO 功能後, 掉字的問題就解決了
+(如果你要這樣做, 似乎只要將 uart 的種類指定為 8250 就可以了).
+<P>
+<HR>
+<A HREF="Printing-HOWTO-17.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Printing-HOWTO-15.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Printing-HOWTO.html#toc16"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

@@ -1,0 +1,72 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Linux 2.4 Advanced Routing HOWTO: Netfilter 與 iproute - 封包標識 (Netfilter &amp; iproute - marking packets)</TITLE>
+ <LINK HREF="Adv-Routing-HOWTO-13.html" REL=next>
+ <LINK HREF="Adv-Routing-HOWTO-11.html" REL=previous>
+ <LINK HREF="Adv-Routing-HOWTO.html#toc12" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Adv-Routing-HOWTO-13.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Adv-Routing-HOWTO-11.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Adv-Routing-HOWTO.html#toc12"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s12">12. Netfilter 與 iproute - 封包標識 (Netfilter &amp; iproute - marking packets)</A></H2>
+
+<P>到目前為止﹐我們已經見識過 iproute 的能耐了﹐而 netfilter 也曾數度提及。現在是要好好的看看
+<A HREF="http://netfilter.samba.org/unreliable-guides/">Rusty's Remarkably Unreliable Guides</A> 的時候了。而 netfilter 的芳蹤﹐可以從  
+<A HREF="http://netfilter.filewatcher.org/">這裡</A> 覓得。
+<P>Netfilter 可以讓我們過濾封包﹐或是修改它們的標頭(headers)。其中一絕是我們可以用號碼將封包標識起來﹐用 --set-mark 就可以做到。
+<P>舉個例子﹐下面的命令將所有送給 port 25 的封包標﹐也就是外送郵件﹐給識起來﹕
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# iptables -A PREROUTING -i eth0 -t mangle -p tcp --dport 25 \
+ -j MARK --set-mark 1
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>讓我們假設有多條連線﹐其中一個比較快(當然每一 magabyte 也較貴)﹐而另一個比較慢﹐但使用固定價格。我們理所應當想把外送郵件走那個較便宜的 router 。
+<P>我們已經將封包標識為 '1' 了﹐現在就指引路由原則資料庫做如下事情﹕
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# echo 201 mail.out >> /etc/iproute2/rt_tables
+# ip rule add fwmark 1 table mail.out
+# ip rule ls
+0:      from all lookup local 
+32764:  from all fwmark        1 lookup mail.out 
+32766:  from all lookup main 
+32767:  from all lookup default 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>現在我們產生 mail.out 表格﹐將個路由指向較慢但也較便宜的線路﹕
+<BLOCKQUOTE><CODE>
+<PRE>
+# /sbin/ip route add default via 195.96.98.253 dev ppp0 table mail.out
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>大功告成﹗假如我們想要網開一面﹐有很多辦法可以做到的。我們可以修改 netfilter 的敘述﹐將某些特定主機豁免出來﹐或是為那些豁免主機插入一條規則﹐使用較低的優先值指向 main 表格。
+<P>我們還可以運用此一絕技來實踐 TOS 位元(bits)﹐只需將封包以不同數字標識為不同等服務類型﹐同時建立規則將之跑起來即可。用此辦法﹐我們甚至指定一條 ISDN 線路給互動連線呢。
+<P>值得一提的是﹐此法在 NAT('masquerading') 主機上也同具功效哦。
+<P>非常重要﹕我們收到一個報告指出 MASQ 和 SNAT 至少和封包標識會有所抵觸。Rusty Russel 已在如下網頁作過解釋﹕
+<A HREF="http://lists.samba.org/pipermail/netfilter/2000-November/006089.html">this posting</A>。請關閉逆向路徑過濾功能﹐以解決此一問題。
+<P>請留意﹕您需要將某些核心選項打開才行﹕
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+IP: advanced router (CONFIG_IP_ADVANCED_ROUTER) [Y/n/?]
+ IP: policy routing (CONFIG_IP_MULTIPLE_TABLES) [Y/n/?]
+  IP: use netfilter MARK value as routing key (CONFIG_IP_ROUTE_FWMARK) [Y/n/?]
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>另外﹐還請看看 Cookbook 中的 
+<A HREF="Adv-Routing-HOWTO-16.html#SQUID">Transparent web-caching using netfilter, iproute2, ipchains and squid</A> 。
+<P>
+<P>
+<P>
+<HR>
+<A HREF="Adv-Routing-HOWTO-13.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Adv-Routing-HOWTO-11.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Adv-Routing-HOWTO.html#toc12"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

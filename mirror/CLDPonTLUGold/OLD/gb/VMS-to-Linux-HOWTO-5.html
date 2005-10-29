@@ -1,0 +1,221 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>如何从 VMS 转移到 Linux (From VMS to Linux HOWTO): 程式 </TITLE>
+ <LINK HREF="VMS-to-Linux-HOWTO-6.html" REL=next>
+ <LINK HREF="VMS-to-Linux-HOWTO-4.html" REL=previous>
+ <LINK HREF="VMS-to-Linux-HOWTO.html#toc5" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="VMS-to-Linux-HOWTO-6.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="VMS-to-Linux-HOWTO-4.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="VMS-to-Linux-HOWTO.html#toc5"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="Programming"></A> <A NAME="s5">5. 程式 </A></H2>
+
+<P>
+<P>在 Linux 上写程式更是舒服：有许多好用得工具可以让写程式更加快速更加简单。
+例如：写程式无非是单调沈闷的工作：编辑--存档--离开--编译--重新编辑 一直反覆的执行同样的动作。
+但是，如果使用像 <CODE>emacs</CODE> 或是 <CODE>jed</CODE> 等工具，上述那些动作，将统一整合在编辑器里，一次完成。
+<P>
+<H2><A NAME="ss5.1">5.1 Fortran</A>
+</H2>
+
+<P>
+<P>大体上，没有多大的差别，但是请注意，这个免费的编译器可不是百分之百的和 VMS 相容的。
+可能会有些奇怪的结果发生。（实际上，VMS 的 Fortran 编译器并不是一个可以标准延伸的(non-standard)）。
+详细情形请看 <CODE>/usr/doc/g77/DOC</CODE> or <CODE>/usr/doc/f2c/f2c.ps</CODE>
+。
+<P>您的系统管理员已经安装了一个叫做 <CODE>g77</CODE> 的 compiler (不错但是, 在
+0.5.21 版, 还是没有完全和 DEC 的 Fortran 百分百地相容) ，或是一个把 Fortran 转成 C 语言的转换器，叫做 <CODE>f2c</CODE>。 
+加上她的一个前端(front-ends)装置，模拟就像是一个 Fortran 编译器。
+依我的经验，<CODE>yaf77</CODE> 套件提供最好的解决方案。
+<P>欲使用 <CODE>g77</CODE> 来 compile 您的 Fortran 程式, 先用任意编辑记编辑程式码，以副档名 <CODE>.f</CODE> 存档，
+然後执行如下：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ g77 myprog.f
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>她会自动帮您产称 <CODE>a.out</CODE> 的执行档。(您不需要作任何 link 的动作）
+如果想要产生不同的执行档档名，可以下参数：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ g77 -O2 -o myprog myprog.f
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>请注意最佳化！要求您的系统管理员细读编译器的说明文件，并且告知您是否还有任何的存在问题。
+<P>编译中间码(subroutine)：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ g77 -c mysub.f
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>这会产生 <CODE>mysub.o</CODE> 这个档案。 然後您需要作连结(link)的动作。
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ g77 -o myprog myprog.f mysub.o
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>如果您想作成函数库(library)，您可以这样作：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ cd subroutines/
+$ cat *f >mylib.f ; g77 -c mylib.f
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>这会产生出 <CODE>mylib.o</CODE> ，您可以使用她来连结您的程式。
+<P>最後，如果要 link 其他的函数库(library)，我们假设 <CODE>libdummy.so</CODE>:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ g77 -o myprog myprog.f -ldummy
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>如果您使用 <CODE>f2c</CODE>, 您只能使用 <CODE>f77</CODE> 或是 <CODE>fort77</CODE> ，而不能使用 <CODE>g77</CODE>。
+<P>另一个有用的工具是 <CODE>make</CODE>, 详述如下：
+<P>
+<P>
+<H2><A NAME="ss5.2">5.2 如何使用 <CODE>make</CODE></A>
+</H2>
+
+<P>
+<P><CODE>make</CODE> 可以用来编辑很多分散於个档案的原始码。在 VMS 上我们称为 <CODE>MMS</CODE>
+和 <CODE>MMK</CODE>, 但是她们和 Linux 有不同的语法。
+<P>假设您有一些原始程式，需要作些例行程序。程式分别为 <CODE>file_1.f,
+file_2.f, file_3.f</CODE>, 主程式为 <CODE>myprog.f</CODE>。 如果您是手动编译您的程式，每当您修改您的程式码後，
+您必须知道哪个档案和哪个档案有关连，哪个档案必须先编译，等等。
+<P>与其发疯，不如您可以写个 `makefile'。 这是一个文字档，里面记录著您程式码与程式码之间的关连性。
+当其中一个档案被修改後，只有与这个被修改的档案有相关的档案需要被重新编译。
+<P>例如，您写了一个 makefile 如下：
+<P>
+<HR>
+<PRE>
+
+# 这是一个 makefile
+# 使用 &lt;TAB> 键，当您见到 &lt;TAB> 标签时!
+# 这非常的重要，请不要使用空白键代替。
+
+myprog: myprog.o file_1.o file_2.o file_3.o
+&lt;TAB>g77 -o myprog myprog.o file_1.o file_2.o file_3.o
+# myprog depends on four object files
+
+myprog.o: myprog.f
+&lt;TAB>g77 -c myprog.f
+# myprog.o depends on its source file
+
+file_1.o: file_1.f
+&lt;TAB>g77 -c file_1.f
+# file_1.o depends on its source file
+
+file_2.o: file_2.f file_1.o
+&lt;TAB>g77 -c file_2.f file_1.o
+# file_2.o depends on its source file and an object file
+
+file_3.o: file_3.f file_2.o
+&lt;TAB>g77 -c file_3.f file_2.o
+# file_3.o depends on its source file and an object file
+
+# end of makefile.
+</PRE>
+<HR>
+<P>储存这个档案，命名为 <CODE>Makefile</CODE> 且在命令列输入 <CODE>make</CODE> 来编译您的程式;
+或是您也可以将她存成 <CODE>myprog.mak</CODE> 然後使用 <CODE>make -f myprog.mak</CODE> 来编译.
+接下来的後续动作, RMP.（还记得什麽是 RMP 吧！）
+<P>
+<P>
+<H2><A NAME="ss5.3">5.3 Shell Scripts</A>
+</H2>
+
+<P>
+<P>Shell scripts 就像 VMS 上的 command files。, 这可以建构出非常有用的功能。
+<P>要写一个 script, 您所要作的就只是写一个包含一些指令的文字档，然後存档，改变成可执行的模式
+（使用 <CODE>chmod +x &lt;scriptfile></CODE>）。 只要输入该 Script 的名字就可以执行了。
+<P>写一个 Script 是一个非常重大的工程，这需要一本书。这里我就不再多做说明了。
+<P>我只给您一个或多或少的综合的（希望）有用的例子，您或许可以从这个例子中得到一些基本的规则。
+<P>EXAMPLE: sample.sh
+<P>
+<HR>
+<PRE>
+#!/bin/sh
+# sample.sh
+# I am a comment
+# 不要修改第一行，她必须以这种形式存在在第一行！！！
+echo "This system is: `uname -a`" # use the output of the command
+echo "My name is $0" # built-in variables
+echo "You gave me the following $# parameters: "$*
+echo "First parameter is: "$1
+echo -n "What's your name? " ; read your_name
+echo notice the difference: "hi $your_name" # quoting with "
+echo notice the difference: 'hi $your_name' # quoting with '
+DIRS=0 ; FILES=0
+for file in `ls .` ; do
+  if [ -d ${file} ] ; then # if file is a directory
+    DIRS=`expr $DIRS + 1`  # this means DIRS = DIRS + 1
+  elif [ -f ${file} ] ; then
+    FILES=`expr $FILES + 1`
+  fi
+  case ${file} in
+    *.gif|*jpg) echo "${file}: graphic file" ;;
+    *.txt|*.tex) echo "${file}: text file" ;;
+    *.c|*.f|*.for) echo "${file}: source file" ;;
+    *) echo "${file}: generic file" ;;
+  esac
+done
+echo "there are ${DIRS} directories and ${FILES} files"
+ls | grep "ZxY--!!!WKW"
+if [ $? != 0 ] ; then # exit code of last command
+  echo "ZxY--!!!WKW not found"
+fi
+echo "enough... type 'man bash' if you want more info."
+</PRE>
+<HR>
+<P>
+<H2><A NAME="C"></A> <A NAME="ss5.4">5.4 C 语言</A>
+</H2>
+
+<P>
+<P>Linux 是一个写 Ｃ语言的好地方。就假设您会Ｃ语言吧！这里也几个指导方针。
+编译您的程式<CODE>hello.c</CODE> ，您会使用到 <CODE>gcc</CODE> compiler, 这已是 Linux 的一部份了。
+而且和 <CODE>g77</CODE> 有相同的使用方法:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ gcc -O2 -o hello hello.c
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>连结(link)函数库(library)，加入参数 <CODE>-l&lt;libname&gt;</CODE>。
+例如，要 link 数学函数库和最佳化，可以下如下指令：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ gcc -O2 -o mathprog mathprog.c -lm
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>( <CODE>-l&lt;libname&gt;</CODE> 参数强迫 <CODE>gcc</CODE> 连结(link)函数库(library)
+<CODE>/usr/lib/lib&lt;libname&gt;.a</CODE>; 所以 <CODE>-lm</CODE> 就连结了
+<CODE>/usr/lib/libm.a</CODE>).
+<P>如果您的程式是由许多档案组成的，您可能也需要使用前面所提到的 <CODE>make</CODE> 这个工具。
+在 makefile 使用 <CODE>gcc</CODE> 和 Ｃ语言的原始码档案就可以了。
+<P>您也可以获得有关 C 语言的函数的说明。这些说明文件都已经被编成 man pages，第三节(section 3) 了。
+例如:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ man 3 printf
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>同时，有许许多多的函数库可供使用。其中您第一想要使用的是 <CODE>ncurses</CODE>, 
+这可以用来处理文字模式下的特效。或是 <CODE>svgalib</CODE>, 这可以用来处理图形模式。
+<P>
+<HR>
+<A HREF="VMS-to-Linux-HOWTO-6.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="VMS-to-Linux-HOWTO-4.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="VMS-to-Linux-HOWTO.html#toc5"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

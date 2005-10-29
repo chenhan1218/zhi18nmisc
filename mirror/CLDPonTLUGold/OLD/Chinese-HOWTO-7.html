@@ -1,0 +1,454 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="LinuxDoc-Tools 0.9.16">
+ <TITLE>Linux Chinese HOWTO 中文版: 中文排版軟體</TITLE>
+ <LINK HREF="Chinese-HOWTO-8.html" REL=next>
+ <LINK HREF="Chinese-HOWTO-6.html" REL=previous>
+ <LINK HREF="Chinese-HOWTO.html#toc7" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Chinese-HOWTO-8.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="Chinese-HOWTO-6.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="Chinese-HOWTO.html#toc7"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s7">7.</A> <A HREF="Chinese-HOWTO.html#toc7">中文排版軟體</A></H2>
+
+<H2><A NAME="ss7.1">7.1</A> <A HREF="Chinese-HOWTO.html#toc7.1">LaTeX + CJK</A>
+</H2>
+
+<P>TeX/LaTeX 是一套的幕後排版軟體。其優秀的輸出品質早已為廣大的學術界朋友所喜愛及採用。
+CJK 是一個 LaTeX2e 的巨集套件(macro package)，能讓你在 TeX 文件中使用 CJK (Chinese/Japanese/Korean) 的文字編碼。</P>
+<P>你的系統必須先安裝好 teTeX/LaTeX. 許多的 Linux 發行套件都已包含了 teTeX/LaTeX.
+如果沒有的話，你也可以自己裝。請參考 
+<A HREF="http://sunsite.unc.edu/LDP/HOWTO/TeTeX-HOWTO.html">teTeX HOWTO</A> 的說明。</P>
+
+<H3>取得軟體</H3>
+
+<P>在下面地點取回 CJK 4.1.3
+<BLOCKQUOTE>
+<A HREF="ftp://nctuccca.edu.tw/Chinese/ifcss/software/tex/">ftp://nctuccca.edu.tw/Chinese/ifcss/software/tex/CJK-4.1.3.src.tar.gz</A></BLOCKQUOTE>
+</P>
+<P>在此取回你要的 TTF 字型:
+<BLOCKQUOTE>
+<A HREF="ftp://nctuccca.edu.tw/Chinese/ifcss/software/fonts/big5/ms-win/">ftp://nctuccca.edu.tw/Chinese/ifcss/software/fonts/big5/ms-win/</A></BLOCKQUOTE>
+</P>
+
+<H3>安裝</H3>
+
+<P>你必須知道你 teTeX/LaTeX 的安裝目錄 <CODE>$TEXMF</CODE>, 例如 <CODE>/usr/lib/texmf</CODE>.
+我還假設你用的字型是 <CODE>ntu_kai.ttf</CODE>, 如果你用別的請自行對應。</P>
+<P>
+<UL>
+<LI>將你抓回來的字型 
+<A HREF="Chinese-HOWTO-11.html#ntuttf">解壓縮</A> 後放到 <CODE>$TEXMF/fonts/truetype/chinese</CODE> 下。</LI>
+<LI>解開 CJK-4.1.3.src.tar.gz, 將 <CODE>texinput</CODE> 子目錄移至 <CODE>$TEXMF/tex/latex</CODE>, 改名為 <CODE>CJK</CODE>, 並建立字型目錄。
+<BLOCKQUOTE><CODE>
+<PRE>
+# cd 4_1.3/; mv ./texinput $TEXMF/tex/latex/CJK
+# mkdir -p $TEXMF/fonts/tfm/chinese/ntukai
+# mkdir $TEXMF/ttf2pk
+# mkdir $TEXMF/hbf2gf
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>接下來這個可能是最難的步驟。將 <CODE>4_1.3/doc/teTeX</CODE> 目錄下的 <CODE>*.diff</CODE> 以 <CODE>patch</CODE> 指令施加到這幾個檔案上:
+<BLOCKQUOTE><CODE>
+<PRE>
+  /usr/bin/MakeTeX*
+  $TEXMF/web2c/texmf.cnf
+  $TEXMF/fontname/special.map   
+</PRE>
+</CODE></BLOCKQUOTE>
+
+例如:
+<BLOCKQUOTE><CODE>
+<PRE>
+# cd /usr/bin
+# patch -s &lt; 4_1.3/doc/teTeX/MakeTeXPK.diff
+</PRE>
+</CODE></BLOCKQUOTE>
+
+由於 TeX 的版本眾多，你的 <CODE>patch</CODE> 可能會失敗。這樣的話你就要自己手動地將失敗的地方補上(失敗的地方會記錄在 <CODE>.rej</CODE> 中)。如果你不太了解 <CODE>patch</CODE>  運作的原理，最好請教一下有經驗的人。
+</LI>
+<LI>編譯及安裝 <CODE>bg5conv</CODE>
+<BLOCKQUOTE><CODE>
+<PRE>
+# cd 4_1.3/utils/Bg5conv; gcc -o bg5conv bg5conv.c
+# chmod 755 bg5latex
+# cp bg5conv bg5latex /usr/local/bin/
+# gzip bg5conv.1; cp bg5conv.1.gz /usr/local/man/man1/   
+</PRE>
+</CODE></BLOCKQUOTE>
+
+由於含 BIG5 碼的 TeX 文件中某些中文編碼可能含有 <CODE>{</CODE>, <CODE>}</CODE>, <CODE>\</CODE> 等對 TeX 具有特殊含義的符號，<CODE>bg5conv</CODE> 能將這些編碼轉換為 TeX 能處理的形式。
+</LI>
+<LI>編譯及安裝 <CODE>ttf2pk</CODE>, 這是一個將 TrueType 字型轉換為 TeX's pk 字型的工具。
+<BLOCKQUOTE><CODE>
+<PRE>
+# cd 4_1.3/utils/ttf2pk/src
+# make all OS=unix
+# cp ttf2pk /usr/local/bin/
+# cd ..
+# cp config/ttf2pk.cfg  $TEXMF/ttf2pk/
+# gzip ttf2pk.1; cp ttf2pk.1.gz /usr/local/man/man1/
+# cp c00kai.fd $TEXMF/tex/latex/CJK/Bg5/
+# cp MakeTTFPK /usr/local/bin
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>如果你還想直印的話在 <CODE>$TEXMF/tex/latex/CJK/Bg5/</CODE> 上自己編一個 <CODE>c00kair.fd</CODE> 檔:
+<HR>
+<PRE>
+\def\fileversion{4.1.0}
+\def\filedate{1996/11/20}
+\ProvidesFile{c00kair.fd}[\filedate\space\fileversion]
+
+% traditional Chinese characters in Big 5 encoding scheme.
+
+% font shape: kai
+% ntu_kai.ttf is Kai3 Shu1 (&amp;quotmodel book")
+
+\DeclareFontFamily{C00}{kair}{}
+
+\DeclareFontShape{C00}{kair}{m}{n}{&lt;-> CJK * ntukar}{}
+\DeclareFontShape{C00}{kair}{bx}{n}{&lt;-> CJKb * ntukar}{\CJKbold}
+
+\endinput 
+</PRE>
+<HR>
+
+</LI>
+<LI>執行 <CODE>texconfig</CODE>:
+<BLOCKQUOTE><CODE>
+<PRE>
+# texconfig rehash
+# texconfig hyphen
+</PRE>
+</CODE></BLOCKQUOTE>
+</LI>
+</UL>
+</P>
+
+<H3>測試</H3>
+
+<P>
+<UL>
+<LI>橫印測試:
+<BLOCKQUOTE><CODE>
+<PRE>
+# cd 4_1.3/examples
+# bg5latex Big5.tex          (看看有沒有產生 Big5.dvi ?)
+# xdvi Big5.dvi              (是否能看到中文? 當然你要先進 X Window)
+# dvips Big5.dvi -o Big5.ps  (轉換成 PostScript 格式)
+# ghostview Big5.ps          (用 ghostview 觀看)
+# lpr Big5.ps                (送到印表機，看看是否印出中文)
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>直印測試: 用 <CODE>examples</CODE> 目錄中的 <CODE>Big5vert.tex</CODE> 來重覆上述過程。</LI>
+</UL>
+</P>
+
+<H3>增加新字型</H3>
+
+<P>例如，你想改用明體字型 <CODE>ntu_mm.ttf</CODE></P>
+<P>
+<UL>
+<LI>將你的 TrueType 字型放在 <CODE>$TEXMF/fonts/truetype/chinese</CODE> 下。</LI>
+<LI>在 <CODE>$TEXMF/ttf2pk/ttf2pk.cfg</CODE> 中增加兩行:
+<BLOCKQUOTE><CODE>
+<PRE>
+ntumm:  -e Big5 $TEXMF/fonts/truetype/chinese/ntu_mm.ttf
+ntummr: -r 1 -e Big5 $TEXMF/fonts/truetype/chinese/ntu_mm.ttf
+</PRE>
+</CODE></BLOCKQUOTE>
+ </LI>
+<LI>建立 <CODE>c00ming.fd</CODE> 檔: 
+<BLOCKQUOTE><CODE>
+<PRE>
+# cd 4_1.3/utils/ttf2pk
+# cp c00ming.fd $TEXMF/tex/latex/CJK/Bg5/
+</PRE>
+</CODE></BLOCKQUOTE>
+</LI>
+<LI>再次執行 <CODE>texconfig</CODE>.</LI>
+<LI>將 <CODE>4_1.3/examples/Big5.tex</CODE> 中的 kai 改為 ming, 重覆上面 <CODE>bg5latex</CODE>, <CODE>xdvi</CODE>, <CODE>dvips</CODE> 等測試看看結果正不正確。</LI>
+<LI>如果要直印，同樣重覆安裝一節所述，建立 <CODE>c00mingr.fd</CODE> 如下，並將 <CODE>Big5vert.tex</CODE> 中的 kair 改為 mingr, 重覆測試過程。
+<HR>
+<PRE>
+\def\fileversion{4.1.0}
+\def\filedate{1996/11/20}
+\ProvidesFile{c00kair.fd}[\filedate\space\fileversion]
+
+\DeclareFontFamily{C00}{mingr}{}
+
+\DeclareFontShape{C00}{mingr}{m}{n}{&lt;-> CJK * ntummr}{}
+\DeclareFontShape{C00}{mingr}{bx}{n}{&lt;-> CJKb * ntummr}{\CJKbold}
+
+\endinput 
+</PRE>
+<HR>
+
+</LI>
+</UL>
+</P>
+
+<H3>建立 CJK 文件</H3>
+
+<P>中文 CJK TeX 文件與一般 LaTeX 主要不同之處在於:
+<UL>
+<LI>所謂 LaTeX 的 preamble (\documentclass 至 \begin{document}）區域中， 必須有 \usepackage{CJK} 這個命令，即必須載入 CJK.sty。 </LI>
+<LI> 中文字必須在 CJK 或 CJK* 的中文環境中。</LI>
+<LI>要變換字型可用 \CJKfamily 命令，如 \CJKfamily{fs} 將以下的字型改成仿宋字（當然 <CODE>fs</CODE> 這個字形名稱必須定義在 <CODE>c00fs.fd</CODE> 中）。 </LI>
+</UL>
+
+下面是一個 CJK 文件的範例:
+<HR>
+<PRE>
+  \documentclass[12pt]{article}
+  \usepackage{CJK}
+  \begin{document}
+    \begin{CJK*}{Bg5}{kai}
+
+      \section{第一節}
+      \section{第二節}
+      中文段落、章節、圖形、表格、參考文獻、…等
+      ...
+
+    \end{CJK*}
+  \end{document} 
+</PRE>
+<HR>
+</P>
+
+<H2><A NAME="ss7.2">7.2</A> <A HREF="Chinese-HOWTO.html#toc7.2">ChiTeX</A>
+</H2>
+
+<P>由中央大學數學系陳弘毅教授 &lt;
+<A HREF="mailto:yih@math.ncu.edu.tw">yih@math.ncu.edu.tw</A>&gt; 所發展。
+除了 ChiTeX 特有的幾個指令，使用 ChiTeX 就像使用英文 TeX 一樣容易。</P>
+
+<H3>取得</H3>
+
+<P>ChiTeX 可以從這裡取得 
+<BLOCKQUOTE>
+<A HREF="ftp://dongpo.math.ncu.edu.tw/tex-archive/local/chitex/chitex/Linux/">ftp://dongpo.math.ncu.edu.tw/tex-archive/local/chitex/chitex/Linux/</A></BLOCKQUOTE>
+</P>
+
+<H3>安裝</H3>
+
+<P>你要知道你的系統上安裝的 TeX 是什麼版本。在較舊的系統上通常安裝的是 NTeX, 而在新的系統上通常是 teTeX.
+如何知道你的 Linux 裝的是 teTeX 還是 NTeX? 只要執行一下 tex, 若出現  
+<BLOCKQUOTE><CODE>
+<PRE>
+This is TeX, Version 3.14159 
+</PRE>
+</CODE></BLOCKQUOTE>
+
+就是 teTeX. 若出現
+<BLOCKQUOTE><CODE>
+<PRE>
+This is TeX, Version 3.1415N
+</PRE>
+</CODE></BLOCKQUOTE>
+
+則為 NTeX.
+請按照你的 TeX 版本取回適當的 ChiTeX.</P>
+<P>ChiTeX 的安裝很簡單。只要將 <CODE>chitex60.tgz</CODE>(teTeX) 或 <CODE>chitexN.tgz</CODE>(NTeX) 以及 <CODE>fonts1.tgz</CODE>, <CODE>fonts2.tgz</CODE> 放在 <CODE>/usr/local</CODE> 下，
+再將 <CODE>chitex60.tgz</CODE> 解開並執行安裝程式 <CODE>csetup</CODE> 即可。
+<BLOCKQUOTE><CODE>
+<PRE>
+# tar zxvf chitex60.tgz
+# cd chitex60
+# ./csetup
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>如果你的系統是 Red Hat 5.0, 那麼可以直接安裝我製作的 rpm 套件:
+<BLOCKQUOTE>
+<A HREF="ftp://ftp.phys.ntu.edu.tw/pub/OS/Linux/rpm/">ftp://ftp.phys.ntu.edu.tw/pub/OS/Linux/rpm/chitex-6.0.8-1.i386.rpm</A></BLOCKQUOTE>
+</P>
+
+<H3>安裝字型</H3>
+
+<P>你可以安裝中文 TrueType 字型供 ChiTeX 使用。
+<UL>
+<LI>將 TrueType 字型放在 <CODE>$TEXMF/fonts/chinese/ttf</CODE>.</LI>
+<LI>修改 <CODE>$TEXMF/tex/chinese/chitex.fdf</CODE>, 加入一行
+<BLOCKQUOTE><CODE>
+<PRE>
+\choosechfont{fontname}{filename}
+</PRE>
+</CODE></BLOCKQUOTE>
+
+其中 <CODE>filename</CODE> 是你的字型檔名去掉 <CODE>.ttf</CODE>, 而 <CODE>\fontname</CODE> 是此字型的名稱。
+例如，如果你想使用某字型 <CODE>avntmv.ttf</CODE>, 就加入一行 <CODE>\choosechfont{ming}{avntmv}</CODE>, 並在文件中使用巨集 <CODE>\ming</CODE> 表示開始使用字形 <CODE>avntmv.ttf</CODE>.</LI>
+<LI><CODE>chitex.fdf</CODE> 中已事先定義好下面幾種字型，因此如果你要裝這些字型，就不必再更改 <CODE>chitex.fdf</CODE>.
+<BLOCKQUOTE><CODE>
+<PRE>
+ \kai    ---->  ntukai.ttf
+ \li     ---->  ntuli.ttf
+ \mr     ---->  ntumr.ttf
+ \fs     ---->  ntufs.ttf
+</PRE>
+</CODE></BLOCKQUOTE>
+</LI>
+</UL>
+</P>
+
+<H3>測試</H3>
+
+<P>現在你可以拿 ChiTeX 附的範例來測試:
+<BLOCKQUOTE><CODE>
+<PRE>
+# chilatex math2.tex        (編譯)
+# xdvi math2                (預視)
+# dvips math2               (轉換成 PostScript 檔)
+# ghostview math2.ps        (用 ghostview 觀看轉換出來的 PostScript 檔)
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>你也可寫個小文件來測試新安裝的字型:
+<HR>
+<PRE>
+\documentclass[12pt]{article}
+\begin{document}
+\ming
+   這是個測試
+\end{document}
+</PRE>
+<HR>
+</P>
+<P>更詳細的資料請參考陳教授網頁的說明:
+<BLOCKQUOTE>
+<A HREF="http://www.math.ncu.edu.tw/yih/intro.htm">http://www.math.ncu.edu.tw/yih/intro.htm</A></BLOCKQUOTE>
+</P>
+
+<H2><A NAME="ss7.3">7.3</A> <A HREF="Chinese-HOWTO.html#toc7.3">六書(Dtop)</A>
+</H2>
+
+<P>六書是由
+<A HREF="http://www.bdc.com.tw/">致遠科技</A>所研發的一套 Unix 平台的中文排版軟體。
+民國八十四年十一月初完成的 v1.4 版一口氣推出了五個平台的版本。其中 Linux 平台的 beta 版提供使用者自由，無限期的試用。
+這項創舉使得 Linux 愛好者又多了一個良好的中文使用環境。
+然而，由於市場太小，以致正式版遲遲未能推出。目前似已停止研發。</P>
+
+<H3>如何取得</H3>
+
+<P>六書 for Linux 的 beta 版可自各大校園的 FTP 站台取得:
+<UL>
+<LI>
+<A HREF="ftp://nctuccca.edu.tw/Chinese/ifcss/software/linux/X11R6/dtop1.4/pub/">ftp://nctuccca.edu.tw/Chinese/ifcss/software/linux/X11R6/dtop1.4/pub/</A></LI>
+<LI>
+<A HREF="ftp://ftp.ntu.edu.tw/Chinese/ifcss/software/linux/X11R6/dtop1.4/pub/">ftp://ftp.ntu.edu.tw/Chinese/ifcss/software/linux/X11R6/dtop1.4/pub/</A></LI>
+<LI>
+<A HREF="ftp://ftp.ccu.edu.tw/pub3/chinese/linux/X11R6/dtop1.4/pub/">ftp://ftp.ccu.edu.tw/pub3/chinese/linux/X11R6/dtop1.4/pub/</A></LI>
+<LI>
+<A HREF="ftp://ftp.ncu.edu.tw/OS/linux/X/ifcss/X11R6/dtop1.4/pub/">ftp://ftp.ncu.edu.tw/OS/linux/X/ifcss/X11R6/dtop1.4/pub/</A></LI>
+<LI>
+<A HREF="ftp://ftp.ifcss.org/pub/software/linux/X11R6/dtop1.4/pub/">ftp://ftp.ifcss.org/pub/software/linux/X11R6/dtop1.4/pub/</A></LI>
+</UL>
+</P>
+<P>其下有三個子目錄，分別是:
+<DL>
+<DT><B>dtop.linux</B><DD><P>存放六書的執行檔與執行時所需的資料檔，目前分類為三個主要檔案。全部解開安裝後所需硬碟空間接近 40 MB.</P>
+<DT><B>dtop.readme</B><DD><P>存放六書 Linux beta 版的相關文件。這些文件皆以六書的檔案格式儲存，使用者可直接使用六書 Linux beta 版讀取。</P>
+<DT><B>dtop.manual</B><DD><P>存放六書 X Window 版的使用手冊，以六書的檔案格式儲存。六書的 X Window 版(Linux, IBM AIX, HP-UX, Sun 4.1.x, Solaris)皆可直接讀取。</P>
+</DL>
+</P>
+
+<H3>安裝</H3>
+
+<P>六書的硬體需求大約是: CPU 486 DX-33 或以上。RAM 16 MB 或以上。太少的記憶體速度會慢得讓你受不了!硬碟空間應預留 50 MB 左右。</P>
+<P>取回 <CODE>dtop.linux</CODE> 目錄下的壓縮檔，在自行選定的目錄下全部解開即可，如 <CODE>/usr/local/dtop</CODE>。</P>
+<P>在執行前還必須先設定好環境變數: <CODE>$DTOPHOME</CODE> 是你安裝六書的目錄，<CODE>$DTOPTMP</CODE> 是六書暫存檔的目錄，一般設在 <CODE>/tmp</CODE> 即可。<CODE>XAPPLRESDIR</CODE> 是六書資源檔所在目錄，一般是在 <CODE>$DTOPHOME/user</CODE> 下。
+<BLOCKQUOTE><CODE>
+<PRE>
+# export DTOPHOME=/usr/local/dtop
+# export DTOPTMP=/tmp
+# export XAPPLRESDIR=DTOPHOME/user
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>你還要設定六書所使用的中文字型目錄:
+<BLOCKQUOTE><CODE>
+<PRE>
+# xset fp+ $DTOPHOME/pcf.chn
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>最後你還要設定 Keysym 對應表。由於 Linux X Window 上 Keysym 與 Keycode 的對應和工作站不盡相同，
+例如在 Linux X Window 上 <CODE>BackSpace</CODE> 與 <CODE>Delete</CODE> 兩個 Keysym 都對應到同一 Keycode，造成 
+<CODE>BackSpace</CODE> 實際上是 <CODE>Delete</CODE> 的行為模式。為解決此問題六書造了一個 Keysym 檔，置於 <CODE>$DTOPHOME/user</CODE> 下，檔名為
+<CODE>dtop_keysym.linux</CODE>. 在進入 X Window 後，鍵入 
+<BLOCKQUOTE><CODE>
+<PRE>
+# xmodmap dtop_keysym.linux
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>另一個解決的方法是直接在指令列上下
+<BLOCKQUOTE><CODE>
+<PRE>
+# xmodmap -e "keycode 22 = BackSpace"
+# xmodmap -e "keycode 107 = Delete"
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>一切都準備就緒後就可以執行六書了:
+<BLOCKQUOTE><CODE>
+<PRE>
+# $DTOPHOME/bin/dtop14
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>你可以閱讀六書所附的線上使用手冊以獲得更詳盡的說明。</P>
+
+<H2><A NAME="ss7.4">7.4</A> <A HREF="Chinese-HOWTO.html#toc7.4">ChinesePower</A>
+</H2>
+
+<P>ChinesePower 是一個在 X window 上非常易於使用，所見即所得(WYSIWYG)的遠東文書處理器。
+它支援 BIG5, GB, 日文，韓文混合輸入，PostScript 列印與顯示。
+它可以為文件產生七種顏色的 GIF 圖檔，非常適合用來製作中文網頁。
+ChinesePower 使用 HBF 或 TTF 字型。</P>
+<P>由此取得 ChinesePower
+<BLOCKQUOTE>
+<A HREF="ftp://ftp.ifcss.org/pub/software/x-win/editor/chpower-2.0.tar.gz">ftp://ftp.ifcss.org/pub/software/x-win/editor/chpower-2.0.tar.gz</A></BLOCKQUOTE>
+</P>
+<P>編譯 ChinesePower 需要 HBF 字型與 Motif 程式庫。首先修改 <CODE>Makefile</CODE> 以符合你的需求，然後
+<BLOCKQUOTE><CODE>
+<PRE>
+# make
+</PRE>
+</CODE></BLOCKQUOTE>
+
+如此將產生二進位執行檔。再來設定環境變數
+<BLOCKQUOTE><CODE>
+<PRE>
+# export HBFPATH=/usr/local/lib/chinese/HBF/
+# export TTFPATH=/usr/local/lib/chinese/TTF/
+# export HZINPUTDIR=/usr/local/lib/chinese/dict/
+# export CHPOWERPATH=path_of_chinesepower
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+
+<H2><A NAME="ss7.5">7.5</A> <A HREF="Chinese-HOWTO.html#toc7.5">EasyFlow</A>
+</H2>
+
+<P>由王佑中 &lt;
+<A HREF="mailto:wycc@iis.sinica.edu.tw">wycc@iis.sinica.edu.tw</A>&gt; 所發展的中文簡排程式。相關資料請參考
+<BLOCKQUOTE>
+<A HREF="http://formosa.iis.sinica.edu.tw/~wycc/">http://formosa.iis.sinica.edu.tw/~wycc/</A></BLOCKQUOTE>
+</P>
+
+
+<HR>
+<A HREF="Chinese-HOWTO-8.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="Chinese-HOWTO-6.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="Chinese-HOWTO.html#toc7"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

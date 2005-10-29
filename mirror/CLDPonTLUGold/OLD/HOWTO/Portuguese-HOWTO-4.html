@@ -1,0 +1,149 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux Portuguese-HOWTO: Biblioteca de funções libc e aplicativos GNU</TITLE>
+ <LINK HREF="Portuguese-HOWTO-5.html" REL=next>
+ <LINK HREF="Portuguese-HOWTO-3.html" REL=previous>
+ <LINK HREF="Portuguese-HOWTO.html#toc4" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Portuguese-HOWTO-5.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Portuguese-HOWTO-3.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Portuguese-HOWTO.html#toc4"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="SEC:LIBC"></A> <A NAME="s4">4. Biblioteca de funções libc e aplicativos GNU</A></H2>
+
+<P>A biblioteca padrão de funções do Linux suporta Internacionalização e
+Localização segundo o padrão POSIX (Portable Operating System Interface).
+Trata-se de uma norma estabelecida pelo IEEE (Institute of Electrical and
+Electronics Engineers) para intercomunicação entre diferentes sistemas
+operativos. Existe também um padrão estabelecido pelo ANSI (American National
+Standards Institute) para a linguagem de programação C que permite escrever
+programas com suporte internacional.
+<P>
+<H2><A NAME="ss4.1">4.1 Configurando o suporte internacional</A>
+</H2>
+
+<P>Resumidamente, podemos dizer que as funções que tratam informações dependentes
+da língua ou do país podem ter seu comportamento modificado, bastando para
+tanto estabelecer algumas variáveis de ambiente. E que funções são essas?
+Podemos citar as de formatação de datas, valores monetários e mensagens de
+erro do sistema. Se você não sabe o que é uma variável de ambiente, sugiro que
+leia o manual com o comando
+<PRE>
+    man environ
+</PRE>
+<P>O padrão POSIX permite usar diversas variáveis de configuração, cada uma delas
+definindo o tratamento dado a um tipo de informação, a saber
+<DL>
+<DT><B>LC_COLLATE</B><DD><P>Define regras para comparação entre caracteres no alfabeto local. Por
+exemplo, a letra `ã' deve ser tratada como idêntica ao `a' no Português
+quando ordenamos alfabeticamente.
+<P>
+<DT><B>LC_CTYPE</B><DD><P>Define regras para comparação entre caracteres maiúsculos e
+minúsculos. Se estivermos trabalhando com o código ASCII, sabemos que o
+código numérico de uma letra minúscula é 32 a mais do que a maiúscula
+correspondente, mas para uma letra acentuada esta regra não é válida!
+<P>
+<DT><B>LC_MONETARY</B><DD><P>Muda o comportamento das funções de formatação de valores monetários e
+permite descobrir, por exemplo, o símbolo da moeda local, ou se usa ponto
+ou vírgula como separador de milhares e de casas decimais.
+<P>
+<DT><B>LC_MESSAGES</B><DD><P>Estabelece a língua em que as mensagens serão apresentadas e como é uma
+resposta afirmativa ou negativa (S/N).
+<P>
+<DT><B>LC_NUMERIC</B><DD><P>Estabelece o comportamento das funções de leitura/escrita de valores
+numéricos permitindo, por exemplo que usemos a vírgula decimal.
+<P>
+<DT><B>LC_TIME</B><DD><P>Define a formatação de datas e horas.
+<P>
+<DT><B>LC_ALL</B><DD><P>Define de uma só vez todas as categorias. Se usarmos LC_ALL, não
+precisaremos definir nenhuma das outras, a não ser que queiramos um
+comportamento diferente para aquele ítem específico.
+<P>
+<DT><B>LANG</B><DD><P>Define de uma só vez todas as categorias, se LC_ALL não estiver definida.
+Também é usada pelo comando <CODE>man</CODE> para compor os caminhos pelos quais
+ele procurará as páginas do manual. Veja as observações a respeito desta
+variável nas seções 
+<A HREF="Portuguese-HOWTO-5.html#SEC:LOCALE">Locale</A>, 
+<A HREF="Portuguese-HOWTO-5.html#SEC:LOCALE">Locale</A> e 
+<A HREF="Portuguese-HOWTO-5.html#SEC:LOCALE">Locale</A>.
+</DL>
+<P>Maiores informações podem ser obtidas no manual do sistema com o comando
+<PRE>
+    man 7 locale 
+</PRE>
+
+O `7' no comando anterior é necessário para evitar confusão com uma função
+homônima da linguagem Perl. Note que as configurações acima afetam, em
+princípio, apenas as funções disponíveis na biblioteca de funções da linguagem
+C. Na prática, todos os programas que rodam em Linux usam aquela biblioteca,
+mas o sistema operativo não provê, catálogos de mensagens em
+diversas línguas para todos os programas.
+<P>A identificação da língua e do local é feita por dois códigos de duas letras,
+separados por um sinal ``_''. Se omitirmos o código de país, assume-se o país
+padrão para a língua informada, mas deve haver um catálogo correspondente.
+Deste modo, o código ``pt_PT'' significa Português de Portugal, enquanto
+``pt_BR'' significa Português do Brasil. Escolher uma combinação língua/local
+basta então colocar em seu arquivo <CODE>/etc/profile</CODE> uma linha contendo
+<PRE>
+    LC_ALL="pt_PT"
+    export LC_ALL
+</PRE>
+
+Usuários brasileiros devem usar ``pt_BR'' ao invés de ``pt_PT''. Teste o
+resultado com os comandos a seguir (<CODE>/inexistente</CODE> é o nome de um
+arquivo que <B>não</B> existe):
+<PRE>
+    echo ÁÉÍÓÚ | tr '[:upper:]' '[:lower:]'
+    tar tf /inexistente
+    ls -l /
+    date
+    cal 1 1999
+</PRE>
+
+O resultado do primeiro deverá ser ``<CODE>áéíóú</CODE>''. Os comandos <CODE>tar</CODE> e
+<CODE>ls</CODE> devem retornar mensagens em Português e <CODE>cal</CODE> deve mostrar um
+calendário de janeiro de 1999, com <EM>do se te qu qu se sá</EM> no cabeçalho dos
+dias da semana.
+<P>Na distribuição Debian, certifique-se de ter instalado o pacote ``locales'',
+que pertence ao grupo ``admin''. O nome do arquivo que contém o pacote (na
+versão 2.0 da distribuição) é <CODE>locales_2.0.7t-1.deb</CODE> e em meu CD
+está no diretório <CODE>debian/main/binary-i386/admin</CODE>.
+<H2><A NAME="ss4.2">4.2 Problemas com a libc 5</A>
+</H2>
+
+<P>Até meados de 1997 todas as distribuições de Linux usavam a mesma biblioteca
+<EM>libc</EM>, que estava na versão 5, desenvolvida a partir de uma versão
+mais antiga da libc do projeto GNU. Esta biblioteca possuia suporte muito
+limitado à internacionalização e normalmente nenhum dos catálogos de locais
+era incluído na distribuição, ficando o inglês como língua padrão.
+<P>A versão 6 da libc do Linux baseia-se na versão 2 da libc do projeto GNU. O
+suporte à internacionalização foi muito melhorado, além de incluir outros
+atributos que não interessam para os fins deste HOWTO. Se sua distribuição for
+a Debian versão 2, Red Hat versão 5 ou qualquer outra que use a nova libc,
+então não há mais nada a fazer além do descrito na seção anterior.
+<P>Mas se você usa uma distribuição ainda baseada na libc 5 (Slackware, Caldera
+1.x ou uma versão mais antiga de Debian ou Red Hat) é preciso instalar a
+coleção de locais. Não tente copiar a coleção de uma distribuição mais
+recente, pois os formatos dos arquivos são incompatíveis. Pegue na página do
+Portuguese HOWTO o arquivo <CODE>locales-pt.tgz</CODE>. Para instalá-lo na
+distribuição Slackware, basta (como usuário <B>root</B>) usar o comando
+<PRE>
+    installpkg locales-pt.tgz
+</PRE>
+
+e para outras distribuições use o comando
+<PRE>
+    tar xzf locales-pt.tgz -C /
+</PRE>
+<P>Verifique se há dois subdiretórios do <CODE>/usr/share/locale</CODE> chamados
+<CODE>pt_BR</CODE> e <CODE>pt_PT</CODE>. Basta então configurar a variável de ambiente
+LC_ALL, como já descrito.
+<P>
+<HR>
+<A HREF="Portuguese-HOWTO-5.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Portuguese-HOWTO-3.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Portuguese-HOWTO.html#toc4"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

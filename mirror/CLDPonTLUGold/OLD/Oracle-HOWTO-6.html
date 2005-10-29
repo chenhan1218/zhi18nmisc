@@ -1,0 +1,134 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Oracle Database HOWTO: 自動啟動及停止</TITLE>
+ <LINK HREF="Oracle-HOWTO-7.html" REL=next>
+ <LINK HREF="Oracle-HOWTO-5.html" REL=previous>
+ <LINK HREF="Oracle-HOWTO.html#toc6" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Oracle-HOWTO-7.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Oracle-HOWTO-5.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Oracle-HOWTO.html#toc6"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s6">6. 自動啟動及停止</A></H2>
+
+<H2><A NAME="ss6.1">6.1 <CODE>dbstart</CODE> 及 <CODE>dbstop</CODE></A>
+</H2>
+
+<P>Oracle 資料庫的自動啟動及停止可籍 Oracle 提供的 <CODE>dbstart</CODE> 及 <CODE>dbshut</CODE> 檔達成 (在 7.3.3.0.0 中）。這些檔案又耍依靠 <CODE>/etc/oratab</CODE> 存在才能使用（雖然更改 <CODE>dbshut</CODE> 和 <CODE>dbstart</CODE> 檔可使解除這限制。）
+<P><CODE>/etc/oratab</CODE> 檔格式如下：
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+SID:ORACLE_HOME:AUTO
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+<P>例如
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+orcl:/home/oracle/7.3.3.0.0:Y
+leaveup:/home/oracle/7.3.2.1.0:N
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+<H2><A NAME="ss6.2">6.2 <CODE>init.d</CODE> 及 <CODE>rc.d</CODE></A>
+</H2>
+
+<P>要在開機關機時自動啟動和結朿資料庫的話，你需要修改 Linux 的啟動命令稿。這並不困難，不過，我需要指出這些改動因應不同的 Linux 發行版本（slackware, debian, redhat 等）而有所不同。我這些例子適用於 Redhat  5.0。要為你所用的 Linux 作出修改，請先參考你手頭上的 Linux 文件。（雖然這實際上應該適用於所有 Sys V UNIX。）
+<P>首先，我們要建立會執行 <CODE>/etc/rc.d/init.d</CODE> 目錄中 <CODE>dbshut</CODE> 及 <CODE>dbstart</CODE> 的命令稿。把以下檔案命名為 <CODE>/etc/rc.d/init.d/oracle</CODE>:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+#!/bin/sh
+#
+# /etc/rc.d/init.d/oracle
+# 解說︰啟動及停止 Oracle 資料庫和監聽程式
+# 檢查如何執行命令稿
+case "$1" in
+  start)
+        echo -n "Starting Oracle Databases: "
+        echo "----------------------------------------------------" >> /var/log/oracle
+        date +"! %T %a %D : Starting Oracle Databases as part of system up." >> /var/log/oracle
+        echo "----------------------------------------------------" >> /var/log/oracle
+        su - oracle -c dbstart >> /var/log/oracle
+        echo "Done."
+        echo -n "Starting Oracle Listeners: "
+        su - oracle -c "lsnrctl start" >> /var/log/oracle
+        echo "Done."
+        echo ""
+        echo "----------------------------------------------------" >> /var/log/oracle
+        date +"! %T %a %D : Finished." >> /var/log/oracle
+        echo "----------------------------------------------------" >> /var/log/oracle
+        touch /var/lock/subsys/oracle
+        ;;
+  stop)
+        echo -n "Shutting Down Oracle Listeners: "
+        echo "----------------------------------------------------" >> /var/log/oracle
+        date +"! %T %a %D : Shutting Down Oracle Databases as part of system down." >> /var/log/oracle
+        echo "----------------------------------------------------" >> /var/log/oracle
+        su - oracle -c "lsnrctl stop" >> /var/log/oracle
+        echo "Done."
+        rm -f /var/lock/subsys/oracle
+        echo -n "Shutting Down Oracle Databases: "
+        su - oracle -c dbshut >> /var/log/oracle
+        echo "Done."
+        echo ""
+        echo "----------------------------------------------------" >> /var/log/oracle
+        date +"! %T %a %D : Finished." >> /var/log/oracle
+        echo "----------------------------------------------------" >> /var/log/oracle
+        ;;
+  restart)
+        echo -n "Restarting Oracle Databases: "
+        echo "----------------------------------------------------" >> /var/log/oracle
+        date +"! %T %a %D : Restarting Oracle Databases as part of system up." >> /var/log/oracle
+        echo "----------------------------------------------------" >> /var/log/oracle
+        su - oracle -c dbstop >> /var/log/oracle
+        su - oracle -c dbstart >> /var/log/oracle
+        echo "Done."
+        echo -n "Restarting Oracle Listeners: "
+        su - oracle -c "lsnrctl stop" >> /var/log/oracle
+        su - oracle -c "lsnrctl start" >> /var/log/oracle
+        echo "Done."
+        echo ""
+        echo "----------------------------------------------------" >> /var/log/oracle
+        date +"! %T %a %D : Finished." >> /var/log/oracle
+        echo "----------------------------------------------------" >> /var/log/oracle
+        touch /var/lock/subsys/oracle
+        ;;
+  *)
+        echo "Usage: oracle {start|stop|restart}"
+        exit 1
+esac
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+<P>不要吝嗇於檢查這個檔案到底有沒有真的正確地啟動和停止系統中的資料庫。請檢查記錄檔(log file)，看看有沒有錯誤訊息。
+<P>弄妥這命令稿後，我們要在正確的執行等級目錄 (runlevel directories)  <CODE>/etc/rc.d/rcX.d</CODE> 中建立及刪除符號連結 (symbolic links)。
+<P>以下指令確保在執行等級 2, 3 及 4 下會叫出資料庫︰
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+$ ln -s ../init.d/oracle /etc/rc.d/rc2.d/S99oracle
+$ ln -s ../init.d/oracle /etc/rc.d/rc3.d/S99oracle
+$ ln -s ../init.d/oracle /etc/rc.d/rc4.d/S99oracle
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+<P>要在重新啟動時停止資料庫，我們需要以下連結︰
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+$ ln -s ../init.d/oracle /etc/rc.d/rc0.d/K01oracle          # 停止
+$ ln -s ../init.d/oracle /etc/rc.d/rc6.d/K01oracle          # 重新啟動
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+<HR>
+<A HREF="Oracle-HOWTO-7.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Oracle-HOWTO-5.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Oracle-HOWTO.html#toc6"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

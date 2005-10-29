@@ -1,0 +1,469 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux Quake HOWTO: Troubleshooting/FAQs</TITLE>
+ <LINK HREF="Quake-HOWTO-6.html" REL=next>
+ <LINK HREF="Quake-HOWTO-4.html" REL=previous>
+ <LINK HREF="Quake-HOWTO.html#toc5" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Quake-HOWTO-6.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Quake-HOWTO-4.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Quake-HOWTO.html#toc5"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="troubleshooting"></A> <A NAME="s5">5. Troubleshooting/FAQs</A></H2>
+
+<P>
+<P>
+<H2><A NAME="ss5.1">5.1 General</A>
+</H2>
+
+<P>
+<P>
+<H3>OS difference considerations </H3>
+
+<P>
+<UL>
+<LI><B>Case sensitivity</B> - In DOS and Windows, case is not important.
+<CODE>BASE1.TXT</CODE> is the same as <CODE>base1.txt</CODE>.  Under Linux and other
+unices, case IS significant.  <CODE>MOTD.TXT</CODE> and <CODE>motd.txt</CODE> are
+different files.  This can cause problems with player models and skin files
+if they're installed with upper- or mixed-case filenames.
+<CODE>players/male/santa.PCX</CODE> needs to be renamed to <CODE>santa.pcx</CODE> in
+order to work in Linux.  The <CODE>fixskins.sh</CODE> script included with 
+quakeworld will convert all filenames in a directory to lowercase. It's
+reproduced below for your convenience:
+<HR>
+<PRE>
+     #!/bin/sh
+     for x in *; do
+        y=`echo $x | tr '[A-Z]' '[a-z]'`
+        if [ $x != $y ]; then
+           mv $x $y
+        fi
+     done
+     
+</PRE>
+<HR>
+
+</LI>
+<LI><B>Path delimiters</B> - DOS and Windows use the backslash "<CODE>\</CODE>"
+character to separate file pathname elements.  In Unix, the backslash is an escape
+character.  If you use file pathnames in your config files (or your mod code, or
+anywhere else, for that matter), be sure you're using "<CODE>/</CODE>" and not "<CODE>\</CODE>".
+</LI>
+<LI><B>End of line characters</B> - Under DOS/Windows, each line of a text file
+ends with a carriage return character (CR) and a linefeed character (LF).  Unix
+textfiles just have a linefeed at the end of each line.  Using DOS/Win formatted
+textfiles in Unix can cause all kinds of mysterious Quake problems.  Using the
+incorrectly formatted <CODE>quake2.conf</CODE> file from the Quake2 3.17 package, for
+example, gives the error "<CODE>LoadLibrary("ref_XXX.so") failed: No such file or
+directory</CODE>".  LMCTF-TE reports a floating point exception.
+If you've got an problem you can't explain, try removing the CRs from your text
+files:  
+<BLOCKQUOTE><CODE>
+<PRE>
+     mv file.txt file.bak; tr -d '\r' &lt; file.bak > file.txt
+     
+</PRE>
+</CODE></BLOCKQUOTE>
+</LI>
+</UL>
+<P>
+<H3><A NAME="glibc"></A> Glibc, RedHat 5.x, Debian 2 considerations **</H3>
+
+<P>The following applies the Quake I binaries (<CODE>squake</CODE>,
+<CODE>glquake</CODE>, and <CODE>quake.x11</CODE>) only.  As of versions
+2.30 and 3.19 respectively, QuakeWorld and Quake II are available
+in both libc5 and glibc versions.
+<P>The Quake executables were compiled with libc5.  Newer Linux
+distributions like RedHat 5.1 and Debian 2.0 use the incompatible
+glibc as their default C library.  If you're running Quake on a
+glibc system, there are a few things to watch out for:
+<P>
+<UL>
+<LI>Both RedHat 5 and Debian 2 have libc5 compatibility packages that allow
+you to run libc5-based applications.  Make sure you have these packages installed.
+Both distributions put the libc5-based libraries in <CODE>/usr/i486-linux-libc5/lib</CODE>.</LI>
+<LI>Make sure Quake uses the correct libraries.  Create a script like the one below 
+that points <CODE>$LD_LIBRARY_PATH</CODE> to your compatibility libraries directory before
+it runs Quake.
+<HR>
+<PRE>
+     #!/bin/sh
+     export LD_LIBRARY_PATH=/usr/i486-linux-libc5/lib
+     ./quake2 +set vid_ref gl $*
+     
+</PRE>
+<HR>
+</LI>
+<LI>If you are going to compile a library like SVGAlib or Mesa
+for use with Quake, it must be compiled with libc5 and friends.
+Simply building a new library according its installation
+instructions will result in a library that is linked against your
+default library, glibc.  You must ensure your new library is
+linked only with libc5 and libc5-based libraries so it will be
+compatible with Quake.  See your distribution's documentation for
+information on linking to the non-default libraries.</LI>
+</UL>
+<P>
+<P>
+<H3>My mouse doesn't work or seems to respond randomly. </H3>
+
+<P>
+<UL>
+<LI>Is gpm running?  gpm is a program that enables you to cut and paste
+with the mouse in virtual consoles.  Many distributions enable it by
+default.  It may be interfering with Quake.  Check if it's running with
+the following command:
+<BLOCKQUOTE><CODE>
+<PRE>
+     ps aux | grep gpm
+     
+</PRE>
+</CODE></BLOCKQUOTE>
+
+If you get output like
+<BLOCKQUOTE><CODE>
+<PRE>
+     root      6115  0.0  0.4   832   316  ?  S   17:54   0:00 gpm -t PS/2
+     
+</PRE>
+</CODE></BLOCKQUOTE>
+
+then gpm is running and interfering with Quake.  <CODE>gpm -k</CODE> (as root)
+ought to stop gpm.  If it doesn't (<CODE>gpm -k</CODE> doesn't always work on 
+my system),  kill gpm with the command <CODE>killall gpm</CODE>.
+
+If you never use gpm, you may want to stop it from running at startup.
+See the documentation for your distribution for information on how to do
+this.
+<P>
+</LI>
+<LI>Is your mouse defined properly in <CODE>libvga.config</CODE>?  This file
+usually lives in <CODE>/etc</CODE> or <CODE>/etc/vga</CODE>.  Open it up and look
+for a line like
+<BLOCKQUOTE><CODE>
+<PRE>
+     mouse Microsoft
+     
+</PRE>
+</CODE></BLOCKQUOTE>
+
+On my system, this is the first option in the file.  Make sure the mouse
+type is appropriate for your hardware.  
+     </LI>
+</UL>
+<P>
+<H3>My Microsoft Intellimouse or Logitech MouseMan+ isn't working correctly. </H3>
+
+<P>SVGAlib, which handles mouse input for SVGA and GL Quake/QW/Q2,
+didn't directly support the Intellimouse until version 1.3.0.  If you have a
+version of SVGAlib prior to 1.3.0, you should upgrade, then use mouse
+type <CODE>IntelliMouse</CODE> (for serial mice) or <CODE>IMPS2</CODE> (for
+PS/2 mice) in your <CODE>libvga.config</CODE> file.
+<P>
+<H3>My mouse is "laggy" and seems much slower than under Windows.</H3>
+
+<P>
+<UL>
+<LI>For many people, just cranking up the value of
+<CODE>sensitivity</CODE> in the game console cures the problem.
+Setting <CODE>sensitivity</CODE> by hand in the console or in a
+<CODE>.cfg</CODE> file allows you to increase the mouse sensitivity
+more than the slider in the Options menu.  <CODE>sensitivity 15</CODE>,
+for example.
+</LI>
+<LI> From Zoid's 1/7/98 .plan update:
+<BLOCKQUOTE>
+If you are experience video 'lag' in the GL renderer (the frame
+rate feels like it's lagging behind your mouse movement) type 
+"gl_finish 1" in the console. This forces update on a per frame
+basis.
+</BLOCKQUOTE>
+
+</LI>
+<LI>The latest version of SVGAlib (1.3.0) provides a slew of parameters
+in <CODE>libvga.config</CODE> that you can use to customize the behavior of 
+your mouse.  With the proper settings it should be possible to make your
+mouse feel any way you want.  On my system, just changing
+<CODE>mouse_accel_type</CODE> to <CODE>normal</CODE> (default is <CODE>power</CODE>)
+gave me the results I wanted.  I haven't messed with the other settings,
+and I don't pretend to have a clue about what they all do.
+</LI>
+<LI>The little slider</LI>
+</UL>
+<P>
+<H3>I have a Voodoo2, and, when I try to run with the gl renderer, it reports that I don't have a Voodoo card installed.</H3>
+
+<P>There are different versions of Glide for Voodoo and Voodoo 2 cards.  Be
+sure you downloaded the correct one for your system.
+<P>
+<P>
+<H3>When I'm playing any of the Quake games under SVGAlib or GL and press CTRL-C, the game exits and sometimes leaves my console in an unusable state.</H3>
+
+<H3>Sometimes when Quake/Quake II exits abnormally, it leaves my console unusable.</H3>
+
+<P>Yes.  This bites.  SVGAlib catches the CTRL-C and decides what to do with
+it instead of allowing Quake to handle it.  I know of no way around this
+short of hacking SVGAlib.  
+<P>If you run your Quake games from a script that resets the
+keyboard and terminal like the one below, you'll run
+less chance of ending up with a hosed terminal if this does happen, though.
+<P>
+<HR>
+<PRE>
+     #!/bin/sh
+     ./quake2 $*
+     kbd_mode -a
+     reset
+     
+</PRE>
+<HR>
+<P>
+<H3>squake/quake2 fails to start and says "<CODE>svgalib: cannot get I/O permissions"</CODE></H3>
+
+<P>The Quake executables must run as root, so you must either run them as
+root or make them setuid root.  See the installation instructions in this
+document for details.
+<P>
+<H3>Sometimes after  playing one of the Quake games in X, key repeat doesn't work any more.</H3>
+
+<P>For some reason, the X11 versions of Quake disable key repeat while
+they're running.  If the program exits abnormally for some reason, key
+repeat never get turned back on. Do
+<BLOCKQUOTE><CODE>
+<PRE>
+     xset r on
+     
+</PRE>
+</CODE></BLOCKQUOTE>
+
+to reenable it.
+<P>
+<H3>Quake/Quake II says "/dev/dsp : device not configured" </H3>
+
+<P>Your sound hardware is not properly configured.  You may simply need to do
+a <CODE>insmod sound</CODE>, or it may be necessary to rebuild your kernel.
+RedHat users may need to invoke the <B>sndconfig(8)</B> utility.
+See the documentation for your Linux distribution and/or the Linux Sound
+HOWTO for information on configuring your system's sound hardware.
+<P>
+<H3>GL Quake/Quake II run slower in Linux than in Windows. **</H3>
+
+<P>The Windows 3Dfx GL miniport is heavily optimized for the things
+Quake II does.  Mesa on the other hand, is more general and less optimized
+As a result, Linux Quake II runs slower than under Windows.  This isn't a
+limitation of Linux, but a limitation of the current drivers. 
+<P>With the most recent releases of QuakeWorld and Quake II, the
+3Dfx miniport mentioned above is available for Linux.  While it
+still doesn't bring Linux Quake performance to par with Windows
+Quake, it's another step in that direction.
+<P>Additionally, for Pentium Pro and Pentium II users, there are
+some tweaks than can be done with memory buffering - the latest
+<CODE>/dev/3dfx</CODE> device driver has support for automatically
+setting this up for you.  Enabling MTRRs can result in
+<EM>significant</EM> (10 fps on my system) GL Quake speedups. See 
+<A HREF="http://glide.xxedgexx.com/MTRR.html">http://glide.xxedgexx.com/MTRR.html</A> for some more
+detailed information about this.
+<P>
+<H3>How can I start a server and log off, then come back to it later? **</H3>
+
+<P><B>screen(1)</B> is a great utility for this sort of thing.  It
+allows you to create many virtual screens in one tty and switch
+between them.
+Screen comes with most distributions.  You can download it from 
+<A HREF="ftp://prep.ai.mit.edu/pub/gnu">ftp://prep.ai.mit.edu/pub/gnu</A>
+or any GNU mirror.
+<P>Start screen by typing the command <CODE>screen</CODE>, then create a new
+screen window by pressing CTRL-A CTRL-C.  You won't see much as
+you do these things, but be assured, something is happening.  
+<P>Start a Quakeworld server:
+<BLOCKQUOTE><CODE>
+<PRE>
+     /usr/local/games/quake/qwsv 
+     
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Now open a new screen window with CTRL-A CTRL-C and start up a 
+Quake II server:
+<BLOCKQUOTE><CODE>
+<PRE>
+     /usr/local/games/quake2/quake2 +set dedicated 1
+     
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>You can switch back and forth between your servers by pressing
+CTRL-A CTRL-N.
+<P>Press CTRL-A CTRL-D to detach from the screen program.  Screen
+and your servers are still running, but they're no longer visible
+in your terminal window.  You can logoff now and your processes
+will continue to run normally.
+<P>Use <CODE>screen -r</CODE> to re-attach to your previous screen
+process and access your servers again.  
+<P>That's all there is to it.  See the <B>screen(1)</B> man page
+for more detailed information.
+<P>
+<P>
+<P>
+<P>
+<H2><A NAME="ss5.2">5.2 Quake/QuakeWorld</A>
+</H2>
+
+<P>
+<H3>Quake dies at startup with a segmentation fault. </H3>
+
+<P>This usually means your network setup isn't right.  Try starting quake
+with the <CODE>-noudp</CODE> option and see if the error goes away.  If that
+fixes it, check your <CODE>/etc/hosts</CODE> file and verify there's an 
+entry for your machine in it.  Use 127.0.0.1 for your IP address if you
+have a dialup account that gives you a different address each time you 
+connect.
+<P>
+<H3>What's the difference between <CODE>glqwcl</CODE>, <CODE>glqwcl.3dfxgl</CODE>, and <CODE>glqwcl.glx</CODE>? ++</H3>
+
+<P>
+<UL>
+<LI><B><CODE>glqwcl</CODE></B> is the standard GL Quakeworld client you've
+seen in previous versions.  It's linked against libMesaGL.so.2.</LI>
+<LI><B><CODE>glqwcl.3dfxgl</CODE></B> is a script that runs <CODE>glqwcl</CODE>
+after preloading the 3Dfx GL miniport library, <CODE>lib3dfxgl.so</CODE>.  Preloading
+the minport library causes its GL functions to get used instead of Mesa's.  Since
+the GL minport is optimized for Quake, this is a good thing.</LI>
+<LI><B><CODE>glqwcl.glx</CODE></B> is linked against standard OpenGL libriaries
+instead of Mesa.  This will allow glquake to run on other 3D hardware that is 
+supported by some other OpenGL implementation.  This is an X application and 
+so must be run from X.</LI>
+</UL>
+<P>
+<H3>When I run <CODE>glqwcl.glx</CODE> fullscreen from X, I can't use my mouse or keyboard. ++</H3>
+
+<P>
+<P>Run <CODE>glqwcl.glx</CODE> with the <CODE>+_windowed_mouse 1</CODE>
+option. GLX Quakeworld is running in a window, even though it
+appears to take up your whole screen.  If you move the mouse
+while the WM is in focus-follows-mouse mode, you're likely to
+move the pointer outside this window, and then Quake will stop
+responding to mouse and keyboard input.  <CODE>+_windowed_mouse 1</CODE>
+makes Quakeworld grab the mouse exclusively.
+<P>
+<H2><A NAME="ss5.3">5.3 Quake II</A>
+</H2>
+
+<P>
+<H3>When I try to run Quake II with the GL renderer, it fails and says "LoadLibrary("ref_gl.so") failed: Unable to resolve symbol"</H3>
+
+<P>If immediately prior to the "Unable to resolve symbol" line, you have 
+messages like "<CODE>can't resolve symbol 'fxMesaCreateContext'</CODE>", your
+Mesa library doesn't have glide support compiled in.  
+See section 
+<A HREF="Quake-HOWTO-3.html#quake2-gl">The GL renderer</A> in the 
+Quake II installation section for information on installing Mesa and
+glide.
+<P>
+<H3>Quake II fails with the message <CODE>LoadLibrary("ref_XXX.so") failed: No such file or directory </CODE></H3>
+
+<P>
+<UL>
+<LI><CODE>/etc/quake2.conf</CODE> doesn't have the correct path to your
+Quake II directory in it.  This file should contain one line that is the
+directory Quake II lives in.
+</LI>
+<LI>If <CODE>/etc/quake2.conf</CODE> <EM>does</EM> contain the correct
+path, try removing the file and re-creating it by hand.  Some versions of 
+Quake II for Linux included an incorrectly formatted <CODE>quake2.conf</CODE>
+file.  
+     </LI>
+<LI>Do you have SVGAlib installed?  Check <CODE>/lib</CODE>,
+<CODE>/usr/lib</CODE> and <CODE>/usr/local/lib</CODE> for a file called
+<CODE>libvga.so.1.X.X</CODE>, where the X's are some numbers.  If nothing
+turns up, you need to get and install SVGAlib to run Quake II outside of 
+X.
+</LI>
+<LI>If the renderer in question is <CODE>ref_gl.so</CODE>, Mesa may not be
+properly installed.  Did you copy <CODE>libMesaGL.so.2.6</CODE> to a 
+library directory like the installation instruactions told you to?  
+     </LI>
+<LI>If the renderer in question is <CODE>ref_gl.so</CODE>, did you install
+the glide libraries?  
+</LI>
+</UL>
+<P>
+<P>
+<H3>When I update the brightness while using the GL renderer, and hit "apply," nothing happens!</H3>
+
+<P>
+<P>Type <CODE>vid_restart</CODE> in the console to make the changes take 
+affect.
+<P>
+<P>
+<H3><A NAME="3.17"></A> Note about the 3.17 distribution</H3>
+
+<P>
+<P>As of this writing, the most recent Quake II version is 3.19.  If
+for some reason, you're running version 3.17 instead, the
+following information may be helpful to you.
+<P>Two text files (<CODE>quake2.conf</CODE> and <CODE>fixperms.sh</CODE>) in the 3.17
+distribution were inadvertently saved in MS-DOS CR/LF text-file format
+instead of the unix LF format.  This means there's an extra carriage
+return character at the end of each line in these files and they're not 
+going to behave right until you fix them.
+<P>We'll run them through <B>tr(1)</B> to strip out the CR's. 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+     for i in fixperms.sh quake2.conf
+     do
+     mv $i $i.bak
+     tr -d '\r' &lt; $i.bak > $i
+     done
+     
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H3>When I run Quake II with <CODE>+set vid_ref glx</CODE> fullscreen from X, I can't use my mouse or keyboard. ++</H3>
+
+<P>
+<P>Run GLX <CODE>quake2</CODE> with the <CODE>+set _windowed_mouse 1</CODE>
+option. GLX Quake2 is running in a window, even though it
+appears to take up your whole screen.  If you move the mouse
+while the WM is in focus-follows-mouse mode, you're likely to
+move the pointer outside this window, and then Quake II will stop
+responding to mouse and keyboard input.  <CODE>+set _windowed_mouse
+1</CODE> makes Quake II grab the mouse exclusively.
+<P>
+<H3>Why can't I change to some of the SVGA modes that aree in the Quake II Video menu? **</H3>
+
+<P>SVGAlib probably doesn't know how to create the modes on your card.
+When Quake II starts up with the SVGA renderer (<CODE>ref_soft.so</CODE>),
+it prints a list of all the modes that SVGAlib tells it are available:
+<BLOCKQUOTE><CODE>
+<PRE>
+     ------- Loading ref_soft.so -------
+     Using RIVA 128 driver, 4096KB.
+     mode 320: 200 1075253220
+     mode 320: 240 1075253220
+     mode 320: 400 1075253220
+     mode 360: 480 1075253220
+     mode 640: 480 1075253220
+     mode 800: 600 1075253220
+     mode 1024: 768 1075253220
+     mode 1280: 1024 1075253220
+     
+</PRE>
+</CODE></BLOCKQUOTE>
+
+These are the only modes you will be able to successfully switch to from 
+the Video menu.  If say, 512x384 isn't on the list, selecting it from the
+Video menu won't work.
+<P>SVGAlib does let you define new video modes for some chipsets in
+<CODE>libvga.config</CODE>, so you may be able create your own video mode this
+way.  See the SVGAlib documentation for more detail on this topic.
+<P>
+<P>
+<HR>
+<A HREF="Quake-HOWTO-6.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Quake-HOWTO-4.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Quake-HOWTO.html#toc5"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

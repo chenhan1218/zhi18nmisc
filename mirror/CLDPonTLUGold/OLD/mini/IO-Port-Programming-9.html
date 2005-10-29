@@ -1,0 +1,66 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>如何在 Linux 下撰寫程式來使用 I/O 埠: 程式碼範例</TITLE>
+ <LINK HREF="IO-Port-Programming-10.html" REL=next>
+ <LINK HREF="IO-Port-Programming-8.html" REL=previous>
+ <LINK HREF="IO-Port-Programming.html#toc9" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+<A HREF="IO-Port-Programming-10.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="IO-Port-Programming-8.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="IO-Port-Programming.html#toc9"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s9">9. 程式碼範例</A></H2>
+
+<P>這邊是一段用來存取 I/O 埠的簡單的程式碼範例:
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+/*
+ * example.c: 一個用來存取 I/O 埠的非常簡單的範例
+ *
+ * 這個程式碼並沒有什麼用處, 他只是做了埠的寫入, 暫停, 
+ * 以及埠的讀出幾個動作. 編譯時請使用 `gcc -O2 -o example example.c',
+ * 並以 root 的身份執行 `./example'.
+ */
+
+#include &lt;stdio.h>
+#include &lt;unistd.h>
+#include &lt;asm/io.h>
+
+#define BASEPORT 0x378 /* lp1 */
+
+int main()
+{
+  /* 取得埠位址的存取權限 */
+  if (ioperm(BASEPORT, 3, 1)) {perror("ioperm"); exit(1);}
+  
+  /* 設定埠的輸出資料信號 (D0-7) 全為零 (0) */
+  outb(0, BASEPORT);
+  
+  /* 休息一下 (100 ms) */
+  usleep(100000);
+  
+  /* 從狀態埠 (BASE+1) 讀出資料並顯示結果 */
+  printf("status: %d\n", inb(BASEPORT + 1));
+
+  /* 我們不再需要這些埠位址 */
+  if (ioperm(BASEPORT, 3, 0)) {perror("ioperm"); exit(1);}
+
+  exit(0);
+}
+
+/* 結束 example.c */
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+<P>
+<P>
+<HR>
+<A HREF="IO-Port-Programming-10.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="IO-Port-Programming-8.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="IO-Port-Programming.html#toc9"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

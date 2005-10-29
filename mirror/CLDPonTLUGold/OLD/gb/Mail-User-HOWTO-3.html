@@ -1,0 +1,109 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>The Linux Mail User HOWTO: 高级主题</TITLE>
+ <LINK HREF="Mail-User-HOWTO-4.html" REL=next>
+ <LINK HREF="Mail-User-HOWTO-2.html" REL=previous>
+ <LINK HREF="Mail-User-HOWTO.html#toc3" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Mail-User-HOWTO-4.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Mail-User-HOWTO-2.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Mail-User-HOWTO.html#toc3"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s3">3. 高级主题</A></H2>
+
+<P>
+<H2><A NAME="ss3.1">3.1 别名</A>
+</H2>
+
+<P>别名是用来设置一个假地址将邮件转投到另一个邮件地址。有两种别名：MUA 别名和 MTA 别名。
+<P>MUA 别名是在你的 MUA 中设置的个人地址速记。其他用户不能看到和使用这个别名。举例如下：
+<P>
+<HR>
+<PRE>
+alias esr       Eric S. Raymond &lt;esr@thyrsus.com>
+</PRE>
+<HR>
+<P>在你的 mutt 配置文件中如上书写。 这将告诉 mutt ，当它看到地址行中出现 'esr' 时将其看作 'esr@thyrsus.com'。或者当你键入 'mutt esr' 时，地址自动展开填写在 'to' 行。
+<P>MTA 别名是你的 MTA 扩展，可以被本地或远程的所有人使用。
+要创建 MTA 别名你必须修改你的系统文件，通常(但不总)是 /etc/aliases (具体位置与你的 MTA 有关)。
+你可以查阅一下你系统上的 /etc/aliases ，这将对你理解大有帮助；这个文件可以包含许多标准别名比如 'postmaster'。
+<P>你的 MTA 可能也允许别名的目标是一个文件名，这将被视为一个邮件将附加在其中的收件箱(这种方式对存档邮件非常有用)。也可能允许别名的目标是一个程序，在这种方式下送往别名的邮件将作为该程序实例的标准输入。
+<P>
+<H2><A NAME="ss3.2">3.2 转寄</A>
+</H2>
+
+<P>MTA 别名的设置通常要求具备管理员权限。对普通邮件用户而言值得欣喜的是可以使用转寄个人邮件而不需要管理员权限。
+<P>为实现这一功能，许多 MTA 按照 sendmail 标准在你的主目录下查找 <CODE>.forward</CODE> 文件。
+这个文件的内容被解释成别名的目标，可以接收你的所有邮件。最常用的是转寄你的邮件到另一台机器。
+<P>
+<H2><A NAME="ss3.3">3.3 自动回复</A>
+</H2>
+
+<P>
+<P><CODE>.forward</CODE> 的另一个常用功能是转送你的邮件到一个 'vacation' 程序。这个程序读入邮件并自动生成已录制好的回复；如果你正在渡假，在预定的日期内无法返回，可以使用该功能自动回复邮件。 
+<P>没有一个标准的自动回复程序。有两个原因：一是这样一个程序很容易用带过滤规则的 shellscript 编写(见下例)；二是自动回复程序在邮件列表中有坏的相互作用。
+<P>在设置自动回复前，你需要暂时退订所有的邮件列表；否则你所订阅的邮件列表将被你的自动回复邮件所淹没。这是一种非常粗鲁的行为，在你渡假回来时有你好受的。
+<P>
+<H2><A NAME="ss3.4">3.4 邮件列表</A>
+</H2>
+
+<P>邮件列表是一种发送邮件给不止一个人的假地址。
+<P>在最简单的格式中，邮件地址只是一个有多个接收地址的 MTA 别名。
+一些 smail 邮件列表就是用这种方式维护的。Sendmail 则使用 /etc/aliases，在别名的目标地址中放置邮件列表地址文件。就象以下所示：
+<P>
+<HR>
+<PRE>
+admin-list:     ":include:/usr/home/admin/admin-list"
+</PRE>
+<HR>
+<P>这种方式带来的优势是 admin-list 文件可以放在没有权限用户的任何地方。其它一些 MTA 也使用相似的方法。
+<P>这种简单的列表通常称作 'mail reflectors'。这种方式有两个问题。一是因错误引起的返回信息将传给所有的用户。另一个是所有的订阅和退订都必须由邮件列表管理者来手工完成。
+<P>有一类被称为 mailing list manager 的软件可以解决这些问题。它们最重要的功能就是允许邮件列表用户订阅和退订而不用去维护列表。
+<P>邮件列表管理器保持自身的用户列表信息，通过 /etc/aliases 中的程序别名与 MTA 联结在一起。
+例如，如果以上管理列表通过 sendmail 系统中一个被称为 SmartList 的邮件列表管理器时，/etc/aliases 文件中的部分内容可能如下所示：
+<P>
+<HR>
+<PRE>
+admin-list: "|/usr/home/smartlist/bin/flist admin-list"
+admin-list-request: "|/usr/home/smartlist/bin/flist admin-list-request"
+</PRE>
+<HR>
+<P>注意这只是别名的一部分。按约定真实的邮件列表都有一个 request address 以供用户订阅和退订。往邮件列表的主地址发送订阅或退订请求被认为是粗鲁和无知的行为，千万可别这样做！
+<P>request address 不仅仅提供订阅/退订功能。它可以响应帮助请求，允许你查询有谁在列表中，或者让你自动访问列表档案。它还允许列表管理者限制对已知用户的投递，第一次投递时设置自动订阅的非成员列表，或设置不同的安全选项。
+<P>Mailing-list managers differ primarily in the design and
+range of these secondary features.
+<P>很不幸，邮件列表的请示命令没有标准化。有的期待命令在主题行，有的则忽略主题行而期待命令在邮件内容中。你必须注意第一次订阅时返回的邮件信息；好的习惯是保存这些邮件到“订阅收件箱”中以供以後参考。
+<P>最著名的邮件列表管理器有 majordomo, listserv, listproc 和 smartlist。majordomo 是最流行的。相关信息可以参考 
+<A HREF="http://www.catalog.com/vivian/mailing-list-software.html">list</A> 。
+<P>关於邮件列表管理器更多的信息，参考 
+<A HREF="http://www.greatcircle.com/list-managers/">List-Managers Mailing List</A>，
+<P>
+<H2><A NAME="ss3.5">3.5 邮件过滤</A>
+</H2>
+
+<P>mail filter 是一个在你与本地投递代理之间的程序，在你看到邮件之前自动发送或拒绝邮件。
+<P>邮件过滤有许多用法。最重要的是广告过滤，根据主题或发送者投递邮件到多个收件箱，自动回复邮件。
+<P>典型地，你可以通过在你的 .forward 文件中放置一个过滤程序别名并且写一个过滤规则的文件来设置邮件过滤。过滤规则文件的格式和位置在不同的过滤程序之间是不同的。
+<P>在 Chris Lewis's Email Software Survey 的 
+<A HREF="http://www.faqs.org/faqs/mail/setup/unix/part3/index.html">part 3</A> 有关於三个最主要的邮件过滤程序(procmail, mailagent 和 deliver)的特点要描述。其中最流行的是 procmail，尽管它的规则句法非常难用。procmail 在 Linux 中普遍都有提供，并且作为系统本地投递代理使用。
+<P>
+<H2><A NAME="ss3.6">3.6 Coping with spam</A>
+</H2>
+
+<P>Spam 有时被称为 'UCE' (Unsolicited Commercial Email) 或 'UBE' (Unsolicited Bulk Email)。根据名字的暗示，你应该能明白指的是讨厌的广告邮件。(术语 'spam' 来自於一个 Monty Python 的飞行马戏团笑话，一群海盗不停地唱著 "Spam spam spam ...")
+<P>
+<P>许多 spam 由金字塔型的诱惑、色情描写或者是恼人的推销组成。少数 spam (比如快速赚钱等)已经相当稳固。Spam 趋向於冗长和无知。这是时间的浪费和网络带宽的巨大消费。
+<P>
+<P>spam 在1997年中期相当流行，其後有所减弱，但仍然是一个相当讨厌的事情。
+如果你正被 spam 所淹没，请查阅 
+<A HREF="http://spam.abuse.net/">Fight Spam on the Internet!</A>。 
+<A HREF="http://www.mindworkshop.com/alchemy/nospam.html">Death To Spam!</A> 主页有关於阻止 spam 相当有效方法的介绍。
+<P>
+<HR>
+<A HREF="Mail-User-HOWTO-4.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Mail-User-HOWTO-2.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Mail-User-HOWTO.html#toc3"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

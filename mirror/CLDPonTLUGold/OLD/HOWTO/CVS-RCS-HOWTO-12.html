@@ -1,0 +1,288 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>CVS-RCS- HOW-TO document for Linux (Source Code Control System): RCS Shell scripts </TITLE>
+ <LINK HREF="CVS-RCS-HOWTO-13.html" REL=next>
+ <LINK HREF="CVS-RCS-HOWTO-11.html" REL=previous>
+ <LINK HREF="CVS-RCS-HOWTO.html#toc12" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="CVS-RCS-HOWTO-13.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="CVS-RCS-HOWTO-11.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="CVS-RCS-HOWTO.html#toc12"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="rcs_scripts"></A> <A NAME="s12">12. RCS Shell scripts </A></H2>
+
+<P>If you want to use RCS instead of CVS then you can use the following
+shell scripts.
+<H2><A NAME="cotree.sh"></A> <A NAME="ss12.1">12.1 cotree.sh </A>
+</H2>
+
+<P>
+<HR>
+<PRE>
+#!/bin/ksh
+
+# cotree.sh (Check Out Tree shell script)
+# cotree.sh - Check out the entire RCS directory
+
+# Usage :
+# This will get the all the directories
+#       unix> cotree.sh 
+#
+# This will get just one single directory tree
+#       unix> cotree.sh &lt;directory name>
+
+# See also cofiles.sh
+
+###############################################################
+# Setting up RCS (Revision Control System)
+# Install the RCS programs - which gives command co, ci, rcslog
+# Create a rcs home directory where you want to put all the
+# source code repository. Call this $RCSDIR=/home/rcs_version_control
+# Setup up an environment variable RCSDIR=/home/rcs_version_control
+# in $HOME/.profile file. Like -
+#               export RCSDIR=/home/rcs_version_control
+# Create a directory structure under $RCSDIR and check in all your
+# files using ci . See 'man ci'
+# Now create a link from your home directory to your project
+# under $RCSDIR
+#               cd $HOME
+#               mkdir $HOME/myproject
+#               cd $HOME/myproject
+# and run this script to get all the files and directory tree
+#               cotree.sh
+# This script will create the entire source-tree under user's
+# home and also will have a soft link to RCS directories. Each 
+# user will run this script under his home directory.
+###############################################################
+
+check_out_directory()
+{
+        # Root directory of RCS (revision control system)
+        # like RCSDIR=/home/rcs_version_control
+        RCSDIR=$1
+        DIRNAME=$2
+
+        # The given directory name must exist in rcs root directory
+        if [ "$DIRNAME" = "" -o  ! -d $RCSDIR/$DIRNAME ]; then
+                print "\nDirectory DIRNAME=$DIRNAME does not exist!!"
+                print "\nAborting the program ... and exiting...\n"
+                exit
+        fi
+        
+        mkdir -p $DIRNAME
+        ln -s $RCSDIR/$DIRNAME/RCS $DIRNAME
+        (
+                cd $DIRNAME
+
+                # This fails in case of filename=sample,vv 
+                # which inside RCS will be RCS/sample,vv,v
+                # ls RCS | cut -d',' -f1 | xargs co
+                # Use match to end of name $, as below -
+                # Use ls RCS/* to avoid getting the names ./ and ../
+                #ls RCS/* | cut -d'/' -f2 | sed -e's/,v$//g' | xargs co
+                if [ -d RCS ]; then
+                        ls RCS/* | cut -d'/' -f2 | sed -e's/,v$//g' | \
+                        while read ii
+                        do
+                                #echo "ii is : $ii"
+                                if [ -f "RCS/$ii,v" ]; then
+                                        co $ii
+                                fi
+                        done
+                fi
+        )
+}
+
+# Root directory of RCS (revision control system)
+# like RCSDIR=/home/rcs_version_control
+if [ "$RCSDIR" = "" -o ! -d $RCSDIR ]; then
+        print "\nDirectory RCSDIR=$RCSDIR does not exist!!"
+        print "\nAborting the program ... and exiting...\n"
+        exit
+fi
+#echo "rcsdir is : $RCSDIR"
+
+# If a directory argument is passed, then check out all
+# files for this directory only and exit.
+if [ "$1" != "" ]; then
+        (cd $RCSDIR; find $1 -type d -print ) | 
+        while read DIRNAME
+        do
+                #echo DIRNAME=$DIRNAME
+                #DIRNAME=c_src
+                # Send rcs root directory and dir name relative to rcs root dir
+                tmpaa=` basename $DIRNAME `
+                if [ "$tmpaa" != "RCS" ]; then
+                        check_out_directory $RCSDIR $DIRNAME
+                fi
+        done
+else
+        (cd $RCSDIR; find * -type d -print ) | 
+        while read DIRNAME
+        do
+                echo DIRNAME=$DIRNAME
+                #DIRNAME=c_src
+                # Send rcs root directory and dir name relative to rcs root dir
+                tmpaa=` basename $DIRNAME `
+                if [ "$tmpaa" != "RCS" ]; then
+                        check_out_directory $RCSDIR $DIRNAME
+                fi
+        done
+fi
+</PRE>
+<HR>
+<H2><A NAME="cofiles.sh"></A> <A NAME="ss12.2">12.2 cofiles.sh </A>
+</H2>
+
+<P>
+<HR>
+<PRE>
+#!/bin/ksh
+
+# cofiles.sh (Check Out files shell script)
+# cofiles.sh - Check out all the files in current directory from RCS
+# See also cotree.sh and 'man rcsclean'
+
+if [ ! -d RCS ]; then
+        print "\nDirectory RCS does not exist!!"
+        print "\nAborting the program ... and exiting...\n"
+        exit
+fi
+
+#echo "No. of args = " $# " and all args " $@
+
+while true
+do
+        print -n "\n\nCheck-out all files in read-write mode? &lt;y/n> [n]: "
+        read ans
+        if [ "$ans" = "" -o "$ans" = "n" -o "$ans" = "N" ]; then
+                ans="N"
+                break
+        elif [ "$ans" = "y" -o "$ans" = "Y" ]; then
+                ans="Y"
+                break
+        else
+                print "\nWrong entry! Try again!!"
+        fi
+done
+#echo "The ans is : " $ans
+
+if [ $# -eq 0 ]; then
+        # The 'ls RCS' fails in case of filename=sample,vv in RCS/sample,vv,v
+        # ls RCS | cut -d',' -f1 | xargs co
+        # Use match to end of name $, as below -
+        if [ "$ans" = "Y" ]; then
+                ls RCS | sed -e's/,v$//g' | xargs co -l 
+        else
+                ls RCS | sed -e's/,v$//g' | xargs co
+        fi
+elif [ $# -eq 1 ]; then
+        if [ -f "RCS/$1,v" ]; then
+                # Here, in this case $1 will be like dbalter.sql
+                # and not like db*.sql....
+                #echo "One arg, no. of args = " $# " and all args " $@
+                if [ "$ans" = "Y" ]; then
+                        co -l "$1"
+                else
+                        co "$1"
+                fi
+        else
+                # For case where $1=db*.sql and there is no db*.sql in
+                # current directory
+                #echo "No files... no. of args = " $# " and all args " $@
+                tmpaa="RCS/$1,v"  # will be like RCS/db*.sql,v
+                ls $tmpaa | \
+                while read ii
+                do
+                        #echo "ii is : $ii"
+                        if [ "$ans" = "Y" ]; then
+                                co -l "$ii"
+                        else
+                                co "$ii"
+                        fi
+                done
+        fi
+else
+        for ii in $@
+        do
+                #echo "ii is : $ii,v"
+                if [ "$ans" = "Y" ]; then
+                        co -l "$ii"
+                else
+                        co "$ii"
+                fi
+        done
+fi
+</PRE>
+<HR>
+<H2><A NAME="ciall.sh"></A> <A NAME="ss12.3">12.3 ciall.sh </A>
+</H2>
+
+<P>
+<HR>
+<PRE>
+#!/bin/ksh
+
+# ciall.sh (Check in files shell script)
+# ciall.sh - Check in all the files in current directory into RCS
+# This script is very useful for checking in enmass large number
+# of new files into RCS. Saves time by avoiding to type the
+# 'description' for every file
+# And for files already in RCS, it does regular check-in command
+
+
+# To convert filenames to lower case filenames, use this
+# technique - use 'tr', see 'man tr'
+#ls * | \
+#while read ii
+#do
+#       jj=`echo $ii | tr [A-Z] [a-z] `
+#       echo "ii is : $ii"
+#       echo "jj is : $jj"
+#       mv $ii $jj
+#done
+
+if [ ! -d RCS ]; then
+        print "\nDirectory RCS does not exist!!"
+        print "\nWill be creating RCS directory now ...\n"
+        mkdir RCS
+fi
+
+print "\n\nNOTE: This is not log message!"
+print "Please enter description (will be used for"
+print -n "all the files checked in) : "
+read description
+
+#find * -prune -type f | 
+
+# The number of args is zero or more.... 
+if  [ $# -eq 0 ]; then
+        listoffiles="*"
+else
+        listoffiles="$@"
+fi
+
+find $listoffiles -prune -type f | 
+while read ii
+do
+        #echo $ii
+        if [ -f "RCS/$ii,v" ]; then
+                #print "The file $ii already in RCS"
+                ci -m"$description" $ii 
+        else
+                #print "The file $ii is new file"
+                ci $ii &lt;&lt; EOF
+$description
+EOF
+        fi
+done
+</PRE>
+<HR>
+<HR>
+<A HREF="CVS-RCS-HOWTO-13.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="CVS-RCS-HOWTO-11.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="CVS-RCS-HOWTO.html#toc12"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

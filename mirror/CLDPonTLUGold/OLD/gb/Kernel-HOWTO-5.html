@@ -1,0 +1,107 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Kernel HOWTO 中译版: 修补核心</TITLE>
+ <LINK HREF="Kernel-HOWTO-6.html" REL=next>
+ <LINK HREF="Kernel-HOWTO-4.html" REL=previous>
+ <LINK HREF="Kernel-HOWTO.html#toc5" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Kernel-HOWTO-6.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Kernel-HOWTO-4.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Kernel-HOWTO.html#toc5"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s5">5. 修补核心</A></H2>
+
+<P>
+<P>
+<H2><A NAME="ss5.1">5.1 使用修补档</A>
+</H2>
+
+<P>核心的小幅更新是以修补档的方式发行．例如，如果你的版本是 1.1.45 ，
+而且你注意到出现了一个 `<CODE>patch46.gz</CODE>' 可以用来升级它，
+这代表你可以藉由使用这个修补档将版本升级到 1.1.46．
+你也许会想要先备份原始程式码(`<CODE>make clean</CODE>' 然後 `<CODE>cd /usr/src; tar zcvf old-tree.tar.gz linux</CODE>' 将会为你造出一份 tar 压缩档，里面就是整个原始程式码与其档案架构)．
+<P>现在接著继续上面的例子，假设你已经取得了 `<CODE>patch46.gz</CODE>' 并放在 <CODE>/usr/src</CODE> 下．
+<CODE>cd</CODE> 到 <CODE>/usr/src</CODE> 然後执行 `<CODE>zcat patch46.gz | patch -p0</CODE>' (如果并不是压缩过的修补档，那麽就执行 `<CODE>patch -p0 &lt; patch46</CODE>')，
+你将会看到许多东西飞逝而过(或是慢慢跳过，如果你的电脑真的很慢的话)告诉你它正试著修补程式，以及是否成功．
+通常，这个过程快得无法仔细看清楚它的动作，所以你会无法确定它到底有没有成功地执行．
+所以你可能会想在 <CODE>patch</CODE> 指令中加上 <CODE>-s</CODE> 选项，告诉 <CODE>patch</CODE> 程式只报告错误讯息就好．
+(这样你就不会得到许多``嗨! 我的电脑正在做某些改变!''的感觉，不过你可能宁愿这样…)
+那麽就得找找看一些可能不是那麽顺利的事．<CODE>cd</CODE> 到 <CODE>/usr/src/linux</CODE> 并找寻档名结尾为 <CODE>.rej</CODE> 的档案．
+某些版本的 <CODE>patch</CODE>（比较旧的版本，它们可能是在比较早期的档案系统上编译的）会把这些没有成功的操作记录在档名有 <CODE>#</CODE> 的档案里．
+你可以用 `<CODE>find</CODE>' 来替你找；
+<PRE>
+    find .  -name '*.rej' -print
+</PRE>
+
+会将现行目录及子目录下所有具 <CODE>.rej</CODE> 结尾的档名印到标准输出．
+<P>如果一切正确无误的话，执行第三节跟第四节所讨论的 `<CODE>make clean</CODE>'，`<CODE>config</CODE>' 以及 `<CODE>dep</CODE>'．
+<P>关於 <CODE>patch</CODE> 指令另外还有一些选项．如前所述，<CODE>patch -s</CODE> 将会抑制除了错误以外的所有其他讯息．
+如果你把核心原始程式码放在 <CODE>/usr/src/linux</CODE> 以外的地方，在该目录下用 <CODE>patch -p1</CODE> 也可以乾净俐落的执行修补任务．
+其它的 <CODE>patch</CODE> 选项在线上手册(man page)里都有很详细的描述．
+<P>
+<H2><A NAME="ss5.2">5.2 如果有错误发生</A>
+</H2>
+
+<P>(注意: 本节提到的大部份是指旧版的核心)
+<P>通常最常发生的问题是当 <CODE>patch</CODE> 修改一个叫做 `<CODE>config.in</CODE>' 的档案时，这个档案看起来不怎麽对劲，
+因为你修改了一些选项来配合你的机器．这个问题已经小心的注意过了，但还是可能有人会在较旧的版本上遭遇这个问题．
+要修正这个问题的话，查看 <CODE>config.in.rej</CODE> 这个档案里留下些什麽讯息．
+有修改过的部份正常来说会在每一行开始的地方标上 `<CODE>+</CODE>' 和 `<CODE>-</CODE>'．
+查看有标记的附近几行，然後记得它们是设成 `<CODE>y</CODE>' 或是 `<CODE>n</CODE>'．
+现在编辑 <CODE>config.in</CODE> 档，然後在适当的地
+方把 `<CODE>y</CODE>' 改成 `<CODE>n</CODE>' 以及 `<CODE>n</CODE>' 改成 `<CODE>y</CODE>'．执行
+<PRE>
+    patch -p0 &lt; config.in.rej
+</PRE>
+
+如果成功的话(没有错误)，那麽你就可以继续配置与编译的工作．
+这个 <CODE>config.in.rej</CODE> 档还是会留在那里，但是你可以砍掉它．
+<P>
+<P>如果你仍然遭遇其它问题，那麽可能是你安装了一份损坏的修补档．
+如果 patch 显示 `<CODE>previously applied patch detected: Assume -R?</CODE>'，
+你可能使用了一些比你目前的版本编号还低的修补档; 如果你回答 `<CODE>y</CODE>'，它会尝试将你的程式码降级，而且几乎一定会失败;
+如此，你就需要重新取得一份新的原始程式码．
+<P>要还原到修补前的状态的话，在原先的修补档上执行 `<CODE>patch -R</CODE>'．
+<P>当修补档真的失败的时候，最好的办法是从一个乾净的原始程式码(例如从 linux-x.x.x.tar.gz 档案其中之一)开始，再重新执行．
+<P>
+<H2><A NAME="ss5.3">5.3 砍掉 .orig 档案</A>
+</H2>
+
+<P>只要做过几次修补以後，那些 <CODE>.orig</CODE> 的档案将会开始堆积．
+例如，我的一个 1.1.51 版的程式码最後一次做清扫是在 1.1.48 版（我想是吧）．
+删除这些 <CODE>.orig</CODE> 档案会节省许多的磁碟空间．
+<PRE>
+    find .  -name '*.orig' -exec rm -f {} ';'
+</PRE>
+
+将会替你照料这件事．某些版本的 <CODE>patch</CODE> 会用 ~ 来代替 <CODE>.orig</CODE>．
+<P>有其它更好的的办法可砍掉这些 <CODE>.orig</CODE> 档，就是利用 GNU 的 <CODE>xargs</CODE>:
+<PRE>
+    find .  -name '*.orig' | xargs rm
+</PRE>
+
+或是更安全但有些罗嗦的方法:
+<PRE>
+    find . -name '*.orig' -print0 | xargs --null rm --
+</PRE>
+<P>
+<H2><A NAME="ss5.4">5.4 其它的修补档</A>
+</H2>
+
+<P>有一些并不是由 Linus 发行的其它修补档出现(我将称之为``非标准的'')．
+如果你使用了它们，Linus 的修补档可能会而无法正确地执行，
+那麽你不是得将它们还原就是得因此而去修改原始程式码或是修补档．这个工作对初学者通常是很讨厌，
+所以如果你不想去修改原始程式码(结果通常不大好)，在使用 Linus 的修补档之前先还原这些非标准的修补档，或重新安装新的程式码．
+然後试试这非标准的修补档能不能用．如果不能的话，那麽要不你就继续使用旧的核心，
+试著修改修补档使其能用，要不就等待(可能是乞求)新版非标准修补档出现．
+<P>非标准的修补档有多普遍? 你有可能曾经听过它们．我使用 Bill Paul 的不闪烁修补档来修改我的虚拟控制台，因为我讨厌会闪烁的游标(这个修补档经常为新版核心而更新)．
+由於大部份较新的设备驱动程式都已经被发展成可载入模组形式，因此许多非标准的修补档的重要性已逐渐降低．
+<P>
+<HR>
+<A HREF="Kernel-HOWTO-6.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Kernel-HOWTO-4.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Kernel-HOWTO.html#toc5"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

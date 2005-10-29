@@ -1,0 +1,786 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Linux IP Masquerade mini HOWTO 中譯版: IP Masquerade 的設定</TITLE>
+ <LINK HREF="IP-Masquerade-HOWTO-4.html" REL=next>
+ <LINK HREF="IP-Masquerade-HOWTO-2.html" REL=previous>
+ <LINK HREF="IP-Masquerade-HOWTO.html#toc3" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="IP-Masquerade-HOWTO-4.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="IP-Masquerade-HOWTO-2.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="IP-Masquerade-HOWTO.html#toc3"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s3">3. IP Masquerade 的設定</A></H2>
+
+<P>
+<BLOCKQUOTE>
+<B>如果你的私用網路裡有任何重要的資訊，在使用 IP Masquerade 之前請三思。這可能成為你通往網際網路的閘道，反之亦然，也可能成為另一邊的世界進入你私用網路的途徑。</B>
+</BLOCKQUOTE>
+<P>
+<H2><A NAME="ss3.1">3.1 編譯核心加入 IP Masquerade 的支援</A>
+</H2>
+
+<P>
+<BLOCKQUOTE>
+ <B>如果你的 Linux 發行套件已經將下面將提到的所需特性及模組編譯進去的話(大部份模組化的核心有你所需的東西)，那麼你不需要重新編譯核心。
+不過仍十分建議你讀一讀此節，因為它包含了其它有用的資訊。</B> 
+</BLOCKQUOTE>
+<P>
+<H3>Linux 2.2.x 版核心</H3>
+
+<P>
+<UL>
+<LI>首先，你需要 2.2.x 版核心的原始程式碼。
+</LI>
+<LI>如果這是你第一次編譯核心，不要害怕。
+事實上，這非常容易而且涵蓋於 
+<A HREF="../Kernel-HOWTO.html">Linux Kernel HOWTO</A>。
+</LI>
+<LI>以這個指令: <CODE>tar xvzf linux-2.2.x.tar.gz -C /usr/src</CODE>
+將核心原始碼解開至 <CODE>/usr/src/</CODE>,
+其中 x 是 2.2 之後的修補層級(確定有一叫 <CODE>linux</CODE> 的目錄或符號連結)。
+</LI>
+<LI>加上適當的修補。因為新的修補檔不斷出來，所以細節不會包含在這裡。
+最新的資訊請參考 
+<A HREF="http://ipmasq.cjb.net/">IP Masquerade Resources</A>。
+</LI>
+<LI>有關編譯核心更進一步的介紹請參考 Kernel HOWTO 以及核心原始程式碼目錄裡的 README 檔案。
+</LI>
+<LI>這裡是你要編譯進去的選項:
+<P>下列選項要回答 <EM>YES</EM>:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+  * Prompt for development and/or incomplete code/drivers
+    CONFIG_EXPERIMENTAL
+    - 這將讓你能選擇把實驗性的 IP Masquerade 程式碼編譯到核心裡去
+
+  * Enable loadable module support
+    CONFIG_MODULES
+    - 讓你能夠載入 ipmasq 相關模組如 ip_masq_ftp.o
+
+  * Networking support
+    CONFIG_NET
+
+  * Network firewalls
+    CONFIG_FIREWALL
+
+  * TCP/IP networking
+    CONFIG_INET
+
+  * IP: forwarding/gatewaying
+    CONFIG_IP_FORWARD
+
+  * IP: firewalling
+    CONFIG_IP_FIREWALL
+
+  * IP: masquerading
+    CONFIG_IP_MASQUERADE
+
+  * IP: ipportfw masq support
+    CONFIG_IP_MASQUERADE_IPPORTFW
+    - 建議加入
+
+  * IP: ipautofw masquerade support
+    CONFIG_IP_MASQUERADE_IPAUTOFW
+    - 可選用
+
+  * IP: ICMP masquerading
+    CONFIG_IP_MASQUERADE_ICMP
+    - 支援偽裝 ICMP 封包，建議加入
+
+  * IP: always defragment
+    CONFIG_IP_ALWAYS_DEFRAG
+    - 高度建議使用
+
+  * Dummy net driver support
+    CONFIG_DUMMY
+    - 建議加入
+
+  * IP: ip fwmark masq-forwarding support
+    CONFIG_IP_MASQUERADE_MFW
+    - 可選用
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>注意: 這只不過是你跑 IP Masquerade 所需的項目，其它的按照你所需的來選擇。
+<P>
+</LI>
+<LI>在編譯完核心之後，你需要編譯及安裝模組:
+<BLOCKQUOTE><CODE>
+<PRE>
+make modules; make modules_install
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>然後把下面幾行加到你的 <CODE>/etc/rc.d/rc.local</CODE> 檔案
+(或其它你認為適當的檔案)中以便於每次重開機時自動載入位於 
+<CODE>/lib/modules/2.2.x/ipv4/</CODE> 的模組:
+<BLOCKQUOTE><CODE>
+<PRE>
+        .
+        .
+        .
+/sbin/depmod -a
+/sbin/modprobe ip_masq_ftp
+/sbin/modprobe ip_masq_raudio
+/sbin/modprobe ip_masq_irc
+(以及其它的模組如 ip_masq_cuseeme, ip_masq_vdolive,
+如果你有加上這些修補的話)
+        .
+        .
+        .
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+<B>重要: IP 轉送功能在 2.2.x 版核心中預設是關閉的，請確定你以此指令將其打開:</B><BR>
+<BLOCKQUOTE><CODE>
+<PRE>
+echo "1" > /proc/sys/net/ipv4/ip_forwarding
+</PRE>
+</CODE></BLOCKQUOTE>
+
+對於 Red Hat 的使用者來說，你可以把 <CODE>/etc/sysconfig/network</CODE> 中的
+<CODE>FORWARD_IPV4=false</CODE> 改成 <CODE>FORWARD_IPV4=true</CODE>。
+</LI>
+<LI>重新啟動 Linux 主機。
+</LI>
+</UL>
+<P>
+<H3>Linux 2.0.x Kernels</H3>
+
+<P>
+<UL>
+<LI>首先，你需要核心的原始程式碼(最好是最新的 2.0.36 或以上的版本)。
+</LI>
+<LI>如果這是你第一次編譯核心，不要害怕。
+事實上，這非常容易而且涵蓋於 
+<A HREF="../Kernel-HOWTO.html">Linux Kernel HOWTO</A>。
+</LI>
+<LI>以這個指令: <CODE>tar xvzf linux-2.0.x.tar.gz -C /usr/src</CODE>
+將核心原始碼解開至 <CODE>/usr/src/</CODE>,
+其中 x 是 2.0 之後的修補層級(確定有一叫 <CODE>linux</CODE> 的目錄或符號連結)。
+</LI>
+<LI>加上適當的修補。因為新的修補檔不斷出來，所以細節不會包含在這裡。
+最新的資訊請參考 
+<A HREF="http://ipmasq.cjb.net/">IP Masquerade Resources</A>。
+</LI>
+<LI>有關編譯核心更進一步的介紹請參考 Kernel HOWTO 以及核心原始程式碼目錄裡的 README 檔案。
+</LI>
+<LI>這裡是你要編譯進去的選項:
+<P>下列選項要回答 <EM>YES</EM>:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+  * Prompt for development and/or incomplete code/drivers
+    CONFIG_EXPERIMENTAL
+    - 這將讓你能選擇把實驗性的 IP Masquerade 程式碼編譯到核心裡去
+
+  * Enable loadable module support
+    CONFIG_MODULES
+    - 讓你能夠載入模組
+
+  * Networking support
+    CONFIG_NET
+
+  * Network firewalls
+    CONFIG_FIREWALL
+
+  * TCP/IP networking
+    CONFIG_INET
+
+  * IP: forwarding/gatewaying
+    CONFIG_IP_FORWARD
+
+  * IP: firewalling
+    CONFIG_IP_FIREWALL
+
+  * IP: masquerading (EXPERIMENTAL)
+    CONFIG_IP_MASQUERADE
+    - 這雖然是實驗性的，但卻是 *必須* 的
+
+  * IP: ipautofw masquerade support (EXPERIMENTAL)
+    CONFIG_IP_MASQUERADE_IPAUTOFW
+    - 建議加入
+
+  * IP: ICMP masquerading
+    CONFIG_IP_MASQUERADE_ICMP
+    - 支援偽裝 ICMP 封包，可選用
+
+  * IP: always defragment
+    CONFIG_IP_ALWAYS_DEFRAG
+    - 高度建議使用
+
+  * Dummy net driver support
+    CONFIG_DUMMY
+    - 建議加入
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>注意: 這只不過是你跑 IP Masquerade 所需的項目，其它的按照你所需的來選擇。
+<P>
+</LI>
+<LI>在編譯完核心之後，你需要編譯及安裝模組:
+<BLOCKQUOTE><CODE>
+<PRE>
+make modules; make modules_install
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>然後把下面幾行加到你的 <CODE>/etc/rc.d/rc.local</CODE> 檔案
+(或其它你認為適當的檔案)中以便於每次重開機時自動載入位於 
+<CODE>/lib/modules/2.0.x/ipv4/</CODE> 的模組:
+<BLOCKQUOTE><CODE>
+<PRE>
+        .
+        .
+        .
+/sbin/depmod -a
+/sbin/modprobe ip_masq_ftp
+/sbin/modprobe ip_masq_raudio
+/sbin/modprobe ip_masq_irc
+(以及其它的模組如 ip_masq_cuseeme, ip_masq_vdolive,
+如果你有加上這些修補的話)
+        .
+        .
+        .
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+<B>重要: IP 轉送功能在 2.0.34 之後的核心中預設是關閉的，請確定你以此指令將其打開:</B><BR>
+<BLOCKQUOTE><CODE>
+<PRE>
+echo "1" > /proc/sys/net/ipv4/ip_forwarding
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+對於 Red Hat 的使用者來說，你可以把 <CODE>/etc/sysconfig/network</CODE> 中的
+<CODE>FORWARD_IPV4=false</CODE> 改成 <CODE>FORWARD_IPV4=true</CODE>。
+</LI>
+<LI>重新啟動 Linux 主機。
+</LI>
+</UL>
+<P>
+<P>
+<H2><A NAME="ss3.2">3.2 指定私用網路的 IP 位址</A>
+</H2>
+
+<P>因為所有<B>其它</B>機器都沒有正式指定的位址，必須有個正確的方式來分配位址給這些機器。
+<P>節自 IP Masquerade FAQ:
+<P>有份 RFC (#1597, 現在可能已過時了) 是有關沒有與外界連線的網路該使用什麼 IP 位址。有三個數字區塊是特別為這個目的而保留的。其中一個我使用的是 192.168.1.n 到 192.168.255.n 之間的 255 Class-C 子網路。
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+節自 RFC 1597:
+
+第三節: 私用位址空間
+
+      網際網路位址指定當局(IANA: Internet Assigned Numbers Authority)
+      已經保留下列三個區塊的 IP 位址空間給私用網路:
+
+                     10.0.0.0        -   10.255.255.255
+                     172.16.0.0      -   172.31.255.255
+                     192.168.0.0     -   192.168.255.255
+
+      我們將稱第一個區塊為 "24位元區塊"，第二個為 "20位元區塊"，
+      而第三個則稱為 "16位元區塊"。注意到第一個區塊就只是個 
+      class A  網路號碼，第二個區塊則是連續的 16 個 class B 網路
+      號碼，而第三個區塊是一組 255  個連續的 class C 網路號碼。
+</PRE>
+</CODE></BLOCKQUOTE>
+
+所以，如果你要使用一個 class C  網路的話，那麼你的機器應該以 192.168.1.1, 192.168.1.2, 192.168.1.3, ..., 192.168.1.x 來名之。
+<P>192.168.1.1 通常是閘道這台機器，在此即你連上網際網路的 Linux 主機。注意 192.168.1.0 以及 192.168.1.255 分別為網路以及廣播位址，是保留的。避免在你的機器上使用這些位址。
+<P>
+<H2><A NAME="ss3.3">3.3 配置其它機器</A>
+</H2>
+
+<P>除了為每台機器設定適當的 IP 位址之外，你也應該設定適當的閘道。一般說來，這是非常直接了當的。你只需簡單地輸入 Linux 主機的位址(通常是 192.168.1.1)作為閘道位址。
+<P>關於領域名稱服務，你可以加入任何 DNS  系統。最可能的應該是你 Linux 使用的那一個。你也可以選擇性地加上任何網域字尾(domain suffix) 。
+<P>在你重新配置這些 IP 位址之後，記得重新啟動適當的服務或是重新開機。
+<P>下面的配置範例假設你使用一個 Class C  網路並且以 192.168.1.1 作為 Linux  主機的位址。請注意 192.168.1.0  及 192.168.1.255 是保留的。
+<P>
+<P>
+<H3>配置 Windows 95</H3>
+
+<P>
+<OL>
+<LI>如果你還沒有安裝網路卡以及界面驅動程式，現在做。
+</LI>
+<LI>到 <EM>'控制台/網路'</EM> 裡去。
+</LI>
+<LI>如果你的網路配置裡沒有 <EM>'TCP/IP  協定'</EM> 則加進去。
+</LI>
+<LI>在<EM>'TCP/IP  內容'</EM>中，選擇<EM>'IP  位址'</EM>並且把 IP 位址設定為 192.168.1.x,(1&lt;x&lt;255) ，並且把子網路遮罩設為 255.255.255.0
+</LI>
+<LI>在<EM>'通訊閘'</EM>中加入 192.168.1.x  作為你的閘道。
+</LI>
+<LI>在<EM>'DNS 配置'/'DNS 伺服器'</EM>下加入你的 Linux 主機使用的 DNS (通常可以在 /etc/resolv.conf 裡找到)。你可以選擇性地加入適當的網域字尾搜尋順序。
+</LI>
+<LI>不要變更原先的其它設定，除非你知道自己在做什麼。
+</LI>
+<LI>在所有的對話盒中按下<EM>'確定'</EM>並且重新啟動系統。
+</LI>
+<LI>測試網路連線，<CODE>Ping</CODE> 你的 linux 主機: 從<EM>'開始/執行'</EM>，輸入 ping 192.168.1.1<BR>
+(這只是區域網路連線測試，你現在還不能 <CODE>ping</CODE> 外面的世界。)
+</LI>
+<LI>你可以在 windows  目錄下選擇性地建立一個 <CODE>HOSTS</CODE> 檔案，如此你可以使用區域網路裡的機器名稱。在 windows  目錄裡有個稱為 <CODE>HOSTS.SAM</CODE> 的範例。</LI>
+</OL>
+<P>
+<H3>配置 Windos for Workgroup 3.11</H3>
+
+<P>
+<OL>
+<LI>如果你還沒有安裝網路卡以及界面驅動程式，現在做。
+</LI>
+<LI>如果你還未安裝 TCP/IP 32b 套件的話就裝吧。
+</LI>
+<LI>在 <EM>'Main'/'Windows Setup'/'Network Setup'</EM>, 按下 <EM>'Drivers'</EM>。
+</LI>
+<LI>將 <EM>'Network Drivers'</EM> 裡的 <EM>'Microsoft TCP/IP-32 3.11b'</EM> 反白，按下 <EM>'Setup'</EM>。
+</LI>
+<LI>設定 IP 位址於 192.168.1.x (1 &lt; x &lt; 255), 然後設定 Subnet Mask 為 255.255.255.0 以及 Default Gateway 為 192.168.1.1。
+</LI>
+<LI>不要開啟 <EM>'Automatic DHCP Configuration'</EM> 並在 <EM>'WINS Server'</EM> 中放入任何東西，除非你在一 Windows NT 網域中而且你知道你在做什麼。
+</LI>
+<LI>按下 <EM>'DNS'</EM>, 填入在 3.3.1 小節中步驟六提到的資訊，然後在你完成後按下 <EM>'OK'</EM> 鈕。
+</LI>
+<LI>按下 <EM>'Advanced'</EM>, 如果你使用類似 3.3.1 小節步驟十中提到主機檔案，勾選 <EM>'Enable DNS for Windows Name Resolution'</EM> 及 <EM>'Enable LMHOSTS lookup'</EM>。
+</LI>
+<LI>在所有對話盒中按 <EM>'OK'</EM> 並重新啟動系統。
+</LI>
+<LI><CODE>Ping</CODE> 一下你的 Linux 主機以測試網路連接: 在 <EM>'File/Run'</EM> 輸入: <CODE>ping 192.168.1.1</CODE> <BR>
+(這只不過是區域網路的連接測試，你還不能 <CODE>ping</CODE> 到外面的世界)。</LI>
+</OL>
+<P>
+<H3>Configuring Windows NT</H3>
+
+<P>
+<OL>
+<LI>如果你還沒有安裝網路卡以及界面驅動程式，現在做。
+</LI>
+<LI>到 <EM>'Main'/'Control Panel'/'Network'</EM>。
+</LI>
+<LI>如果你還沒裝 TCP/IP 服務的話從 <EM>'Add Software'</EM> 選單中加入 TCP/IP 協定及相關的部份。
+</LI>
+<LI>在 <EM>'Network Software and Adapter Cards'</EM> 裡將 <EM>'Installed Network Software'</EM> 選擇盒中的 <EM>'TCP/IP 協定'</EM> 反白。
+</LI>
+<LI>在 <EM>'TCP/IP Configuration'</EM>，選擇適當的界面驅動程式，例如，<CODE>[1]Novell NE2000 Adapter</CODE>。然後設定 IP 位址於 192.168.1.x (1 &lt; x &lt; 255)，然後設定 Subnet Mask 為 255.255.255.0 以及 Default Gateway 為 192.168.1.1。
+</LI>
+<LI>不要開啟 <EM>'Automatic DHCP Configuration'</EM> 並在 <EM>'WINS Server'</EM> 中放入任何東西，除非你在一 Windows NT 網域中而且你知道你在做什麼。
+</LI>
+<LI>按下 <EM>'DNS'</EM>, 填入在 3.3.1 小節中步驟六提到的資訊，然後在你完成後按下 <EM>'OK'</EM> 鈕。
+</LI>
+<LI>按下 <EM>'Advanced'</EM>, 如果你使用類似 3.3.1 小節步驟十中提到主機檔案，勾選 <EM>'Enable DNS for Windows Name Resolution'</EM> 及 <EM>'Enable LMHOSTS lookup'</EM>。
+</LI>
+<LI>在所有對話盒中按 <EM>'OK'</EM> 並重新啟動系統。
+</LI>
+<LI><CODE>Ping</CODE> 一下你的 Linux 主機以測試網路連接: 在 <EM>'File/Run'</EM> 輸入: <CODE>ping 192.168.1.1</CODE> <BR>
+(這只不過是區域網路的連接測試，你還不能 <CODE>ping</CODE> 到外面的世界)。</LI>
+</OL>
+<P>
+<H3>配置 UNIX 系列的系統</H3>
+
+<P>
+<OL>
+<LI>如果你還未安裝你的網路卡並以適當的界面驅動程式重新編譯你的核心，現在就做吧。
+</LI>
+<LI>安裝 TCP/IP 網路，像是 nettools 套件，如果你還沒裝的話。
+</LI>
+<LI>將 <EM>IPADDR</EM> 設為 192.168.1.x (1 &lt; x &lt; 255), 然後將 <EM>NETMASK</EM> 設為 255.255.255.0, <EM>GATEWAY</EM> 設為 192.168.1.1, 以及 <EM>BROADCAST</EM> 設為 192.168.1.255。<BR>
+例如，在 Red Hat Linux 系統上你可以編輯 <CODE>/etc/sysconfig/network-scripts/ifcfg-eth0</CODE>，或直接從 Control Panel 裡做。<BR>
+(在 SunOS, BSDi, Slackware Linux, 等中都不相同...)
+</LI>
+<LI>將你的名稱伺服器及領域搜尋字尾加到 <CODE>/etc/resolv.conf</CODE>。
+</LI>
+<LI>依據你的設定你可能要更新你的 <CODE>/etc/networks</CODE> 檔案。
+</LI>
+<LI>重新啟動適當的服務，或簡單的重新開機。
+</LI>
+<LI>發出 <CODE>ping</CODE> 指令: <CODE>ping 192.168.1.1</CODE> 以測試到你的 gateway 機器的連接性。<BR>
+(這只不過是區域網路的連接測試，你還不能 <CODE>ping</CODE> 到外面的世界)。</LI>
+</OL>
+<P>
+<H3>配置使用 NCSA Telnet 套件的 DOS 機器</H3>
+
+<P>
+<OL>
+<LI>如果你還沒有安裝網路卡，現在做。
+</LI>
+<LI>載入適當的封包驅動程式。對於 NE2000 卡來說，如果你的卡設定為 IRQ 10 及硬體位址於 0x300，用 <CODE>nwpd 0x60 10 0x300</CODE>。
+</LI>
+<LI>建立一新目錄，然後解開 NCSA Telnet 套件: <CODE>pkunzip tel2308b.zip</CODE>
+</LI>
+<LI>使用文字編輯器打開 <CODE>config.tel</CODE> 檔案。
+</LI>
+<LI>設定 <CODE>myip=192.168.1.x</CODE> (1 &lt; x &lt; 255), 以及 <CODE>netmask=255.255.255.0</CODE>。
+</LI>
+<LI>在本例子中，你應該設定 <CODE>hardware=packet, interrupt=10, ioaddr=60</CODE>。
+</LI>
+<LI>你至少要有一單獨的機器設定為 gateway，也就是 Linux 主機:
+<BLOCKQUOTE><CODE>
+<PRE>
+name=default
+host=yourlinuxhostname
+hostip=192.168.1.1
+gateway=1
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>還要有另外一個指定領域名稱服務:
+<BLOCKQUOTE><CODE>
+<PRE>
+name=dns.domain.com ; hostip=123.123.123.123; nameserver=1
+</PRE>
+</CODE></BLOCKQUOTE>
+
+注意: 用你 Linux 主機使用的 DNS 的適當資訊來取代。
+</LI>
+<LI>儲存你的 <CODE>config.tel</CODE> 檔案。
+</LI>
+<LI>Telnet 到你的 Linux 主機以測試網路連接: <CODE>telnet 192.168.1.1</CODE></LI>
+</OL>
+<P>
+<H3>配置執行 MacTCP 的 MacOS 機器</H3>
+
+<P>
+<OL>
+<LI>如果你還沒為你的乙太網路轉接器安裝適當的驅動程式，最好現在就作。
+     </LI>
+<LI>打開 <EM>MacTCP control panel</EM>，選擇適當的網路驅動程式(Ethernet, 而非 EtherTalk) 並按下 <EM>'More...'</EM> 鈕。
+</LI>
+<LI>在 <EM>'Obtain Address:'</EM>, 按 <EM>'Manually'</EM>。
+</LI>
+<LI>在 <EM>'IP Address:'</EM> 下，從彈出選單中選擇 <EM>class C</EM>。忽略對話盒中的其它部份。
+</LI>
+<LI>在 <EM>'Domain Name Server Information:'</EM> 中填入適當資訊。
+</LI>
+<LI>在 <EM>'Gateway Address:'</EM> 中，填入 192.168.1.1。
+</LI>
+<LI>按下 <EM>'OK'</EM> 以儲存設定。在 <EM>MacTCP control panel</EM> 的主視窗中，在 <EM>'IP Address:'</EM> 盒中填入你 Mac 的 IP 位址 (192.168.1.x, 1 &lt; x &lt; 255)。
+</LI>
+<LI>關閉 <EM>MacTCP control panel</EM>。如果有的彈出視窗提醒你重新開機，那就做吧。  
+</LI>
+<LI>你可以 <CODE>ping</CODE> 一下你的 Linux 主來來測試網路連線。如果你有 <EM>MacTCP Watcher</EM> 免費程式，按下 <EM>'Ping'</EM> 鈕，然後在彈出的對話盒中鍵入你的 Linux 主機的地址(192.168.1.1)。(這只不過是區域網路的連接測試，你還不能 <CODE>ping</CODE> 到外面的世界。)
+</LI>
+<LI>你可選擇性地在 System Folder 中建立一 <CODE>Hosts</CODE> 檔案以便你可以使用你區域網路裡機器的主機名稱。
+這個檔案可能已經存在於你的 System Folder 裡，而且它應該會包含一些(註解掉的)範例項目而你可以根據你的需要來修改。
+</LI>
+</OL>
+<P>
+<H3>配置執行 Open Transport 的 MacOS 系統</H3>
+
+<P>
+<OL>
+<LI>如果你還沒為你的乙太網路轉接器安裝適當的驅動程式，最好現在就作。
+</LI>
+<LI>打開 <EM>TCP/IP Control Panel</EM> 然後從 <EM>Edit</EM> 選單中選擇 <EM>'User Mode ...'</EM>。確定使用者模式至少是 <EM>'Advanced'</EM> 然後按下 <EM>'OK'</EM> 鈕。
+</LI>
+<LI>從 <EM>File</EM> 選單中選擇 <EM>'Configurations...'</EM>。選擇 <EM>'Default'</EM> 配置並按下 <EM>'Duplicate...'</EM> 鈕。在 <EM>'Duplicate Configuration'</EM> 對話盒中鍵入 'IP Masq' (或是其它能讓你知道這是個特殊配置的字眼)，它可能會說像是 <EM>'Deafault copy'</EM> 什麼的。然後按下 <EM>'OK'</EM> 鈕，以及 <EM>'Make Active'</EM> 鈕。
+</LI>
+<LI>從 <EM>'Connect via:'</EM> 彈出式選單中選擇 <EM>'Ethernet'</EM>。
+</LI>
+<LI>從 <EM>'Configure:'</EM> 彈出式選單選擇適當的項目。如果你不知道應該選什麼，你可能應該重新選擇你的 <EM>'Default'</EM> 配置然後離開。我用的是 <EM>'Manually'</EM>。
+</LI>
+<LI>在 <EM>'IP Address:'</EM> 盒中輸入你的 Mac 的 IP 位址 (192.168.1.x, 1 &lt; x &lt; 255)。
+</LI>
+<LI>在 <EM>'Subnet mask:'</EM> 盒中輸入 255.255.255.0。
+</LI>
+<LI>在 <EM>'Router address:'</EM> 盒中輸入 192.168.1.1 。
+</LI>
+<LI>在 <EM>'Name server addr.:'</EM> 盒中輸入你的領域名稱伺服器 IP 位址。
+</LI>
+<LI>在 <EM>'Implicit Search Path:'</EM> 裡的 <EM>'Starting domain name'</EM> 輸入你的網際網路領域名稱(例如 'microsoft.com')。
+</LI>
+<LI>接下來的步驟是選擇性的。不正確的值可能導致嚴重的錯誤行為。如果你不確定，最好留下空白，不要勾選。如果需要的話，除去那些欄位中的任何資訊。就我目前所知沒有辦法在 TCP/IP 對話視窗中告訴系統不要使用以前選過的另一 "Hosts"  檔案。如果你知道的話，我很有興趣了解。如果你的網路需要 802.3 框架的話就勾選 <EM>'802.3'</EM>。
+</LI>
+<LI>按下 <EM>'Options...'</EM> 以確定 TCP/IP 有作用。我使用 <EM>'Load only when needed'</EM> 選項。如果你執行並結束 TCP/IP  應用程式許多次而未重新啟動你的機器，你將發現不選 <EM>'Load only when needed'</EM> 會抑制/降低你機器的記憶體管理效能。不選此項目將使 TCP/IP  協定總是被載入便於使用。如果勾選了，TCP/IP  協定會自動在需要時載入並在不需要時釋放。載入與釋放的過程可能使你機器的記憶體變的碎裂。
+</LI>
+<LI>你可以 <CODE>ping</CODE> 一下你的 Linux 主來來測試網路連線。如果你有 <EM>MacTCP Watcher</EM> 免費程式，按下 <EM>'Ping'</EM> 鈕，然後在彈出的對話盒中鍵入你的 Linux 主機的地址(192.168.1.1)。(這只不過是區域網路的連接測試，你還不能 <CODE>ping</CODE> 到外面的世界。)
+</LI>
+<LI>你可以在 System Folder 中建立一 <CODE>Hosts</CODE> 檔案以便你可以使用你區域網路裡機器的主機名稱。這個檔案可能已經或還未存在於你的 System Folder 裡。如果有的話，它應該會包含一些(註解掉的)範例項目而你可以根據你的需要來修改。如果還沒有的話，你可以從一部正在運作 MacTCP 的系統中取回，或自己建一個(它遵循 Unix 的 <CODE>/etc/hosts</CODE> 檔案格式，在 RFC 952 中描述)。一旦你建立了這個檔案，打開 <EM>TCP/IP control panel</EM>，按下 <EM>'Select Hosts File...'</EM> 鈕，然後打開 <CODE>Hosts</CODE> 檔案。
+</LI>
+<LI>關閉對話盒或從 <EM>File</EM> 選單中選擇 <EM>'Close'</EM> 或 <EM>'Quit'</EM> 然後按下 <EM>'Save'</EM> 以儲存你所做的改變。
+</LI>
+<LI>這些改變會立刻生效，但重新開機也無害。
+</LI>
+</OL>
+<P>
+<P>
+<H3>配置使用 DNS 的 Novell 網路</H3>
+
+<P>
+<OL>
+<LI>如果你還沒為你的乙太網路轉接器安裝適當的驅動程式，最好現在就作。
+</LI>
+<LI>從 
+<A HREF="ftp.novell.com/pub/updates/unixconn/lwp5">ftp.novell.com/pub/updates/unixconn/lwp5</A> 取回 tcpip16.exe。
+</LI>
+<LI>
+<PRE>
+編輯 c:\nwclient\startnet.bat
+</PRE>
+: (here is a copy of mine)
+<PRE>
+SET NWLANGUAGE=ENGLISH
+LH LSL.COM
+LH KTC2000.COM
+LH IPXODI.COM
+LH tcpip
+LH VLM.EXE
+F:
+</PRE>
+
+</LI>
+<LI>
+<PRE>
+編輯 c:\nwclient\net.cfg
+</PRE>
+: (將驅動程式改為你的， i.e. NE2000)
+<PRE>
+Link Driver KTC2000
+        Protocol IPX 0 ETHERNET_802.3    
+        Frame ETHERNET_802.3     
+        Frame Ethernet_II        
+        FRAME Ethernet_802.2
+
+NetWare DOS Requester
+           FIRST NETWORK DRIVE = F
+           USE DEFAULTS = OFF
+           VLM = CONN.VLM
+           VLM = IPXNCP.VLM
+           VLM = TRAN.VLM
+           VLM = SECURITY.VLM
+           VLM = NDS.VLM
+           VLM = BIND.VLM
+           VLM = NWP.VLM
+           VLM = FIO.VLM
+           VLM = GENERAL.VLM
+           VLM = REDIR.VLM
+           VLM = PRINT.VLM
+           VLM = NETX.VLM
+
+Link Support
+        Buffers 8 1500
+        MemPool 4096
+
+Protocol TCPIP
+        PATH SCRIPT     C:\NET\SCRIPT
+        PATH PROFILE    C:\NET\PROFILE
+        PATH LWP_CFG    C:\NET\HSTACC
+        PATH TCP_CFG    C:\NET\TCP
+        ip_address      xxx.xxx.xxx.xxx
+        ip_router       xxx.xxx.xxx.xxx
+</PRE>
+
+</LI>
+<LI>最後建立 
+<PRE>
+c:\bin\resolv.cfg
+</PRE>
+:
+<PRE>
+SEARCH DNS HOSTS SEQUENTIAL
+NAMESERVER 207.103.0.2
+NAMESERVER 207.103.11.9
+</PRE>
+
+</LI>
+<LI>我希望這些某些使用 Novell 網路的人有幫助。還有，這對 Netware 3.1x 或 4.x 都有用。
+</LI>
+</OL>
+<P>
+<H3>配置 OS/2 Warp</H3>
+
+<P>
+<OL>
+<LI>如果你還沒為你的乙太網路轉接器安裝適當的驅動程式，最好現在就作。
+</LI>
+<LI>如果你還沒裝 TCP/IP 通訊協定的話現在就裝。
+</LI>
+<LI>開啟 <EM>Programms/TCP/IP (LAN) / TCP/IP</EM> 設定
+</LI>
+<LI>在 <EM>'Network'</EM> 欄位加上你的 TCP/IP 位址並設定你的 netmask (255.255.255.0)
+</LI>
+<LI>在 <EM>'Routing'</EM> 欄位按下 <EM>'Add'</EM>。將 <EM>Type</EM> 欄位設定為 
+<EM>'default'</EM> 並在 <EM>'Router Address'</EM> 欄位中鍵入你的 Linux 主機的 IP 位址 (192.168.1.1)。
+</LI>
+<LI>將 <EM>'Hosts'</EM> 欄位設定與你的 Linux 主機使用相同的 DNS (名稱伺服器)位址。
+</LI>
+<LI>關閉 TCP/IP 控制台。在接下來的問題中回答 yes。
+</LI>
+<LI>重新啟動你的系統
+</LI>
+<LI>你可以 ping 你的 Linux 主機以測試網路配置。在 'OS/2 命令視窗' 上鍵入 <CODE>'ping 192.168.1.1'</CODE>。如果收到 ping 封包一切就沒問題。
+</LI>
+</OL>
+<P>
+<H3>配置其它系統</H3>
+
+<P>相同的邏輯應可適用於配置其它的平台。查閱上述的小節的說明。
+如果你有興趣寫關於其它的作業系統的配置，
+請送詳細的建立指引到
+<A HREF="mailto:ambrose@writeme.com">ambrose@writeme.com</A> 及
+<A HREF="mailto:dranch@trinnet.net">dranch@trinnet.net</A>。
+<P>
+<P>
+<H2><A NAME="ss3.4">3.4 配置 IP 轉送(Forwarding)的方式</A>
+</H2>
+
+<P>到目前為止，你應該已經安裝好核心以及其它需要的套件，也載入了你的模組。同時，<B>其它</B>機器的 IP 位址，閘道，以及　DNS 也該全都設定完成。
+<P>現在，唯一剩下要做的事是使用 IP 防火牆工具來轉送適當的封包給適當的機器:
+<P>
+<BLOCKQUOTE>
+<B>** 這可以用許多不同的方式來達成。下列的建議與例子對我來說能用，但你可能有不同的主意，詳節部份請參考 4.4 節及 ipchains(2.2.x) / ipfwadm(2.0.x) 的線上手冊。 **</B>
+</BLOCKQUOTE>
+<P>
+<BLOCKQUOTE>
+<B>** 本節僅提供你建立 IP 偽裝功能所需的最少規則，一些安全的考量並未包含進去。
+強烈建議你花一些時間去研究適當的防火牆規則來加強安全性。 **</B>
+</BLOCKQUOTE>
+<P>
+<H3>Linux 2.2.x 核心</H3>
+
+<P>
+<P><B>Ipfwadm 已經無法在 2.2.x 版的核心中處理 IP 封包的偽裝規則，請改用 ipchains。</B>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ipchains -P forward DENY
+ipchains -A forward -s yyy.yyy.yyy.yyy/x -j MASQ
+</PRE>
+</CODE></BLOCKQUOTE>
+
+其中 x 視你的子網路而定，為下列數字之一，而 yyy.yyy.yyy.yyy 則是你的網路位址。
+<BLOCKQUOTE><CODE>
+<PRE>
+netmask         | x  | Subnet
+~~~~~~~~~~~~~~~~|~~~~|~~~~~~~~~~~~~~~
+255.0.0.0       | 8  | Class A
+255.255.0.0     | 16 | Class B
+255.255.255.0   | 24 | Class C
+255.255.255.255 | 32 | Point-to-point
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>你也可以使用這種格式 yyy.yyy.yyy.yyy/xxx.xxx.xxx.xxx,
+其中 xxx.xxx.xxx.xxx 指定你的子網路遮罩，如 255.255.255.0。
+<P>例如，如果我是在一個 class C 子網路上，我得輸入:
+<BLOCKQUOTE><CODE>
+<PRE>
+ipchains -P forward DENY
+ipchains -A forward -s 192.168.1.0/24 -j MASQ
+</PRE>
+</CODE></BLOCKQUOTE>
+
+或
+<BLOCKQUOTE><CODE>
+<PRE>
+ipchains -P forward DENY
+ipchains -A forward -s 192.168.1.0/255.255.255.0 -j MASQ
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>你也可以分別對每台機器設定。
+例如，如果我想讓 192.168.1.2 及 192.168.1.8 能夠存取網際網路，但不允許其它機器使用的話，我得輸入:
+<BLOCKQUOTE><CODE>
+<PRE>
+ipchains -P forward DENY
+ipchains -A forward -s 192.168.1.2/32 -j MASQ
+ipchains -A forward -s 192.168.1.8/32 -j MASQ
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P><B>不要</B>把你的預設方式(policy)定為偽裝(masquerading) － 否則可以操控他們的遞送路徑(routing) 的人將能夠直接穿過(tunnel)你的閘道，以此偽裝他們的身分!
+<P>
+<P>
+<P>同樣地，你可以把這些加入 <CODE>/etc/rc.d/rc.local</CODE> 檔案，任何一個你比較喜歡的 rc 檔案，或是在每次你需要 IP Masquerade 時手動執行之。
+<P>關於 ipchains 的詳細使用方法，請參考
+<A HREF="http://metalab.unc.edu/mdw/HOWTO/IPCHAINS-HOWTO.html">Linux IPCHAINS HOWTO</A><P>
+<H3>Linux 2.0.x 核心</H3>
+
+<P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ipfwadm -F -p deny
+ipfwadm -F -a m -S yyy.yyy.yyy.yyy/x -D 0.0.0.0/0
+</PRE>
+</CODE></BLOCKQUOTE>
+
+或
+<BLOCKQUOTE><CODE>
+<PRE>
+ipfwadm -F -p deny
+ipfwadm -F -a masquerade -S yyy.yyy.yyy.yyy/x -D 0.0.0.0/0
+</PRE>
+</CODE></BLOCKQUOTE>
+
+其中 x 視你的子網路而定，為下列數字之一，而 yyy.yyy.yyy.yyy 則是你的網路位址。
+<BLOCKQUOTE><CODE>
+<PRE>
+netmask         | x  | Subnet
+~~~~~~~~~~~~~~~~|~~~~|~~~~~~~~~~~~~~~
+255.0.0.0       | 8  | Class A
+255.255.0.0     | 16 | Class B
+255.255.255.0   | 24 | Class C
+255.255.255.255 | 32 | Point-to-point
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>你也可以使用這種格式 yyy.yyy.yyy.yyy/xxx.xxx.xxx.xxx,
+其中 xxx.xxx.xxx.xxx 指定你的子網路遮罩，如 255.255.255.0。
+<P>例如，如果我是在一個 class C 子網路上，我得輸入:
+<BLOCKQUOTE><CODE>
+<PRE>
+ipfwadm -F -p deny
+ipfwadm -F -a m -S 192.168.1.0/24 -D 0.0.0.0/0
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>因為 bootp 請求封包沒有合法的 IP's ，客戶端並不知道它的位址，對於在偽裝/防火牆上執行 bootp 伺服器的人必須在 deny 之前執行下列指令:
+<BLOCKQUOTE><CODE>
+<PRE>
+ipfwadm -I -a accept -S 0/0 68 -D 0/0 67 -W bootp_clients_net_if_name -P udp
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>你也可以分別對每台機器設定。
+例如，如果我想讓 192.168.1.2 及 192.168.1.8 能夠存取網際網路，但不允許其它機器使用的話，我得輸入:
+<BLOCKQUOTE><CODE>
+<PRE>
+ipfwadm -F -p deny
+ipfwadm -F -a m -S 192.168.1.2/32 -D 0.0.0.0/0
+ipfwadm -F -a m -S 192.168.1.8/32 -D 0.0.0.0/0
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>常見的錯誤是像這樣的第一行指令
+<PRE>
+ipfwadm -F -p masquerade
+</PRE>
+
+<B>不要</B>把你的預設方式(policy)定為偽裝(masquerading) － 否則可以操控他們的遞送路徑(routing) 的人將能夠直接穿過(tunnel)你的閘道，以此偽裝他們的身分!
+<P>同樣地，你可以把這些加入 <CODE>/etc/rc.d/rc.local</CODE> 檔案，任何一個你比較喜歡的 rc 檔案，或是在每次你需要 IP Masquerade 時手動執行之。
+<P>請閱讀 4.4  節有關 Ipfwadm 的詳細指引。
+<P>
+<P>
+<H2><A NAME="ss3.5">3.5 測試 IP Masquerade</A>
+</H2>
+
+<P>在這些工作完成後，現在是試試看的時候了。確定你的 Linux  主機到網際網路的連線是通的。
+<P>你可以在<B>其它</B>機器上試著瀏覽一些<EM>'網際網路!!!'</EM> 上的網頁，看是否能見到。我建議第一次嘗試時使用 IP 位址而不要用主機名稱，因為你的 DNS  設定有可能並不正確。
+<P>例如，你可以使用 
+<A HREF="http://152.19.254.81/mdw/linux.html">http://152.19.254.81/mdw/linux.html</A> 來存取 Linux 文件計畫網頁 http://metalab.unc.edu/mdw/linux.html
+<P>如果你看見 The Linux Documentation Project 的字樣，那麼恭喜! 它可以運作了! 接著你可以使用主機名稱試試看，然後是 telnet, ftp, RealAudio, True Speech，以及任何 IP Masquerade 支援的東西。
+<P>到目前為止，我還不曾在上面的設定上發生過問題，而那些花下時間讓這個絕妙功能運作的人完全同意這些設定。
+<P>
+<P>
+<HR>
+<A HREF="IP-Masquerade-HOWTO-4.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="IP-Masquerade-HOWTO-2.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="IP-Masquerade-HOWTO.html#toc3"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

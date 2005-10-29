@@ -1,0 +1,153 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Linux+FreeBSD mini-HOWTO 中譯版: FreeBSD 標示硬碟的方式</TITLE>
+ <LINK HREF="Linux+FreeBSD-3.html" REL=next>
+ <LINK HREF="Linux+FreeBSD-1.html" REL=previous>
+ <LINK HREF="Linux+FreeBSD.html#toc2" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+<A HREF="Linux+FreeBSD-3.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Linux+FreeBSD-1.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Linux+FreeBSD.html#toc2"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s2">2. FreeBSD 標示硬碟的方式</A></H2>
+
+<P>Linux 和 FreeBSD 使用兩種不同的方式來標示與切割硬碟. 
+<H2><A NAME="ss2.1">2.1 FreeBSD ``slices'' 和 ``partitions''</A>
+</H2>
+
+<P>FreeBSD 只需要用硬碟上的一個主硬碟切割區.  
+這個主切割區在 FreeBSD 的術語中被稱為 <EM>``slice''</EM>.
+然後它用 <CODE>disklabel</CODE> 這個程式在這個主硬碟切割區中製造邏輯切割區.
+這些邏輯切割區在 FreeBSD 的術語中被稱為<EM>``partitions''</EM>. 
+這個觀念與 Linux (和 DOS) 處理括充切割區中的邏輯切割區是非常相像的.
+注意: Linux <CODE>fdisk</CODE> 程式的主功能表中並不會將 FreeBSD slice 中的 partitions 顯示出來, 但是你可以使用命令 'b' 來顯示 BSD 磁碟標籤的訊息.
+它的輸出將如這樣 : (<CODE>/dev/hda4</CODE> 是 FreeBSD 的 slice): 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# fdisk /dev/hda 
+ 
+Command (m for help): p
+Disk /dev/hda: 64 heads, 63 sectors, 621 cylinders
+Units = cylinders of 4032 * 512 bytes 
+   Device Boot   Begin    Start      End   Blocks   Id  System
+/dev/hda1   *        1        1       27    54400+  83  Linux native
+/dev/hda2           28       28       55    56448   83  Linux native
+/dev/hda3           56       56      403   701568   83  Linux native
+/dev/hda4          404      404      621   439488   a5  BSD/386 
+Command (m for help): b
+Reading disklabel of /dev/hda4 at sector 1624897. 
+BSD disklabel command (m for help): p
+8 partitions:
+#        size   offset    fstype   [fsize bsize   cpg]
+  a:    64512  1624896    4.2BSD        0     0     0   # (Cyl.  404 - 419)
+  b:   104832  1689408      swap                        # (Cyl.  420 - 445)
+  c:   878976  1624896    unused        0     0         # (Cyl.  404 - 621)
+  e:    64512  1794240    4.2BSD        0     0     0   # (Cyl.  446 - 461)
+  f:   645120  1858752    4.2BSD        0     0     0   # (Cyl.  462 - 621) 
+BSD disklabel command (m for help): q
+#
+</PRE>
+</CODE></BLOCKQUOTE>
+
+在第一個欄位中的字母 `a'...`f' 與下面 FreeBSD slice 的例子中的是相同的.
+字母`b'指的是 swap partition, 而`c'指的是整個 slice.
+閱讀 FreeBSD 文件以便獲取指定這些字母給不同切割型態的``標準方法" 的更多資訊. 
+<P>
+<H2><A NAME="ss2.2">2.2 Linux 和 FreeBSD 中的硬碟與切割區標示.</A>
+</H2>
+
+<P>Linux 和 FreeBSD 中的硬碟是如下列方法標示的:
+<BLOCKQUOTE><CODE>
+<PRE>
+Linux FreeBSD
+First IDE drive /dev/hda /dev/wd0
+Second IDE drive /dev/hdb /dev/wd1
+First SCSI drive /dev/sda /dev/sd0
+Second SCSI drive /dev/sdb /dev/sd1
+</PRE>
+</CODE></BLOCKQUOTE>
+ 
+FreeBSD slice 是如下方法標示:
+(<CODE>/dev/hda</CODE> 為範例):
+<BLOCKQUOTE><CODE>
+<PRE>
+Linux FreeBSD
+First primary partition /dev/hda1 /dev/wd0s1
+Second primary partition /dev/hda2 /dev/wd0s2
+Third primary partition /dev/hda3 /dev/wd0s3
+Fourth primary partition /dev/hda4 /dev/wd0s4
+</PRE>
+</CODE></BLOCKQUOTE>
+ 
+FreeBSD slice 中的 partitions 如下述方法標示
+(<CODE>/dev/hda4</CODE> 是例子中的 FreeBSD slice ):
+<BLOCKQUOTE><CODE>
+<PRE>
+Linux label FreeBSD label Default FreeBSD mount point 
+/dev/hda5 /dev/wd0s4a /
+/dev/hda6 /dev/wd0s4b swap
+/dev/hda7 /dev/wd0s4e /var
+/dev/hda8 /dev/wd0s4f /usr
+</PRE>
+</CODE></BLOCKQUOTE>
+ 
+如果你在 Linux中執行 <CODE>dmesg</CODE> 你將會看到如下 (Linux 的 kernel 必須有  <B>UFS</B> 支援才能奏效. 看 
+<A HREF="Linux+FreeBSD-3.html#installlinux">安裝並準備 Linux</A>) 部份:
+<BLOCKQUOTE><CODE>
+<PRE>
+Partition check:
+hda: hda1 hda2 hda3 hda4 &lt; hda5 hda6 hda7 hda8 >
+</PRE>
+</CODE></BLOCKQUOTE>
+ 
+如果你在 <CODE>/dev/sdb3</CODE> slice 中安裝 FreeBSD, 而且 <CODE>/dev/sdb2</CODE> 是一個含有兩個邏輯切割的 Linux 擴充切割 (<CODE>/dev/sdb5</CODE> 及 <CODE>/dev/sdb6</CODE>), 之前的例子看起來將如同這樣:
+<BLOCKQUOTE><CODE>
+<PRE>
+Linux label FreeBSD label Default FreeBSD mount point 
+/dev/sdb7 /dev/sd1s3a /
+/dev/sdb8 /dev/sd1s3b swap
+/dev/sdb9 /dev/sd1s3e /var
+/dev/sdb10 /dev/sd1s3f /usr
+</PRE>
+</CODE></BLOCKQUOTE>
+ 
+在 <CODE>dmesg</CODE> 的輸出中看起來將如
+<BLOCKQUOTE><CODE>
+<PRE>
+Partition check:
+sdb: sdb1 sdb2 &lt; sdb5 sdb6 > sdb3 &lt; sdb7 sdb8 sdb9 sdb10 >
+</PRE>
+</CODE></BLOCKQUOTE>
+ 
+如果你有一個 Linux 延伸磁區在 FreeBSD slice <EM>之後</EM>, 你便有了麻煩.
+因為大多數的 Linux 核心安裝磁片沒有內含<B>UFS</B> 支援, 
+它們認不得 FreeBSD slice 中的 partitions.
+看到的(<CODE>/dev/hda3</CODE> 是 FreeBSD slice 而 <CODE>/dev/hda4</CODE> 是 Linux 延伸切割)
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+Partition check:
+hda: hda1 hda2 hda3 &lt; hda5 hda6 hda7 hda8 > hda4 &lt; hda9 hda10 >
+</PRE>
+</CODE></BLOCKQUOTE>
+
+出現成:
+<BLOCKQUOTE><CODE>
+<PRE>
+Partition check:
+hda: hda1 hda2 hda3 hda4 &lt; hda5 hda6 >
+</PRE>
+</CODE></BLOCKQUOTE>
+ 
+<P>這會導致錯誤的設施指定, 並會令資料遺失. 
+我的建議是 <EM>永遠把你的 FreeBSD slice 放在任何 Linux 延伸切割之後, 並且不要在安裝 FreeBSD 後, 改變 Linux 延伸切割中的任何邏輯切割</EM>. 
+<P>
+<HR>
+<A HREF="Linux+FreeBSD-3.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Linux+FreeBSD-1.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Linux+FreeBSD.html#toc2"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

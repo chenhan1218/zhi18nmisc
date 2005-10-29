@@ -1,0 +1,126 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux Security HOWTO: Local Security</TITLE>
+ <LINK HREF="Security-HOWTO-5.html" REL=next>
+ <LINK HREF="Security-HOWTO-3.html" REL=previous>
+ <LINK HREF="Security-HOWTO.html#toc4" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Security-HOWTO-5.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Security-HOWTO-3.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Security-HOWTO.html#toc4"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="local-security"></A> <A NAME="s4">4. Local Security</A></H2>
+
+<P>The next thing to take a look at is the security in your system
+against attacks from local users. Did we just say <EM>local</EM> users? Yes!
+<P>Getting access to a local user account is one of the first things that system
+intruders attempt while on their way to exploiting the root
+account. With lax local security, they can then "upgrade" their normal
+user access to root access using a variety of bugs and poorly setup
+local services. If you make sure your local security is tight, then
+the intruder will have another hurdle to jump.
+<P>Local users can also cause a lot of havoc with your system even
+(especially) if they really are who they say they are. Providing
+accounts to people you don't know or for whom you have no contact information
+is a very bad idea.
+<P>
+<H2><A NAME="ss4.1">4.1 Creating New Accounts</A>
+</H2>
+
+<P>You should make sure you provide user accounts with only the minimal
+requirements for the task they need to do. If you provide your son
+(age 10) with an account, you might want him to only have access to a
+word processor or drawing program, but be unable to delete data that
+is not his.
+<P>Several good rules of thumb when allowing other people legitimate
+access to your Linux machine:
+<P>
+<UL>
+<LI>Give them the minimal amount of privileges they need.</LI>
+<LI>Be aware when/where they login from, or should be logging in from. </LI>
+<LI>Make sure you remove inactive accounts</LI>
+<LI>The use of the same userid on all computers and networks is advisable 
+to ease account maintence, and permits easier analysis of log
+data.</LI>
+<LI>The creation of group userid's should be absolutely prohibited.  User
+accounts also provide accountability, and this is not possible with
+group accounts.</LI>
+</UL>
+<P>Many local user accounts that are used in security compromises have
+not been used in months or years. Since no one is using
+them they, provide the ideal attack vehicle.
+<P>
+<H2><A NAME="root-security"></A> <A NAME="ss4.2">4.2 Root Security</A>
+</H2>
+
+<P>The most sought-after account on your machine is the root (superuser)
+account.  This account has authority over the entire machine, which
+may also include authority over other machines on the network.
+Remember that you should only use the root account for very short,
+specific tasks, and should mostly run as a normal user. Even small
+mistakes made while logged in as the root user can cause problems. The 
+less time you are on with root privileges, the safer you will be. 
+<P>Several tricks to avoid messing up your own box as root:
+<UL>
+<LI>When doing some complex command, try running it first in a
+non-destructive way...especially commands that use globbing: e.g., if
+you want to do <CODE>rm foo*.bak</CODE>, first do <CODE>ls foo*.bak</CODE> and make
+sure you are going to delete the files you think you are. Using <CODE>echo</CODE>
+in place of destructive commands also sometimes works. </LI>
+<LI>Provide your users with a default alias to the <CODE>rm</CODE> command to ask for
+confirmation for deletion of files.</LI>
+<LI> 
+Only become root to do single specific tasks. If you find yourself
+trying to figure out how to do something, go back to a normal user
+shell until you are <EM>sure</EM> what needs to be done by root. </LI>
+<LI>The command path for the root user is very important.  The command
+path (that is, the <CODE>PATH</CODE> environment variable) specifies the
+directories in which the shell searches for programs.  Try to limit
+the command path for the root user as much as possible, and <EM>never</EM>
+include <CODE>.</CODE> (which means "the current directory") in your PATH.
+Additionally, never have writable directories in your search path, as
+this can allow attackers to modify or place new binaries in your
+search path, allowing them to run as root the next time you run that
+command.</LI>
+<LI>Never use the rlogin/rsh/rexec suite of tools (called the r-utilities)
+as root. They are subject to many sorts of attacks, and are downright
+dangerous when run as root. Never create a <CODE>.rhosts</CODE> file for root.</LI>
+<LI>The <CODE>/etc/securetty</CODE> file contains a list of terminals that root can
+login from. By default (on Red Hat Linux) this is set to only the local
+virtual consoles(vtys). Be very wary of adding anything else to
+this file. You should be able to login remotely as your regular user
+account and then <CODE>su</CODE> if you need to (hopefully over <CODE>
+<A HREF="Security-HOWTO-6.html#ssh">ssh</A></CODE> or other encrypted channel), so there is no
+need to be able to login directly as root. </LI>
+<LI>Always be slow and deliberate running as root. Your actions could
+affect a lot of things. Think before you type!</LI>
+</UL>
+<P>If you absolutely positively need to allow someone (hopefully very
+trusted) to have root access to your machine, there are a few
+tools that can help. <CODE>sudo</CODE> allows users to use their password to access
+a limited set of commands as root. This would allow you to, for
+instance, let a user be able to eject and mount removable media on
+your Linux box, but have no other root privileges. <CODE>sudo</CODE> also keeps a
+log of all successful and unsuccessful sudo attempts, allowing you to
+track down who used what command to do what. For this reason <CODE>sudo</CODE>
+works well even in places where a number of people have root access,
+because it helps you keep track of changes made.
+<P>Although <CODE>sudo</CODE> can be used to give specific users specific privileges
+for specific tasks, it does have several shortcomings. It should be
+used only for a limited set of tasks, like restarting a server, or
+adding new users.  Any program that offers a shell escape will give
+root access to a user invoking it via <CODE>sudo</CODE>.  This includes
+most editors, for example.  Also, a program as innocuous as
+<CODE>/bin/cat</CODE> can be used to overwrite files, which could allow
+root to be exploited.  Consider <CODE>sudo</CODE> as a means for
+accountability, and don't expect it to replace the root user and still
+be secure.
+<P>
+<HR>
+<A HREF="Security-HOWTO-5.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Security-HOWTO-3.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Security-HOWTO.html#toc4"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

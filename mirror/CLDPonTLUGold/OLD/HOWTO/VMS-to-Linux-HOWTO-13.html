@@ -1,0 +1,148 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>From VMS to Linux HOWTO: Reading VMS tapes from Linux</TITLE>
+ <LINK HREF="VMS-to-Linux-HOWTO-14.html" REL=next>
+ <LINK HREF="VMS-to-Linux-HOWTO-12.html" REL=previous>
+ <LINK HREF="VMS-to-Linux-HOWTO.html#toc13" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="VMS-to-Linux-HOWTO-14.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="VMS-to-Linux-HOWTO-12.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="VMS-to-Linux-HOWTO.html#toc13"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s13">13. Reading VMS tapes from Linux</A></H2>
+
+<P>
+<P>(This section was written by Mike Miller)
+<P>
+<H2><A NAME="ss13.1">13.1 Introduction</A>
+</H2>
+
+<P>
+<P>From time to time you may want to read tapes made on a VMS machine (or tapes
+that are made to be readable by VMS and *nix systems). In general, this is
+quite easy for DECFILES11A tapes.
+<P>Although you may be reading this as part of a Linux mini-HOWTO, I believe
+that the information here is applicable to any *nix system - I've done this
+on Linux, HP, Sun and DEC *nix systems. The main platform dependences that I
+know are device names, which can differ on different systems, and the
+options to mt for specifying the device name (for example, mt -f on Linux
+and mt -t on HPUX 9).
+<P>Caveat - I've only tried this with Exabyte 8mm SCSI tape drives. If you've
+read other formats (still got those 9-tracks lying around?) let me know and
+I'll add a note here.
+<P>
+<P>
+<H2><A NAME="ss13.2">13.2 The Basics</A>
+</H2>
+
+<P>
+<P>When reading a tape that has been made with the VMS ``copy'' command (or has
+at least been made to look like it was made with copy) all you need to know
+is there will be three files on the tape for each actual data file - a
+header, the data, and a trailer.  The header and trailer are interesting in
+that they contain info on the file as it existed under VMS.  The data is,
+well, the data.  Each of these files can be extracted from the tape with the
+dd command.  The tape can be positioned by skipping around with the mt
+command.
+<P>Example: I've got VMS tape with a series of files on it.  The first two were
+originally named ce66-2.evt and ce66-3.evt on a VMS system.  The tape label
+is c66a2.
+<P>If I execute these commands:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+> dd if=$TAPE bs=16k of=header1
+> dd if=$TAPE bs=16k of=data1
+> dd if=$TAPE bs=16k of=trailer1
+> dd if=$TAPE bs=16k of=header2
+> dd if=$TAPE bs=16k of=data2
+> dd if=$TAPE bs=16k of=trailer2
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>I'm left with six files: header1, data1, trailer1, header2, data2 and
+trailer2.  The syntax here is if="input file", bs="block size" and
+of="output file".  TAPE is expected to be a variable containing the device
+name of your tape drive - for example, /dev/nts0 if you are using the first
+SCSI tape on Linux.
+<P>If you wanted to read the second file, but not the first, you didn't care
+about the header, and you wanted to use the original file name, do this:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+> mt -f $TAPE fsf 4
+> dd if=$TAPE bs=16k of=ce66-2.evt
+> mt -f $TAPE fsf 1
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Note the 4 - skip three files for the first file on the tape and one for the
+next header.  The second mt skips the second file's trailer and positions
+the tape at the beginning of the next file - the third VMS header.  You can
+also use mt to skip backwards (bsf), rewind (rewind) and rewind and unload
+the tape (offline, rewoffl).
+<P>
+<P>
+<H2><A NAME="ss13.3">13.3 Some details</A>
+</H2>
+
+<P>
+<P>
+<P>The header and trailer files contain uppercase ASCII data used by VMS to
+store file information such as block size.  They also contain the file name,
+which can be handy if you want to build scripts that automate read files or
+search for a particular file. The first header on a tape volume is slightly
+different than subsequent headers.
+<P>For a file that is the first file on the tape, as in header1 of the above
+example, the first four characters will be "VOL1" followed by the volume
+name.  In the example, header1 starts with "VOL1C66A2".  This is followed by
+a series of spaces terminated with a numeral.  After that is the string
+"HDR1" which indicates that this is a file header.  The characters
+immediately following the HDR1 string are the VMS file name.  In in the
+example, this is "HDR1CE66-2.EVT".  The next field is the volume name again.
+<P>For files that are not the first file on the tape, the initial VOL1 field is
+not present.  Other than that the header has the same structure as for the
+initial file.  Another useful field is the 7th field, which will end with
+"DECFILES11A".  This must be present on tapes that conform to the DEC
+Files11A standard.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       field     initial header         subsequent headers
+       =====     =============          ==================
+         1       VOL1 + volume name     HDR1 + file name
+         2       3HDR1 + file name      volume name
+         3       volume name            
+
+         6                              ...DECFILES11A
+         7      ...DECFILES11A
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>For full details on the header and trailer format, see the DEC FILES11A
+documentation (on the orange/grey wall - ask your local VMS folks :-).
+<P>
+<P>
+<H2><A NAME="ss13.4">13.4 Comment on Block Size </A>
+</H2>
+
+<P>
+<P>In the example, I used a block size of 16k.  On a *nix system, there is no
+block size associated with a file on disk while, under VMS, each file has a
+specific block size.  That means that block size doesn't matter too much on
+the Linux end... unless it makes it hard to read the tape.  If you have
+difficulty figuring out the block size and reading a tape, you can try
+setting the hardware block size on your tape drive using `mt -f $TAPE setblk
+0'.  The exact form of the setblk option (and its availability) may depend
+on the version of mt, the tape drive hardware interface and on your
+particular flavor of *nix.
+<P>(Thanks to Wojtek Skulski (
+<A HREF="skulski@nsrlc6.nsrl.rochester.edu">skulski@nsrlc6.nsrl.rochester.edu</A>) 
+for pointing out setblk.)
+<P>
+<P>
+<HR>
+<A HREF="VMS-to-Linux-HOWTO-14.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="VMS-to-Linux-HOWTO-12.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="VMS-to-Linux-HOWTO.html#toc13"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

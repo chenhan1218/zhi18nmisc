@@ -1,0 +1,1106 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Linux Remote-Boot mini-HOWTO:: 如何设定</TITLE>
+ <LINK HREF="Remote-Boot-5.html" REL=next>
+ <LINK HREF="Remote-Boot-3.html" REL=previous>
+ <LINK HREF="Remote-Boot.html#toc4" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+<A HREF="Remote-Boot-5.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Remote-Boot-3.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Remote-Boot.html#toc4"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s4">4. 如何设定</A></H2>
+
+<P>首先, 调整机器位置使手边有下列两台机器: 
+<UL>
+<LI><B>伺服器</B>, 我们是用一台 Unix 主机或 Windows NT.</LI>
+<LI><B>用户端</B>, 一台已经启动 BootPROM 的个人电脑, 硬碟内不要有重要资料.
+</LI>
+</UL>
+
+如果你想要测试您的组态设定而您还没有 BootPROM,
+你可以到
+<CODE>
+<A HREF="http://www.bootix.com">http://www.bootix.com</A></CODE>
+下载测试版磁片. 这个磁片可以使您的电脑就好像是插上 TCP/IP BootPROM 一般.
+<P>如果你已有 Boot ROM, 你要先启动它. 如果您使用 Bootix 的 TCP/IP BootPROM,
+你可以用网路卡制造商所提供的特殊程式来启用它.
+如果你用 PXE BootPROM, 你只要经由 BIOS 设定, 改变预设的开机装置
+(default boot device) 就可以了.
+<P>学生所使用的电脑, 我们设定由网路开机, 而不能透过硬碟及软碟开机.
+助教的电脑, 我们设定先由网路开机, 但也允许硬碟与软碟开机.
+<P>
+<H2><A NAME="ss4.1">4.1 伺服器端的设定</A>
+</H2>
+
+<P>在伺服器端, 只需要下列的服务:
+<OL>
+<LI>一个 BOOTP/DHCP 伺服器.</LI>
+<LI>或许也要一个 Proxy DHCP 伺服器.</LI>
+<LI>一个 TFTP 伺服器.</LI>
+</OL>
+
+<B>使用 PXE Boot ROM 必须注意:</B> 你要确定是使用最新版的 PXE.
+在写本文的时候, 最新的版本是 PXE 2.0 但 PXE 0.99x bootrom 也支援,
+不过有部份的 DHCP 选项将不会透过 DHCP 伺服器送出. 特别是,
+如果 DHCP 选项 135 对 BpBatch 失效 (BpBatch 於启动时, 显示 "Cannot load file"),
+你就要升级到 PXE 2.0 .
+如果你的网路卡属於 Intel EPRO100 族系, 你可以取得最新的
+Intel PXE Product Development Kit (PDK) 评估版,
+它还包含一个用来更新 BootPROM 的快闪记忆体工具程式.
+这个 PDK 放在 <CODE>
+<A HREF="http://developer.intel.com/ial/wfm/tools/pxepdk20/index.htm">http://developer.intel.com/ial/wfm/tools/pxepdk20/index.htm</A></CODE>.
+<P>
+<H3>设定 DHCP 伺服器</H3>
+
+<P>DHCP 伺服器所伴演的角色是传送 IP 位址给用户端并让它自 TFTP 伺服器下载,
+名为 <CODE>bpbatch.P</CODE> 的档案. DHCP 是重叠於 BOOTP 的通讯协定.
+如果你用 Bootix 的 TCP/IP BootPROM, 你可以不用 DHCP 伺服器 (用旧的 BOOTP 伺服器).
+<P>在 Windows NT, 你也需要类似的原生 DHCP 伺服器.
+如果你用 Bootix 的 TCP/IP BootPROM, 你则要用一个小技巧来定义可开机档的档名
+(可由 Bootix 的 WWW 网页获得更多资讯). 如果你用 PXE BootPROM,
+你还需要一个用 DHCP 选项 67 定义可开机档的档名.
+还要设定 VendorClass (DHCP 选项 60) 为 "PXEClient" 及
+VendorOptions (DHCP 选项 43) 为 <CODE>01,04,00,00,00,00,ff</CODE>
+(参考下文).
+<P>在 Linux, 最佳的选择是来自 网际网路软体协会 (Internet Software Consortium)
+的标准 DHCP 伺服器.
+如果你用 PXE BootPROM, 则在常见的设定外, 你还要多加下面两个设定:
+<UL>
+<LI><CODE>option dhcp-class-identifier "PXEClient"</CODE>.</LI>
+<LI><CODE>option vendor-encapsulated-options 01:04:00:00:00:00:ff;</CODE>.</LI>
+</UL>
+<P>如果你使用 ISC DHCP 3.0, 则语法上有些微出入. 以下是 DHCP 3.0 相容的设定档:
+<P>
+<PRE>
+# DHCP ISC 3.0 &amp; BpBatch 用的 DHCP 设定档
+#
+
+# 全域选项
+option subnet-mask 255.255.255.0;
+default-lease-time -1;
+
+# 定义 PXE 规□的选项
+# Code 1: 指到开机档所在位置机器的 IP 位址
+# Code 2: 用户端电脑监控 MTFTP 回应的 UDP 埠号
+# Code 3: MTFTP 伺服器用来监听 MTFTP 回应的 UDP 埠号
+# Code 4: 用户端电脑在试著启动一个新的 MTFTP 传输之前的等待秒数
+# Code 5: 用户端电脑在试著重新启动一个新的 MTFTP 传输之前的等待秒数
+option space PXE;
+option PXE.mtftp-ip    code 1 = ip-address;
+option PXE.mtftp-cport code 2 = unsigned integer 16;
+option PXE.mtftp-sport code 3 = unsigned integer 16;
+option PXE.mtftp-tmout code 4 = unsigned integer 8;
+option PXE.mtftp-delay code 5 = unsigned integer 8;
+
+# 规□子网域的选项
+subnet 192.168.1.0 netmask 255.255.255.0 {
+  option routers 192.168.1.1;
+
+# 规□主机的选项
+  host pctest {
+        hardware ethernet 00:01:02:03:04:05;
+        filename "bpbatch.P";
+        next-server 192.168.1.2;
+        fixed-address 192.168.1.100;
+        # BpBatch 命令列参数: -i == 交谈式
+        # 你也可以定义一脚本程式档名 (不要把副档名 .bpb 写进去)
+        option option-135 "-i";
+        # PXE 规□的选项
+        class "pxeclients"
+        {
+         match if substring (option vendor-class-identifier, 0, 9) =
+                "PXEClient";
+         option vendor-class-identifier "PXEClient";
+         # 至少设定一个 vendor-specific 选项.
+         # 我们设定 MCAST IP 位址为 0.0.0.0 也就告诉 BootPROM 继续使用
+         # TFTP 通讯协定 (位址 0.0.0.0 意谓著 "没有位址")
+         option PXE.mtftp-ip 0.0.0.0;
+         vendor-option-space PXE;
+        }
+  }
+}
+</PRE>
+<P>
+<P>在 Solaris 上, 你依然可以使用 网际网路软体协会 的 DHCP 伺服器
+(可以在 Web 上找到), 或使用 Solaris 的 DHCP 伺服器 (Solaris 2.5 版以後都有附).
+然而, 用 Solaris DHCP 伺服器似乎无法在 DHCP 设定中提供, 用户类别的辨识码.
+你必须安装一个 Proxy DHCP 伺服器.
+不过, 这个 Proxy DHCP 伺服器必须安装在另一台电脑上,
+因为 Solaris DHCP 伺服器会锁住 DHCP 埠.
+<P>我们建议您设定用户端电脑的 DHCP 参数为无限制的使用周期.
+别忘了 BOOTP/DHCP 的要求讯号受限於子网域内传送.
+如果用户端与伺服器不在同一个子网域你就必须安装一个 BOOTP/DHCP Relay
+代理程式在两个子网域之间. 但现在, 先假设两台机器都在同一个子网域.
+<P>
+<P>如果您使用 PXE 2.0 BootPROM, 您只能使用 site-specific 选项第 128 至 135
+以传递讯息给 BpBatch. 大於 135 的选项会被 PXE 2.0 BootPROM 忽略掉.
+选项 135 用来传递 BpBatch 的命令列参数. 所以你还有 6 个选项可以用来自订.
+<P>
+<H3>设定 Proxy DHCP 伺服器</H3>
+
+<P>Proxy DHCP 伺服器所伴演的角色是用来克服 DHCP 伺服器的限制并提供
+PXE 规□的延伸讯息. Proxy DHCP 伺服器只为了与 PXE BootPROM 搭配使用.
+因此, Proxy DHCP 伺服器不是必要的. 如果你的 DHCP 伺服器能回应所有 PXE BootPROM
+要求的选项, 则 PXE BootPROM 就不会去寻找 Proxy DHCP 伺服器 (aka BINL).
+而我们所说的 "所有 PXE BootPROM 要求的选项", 是指
+IP 选项 (IP 位址, 闸道器, 子网域, 主机名,...) 以及 PXE vendor-specific 选项
+(vendor-class -- 选项 60 -- 用以设定 "PXEClient" 而 vendor-encapsulated-options
+设定一些有意义的资讯给 PXE BootPROM.
+你可以用 01:04:00:00:00:00:ff 如果你不知道对 PXE BootPROM
+而言那一个资讯是有意义的). 更完整的叙述请看下面的说明.
+<P>BpBatch 本身功能就很完整, 你不须使用任何 PXE 规□的 DHCP 延伸参数 (选单, 等.).
+然而, 如果您的 DHCP 伺服器不能提供最低限度的 PXE 相容,
+则您就需要一台 Proxy DHCP 伺服器, 否则您的 PXE BootPROM 无法继续使用.
+最低限度的相容, 是指允许设定 VendorClass 及 VendorOptions (选项 60 及 43 ).
+<P>在 Windows NT 下, 您可以试著用 Intel WfM PDK (可在他们的网页找到),
+但它并不容易操作. 我们建议您找一台在子网域中,
+跑 Linux 的机器安装我们的小型 Proxy DHCP 伺服器.
+我们的 Proxy DHCP 伺服器对 BpBatch 的最大优点是,
+让你可以自订选项 155 vendor 标签让 BpBatch 解释为命令.
+<P>在 Linux 及 Solaris 下, 您可以使用我们的 Proxy DHCP 伺服器程式,
+你只需设定好 TFTP 伺服器的 IP 位址, 可开机档档名及其它附加参数,
+就可以完成所有的工作. 如果在伺服器上的 DHCP 通讯埠已被其它伺服程式使用,
+则 Proxy DHCP 伺服器会改在 4011 埠上执行.
+在这种状况下, 使用 DHCP 通讯埠的程式必须回应
+<CODE>PXEClinet</CODE> 给 client class.
+这样 PXE 用户端才会知道要去试著在 4011 埠上通连.
+<P>如果你想更了解 PXE 对 DHCP 的延伸功能,
+可以在 Intel 的网页上找到更多说明. 但是这些文章有点怪怪的,
+这个通讯协定竟然设定在额外的位置号码上, 用以得到更大的弹性.
+对这个问题唯一的解释是 PXE 用户端需要完整的
+<EM>增强型的 DHCP 回应</EM>. 如果它只收到标准的 DHCP 要求,
+它会一直等到收到才停住.
+<OL>
+<LI>一个 client class (T60) 设定为 <CODE>PXEClient</CODE>.</LI>
+<LI>vendor encapsulated options (T43).
+(不可以是空的字串, 但你可以设为 16 进制的 <CODE>01:04:00:00:00:00</CODE>,
+这可以被 PXE BootPROM 所接受)</LI>
+<LI>一个非空白的可开机档档名.</LI>
+<LI>一个有效的主机名.</LI>
+</OL>
+
+PXE 规□协调的工作会在所有的资讯都取得後才结束,
+如果缺了某一部份的资讯, 将引发相当复杂的作业程序 (寻找安装伺服器, 等问题.).
+<P>
+<H3>设定 TFTP 伺服器</H3>
+
+<P>TFTP 伺服器是相当简单的档案伺服器. 最基本的版本中,
+TFTP 通讯协定乃是采用每个区块 512 位元组, 这个作法相当没效率.
+Bootix 的 TCP/IP BootPROM 及 PXE BootPROM 允许使用较大的区块来传送
+(1408 位元组), 此法可以大幅加速传输速度. 但, 这只能在增强型的 TFTP 伺服器上工作.
+<P>在 Windows NT 环境下, 我们建议采用 Intel 的 TFTP 伺服器,
+可以在 Intel PXE Product Development Kit for Windows 找到.
+你可以在这找到这个 PDK <CODE>
+<A HREF="http://developer.intel.com/ial/wfm/tools/pxepdk20/index.htm">http://developer.intel.com/ial/wfm/tools/pxepdk20/index.htm</A></CODE>.
+极重要的问题: 如果你计画在 Windows NT 上使用 Intel 的 TFTP 伺服器,
+别忘记必须重新命名你的 BpBatch 载入器名称, 由 bpbatch.P 改为 bpbatch.B.
+这将告知 BpBatch 采用与 Intel 相容的 TFTP 选项.
+<P>Intel 的 PXE PDK 还包还含了评估版的 PXE BootPROM 程式码,
+给 Intel 的 EPRO100 族系网路卡使用,
+亦包含了用来更新快闪记忆体的工具程式以升级为 BootPROM 内容为最新版的 PXE.
+<P>
+<P>在 Linux 环境下, 你可以使用大部份套件中所含的 tftp daemon,
+但不具备增强的 TFTP 模式 (1408 位元组的封包).
+我们建议使用 Bootix 的增强型 TFTP 伺服器, 可以在我们的目录下找到
+(<CODE>
+<A HREF="http://cuiwww.unige.ch/info/pc/remote-boot/soft/">http://cuiwww.unige.ch/info/pc/remote-boot/soft/</A></CODE>),
+档名为 <CODE>incomtftpdlx.tar.gz</CODE>.
+<P>在 Solaris 环境下, 你可以使用 Bootix 增强型 TFTP 伺服器,
+也可以在我们的目录下找到 (档名为 <CODE>incomtftpdsun.tar.gz</CODE>).
+另一种可用的选择:
+John Martin (<CODE>j.martin@abdn.ac.uk</CODE>) 已把 Linux 上的
+<CODE>tftpd</CODE> 移殖到 Solaris 上. 你可以在这找到 <CODE>
+<A HREF="http://www.csd.abdn.ac.uk/~jmartin/tftpd.tar.gz">http://www.csd.abdn.ac.uk/~jmartin/tftpd.tar.gz</A></CODE>.
+<P>
+<P><B>如果你较喜欢使用标准的 TFTP 伺服器, 把所有可开机映像档档名的副档名 <CODE>P</CODE>
+拿掉, 这样可以告知 BootPROM 采用标准的 TFTP 通讯埠通讯.
+(这个小技巧是 Bootix 给 TCP/IP BootPROM 使用. 我们也可以用这个简单的方法来选择
+预设的 TFTP 通讯埠给 PXE BootPROM 使用).</B>
+<P>
+<P>摘要来说, 如果你计画使用标准的 TFTP 伺服器,
+则把 BpBatch 载入器档名的副档名 移去 (也就是改为 bpbatch).
+如果你计画使用 Bootix 支援在 59 埠, 以 1408 位元组封包的 TFTP 伺服器,
+则你的载入器档名必须有副档名 <CODE>.P</CODE> . 最後,
+如果你计画使用 Intel 的 TFTP 伺服器 (或 Bootware 的那个伺服器),
+则把载入器命名为 <CODE>bpbatch.B</CODE>.
+<P>
+<H2><A NAME="ss4.2">4.2 用户端的设定</A>
+</H2>
+
+<P>首先, 我们把所有作业系统相同的部份设定好.
+如: 批次档的解译器. 然後, 再针对各种作业系统来完成, 我们需要下列的步骤:
+<OL>
+<LI>设定单一的用户端.</LI>
+<LI>储存其设定到伺服器.</LI>
+<LI>测试它是否可以为远端开机的用户端电脑所使用.</LI>
+<LI>调整它的设定以适用於其他硬体配备类似的用户端机器.</LI>
+</OL>
+
+如果这些都完成了, 你要加一台用户端, 则只要插上 Boot ROM
+(或买台具 Wired for Management 的电脑...)
+然後再加一行设定到 DHCP 伺服器的设定档.
+译注: Wired for Management 应该是指本身具备 PXE 功能的品牌电脑.
+<P>我们的□例是假设你的用户端电脑的硬碟空间至少有 1.4 G 以上.
+如果低於这个值, 那就要缩小分割区, 但请记住你要保留几百 MB 空间不被对应到
+(也就是, 不要连最後一个分割区都已画分到最後一个磁柱)
+以保留空间给特别的快取分割区. 然而, 快取区通常接在最後一个对应到的磁柱开始对应,
+如果你不想用相同大小来做测试, 你将下载同样的档案数次 (快取区会被自动清除).
+<P>别灰心. 如果你一直无法让它正常工作, 先参考 <EM>问题集</EM> 那一节,
+搞不好你的问题已被解决过了 (请自网页取得最新版本).
+再不行, 查一下 BpBatch 讨论区. 或许有人跟你遇到同样的问题,
+而解答可以在讨论区找到. 讨论区的网址是: 
+<CODE>
+<A HREF="forum/">http://cuiwww.unige.ch/info/pc/remote-boot/forum/</A></CODE>. 
+如果还是无法正常工作, 考虑看看监控一下网路流量是否是网路本身的问题
+(在 Linux 环境下, 可以用 <CODE>tcpdump</CODE> 而 Solaris 环境, 可以用 <CODE>snoop</CODE> ).
+如果你依然无法让它正常工作, 送一封 E-mail 到 <CODE>support@bpbatch.org</CODE>. 
+如果你的问题与远端开机的设定有密切关系, 我们会试著解决你的问题.
+<P>
+<H2><A NAME="ss4.3">4.3 设定开机流程</A>
+</H2>
+
+<P>取得 <CODE>BpBatch</CODE> 软体, 不管是 <CODE>.zip</CODE> 或 <CODE>.tar.gz</CODE> 格式.
+可执行档都放在
+<UL>
+<LI><CODE>
+<A HREF="soft/bpb-exe.zip">http://cuiwww.unige.ch/info/pc/remote-boot/soft/bpb-exe.zip</A></CODE>.</LI>
+<LI><CODE>
+<A HREF="soft/bpb-exe.tar.gz">http://cuiwww.unige.ch/info/pc/remote-boot/soft/bpb-exe.tar.gz</A></CODE>.</LI>
+</UL>
+<P>在伺服器上的 <CODE>/tftpboot</CODE> 目录下, 放入下面三个特别的可开机映像档.
+他们是用来完成开机前的批次档案解译功能 (下面我们用 <CODE>bpbatch.P</CODE>
+为载入器的档名. 如果你不是用 Bootix 的 TFTP 伺服器,
+则变更载入器档名为 <CODE>bpbatch</CODE> (标准型 TFTP 伺服器)
+或 <CODE>bpbatch.B</CODE> (Intel/Bootware 的 TFTP 伺服器):
+<UL>
+<LI><CODE>bpbatch.P</CODE>, 动态载入器 (注意大小写并参考 设定 TFTP 伺服器那节,
+以选择适当的附档名).</LI>
+<LI><CODE>bpbatch.ovl</CODE>, 中断重导档</LI>
+<LI><CODE>bpbatch.hlp</CODE>, 线上说明档</LI>
+</UL>
+
+然後为你的用户端加一些 DHCP 的设定工作, 其中: 可开机档档名设定为
+<CODE>"bpbatch.P"</CODE>. 定义 vendor 选项标签 155 (十进制) 为
+<CODE>"-i"</CODE> (在标准型的 DHCP 伺服器, 可以用以下的指令完成:
+<CODE>option option-155 "-i";</CODE>). 它会被 <CODE>bpbatch</CODE> 解释为命令列,
+而 <CODE>-i</CODE> 意谓著 "交谈模式".
+<P>启动用户端电脑. 你应该看到
+<UL>
+<LI>BootPROM 的版权宣告.</LI>
+<LI>当用户端在等待 DHCP 回应时, 会出现 <CODE>DHCP</CODE> 字串.</LI>
+<LI>当用户端在等待第一个 TFTP 封包时, 会出现 <CODE>TFTP</CODE> 字串.</LI>
+<LI>当载入器下载解译器时, 会出现 <CODE>Loading BpBatch</CODE> 字串.</LI>
+<LI>最後是我们的旗帜, 随著一个 <I>极大的</I> 提示符.</LI>
+</UL>
+
+恭喜 ! 你以经启动了批次档解译器... 如果你很急於知道在这环境下你可以做舍事,
+那就继续阅读下一节. 如果你不急, 跳过它直接安装你所选择的作业系统.
+如果你有任何关於解译器指令的疑问, 输入 <CODE>help</CODE>.
+<P>记住你可以在 DOS 及 Linux 下执行相同的解译器, 只要执行 <CODE>MrBatch</CODE> 程式.
+只有一点点的差异 (Linux 版本不支援图形化的功能,
+而 DOS 版本如果在 BootPROM 未被作业系统隐藏之前,
+只能送出 BOOTP 及 TFTP 的要求讯号).
+<P>现在是阅读 <CODE>BpBatch</CODE> <EM>语法</EM> 的时候了,
+尤其是 <EM>参考档案</EM> 及 <EM>快取档案系统</EM> 这两段. 这将帮助你了解□例.
+<P>当所有的作业系统都设定好,
+你要制作一个选单让使用者去选择它所要的是哪一种作业系统.
+你可自行探究如何去产生那种选单. 而所需的指令都在本文末端.
+<P>
+<H3>探讨 BpBatch</H3>
+
+<P>试著输入 <CODE>LogVars</CODE>. 你应该可以看到大约三十几个变数被列出来.
+概括来说, 先出现 BpBatch 的变数设定, 然後是自 BOOTP/DHCP 通讯协定取得的回应,
+最後是硬碟大小的变数, 以百万位元组为单位.
+<P>输入 <CODE>GetPartitions part</CODE>, 再输入 <CODE>LogVars</CODE> 一次.
+就应该看到在你第一个硬碟机内的分割区定义资讯.
+假设第一个分割区有 BIGDOS, FAT32 或 LINUX-EXT2,
+试著打 <CODE>LogDir "{:1}"</CODE> 以取得根目录的内容,
+然後输入 <CODE>LogDir "{:1}/usr"</CODE> 如果有
+<CODE>usr</CODE> 目录的话. 你也可以试著打
+<CODE>LogTree "{:1}/etc"</CODE> 以取得树状目录.
+<P>放一个 GIF 档 (格式是 GIF-87a, 交错或非交错的都行, 但不可是 GIF-89a)
+到你的 TFTP 伺服器. 我们假设档名是 <CODE>image.gif</CODE>.
+你可以用下列的指令把它复制到任何地方:
+<CODE>copy "image.gif" "{:1}/temp/image.gif"</CODE>.
+或者, 你可以自伺服器上直接使用. 现在输入 <CODE>Logvars "V*"</CODE>
+并检视 <CODE>VESA</CODE> 变数值. 如果它显示 <CODE>On</CODE>, 那就相当可能意谓著,
+你的显示卡有 VESA相容的功能.
+你可以用 <CODE>Echo "$VESA-Modes"</CODE> 列出有效的显示模式.
+要秀出你的图档只要试著输入以下的指令: <CODE>DrawGif "image.gif"</CODE>.
+这个图档应该显示在萤幕左上角. 你可以在档名後标定 X 及 Y 轴,
+把它摆在其他地方.
+你也可以用 <CODE>DrawText 200 200 "Hello world" yellow</CODE> 画出文字.
+或用 <CODE>DrawWindow 200 200 300 150</CODE> 画出一个空的视窗.
+而要在产生新视窗时插入主题, 可以试著用
+<CODE>DrawWindow 200 200 300 150 "My Window"</CODE>.
+如果你对图形化模式感到厌烦只要打 <CODE>CloseGraph</CODE>.
+<P>在图形化模式下要注意: 预设情况下, 所有的图形功能在 800x600 VESA 模式下工作
+(有 256 色阶), 这是在 <CODE>VESA-Modes</CODE> 变数下的第一个栏位.
+如果你要使用不同的显示模式, 则变更第一个栏位为你所要的显示模式.
+<P>现在用文字编辑器, 在 <CODE>tftpboot</CODE> 目录下, 建一个名为 <CODE>test.bpb</CODE>
+的档案内容是:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+:again
+DrawWindow 150 200 400 160 "Identity check"
+TextAttr Black LightGray
+At 15,20 Print "Username : "
+Input username 8
+At 17,20 Print "Password : "
+Getpasswd userpass 8
+if "$username" != "smith" goto again
+if not "$userpass" match-passwd "BpR8oiIlRR9bo" goto again
+#
+clear
+DrawWindow 200 200 150 100 green blue "Congratulations"
+DrawText 220 250 "You got it !" yellow
+WaitForKey 3
+CloseGraph
+interact
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+
+在你的 BOOTP/DHCP 伺服器的设定档中, 变更 选项-155 由
+<CODE>"-i"</CODE> 为 <CODE>"test"</CODE>, 并把用户端电脑重新开机.
+这个小型的脚本程序可以自动执行, 并会寻问你的使用者名称 (username) 及
+判行密码 (password). 如果你不输入 <CODE>smith</CODE> 及 <CODE>justdoit</CODE>,
+你就不能使电脑开机. 接著你将学得如何用 Unix, NT 或 Radius
+伺服器以辨证有效的使用者.
+<P>
+<H2><A NAME="ss4.4">4.4 设定 Linux</A>
+</H2>
+
+<P>为了安装 Linux, 你需要 RedHat Linux 套件所提供的可开机软碟.
+BpBatch 含有一个可以指向软碟开机的指令: <CODE>FloppyBoot</CODE>.
+<P>安装 
+<A HREF="http://www.redhat.com">RedHat Linux</A> 到你的用户端电脑, 必需具备网路支援功能.
+以及你所需要的套件软体. 你或许需要重新编译一个 Kernel 以合於你的硬体配备,
+但这不是必需的.
+<P>
+<H3>设定用户端电脑</H3>
+
+<P>在 Kernel 中加入对 BOOTP 通讯协定的支援将会是一个好主意,
+这样你就不用手动去设定用户端的 IP 位址.
+<P>为了降低网路负载, 你应该安装 <CODE>file cache</CODE> 以快取由 NFS 所载入的档案到硬碟中.
+简单的说, file cache 的功能是当有来自 <CODE>cache</CODE> 子目录下的符号连结形成时,
+它会被它的目标所取代. 如果目标本身是子目录,
+则在子目录下的所有东西都会变成符号连结, 并指向外在档案系统的原始资料.
+这个 file cache 由 Unifix GmbH 所写, 已成为 Unifix Linux 2.0 的一部份.
+它可以自由散布, 你可以在
+<CODE>
+<A HREF="soft/filecache.tar.gz">http://cuiwww.unige.ch/info/pc/remote-boot/soft/filecache.tar.gz</A></CODE>
+取得必要的档案.
+为了使用这个 file cache, 你必须要
+<UL>
+<LI>对 Kernel 加入一些修正 (档案是 <CODE>patch-filecache</CODE>),
+透过 <CODE>make config</CODE> 或你所喜欢的方式来启用这个功能, 并重新编译 kernel.</LI>
+<LI>复制 file cache 的可执行档到 <CODE>/sbin</CODE>.</LI>
+<LI>建一个可以挂上的点叫 <CODE>/mnt/nfs</CODE> (使用 <CODE>mkdir</CODE> 指令).</LI>
+<LI>复制 <CODE>filecache.conf</CODE> 到 <CODE>/etc</CODE>. 此档的内容包含以下几行:
+<PRE>
+Max 100 MB 50 % #
+Cache /mnt/nfs/usr /usr
+Cache /mnt/nfs/opt /opt
+</PRE>
+</LI>
+<LI>复制 <CODE>/usr</CODE> 及 <CODE>/opt</CODE> 内的资料到伺服器,
+以 <CODE>anon=0</CODE> (允许root 存取) 设定为唯读属性的分享并把它挂在 <CODE>/mnt/nfs</CODE> 下 (加入一行到 <CODE>/etc/fstab</CODE>)</LI>
+<LI>更名 <CODE>/usr</CODE> 为 <CODE>/usr.orig</CODE>.</LI>
+<LI>建立连结 <CODE>/usr</CODE> 指到 <CODE>/mnt/nfs/usr</CODE>.</LI>
+<LI>更名 <CODE>/opt</CODE> 为 <CODE>/opt.orig</CODE>.</LI>
+<LI>建立连结 <CODE>/opt</CODE> 指到 <CODE>/mnt/nfs/opt</CODE>.</LI>
+<LI>确定 <CODE>/usr</CODE> 及 <CODE>/opt</CODE> 目录不是空的并应该包含正确的目录资料.</LI>
+<LI>以递回的方式移除 <CODE>/usr.orig</CODE> 及 <CODE>/opt.orig</CODE>.</LI>
+<LI>复制 <CODE>filecache.init</CODE> 到 <CODE>/etc/rc.d/init.d</CODE>.</LI>
+<LI>最後建立连结 <CODE>/etc/rc.d/rc3.d/S35filecache</CODE>
+指到 <CODE>/etc/rc.d/init.d/filecache.init</CODE>.</LI>
+</UL>
+
+如果你完成上述的步骤, 你应该在下次开机时已具备 file cache 功能,
+只要你没忘记修正你的 Kernel.
+<P>
+<H3>测试设定档</H3>
+
+<P>复制你的压缩 Kernel 映像档 (<CODE>zImage</CODE>, <CODE>bzImage</CODE>,
+<CODE>vmlinuz</CODE> 或其它的命名) 到伺服器的 <CODE>/tftpboot</CODE> 目录下,
+更名为 <CODE>linux.krn</CODE>. 如果你已经把 BootPROM 从你的 PC 拔起来了,
+那现在必须重插回去. 当 <CODE>BpBatch</CODE> 启动, 输入
+<CODE>LinuxBoot "linux.krn" "root=/dev/hda1 BOOT_IMAGE=linux"</CODE>
+(假设 根的 ext2 档案系统在第一个分割区). 另一种状况,
+如果你要在无 BootPROM 的电脑上设定你的组态,
+只要用你所安装的载入器 (lilo, ...) 来开机就可以.
+但在後面的情况下, 如果你要使 file cache 正常工作,
+你就必须把 file cache 的支援功能正确的安装到你的 Kernel.
+<P>等到系统开机完成. 如果你已安装 file cache, 你可以检查 <CODE>/usr</CODE> 目录下,
+已经直接变成一些目录型式的符号连结到已划分好的目录. 现在启动使用者常用的程式,
+帮他们把所需的资料载到硬碟中.
+<P>你还可以调整你的设定, 让它更像其他独立运作的 Linux 工作站.
+<P>
+<H3>建立磁碟映像档</H3>
+
+<P>当你觉得你的设定用起来很棒了, 就可以用 <CODE>root</CODE> 登入,
+并到 <CODE>/tmp</CODE> 目录下, 执行我们的 <CODE>mrzip</CODE> 程式.
+<CODE>MrZip</CODE> 是一个像 <CODE>BpBatch</CODE> 的命令解译器,
+但它可以了解比 <CODE>BpBatch</CODE> 更多的命令. 特别是, 它可以了解下列的命令:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+showlog
+filter -"tmp/*"
+filter -"var/log/*"
+fullzip "/" "/tmp/linux.imz"
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+
+这将产生一个磁碟映像档到 <CODE>/tmp/linux.imz</CODE>.
+把它移到伺服器的 <CODE>/tftpboot</CODE> 目录下. 然後复制下列的批次执行档到
+<CODE>/tftpboot/linux.bpb</CODE>:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+hidelog
+setpartitions "linux-ext2:992 linux-swap:32"
+fullunzip "linux.imz" 1
+clean 2
+linuxboot "linux.krn" "root=/dev/hda1 BOOT_IMAGE=linux"
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+<P>这个 <CODE>BOOT_IMAGE</CODE> 参数是用来表示相容於 RedHat 5.1 的
+<CODE>lilo</CODE> 及之後的 <CODE>rc.sysinit</CODE>.
+<P>你的 Linux 远端开机设定组态已经就续! 你现在只要设定 BOOTP-option-155 为
+<CODE>"linux"</CODE>, 或在 BpBatch 下输入 <CODE>include "linux.bpb"</CODE> 就可以测试它了.
+<P>
+<H3>系统维护与升级</H3>
+
+<P>如果你以後要更新软体, 安装程式臭□修正或安全性的修正, 处理程序如下:
+<UL>
+<LI>以远端开机方式启动一台用户端电脑以得到一个全新的 Linux.</LI>
+<LI>完成你需要的改变.</LI>
+<LI>重制磁碟映像档.</LI>
+<LI>复制新的磁碟映像档到伺服器以取代旧的.</LI>
+</UL>
+
+这就意谓著, 你可以就像在使用一台普通的电脑一样来更新你的伺服器为基础的组态设定.
+<P>
+<H2><A NAME="ss4.5">4.5 设定 DOS 6 及 Windows 3.1</A>
+</H2>
+
+<P>到用户端电脑上, 用你所喜好的 DOS 磁片开机
+(可以移去 BootPROM 或在 BpBatch 环境下, 输入 <CODE>FloppyBoot</CODE> ).
+用 <CODE>/S</CODE> 选项, 格式化磁碟中的 DOS 分割区, 以安装作业系统.
+分割区的大小并不重要. 因为以 <CODE>MrZip</CODE> 产生磁碟映像档案时, 是以档案来认定的.
+而与分割区大小无关.
+<P>建一个 <CODE>DOS</CODE> 子目录, 把 DOS 复制进去. 安装你所喜好的网路用户端软体
+(比如 Microsoft LanManager), Windows 3.1, 及其他你要的程式.
+如果你要用 Microsoft LanManager, 千万别使用它的 DHCP 通讯协定来组态 IP 设定,
+因为它的实作方法相当烂, 在正常的网路负载下, 也绝对有可能失效. 但要得到相同效果,
+可以加入以下几行到 <CODE>protocol.ref</CODE> 档, 在载入 <CODE>tcptsr</CODE> 的同时
+(它会把 <CODE>xxx</CODE> 以你给定的真确 IP 参数值取代):
+<PRE>
+        IPADDRESS0 = xxx xxx xxx xxx
+        SUBNETMASK0 = 255 255 xxx xxx
+        DEFAULTGATEWAY0 = xxx xxx xxx xxx
+        DISABLEDHCP = 1
+</PRE>
+<P>不用怕使用 EMM386 最佳化您所使用的记忆体,
+您可以把网路卡 ROM 所占的区域纳入管理, 因为它在这时已经用不到了.
+但要记得把网路卡所使用的 RAM 区块不纳入管理, 否则您将无法连接到您的伺服器.
+用 <CODE>NOEMS</CODE> 参数.
+<P>如果你要确认用户端电脑只允许已认可的使用者所使用,
+可以把我们的 <CODE>nobreak</CODE> 虚拟装置驱动程式
+(可在这下载 <CODE>
+<A HREF="soft/nobreak.zip">http://cuiwww.unige.ch/info/pc/remote-boot/soft/nobreak.zip</A></CODE>)
+放在您 <CODE>config.sys</CODE> 档的开头处, 并把以下这些东西放到您的
+<CODE>autoexec.bat</CODE>: 
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+rem -- we use the dummy file c:\logged as a flag
+del c:\logged >nul
+:loginneeded
+cls
+echo Please type in your login name and password
+echo.
+net logon *
+rem -- the login script should have created c:\logged
+if not exist c:\logged goto loginneeded
+del c:\logged
+rem -- now enable break again
+echo Yes >NOBRK
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+<P>重开机, 确认你的用户端电脑一切正常, 并试著在 <CODE>BpBatch</CODE>
+的交谈模式下输入以下指令:
+<PRE>
+        HideBootprom
+        HdBoot
+</PRE>
+
+如果你没看到 BpBatch 则 PC 会采用硬碟来开机.
+<P>
+<H3>建立磁碟映像档</H3>
+
+<P>回到伺服器上, 建立一个分享名称为 <CODE>admin</CODE> 的目录,
+用来放一些系统管理者用的东东. 如果伺服器是跑 Unix,
+建议您把 <CODE>/tftpboot</CODE> 子目录用软式连结方式放一份到 <CODE>admin</CODE> 目录,
+这样您可以直接由用户端传回开机映像档. 在 <CODE>admin</CODE> 目录内,
+建一个 <CODE>/utils</CODE> 子目录并放入如下的工具: 
+<UL>
+<LI><CODE>mrbatch.exe</CODE>, DOS 版的 <CODE>BpBatch</CODE>.</LI>
+<LI><CODE>mrzip.exe</CODE>, DOS 版的工具程式用来建立磁碟映像档.</LI>
+<LI><CODE>bpbatch.hlp</CODE>, 线上说明档.</LI>
+</UL>
+
+您也需要放一些简便的 MrZip 脚本程序档名为 <CODE>zipdos.mrz</CODE> 的档案,
+内含用来建立 DOS 磁碟映像档的指令, 就像下面这样:
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+showlog
+filter -"lanman.dos/lmuser.ini"
+filter -"temp/*"
+filter -"*.swp"
+fullzip "c:/" "L:/tftpboot/dos.imz"
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+<P>现在回到你的用户端电脑, 把 <CODE>admin</CODE> 挂到 <CODE>L:</CODE>,
+到你的 <CODE>utils</CODE> 子目录下, 输入以下指令:
+<PRE>
+        mrzip -b zipdos
+</PRE>
+<P>一分钟之後, 你会在伺服器的 <CODE>/tftpboot</CODE> 子目录下看到一个名为
+<CODE>dos.imz</CODE> 的档案, 它就是你用户端电脑硬碟的压缩磁碟映像档.
+把以下的批次档内容复制到 <CODE>/tftpboot/dos.bpb</CODE>:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+hidelog
+setpartitions "bigdos:1024"
+setbootpart 1
+fullunzip "dos.imz" 1
+hideBootprom
+hdboot :1
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+<P>你的 DOS 远端开机设定组态已经就续 ! 你现在只要设定 BOOTP-option-155 为
+<CODE>"dos"</CODE>, 或在 BpBatch 下输入 <CODE>include "dos.bpb"</CODE> 就可以测试它了.
+<P>
+<H3>调整设定以适用其他机器</H3>
+
+<P>如果你要针对某一些机器做一些特定的设定,
+最典型的是 IP 位址值的设定不过因为 Micro$oft 的 DHCP 做的很烂,
+你可以用 <CODE>BpBatch</CODE> 在开机时做一些修正. 首先到 <CODE>lanman.dos</CODE> 目录下并执行
+<PRE>
+        copy *.ini *.ref
+</PRE>
+
+接著编辑副档名为 <CODE>.ref</CODE> 档案, 把所有固定的参数用 BOOTP 的变数取代, 下面是□例:
+<PRE>
+        computername = ${BOOTP-Host-Name}
+        ipaddress0 = ${MS-IPAddress}
+        subnetmask0 = ${MS-IPSubnet}
+        defaultgateway = ${MS-IPRouter}
+</PRE>
+
+接著用先前的方式重建磁碟映像档. 注意一下 IP 参数,
+我们不能直接使用 BOOTP 变数给 LanManager 使用,
+因为它需要以空格分隔而不是以点来分隔数字.
+把 <CODE>dos.bpb</CODE> 改成如下的样子:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+hidelog
+setpartitions "bigdos:1024"
+setbootpart 1
+fullunzip "dos.imz" 1
+set MS-IPAddress="$BOOTP-Your-IP"/.= /
+set MS-IPSubnet="$BOOTP-Subnet-Mask"/.= /
+set MS-IPRouter="$BOOTP-Routers"/.= /
+patch "{:1}lanman.dos/protocol.ref" "{:1}lanman.dos/protocol.ini"
+patch "{:1}lanman.dos/tcpputils.ref" "{:1}lanman.dos/tcputils.ini"
+patch "{:1}lanman.dos/lanman.ref" "{:1}lanman.dos/lanman.ini"
+hideBootprom
+hdboot :1
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+
+如果你喜欢, 你也可以把 <CODE>.ref</CODE> 的档案放在伺服器上的 <CODE>/tftpboot</CODE> 目录下, 而不放在磁碟映像档里.
+<P>我们可以在不重建映像档的状态下, 轻松的变更电脑的设定.
+作法是, 复制你的 <CODE>autoexec.bat</CODE> 及 <CODE>config.sys</CODE> 为
+<CODE>autoexec.ref</CODE> 及 <CODE>config.ref</CODE> 到伺服器的 <CODE>/tftpboot</CODE> 目录,
+把下面两行加到批次档中:
+<PRE>
+        patch "autoexec.ref" "{:1}autoexec.bat"
+        patch "config.ref" "{:1}config.sys"
+</PRE>
+
+你可以透过 BOOTP 通讯协定, 自由的变更档案内容.
+即使是做一些根据机器而来的特殊化设定.
+<P>在对用户端电脑的设定档做任何修改後, 如果你要预先做好修正.
+别忘了以 <CODE>MrZip</CODE> 重新制作磁碟映像档.
+<P>
+<H3>系统维护与升级</H3>
+
+<P>如果你以後要更新软体, 安装程式臭□修正或安全性修正的程式, 其处理程序如下:
+<UL>
+<LI>以远端开机方式启动一台用户端电脑以得到一个全新的 Linux.</LI>
+<LI>完成你需要的改变.</LI>
+<LI>重制磁碟映像档.</LI>
+<LI>复制新的磁碟映像档到伺服器以取代旧的.</LI>
+</UL>
+
+这就意谓著, 你可以就像在使用一台普通的电脑一样来更新你的伺服器为基础的组态设定.
+<P>
+<H2><A NAME="ss4.6">4.6 设定 Windows 95/98</A>
+</H2>
+
+<P>在此份文件先前的版本, 我们使用过微软公司的 Windows 95 以伺服器为基础的安装方式, 但是用这方法太过痛苦, 又不是那麽的有价值:
+<UL>
+<LI>它就真的是非常的虚拟.</LI>
+<LI>大部份的软体套件都不支援它而且如果您试著去安装最後的结果通常是失败的.
+包括, Microsoft Internet Explorer, OnNet 32,
+Novell's Protected-mode client (这较 Microsoft Client for Netware安全).</LI>
+<LI>因为微软公司不提供 Windows 95/98 在真实模式下的 TCP/IP
+相容的驱动程式所以您无法使用 Microsoft Network client over TCP/IP,
+而这也就意味著您不能使用 Samba.</LI>
+<LI>因为当用户端一启动就会锁住一些动态连结档造成许多程式几乎无法更新,
+如果您试著去更新它则会出现 <EM>违背分享 (sharing violations)</EM> 的错误.</LI>
+</UL>
+
+因此几个月前, 我们放弃这份本身就有问题的资料
+(您仍然可在这找到 <CODE>
+<A HREF="win95old/win95old.html">http://cuiwww.unige.ch/info/pc/remote-boot/win95old/win95old.html</A></CODE>)
+然後换到我们这个新的以硬碟机为基础的远端启动概念.
+基本上, 在这种环境下 Windows 95/98 安装方法就跟安装 DOS 一样容易.
+<P>
+<H3>建立一台独立的用户端</H3>
+
+<P>安装一台寻常的 Windows 95/98 用户端, 可以用我们先前所提的 DOS
+网路开机组态模式启动电脑, 再透过网路安装 (我们都这样做).
+你也可以用已经安装 Windows 的机器来做, 但若这样你对硬碟里有舍东西就比较不了解了.
+<P>把它视为先前所提的 DOS 用户端来处理. 但在 Windows 95/98 是不需使用 EMM386.
+如果你使用 Windows 98 或 Windows 95 OSR2 (别名为 MSWIN 4.1,
+也就是 Windows 95 service pack 1, 亦是 Windows 95 with Internet Explorer)
+你应该加入以下几行到 <CODE>MSDOS.SYS</CODE> (没错, 他是文字档) 的 <CODE>[Options]</CODE> 那一节:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+AUTOSCAN=0
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+
+这样可以使 Windows 知道您开机时, 不自动启动 ScanDisk.
+<P>当所有的软体都放在伺服器时, 如果您要减轻网路及伺服器的负担
+(这将增进您的系统效率), 您可以考虑安装这套相当不错的 Shared LAN Cache,
+由 Measurement Techniques, Inc 生产的
+(参考 <CODE>
+<A HREF="http://www.lancache.com">http://www.lancache.com</A></CODE>).
+<P>这套软体在每台用户端电脑执行,
+它会把所有从网路上取得的资料放在区域性的硬碟中快取.
+即使像 MS-Office 这种怪物, 在您第二次执行时也会更快...
+您的每台客户端电脑都要有一份版权, 不过它还不算太贵,
+这家公司对於大专院校有特惠价格. 更棒的是, 您可以到他们的网页下载免费的评估版.
+<P>
+<H3>建立磁碟映像档</H3>
+
+<P>在这个地方, 如果你是使用 Samba 档案伺服器,
+你应该需要先关掉 Windows 98 的密码传输前加密功能.
+这样才能把 <CODE>admin</CODE> 挂上去当网路磁碟机.
+你只要把下面的登录组态 <CODE>EnablePlainTextPassword</CODE>
+节的 DWORD 值设为 1
+<PRE>
+[HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\VxD\VNETSUP]
+</PRE>
+<P>你的 MrZip 脚本程序档可以命名为 <CODE>zipwin.mrz</CODE> 并包含以下内容:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+showlog
+filter -"windows/schedlog.txt"
+filter -"windows/msimgsiz.dat"
+filter -"*/index.dat"
+filter -"*.swp"
+filter -"*.tmp"
+filter -"temp/*"
+fullzip "c:/" "L:/tftpboot/win.imz"
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+<P>为了建立映像档, 把 <CODE>admin</CODE> 挂到磁碟机 <CODE>L:</CODE>,
+并到你的 <CODE>utils</CODE> 目录下并输入以下指令:
+<PRE>
+        mrzip -b zipwin
+</PRE>
+<P>几分钟过後, 你可以在伺服器的 <CODE>/tftpboot</CODE> 子目录下,
+找到名为 <CODE>win.imz</CODE> 的档案, 它就是你硬碟的压缩磁碟映像档.
+如果你的映像档超过 87 MB, 最好把它分割成两个或更多的档案.
+这些档案会在我们需要它时自动地一个接著一个载入. 记住,
+如果你的映像档超过 87 MB
+则系统花在解压缩的时间会超过一分钟而这会激怒你的使用者.
+我们的 Windows 95/98 映像档止有 70 MB 大,
+因为大部份的软体都摆在伺服器, 且只有在要求时才会载入.
+只有极少部份的软体需要安装到你的硬碟中. 如果你跟我们一样在乎这问题,
+你应该让解压缩这个映像档及完整回存到硬碟的时间低於一分钟.
+<P>把以下的批次档内容复制到档案 <CODE>/tftpboot/win.bpb</CODE>:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+hidelog
+setpartitions "bigdos:1024"
+setbootpart 1
+fullunzip "win.imz" 1
+hide`
+hdboot :1
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+<P>你的 Windows 95/98 远端开机设定组态已经就续 !
+你现在只要设定 BOOTP-option-155 为 <CODE>"win"</CODE>,
+或在 BpBatch 下输入 <CODE>include "win.bpb"</CODE> 就可以测试它了.
+<P>
+<H3>调整设定以适用其他机器</H3>
+
+<P>Windows 95/98 与 Windows 3.1 最大的不同是加入了即插即用的程式码,
+即自动侦测您的硬体设备. 它本身无舍坏处, 但问题是出在它太过灵敏,
+而且有时後会出□.
+<P>如果您试著用同样的开机映像档去启动另一台用户端机器,
+您将在收到一堆 Windows 侦测到新的硬体设备的讯息:
+一片新的音效卡, 一颗新的硬碟机, 一片新的网路卡, 或者一只新的滑鼠...
+会这样的原因有二:
+<P>
+<UL>
+<LI>这些设备可能使用不同的硬体资源 (比如, 滑鼠不是接在相同的连接埠,
+音效卡不是接在同样的扩充槽 -.- 没错, 这会被侦测到).</LI>
+<LI>这些设备可能通知 Windows 95/98 它们的序号
+(比如, 每台跑 Windows 95/98 的网路卡, 从最根本的乙太网路位址
+就每台都不一样了).</LI>
+</UL>
+
+事实上 , 如果 Windows 95/98 的即插即用功能可以正常工作的话,
+自动侦测变更的硬体设备并不会出问题, 所以如果即插即用功能失效时,
+问题就来了. 例如, Windows 95/98 对上我们的罗技 PS2 滑鼠时就不能即插即用,
+更糟的是滑鼠就消失了. 要解决这类问题方法就是, 尽可能使全部电脑有相同的硬体设备.
+<P>您无法避免的问题是每台电脑的网路卡. 很不幸的,
+在搭配我们所用的 SMC EtherEX 网路卡时, 即插即用的程式码会使电脑当机.
+唯一的解法是使 Windows 95/98 相信它已经知道有这片网路卡,
+且不需触动即插即用机制. 这个技巧就是透过开机自动执行档 <CODE>autoexec.bat</CODE>,
+自动的把关於这片网路卡的设定值加入 Windows 95/98 的系统登录资讯. 
+<P>要注意的是大部份 PCI 的网路卡并不需要这个技巧.
+<P>到您的用户端电脑, 编辑开机自动执行档 <CODE>autoexec.bat</CODE> 并加入下列几行: 
+<PRE>
+rem --- Patch Windows registry in order to avoid plug-and-play detection
+regedit /L:c:\windows\system.dat /R:c:\windows\user.dat c:\temp\patch.reg
+</PRE>
+
+<CODE>regedit</CODE> 是标准 Windows 95/98 的程式. 如果您在 Windows 环境下执行它,
+它可以帮您流览您的系统登录资讯, 或者如果您在 DOS 下执行它,
+它可以对您的系统登录资讯做一些简单的修正.
+在视窗环境下执行 <CODE>regedit</CODE>, 寻找你的网路卡, 通常在
+<PRE>
+        HKEY_LOCAL_MACHINE\Enum\ISAPNP
+</PRE>
+
+用 <EM>登录</EM> 功能选单的 汇出登录档 功能. 这个动作将建立一个文字档,
+你可以把它命名为 <CODE>patch.ref</CODE> 放在伺服器的 <CODE>/tftpboot</CODE> 目录下.
+编辑这个档案并找到这个网路卡的乙太网路位址放置的位置
+(如果你找不到它, 可以在不同机器上产生这两个档案, 比较他们就可以找到).
+用 <CODE>${MACID}</CODE> 的样式来取代它.
+接著在 <CODE>win.bpb</CODE> 脚本程序档中加入以下几行:
+<PRE>
+        set macid = "$BOOTP-Client-ID"
+        patch "patch.ref" "{:1}temp/patch.reg"
+</PRE>
+
+(如果它不是用户的正确乙太网路位址, 就必须对 <CODE>MACID</CODE> 字串设定值做必要的修正).
+就这样, 你的用户端电脑就不会再试著去自动侦测网路卡了.
+<P>再提一次, 这整个技巧在使用 PCI 网路卡时, 是不需要的.
+另外, 当 Windows 不能在登入时透过 DHCP 通讯协定设定主机名 (hostname), 我们也可以用相同的手法来达到. 只要把下列几行加到我们的 <CODE>patch.ref</CODE> 档:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+[HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\VxD\VNETSUP]
+"ComputerName"="${BOOTP-Host-Name}"
+
+[HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\VxD\MSTCP]
+"HostName"="${BOOTP-Host-Name}"
+
+[HKEY_LOCAL_MACHINE\System\CurrentControlSet\control\ComputerName\ComputerName]
+"ComputerName"="${BOOTP-Host-Name}"
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+<P>使用登录编辑程式的小技巧, 你的组态设定可以顺利的转移到有类似配备的机器上.
+如果你无法避免 Windows 去侦测你的某些硬体配备,
+可以试著在那机器上重建一个磁碟映像档.
+这样会把这台机器上的组态设定都含入这个映像档中,
+希望这能解决问题.
+<P>
+<H3>系统维护与升级</H3>
+
+<P>如果你以後要更新软体, 安装臭□修正或安全性修正的程式, 处理程序如下:
+<UL>
+<LI>以远端开机方式启动一台用户端电脑以得到一个全新的安装.</LI>
+<LI>完成你需要的改变.</LI>
+<LI>重制磁碟映像档.</LI>
+<LI>复制新的磁碟映像档到伺服器以取代旧的.</LI>
+</UL>
+
+这就意谓著, 你可以就像在使用一台普通的电脑一样来更新你的伺服器为基础的组态设定.
+<P>
+<H2><A NAME="ss4.7">4.7 设定 Windows NT</A>
+</H2>
+
+<P>我们并没有使用 Windows NT 来当远端开机用户端电脑的作业系统,
+但我们已经测试过, 它确定可以正常工作. 并且没问题.
+<P>由於我们的工具程式还没支援到 NTFS 档案系统
+(我们既没有相关文件也没有时间去做这件事,
+但我很乐意去帮助任何对这工作有兴趣的人)
+所以你必须把 NT 安装到 FAT16 档案系统上
+(只要在安装时, 不把你的分割区转换为 NTFS 档案系统就可以).
+<P>把 <CODE>win.bpb</CODE> 开机脚本程序复制到 <CODE>winnt.bpb</CODE>.
+改变 <CODE>winnt.bpb</CODE> 中 <CODE>setpartitions</CODE> 那一行为如下:
+<PRE>
+        setpartitions "BIGDOS:512 BIGDOS:512"
+</PRE>
+
+接著用这个脚本程序档使 Windows 95/98 开机, 把 NT 用户端安装到 C 槽.
+先别管第二个分割区的问题. 别安装太多东西进去,
+不然会产生一个又大解压缩又很慢的映像档.
+把 Windows 95/98 从 C 槽移除, Windows NT 的映像档不需要它
+(开机选单是由 BootPROM 所控制, 不再是 NT 的开机载入器).
+<P>在不覆写硬碟资料状况下, 重新启动你的电脑,
+就是千万别去执行 <CODE>winnt</CODE> 脚本程序档. 只要做:
+<PRE>
+        hideBootprom
+        hdboot
+</PRE>
+
+你的 NT 工作站就可以正确的启动. 然後就可以做其他的特殊修正了.
+<P>
+<H3>建立磁碟映像档</H3>
+
+<P>Windows NT 麻烦的地方是出在: 磁碟直接存取的功能会被 Kernel 所禁止.
+意谓著, <CODE>MrZip</CODE> 无法读取开机磁区.
+制作映像档的最佳方式是以 Windows 95/98 开机, 在 DOS 视窗下,
+执行 <CODE>MrZip</CODE>. 要这麽做就要变更 <CODE>winnt.bpb</CODE> 脚本程序档内容.
+使得 Windows 95/98 映像档不回存到第一个分割区, 而是第二个:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+hidelog
+setpartitions "BIGDOS:512 BIGDOS:512"
+setbootpart 2
+fullunzip "win.imz" 2
+hidebootprom
+hdboot :2
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+
+(如果你有其他补充的修正, 在把 <CODE>"{:1}"</CODE> 变为 <CODE>"{:2}"</CODE>). 用这个脚本程序开机; 应该会让 Windows 95/98 执行, 而新磁碟机 <CODE>D:</CODE> 槽会出现,
+里头放的就是 Windows NT.
+<P>就如以往的方式建立你的磁碟映像档 (只是改对 <CODE>D:</CODE> 做, 当然了),
+把它存为 <CODE>winnt.imz</CODE> 并放在伺服器上的 <CODE>/tftpboot</CODE> 目录下.
+最後编辑 <CODE>winnt.bpb</CODE> 脚本程序档改成如下:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+hidelog
+setpartitions "BIGDOS:512 BIGDOS:512"
+setbootpart 1
+fullunzip "winnt.imz" 1
+clean 2
+#fullunzip "win.imz" 2
+hidebootprom
+hdboot :1
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+
+你的 Windows NT 远端开机设定组态已经就续. 当然, 如果你不想有两个分割区,
+你可以设定成单一个分割区. 但当你要重建映像档时,
+你还是需要再设定第二个分割区以 Windows 95/98 开机.
+<P>
+<H3>系统维护与升级</H3>
+
+<P>如果你以後要更新软体, 安装程式臭□修正或安全性的修正, 处理程序如下:
+<UL>
+<LI>以远端开机方式启动一台用户端电脑以得到一个全新的安装.</LI>
+<LI>完成你需要的改变.</LI>
+<LI>编辑 <CODE>winnt.bpb</CODE>: 把 <CODE>clean</CODE> 及 winnt <CODE>fullunzip</CODE> 改成注解,
+把 win95 <CODE>fullunzip</CODE> 改成可执行.</LI>
+<LI>重制磁碟映像档.</LI>
+<LI>复制新的磁碟映像档到伺服器以取代旧的.</LI>
+</UL>
+
+就这样, 搞定
+<P>
+<H2><A NAME="ss4.8">4.8 问题集 (FAQ)</A>
+</H2>
+
+<P>本节列出我们所统计最常遇到的问题.
+<DL>
+<DT><B>不停地下载映像档</B><DD><P>可能是因为你所使用的是标准型 TFTP 伺服器,
+而它不能处理超过 65535 个 512 位元组大小的封包
+(而 Solaris 伺服器, 在超过 32767 个封包就有这个问题).
+因为这样, 你的映像档必须拆成许多个不超过的档案 30 MB
+(Solaris 的话, 是 15 MB).
+参考 <EM>复制档案(CopyArchive)</EM> 的机制, 它会教你如何分割已存在的映像档.
+如果你目前还在使用标准型 TFTP 伺服器,
+你应该慎重考虑改用 Bootix 或 Intel 的 TFTP 伺服器.
+参考下一个问题以探讨这些伺服器的功能.
+<DT><B>BpBatch 显示 "Fragment is not complete" 的错误讯息</B><DD><P>这是 TFTP 通讯协定的问题. 你的载入器档名的副档名一定要设对
+(参考 TFTP 伺服器那节).
+如果你用 Bootix 的 TFTP 伺服器并用了 <CODE>-s 1408 59</CODE> 的选项,
+则你的载入器档名应该是 <CODE>bpbatch.P</CODE>.
+如果你是用 Intel 或 Bootware 的 TFTP 伺服器有支援 blksize 的 TFTP 选项功能,
+则重命名你的载入器档名为 <CODE>bpbatch.B</CODE>.
+最後, 如果你用标准型 TFTP 伺服器,
+则重新命名你的载入器档名为 <CODE>bpbatch</CODE> (没有副档名).
+这个状况下 BpBatch 会用 512 位元组大小的封包取代 1408 位元组大小.
+而这时分割档的大小限制在 32MB (TFTP 内部限制) 不是 87MB.
+参考上一个问题, 探讨 512 位元组大小的封包.
+<DT><B>档案解压缩时直接失效</B><DD><P>有三种可能原因. 在伺服器上的映像档葛屁了
+(可以试著用 MrZip 检查是不是这个问题), 或是 TFTP 传输延误以致档案档案传送失败,
+或是通讯协定不相容.
+<P>当网路负载太重, 就会发生 TFTP 传输延误的状况
+(比如, 你想一次把一个极大的映像档下载到超过四台的用户端电脑).
+在这种情况下, <CODE>BpBatch</CODE> 不会一直重复传输. 因为那样作毫无用处.
+关掉几台电脑并试著在不超过四台用户端电脑同时启动的环境下测试
+(或者不超过三台). 如果你常常需要下载映像档到许多台电脑,
+你可以试用我们所使用的特殊广播型 TFTP 伺服器 (参考讨论它的那一节内容).
+<P>因标准型 TFTP 伺服器 (通常内建於你的 UNIX 伺服器) 所导致的通讯协定不相容.
+因为当 <CODE>BpBatch</CODE> 要以增强型的 TFTP 协定工作时,
+伺服器以标准型 TFTP 协定来对应. 如果你要用标准型 TFTP 伺服器,
+<B>你应该移去副档名 .P </B> (参考下一个问题的解说会更清楚).
+<P>
+<DT><B>下载 / 解压缩时(1) 电脑当机</B><DD><P>如果你用 Bootix 的 TFTP 伺服器, 试著在启动电脑时於命令列上加入
+<CODE>-s 1408 59</CODE> . 如果你不是采用增强型 TFTP 伺服器,
+则移去在伺服器上 BpBatch 档名及 <CODE>bootptab</CODE> 中的副档名 <CODE>.P</CODE> .
+<P>细部解说:
+这个问题发生在你没有架设增强型 TFTP 伺服器但却又使用了
+<CODE>bpbatch.P</CODE> 为你 DHCP/BOOTP 的可开机档档名的标签.
+当可开机档档名以 <CODE>.P</CODE> 为副档名时,
+BpBatch 将试著去连接到一台 Bootix 的 TFTP 伺服器. 要解决这个问题,
+你可以移去可开机档档名中的副档名 <CODE>.P</CODE>
+(这就等於告诉 BpBatch 改用标准型 TFTP 协定) 或者安装一台增强型 TFTP 伺服器.
+还有其他选择, 你可以安装 Intel 的 TFTP 伺服器并变更载入器档名为
+<CODE>bpbatch.B</CODE>.
+记住: 要使 Bootix 的 TFTP 伺服器正确的在增强型 TFTP 特性下工作,
+你必须在命令列中加上 <CODE>-s 1408 59</CODE>.
+<DT><B>下载 / 解压缩时(2) 电脑当机</B><DD><P>可能是你的电脑对 VESA 的支援有问题. 试著在命令列参数中加入 <CODE>-v</CODE>
+或设定 VESA 变数为 <CODE>"OFF"</CODE>.
+<DT><B>VESA 卷页功能故障</B><DD><P>我们使用 VESA 1.1 的卷页功能. 如果你的显示卡不支援 VESA 1.1, 就别用这个功能.
+如果只卷一页, 就会发生奇怪的条纹, 别急. 这是一个已知的程式臭□,
+我将在有空时修正 (VESA 卷页功能不是那摸重要啦...).
+<DT><B>快取中有坏掉的档案</B><DD><P>如果一个存於快取区中的档案, 被外在的程式弄坏了. 它会自动地从快取中被移除.
+如果一个正在写入快取区的档案没完整写入 (可能是电脑在档案传输中被关机),
+则它也会被自动清除. 但如果伺服器传送一个已损坏的档案.
+或者发自伺服器的资料传送取消. 则这类已毁损的档案仍然会存在快取区中.
+你只要在 <CODE>BpBatch</CODE> 第一次存取快取区时, 同时按下两个 shift 键,
+就可以把快取区内的资料清空. 还有一个方法, 在交谈模式下输入 <CODE>clean -1</CODE> .
+<DT><B>在批次档中的 EXIT 指令失效</B><DD><P>这不是一个程式臭□. Exit 并不是一个指令.
+没有 exit 或 quit 指令是因为如果不开机, 则从开机脚本程序中退出是毫无意义的.
+而 MrBatch 完全跟 BpBatch 一样是同一支程式.
+你可改以叫用 HdBoot 取代 exit. 这才有意义, 且在 DOS 版下,
+真的会取代重开机而完全退出.
+记住你可以在 DOS 版任何情况下按下 Ctrl-Break 然後退出.
+这将在离开前, 回存所有被拦截的中断.
+<DT><B>Print 指令失效</B><DD><P>如果你试著要印一些东西并直接进入交谈模式, 你有可能来不及看到那些文字.
+这是因为你所印的字是显示在 <EM>执行时期</EM> 显示幕而 <CODE>Interact</CODE> 指令会切换到
+<EM>记录</EM> 显示幕. 因此只要放一个 <CODE>GetKey</CODE>
+指令在 print 指令之後你就可以看到你要的文字了.
+<DT><B>MrZip 显示 <CODE>Malloc failed</CODE></B><DD><P>MrZip 需要大量的传统记忆体才能执行. 如果你遇到这个问题,
+先确定你已经用 <CODE>HideBootprom</CODE> 指令或 Bootix 的 <CODE>bputil</CODE> 卸载了
+BootPROM 所占的记忆体.
+如果你在单纯的 MS-DOS 下执行 (非 Windows 95/98 DOS 视窗),
+你应该使用 EMM386 把网路卡驱动程式载到高层记忆体以取得更多的传统记忆体.
+在 Windows 的 DOS 视窗下执行, 通常是没舍问题的
+(只要你在安装 Windows 时, 没留下任何 16 位元的东西在你的 <CODE>autoexec.bat</CODE> 档中).
+<DT><B>MrZip 在读取目录时失效</B><DD><P>这个程式臭□已修正. 取得最新版 <CODE>MrZip</CODE>. 如果还有这个问题,
+试著在把变数 <CODE>Trace</CODE> 设为 <CODE>"ON"</CODE> (且把 <CODE>PauseLog</CODE> 设为 <CODE>"OFF"</CODE>) 下,
+重建你的映像档; 这可以让你发现导致问题的原因. 请回传详细的程式臭□报告.
+<DT><B>MrZip 无法存取某些档案</B><DD><P>MrZip 会试著去读取已锁住, 已开启或其他特别的档案, 如 Windows swap 档.
+这类档案应该不被含在映像档中并应被过滤出来 (使用 <CODE>filter</CODE> 指令).
+当然也可能是作业系统在耍你. 如果 MrZip 没告诉你哪个档案导致问题,
+试著把变数 <CODE>Trace</CODE> 设为 <CODE>"ON"</CODE> (且把 <CODE>PauseLog</CODE> 设为 <CODE>"OFF"</CODE>) 下,
+重建你的映像档. 你也可以试著用直接磁碟存取 (也就是, 不把来源分割区当成
+<CODE>"C:"</CODE> 或 <CODE>"/"</CODE> 改以 <CODE>"{:1}"</CODE> 表示).
+使用直接磁碟存取通常比较慢, 因为我们的缓冲区不若作业系统大, 但它有些时候比较可靠.
+<DT><B>磁碟映像档总是一直由伺服器上重新载入</B><DD><P>磁碟映像档被存放在特殊快取区中, 如果伺服器上的没变更, 照理说应该不需再下载一次.
+但是, 由於快取区是在最後一个使用到的分割区之後启始,
+更动分割区的大小将移动快取区的位置并损毁其内容.
+另一个使档案自快取区中消失的可能因素是先前的档案已经变得比原来的大一倍半.
+则这个档案就应该被覆写并重新下载一次. 但这应该不会发生.
+第三个可能因素是快取区过小.
+如果分割区以外所剩的可用空间小於所有压缩映像档的一倍半,
+则只有最常使用的映像档会在快取区中, 其他的就必需再重载一次.
+<DT><B>Red Hat Linux 5.1 不能正常开机</B><DD><P>这个套件假设 Linux 都用 <CODE>lilo</CODE> 开机并会检查 <CODE>BOOT_IMAGE</CODE> 命令列参数
+(在 <CODE>/etc/rc.d/rc.sysinit</CODE>).
+只要把它加在 <CODE>linuxboot</CODE> 呼叫中, 或者变更你的 <CODE>rc.sysinit</CODE>.
+<DT><B>广播型 TFTP 的 ramdisk 当掉 (<EM>Got in bound state</EM>)</B><DD><P>Linux 的 dhcp 用户程式可以透过 DHCP 回应, 动态地改变用户端的 IP 位址.
+如果提供的位址值是永久的 (无限制使用时间),
+则 DHCP 用户端程式只设定位址值後就结束返回 (这就是我们所期望的).
+但是, 如果位址的使用时间有限制,
+则用户端程式必须一直存在并每一分钟就寻问新的位址值.
+而如果 DHCP 用户端程式没有结束返回, 则 MrBatch 就永远不会被载入...
+这问题的解法就是设定无限期的位址使用时间 (有时候就当成是 -1).
+<DT><B>在 BpBatch 下会档案存取当机, 但在 MrBatch 不会</B><DD><P>这个问题发生在 AMI BIOS 日期为 94/07/25. 我们研究後, 发觉无解.
+这个问题好像是因为 BIOS 本身有程式臭□ (部份暂存器或记忆体位置会被毁坏).
+<DT><B>对分割过的档案解压缩失效 (Malloc failed)</B><DD><P>这个问题是发生在 PXE 相容性上, 已被修正. 请取得最新版.
+<DT><B>MrBatch 及 MrZip 不相容於 RedHat 5.x 的 terminal</B><DD><P>这个问题已在 MrBatch/MrZip 八月份第 9 个版本修正.
+与 RedHat 5.1 一起发行的新版 ncurses 函式库有问题.
+<DT><B>在 Linux 下出现 "libncurses.so.3.0: cannot open shared object file"</B><DD><P>MrZip 已改在 libncurses 3.0 版下连结.
+你只能使用其它比 3.0 版更新的 libncurses 才行.
+要用较新版的 libncurses, 而你所需要去做的只是建立一些软性连结由
+libncurses.so.3.0 到你新的 libncurses.so.xx 档案.
+在 RedHat 5.1, 你可以使用下列的指令 :
+<CODE>cd /usr/lib ; ln -s libncurses.4.2 libncurses.3.0</CODE>
+你也可以下载 mrzip/mrbatch 最新的版本. 自 10/25/98,
+MrBatch 已在 RedHat 5.1 环境下编译.
+<DT><B>MrBatch 及 MrZip 不能在 Linux 下执行(file not found)</B><DD><P>这个问题与前一个问题相反. 现在这个套件是预设在 libc6 环境下,
+它已不能再与 libc5 一并使用. 如果你遇到这个问题,
+只需要升级你的 Linux (当然, 如果我们听到太多抱怨, 我们或许会试著保留两种套件...).
+<DT><B>除了预设的 800x600 VESA 模式, 我不能使用其他模式</B><DD><P>你应该先检视 <CODE>VESA-Modes</CODE> 变数的内容,
+看看你的硬体设备是否可以支援你要使用的模式. 然後,
+试著用下列两种方法之一来选用你要的 VESA 模式 :
+<UL>
+<LI><CODE>InitGraph "mode"</CODE>: 试著用 InitGraph "1024x768",
+然後执行你所喜好的初始划图形 (即用 <CODE>DrawGif</CODE> 指令).</LI>
+<LI><CODE>VESA-Modes</CODE>: <CODE>VESA-Modes</CODE> 变数的第一栏是预设模式.
+如果你改变 VESA-Modes 变数, 所有的初始化图形会依循你所设定的模式.</LI>
+</UL>
+<DT><B>在回存多个分割映像档时, BpBatch 显示 "Malloc failed" 讯息</B><DD><P>我们已修正 BpBatch 一个记忆体对分配的问题.
+你应该确定你使用的 BpBatch 版本在 1998 年九月 22 日之後.
+<DT><B>Linux 版的 MrBatch 使用 Fullunzip 总会失效</B><DD><P>我们已於 09/22/1998 的版本中, 修正这个问题.
+<DT><B>Scandisk 显示我的硬碟机已损毁</B><DD><P>10/25/98 的版本已修正一个与大映像档有关的问题. 试著去下载最新版的 BpBatch.
+<DT><B>我的 RedHat 开机磁碟片不能用 FloppyBoot 功能</B><DD><P>这个软体臭□已经在 10/25/98 版本中修正.
+<DT><B>我的 FAT32 磁碟映像档无法正常开机</B><DD><P>这个软体臭□已经在 02/09/99 版本中修正.
+<DT><B>当你启动 BpBatch 总是出现 "Cannot load file"</B><DD><P>你的 DHCP 伺服器不能送出有效的 option-135 到用户端.
+BpBatch 使用 option 135 为它自身的命令列参数. 如果你想要进入交谈模式,
+你可以设定为 "-i". 或者你可以把它设定为一个脚本程序档名,
+如果你想要 BpBatch 按照你所选的脚本程序执行 (别把 .bpb 的副档名纳入名称中).
+如果你使用 PXE BootPROM, 确定你使用 option-135 为命令列参数.
+PXE 2.0 BootPROM 已不再支援 Option-155.
+</DL>
+<P>
+<HR>
+<A HREF="Remote-Boot-5.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Remote-Boot-3.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Remote-Boot.html#toc4"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

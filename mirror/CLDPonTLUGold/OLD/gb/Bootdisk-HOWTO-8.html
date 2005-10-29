@@ -1,0 +1,141 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="LinuxDoc-Tools 0.9.16">
+ <TITLE>The Linux Bootdisk HOWTO: 其它各种主题 -- Miscellaneous topics</TITLE>
+ <LINK HREF="Bootdisk-HOWTO-9.html" REL=next>
+ <LINK HREF="Bootdisk-HOWTO-7.html" REL=previous>
+ <LINK HREF="Bootdisk-HOWTO.html#toc8" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Bootdisk-HOWTO-9.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="Bootdisk-HOWTO-7.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="Bootdisk-HOWTO.html#toc8"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s8">8.</A> <A HREF="Bootdisk-HOWTO.html#toc8">其它各种主题 -- Miscellaneous topics</A></H2>
+
+
+
+<H2><A NAME="ss8.1">8.1</A> <A HREF="Bootdisk-HOWTO.html#toc8.1">减少 root filesystem 的 size -- Reducing root filesystem size</A>
+</H2>
+
+<P>
+<A NAME="Slimfast"></A> </P>
+<P>有时 root filesystem 会因太大而无法塞入一张软碟片内，甚至在压缩过后还是这样。这里有一些方法可减少 filesystem 的 size ：</P>
+<P>
+<OL>
+<LI><EM> 增加磁碟片密度 (density)</EM> 。
+依照预设，软碟片会以 1440 K 来进行格式化，但是现在也有更高密度的格式。 fdformat会为以下 sizes 的磁片进行格式化： 1600, 1680, 1722, 1743, 1760, 1840, 以及 1920 。大部分的 1440 K 软碟机可支援 1722 K ，我一直都是使用这个来制作 bootdisks 。请参考 <CODE>fdformat</CODE> man page与 /usr/src/linux/Documentation/devices.txt 。
+</LI>
+<LI> <EM> 替换你的 shell</EM> 。
+一些在 Linux 上广受欢迎的 shells ，诸如 <CODE>bash</CODE> 与 <CODE>tcsh</CODE> ，是相当大且需要许多函式库。 Light-weight 的选择于是存在，诸如 <CODE>ash</CODE>, <CODE>lsh</CODE>, <CODE>kiss</CODE> 与 <CODE>smash</CODE>，它们小很多而且只需要很少 (或是不需要)函式库。大部分这些用来代替的 shells 可以在 
+<A HREF="http://metalab.unc.edu/pub/Linux/system/shells/">http://metalab.unc.edu/pub/Linux/system/shells/</A> 找得到。请确定你所使用的任何 shell ，能够执行你放在你 bootdisk 内的所有 rc 档案中的指令。
+<!--
+shells
+-->
+
+</LI>
+<LI><EM> 删去函式库与二进位档 </EM>。
+很多函式库与二进位档一般而言是未被删去的 (包括debugging symbols)。如果如此，对这些档案执行 <CODE>file</CODE> 会告诉你 ``<CODE>not stripped</CODE>'' 。
+<!--
+libraries
+-->
+
+当 copy 二进位档到你的 root filesystem 时，这是一个好练习去使用：
+<PRE>
+      objcopy --strip-all FROM TO
+</PRE>
+
+
+<!--
+libraries, stripping
+-->
+<!--
+strip
+-->
+<!--
+objcopy
+-->
+
+
+当 copy 函式库时，请确定使用的是 <CODE>strip-debug</CODE> 而不是 <CODE>strip-all</CODE> 。
+</LI>
+<LI> 如果你在制作 root filesystem 时，删除或移动过多档案，请再重新制作一次。请看上述关于不要在 filesystem 内有 dirty blocks 之重要性的注意事项。
+</LI>
+<LI> <EM> 移动非关键档案到工具磁片 (utility disk) 上 </EM> 。
+如果你的一些二进位档对 boot 或 login 来说并非立即需要，那么你就可以把它们移到工具磁片上。细节请看 
+<A HREF="#UtilityDisk">Building a utility disk</A> 这一节。你同样可考虑把 modules 移到工具磁片上。
+<!--
+utility diskette
+-->
+</LI>
+</OL>
+</P>
+
+<H2><A NAME="ss8.2">8.2</A> <A HREF="Bootdisk-HOWTO.html#toc8.2">Non-ramdisk root filesystems</A>
+</H2>
+
+<P>
+<A NAME="NonRamdiskRoot"></A> 
+<!--
+ramdisk
+-->
+</P>
+<P>
+<A HREF="Bootdisk-HOWTO-4.html#BuildRoot">Building a root filesystem</A> 这一节曾给予指示以建造一个压缩的 root filesystem ，它会在系统开机时被载入到 ramdisk 。这个方法有许多优点，所以通常都采用此法。然而，一些只有一点点记忆体的系统无法负担此法所需的 RAM ，因此，这些系统必须使用直接从软碟片挂上的 root filesystems 。</P>
+<P>这样的 filesystems 实际上比压缩的 root filesystems 更容易建造，因为它们可以被造在一张磁片上，而非某个其它的设备上，另外，它们也不必被压缩。当异于前述的指示时，我们将叙述该程序的要点。如果你选择这样做，请记得你可获得的剩馀 <EM> 空间会变少 </EM> 。</P>
+<P>
+<OL>
+<LI> 请计算你将有多少空间可供 root files 使用。
+
+如果你建造的是一张单一的 boot/root 磁片，你必须让所有给 kernel 的 blocks 以及所有给 root filesystem 的 blocks 都能容纳于同一张磁片上。
+</LI>
+<LI> 使用 <CODE>mke2fs</CODE> ，在适当 size 的软碟片上造出一个 root filesystem 。
+</LI>
+<LI> 如同前述的方法殖入于此 filesystem 。
+</LI>
+<LI> 完成后， unmount 此 filesystem 并且传送它使之成为一个磁片档案，但是 <EM> 不要压缩它 </EM> 。
+</LI>
+<LI> 以前述之方法，把 kernel 传送到一张软碟片上。当计算 ramdisk word 时， <EM> 把 bit 14 设成 0</EM> ，以指示不要把 root filesystem 载入到 ramdisk 。请以前述之方法执行 <CODE>rdev</CODE> 指令。 
+<!--
+ramdisk word
+-->
+<!--
+rdev
+-->
+
+</LI>
+<LI> 如同以往，传送此 root filesystem 。</LI>
+</OL>
+</P>
+<P>有好几种捷径你可采用。如果你建造的是一套双磁片组，你可以直接把完整的 root filesystem建造在第二张磁片上，而且你并不需要把它传送成一个硬碟档案然后再存回磁片上。同样地，如果你建造的是一张单一的 boot/root 磁片而且使用 LILO ，你可以在整张磁片上建立 <EM> 单一的 </EM>filesystem，包含 kernel 、 LILO files 与 root files ，然后只要执行 LILO 做为最后一步。</P>
+
+<H2><A NAME="ss8.3">8.3</A> <A HREF="Bootdisk-HOWTO.html#toc8.3">建造一张工具磁片 -- Building a utility disk</A>
+</H2>
+
+<P>
+<A NAME="UtilityDisk"></A> 
+<!--
+utility diskette
+-->
+</P>
+<P>建造一张工具磁片相对来说简单多了 -- 只要在一张已格式化的磁片上造出一个 filesystem ，然后 copy 档案于其上即可。为了跟 bootdisk 一起使用它，请在系统启动以后，用手动的方式 mount 它。</P>
+<P>在前面的指示中，我们曾提及 utility disk 可以被 mount 做为 /usr 。在这个情况下，二进位档可以被放在你 utility disk 之 /bin 目录内，以便于将 /usr/bin 设入你的 path 中可以存取它们。二进位档所需之其它函式库被放在 utility disk 之 /lib 目录内。</P>
+<P>当设计 utilitu disk 时，有几个重点要记住：</P>
+<P>
+<OL>
+<LI> 不要把关键的系统二进位档或函式库放到 utility disk 上，因为直到系统顺利启动之前， utility disk 不会被挂上，其上的档案也无法供系统使用。
+</LI>
+<LI> 你不能同时存取一张软碟片与一台磁带机。意指如果你有一台磁带机，那么当你正在使用 (mount) utility disk 时，你将不能存取那台磁带机。
+</LI>
+<LI> 存取 utility disk 上的档案会很慢。</LI>
+</OL>
+</P>
+<P>
+<A HREF="Bootdisk-HOWTO-14.html#utilitylist">Sample utility disk directory listing</A> 提供了utility disk的档案之样本。以下是一些建议关于一些你会发现有用的档案：检查与操作磁片(<CODE>format, fdisk</CODE>)、 filesystems (<CODE>mke2fs, fsck, debugfs, isofs.o</CODE>)的程式，小型的文书编辑器 (<CODE>elvis, jove</CODE>)，压缩与档案工具 (<CODE>gzip, tar, cpio, afio</CODE>), 磁带工具 (<CODE>mt, tob, taper</CODE>)，通讯工具 (<CODE>ppp.o, slip.o, minicom</CODE>)与给设备使用的工具 (<CODE>setserial, mknod</CODE>)。</P>
+
+<HR>
+<A HREF="Bootdisk-HOWTO-9.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="Bootdisk-HOWTO-7.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="Bootdisk-HOWTO.html#toc8"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

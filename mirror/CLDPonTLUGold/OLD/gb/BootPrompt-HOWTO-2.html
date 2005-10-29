@@ -1,0 +1,159 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>The Linux BootPrompt-HowTo 中译版: 启动提示参数概观</TITLE>
+ <LINK HREF="BootPrompt-HOWTO-3.html" REL=next>
+ <LINK HREF="BootPrompt-HOWTO-1.html" REL=previous>
+ <LINK HREF="BootPrompt-HOWTO.html#toc2" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="BootPrompt-HOWTO-3.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="BootPrompt-HOWTO-1.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="BootPrompt-HOWTO.html#toc2"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="oview"></A> <A NAME="s2">2. 启动提示参数概观</A></H2>
+
+<P>
+<P>这一节介绍一些可以用来传递启动时期参数给核心本身的软体□例。
+也给你有关这些参数系如何被处理，启动参数有什麽样的限制，
+以及它们如何被转送到各个适当设备的观念。
+<P>有一点<EM>很重要</EM>得注意的是在启动参数中<EM>不</EM>应该使用空白，
+只有在各别的参数之间可以。
+单一参数其值的列表(A list of values)是在各值之间以逗号格开的，再一次，
+没有任何空白。参见下面的□例。
+<P>
+<HR>
+<PRE>
+        ether=9,0x300,0xd0000,0xd4000,eth0  root=/dev/hda1
+*RIGHT*
+        ether = 9, 0x300, 0xd0000, 0xd4000, eth0  root = /dev/hda1
+*WRONG*
+</PRE>
+<HR>
+<P>
+<H2><A NAME="lilo"></A> <A NAME="ss2.1">2.1 LILO (LInux LOader)</A>
+</H2>
+
+<P>
+<P>最常用的是 Werner Almesberger 所写的 LILO(LInux LOader) 程式。
+它有能力启动不同的核心，而且配置资讯存放在一个纯文字档里。
+大部份的发行套件都附有 LILO 作为预设的启动载入程式(boot-loader)。
+LILO 可以一视同仁地启动 DOS, OS/2, Linux, FreeBSD 等等，而且相当有弹性。
+<P>在你开机之後，典型的配置会让 LILO 停住并印出 <CODE>LILO:</CODE>。
+然後等个几秒看看使用者有没有输入任何选项，没有的话就启动预设的系统。
+在 LILO 配置档里典型的系统标签是 <CODE>linux</CODE> 以及 <CODE>backup</CODE> 和
+<CODE>msdos</CODE>。
+如果你想要输入启动参数，可以打在这，在输入你要 LILO 启动的系统之标签後面，
+像下面这个□例所显示的。
+<P>
+<HR>
+<PRE>
+        LILO: linux root=/dev/hda1
+</PRE>
+<HR>
+<P>LILO 随附有绝佳的文件，而且为了这里所讨论的启动参数之使用，
+当你想要把启动时期参数加到 LILO 配置档里永久使用时 LILO 的
+<CODE>append=</CODE> 指令就非常重要。
+只要简单地在 <CODE>/etc/lilo.conf</CODE> 档中加入像
+<CODE>append = "foo=bar"</CODE> 这样的东东即可。
+可以加在该档的最前面，使它对每一节区(section)都生效，
+或是加在某 <CODE>image=</CODE> 节区里使它对该节区生效。
+请参阅 LILO 文件里更完整的说明。
+<P>
+<H2><A NAME="loadlin"></A> <A NAME="ss2.2">2.2 LoadLin</A>
+</H2>
+
+<P>
+<P>另一个常用的 Linux 载入程式 `LoadLin' 则是一支有能力从
+DOS 提示符号(prompt)下启动 Linux 核心（可以给予启动参数）的 DOS 程式，
+假如某些系统资源可用的话就行。
+这对使用 DOS 并想从 DOS 下启动进入 Linux 的人而言很好用。
+<P>如果你拥有一些需要使用其所提供的 DOS 驱动程式来初使化以进入可用状态
+(known state)的硬体那麽它也很有用。
+一个常见的例子是需要使用 DOS 驱动程式设定(twiddle)
+几个神秘的暂存器使它进入声霸卡相容模式的”声霸卡相容”音效卡。
+启动 DOS 与所附的驱动程式，
+然後从 DOS 提示符号下使用 <CODE>LOADLIN.EXE</CODE> 载入 Linux
+以避免重新启动(reboot)会重置(reset)该卡。
+如此该卡维持在声霸卡相容模式也就能在 Linux 下使用。
+<P>还有一些其它程式可以用来启动 Linux。
+完整的列表请找找在你当地 Linux 档案传输映设节点里的程式，
+在 <CODE>system/Linux-boot/</CODE> 下。
+<P>
+<H2><A NAME="rdev"></A> <A NAME="ss2.3">2.3 ``rdev'' 公用程式</A>
+</H2>
+
+<P>
+<P>核心本身里面的数个位元组存有少数几个核心启动参数的预设值。
+在大部份的系统里安装有一支称为 <CODE>rdev</CODE> 的公用程式知道这些值在那里，
+以及如何改变它们。
+它也能改变另外一些没有相对之核心启动参数的东西，
+像是预设的显示模式(video mode)。
+<P>此 rdev 公用程式通常也另称(aliased to) swapdev, ramsize, vidmode 以及
+rootflags。它能够改变五种东西，分别是根目录设备(root device)，
+置换设备(swap device)，记忆体磁碟(RAM disk)之参数，预设的显示模式，
+及根目录设备的存取设定(readonly/readwrite)。
+<P>更多有关 <CODE>rdev</CODE> 的资讯可以藉由输入 <CODE>rdev -h</CODE> 或是参阅其线上说明页
+(<CODE>man rdev</CODE>)获得。
+<P>
+<H2><A NAME="ss2.4">2.4 核心如何排列参数</A>
+</H2>
+
+<P>
+<P>大部份的启动参数格式为：
+<P>
+<HR>
+<PRE>
+        name[=value_1][,value_2]...[,value_11]
+</PRE>
+<HR>
+<P>其中 `name' 是一个用来唯一识别(unique)相关的值（如果有的话）
+是要给核心的那个部份的关键字。
+多个启动参数只是上述格式以空白分隔的列表。
+注意那个 11 是真实的限制，
+因为现行的程式码对每个关键字只处理 11 个以逗号分隔的参数。
+（然而，在非比寻常复杂的情况下你可以重覆使用相同的关键字加入 11
+个以上的参数，
+假如设定函式支援这样搞的话。）
+同时也要注意，核心把列表分成(splits)最多 10 个的整数参数，
+後面并跟著一个字串，所以你不能真的给它 11 个整数，
+除非你自行在驱动程式中将第 11 个参数由字串转换成整数。
+<P>大部份排序的动作是在 <CODE>linux/init/main.c</CODE> 里面。
+首先，核心查看参数是否为 `root=', `Ro', `Rw', or `Debug' 这些特别的参数。
+这些特别参数的意义本文中会进一步说明。
+<P>然後它走过(walks)一系列的设定函式（放在 <CODE>bootsetups</CODE> 阵列里）
+看看所指定的参数字串（像是
+`foo'）是不是与其中的一个设定函式（<CODE>foo_setup()</CODE>）相关，
+以设定特定设备或核心的一部份。
+如果你传给核心 <CODE>foo=3,4,5,6,bar</CODE> 这样一行那麽核心会搜寻
+<CODE>bootsetups</CODE> 阵列看看 `foo' 是否有注册。
+如果有，那麽它会呼叫与 `foo' 相关联的设定函式（<CODE>foo_setup()</CODE>）
+并交给它在核心指令列所给的整数参数 3, 4, 5, and 6，并交给它字串参数
+<CODE>bar</CODE>。
+<P>
+<H2><A NAME="ss2.5">2.5 设定环境变数</A>
+</H2>
+
+<P>
+<P>任何不被接受当作上述设定函式的 `foo=bar'
+型式之叙述会被解译为要设定的环境变数。
+一个（没用的？）□例是以 `TERM=vt100' 作为启动参数。
+<P>
+<H2><A NAME="ss2.6">2.6 传递参数给 `init' 程式</A>
+</H2>
+
+<P>
+<P>任何剩下的，
+核心不管而且不被解译成环境变数之参数接下来会传给第一个程序(process)，
+通常是 <CODE>init</CODE> 程式。
+最常传给 init 程序的参数是 <EM>single</EM> 这个字，
+指示 <CODE>init</CODE> 把电脑启动在单人模式(single user mode)
+并且不启动所有一般的驻留程式(daemons) 。
+查阅你系统里安装的 <CODE>init</CODE> 版本之线上手册看看它接受那些参数。
+<P>
+<HR>
+<A HREF="BootPrompt-HOWTO-3.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="BootPrompt-HOWTO-1.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="BootPrompt-HOWTO.html#toc2"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

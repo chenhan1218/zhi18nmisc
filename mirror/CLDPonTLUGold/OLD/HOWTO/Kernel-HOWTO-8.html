@@ -1,0 +1,293 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>The Linux Kernel HOWTO: Some pitfalls </TITLE>
+ <LINK HREF="Kernel-HOWTO-9.html" REL=next>
+ <LINK HREF="Kernel-HOWTO-7.html" REL=previous>
+ <LINK HREF="Kernel-HOWTO.html#toc8" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Kernel-HOWTO-9.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Kernel-HOWTO-7.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Kernel-HOWTO.html#toc8"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s8">8. Some pitfalls </A></H2>
+
+<P>
+<P>
+<H2><A NAME="ss8.1">8.1 make clean </A>
+</H2>
+
+<P>If your new kernel does really weird things after a routine kernel upgrade,
+chances are you forgot to <CODE>make clean</CODE> before compiling the new
+kernel. Symptoms can be anything from
+your system outright crashing, strange I/O problems, to crummy
+performance. Make sure you do a <CODE>make dep</CODE>, too.
+<P>
+<P>
+<H2><A NAME="ss8.2">8.2 Huge or slow kernels </A>
+</H2>
+
+<P>If your kernel is sucking up a lot of memory, is too large,
+and/or just takes forever to compile even when you've got your new
+Quadbazillium-III/4400 working on it, you've probably got lots of unneeded
+stuff (device drivers, filesystems, etc) configured. If you don't use it,
+don't configure it, because it does take up memory.
+The most obvious symptom of kernel bloat is extreme swapping in and out of
+memory to disk; if your disk is making a lot of noise and it's not one of
+those old Fujitsu Eagles that sound like like a jet landing when turned
+off, look over your kernel configuration.
+<P>
+<P>You can find out how much memory the kernel is using by taking the
+total amount of memory in your machine and subtracting from it the
+amount of ``total mem'' in <CODE>/proc/meminfo</CODE>  or the output of the command
+`<CODE>free</CODE>'.
+<P>
+<P>
+<H2><A NAME="ss8.3">8.3 The parallel port doesn't work/my printer doesn't work</A>
+</H2>
+
+<P>Configuration options for PCs are: First, under the category `General Setup',
+select `Parallel port support' and `PC-style hardware'. Then under
+`Character devices', select `Parallel printer support'.
+<P>Then there are the names. Linux 2.2 names the printer devices differently
+than previous releases. The upshot of this is that if you had an <CODE>lp1</CODE>
+under your old kernel, it's probably an <CODE>lp0</CODE> under your new one.
+Use `<CODE>dmesg</CODE>' or look through the logs in <CODE>/var/log</CODE> to find
+out.
+<P>
+<P>
+<H2><A NAME="ss8.4">8.4 Kernel doesn't compile </A>
+</H2>
+
+<P>
+<P>If it does not compile, then it is likely that a patch failed, or your
+source is somehow corrupt. Your version of gcc also might not
+be correct, or could also be corrupt (for example, the include files
+might be in error). Make sure that the symbolic links which
+Linus describes in the <CODE>README</CODE> are set up correctly. In general, if
+a standard kernel
+does not compile, something is seriously wrong with the system, and 
+reinstallation of certain tools is probably necessary.
+<P>
+<P>In some cases, gcc can crash due to hardware problems. The error
+message will be something like ``xxx exited with signal 15'' and it will
+generally look very mysterious. I probably would not mention this, except
+that it happened to me once - I had some bad cache memory, and the compiler
+would occasionally barf at random. Try reinstalling gcc first if you
+experience problems. You should only get suspicious if your kernel compiles
+fine with external cache turned off, a reduced amount of RAM, etc.
+<P>
+<P>It tends to disturb people when it's suggested that their hardware has
+problems. Well, I'm not making this up. There is an FAQ for it -- it's at
+<CODE>http://www.bitwizard.nl/sig11/</CODE>.
+<P>
+<P>
+<H2><A NAME="ss8.5">8.5 New version of the kernel doesn't seem to boot</A>
+</H2>
+
+<P>
+<P>You did not run LILO, or it is not configured correctly. One thing that
+``got'' me once was a problem in the config file; it said `<CODE>boot =
+/dev/hda1</CODE>'
+instead of `<CODE>boot = /dev/hda</CODE>' (This can be really annoying at first,
+but once you have a working config file, you shouldn't need to
+change it.).
+<P>
+<P>
+<H2><A NAME="ss8.6">8.6 You forgot to run LILO, or system doesn't boot at all</A>
+</H2>
+
+<P>
+<P>Ooops! The best thing you can do here is to boot off of a floppy disk or
+CDROM and
+prepare another bootable floppy (such as `<CODE>make zdisk</CODE>' would do).
+You need to know where your root (<CODE>/</CODE>) filesystem is and what type
+it is (e.g. second extended, minix). In the example below, you also need
+to know what filesystem your <CODE>/usr/src/linux</CODE> source
+tree is on, its type, and where it is normally mounted.
+<P>
+<P>In the following example, <CODE>/</CODE> is <CODE>/dev/hda1</CODE>, and the
+filesystem which holds <CODE>/usr/src/linux</CODE>
+is <CODE>/dev/hda3</CODE>, normally mounted at <CODE>/usr</CODE>. Both are
+second extended filesystems. The working kernel image in
+<CODE>/usr/src/linux/arch/i386/boot</CODE> is called <CODE>bzImage</CODE>.
+<P>
+<P>The idea is that if there is a functioning
+<CODE>bzImage</CODE>, it is possible to use that
+for the new floppy. Another alternative, which may or may not work better
+(it depends on the particular method in which you messed up your system) is
+discussed after the example.
+<P>
+<P>First, boot from a boot/root disk combo or rescue disk, and
+mount the filesystem which contains the working kernel image:
+<P>
+<P>
+<PRE>
+    mkdir /mnt
+    mount -t ext2 /dev/hda3 /mnt
+</PRE>
+<P>If <CODE>mkdir</CODE> tells you that the directory already exists, just ignore
+it. Now, <CODE>cd</CODE> to the place where the working kernel image was. Note
+that
+<PRE>
+/mnt + /usr/src/linux/arch/i386/boot - /usr = /mnt/src/linux/arch/i386/boot
+</PRE>
+
+Place a formatted
+disk in drive ``A:'' (not your boot or root disk!), dump
+the image to the disk, and configure it for your root filesystem:
+<P>
+<P>
+<PRE>
+    cd /mnt/src/linux/arch/i386/boot
+    dd if=bzImage of=/dev/fd0
+    rdev /dev/fd0 /dev/hda1
+</PRE>
+<P><CODE>cd</CODE> to <CODE>/</CODE> and unmount the normal <CODE>/usr</CODE> filesystem:
+<P>
+<PRE>
+    cd /
+    umount /mnt
+</PRE>
+<P>You should now be able to reboot your system as normal from this floppy.
+Don't forget to run lilo (or whatever it was that you did wrong) after
+the reboot!
+<P>
+<P>As mentioned above, there is another common alternative. If you
+happened to have a working kernel image in <CODE>/</CODE> (<CODE>/vmlinuz</CODE>
+for example), you can use that for a boot disk. Supposing all of the above
+conditions, and that my kernel image is <CODE>/vmlinuz</CODE>, just make these
+alterations to the example above: change
+<CODE>/dev/hda3</CODE> to <CODE>/dev/hda1</CODE> (the <CODE>/</CODE> filesystem),
+<CODE>/mnt/src/linux</CODE> to
+<CODE>/mnt</CODE>, and <CODE>if=bzImage</CODE> to <CODE>if=vmlinuz</CODE>. The
+note explaining how to derive <CODE>/mnt/src/linux</CODE> may be ignored.
+<P>
+<P>Using LILO with big drives (more than 1024 cylinders) can cause problems.
+See the LILO mini-HOWTO or documentation for help on that.
+<P>
+<P>
+<H2><A NAME="ss8.7">8.7 It says `warning: bdflush not running' </A>
+</H2>
+
+<P>
+<P>This can be a severe problem. Starting with a kernel release
+after 1.0 (around 20 Apr 1994), a program called `<CODE>update</CODE>' which
+periodically flushes out the filesystem buffers, was upgraded/replaced. Get
+the sources to `<CODE>bdflush</CODE>'
+(you should find it where you got your kernel source), and install it (you
+probably want to run your system under the old kernel while doing this). It
+installs itself as `<CODE>update</CODE>' and after a reboot, the new kernel
+should no longer complain.
+<P>
+<P>
+<H2><A NAME="ss8.8">8.8 I can't get my IDE/ATAPI CD-ROM drive to work</A>
+</H2>
+
+<P>Strangely enough, lots of people cannot get their ATAPI drives working,
+probably because there are a number of things that can go wrong.
+<P>If your CD-ROM drive is the only device on a particular IDE
+interface, it must be jumpered as ``master'' or ``single.'' Supposedly,
+this is the most common error.
+<P>Creative Labs (for one) has put IDE interfaces on their sound cards now.
+However, this leads to the interesting problem that while some people only
+have one interface to being with, many have two IDE interfaces built-in to
+their motherboards (at IRQ15, usually), so a common practice is to make the
+soundblaster interface a third IDE port (IRQ11, or so I'm told).
+<P>This causes problems with linux in that versions 1.2.x don't support a third
+IDE interface (there is support in starting somewhere in the 1.3.x series
+but that's development, remember, and it doesn't auto-probe). To get around
+this, you have a few choices.
+<P>
+<P>If you have a second IDE port already, chances are that you are not using
+it or it doesn't already have two devices on it. Take the ATAPI drive off
+the sound card and put it on the second interface. You can then disable the
+sound card's interface, which saves an IRQ anyway.
+<P>If you don't have a second interface, jumper the sound card's interface
+(not the sound card's sound part) as IRQ15, the second interface. It should
+work.
+<P>
+<P>
+<H2><A NAME="ss8.9">8.9 It says weird things about obsolete routing requests </A>
+</H2>
+
+<P>
+<P>Get new versions of the <CODE>route</CODE> program and any other programs
+which do route manipulation.
+<CODE>/usr/include/linux/route.h</CODE>  (which is actually a file in
+<CODE>/usr/src/linux</CODE>) has changed.
+<P>
+<P>
+<H2><A NAME="ss8.10">8.10 Firewalling not working in 1.2.0</A>
+</H2>
+
+<P>Upgrade to at least version 1.2.1.
+<P>
+<P>
+<H2><A NAME="ss8.11">8.11 ``Not a compressed kernel Image file''</A>
+</H2>
+
+<P>Don't use the <CODE>vmlinux</CODE> file created in <CODE>/usr/src/linux</CODE> as
+your boot image; <CODE>[..]/arch/i386/boot/bzImage</CODE> is the right
+one.
+<P>
+<P>
+<H2><A NAME="ss8.12">8.12 Problems with console terminal after upgrade to 1.3.x</A>
+</H2>
+
+<P>Change the word <CODE>dumb</CODE> to <CODE>linux</CODE> in the console termcap
+entry in <CODE>/etc/termcap</CODE>. You may also have to make a terminfo entry.
+<P>
+<P>
+<H2><A NAME="ss8.13">8.13 Can't seem to compile things after kernel upgrade</A>
+</H2>
+
+<P>The linux kernel source includes a number of include files (the things that
+end with <CODE>.h</CODE>) which are referenced by the standard ones in
+<CODE>/usr/include</CODE>. They are typically referenced like this (where
+<CODE>xyzzy.h</CODE> would be something in <CODE>/usr/include/linux</CODE>):
+<PRE>
+    #include &lt;linux/xyzzy.h>
+</PRE>
+
+Normally, there is a link called <CODE>linux</CODE> in <CODE>/usr/include</CODE> to
+the <CODE>include/linux</CODE> directory of your kernel source
+(<CODE>/usr/src/linux/include/linux</CODE> in the typical system). If this link
+is not there, or points to the wrong place, most things will not compile at
+all. If you decided that the kernel source was taking too much room on the
+disk and deleted it, this will obviously be a problem. Another way it might
+go wrong is with file permissions; if your <CODE>root</CODE> has a umask
+which doesn't allow other users to see its files by default, and you
+extracted the kernel source without the <CODE>p</CODE> (preserve filemodes)
+option, those users also won't be able to use the C compiler. Although you
+could use the <CODE>chmod</CODE> command to fix this, it is probably easier to
+re-extract the include files. You can do this the same way you did the
+whole source at the beginning, only with an additional argument:
+<P>
+<PRE>
+    blah# tar zxvpf linux.x.y.z.tar.gz linux/include
+</PRE>
+
+Note: ``<CODE>make config</CODE>'' will recreate the <CODE>/usr/src/linux</CODE>
+link if it isn't there.
+<P>
+<P>
+<H2><A NAME="ss8.14">8.14 Increasing limits</A>
+</H2>
+
+<P>The following few <I>example</I> commands may be helpful to those
+wondering how to increase certain soft limits imposed by the kernel:
+<PRE>
+echo 4096 > /proc/sys/kernel/file-max
+echo 12288 > /proc/sys/kernel/inode-max
+echo 300 400 500 > /proc/sys/vm/freepages
+</PRE>
+<P>
+<P>
+<HR>
+<A HREF="Kernel-HOWTO-9.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Kernel-HOWTO-7.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Kernel-HOWTO.html#toc8"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

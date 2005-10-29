@@ -1,0 +1,886 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux IP Masquerade HOWTO: Setting Up IP Masquerade</TITLE>
+ <LINK HREF="IP-Masquerade-HOWTO-4.html" REL=next>
+ <LINK HREF="IP-Masquerade-HOWTO-2.html" REL=previous>
+ <LINK HREF="IP-Masquerade-HOWTO.html#toc3" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="IP-Masquerade-HOWTO-4.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="IP-Masquerade-HOWTO-2.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="IP-Masquerade-HOWTO.html#toc3"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s3">3. Setting Up IP Masquerade</A></H2>
+
+<P>
+<BLOCKQUOTE>
+<B>If your private network contains any vital information, think carefully in terms of SECURITY before implementing IP Masquerade.  By default, IP MASQ becomes a GATEWAY for you to get to the Internet but it also can allow someone on the Internet to possibly get into your internal network.</B>  
+<P>Once you have IP MASQ functioning, it is HIGHLY recommended for the user to implement a STRONG IPFWADM/IPCHAINS firewall ruleset.  Please see the 
+<A HREF="IP-Masquerade-HOWTO-6.html#Strong-IPFWADM-Rulesets">Strong-IPFWADM-Rulesets</A>
+ and 
+<A HREF="IP-Masquerade-HOWTO-6.html#Strong-IPCHAINS-Rulesets">Strong-IPCHAINS-Rulesets</A>
+ sections below for more details.
+</BLOCKQUOTE>
+<P>
+<H2><A NAME="ss3.1">3.1 Compiling the Kernel for IP Masquerade Support</A>
+</H2>
+
+<P>
+<P>
+<A NAME="Kernel-Compile"></A> <P>
+<BLOCKQUOTE>
+<B>If your Linux distribution already has all the required feature support compiled such as:</B>
+<UL>
+<LI>IPFWADM/IPCHAINS</LI>
+<LI>IP forwarding</LI>
+<LI>IP masquerading</LI>
+<LI>IP Firewalling</LI>
+<LI>etc.</LI>
+</UL>
+
+and all MASQ-related modules compiled (most modular kernels will have all you need), then you will NOT need to re-compile the kernel.  If you aren't sure if you Linux distribution is MASQ ready, see the 
+<A HREF="IP-Masquerade-HOWTO-7.html#MASQ-supported-Distributions">MASQ-supported-Distributions</A>
+ section.  If you don't trust this list or if your distribution isn't listed, try the following tests:
+<P>
+<UL>
+<LI>Run the command "ls /proc/sys/net/ipv4" while logged into the Linux box.</LI>
+<LI>See if files such as "ip_forward", "ip_masq_debug", "ip_masq_udp_dloose"(optional), and "ip_always_defrag"(optional) exist.  </LI>
+</UL>
+
+If they do, your kernel is ready to go.
+<P>If you can't find any of the above files or if your distribution does support IP Masquerading by default, ASSUME IT DOESN'T support MASQ by default.  If so.. you'll need to compile a kernel but don't worry.. it isn't hard.
+<P>Regardless of native support or not, reading this section is still highly recommended as it contains other useful information.  
+</BLOCKQUOTE>
+ 
+<P>
+<P>
+<H3>Linux 2.2.x Kernels</H3>
+
+<P>
+<P><B>Please see the 
+<A HREF="IP-Masquerade-HOWTO-2.html#2.2.x-Requirements">2.2.x-Requirements</A>
+ section for any required software, patches, etc.</B>
+<P>
+<UL>
+<LI>First of all, you need the kernel source for 2.2.x (preferably the latest kernel version 2.2.16 or above)
+<P>NOTE #1: Linux 2.2.x kernels less than 2.2.16 have a TCP root exploit vunerability and versions less than 2.2.11 have a IPCHAINS fragmentation bug.  Because of this, people running strong IPCHAINS rulesets are open to attack.  Please upgrade your kernel to a fixed version.
+<P>NOTE #2: As the 2.2.x train as progressed, they keep changing the compile-time
+options.  As of this version, this section reflects the settings for 2.2.15.
+If you are running a previous kernel version, the dialogs will look different.
+It is recommended that you update to the newest kernel for all the new features
+and stability they bring.
+<P>
+</LI>
+<LI>If this is your first time compiling the kernel, don't be scared. In fact, it's rather easy and it's covered in several URLs found in the 
+<A HREF="IP-Masquerade-HOWTO-2.html#2.2.x-Requirements">2.2.x-Requirements</A>
+ section.
+<P>
+</LI>
+<LI>Unpack the kernel source to <CODE>/usr/src/</CODE> with a command: <CODE>tar xvzf linux-2.2.x.tar.gz -C /usr/src</CODE>, where the "x" in 2.2.x is the current Linux 2.2 kernel.  Once finished, make sure there is a directory or symbolic link to <CODE>/usr/src/linux/</CODE>
+<P>
+</LI>
+<LI>Apply any appropriate or optional patches to the kernel source code.  As of 2.2.1, IP Masq does not require any specific patching to get everything working.  Features like PPTP and Xwindows forwarders are optional.  Please refer to the 
+<A HREF="IP-Masquerade-HOWTO-2.html#2.2.x-Requirements">2.2.x-Requirements</A>
+ section for URLs and the 
+<A HREF="http://ipmasq.cjb.net/">IP Masquerade Resources</A> for up-to-date information and patch URLs.
+<P>
+</LI>
+<LI>Here are the MINIMUM options that are needed to be compiled into the kernel.  You will also need to configure the kernel to use your installed network interfaces as well.  Refer to the 
+<A HREF="http://www.linuxdoc.org/HOWTO/Kernel-HOWTO.html">Linux Kernel HOWTO</A> and the README file in the kernel source directory for further instructions on compiling a kernel.
+<P> 
+Please note the <B><EM>YES or NO ANSWERS</EM></B> to the following.  Not all options will be available without the proper kernel patches described later in this HOWTO:
+</LI>
+</UL>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+
+  * Prompt for development and/or incomplete code/drivers (CONFIG_EXPERIMENTAL) [Y/n/?]
+    - YES: though not required for IP MASQ, this option allows the kernel to create the MASQ modules and enable the option for port forwarding
+
+  -- Non-MASQ options skipped --
+
+  * Enable loadable module support (CONFIG_MODULES) [Y/n/?]
+    - YES: allows you to load kernel IP MASQ modules
+
+  -- Non-MASQ options skipped --
+
+  * Networking support (CONFIG_NET) [Y/n/?]
+    - YES: Enables the network subsystem
+
+  -- Non-MASQ options skipped --
+
+  * Sysctl support (CONFIG_SYSCTL) [Y/n/?] 
+    - YES:  Enables the ability to enable disable options such as forwarding,
+      dynamic IPs, LooseUDP, etc.
+
+  -- Non-MASQ options skipped --
+
+  * Packet socket (CONFIG_PACKET) [Y/m/n/?]
+    - YES: Though this is OPTIONAL, this recommended feature will allow you to use TCPDUMP to debug any problems with IP MASQ
+
+  * Kernel/User netlink socket (CONFIG_NETLINK) [Y/n/?] 
+    - YES: Though this is OPTIONAL, this feature will allow the logging of advanced firewall issues such as routing messages, etc
+
+  * Routing messages (CONFIG_RTNETLINK) [Y/n/?]
+    - NO:  This option does not have anything to do with packet firewall logging
+
+  -- Non-MASQ options skipped --
+
+  * Network firewalls (CONFIG_FIREWALL) [Y/n/?]
+    - YES: Enables the kernel to be comfigured by the IPCHAINS firewall tool
+
+  * Socket Filtering (CONFIG_FILTER) [Y/n/?]
+    - OPTIONAL:  Though this doesn't have anything do with IPMASQ, if you plan
+      on implimenting a DHCP server on the internal network, you WILL need this
+      option.
+
+  * Unix domain sockets (CONFIG_UNIX) [Y/m/n/?]
+    - YES:  This enables the UNIX TCP/IP sockets mechanisms
+
+  * TCP/IP networking (CONFIG_INET) [Y/n/?]
+    - YES: Enables the TCP/IP protocol
+
+  -- Non-MASQ options skipped --
+
+  * IP: advanced router (CONFIG_IP_ADVANCED_ROUTER) [Y/n/?]
+    - YES:  This will allow you to configure advanced MASQ options farther down
+
+  * IP: policy routing (CONFIG_IP_MULTIPLE_TABLES) [N/y/?]
+    - NO: Not needed by MASQ though users who need advanced features such as
+      TCP/IP source address-based or TOS-enabled routing will need to 
+      enable this option.
+
+  * IP: equal cost multipath (CONFIG_IP_ROUTE_MULTIPATH) [N/y/?]
+    - NO: Not needed for normal MASQ functionality
+
+  * IP: use TOS value as routing key (CONFIG_IP_ROUTE_TOS) [N/y/?] 
+    - NO:  Not needed for normal MASQ functionality
+
+  * IP: verbose route monitoring (CONFIG_IP_ROUTE_VERBOSE) [Y/n/?]
+    - YES: This is useful if you use the routing code to drop IP spoofed packets (highly recommended) and you want to log them.
+
+  * IP: large routing tables (CONFIG_IP_ROUTE_LARGE_TABLES) [N/y/?]
+    - NO:  Not needed for normal MASQ functionality
+
+  * IP: kernel level autoconfiguration (CONFIG_IP_PNP) [N/y/?] ?
+    - NO:  Not needed for normal MASQ functionality
+
+  * IP: firewalling (CONFIG_IP_FIREWALL) [Y/n/?]
+    - YES: Enable the firewalling feature
+
+  * IP: firewall packet netlink device (CONFIG_IP_FIREWALL_NETLINK) [Y/n/?]
+    - OPTIONAL: Though this is OPTIONAL, this feature will allow IPCHAINS to copy some packets to UserSpace tools for additional checks
+
+  * IP: transparent proxy support (CONFIG_IP_TRANSPARENT_PROXY) [N/y/?]
+    - NO:  Not needed for normal MASQ functionality
+
+  * IP: masquerading (CONFIG_IP_MASQUERADE) [Y/n/?]
+    - YES: Enable IP Masquerade to re-address specific internal to external TCP/IP packets
+
+  * IP: ICMP masquerading (CONFIG_IP_MASQUERADE_ICMP) [Y/n/?]
+    - YES: Enable support for masquerading ICMP ping packets (ICMP error codes will be MASQed regardless).  This is an important feature for troubleshooting connections.
+
+  * IP: masquerading special modules support (CONFIG_IP_MASQUERADE_MOD) [Y/n/?]
+    - YES: Though OPTIONAL, this enables the OPTION to later enable the TCP/IP Port forwarding system to allow external computers to directly connect to specified internal MASQed machines.
+
+  * IP: ipautofw masq support (EXPERIMENTAL) (CONFIG_IP_MASQUERADE_IPAUTOFW) [N/y/m/?]
+    - NO:  IPautofw is a legacy method of port forwarding.  It is mainly old code and has been found to have some issues.  NOT recommended.
+
+  * IP: ipportfw masq support (EXPERIMENTAL) (CONFIG_IP_MASQUERADE_IPPORTFW) [Y/m/n/?]
+    - YES: Enables IPPORTFW which allows external computers on the Internet to directly communicate to specified internal MASQed machines.  This feature is typically used to access internal SMTP, TELNET, and WWW servers.  FTP port forwarding will need an additional patch as described in the FAQ section of the MASQ HOWTO.  Additional information on port forwarding is available in the Forwards section of this HOWTO.
+
+  * IP: ip fwmark masq-forwarding support (EXPERIMENTAL) (CONFIG_IP_MASQUERADE_MFW) [Y/m/n/?]
+    - OPTIONAL:  This is a new method of doing PORTFW.  With this option, IPCHAINS can mark packets that should have additional work on.  Using a UserSpace tool, much like IPMASQADM or IPPORFW, IPCHAINS would then automaticaly re-address the packets. Currently, this code is less tested than PORTFW but it looks promising.  For now, the recommended method is to use IPMASQADM and IPPORTFW.  If you have thoughts on MFW, please email me.
+
+  * IP: optimize as router not host (CONFIG_IP_ROUTER) [Y/n/?]
+    - YES:  This optimizes the kernel for the network subsystem though it isn't known if it makes a siginificant performance difference.
+
+  * IP: tunneling (CONFIG_NET_IPIP) [N/y/m/?]
+    - NO: This OPTIONAL section is for IPIP tunnels through IP Masq.  If you
+      need tunneling/VPN functionality, it is recommended to use either GRE or
+      IPSEC tunnels.
+
+  * IP: GRE tunnels over IP (CONFIG_NET_IPGRE) [N/y/m/?]
+    - NO:   This OPTIONAL selection is to enable PPTP and GRE tunnels through the IP MASQ box
+
+    -- Non-MASQ options skipped -- 
+
+  * IP: TCP syncookie support (not enabled per default) (CONFIG_SYN_COOKIES) [Y/n/?]
+    - YES: HIGHLY recommended for basic TCP/IP network security
+
+    -- Non-MASQ options skipped --
+
+  * IP: Allow large windows (not recommended if &lt;16Mb of memory) * (CONFIG_SKB_LARGE) [Y/n/?]
+    - YES:  This is recommended to optimize Linux's TCP window 
+
+    -- Non-MASQ options skipped --
+
+  * Network device support (CONFIG_NETDEVICES) [Y/n/?]
+    - YES: Enables the Linux Network device sublayer 
+
+    -- Non-MASQ options skipped --
+
+  * Dummy net driver support (CONFIG_DUMMY) [M/n/y/?] 
+    - YES:  Though OPTIONAL, this option can help when debugging problems
+
+  == Don't forget to compile in support for your network card !! ==
+
+    -- Non-MASQ options skipped --
+
+  == Don't forget to compile in support for PPP/SLIP if you use a modem or
+     use a PPPoE DSL modem ==
+
+    -- Non-MASQ options skipped --
+
+  * /proc filesystem support (CONFIG_PROC_FS) [Y/n/?]
+    - YES:  Required to enable the Linux network forwarding system
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>NOTE: These are just the components you need for IP Masquerade.  You will need to select whatever other options needed for your specific setup.  
+<P>
+<UL>
+<LI>After compiling the kernel, you should compile and install the IP MASQ modules by doing:
+<BLOCKQUOTE><CODE>
+<PRE>
+  make modules; make modules_install
+  
+</PRE>
+</CODE></BLOCKQUOTE>
+
+<P>
+</LI>
+<LI>Then you should add a few lines into your <CODE>/etc/rc.d/rc.local</CODE> file to load the IP Masquerade modules and enable IP MASQ automatically after each reboot:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+        .
+        .
+        .
+        #rc.firewall script - Start IPMASQ and the firewall
+        /etc/rc.d/rc.firewall
+        .
+        .
+        .
+  
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+</LI>
+</UL>
+<P>
+<P>
+<H3>Linux 2.0.x Kernels</H3>
+
+<P>
+<P><B>Please see the 
+<A HREF="IP-Masquerade-HOWTO-2.html#2.0.x-Requirements">2.0.x-Requirements</A>
+ section for any required software, patches, etc.</B>
+<P>
+<UL>
+<LI>First of all, you need the kernel source (preferably the latest kernel version 2.0.38 or above)
+<P>
+</LI>
+<LI>If this is your first time compiling the kernel, don't be scared. In fact, it's rather easy and it's covered in several URLs found in the 
+<A HREF="IP-Masquerade-HOWTO-2.html#2.0.x-Requirements">2.0.x-Requirements</A>
+ section.  
+<P>
+</LI>
+<LI>Unpack the kernel source to <CODE>/usr/src/</CODE> with a command: <CODE>tar xvzf linux-2.0.x.tar.gz -C /usr/src</CODE>, where the "x" in 2.0.x is the current Linux 2.0 kernel.  Once finished, make sure there is a directory or symbolic link to <CODE>/usr/src/linux/ </CODE>
+<P>
+</LI>
+<LI>Apply any appropriate or optional patches to the kernel source code.  As of 2.0.36, IP Masq does not require any specific patching to get everything working.  Features like IPPORTFW, PPTP, and Xwindows forwarders are optional.  Please refer to the 
+<A HREF="IP-Masquerade-HOWTO-2.html#2.0.x-Requirements">2.0.x-Requirements</A>
+ section for URLs and the 
+<A HREF="http://ipmasq.cjb.net/">IP Masquerade Resources</A> for up-to-date information and additional patch URLs.
+<P>
+</LI>
+<LI>Here are the MINIMUM options that are needed to be compiled into the kernel.  You will also need to confi
+gure the kernel to use your installed network interfaces as well. Refer to the 
+<A HREF="http://www.linuxdoc.org/HOWTO/Kernel-HOWTO.html">Linux Kernel HOWTO</A> and the README file in the kernel source directory for further instructions on compiling a kernel
+<P> 
+Please note the <B><EM>YES or NO ANSWERS</EM></B> to the following options.  Not all options will be available without the proper kernel patches described later in this HOWTO:
+</LI>
+</UL>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+  * Prompt for development and/or incomplete code/drivers (CONFIG_EXPERIMENTAL) [Y/n/?] 
+    - YES: this will allow you to later select the IP Masquerade feature code 
+
+  * Enable loadable module support (CONFIG_MODULES) [Y/n/?] 
+    - YES: allows you to load kernel IP MASQ modules
+
+  * Networking support (CONFIG_NET) [Y/n/?]
+    - YES: Enables the network subsystem
+
+  * Network firewalls (CONFIG_FIREWALL) [Y/n/?]
+    - YES: Enables the IPFWADM firewall tool
+
+  * TCP/IP networking (CONFIG_INET)
+    - YES: Enables the TCP/IP protocol
+
+  * IP: forwarding/gatewaying (CONFIG_IP_FORWARD)
+    - YES: Enables Linux network packet forwarding and routing - Controlled by IPFWADM
+
+  * IP: syn cookies (CONFIG_SYN_COOKIES) [Y/n/?]
+    - YES: HIGHLY recommended for basic network security
+
+  * IP: firewalling (CONFIG_IP_FIREWALL) [Y/n/?]
+    - YES: Enable the firewalling feature
+
+  * IP: firewall packet logging (CONFIG_IP_FIREWALL_VERBOSE) [Y/n/?]
+    - YES: (OPTIONAL but HIGHLY recommended):  Allows for the reporting of firewall hits
+
+  * IP: masquerading (CONFIG_IP_MASQUERADE [Y/n/?]
+    - YES: Enable IP MASQ to re-address specific internal to external TCP/IP packets
+
+  * IP: ipautofw masquerade support (EXPERIMENTAL) (CONFIG_IP_MASQUERADE_IPAUTOFW) [Y/n/?]
+    - NO:  IPautofw is a legacy method of TCP/IP port forwarding.  Though it works, IPPORTFW 
+           is a better way so IPAUTOFW is not recommended.
+
+  * IP: ipportfw masq support (EXPERIMENTAL) (CONFIG_IP_MASQUERADE_IPPORTFW) [Y/n/?]
+    - YES: This option is ONLY AVAILABLE VIA A PATCH for the 2.0.x kernels.  
+
+           With this option, external computers on the Internet can directly communicate to specified internal MASQed machines.  This feature is typically used to access internal SMTP, TELNET, and WWW servers.  FTP port forwarding sometimes might require an additional patch as described in the FAQ section.  Additional information on port forwarding is available in the Forwards section of this HOWTO.
+
+  * IP: ICMP masquerading (CONFIG_IP_MASQUERADE_ICMP) [Y/n/?]
+    - YES: Enable support for masquerading ICMP packets. Though thought of as optional, many programs will NOT function properly with out ICMP support.
+
+  * IP: loose UDP port managing (EXPERIMENTAL) (CONFIG_IP_MASQ_LOOSE_UDP) [Y/n/?] 
+    - YES: This option is ONLY AVAILABLE VIA A PATCH for the 2.0.x kernels.
+
+           With this option, internally masqueraded computers can play NAT-friendly games over the Internet.  Explicit details are given in the FAQ section of this HOWTO.
+
+  * IP: always defragment (CONFIG_IP_ALWAYS_DEFRAG) [Y/n/?]
+    - YES:  This feature optimizes IP MASQ connections - HIGHLY recommended
+
+  * IP: optimize as router not host (CONFIG_IP_ROUTER) [Y/n/?] 
+    - YES:  This optimizes the kernel for the network subsystem 
+
+  * IP: Drop source routed frames (CONFIG_IP_NOSR) [Y/n/?]
+    - YES: HIGHLY recommended for basic network security
+
+  * Dummy net driver support (CONFIG_DUMMY) [M/n/y/?]
+    - YES:  Though OPTIONAL, this option can help when debugging problems
+
+  * /proc filesystem support (CONFIG_PROC_FS) [Y/n/?] 
+    - YES:  Required to enable the Linux network forwarding system
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>NOTE: These are just the components you need for IP Masquerade functionality. You will need to also select whatever other options you need for your specific network and hardware setup.  
+<P>
+<UL>
+<LI>After compiling the kernel, you need to also compile and install the IP MASQ kernel modules by doing: 
+<BLOCKQUOTE><CODE>
+<PRE>
+make modules; make modules_install
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>Next, add a few lines into your <CODE>/etc/rc.d/rc.local</CODE> file to load the IP Masquerade script and thus enable IP MASQ automatically after each reboot:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+        .
+        .
+        .
+        #rc.firewall script - Start IPMASQ and the firewall
+        /etc/rc.d/rc.firewall
+        .
+        .
+        .
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+</UL>
+<P>
+<P>
+<H3>Linux 2.3.x / 2.4.x Kernels</H3>
+
+<P>
+<P><B>The 2.3.x and 2.4.x kernels are NOT covered in this HOWTO yet.  Please see the 
+<A HREF="IP-Masquerade-HOWTO-2.html#2.3.x/2.4.x-Requirements">2.3.x/2.4.x-Requirements</A>
+ section for URLs, etc until it is covered by this or a NEW howto.</B>
+<P>
+<P>
+<H2><A NAME="ss3.2">3.2 Assigning Private Network IP Addresses to the Internal LAN</A>
+</H2>
+
+<P>
+<P>Since all <B>INTERNAL MASQed</B> machines should NOT have official Internet assigned addressees, there must be specific and accepted way to allocate address to those machines without conflicting with anyone else's Internet addresses. 
+<P>From the original IP Masquerade FAQ:
+<P>
+<A HREF="http://www.cis.ohio-state.edu/htbin/rfc/INDEX.rfc.html">RFC 1918</A> is the official document on which IP addresses are to be used on a non-connected or "private" network.  There are 3 blocks of numbers set aside specifically for this purpose
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+
+Section 3: Private Address Space
+
+The Internet Assigned Numbers Authority (IANA) has reserved the
+following three blocks of the IP address space for private networks:
+
+              10.0.0.0        -   10.255.255.255
+              172.16.0.0      -   172.31.255.255
+              192.168.0.0     -   192.168.255.255
+
+We will refer to the first block as "24-bit block", the second as
+"20-bit block", and to the third as "16-bit" block".  Note that the
+first block is nothing but a single class A network number, while the
+second block is a set of 16 contiguous class B network numbers, and
+third block is a set of 255 contiguous class C network numbers.
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>For the record, my preference is to use the 192.168.0.0 network with a 255.255.255.0 Class-C subnet mask and this HOWTO reflects this.  But, any of the above private networks are valid but just be SURE to use the correct subnet-mask.
+<P>So, if you're using a Class-C network, you should number your TCP/IP enabled machines as 192.168.0.1, 192.168.0.2, 192.168.0.3, ..., 192.168.0.x 
+<P>192.168.0.1 is usually the internal gateway or Linux MASQ machine to get out to the external network.  Please note that 192.168.0.0 and 192.168.0.255 are the Network and Broadcast address respectively (these addresses are RESERVED). Avoid using these addresses on your machines or your network will not work properly. 
+<P>
+<P>
+<P>
+<A NAME="firewall-examples"></A> <P>
+<H2><A NAME="ss3.3">3.3 Configuring IP Forwarding Policies</A>
+</H2>
+
+<P>At this point, you should have your kernel and other required packages installed.  All network IP addresses, gateway, and DNS addresses should be configured on your Linux MASQ server as well.  If you don't know how to configure your Linux network cards, please consult the HOWTOs listed in either the 
+<A HREF="IP-Masquerade-HOWTO-2.html#2.0.x-Requirements">2.0.x-Requirements</A>
+ or 
+<A HREF="IP-Masquerade-HOWTO-2.html#2.2.x-Requirements">2.2.x-Requirements</A>
+ sections.
+<P>Now, the only thing left to do is to configure the IP firewalling tools to both FORWARD and MASQUERADE the appropriate packets to the appropriate machine:
+<P>
+<P>
+<BLOCKQUOTE>
+** This can be accomplished in many different ways.  The following suggestions and examples worked for me, but you may have different ideas or needs.  
+</BLOCKQUOTE>
+<P>
+<BLOCKQUOTE>
+** This section ONLY provides you with the bare minimum firewall ruleset to get the IP Masquerade feature working.  Once IP MASQ has been successfully tested (as described later in this HOWTO), please refer to the 
+<A HREF="IP-Masquerade-HOWTO-6.html#Strong-IPFWADM-Rulesets">Strong-IPFWADM-Rulesets</A>
+ and 
+<A HREF="IP-Masquerade-HOWTO-6.html#Strong-IPCHAINS-Rulesets">Strong-IPCHAINS-Rulesets</A>
+ sections for more secure firewall rulesets.  In addition, check out the IPFWADM (2.0.x) and/or IPCHAINS(2.2.x) man pages for more details.
+</BLOCKQUOTE>
+<P>
+<P>
+<A NAME="rc.firewall-2.2.x"></A> <P>
+<P>
+<H3>Linux 2.2.x Kernels</H3>
+
+<P>
+<P>Please note that <B>IPFWADM is no longer the firewall tool </B> for manipulating IP Masquerading rules for both the 2.1.x and 2.2.x kernels.  These new kernels now use the IPCHAINS tool.  For a more detailed reason for this change, please see the 
+<A HREF="IP-Masquerade-HOWTO-7.html#FAQ">FAQ</A>
+ section.
+<P>
+<P>Create the file /etc/rc.d/rc.firewall with the following initial SIMPLE ruleset:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+
+#!/bin/sh
+#
+# rc.firewall - Initial SIMPLE IP Masquerade test for 2.1.x and 2.2.x kernels 
+#               using IPCHAINS
+#
+# Load all required IP MASQ modules
+#
+#   NOTE:  Only load the IP MASQ modules you need.  All current IP MASQ modules
+#          are shown below but are commented out from loading.
+
+# Needed to initially load modules
+#
+/sbin/depmod -a
+
+# Supports the proper masquerading of FTP file transfers using the PORT method
+#
+/sbin/modprobe ip_masq_ftp
+
+# Supports the masquerading of RealAudio over UDP.  Without this module,
+#       RealAudio WILL function but in TCP mode.  This can cause a reduction
+#       in sound quality
+#
+#/sbin/modprobe ip_masq_raudio
+
+# Supports the masquerading of IRC DCC file transfers
+#
+#/sbin/modprobe ip_masq_irc
+
+
+# Supports the masquerading of Quake and QuakeWorld by default.  This modules is
+#   for for multiple users behind the Linux MASQ server.  If you are going to 
+#   play Quake I, II, and III, use the second example.
+#
+#   NOTE:  If you get ERRORs loading the QUAKE module, you are running an old
+#   -----  kernel that has bugs in it.  Please upgrade to the newest kernel.
+#
+#Quake I / QuakeWorld (ports 26000 and 27000)
+#/sbin/modprobe ip_masq_quake
+#
+#Quake I/II/III / QuakeWorld (ports 26000, 27000, 27910, 27960)
+#/sbin/modprobe ip_masq_quake 26000,27000,27910,27960
+
+
+# Supports the masquerading of the CuSeeme video conferencing software
+#
+#/sbin/modprobe ip_masq_cuseeme
+
+#Supports the masquerading of the VDO-live video conferencing software
+#
+#/sbin/modprobe ip_masq_vdolive
+
+
+#CRITICAL:  Enable IP forwarding since it is disabled by default since
+#
+#           Redhat Users:  you may try changing the options in 
+#                          /etc/sysconfig/network from:
+#
+#                       FORWARD_IPV4=false
+#                             to
+#                       FORWARD_IPV4=true
+#
+echo "1" > /proc/sys/net/ipv4/ip_forward
+
+
+#CRITICAL:  Enable automatic IP defragmenting since it is disabled by default 
+#           in 2.2.x kernels.  This used to be a compile-time option but the 
+#           behavior was changed in 2.2.12
+#
+echo "1" > /proc/sys/net/ipv4/ip_always_defrag
+
+
+# Dynamic IP users:
+#
+#   If you get your IP address dynamically from SLIP, PPP, or DHCP, enable this #   following option.  This enables dynamic-ip address hacking in IP MASQ, 
+#   making the life with Diald and similar programs much easier.
+#
+#echo "1" > /proc/sys/net/ipv4/ip_dynaddr
+
+
+# Enable the LooseUDP patch which some Internet-based games require
+#
+#  If you are trying to get an Internet game to work through your IP MASQ box,
+#  and you have set it up to the best of your ability without it working, try
+#  enabling this option (delete the "#" character).  This option is disabled
+#  by default due to possible internal machine UDP port scanning 
+#  vunerabilities.
+#
+#echo "1" > /proc/sys/net/ipv4/ip_masq_udp_dloose
+
+
+# MASQ timeouts
+#
+#   2 hrs timeout for TCP session timeouts
+#  10 sec timeout for traffic after the TCP/IP "FIN" packet is received
+#  160 sec timeout for UDP traffic (Important for MASQ'ed ICQ users) 
+#
+/sbin/ipchains -M -S 7200 10 160
+
+
+# DHCP:  For people who receive their external IP address from either DHCP or 
+#        BOOTP such as ADSL or Cablemodem users, it is necessary to use the 
+#        following before the deny command.  The "bootp_client_net_if_name" 
+#        should be replaced the name of the link that the DHCP/BOOTP server 
+#        will put an address on to?  This will be something like "eth0", 
+#        "eth1", etc.
+#
+#        This example is currently commented out.
+#
+#
+#/sbin/ipchains -A input -j ACCEPT -i bootp_clients_net_if_name -s 0/0 67 -d 0/0 68 -p udp
+
+# Enable simple IP forwarding and Masquerading
+#
+#  NOTE:  The following is an example for an internal LAN address in the 
+#         192.168.0.x network with a 255.255.255.0 or a "24" bit subnet mask
+#         connecting to the Internet on interface eth0.
+#
+#         ** Please change this network number, subnet mask, and your Internet
+#         ** connection interface name to match your internal LAN setup
+#
+/sbin/ipchains -P forward DENY
+/sbin/ipchains -A forward -i eth0 -s 192.168.0.0/24 -j MASQ
+
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Once you are finished with editing the /etc/rc.d/rc.firewall ruleset, make it
+executable by typing in <CODE>chmod 700 /etc/rc.d/rc.firewall</CODE>
+<P>
+<P>Now that the firewall ruleset is ready to go, you need to let it run after every reboot.  You could either do this by running it by hand everytime (a pain) or add it to the boot scripts.  We have covered two methods below:
+<P>
+<UL>
+<LI>Redhat and Redhat-derived distros:
+<P>
+</LI>
+<LI>There are two ways to load things in Redhat:  /etc/rc.d/rc.local or a init script in /etc/rc.d/init.d/.  The first method is the easiest.  All you have to do is add the line:
+<P>
+<UL>
+<LI>echo "Loading the rc.firewall ruleset.."
+/etc/rc.d/rc.firewall</LI>
+</UL>
+<P>to the end of the /etc/rc.d/rc.local file and thats it.  The problem with this approach is that if you are running a STRONG firewall ruleset, the firewall isn't executed until the last stages of booting.  The preferred approach is to have the firewall loaded just after the networking subsystem is loaded.  For now, the HOWTO only covers how to do the /etc/rc.d/rc.local way.  If you want the stronger system, I recommend you check out Section 10 of TrinityOS found in the links section at the bottom of this HOWTO.
+</LI>
+</UL>
+<P>
+<UL>
+<LI>Slackware:
+<P>
+</LI>
+<LI>There are two ways to load things in Slackware: /etc/rc.d/rc.local or editing the /etc/rc.d/rc.inet2 file.  The first method is the easiest.  All you have to do is add the line:
+<P>
+<UL>
+<LI>echo "Loading the rc.firewall ruleset.."<P>/etc/rc.d/rc.firewall
+</LI>
+</UL>
+<P>to the end of the /etc/rc.d/rc.local file and thats it. The problem with this approach is that if you are running a STRONG firewall ruleset, the firewall isn' t executed until the last stages of booting.  The preferred approach is to have the firewall loaded just after the networking subsystem is loaded.  For now, the HOWTO only covers how to do the /etc/rc.d/rc.local way.  If you want the strong er system, I recommend you check out Section 10 of TrinityOS found in the links section at the bottom of this HOWTO.
+</LI>
+</UL>
+<P>
+<P><B>Notes on how users might want to change the above firewall ruleset:</B>
+<P>You could have also enabled IP Masquerading on a PER MACHINE basis instead of the above method enabling an ENTIRE TCP/IP network. For example, say if I wanted only the 192.168.0.2 and 192.168.0.8 hosts to have access to the Internet and NOT any of the other internal machines. I would change the in the "Enable simple IP forwarding and Masquerading" section (shown above) of the /etc/rc.d/rc.firewall ruleset. 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+
+#!/bin/sh
+#
+# Enable simple IP forwarding and Masquerading
+#
+#  NOTE:  The following is an example to only allow IP Masquerading for the 
+#         192.168.0.2 and 192.168.0.8 machines with a 255.255.255.0 or a 
+#         "24" bit subnet mask connecting to the Internet on interface eth0.
+#
+#         ** Please change this network number, subnet mask, and your Internet
+#         ** connection interface name to match your internal LAN setup
+#
+/sbin/ipchains -P forward DENY
+/sbin/ipchains -A forward -i eth0 -s 192.168.0.2/32 -j MASQ
+/sbin/ipchains -A forward -i eth0 -s 192.168.0.8/32 -j MASQ
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P><B>Common mistakes:</B>
+<P>What appears to be a common mistake with new IP Masq users is to make the first command: 
+<P>/sbin/ipchains -P forward masquerade
+<P>Do <B>NOT</B> make your default policy be MASQUERADING.  Otherwise someone who can manipulate their routing tables will be able to tunnel straight back through your gateway, using it to masquerade their OWN identity!
+<P>
+<P>
+<P>Again, you can add these lines to the <CODE>/etc/rc.d/rc.firewall</CODE> file, one of the 
+other rc files you prefer, or do it manually every time you need IP Masquerade.
+<P>Please see the 
+<A HREF="IP-Masquerade-HOWTO-6.html#Strong-IPFWADM-Rulesets">Strong-IPFWADM-Rulesets</A>
+ and 
+<A HREF="IP-Masquerade-HOWTO-6.html#Strong-IPCHAINS-Rulesets">Strong-IPCHAINS-Rulesets</A>
+ sections for a detailed guide on IPCHAINS and a strong IPCHAINS ruleset example.  For additional details on IPCHAINS usage, please refer to 
+<A HREF="http://netfilter.filewatcher.org/ipchains/">http://netfilter.filewatcher.org/ipchains/</A> for the primary IPCHAINS site or the 
+<A HREF="http://www.linuxdoc.org/HOWTO/IPCHAINS-HOWTO.html">Linux IP CHAINS HOWTO Backup</A> site
+<P>
+<P>
+<P>
+<A NAME="rc.firewall-2.0.x"></A> <P>
+<H3>Linux 2.0.x Kernels</H3>
+
+<P>
+<P>Create the file /etc/rc.d/rc.firewall with the following initial SIMPLE ruleset:
+<BLOCKQUOTE><CODE>
+<PRE>
+
+# rc.firewall - Initial SIMPLE IP Masquerade setup for 2.0.x kernels using 
+#               IPFWADM
+#
+# Load all required IP MASQ modules
+#
+#   NOTE:  Only load the IP MASQ modules you need.  All current available IP 
+#          MASQ modules are shown below but are commented out from loading.
+
+# Needed to initially load modules
+#
+/sbin/depmod -a
+
+# Supports the proper masquerading of FTP file transfers using the PORT method
+#
+/sbin/modprobe ip_masq_ftp
+
+# Supports the masquerading of RealAudio over UDP.  Without this module, 
+#       RealAudio WILL function but in TCP mode.  This can cause a reduction
+#       in sound quality
+#
+#/sbin/modprobe ip_masq_raudio
+
+# Supports the masquerading of IRC DCC file transfers
+#
+#/sbin/modprobe ip_masq_irc
+
+# Supports the masquerading of Quake and QuakeWorld by default.  This modules is
+#   for for multiple users behind the Linux MASQ server.  If you are going to 
+#   play Quake I, II, and III, use the second example.
+#
+#   NOTE:  If you get ERRORs loading the QUAKE module, you are running an old
+#   -----  kernel that has bugs in it.  Please upgrade to the newest kernel.
+#
+#Quake I / QuakeWorld (ports 26000 and 27000)
+#/sbin/modprobe ip_masq_quake
+#
+#Quake I/II/III / QuakeWorld (ports 26000, 27000, 27910, 27960)
+#/sbin/modprobe ip_masq_quake 26000,27000,27910,27960
+
+# Supports the masquerading of the CuSeeme video conferencing software
+#
+#/sbin/modprobe ip_masq_cuseeme
+
+#Supports the masquerading of the VDO-live video conferencing software
+#
+#/sbin/modprobe ip_masq_vdolive
+
+
+#CRITICAL:  Enable IP forwarding since it is disabled by default 
+#
+#           Redhat Users:  you may try changing the options in 
+#                          /etc/sysconfig/network from:
+#
+#                       FORWARD_IPV4=false  
+#                             to
+#                       FORWARD_IPV4=true
+#
+echo "1" > /proc/sys/net/ipv4/ip_forward
+
+#CRITICAL:  Enable automatic IP defragmenting since it is disabled by default 
+#
+#           This used to be a compile-time option but the behavior was changed 
+#           in 2.2.12.  This option is required for both 2.0 and 2.2 kernels.
+#
+echo "1" > /proc/sys/net/ipv4/ip_always_defrag
+
+# Dynamic IP users:
+#
+#   If you get your Internet IP address dynamically from SLIP, PPP, or DHCP, 
+#   enable this following option.  This enables dynamic-ip address hacking in 
+#   IP MASQ, making the life with DialD, PPPd, and similar programs much easier.
+#
+#echo "1" > /proc/sys/net/ipv4/ip_dynaddr
+
+
+# MASQ timeouts
+#
+#   2 hrs timeout for TCP session timeouts
+#  10 sec timeout for traffic after the TCP/IP "FIN" packet is received
+#  160 sec timeout for UDP traffic (Important for MASQ'ed ICQ users)
+#
+/sbin/ipfwadm -M -s 7200 10 160
+
+
+# DHCP:  For people who receive their external IP address from either DHCP or 
+#        BOOTP such as ADSL or Cablemodem users, it is necessary to use the 
+#        following before the deny command.  The "bootp_client_net_if_name" 
+#        should be replaced the name of the link that the DHCP/BOOTP server 
+#        will put an address on to.  This will be something like "eth0", 
+#        "eth1", etc.
+#
+#        This example is currently commented out.
+#
+#
+#/sbin/ipfwadm -I -a accept -S 0/0 67 -D 0/0 68 -W bootp_clients_net_if_name -P udp
+
+
+# Enable simple IP forwarding and Masquerading
+#
+#  NOTE:  The following is an example for an internal LAN address in the 
+#         192.168.0.x network with a 255.255.255.0 or a "24" bit subnet mask
+#         connecting to the Internet on interface eth0.
+#
+#         ** Please change this network number, subnet mask, and your Internet
+#         ** connection interface name to match your internal LAN setup
+#
+/sbin/ipfwadm -F -p deny
+/sbin/ipfwadm -F -a m -W eth0 -S 192.168.0.0/24 -D 0.0.0.0/0
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Once you are finished with editing the /etc/rc.d/rc.firewall ruleset, make it
+executable by typing in "<CODE>chmod 700 /etc/rc.d/rc.firewall</CODE>"
+<P>Now that the firewall ruleset is ready to go, you need to let it run after every reboot.  You could either do this by running it by hand everytime (a pain) or add it to the boot scripts.  We have covered two methods below:
+<P>
+<UL>
+<LI>Redhat and Redhat-derived distros:
+<P>
+<UL>
+<LI>There are two ways to load things in Redhat:  /etc/rc.d/rc.local or a init script in /etc/rc.d/init.d/.  The first method is the easiest.  All you have to do is add the line:
+<P>
+<UL>
+<LI>echo "Loading the rc.firewall ruleset.." <P>/etc/rc.d/rc.firewall
+</LI>
+</UL>
+</LI>
+</UL>
+<P>to the end of the /etc/rc.d/rc.local file and thats it.  The problem with this approach is that if you are running a STRONG firewall ruleset, the firewall isn't executed until the last stages of booting.  The preferred approach is to have the firewall loaded just after the networking subsystem is loaded.  For now, the HOWTO only covers how to do the /etc/rc.d/rc.local way.  If you want the stronger system, I recommend you check out Section 10 of TrinityOS found in the links section at the bottom of this HOWTO.
+</LI>
+</UL>
+<P>
+<UL>
+<LI>Slackware:
+<P>
+<UL>
+<LI>There are two ways to load things in Slackware: /etc/rc.d/rc.local or editing the /etc/rc.d/rc.inet2 file.  The first method is the easiest.  All you have to do is add the line:
+<P>
+<UL>
+<LI>echo "Loading the rc.firewall ruleset.."<P>/etc/rc.d/rc.firewall
+</LI>
+</UL>
+<P>to the end of the /etc/rc.d/rc.local file and thats it. The problem with this approach is that if you are running a STRONG firewall ruleset, the firewall isn' t executed until the last stages of booting.  The preferred approach is to have the firewall loaded just after the networking subsystem is loaded.  For now, the HOWTO only covers how to do the /etc/rc.d/rc.local way.  If you want the strong er system, I recommend you check out Section 10 of TrinityOS found in the links section at the bottom of this HOWTO.
+</LI>
+</UL>
+</LI>
+</UL>
+<P>
+<P><B>Notes on how users might want to change the above firewall ruleset:</B>
+<P>  
+You could have also enabled IP Masquerading on a PER MACHINE basis instead of the above method enabling an ENTIRE TCP/IP network.  For example, say if I wanted only the 192.168.0.2 and 192.168.0.8 hosts to have access to the Internet and NOT any of the other internal machines.  I would change the in the "Enable simple IP forwarding and Masquerading" section (shown above) of the /etc/rc.d/rc.firewall ruleset.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# Enable simple IP forwarding and Masquerading
+#
+#  NOTE:  The following is an example to only allow IP Masquerading for the 
+#         192.168.0.2 and 192.168.0.8 machines with a 255.255.255.0 or a "24" 
+#         bit subnet mask connecting to the Internet on interface eth0.
+#
+#         ** Please change this network number, subnet mask, and your Internet
+#         ** connection interface name to match your internal LAN setup 
+#
+#         Please use the following in ADDITION to the simple ruleset above for 
+#         specific MASQ networks.  
+#
+/sbin/ipfwadm -F -p deny
+/sbin/ipfwadm -F -a m -W eth0 -S 192.168.0.2/32 -D 0.0.0.0/0
+/sbin/ipfwadm -F -a m -W eth0 -S 192.168.0.8/32 -D 0.0.0.0/0
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P><B>Common mistakes:</B>
+<P>What appears to be a common mistake with new IP Masq users is to make the first command: 
+<PRE>
+ipfwadm -F -p masquerade
+</PRE>
+<P>Do <B>NOT</B> make your default policy be MASQUERADING.  Otherwise
+someone who can manipulate their routing tables will be able to tunnel
+straight back through your gateway, using it to masquerade their OWN
+identity!
+<P>
+<P>
+<P>
+<P>Again, you can add these lines to the <CODE>/etc/rc.d/rc.firewall</CODE> file, one of the 
+other rc files you prefer, or do it manually every time you need IP Masquerade.
+<P>Please see the 
+<A HREF="IP-Masquerade-HOWTO-6.html#Strong-IPCHAINS-Rulesets">Strong-IPCHAINS-Rulesets</A>
+ and 
+<A HREF="IP-Masquerade-HOWTO-6.html#Strong-IPFWADM-Rulesets">Strong-IPFWADM-Rulesets</A>
+ sections for a detailed guide and stronger examples of IPCHAINS and IPFWADM ruleset examples.
+<P>
+<A NAME="Configuring-clients"></A> <P>
+<HR>
+<A HREF="IP-Masquerade-HOWTO-4.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="IP-Masquerade-HOWTO-2.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="IP-Masquerade-HOWTO.html#toc3"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

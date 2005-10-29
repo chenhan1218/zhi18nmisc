@@ -1,0 +1,99 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE> 教堂與市集 (The Cathedral and the Bazaar) : Popclient 變成 Fetchmail (Popclient becomes Fetchmail)</TITLE>
+ <LINK HREF="Cathedral-Bazaar-7.html" REL=next>
+ <LINK HREF="Cathedral-Bazaar-5.html" REL=previous>
+ <LINK HREF="Cathedral-Bazaar.html#toc6" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 4, 1);</SCRIPT>
+<A HREF="Cathedral-Bazaar-7.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Cathedral-Bazaar-5.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Cathedral-Bazaar.html#toc6"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s6">6. Popclient 變成 Fetchmail (Popclient becomes Fetchmail)</A></H2>
+
+<P>這個專案真正的轉捩點發生在 Harry Hochheiser 送給我他寫的一部份程式,
+這部份的程式會把郵件轉送到客戶端機器上 SMTP 的接收埠, 我立即瞭解到
+這個特色若有穩定的實作, 那麼 fetchmail 中其他的郵件傳遞模式都可以
+廢除了.
+<P>有幾個禮拜, 其實我一直在扭曲 fetchmail 而不是真的改進它, 因為它
+使用介面的設計雖然能提供服務, 但卻不夠高雅, 並且有太多非必要的選項
+成為整個程式的累贅, 尤其是要把取回的郵件存成郵件檔或輸出至螢幕的選項
+對我造成了相當的困擾, 可是我卻也說不出個所以然來.
+<P>當我思考郵件改由 SMTP 轉送這個作法時, 才發覺到原來的 popclient 包攬
+太多事了, 過去它被設計成郵件轉送代理 (MTA) 兼郵件遞送代理 (MDA), 若
+藉由 SMTP 轉送郵件, 那它可以完全不管郵件遞送, 單純地負責郵件轉送, 只
+要把郵件轉給像 sendmail 這樣的郵件遞送程式就可以了.
+<P>在有支援 TCP/IP 通訊協定的平台, 幾乎可以保證第 25 號埠 (SMTP 用) 早
+就在那裡等了, 為什麼還要和設定郵件遞送代理組態或設定郵件檔的上鎖附加
+模式這些問題糾纏呢? 尤其這樣做可以保證取回的信件看起來像發信人透過
+SMTP 傳送一樣, 而這正是我們想要的.
+<P>在這裡給我們上了好幾課, 第一課是, 這個透過 SMTP 轉送的巧思是從我仿效
+Linus 的方法以來, 所得到最大的收穫, 一位使用者提供了絕佳的主意, 而我
+所必須做的已經蘊涵在其中.
+<P><B>[格言 11] 體認你使用者提供的巧思, 以獲取好點子, 有時候越後到的越好.</B>
+<P><EM>11. The next best thing to having good ideas is recognizing good ideas
+from your users.  Sometimes the latter is better.</EM>
+<P>你將會發現一件很有趣的事: 如果你很誠實並很自謙地知道你欠人多少, 那麼
+全世界都會認為你發明了全部, 而且對你先提出的天才創作, 也會以為你非常
+謙虛, 這些我們可以在 Linus 身上得到印證.
+<P>(1997 年 8 月的時候, 當我在 Perl 會議上發表這篇論文時, Larry Wall 坐在
+前排, 我唸到上一行時, 他叫了出來, 以一種復興宗教的神情, 喊著: ``兄弟,
+告訴他們, 告訴他們吧!'', 全場的聽眾都笑了, 因為他們知道這也發生在這位
+Perl 的原創者身上.)
+<P>我以同樣的精神進行這個專案, 經過短短幾週的時間, 我開始得到類似的讚美,
+這些讚美不只來自 popclient 的使用者, 也來自該得到這種讚美而卻未得到的
+人, 我保留了一些感謝函, 也許當我懷疑我人生的意義為何時, 可以再看看這
+些信 :-).
+<P>但除些之外, 這裡還有兩課更基礎, 不具政治性, 更適合所有設計的一般情形:
+<P><B>[格言 12] 通常, 最適切和最有創意的解題法來自發覺自己對問題原先的觀念是錯誤的.</B>
+<P><EM>12. Often, the most striking and innovative solutions come from
+realizing that your concept of the problem was wrong.</EM>
+<P>我曾試著去解一個錯的問題, 就是延續 popclient 既是 MTA 又是 MDA 的設計,
+把它發展成有各種的本地端遞送模式. Fetchmail 的設計需要重新思考, 應該
+只要單純地做一個 MTA 程式, 成為網際網路正規的 SMTP 郵遞路徑中的一段.
+<P>當你在發展程式的過程中撞到障礙時 -- 也就是當你發現很難想出下一步要怎麼
+修補時, 通常是反省的時候了, 但不是問是否已找到正確的答案, 而是我們提出
+正確的問題了嗎? 也許問題需要再重新整頓一番.
+<P>是的, 於是我重新整頓了我的問題, 很明顯地, 該做對的事有:
+(1) 在原來通用的驅動程式中, 加入轉送郵件至 SMTP 接收埠的功能.
+(2) 以 (1) 當成預設模式.
+(3) 丟棄其他遞送模式的程式碼, 尤其是遞送至郵件檔及遞送至標準輸出.
+<P>我對第 (3) 步遲疑了一些時候, 因為擔心會嚇走長久以來 popclient 的使用者,
+因為他們一直倚靠另一種遞送機制, 理論上他們可以立即以 .forward 檔來達到
+同樣的效果而不靠 sendmail 程式, 事實上這個轉換可能含糊不清.
+<P>但當我真的去做, 結果證明益處極大, popclient 驅動程式中 ?? 的一段可以
+消失了, 設定也變得簡單多了 -- 不用再屈就系統的 MTA 程式及使用者的郵件
+信箱檔, 也不再需要擔心底層的作業系統是否支援檔案上鎖.
+<P>而且唯一丟掉郵件的可能也不見了, 如果你指定要把郵件送到某個檔案而磁碟空間
+又滿了, 那麼你的郵件就丟掉了, 然而由 SMTP 轉送信件的話, 則不會發生這種事
+, 因為 SMTP 的接收者除非將信息送達, 或至少先暫存起來待會再送, 才會回覆成
+功給發信者.
+<P>並且效能也改進了 (如果只跑一次, 你大概不會有感覺). 另一個有意義的好處是
+使用說明變得更簡單了.
+<P>稍後, 為了要處理某些模糊的狀況, 如動態 SLIP, 我必需讓使用者可以指定本地
+端要用那一個 MDA 程式來送達郵件, 我發現了一個更簡單的方法. 
+<P>這寓意是什麼呢? 當你可以丟掉程式中老舊的特色而又不失掉效力, 那就別遲疑.
+Antoine de Saint-Exupery (當他還不是經典童書的作者前, 他當過飛行員和飛
+機設計師)曾說:
+<P><B>[格言 13] 設計上完美, 不是 ``沒有東西能再被加入'', 而是 ``沒有東西能再被移出''.</B>
+<P><EM>13. ``Perfection (in design) is achieved not when there is nothing
+more to add, but rather when there is nothing more to take away.''</EM>
+<P><EM> [譯注] 1. ``小王子'' 就是 Antoine de Saint-Exupery 的作品.
+2. 這句格言也曾在 ``Modern Operating System'' 一書中被
+Andrew S. Tanenbaum 引用來說明作業系統微核心的設計哲學. </EM>
+<P>當你覺得做對了, 那麼你的程式碼越來越好, 越來越簡潔, 在這個過程中,
+fetchmail 的設計終於和先前的 popclient 不同了, 而有了自己的特點.
+<P>該是這個程式改名字的時候了, 新的設計看起來比舊的 popclient 更像 sendmail
+, 新的 popclient 和 sendmail 都是 MTA, 只是 sendmail 把郵件 ``推'' 出去
+給 SMTP 收信程式, 再送達使用者, 而新的 popclient 則是把郵件 ``拉'' 回來
+給 SMTP 收信程式, 然後再送出, 所以兩個月後, 我把它更名作 ``fetchmail''.
+<P>
+<P>
+<HR>
+<A HREF="Cathedral-Bazaar-7.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Cathedral-Bazaar-5.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Cathedral-Bazaar.html#toc6"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

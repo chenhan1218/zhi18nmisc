@@ -1,0 +1,376 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" content="text/html; charset=gb2312">
+<TITLE>Linux IP Alias mini HOWTO 中译版</TITLE>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+<PRE>
+
+   The Linux Cipe+Masquerading mini-HOWTO
+   Anthony Ciaravalo, acj@home.com
+   v0.4, 28 October 1998
+</PRE>   
+  1.  简介
+<p>  
+这份是Linux Cipe+Masquerading mini-HOWTO.  本文解释如何使用cipe经由 linux masquerading firewall主机，来建立一个介于您的区域网路(LAN)与其他区域网路之间的虚拟私有网路(Virtual Private Network)。
+<p>   
+    1.1.  版权声明
+<p>    
+   (C)opyright 1998 Anthony Ciaravalo, acj@home.com
+<p>   
+除非特别声明，否则Linux HOWTO文件的版权是归原作者所有。只要保证版权受到保护，Linux HOWTO文件能够以任何电子或实体媒介来进行完整或部分的复制、散布。商业化的重制是被允许的，甚至加以鼓励；但前提是必须知会原作者。
+<p>
+所有源自于Linux HOWTO的文件（包括翻译、改编、汇整等等）都必须包含这份版权声明。也就是说，任何人皆不能在文件的散布上加诸其他限制。除非在某些特定情况下，才得以用特例允许；详情请与Linux HOWTO coordinator洽询，联络方式见后述。
+<p>   
+如果您有任何疑问，欢迎洽询Linux HOWTO  coordinator Greg Hankins <gregh@sunsite.unc.edu>，您可以查询(finger)这个帐号以取得联络电话或邮件地址。
+<p>
+    1.2 责任承担声明
+<p>   
+使用此份文件的范例或资讯，必须自行承担风险。在经由Internet连接到网路上时，可能会衍生许多安全性的议题。即使是您的讯息已经经过加密，但不正确的firewall设定仍然会导致安全上的裂缝。关于cipe connection您必须要特别小心谨慎，然而，仍然无法保障100％的安全。作者并不保证在这份文件中所提供的资讯同时也提供了一个安全的网路环境。
+<p>   
+    1.3.  使用回报
+<p>    
+如果您有任何问题、建议、更正，或评论，欢迎您写信到 acj@home.net.
+<p>   
+    1.4.  本文件之最新版本
+<p>
+新版的文件将会发表到 cipe mailing list 并且email 给 Linux HOWTO coordinator 并且建档成 Linux HOWTO。
+<p>   
+    1.5 取得档案
+<p>    
+这份文件是针对 cipe version 1.0.0 所写成的。您可以从
+<a href="http://sites.inka.de/~bigred/sw/cipe-1.0.0.tar.gz">http://sites.inka.de/~bigred/sw/cipe-1.0.0.tar.gz</a>
+取得文件档案。
+<p>   
+  2.  机器设定
+<p>  
+    2.1  Firewall 设定
+<p>    
+这份文件假设您的 kernel 已经设定成支援 IP masquerade 并且已经正常执行 firewall 相关设定。本文中并不解释如何去设定 masquerading firewall，而只介绍设定规则的范例，以说明在使用 masquerading firewall 时，如何让cipe能够正常运作。您可以在参考文件中找到如何设定 linux IP masquerade firewall. 
+<p>   
+    2.2.  The Star/Hub 设定
+<p>    
+这个设定使用 star/hub 架构，因此如果 machine A 停止运作，那么machine B 和 C 将无法连线。您可以考虑在 machine B 和 C 之间增加一个 cipe connection 来解决这个问题。而当您将许多网路连结在一起的时候，就会开始变得有危机存在。这份文件只介绍了 star/hub 设定的范例。
+<p><pre>   
+                         Machine A
+                         eth0: 10.10.1.1
+                         eth1: real ip 1
+                      /                   \
+                     /                     \
+               Machine B                 Machine C
+               eth0: 10.10.2.1           eth0:10.10.3.1
+               eth1: real ip 2           eth1: real ip 3
+</pre>   
+    2.3.  名词参考
+<p>    
+   eth0 是 local network (fake address)<br>
+   eth1 是 internet address (real address)
+<p>   
+   Port A 是任何您可以选择的有效通讯埠<br>
+   Port B 是任何其馀您可以选择的有效通讯埠
+<p>   
+   Key A 是任何您可以选择的有效 key (详情请阅读 cipe 文件)<br>
+   Key B 是任何您可以选择的有效 key 
+<p>   
+    2.4.  Machine A 的设定
+<p>    
+    2.4a.  /etc/cipe/ip-up
+<p>
+<pre>    
+   #a trimmed down version of the sample ip-up that comes with the
+   distribution
+   #!/bin/sh
+   umask 022
+   PATH=/sbin:/bin:/usr/sbin:/usr/bin
+   echo "UP $*" >> /tmp/cipe
+   echo $3 > /var/run/$1.pid
+   #笔者倾向于在设定 routing 时分成不同的档案来设，详述如下。
+</pre>   
+    2.4b.  /etc/cipe/options.machineB
+<p>
+<pre>    
+   #设备名称
+   device          cip3b0
+   # the peers internal (fake) ip address
+   ptpaddr         10.10.2.1
+   # my cipe (fake) ip address
+   ipaddr          10.10.1.1
+   # my real ip address and cipe port
+   me              (real ip 1):(port A)
+   # the peers ip address and cipe port
+   peer            (real ip 2):(port A)
+   #128 位元的加密 key，应予以保密
+   key             (Key A)
+</pre>   
+    2.4c.  /etc/cipe/options.machineC
+<p>
+<pre>    
+   #设备名称
+   device          cip3b1
+   # the peers internal (fake) ip address
+   ptpaddr         10.10.3.1
+   # my cipe (fake) ip address
+   ipaddr          10.10.1.1
+   # my real ip address and cipe port
+   me              (real ip 1):(port B)
+   # the peers ip address and cipe port
+   peer            (real ip 3):(port B)
+   #128 位元的加密 key，应予以保密
+   key             (Key B)
+</pre>   
+    2.4d.  /etc/cipe/setroute
+<p>
+<pre>    
+   #!/bin/sh
+   #设定 routing table 的档案
+   #设定 Machine B 的 routing table
+   /sbin/route add -host 10.10.2.1 dev cip3b0
+   /sbin/route add -net 10.10.2.0 netmask 255.255.255.0 gw 10.10.2.1
+   #设定 Machine C 的 routing table
+   /sbin/route add -host 10.10.3.1 dev cip3b1
+   /sbin/route add -net 10.10.3.0 netmask 255.255.255.0 gw 10.10.3.1
+</pre>   
+    2.4e.  /etc/rc.d/rc.local
+<p>
+<pre>    
+   echo Configuring VPN network
+   /usr/local/sbin/ciped -o /etc/cipe/options.machineB
+   /usr/local/sbin/ciped -o /etc/cipe/options.machineC
+   /etc/cipe/setroute
+</pre>
+<p>   
+    2.4f.  Firewall 规则
+<p>
+<pre>    
+   #去除所有 incoming firewall 的规则，并将预设值设为 deny
+   /sbin/ipfwadm -I -f
+   /sbin/ipfwadm -I -p deny
+   #允许所有新进的封包 (packets) 经由 cipe links 送至您的网路中
+   /sbin/ipfwadm -I -a accept -W cip3b0 -S 10.10.0.0/16 -D 10.10.0.0/16
+   /sbin/ipfwadm -I -a accept -W cip3b1 -S 10.10.0.0/16 -D 10.10.0.0/16
+   #您可以再增加一些额外的封包进入规则
+   
+   #去除所有 outgoing firewall 的规则，并将预设值设为 deny
+   /sbin/ipfwadm -O -f
+   /sbin/ipfwadm -O -p deny
+   #允许所有送出的封包 (packets) 经由 cipe links 送至其他网路
+   /sbin/ipfwadm -O -a accept -W cip3b0 -S 10.10.0.0/16 -D 10.10.0.0/16
+   /sbin/ipfwadm -O -a accept -W cip3b1 -S 10.10.0.0/16 -D 10.10.0.0/16
+   #您可以再增加一些额外的封包送出规则
+   
+   #去除所有 forwarding firewall 的规则，并将预设值设为 deny
+   /sbin/ipfwadm -F -f
+   /sbin/ipfwadm -F -p deny
+   #允许所有转送的封包 (packets) 经由 cipe links 送至其他网路
+   /sbin/ipfwadm -F -a accept -W cip3b0 -S 10.10.0.0/16 -D 10.10.0.0/16
+   /sbin/ipfwadm -F -a accept -W cip3b1 -S 10.10.0.0/16 -D 10.10.0.0/16
+   #允许从这台机器的真实 ip forward 到其他机器的真实 ip
+   /sbin/ipfwadm -F -a accept -W eth1 -S (real ip 1) -D (real ip 2)
+   /sbin/ipfwadm -F -a accept -W eth1 -S (real ip 1) -D (real ip 3)
+   #允许经由 local interface (fake ip address) 转送到其他网路上
+   /sbin/ipfwadm -F -a accept -W eth0 -S 10.10.0.0/16 -D 10.10.0.0/16
+   #您可以再增加一些额外的封包转送规则
+</pre>   
+    2.4g.  通讯闸 (Gateway)
+<p>    
+所有在 10.10.1.0 网路上的机器必须以 10.10.1.1 来当作通讯闸，如果您不是如此设定，那么将无法正常运作。
+<p>   
+    2.5.  Machine B 的设定
+<p>    
+    2.5a.  /etc/cipe/ip-up
+<p>
+<pre>    
+   #a trimmed down version of the sample ip-up that comes with the
+   distribution
+   #!/bin/sh
+   umask 022
+   PATH=/sbin:/bin:/usr/sbin:/usr/bin
+   echo "UP $*" >> /tmp/cipe
+   echo $3 > /var/run/$1.pid
+   #笔者倾向于在设定 routing 时分成不同的档案来设，详述如下。
+</pre>   
+    2.5b.  /etc/cipe/options.machineA
+<p>    
+<pre>
+   #设备名称
+   device          cip3b0
+   # the peers internal (fake) ip address
+   ptpaddr         10.10.1.1
+   # my cipe (fake) ip address
+   ipaddr          10.10.2.1
+   # my real ip address and cipe port
+   me              (real ip 1):(port A)
+   # the peers ip address and cipe port
+   peer            (real ip 2):(port A)
+   #128 位元的加密 key，应予以保密
+   key             (Key A)
+</pre>   
+    2.5c.  /etc/cipe/setroute
+<p>
+<pre>    
+   #!/bin/sh
+   #设定 routing table 的档案
+   #设定 Machine A 的 routing table
+   /sbin/route add -host 10.10.1.1 dev cip3b0
+   /sbin/route add -net 10.10.1.0 netmask 255.255.255.0 gw 10.10.1.1
+</pre>   
+    2.5d.  /etc/rc.d/rc.local
+<p>
+<pre>    
+   echo Configuring VPN network
+   /usr/local/sbin/ciped -o /etc/cipe/options.machineA
+   /etc/cipe/setroute
+</pre>   
+    2.5e.  Firewall 规则
+<p>    
+(以下请参照 2.4f 的注解说明)
+<p>
+<pre>
+   #flush all incoming firewall rules and set default policy to deny
+   /sbin/ipfwadm -I -f
+   /sbin/ipfwadm -I -p deny
+   #allow incoming packets to your network via the cipe link
+   /sbin/ipfwadm -I -a accept -W cip3b0 -S 10.10.0.0/16 -D 10.10.0.0/16
+   #add rest of your incoming rules here
+   
+   #flush all outgoing firewall rules and set default policy to deny
+   /sbin/ipfwadm -O -f
+   /sbin/ipfwadm -O -p deny
+   #allow outgoing packets to your network via the cipe link
+   /sbin/ipfwadm -O -a accept -W cip3b0 -S 10.10.0.0/16 -D 10.10.0.0/16
+   #add rest of your outgoing rules here
+   
+   #flush all forwarding firewall rules and set default policy to deny
+   /sbin/ipfwadm -F -f
+   /sbin/ipfwadm -F -p deny
+   #allow packets to be forwarded to the other networks via the cipe
+   links
+   /sbin/ipfwadm -F -a accept -W cip3b0 -S 10.10.0.0/16 -D 10.10.0.0/16
+   #allow forwarding from real ip of this machine to the real ip address
+   of the other machines
+   /sbin/ipfwadm -F -a accept -W eth1 -S (real ip 2) -D (real ip 1)
+   #allow packets to be forwarded to the other networks via the local
+   interface (fake ip address)
+   /sbin/ipfwadm -F -a accept -W eth0 -S 10.10.0.0/16 -D 10.10.0.0/16
+   #add rest of your forwarding rules here
+</pre>   
+    2.5f.  通讯闸
+<p>    
+所有在 10.10.2.0 网路上的机器必须以 10.10.2.1 来当作通讯闸，如果您不是如此设定，那么将无法正常运作。
+<p>   
+    2.6.  Machine C 的设定
+<p>    
+    2.6a.  /etc/cipe/ip-up
+<p>
+<pre>    
+   #a trimmed down version of the sample ip-up that comes with the
+   distribution
+   #!/bin/sh
+   umask 022
+   PATH=/sbin:/bin:/usr/sbin:/usr/bin
+   echo "UP $*" >> /tmp/cipe
+   echo $3 > /var/run/$1.pid
+   #笔者倾向于在设定 routing 时分成不同的档案来设，详述如下。
+</pre>   
+    2.6b.  /etc/cipe/options.machineA
+<p>
+<pre>    
+   #设备名称
+   device          cip3b0
+   # the peers internal (fake) ip address
+   ptpaddr         10.10.1.1
+   # my cipe (fake) ip address
+   ipaddr          10.10.3.1
+   # my real ip address and cipe port
+   me              (real ip 3):(port B)
+   # the peers ip address and cipe port
+   peer            (real ip 1):(port B)
+   #128 位元的加密 key，应予以保密
+   key             (Key B)
+</pre>   
+    2.6c.  /etc/cipe/setroute
+<p>
+<pre>    
+   #!/bin/sh
+   #设定 routing table 的档案
+   #设定 Machine A 的 routing table
+   /sbin/route add -host 10.10.1.1 dev cip3b0
+   /sbin/route add -net 10.10.1.0 netmask 255.255.255.0 gw 10.10.1.1
+</pre>   
+    2.6d.  /etc/rc.d/rc.local
+<p>
+<pre>    
+   echo Configuring VPN network
+   /usr/local/sbin/ciped -o /etc/cipe/options.machineA
+   /etc/cipe/setroute
+</pre>   
+    2.6e.  Firewall Rules
+<p>
+(以下请参照 2.4f 的注解说明)
+<p>
+<pre>    
+   #flush all incoming firewall rules and set default policy to deny
+   /sbin/ipfwadm -I -f
+   /sbin/ipfwadm -I -p deny
+   #allow incoming packets to your network via the cipe link
+   /sbin/ipfwadm -I -a accept -W cip3b0 -S 10.10.0.0/16 -D 10.10.0.0/16
+   #add rest of your incoming rules here
+   
+   #flush all outgoing firewall rules and set default policy to deny
+   /sbin/ipfwadm -O -f
+   /sbin/ipfwadm -O -p deny
+   #allow outgoing packets to your network via the cipe link
+   /sbin/ipfwadm -O -a accept -W cip3b0 -S 10.10.0.0/16 -D 10.10.0.0/16
+   #add rest of your outgoing rules here
+   
+   #flush all forwarding firewall rules and set default policy to deny
+   /sbin/ipfwadm -F -f
+   /sbin/ipfwadm -F -p deny
+   #allow packets to be forwarded to the other networks via the cipe
+   links
+   #this machine to the real ip address of the other machines
+   /sbin/ipfwadm -F -a accept -W cip3b0 -S 10.10.0.0/16 -D 10.10.0.0/16
+   #allow forwarding from real ip of this machine to the real ip address
+   of the other machine
+   /sbin/ipfwadm -F -a accept -W eth1 -S (real ip 3) -D (real ip 1)
+   #allow packets to be forwarded to the other networks via the local
+   interface (fake ip address)
+   /sbin/ipfwadm -F -a accept -W eth0 -S 10.10.0.0/16 -D 10.10.0.0/16
+   #add rest of your forwarding rules here
+</pre>   
+    2.6f.  通讯闸
+<p>    
+所有在 10.10.3.0 网路上的机器必须以 10.10.3.1 来当作通讯闸，如果您不是如此设定，那么将无法正常运作。
+<p>   
+  3.  启动
+<p>  
+在每台机器上手动地执行被增加到 rc.local 的指令
+<p>   
+  4.  连接到 WAN.
+<p>  
+设定到此为止，您的 WAN应该能够顺利连接。您可以试著去 ping其他网路上的机器。而下一个步骤，即是让您的网路能够以 SAMBA 来彼此互相存取。有一些小提示： lmhosts 或 wins server是必须的，特别是在 NT 底下。笔者已经实地设定成功过，但不打算在本篇文章中介绍这个部分。
+<p>   
+5.  参考文件：
+<p>
+    5.1.  Web 网址
+<p>
+<pre>    
+   Cipe HomePage     <a href="http://sites.inka.de/~bigred/devel/cipe.html">http://sites.inka.de/~bigred/devel/cipe.html</a>
+   Masq Home Page    <a href="http://ipmasq.home.ml.org">http://ipmasq.home.ml.org</a>
+   Samba Home Page   <a href="http://samba.anu.edu.au">http://samba.anu.edu.au</a>
+   Linux HQ          <a href="http://www.linuxhq.com">http://www.linuxhq.com</a> --- 一个关于Linux资讯的不错网站
+</pre>
+    5.2.  文件
+<p>    
+   cipe.info: 包含有关cipe软体套件资讯的档案
+   Firewall HOWTO,由Mark Grennan <markg@netplus.net>所著
+   IP Masquerade mini-HOWTO, 由Ambrose Au <ambrose@writeme.com>所著
+<p>
+参考：
+<pre>
+   1. http://sites.inka.de/~bigred/sw/cipe-1.0.0.tar.gz
+   2. http://sites.inka.de/~bigred/devel/cipe.html
+   3. http://ipmasq.home.ml.org/
+   4. http://samba.anu.edu.au/
+   5. http://www.linuxhq.com/
+</pre>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>

@@ -1,0 +1,575 @@
+<html><head><title>LinuxGL-QuakeWorld-mini-HOWTO mini-HOWTO</title>
+
+<script src="../../menu.js">
+function BeginPage() {}
+function EndPage() {}
+</script>
+
+</head>
+<body bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0>
+<script>BeginPage(2, 8, 2);</script>
+
+<!-- Begin of document -->
+<br><pre>
+
+LinuxGL (GLX) QuakeWorld Client compile mini-HOWTO
+
+Robert B Easter
+
+           reaster@comptechnews.com
+   
+   Revision History
+   Revision v1.1 Aug 28, 2000 Revised by: rbe
+   
+   This miniHOWTO is about how to get the OpenGL/GLX Linux QuakeWorld
+   client compiled and working on systems with standard OpenGL hardware
+   acceleration support.
+     _________________________________________________________________
+   
+   Table of Contents
+   1. [1]Introduction
+          
+        1.1. [2]New Versions of this Document
+        1.2. [3]Copyright Information
+        1.3. [4]Disclaimer
+                
+   2. [5]The Procedure
+          
+1. Introduction
+
+   This miniHOWTO is about how to get the OpenGL/GLX Linux QuakeWorld
+   client compiled and working on systems with standard OpenGL hardware
+   acceleration support.
+   
+   This procedure was developed while struggling to get glqwcl.glx to
+   work on a system with Linux Slackware 7.0 (2.2.16), XFree86 4.0.1, a
+   GeForce 256 DDR video card, and NVIDIA's 0.9-4 MesaGL drop-in
+   replacement lib/driver (libGL.so.1.0.4).
+     _________________________________________________________________
+   
+1.1. New Versions of this Document
+
+   The lastest version of this mini-HOWTO can be found at:
+   
+   [6]http://www.comptechnews.com/~reaster/linux-glxqw.txt
+   
+   If you'd like a ready to compile distribution of QuakeWorld that has
+   this HOWTO's procedures performed on it already, then you can download
+   it at:
+   
+   [7]http://www.comptechnews.com/~reaster/index.html#games
+     _________________________________________________________________
+   
+1.2. Copyright Information
+
+   This document is copyrighted (c) 2000 Robert B. Easter and is
+   distributed under the terms of the Linux Documentation Project (LDP)
+   license, stated below.
+   
+   Unless otherwise stated, Linux HOWTO documents are copyrighted by
+   their respective authors. Linux HOWTO documents may be reproduced and
+   distributed in whole or in part, in any medium physical or electronic,
+   as long as this copyright notice is retained on all copies. Commercial
+   redistribution is allowed and encouraged; however, the author would
+   like to be notified of any such distributions.
+   
+   All translations, derivative works, or aggregate works incorporating
+   any Linux HOWTO documents must be covered under this copyright notice.
+   That is, you may not produce a derivative work from a HOWTO and impose
+   additional restrictions on its distribution. Exceptions to these rules
+   may be granted under certain conditions; please contact the Linux
+   HOWTO coordinator at the address given below.
+   
+   In short, we wish to promote dissemination of this information through
+   as many channels as possible. However, we do wish to retain copyright
+   on the HOWTO documents, and would like to be notified of any plans to
+   redistribute the HOWTOs.
+   
+   If you have any questions, please contact
+   <[8]linux-howto@metalab.unc.edu>
+     _________________________________________________________________
+   
+1.3. Disclaimer
+
+   No liability for the contents of this documents can be accepted. Use
+   the concepts, examples and other content at your own risk.
+   
+   All copyrights are held by their by their respective owners, unless
+   specifically noted otherwise. Use of a term in this document should
+   not be regarded as affecting the validity of any trademark or service
+   mark.
+   
+   Naming of particular products or brands should not be seen as
+   endorsements.
+     _________________________________________________________________
+   
+2. The Procedure
+
+   It seems that the glqwcl.glx binary available at least at
+   [9]www.quakeworld.net in the package
+   qwcl-2.30-glibc-i386-unknown-linux2.0.tar.gz is not compiled properly
+   since on startup, it looks for libglide2x.so.
+   
+   QuakeWorld clients come in several flavors:
+   
+   OpenGL:
+          glqwcl (3dfx only?)
+          
+          glqwcl.glx (MesaGL/XFree4)
+          
+   Software only:
+          qwcl (svgalib)
+          
+          qwcl.xl1 (x11/svgalib)
+          
+   Again, this miniHOWTO is about getting the glqwcl.glx working with
+   XFree86 4.x DRI.
+   
+    1. Download the Quake source code, q1source.zip, from
+       [10]ftp://ftp.idsoftware.com/idstuff/source/q1source.zip. This zip
+       file contains all versions of Quake1/QuakeWorld.
+       After compiling, you will get version:
+       
+        LinuxGL (0.98) QuakeWorld 2.40 (as of this writing, Aug 19, 2000)
+
+
+       You will also need to download the Mesa 3D Library source code
+       from [11]http://mesa3d.sourceforge.net/. MesaLib-3.3.tar.gz is
+       good.
+       
+        cd /usr/src
+        tar -xvzf MesaLib-3.3.tar.gz
+
+        This puts the mesa source at /usr/src/Mesa-3.3
+
+
+       Build the mesa source code:
+       
+        cd /usr/src/Mesa-3.3
+        ./configure --prefix=/usr
+        make
+
+
+       Depending on your setup, you might not need to actually install
+       Mesa. If you are going to install Mesa, be aware that Mesa will
+       install over the libGL.* files you already have in /usr/lib. Those
+       libGL.* files are likely to be your hardware accelerated versions.
+       Installing Mesa will also overwrite the glx include files in
+       /usr/X11R6/include/GL. Therefore, before you install Mesa, make a
+       backup of /usr/lib/libGL.* and /usr/X11R6/include/GL/glx*.h.
+       To install it:
+       
+        make install
+
+
+       After you install the full Mesa package, you might need to
+       reinstall your hardware accelerated libGL files or restore the
+       backup suggested above. You also need to restore the glx include
+       files. You can restore the glx include files either by restoring
+       the files that you backed up as suggested above, or if you have
+       the source to X still lying around, then you can copy the include
+       files from the source: cp xc/include/GL/*.h /usr/X11R6/include/GL
+       By installing the Mesa libs, you will get the libGLU* files and
+       associated include files installed on your system. XFree86 4.0.1
+       appeared to be lacking libGLU* and its include files. GLU, the
+       OpenGL Utility library is a standard part of a normal OpenGL
+       installation that is missing from XFree86 4 and may not come with
+       vendor-specific OpenGL drivers either.
+       XFree86 4.0.1 appears to have included only the core of Mesa 3.3,
+       which at the time was/is a development version of MesaGL. The
+       direct rendering infrusture (DRI) of XFree86 is based on Mesa
+       code.
+       If you happen to have an Nvidia card and are interested in a
+       complete HOWTO for installing the Nvidia drivers and an assortment
+       of OpenGL libraries (GLU, glut, Qt, OpenGL man pages), then see
+       the NVIDIA-OpenGL-Configuration_miniHOWTO at:
+       [12]http://www.comptechnews.com/~reaster/nvgl.txt
+       You can check the LDP for it also.
+    2. Make a directory to hold the quake source:
+       
+        mkdir q1src
+        cd q1src
+        unzip ../q1source.zip
+        cd QW
+        cp Makefile.Linux Makefile
+
+
+    3. Edit the Makefile:
+       
+        Line 30:
+                MAINDIR=/home/<you>/q1src (where you unzipped the source)
+                
+        Line 37:
+                MESA_DIR=/usr/src/Mesa-3.3 or wherever you put the Mesa
+                source code
+                
+        Lines 43 and 46:
+                You might need to remove all the optimization compiler
+                flags in order to get a stable binary. (I did) You can
+                play around with them. For instance, strange things
+                happened when it opened the pak files with optimizations
+                on: It would error out saying there are millions of files
+                in id1/pak0.pak!
+                
+                I removed all of the following RELEASE_CFLAGS:
+                
+                -O6
+                -ffast-math
+                -funroll-loops
+                -fomit-frame-pointer
+                -fexpensive-optimizations
+                -malign-loops=2
+                -malign-jumps=2
+                -malign-functions=2
+
+
+                However, further experimentation seemed to show that at
+                least the following two are ok:
+                
+                -ffast-math
+                -fexpensive-optimizations
+
+
+                The really troublesome flag seems to be the -O6 flag. I
+                tried setting it down to -O1 and still had trouble. The
+                -malign* flags were unnecessary too.
+                
+        Line 50:
+                Add: -DGL_EXT_SHARED
+                
+                This #define is found inside at least gl_vidlinuxglx.c
+                where it conditionally compiles some 3DFx/glide-specific
+                code #ifndef! Without this, the compile will error with
+                unresolved external functions related to glide/3dfx.
+                
+                Remove: -I/usr/include/glide
+                
+                Change: -L/usr/local/src/Mesa-3.0/lib to where you put
+                the Mesa source: -L/usr/src/Mesa-3.3/lib
+                
+                Remove any other glide references and fix the path to
+                Mesa source wherever else it is referenced.
+                
+        Line 73:
+                Delete the targets you don't care to have built. Some of
+                them may not build? Leave just the glqwcl.glx build
+                target.
+                
+       Make sure that you have a symlink from /usr/X11 to /usr/X11R6.
+       When installing X yourself, you might forget to do that and some
+       source code and programs look for X there:
+       
+        cd /usr
+        ln -s X11R6 X11
+
+
+       Save the Makefile.
+    4. Fix the mouse hide problem.
+       The quake code, as it is, does not hide the mouse when you use it.
+       The pointer would remain visible and jitter around a fixed point
+       in the middle of the screen - very annoying. I found the following
+       simple fix in a mail archive about glx development at:
+       [13]http://lists.openprojects.net/pipermail/glx-dev/1999-October/0
+       00994.html
+       
+        cd q1src/QW/client
+        edit the file: gl_vidlinuxglx.c
+
+
+       At the top of the function called install_grabs(void) (Line 234),
+       add the following code:
+       
+        static void install_grabs(void)
+        {
+                /* vars to make blank cursor */
+                Pixmap blank;
+                XColor dummy;
+                char data[1] = {0};
+                Cursor cursor;
+                                
+                /* make a blank cursor */
+                blank = XCreateBitmapFromData (dpy, win, data, 1, 1);
+                if(blank == None) fprintf(stderr, "error: out of memory.\n");
+                cursor = XCreatePixmapCursor(dpy, blank, blank, &dummy, &dummy,
+ 0, 0);
+                XFreePixmap (dpy, blank);
+                Con_Printf("Cursor blanked.\n");
+
+
+       The 8th parameter to XGrabPointer should be changed from "None" to
+       "cursor" to use the blank cursor:
+       
+        
+        XGrabPointer(dpy, win,
+                         True,
+                         0,
+                         GrabModeAsync, GrabModeAsync,
+                         win,
+                         cursor,
+                         CurrentTime);
+
+
+       (see: man XGrabPointer)
+       This fix might work for the other client builds if you make
+       similar changes in the appropriate *vid*.c file. As it is, this
+       creates a memory leak as it allocates another Cursor object
+       everytime through and doesn't call XFreeCursor() but this is
+       probably not a problem since I don't think a 1x1 cursor is using
+       much memory. If you want, you can apply the following patch
+       against q1src/QW/client/gl_vidlinuxglx.c (patch gl_vidlinuxglx.c
+       patchfile). Just cut and paste the contents between the begin/end
+       patchfile lines into a file called patchfile (or whatever you want
+       to call it). Save patchfile in the q1src/QW/client directory where
+       gl_vidlinuxglx.c is. Then run the command:
+       
+        
+        patch gl_vidlinuxglx.c patchfile
+
+
+       This patch file will make gl_vidlinuxglx.c such that it doesn't
+       have any memory leak. You can download this patch file at:
+       [14]http://www.comptechnews.com/~reaster/gl_vidlinuxglx.c.patch.
+       
+*************************** begin patchfile ***********************************
+*
+*** q1src-p/QW/client/gl_vidlinuxglx.c  Tue Dec 21 18:45:54 1999
+--- gl_vidlinuxglx.c    Sat Aug 19 20:47:42 2000
+***************
+*** 1,22 ****
+! /*
+! Copyright (C) 1996-1997 Id Software, Inc.
+!
+! This program is free software; you can redistribute it and/or
+! modify it under the terms of the GNU General Public License
+! as published by the Free Software Foundation; either version 2
+! of the License, or (at your option) any later version.
+!
+! This program is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+!
+! See the GNU General Public License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program; if not, write to the Free Software
+! Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+!
+! */
+  #include <termios.h>
+  #include <sys/ioctl.h>
+  #include <sys/stat.h>
+--- 1,22 ----
+! /*
+! Copyright (C) 1996-1997 Id Software, Inc.
+!
+! This program is free software; you can redistribute it and/or
+! modify it under the terms of the GNU General Public License
+! as published by the Free Software Foundation; either version 2
+! of the License, or (at your option) any later version.
+!
+! This program is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+!
+! See the GNU General Public License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program; if not, write to the Free Software
+! Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+!
+! */
+  #include <termios.h>
+  #include <sys/ioctl.h>
+  #include <sys/stat.h>
+***************
+*** 66,71 ****
+--- 66,74 ----
+
+  static int scr_width, scr_height;
+
++ /* blank cursor - gets initialized in VID_Init, freed in VID_Shutdown */
++ Cursor cursor;
++
+  /*-----------------------------------------------------------------------*/
+
+  //int         texture_mode = GL_NEAREST;
+***************
+*** 236,243 ****
+                                 0,
+                                 GrabModeAsync, GrabModeAsync,
+                                 win,
+!                                None,
+                                 CurrentTime);
+
+  #ifdef USE_DGA
+        XF86DGADirectVideo(dpy, DefaultScreen(dpy), XF86DGADirectMouse);
+--- 239,247 ----
+                                 0,
+                                 GrabModeAsync, GrabModeAsync,
+                                 win,
+!                                cursor,
+                                 CurrentTime);
++       Con_Printf("Cursor blanked.\n");
+
+  #ifdef USE_DGA
+        XF86DGADirectVideo(dpy, DefaultScreen(dpy), XF86DGADirectMouse);
+***************
+*** 350,355 ****
+--- 354,360 ----
+        if (!ctx)
+                return;
+
++       XFreeCursor(dpy, cursor);
+        glXDestroyContext(dpy, ctx);
+  }
+
+***************
+*** 602,608 ****
+        unsigned long mask;
+        Window root;
+        XVisualInfo *visinfo;
+!
+        S_Init();
+
+        Cvar_RegisterVariable (&vid_mode);
+--- 607,617 ----
+        unsigned long mask;
+        Window root;
+        XVisualInfo *visinfo;
+!       /* vars to make blank cursor */
+!       Pixmap blank;
+!       XColor dummy;
+!       char data[1] = {0};
+!
+        S_Init();
+
+        Cvar_RegisterVariable (&vid_mode);
+***************
+*** 701,706 ****
+--- 710,720 ----
+        Con_SafePrintf ("Video mode %dx%d initialized.\n", width, height);
+
+        vid.recalc_refdef = 1;                          // force a surface cach
+e flush
++
++       blank = XCreateBitmapFromData(dpy, win, data, 1, 1);
++       if(blank == None) fprintf(stderr, "error: out of memory.\n");
++       cursor = XCreatePixmapCursor(dpy, blank, blank, &dummy, &dummy, 0, 0);
++       XFreePixmap(dpy, blank);
+  }
+
+  void Sys_SendKeyEvents(void)
+
+*************************** end patchfile   ***********************************
+*
+
+
+       It is then handy to bind some keys at the quake console to toggle
+       mouse grabbing:
+       
+        
+        bind q "_windowed_mouse 0"
+        bind w "_windowed_mouse 1"
+
+
+    5. Compile (finally!)
+       Just run "make build_release" with no parameters from where the
+       Makefile is located:
+       
+        cd q1src/QW
+        make build_release
+
+
+       If all goes well, you will have a binary, glqwcl.glx, in the
+       releasei386-glibc directory. Copy glqwcl.glx to another directory
+       (like "qw") and then from a Quake cd or other quake installation,
+       copy the id1 directory and any other game directories you
+       like/have - ctf, Fortress etc - to your new quakeworld directory.
+    6. Running the game.
+       You might want to run it like this from XQF: glqwcl.glx -width
+       1280 -height 1024 (or any other resolution your system can
+       support)
+       XQF is a nice program to find QuakeWorld servers and can be found
+       at: [15]http://www.linuxgames.com/xqf
+       To run the game fullscreen requires starting the game at the same
+       resolution as your X desktop. If you are running a desktop
+       environment, you might not be able to hide everything. The sure
+       way to get a fullscreen experience is to run XFree86 on its own
+       without any desktop environment or window manager loaded:
+       
+        XFree86 &
+                This starts X without any desktop environment or window
+                manager. /etc/X11/xinit/xinitrc normally starts your
+                desktop.
+                
+        CTRL-ALT-'-' and CTRL-ALT-'+'
+                Switches to the resolution you want. Check your
+                /etc/X11/XF86Config if you don't have any other
+                resolutions available.
+                
+        CTRL-ALT-F1
+                Switches back to the text console.
+                
+        xterm -display localhost:0.0 &
+                All X applications accept a -display command line
+                argument to tell it which X server to display on. Every X
+                program is an X server client. 0.0 represents the screen
+                on F7, 1.0 on F8, etc. localhost is your computer. Its
+                possible and very common to execute an X program on one
+                computer but have it display on some other workstation.
+                localhost could be an IP address or the dns name of any
+                computer running X that is accepting connections from
+                where you run the X client application program.
+                
+        ALT-F7
+                Switches back to X 0.0. Using xterm, start XQF or
+                whatever program you use to launch Quake.
+                
+        glqwcl.glx -width w -height h
+                Tell your quake launcher to start it like this, where w
+                and h are the resolution you are at. A good resolution is
+                1024 by 768.
+                
+       Light effects.
+       At the console, you can try turning on and off the flashblend
+       function and see which lighting effects you prefer:
+       
+                        
+                gl_flashblend 0
+                gl_flashblend 1
+        
+       When it is on (1), you may notice colored light effects around
+       flags and special items. In this mode, you may NOT see flashes
+       from weapons and light on the walls from rockets. The exact
+       effects of toggling flashblend may depend on your specific OpenGL
+       installation.
+       When it is off (0), there may not be any COLORED light, but
+       otherwise all light effects work. Flags and special items have a
+       glow around them and light up surrounding surfaces. Weapons flash
+       when fired and rockets light up everything around them as they
+       travel.
+    7. HAVE FUN!
+
+References
+
+   1. LinuxGL-QuakeWorld-mini-HOWTO.html#INTRO
+   2. LinuxGL-QuakeWorld-mini-HOWTO.html#AEN23
+   3. LinuxGL-QuakeWorld-mini-HOWTO.html#COPYRIGHT
+   4. LinuxGL-QuakeWorld-mini-HOWTO.html#DISCLAIMER
+   5. LinuxGL-QuakeWorld-mini-HOWTO.html#PROCEDURE
+   6. http://www.comptechnews.com/~reaster/linux-glxqw.txt
+   7. http://www.comptechnews.com/~reaster/index.html#games
+   8. mailto:linux-howto@metalab.unc.edu
+   9. http://www.quakeworld.net/
+  10. ftp://ftp.idsoftware.com/idstuff/source/q1source.zip
+  11. http://mesa3d.sourceforge.net/
+  12. http://www.comptechnews.com/~reaster/nvgl.txt
+  13. http://lists.openprojects.net/pipermail/glx-dev/1999-October/000994.html
+  14. http://www.comptechnews.com/~reaster/gl_vidlinuxglx.c.patch
+  15. http://www.linuxgames.com/xqf
+</pre><br>
+<!-- End of document -->
+
+<script>EndPage();</script>
+</body>
+</html>

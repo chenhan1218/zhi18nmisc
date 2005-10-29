@@ -1,0 +1,179 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Linux 2.4 Advanced Routing HOWTO: 介紹 iproute2 (Introduction to iproute2)</TITLE>
+ <LINK HREF="Adv-Routing-HOWTO-4.html" REL=next>
+ <LINK HREF="Adv-Routing-HOWTO-2.html" REL=previous>
+ <LINK HREF="Adv-Routing-HOWTO.html#toc3" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Adv-Routing-HOWTO-4.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Adv-Routing-HOWTO-2.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Adv-Routing-HOWTO.html#toc3"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s3">3. 介紹 iproute2 (Introduction to iproute2)</A></H2>
+
+<H2><A NAME="ss3.1">3.1 為何要 iproute2? (Why iproute2?)</A>
+</H2>
+
+<P>大部份的 Linux 發行廠商 ﹐以及多數 UNIX 系統﹐目前均沿用歷史悠久的 'arp'﹑'ifconfig'﹑和 'route' 等命令。雖說這些工具都仍能使用﹐然而在 Linux 2.2 及以後的版本中﹐他們卻會導致一些非預期的效果。例如﹐目前 GRE tunnel 已成路由中的密不可分的一部份﹐但卻需要完全不一樣的工具才做得到。
+<P>用 iproute2 的話﹐其自身的工具組裡面就包含了 tunnels 了。
+<P>Linux 2.2 及以後的核心內含一個完全重新設計的網路子系統。此一全新的網路程式碼(networking code) 讓 Linux 在效能和功能上﹐較其它 OS 略勝一籌。事實上﹐新的路由過濾還有分類(classifying) 程式 ﹐比起一些專用路由器以及防火牆和流量管制產品﹐在功能上甚至有過之而無不及。
+<P>隨著新網路概念的不斷涌現﹐人們無不各顯神通將之安插於現有 OS 的架構之上。然而﹐這些持續的堆積﹐卻導致網路程式碼變的無奇不有﹐有如我們人類的各式語言。在過去﹐Linux 模仿 SunOS 來處理這些事情﹐但終非良策。
+<P>此一新架構將可詳盡闡釋遠非 Linux 所能及的功能行為。
+<P>
+<H2><A NAME="ss3.2">3.2 iproute2 導覽 (iproute2 tour)</A>
+</H2>
+
+<P>Linux 本身有一個複雜異常的系統用於頻寬界定﹐叫做 Traffic Control。此系統支援多種方法﹐以應付傳入及傳出交通的分類(classfying)﹑優先排序(prioritizing)﹑分享(sharing)﹑以及限制(limiting)﹐等處理。
+<P>
+<P>下面﹐我們就讓我們粗略溜灠一下 iproute2 的能耐吧。
+<H2><A NAME="ss3.3">3.3 前提 (Prerequisites)</A>
+</H2>
+
+<P>首先﹐請確定必須的使用者工具已經安全妥當。在 RedHat 和 Debian 上﹐此套件都叫做 'iproute'﹐或是直接抓 <CODE>ftp://ftp.inr.ac.ru/ip-routing/iproute2-2.2.4-now-ss??????.tar.gz"</CODE> 也可以。
+<P>您也可以嘗試到 
+<A HREF="ftp://ftp.inr.ac.ru/ip-routing/iproute2-current.tar.gz">這裡</A> 獲得最新的版本。
+<P>iproute 中的某些部份還需要將特定的核心選項打開。另外﹐您還要知道﹐RedHat 6.2 之前的所有發行版本﹐其核心裡面﹐大部份的流量控管功能都付諸闕如。
+<P>FIXME: 有誰可以幫忙確認一下 7.0 已經將所需核心編譯進來了嗎﹖
+<P>同時﹐您還要確認您有支援 netlink ﹐您或許需要打造自己的核心﹐因為 iproute2 需要這個功能。
+<P>
+<H2><A NAME="ss3.4">3.4 探查當前設定 (Exploring your current configuration)</A>
+</H2>
+
+<P>給您一個驚喜﹐其實 iproute2 已經設定好了﹗當前命令如 <CODE>ifconfig</CODE> 和 <CODE>route</CODE> ﹐都已經使用進階的 syscall﹐但通常都使用預設值。
+<P>其中 <CODE>ip</CODE> 這工具最為重要﹐下面用它將我們的界面列示出來。
+<H3>用 <CODE>ip</CODE> 顯示連線 (<CODE>ip</CODE> shows us our links)</H3>
+
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+[ahu@home ahu]$ ip link list
+1: lo: &lt;LOOPBACK,UP> mtu 3924 qdisc noqueue 
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+2: dummy: &lt;BROADCAST,NOARP> mtu 1500 qdisc noop 
+    link/ether 00:00:00:00:00:00 brd ff:ff:ff:ff:ff:ff
+3: eth0: &lt;BROADCAST,MULTICAST,PROMISC,UP> mtu 1400 qdisc pfifo_fast qlen 100
+    link/ether 48:54:e8:2a:47:16 brd ff:ff:ff:ff:ff:ff
+4: eth1: &lt;BROADCAST,MULTICAST,PROMISC,UP> mtu 1500 qdisc pfifo_fast qlen 100
+    link/ether 00:e0:4c:39:24:78 brd ff:ff:ff:ff:ff:ff
+3764: ppp0: &lt;POINTOPOINT,MULTICAST,NOARP,UP> mtu 1492 qdisc pfifo_fast qlen 10
+    link/ppp 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>您所讀到的資料或許有所不同﹐這裡所顯示的是在我家裡的 NAT router 上的資料。我下面只會解釋輸出結果的一部份而已﹐因為並非全部資料都是相關的。
+<P>讓我們先看看 loopback 界面。有可能您的電腦並沒裝任何界面﹐但我建議您起碼將它設定起來。其中的 MTU (Maximum Transfer Unit) 體積是 3924 octet﹐同時並沒被佇列(queued) 起來。這是合理的﹐因為 loopback 界面是由核心虛構出來的。
+<P>現在而言﹐我暫時略過 dummy 界面不談﹐而且它也未必出現在您的電腦上面。接下來是我的兩張實體網路界面﹐一個連接我的 cable modem﹐另一個接到我的家中網路去。最後﹐我們也看到一個 ppp0 的界面。
+<P>注意﹐這裡並沒有 IP 位址。iproute 並沒有將 'links' 和 'IP addresses' 這兩概念連在一起。如果用 IP aliasing 的話﹐那麼 IP 位址的概念就似乎變得不怎麼貼切了。
+<P>不過﹐它會將 MAC 位址顯示出來﹐也就是我們的 ethernet 界面的實體辨別位址啦。
+<H3>用 <CODE>ip</CODE> 顯示 IP 位址 (<CODE>ip</CODE> shows us our IP addresses)</H3>
+
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+[ahu@home ahu]$ ip address show        
+1: lo: &lt;LOOPBACK,UP> mtu 3924 qdisc noqueue 
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 brd 127.255.255.255 scope host lo
+2: dummy: &lt;BROADCAST,NOARP> mtu 1500 qdisc noop 
+    link/ether 00:00:00:00:00:00 brd ff:ff:ff:ff:ff:ff
+3: eth0: &lt;BROADCAST,MULTICAST,PROMISC,UP> mtu 1400 qdisc pfifo_fast qlen 100
+    link/ether 48:54:e8:2a:47:16 brd ff:ff:ff:ff:ff:ff
+    inet 10.0.0.1/8 brd 10.255.255.255 scope global eth0
+4: eth1: &lt;BROADCAST,MULTICAST,PROMISC,UP> mtu 1500 qdisc pfifo_fast qlen 100
+    link/ether 00:e0:4c:39:24:78 brd ff:ff:ff:ff:ff:ff
+3764: ppp0: &lt;POINTOPOINT,MULTICAST,NOARP,UP> mtu 1492 qdisc pfifo_fast qlen 10
+    link/ppp 
+    inet 212.64.94.251 peer 212.64.94.1/32 scope global ppp0
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>這次包含的資訊就比較多了。它將所有的位址﹐以及所屬的網卡都顯示出來。'inet' 代表 Internet (IPv4)。當然﹐還有許多其它的位址族群﹐不過目前來說﹐暫時與我們無關。
+<P>讓我們仔細的看看 eth0 吧。它目前被分配的 inet 位址是 '10.0.0.1/8'。這是什麼意思呢﹖先看 /8 好了﹐它所代表的是網路位址 bit 數目。因為一個 IP 位址有 32 bit﹐所以我們就剩下 24 bit 給我的網路(主機)使用了。10.0.0.1 的前面 8 個 bit 所對應的是 10.0.0.0﹐也就是我們的網路位址(Network Address)﹐這樣我們的 netmask 是 255.0.0.0。
+<P>那剩下的 bits (所對應的位址)就直接連線到這個界面﹐拿例子來說明﹕可以直接在這個界面連上 10.250.3.13 ﹐和 10.0.0.1 一樣。
+<P>至於 ppp0 呢﹐也是同樣的原理啦﹐只是號碼之別而已。它的位址是 212.64.94.251﹐並沒有 subnet mask。這表示我們有一個 point-to-point 的連線﹐並且所有位址﹐除了這個 212.64.94.251 之外﹐都在遠端那邊。除此之外﹐還有更多的資訊﹐告訴我們在連線的另一端也同樣只有一個位址﹕212.64.94.1。那個 /32 ﹐是告訴我們沒有 'network bits' 的意思。
+<P>牢靠的掌握前述概念是至關重要的。假如您在理解上有困難﹐請參考本 HOWTO 前面所介紹的資料。
+<P>(譯者按﹕關於 IP 和 netmask 的關係﹐主要是用來判斷出‘網路位址’和‘主機位址’之用的。詳細的判斷規則﹐可以參考譯者的網站﹕ 
+<A HREF="http://www.study-area.org/network/network_ipadd.htm">http://www.study-area.org/network/network_ipadd.htm</A>。)
+<P>同時﹐還請留意 'qdisc' 這個東東﹐它是 Queueing Discipline (佇列戒律﹖) 的意思。這個概念也至為重要。
+<P>
+<H3>用 <CODE>ip</CODE> 顯示路由 (<CODE>ip</CODE> shows us our routes)</H3>
+
+<P>好了﹐我們已經曉得如何查找 10.x.y.z 這樣的位址了﹐而且也能夠連上 212.64.94.1。只是﹐光是這幾路散手是不能出師的﹐所以我們還要教您如何殺出木人巷。我們可以透過 ppp 連線接上 internet﹐同時封包會以 212.64.94.1 這個位址丟到外面去﹐然後別人也是以這個位址將結果送回來。
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+[ahu@home ahu]$ ip route show
+212.64.94.1 dev ppp0  proto kernel  scope link  src 212.64.94.251 
+10.0.0.0/8 dev eth0  proto kernel  scope link  src 10.0.0.1 
+127.0.0.0/8 dev lo  scope link 
+default via 212.64.94.1 dev ppp0 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>輸出結果本身就說得很清楚了。前面 4 行精確的描述出我們從 <CODE>ip address show</CODE> 所揭示的意義﹐而最後一行則告訴我們我們可以透過 212.64.94.1﹐也就是我們的預設網關(default gateway)﹐和外面的世界做連線。我們之所以將之視為網關﹐是因為我們將封包送給 212.64.94.1﹐然後它就會幫我們善後了。
+<P>為方便比較﹐如下是舊的 'route' 命令所顯示的內容﹕
+<BLOCKQUOTE><CODE>
+<PRE>
+[ahu@home ahu]$ route -n
+Kernel IP routing table
+Destination     Gateway         Genmask         Flags Metric Ref    Use
+Iface
+212.64.94.1     0.0.0.0         255.255.255.255 UH    0      0        0 ppp0
+10.0.0.0        0.0.0.0         255.0.0.0       U     0      0        0 eth0
+127.0.0.0       0.0.0.0         255.0.0.0       U     0      0        0 lo
+0.0.0.0         212.64.94.1     0.0.0.0         UG    0      0        0 ppp0
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss3.5">3.5 ARP</A>
+</H2>
+
+<P>ARP 就是 Address Resolution Protocol﹐其定義可以參考 
+<A HREF="http://www.faqs.org/rfcs/rfc826.html">RFC 826</A>。ARP 是用來查找同一本地網路上﹐其它主機之實體位址/位置用的。而在 Internet 上的機器﹐則通常用它的名稱來判別﹐並用它查詢出 IP 位址。這就是 foo.com 網路的機器﹐為何能與 bar.net 網路的機器進行溝通的原理。不過﹐光得到一個 IP 位址﹐是沒辦法告訴您該機器的實體位置在哪裡。這時﹐ARP 就派得上用場了。
+<P>或許﹐我們找個例子來說說會比較好理解。假設我用幾台機器組成一個網路。其中兩台目前在我的網路上﹐一台叫 foo﹐其 IP 位址是 10.0.0.1﹔另一台叫 bar﹐其 IP 位址是 10.0.0.2。現在﹐foo 想要 ping 一下 bar﹐看看他是否在線上﹐然而頭痛的是﹐foo 並不知道 bar 在哪裡。這樣﹐當 foo 決定要對 bar 做 ping 的時候﹐它需要先丟出一個 ARP 請求(request)。
+這個 ARP 請求就好像 foo 在大聲喊﹕“Bar(10.0.0.2)﹗您在哪裡啊﹖”其結果是﹐在網路上的所有機器都聽到這個呼叫﹐但卻只有 bar (10.0.0.2) 會作出回應。然後 bar 會丟出一個 ARP 回應(reply) 直接送回給 foo ﹕“Foo(10.0.0.1)﹐我在 00:60:94:E9:08:12 這裡啦。”用這個簡單的交流來找出網路上的同伴之後﹐foo 就可以和 bar 溝通了﹐直到它(其 arp cache)忘記 bar 在何方為止。
+<P>現在就讓我們看看這是如何工作的。您可以先檢查機器目前的 arp table ﹐應該會有點像這樣﹕
+<BLOCKQUOTE><CODE>
+<PRE>
+[root@espa041 /home/src/iputils]# ip neigh show
+9.3.76.42 dev eth0 lladdr 00:60:08:3f:e9:f9 nud reachable
+9.3.76.1 dev eth0 lladdr 00:06:29:21:73:c8 nud reachable
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>正如您所見到的﹐我的機器 espa041(9.3.76.41) 已知道如何找出 espa042(9.3.76.42)﹐還有 espagate(9.3.76.1)。然後讓我們將另一台機器加入 arp cache 中。
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+[root@espa041 /home/paulsch/.gnome-desktop]# ping -c 1 espa043
+PING espa043.austin.ibm.com (9.3.76.43) from 9.3.76.41 : 56(84) bytes of data.
+64 bytes from 9.3.76.43: icmp_seq=0 ttl=255 time=0.9 ms
+
+--- espa043.austin.ibm.com ping statistics ---
+1 packets transmitted, 1 packets received, 0% packet loss
+round-trip min/avg/max = 0.9/0.9/0.9 ms
+
+[root@espa041 /home/src/iputils]# ip neigh show
+9.3.76.43 dev eth0 lladdr 00:06:29:21:80:20 nud reachable
+9.3.76.42 dev eth0 lladdr 00:60:08:3f:e9:f9 nud reachable
+9.3.76.1 dev eth0 lladdr 00:06:29:21:73:c8 nud reachable
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>結果如上﹐espa041 先嘗試連接 espa043﹐然後 espa043 的實體位址也已被加進 arp cache 中。這樣﹐除非 espa043 的記錄逾時(例如他們之間再無溝通)﹐espa041 就知道到哪裡找 espa043﹐而無需再送 ARP 請求了。﹐
+<P>現在﹐讓我們將 espa043 從 arp cache 中刪除看看﹕
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+[root@espa041 /home/src/iputils]# ip neigh delete 9.3.76.43 dev eth0
+[root@espa041 /home/src/iputils]# ip neigh show
+9.3.76.43 dev eth0  nud failed
+9.3.76.42 dev eth0 lladdr 00:60:08:3f:e9:f9 nud reachable
+9.3.76.1 dev eth0 lladdr 00:06:29:21:73:c8 nud stale
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>好了﹐現在 espa041 再次忘記到哪裡找 espa043﹐而在下次要和 espa043 溝通的時候﹐就需要送出另外的 ARP 請求。同時﹐您還會從上面的輸出結果中發現﹕ espagate(9.3.76.1) 已經變為 "stale" 狀態。這是說﹐該顯示位置仍然有效﹐但在第一次向該機器傳送的時候﹐必須要先確認就是了。
+<P>
+<HR>
+<A HREF="Adv-Routing-HOWTO-4.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Adv-Routing-HOWTO-2.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Adv-Routing-HOWTO.html#toc3"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

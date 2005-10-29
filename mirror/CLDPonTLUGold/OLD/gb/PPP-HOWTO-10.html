@@ -1,0 +1,83 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>PPP HOWTO 中译版: 建立名称到位址解析(DNS)</TITLE>
+ <LINK HREF="PPP-HOWTO-11.html" REL=next>
+ <LINK HREF="PPP-HOWTO-9.html" REL=previous>
+ <LINK HREF="PPP-HOWTO.html#toc10" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="PPP-HOWTO-11.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="PPP-HOWTO-9.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="PPP-HOWTO.html#toc10"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="DNS"></A> <A NAME="s10">10. 建立名称到位址解析(DNS)</A></H2>
+
+<P>虽然我们人类喜欢给事物取个名称，电脑喜欢数字．
+在 TCP/IP 网路上（这也就是网际网路），我们藉由特定的名称呼叫某台机器，而且每台机器都存在於一个特定的领域标记里面．
+举例而言，我的 Linux 工作站称为 <B>archenland</B> 而它是存在於 <B>interweft.com.au</B> 这个领域里．
+所以它在人们心目中的位址就是 <B>archenland.hedland.edu.au</B>．
+(称为 FQDN - fully qualified domain name．)
+<P>然而，为了使网际网路上的其它电脑找的到这台机器，事实上电脑在网际网路上沟通时它是藉由其 IP 号码来认知的．
+<P>把机器（以及领域）的名称转译（解析）成为在网际网路上所实际使用的 IP 号码是提供领域名称服务之机器的工作．
+<P>它是这样子运作的:-
+<UL>
+<LI>你的机器需要知道某部特定电脑的 IP 位址．需要这项资讯的应用程式向你的 Linux PC 上的'名称解析器'询问此资讯;</LI>
+<LI>名称解析器查询机器内部的主机名称档案(可能是 <CODE>/etc/hosts</CODE> 以及/或是知道这项资讯的领域名称伺服器，而名称解析器实际的行为由 <CODE>/etc/host.conf</CODE> 档案决定);</LI>
+<LI>如果答案在主机名称档案中，就以此答案回答;</LI>
+<LI>如果是在指定的领域名称伺服器中，你的 PC 就向该机器询问;</LI>
+<LI>如果这部领域名称伺服器已经知道被询问名称的 IP 号码，就以此回答．否则，它会透过网际网路向其它的名称伺服器找寻资讯．
+最後这部名称伺服器会将资讯传回给原来询问的名称解析器，然後传给要求此资讯的应用程式．</LI>
+</UL>
+<P>
+<P>当你创造出 PPP  连线时，你需要告诉你的 Linux  机器它可以在哪里找到主机名称对照到 IP 号码（位址解析）的资讯，如此<B>你</B>就可以使用机器的名称而<B>你的电脑</B>可以把这些名称转译成它运作所需的 IP 号码．
+<P>
+<P>一个方法是输入所有你想联络的主机到 <CODE>/etc/hosts</CODE> 档案里（如果你是连上网际网路的话这真的是完全不可能的事）；
+另一个方法是使用相对於机器名称的 IP 号码（要记得全部的 IP 位址是不可能的除非在最小的区域网路上）．
+<P>
+<P>最好的方法是设定你的 Linux  使它知道该到哪取得这项名称到号码的资讯 － 自动地．
+这项服务是由领域名称伺服器系统所提供．需要做的全部工作是把 IP 号码输入到你的 <CODE>/etc/resov.conf</CODE> 档案里．
+<P>
+<H2><A NAME="ss10.1">10.1 <CODE>/etc/resolv.conf</CODE> 档案</A>
+</H2>
+
+<P>你的 PPP  伺服器系统管理／使用者支援人员应该要提供给你两个 DNS 的 IP 号码（只需要一个 － 但是两个在出问题时可以多些帮助）．
+<P>如前所述，Linux 不能以像 MS Windows 95 一样的方式来设定它的名称伺服器的 IP 号码．
+所以你必须(有礼貌地)<B>坚持</B>你的 ISP 提供你这项资讯!
+<P>你的 <CODE>/etc/resolv.conf</CODE> 看起来应该会像这样:
+<HR>
+<PRE>
+domain your.isp.domain.name
+nameserver 10.25.0.1
+nameserver 10.25.1.2
+</PRE>
+<HR>
+<P>
+<P>编辑这个档案（如果没有的话就建一个新的）以呈现你的 ISP  提供的资讯．它的拥有者以及权限应该像下面这样:-
+<BLOCKQUOTE><CODE>
+<PRE>
+-rw-r--r--   1 root     root           73 Feb 19 01:46 /etc/resolv.conf
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>如果你因为本来就在区域网路上所以已经设立 <CODE>/etc/resolv.conf</CODE> 档案的话，只要简单的把 PPP 连线的 DNS 伺服器 IP 号码加到你已有的档案里即可．
+<P>
+<H2><A NAME="ss10.2">10.2 <CODE>/etc/host.conf</CODE> 档案</A>
+</H2>
+
+<P>你也应该检查你的 <CODE>/etc/host.conf</CODE> 档案是否设定正确．它看起来应该像这样
+<HR>
+<PRE>
+order hosts,bind
+multi on
+</PRE>
+<HR>
+<P>
+<P>它告诉你的名称解析器在向名称伺服器询问之前先使用主机名称档案中的资讯．
+<P>
+<HR>
+<A HREF="PPP-HOWTO-11.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="PPP-HOWTO-9.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="PPP-HOWTO.html#toc10"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

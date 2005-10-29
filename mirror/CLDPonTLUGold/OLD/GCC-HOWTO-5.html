@@ -1,0 +1,131 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>The Linux GCC HOWTO中譯版V0.2: 除錯與監管</TITLE>
+ <LINK HREF="GCC-HOWTO-6.html" REL=next>
+ <LINK HREF="GCC-HOWTO-4.html" REL=previous>
+ <LINK HREF="GCC-HOWTO.html#toc5" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="GCC-HOWTO-6.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="GCC-HOWTO-4.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="GCC-HOWTO.html#toc5"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s5">5. 除錯與監管</A></H2>
+
+<H2><A NAME="index.58"></A> <A NAME="ss5.1">5.1 預防重於治療（lint）</A>
+ </H2>
+
+<P> lint對Linux而言並沒有很廣泛的用途，主要是因為大部份的人都能滿足於gcc所提供的警告訊息。可能最有用的就是<CODE>-Wall</CODE>參數了---這個參數的用途是要求gcc將所有的警告訊息顯現出來；but probably has more mnemonic value if thought of as the thing you bang your head against.
+<P>網路上有一個實用的public domain lint，位於 
+<A HREF="ftp://larch.lcs.mit.edu/pub/Larch/lclint">ftp://larch.lcs.mit.edu/pub/Larch/lclint</A>。我並不知道這個站到底有多好就是了。
+<P>
+<H2><A NAME="index.59"></A> <A NAME="ss5.2">5.2 除錯</A>
+ </H2>
+
+<H3><A NAME="index.62"></A> <A NAME="index.61"></A> <A NAME="index.60"></A> 我要怎樣做才能將除錯資訊放到一支程式裡頭？   </H3>
+
+<P> 你需要添加<CODE>-g</CODE>的參數來編譯與連結程式，而且不可以用<CODE>-fomit-frame-pointer</CODE>參數。事實上，你不需要重新編譯所有的程式，只需重新編譯目前你正在除錯的部份即可。
+<P>
+<P>就a.out的組態而言，共享程式庫是以<CODE>-fomit-frame-pointer</CODE>編譯而成，這個時候，gdb就變得英雄無用武之地了。連結時給定<CODE>-g</CODE>的選項，應該就隱含著靜態連結的意義了；這就是為什麼要加-g的原因了。
+<P>
+<P>如果連結器連結失敗，告訴你找不到libg.a，那就是在<CODE>/usr/lib/</CODE>的目錄底下，少了<CODE>libg.a</CODE>。libg.a是一個C語言很特別的偵錯程式庫。一般在libc的套件內就會提供libg.a；不然的話（新版是這樣的），你可能需要拿libc的原始碼自己設置了，不過，實際上你應該<EM>不需要</EM>才對。不管是什麼目的，大部份的情況下，只需將libg.a連結到<CODE>/usr/lib/libc.a</CODE>，你就能得到足夠的資訊了。
+<P>
+<H3><A NAME="index.63"></A> 那，能不能把除錯資訊給拿掉？ </H3>
+
+<P>很多的GNU軟體在編譯連結時，都會設定<CODE>-g</CODE>的選項；這樣做會造成執行檔過大的問題（通常是靜態的連結）。實際上，這並不是一個很熱門的想法。
+<P>如果程式本身有autoconf，產生了<CODE>configure</CODE>命令稿，通常你就可以用<CODE>./configure CFLAGS=</CODE>或是<CODE>./configure CFLAGS=-O2</CODE>來關掉除錯資訊。不然的話，你得檢查檢查Makefile了。當然啦，假如你用的是ELF，程式便會以動態的方式來連結，不論是否有<CODE>-g</CODE>的設定；因此你可以平常心把-g<CODE>拿掉</CODE>。
+<P>
+<P>
+<H3><A NAME="index.64"></A> 實用的軟體 </H3>
+
+<P>據瞭解，大部份的人都是用<B>gdb</B>來除錯。你可以從
+<A HREF="ftp://prep.ai.mit.edu/pub/gnu">GNU archive sites</A>拿到原始程式；或者是到
+<A HREF="ftp://tsx-11.mit.edu/pub/linux/packages/GCC">tsx-11</A>拿可執行檔。<B>xxgdb</B>是一個X介面的除錯程式，植基於gdb（也就是說你得先安裝好gdb，才能再裝xxgdb）。xxgdb的原始碼可以在
+<A HREF="ftp://ftp.x.org/contrib/xxgdb-1.08.tar.gz">ftp://ftp.x.org/contrib/xxgdb-1.08.tar.gz</A>找到。
+<P>另外，<B>UPS</B>除錯程式已由Rick Sladkey移植成功。UPS可以在X底下活得很好，不像xxgdb那樣---僅僅是gdb的X前端介面（X front end）。這支除錯程式有一大堆優良的特點，而且如果你得花時間去除一支破爛的程式，建議你考慮考慮xxgdb。事先編譯好的Linux版與修正版的原始碼可以在
+<A HREF="ftp://sunsite.unc.edu/pub/Linux/devel/debuggers/">ftp://sunsite.unc.edu/pub/Linux/devel/debuggers/</A>找到。而最初的原始程式則放在 
+<A HREF="ftp://ftp.x.org/contrib/ups-2.45.2.tar.Z">ftp://ftp.x.org/contrib/ups-2.45.2.tar.Z</A>。
+<P>你可能會發現另一個用來除錯的工具<B>strace</B>，也是相當的有用。它可以顯示出由程序所產生的系統呼叫，而且還擁有其它眾多繁複的功能，像是如果你手邊沒有原始碼的話，strace可以幫你找出有那些路徑名稱（path-names）已編譯進執行檔內； exacerbating race conditions in programs that you suspect contain them;還有，strace可拿來學習程式是怎麼在電腦中執行的。最新的版本（目前是3.0.8）可在找到
+<A HREF="ftp://ftp.std.com/pub/jrs/">ftp://ftp.std.com/pub/jrs/</A>。
+<P>
+<P>
+<H3>背景程式（常駐程式）</H3>
+
+<P>早期典型的常駐程式(daemon programs)是執行<CODE>fork()</CODE>，然後終止父程序。這樣的做法使得除錯的時間減短了。
+<P>
+<P>瞭解這點的最簡單的方法就是替<CODE>fork()</CODE>設一個中斷點（breakpoint）。當程式停止時，強迫fork()傳回0。
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+(gdb) list 
+1       #include &lt;stdio.h>
+2
+3       main()
+4       {
+5         if(fork()==0) printf("child\n");
+6         else printf("parent\n");
+7       }
+(gdb) break fork
+Breakpoint 1 at 0x80003b8
+(gdb) run
+Starting program: /home/dan/src/hello/./fork 
+Breakpoint 1 at 0x400177c4
+
+Breakpoint 1, 0x400177c4 in fork ()
+(gdb) return 0
+Make selected stack frame return now? (y or n) y
+#0  0x80004a8 in main ()
+    at fork.c:5
+5         if(fork()==0) printf("child\n");
+(gdb) next
+Single stepping until exit from function fork, 
+which has no line number information.
+child
+7       }
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H3>核心檔案</H3>
+
+<P>當Linux開機時，通常組態會設定成不要產生核心檔案。要是你那麼喜歡它們的話，可以用shell的builtin命令使其重新生效：就C-shell相容的shell（如tcsh）而言，會是下面這樣：
+<BLOCKQUOTE><CODE>
+<PRE>
+% limit core unlimited
+</PRE>
+</CODE></BLOCKQUOTE>
+
+而類似Bourne shell的shell（sh, bash, zsh, pdksh）則使用下面的語法：
+<BLOCKQUOTE><CODE>
+<PRE>
+$ ulimit -c unlimited
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>如果你想要有個多才多藝的核心檔命名（core file naming）（for
+example, if you're trying to conduct a post-mortem using a debugger that's buggy itself），那麼你可以對你的核心程式做一點小小的更動。找一找<CODE>fs/binfmt_aout.c</CODE>與<CODE>fs/binfmt_elf.c</CODE>檔中與下列相符的程式片段(in newer kernels, you'll have to grep around a little in older ones)：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+        memcpy(corefile,"core.",5);
+#if 0
+        memcpy(corefile+5,current->comm,sizeof(current->comm));
+#else
+        corefile[4] = '\0';
+#endif
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>將<CODE>0</CODE>換成<CODE>1</CODE>.
+<P>
+<H2><A NAME="ss5.3">5.3 監管</A>
+</H2>
+
+<P> 監管（Profiling）是用來檢核一支程式中那些部份是最常呼叫或是執行的時間最久的方法。這對程式的最佳化與找出何時時間是浪費掉的而言，是相當好的方式。你必須就你所要的時程資訊（timing information）的目的檔加上<CODE>-p</CODE>來編譯，而且如果要讓輸出的檔案有意義，你也會需要<CODE>gprof</CODE>（來自binutils套件的命令）。參閱<CODE>gprof</CODE>的manual page，可得知其細節。
+<P>11/18/97譯
+<P>
+<P>
+<HR>
+<A HREF="GCC-HOWTO-6.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="GCC-HOWTO-4.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="GCC-HOWTO.html#toc5"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

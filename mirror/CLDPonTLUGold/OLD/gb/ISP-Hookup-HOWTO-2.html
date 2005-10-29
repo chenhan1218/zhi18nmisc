@@ -1,0 +1,281 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>ISP-Hookup-HOWTO: 我要怎样才能与其他的世界连接呢 ?</TITLE>
+ <LINK HREF="ISP-Hookup-HOWTO-3.html" REL=next>
+ <LINK HREF="ISP-Hookup-HOWTO-1.html" REL=previous>
+ <LINK HREF="ISP-Hookup-HOWTO.html#toc2" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="ISP-Hookup-HOWTO-3.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="ISP-Hookup-HOWTO-1.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="ISP-Hookup-HOWTO.html#toc2"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s2">2. 我要怎样才能与其他的世界连接呢 ?</A></H2>
+
+<P>首先假设我们已经安装好你所使用的 Linux 供应商版本的系统，包含足够的网路软体模组、
+而且你已经设立好一个串列埠来连接使用 
+<!--
+/dev/modem
+-->
+ /dev/modem了。
+<P>内定上只有<CODE>root</CODE>才被允许来建构 /dev/modem。
+<P>要直接地连接到 ISP 上，以及实验连接的顺序，你可以使用
+<!--
+minicom
+-->
+
+minicom 这个程式，它可以直接地使用。
+<P>
+<H2><A NAME="ss2.1">2.1 基本建构</A>
+</H2>
+
+<P>可在网路上使用的机器必须是以 <CODE>root</CODE>使用者来建构。在进行之前，请确认
+<!--
+/etc/hosts.deny
+-->
+ /etc/hosts.deny 档案包含了下列各行：
+<BLOCKQUOTE><CODE>
+<PRE>
+ALL: ALL
+</PRE>
+</CODE></BLOCKQUOTE>
+
+一般你可能想允询自己，所以加上下面这行到  
+<!--
+/etc/hosts.allow
+-->
+
+/etc/hosts.allow档案□：
+<BLOCKQUOTE><CODE>
+<PRE>
+ALL: LOCAL
+</PRE>
+</CODE></BLOCKQUOTE>
+
+或是如果你坚持的话:
+<BLOCKQUOTE><CODE>
+<PRE>
+ALL: 127.0.0.1
+</PRE>
+</CODE></BLOCKQUOTE>
+
+下面开始，记得，它们只对於使用动态 IP 位址dynamic IP的PPP连接法有用。
+如果你有固接的优势，有些地方是不同的。
+<P>能以一个名字来连接一部机器是很棒的，对於动态 IP 的使用者来说可以由他／她自己来选择这个名称就更好了。
+在 
+<!--
+/etc/HOSTNAME
+-->
+ □输入本例的
+/etc/HOSTNAME:
+<BLOCKQUOTE><CODE>
+<PRE>
+roderick
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>下一步骤是设立一个名称伺服器 (name server)，在
+<!--
+/etc/resolv.conf
+-->
+ /etc/resolv.conf□面:
+<BLOCKQUOTE><CODE>
+<PRE>
+search .
+nameserver 193.212.1.0
+</PRE>
+</CODE></BLOCKQUOTE>
+
+名称伺服器name server必须被指定到一个数字 IP 位址上，而每一个 ISP 都不同。
+依你所需，你可以拥有最多三个不同的伺服器，每一个都在不同的线路上。他们会被照顺序地被要求工作。
+<P>如果你想要使用像 <CODE>somemachine</CODE> 来做为 <CODE>somemachine.acme.xz</CODE>的简称，那麽你必须将第一行更改为：
+<BLOCKQUOTE><CODE>
+<PRE>
+search acme.xz
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>当然在 
+<!--
+/etc/hosts
+-->
+ /etc/hosts□有一小部份必须也更动才行。大部份的使用者可以用：
+<BLOCKQUOTE><CODE>
+<PRE>
+127.0.0.1       localhost
+0.0.0.0         roderick
+</PRE>
+</CODE></BLOCKQUOTE>
+
+ 有固定 IP 位址的话将 0.0.0.0 改成你的 IP。
+<P>另外，
+<!--
+/etc/networks
+-->
+ 也需要小部份的修改：
+/etc/networks is:
+<BLOCKQUOTE><CODE>
+<PRE>
+loopback        127.0.0.0
+localnet        0.0.0.0
+</PRE>
+</CODE></BLOCKQUOTE>
+
+ 
+<P>你也可以在
+<!--
+/etc/mailname
+-->
+ /etc/mailname档□
+更改你的外部电子邮件区域。
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+acme.xz
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>在 ISP 上的使用者名称以及密码必须被指定在
+<!--
+/etc/ppp/pap-secrets
+-->
+
+/etc/ppp/pap-secrets□
+<BLOCKQUOTE><CODE>
+<PRE>
+dirk * PrettySecret
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>对於不使用PAP而使用 CHAP 的 ISP公司来话， 是用 
+<!--
+/etc/ppp/chap-secrets
+-->
+
+/etc/ppp/chap-secrets档。
+<P>最後，对於这些烦人的连接顺序都须在 PPP 可启用前弄好。这可用
+<!--
+/etc/ppp/chatscript
+-->
+ /etc/ppp/chatscript来办到：
+<BLOCKQUOTE><CODE>
+<PRE>
+TIMEOUT 5
+"" ATZ
+OK ATDT12345678
+ABORT "NO CARRIER"
+ABORT BUSY
+ABORT "NO DIALTONE"
+ABORT WAITING
+TIMEOUT 45
+CONNECT ""
+TIMEOUT 5
+"name:" ppp
+</PRE>
+</CODE></BLOCKQUOTE>
+
+  
+  
+当然在这个例子□你可以稍微做些调整。第三行的电话号码当然必须订定。
+某些使用者可能需把  <CODE>ATZ</CODE> 数据机初始化字串改为最佳化的字串。最後一行
+指出在 <CODE>name:</CODE>後需要一个提示，而它的回应到达时应该为 <CODE>ppp</CODE>。
+其他的系统可能有自己的步骤。
+<P>要真正地初始一通拨接， PPP 协定可由下列命令来启动：
+<BLOCKQUOTE><CODE>
+<PRE>
+exec pppd connect \
+     'chat -v -f /etc/ppp/chatscript' \
+      -detach crtscts modem defaultroute \
+      user dirk \
+      /dev/modem 38400
+</PRE>
+</CODE></BLOCKQUOTE>
+
+  
+ 
+  
+ 现在我们应该在线上，直到我们按 Ctrl-C 将这个程式杀掉。
+ 任何有关於拨接的讯息都会被加入到系统日志□。要读取他们，试试：
+<BLOCKQUOTE><CODE>
+<PRE>
+tail /var/adm/messages
+</PRE>
+</CODE></BLOCKQUOTE>
+
+  or
+<BLOCKQUOTE><CODE>
+<PRE>
+dmesg
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>只要 PPP 已启动，你就可以直接在 Internet 上遨游，也可以使用像 ftp,
+ncftp, rlogin, telnet,
+finger 等等的程式。这些程式都是网路套件的一部份。
+<P>关於 PPP 更详尽的资料可由下列地方取得：
+<P><CODE>
+<A HREF="file:/usr/lib/ppp/README.linux">/usr/lib/ppp/README.linux</A></CODE>
+<P><CODE>
+<A HREF="file:/usr/lib/ppp/README.linux-chat">/usr/lib/ppp/README.linux-chat</A></CODE>
+<P>最後，补充一下，关於安全性 security。在 
+<!--
+/etc/inetd.conf
+-->
+ /etc/inetd.conf
+档案□有列明你的机器所提供的外部服务程式。而在 
+<!--
+/etc/hosts.deny
+-->
+ /etc/hosts.deny
+档案内所列的我们就无法做外部的存取。而放在 
+<!--
+/etc/hosts.allow
+-->
+ /etc/hosts.allow档案
+□面的则可以被允许存取。
+区内通讯则可以
+<BLOCKQUOTE><CODE>
+<PRE>
+ALL: LOCAL
+</PRE>
+</CODE></BLOCKQUOTE>
+
+来准许。可参阅 <CODE>man 5 hosts_access</CODE>。  
+<P>最後，关於 POP协定这个名称似乎有一点被混淆了。
+在 
+<!--
+/etc/services
+-->
+ /etc/services □有个定义是说它几乎与下列相容：
+<BLOCKQUOTE><CODE>
+<PRE>
+pop2            109/tcp         pop-2           # PostOffice V.2
+pop3            110/tcp         pop-3 pop       # PostOffice V.3
+</PRE>
+</CODE></BLOCKQUOTE>
+<P><B>ALT:</B> 排除 
+<!--
+chatscript
+-->
+
+chatscript不用，我们可以使用更有弹性的 
+<!--
+dip
+-->
+ dip。
+但不能与 
+<!--
+diald
+-->
+ diald相关连。
+<P><B>ALT:</B> 有永久的 TCP/IP 连接的幸运儿，例如使用 Ethernet， 可以安全地
+不用理会任何关於 PPP 的事，而只需专心地将他们的网路卡设定好就好了。
+<P><B>ALT:</B> 有些无法使用 PPP，而使用 SLIP 的朋友，因为它和 PPP 的支援有点类似。
+还有像 UUCP ，有些仰赖由 SOUP 来做为交换新闻讨论与电子邮件的工具。
+最後一项您可由下面的档案得到讯息：
+<P><CODE>
+<A HREF="ftp://ftp.sol.no/user/bjorn/Linux-offline.tgz">ftp://ftp.sol.no/user/bjorn/Linux-offline.tgz</A></CODE>
+<P>另外 TERM 这个程式也可做为选择之一，你可看看 <I>Term-HOWTO</I>。
+<P>
+<HR>
+<A HREF="ISP-Hookup-HOWTO-3.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="ISP-Hookup-HOWTO-1.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="ISP-Hookup-HOWTO.html#toc2"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

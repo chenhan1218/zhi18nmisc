@@ -1,0 +1,231 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" content="text/html; charset=gb2312">
+<TITLE>Linux IP Alias mini HOWTO 中译版</TITLE>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+<PRE>
+原始文件：Linux IP Alias mini HOWTO
+档案叙述：如何在 Linux 机器上设定 IP 别名
+翻译日期：1997/10/23
+翻译维护：<a href="mailto:cwhuang@phys.ntu.edu.tw">cwhuang@phys.ntu.edu.tw</a>
+----------------------------------------------------------------------------------------------
+
+      本文最后修改日期: January 13th 1997.
+
+    如何在 Linux 机器上设定 IP 别名(aliasing)
+
+   GNU Copyleft 1996/1997 Harish Pillay (<a href="mailto:h.pillay@ieee.org">h.pillay@ieee.org</a>)
+
+ 原始站: <a href="http://home.pacific.net.sg/~harish/linuxipalias.html">http://home.pacific.net.sg/~harish/linuxipalias.html</a>
+
+
+摘要:
+
+本文说明如何在 Linux 机器上设定并执行 IP 别名．除此之外，还有如何设定在 IP
+别名上接收 e-mail．
+
+
+我的设定:
+
+* 最新的核心 (2.0.27 - 从 <a href="ftp://ftp.funet.fi/pub/Linux/kernel/src/v2.0">ftp://ftp.funet.fi/pub/Linux/kernel/src/v2.0</a> 取得) -
+  从 1.3.7x 以后就可以．
+* 将 IP Alias 编译成可载入模组．你在用 "make config" 指令编译核心时，如果要
+  把 IP Masq 编译成模组(Modules)应会被问到．查看 Modules HOWTO(如果有的话)
+  或是查看 /usr/src/linux/Documentation/modules.txt 中的资讯．
+* 我在已分配给我的 IP 之外还又要了两个额外的 IP．
+* 一片 D-Link DE620 网路卡(不重要，任何 Linux 支援的网路卡都行)．
+
+
+指令:
+
+* 首先载入 IP Alias 模组(如果你将它编译进核心可跳过此步骤):
+
+  /sbin/insmod /lib/modules/`uname -r`/ipv4/ip_alias.o
+
+* 再来，建立回绕(loopback)装置，以及 eth0 界面上以主 IP 号码为开头的所有 IP
+  号码:
+
+     /sbin/ifconfig lo 127.0.0.1
+     /sbin/ifconfig eth0 up
+     /sbin/ifconfig eth0 172.16.3.1
+     /sbin/ifconfig eth0:0 172.16.3.10
+     /sbin/ifconfig eth0:1 172.16.3.100
+
+  172.16.3.1 是主 IP 号码，而 .10 及 .100 是别名．比较奇怪的地方是 eth0:x，
+  其中 x=0, 1, 2, ... n 在每一不同的 IP 号码上．主 IP 号码不需要这个．
+
+* 第三步是建立递送路径．首先，递送到回绕装置，然后是区域网路，最后是不同的 
+  IP 号码及预设递送路径:
+
+     /sbin/route add -net 127.0.0.0
+     /sbin/route add -net 172.16.3.0 dev eth0
+     /sbin/route add -host 172.16.3.1 dev eth0
+     /sbin/route add -host 172.16.3.10 dev eth0:0
+     /sbin/route add -host 172.16.3.100 dev eth0:1
+     /sbin/route add default gw 172.16.3.200
+
+就这样了．
+
+在上面的例子中，为了说明我用的是 RFC 1918 所定义的私用 IP 号码．用你正式或
+私有的 IP 号码来取代它．
+
+上面的例子只展示了三个 IP 号码．在 /usr/include/linux/net_alias.h 中定义的
+最大值是 256．在一片网路卡上 256 个 IP 号码已经很多了 :-)!
+
+我用 /sbin/ifconfig 看起来像这样:
+
+lo        Link encap:Local Loopback
+          inet addr:127.0.0.1  Bcast:127.255.255.255  Mask:255.0.0.0
+          UP BROADCAST LOOPBACK RUNNING  MTU:3584  Metric:1
+          RX packets:5088 errors:0 dropped:0 overruns:0
+          TX packets:5088 errors:0 dropped:0 overruns:0
+
+eth0      Link encap:10Mbps Ethernet  HWaddr 00:8E:B8:83:19:20
+          inet addr:172.16.3.1  Bcast:172.16.3.255  Mask:255.255.255.0
+          UP BROADCAST RUNNING PROMISC MULTICAST  MTU:1500  Metric:1
+          RX packets:334036 errors:0 dropped:0 overruns:0
+          TX packets:11605 errors:0 dropped:0 overruns:0
+          Interrupt:7 Base address:0x378
+
+eth0:0    Link encap:10Mbps Ethernet  HWaddr 00:8E:B8:83:19:20
+          inet addr:172.16.3.10  Bcast:172.16.3.255  Mask:255.255.255.0
+          UP BROADCAST RUNNING  MTU:1500  Metric:1
+          RX packets:0 errors:0 dropped:0 overruns:0
+          TX packets:0 errors:0 dropped:0 overruns:0
+
+eth0:1    Link encap:10Mbps Ethernet  HWaddr 00:8E:B8:83:19:20
+          inet addr:172.16.3.100  Bcast:172.16.3.255  Mask:255.255.255.0
+          UP BROADCAST RUNNING  MTU:1500  Metric:1
+          RX packets:1 errors:0 dropped:0 overruns:0
+          TX packets:0 errors:0 dropped:0 overruns:0
+
+而 /proc/net/aliases 是
+
+device           family address
+eth0:0           2      172.16.3.10
+eth0:1           2      172.16.3.100
+
+而 /proc/net/alias_types 是
+
+type    name            n_attach
+2       ip              2
+
+当然，/proc/net 的内容是由 ifconfig 指令产生而非用手写的!
+
+
+问: 如何在重新启动机器后保持设定?
+答: 不论你是用 BSD 形式或是 SysV 形式(例如 Red Hat)的 init 启动，你都可以把它
+    放在 /etc/rc.d/rc.local 中．下面是我在我的 SysV init 系统(Red Hat 3.0.3 
+	及 4.0)中的设定:
+
+   * 我的 /etc/rc.d/rc.local: (修改过只显示相关的部份)
+
+     #setting up IP alias interfaces
+     echo "Setting 172.16.3.1, 172.16.3.10, 172.16.3.100 IP Aliases ..."
+     /sbin/ifconfig lo 127.0.0.1
+     /sbin/ifconfig eth0 up
+     /sbin/ifconfig eth0 172.16.3.1
+     /sbin/ifconfig eth0:0 172.16.3.10
+     /sbin/ifconfig eth0:1 172.16.3.100
+     #setting up the routes
+     echo "Setting IP routes ..."
+     /sbin/route add -net 127.0.0.0
+     /sbin/route add -net 172.16.3.0 dev eth0
+     /sbin/route add -host 172.16.3.1 eth0
+     /sbin/route add -host 172.16.3.10 eth0:0
+     /sbin/route add -host 172.16.3.100 eth0:1
+     /sbin/route add default gw 172.16.3.200
+     #
+
+
+问: 我如何在具 IP 别名的机器上在不同的 IP 别名号码上接收电子邮件(在一部用
+    sendmail 的机器上)?
+答: * 建立(如果还没有的话)一个档案，例如叫 /etc/mynames.cw．不需要真的是这个
+    名字，也不一定要放在 /etc 目录下．
+
+    * 在那个档案中，放上别名 IP 号码的完整领域名称．如果别名的 IP 没有领域名
+	称，你可以用这个 IP 本身．
+    
+    /etc/mynames.cw:
+     ----------------
+     # /etc/mynames.cw - include all aliases for your machine here; # is a comment.
+     domain.one.net
+     domain.two.com
+     domain.three.org
+     4.5.6.7
+
+    * 在你的 sendmail.cf 档中，在它定义档案类别巨集 Fw 的地方，加上:
+
+     .
+     .
+     .
+     ##################
+     #   local info   #
+     ##################
+     .
+     .
+     # file containing names of hosts for which we receive email
+     Fw/etc/mynames.cw
+     .
+     .
+     .
+
+    * 这样应该就可以了．以测试模式执行 sendmail 以测试新的设定:
+
+     ganymede$ /usr/lib/sendmail -bt
+     ADDRESS TEST MODE (ruleset 3 NOT automatically invoked)
+     Enter < ruleset> < address>
+     > 0 me@4.5.6.7
+     rewrite: ruleset  0   input: me @ 4 . 5 . 6 . 7
+     rewrite: ruleset 98   input: me @ 4 . 5 . 6 . 7
+     rewrite: ruleset 98 returns: me @ 4 . 5 . 6 . 7
+     rewrite: ruleset 97   input: me @ 4 . 5 . 6 . 7
+     rewrite: ruleset  3   input: me @ 4 . 5 . 6 . 7
+     rewrite: ruleset 96   input: me < @ 4 . 5 . 6 . 7 >
+     rewrite: ruleset 96 returns: me < @ 4 . 5 . 6 . 7 . >
+     rewrite: ruleset  3 returns: me < @ 4 . 5 . 6 . 7 . >
+     rewrite: ruleset  0   input: me < @ 4 . 5 . 6 . 7 . >
+     rewrite: ruleset 98   input: me < @ 4 . 5 . 6 . 7 . >
+     rewrite: ruleset 98 returns: me < @ 4 . 5 . 6 . 7 . >
+     rewrite: ruleset  0 returns: $# local $: me
+     rewrite: ruleset 97 returns: $# local $: me
+     rewrite: ruleset  0 returns: $# local $: me
+     > 0 me@4.5.6.8
+     rewrite: ruleset  0   input: me @ 4 . 5 . 6 . 8
+     rewrite: ruleset 98   input: me @ 4 . 5 . 6 . 8
+     rewrite: ruleset 98 returns: me @ 4 . 5 . 6 . 8
+     rewrite: ruleset 97   input: me @ 4 . 5 . 6 . 8
+     rewrite: ruleset  3   input: me @ 4 . 5 . 6 . 8
+     rewrite: ruleset 96   input: me < @ 4 . 5 . 6 . 8 >
+     rewrite: ruleset 96 returns: me < @ 4 . 5 . 6 . 8 >
+     rewrite: ruleset  3 returns: me < @ 4 . 5 . 6 . 8 >
+     rewrite: ruleset  0   input: me < @ 4 . 5 . 6 . 8 >
+     rewrite: ruleset 98   input: me < @ 4 . 5 . 6 . 8 >
+     rewrite: ruleset 98 returns: me < @ 4 . 5 . 6 . 8 >
+     rewrite: ruleset 95   input: < > me < @ 4 . 5 . 6 . 8 >
+     rewrite: ruleset 95 returns: me < @ 4 . 5 . 6 . 8 >
+     rewrite: ruleset  0 returns: $# smtp $@ 4 . 5 . 6 . 8 $: me < @ 4 . 5 . 6 . 8 >
+     rewrite: ruleset 97 returns: $# smtp $@ 4 . 5 . 6 . 8 $: me < @ 4 . 5 . 6 . 8 >
+     rewrite: ruleset  0 returns: $# smtp $@ 4 . 5 . 6 . 8 $: me < @ 4 . 5 . 6 . 8 >
+     >
+
+    注意，当我测试 me@4.5.6.7 时，它将信件送到本地机器上，因为 me@4.5.6.8 会
+	被 smtp mailer 拒绝．这是正常的回应．
+
+    * 所有都设定完成了．
+
+希望前面说的对某些人有用．
+
+感谢那些在 Linux 及 IP 别名上做了伟大贡献的人们．还有特别感谢 Juan Jose 
+Ciarlante 澄清我的疑问．还有感谢那些为我找出打字错误及提供建议的人!
+
+如果你认为这份文件有用，或有改进的建议的话，请寄电子邮件给我到
+<a href="mailto:h.pillay@ieee.org">h.pillay@ieee.org</a>．
+
+好好享受吧!
+
+有任何问题吗? 来信到 <a href="mailto:h.pillay@ieee.org">h.pillay@ieee.org</a>．
+
+</PRE>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

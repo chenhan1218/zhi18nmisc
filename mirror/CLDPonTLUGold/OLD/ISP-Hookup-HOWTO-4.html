@@ -1,0 +1,162 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>ISP-Hookup-HOWTO: 我要怎麼收發電子郵件 email呢</TITLE>
+ <LINK HREF="ISP-Hookup-HOWTO-5.html" REL=next>
+ <LINK HREF="ISP-Hookup-HOWTO-3.html" REL=previous>
+ <LINK HREF="ISP-Hookup-HOWTO.html#toc4" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="ISP-Hookup-HOWTO-5.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="ISP-Hookup-HOWTO-3.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="ISP-Hookup-HOWTO.html#toc4"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s4">4. 我要怎麼收發電子郵件 email呢</A></H2>
+
+<P>首先，確認一下 
+<!--
+sendmail
+-->
+ sendmail 已被安裝了。  Sendmail 會排列內部及外部的郵件
+，而且會將外部郵件無法被寄出去時做緩衝，等待到它可以被傳送出去為止。
+<P>Sendmail 是以 
+<!--
+/etc/sendmail.cf
+-->
+ /etc/sendmail.cf的設定來辦事。
+有份適合 ISP 使用者的例子可由下處找到：
+<P><CODE>
+<A HREF="ftp://ftp.sol.no/user/egilk/sendmail.cf">ftp://ftp.sol.no/user/egilk/sendmail.cf</A></CODE>
+這是以 
+<!--
+procmail
+-->
+ procmail 為基準來當做一個傳遞代理人 delivery agent
+，當然也能以 
+<!--
+deliver
+-->
+ deliver來取代它。
+<P>如果在需要一個 <B>正式的</B>網域domain
+address 才能寄外部郵件的話，那須在 
+<!--
+sendmail.cf
+-->
+ sendmail.cf檔裏做指定：
+<BLOCKQUOTE><CODE>
+<PRE>
+# who I masquerade as (null for no masquerading)
+DMacme.xz
+</PRE>
+</CODE></BLOCKQUOTE>
+
+  這假設你的本地端的使用者名稱與你在 ISP 上的使用者名稱是相同的。
+如果不同的話，只需另外將全名指定如下：
+<BLOCKQUOTE><CODE>
+<PRE>
+DMdick@acme.xz
+</PRE>
+</CODE></BLOCKQUOTE>
+
+Sendmail 現在已被建構成 <B>直接地</B> 寄送信件給收件人了。想避免
+連接到那些收信端很慢又不很規律而花太多時間或是重覆的連接的話，使用
+一個 ISP 做為緩衝就比較好些。我們可以使用 DS 來指定：
+<BLOCKQUOTE><CODE>
+<PRE>
+# "Smart" relay host (may be null)
+DSmail.acme.xz
+</PRE>
+</CODE></BLOCKQUOTE>
+
+注意， sendmail 會對 
+<!--
+sendmail.cf
+-->
+ 內的跳格字元 tab
+很敏感。
+sendmail.cf。你可以使用 
+<!--
+vi
+-->
+ vi文字編輯器
+來確認這些 tab 字元沒被更動。
+<P>Email 的接收常可以經由使用 POP3 協定來達成，而它可以在每次的連接啟動時
+即初始化。下面是一個測試用命令手稿：
+<BLOCKQUOTE><CODE>
+<PRE>
+sendmail -q
+popclient -3 -v mail.acme.xz -u dirk -p "PrettySecret" \
+       -k -o /usr/spool/mail/dirk
+</PRE>
+</CODE></BLOCKQUOTE>
+
+ 這個命令手稿可以在 PPP 連接後開始執行。注意，這個命令手稿
+只是用來做測試用，所以請確認本地端的郵筒在它執行時沒有被動到。 <CODE>-k</CODE> 選項是
+郵件被<B>保留在</B> ISP 的郵筒內，你只是簡單地取得一份郵件的拷貝而已。當然你
+如有自信你的設定都對了，那也可將這個選項移除。
+<P>注意，你的密碼會被顯示在命令列上，還有， popclient 已愈來愈退流行了，你可以考慮使用
+<!--
+fetchmail
+-->
+ fetchmail。
+<P>你可以在下面所列的地方找到更安全更好的命令手稿版本。
+<P><CODE>
+<A HREF="ftp://ftp.sol.no/user/egilk/pop-script.tar.gz">ftp://ftp.sol.no/user/egilk/pop-script.tar.gz</A></CODE>
+<P>這份命令手稿需要 
+<!--
+procmail
+-->
+ procmail 被安裝著，但你絕不會後悔的。
+大部份的供應商版都有它，你也可以試試：
+<P><CODE>
+<A HREF="ftp://sunsite.unc.edu/pub/Linux/system/Mail/mailhandlers/procmail-3.10-2.tar.gz">ftp://sunsite.unc.edu/pub/Linux/system/Mail/mailhandlers/procmail-3.10-2.tar.gz</A></CODE>
+<P>Procmail 是一個簡單又富彈性的工具，它可以依各種不同情況來排序收進來的電子郵件。
+不僅如此，還可自動化處理像有關  vacation 等等的訊息。
+<P>註，當我們像這個例子一樣直接使用 procmail 時，這個情形和 procmail 的文件裏所說的是不一樣的。
+我們並<B>不</B>需要.forward ，也不需要 .procmailrc。後者是當我
+們需要排序郵件時才需要用到。
+<P>讀取與寄送電子郵件的使用者介面可以被找到像 
+<!--
+pine
+-->
+ pine 或
+<!--
+elm
+-->
+ elm。
+<P><B>ALT:</B> Fetchmail 目前已經變成一個 popclient 的改良後的替代品了。最新的版本可
+從下列地點取得：
+<P><CODE>
+<A HREF="ftp://ftp.ccil.org/pub/esr/fetchmail/fetchmail-3.3.tar.gz">ftp://ftp.ccil.org/pub/esr/fetchmail/fetchmail-3.3.tar.gz</A></CODE>
+<P><B>ALT:</B>常使用撥接方式上網的 ISP使用者並不是真的需要讓 sendmail 精靈daemon
+啟動。為了減少資源的使用或是錯誤發生，你也可以將任何的 sendmail 的啟動都註解取消，像常見於
+/etc/rc.d/rc.M 檔內的(這點要端視供應商版的而定)。
+<P><B>ALT:</B> 為取代 sendmail 的話，你也可以使用更簡單的 
+<!--
+smail
+-->
+ smail。
+你可以在 <I>Linux Network Administrator's Guide</I> 裏找到一份它的很好描述(還有這兒提到的其他事項)。
+<P><B>ALT:</B> 還有一個 m4 巨集套件，它可以做個很新的 
+<!--
+/etc/sendmail.cf
+-->
+
+/etc/sendmail.cf。只要簡單地安裝，就好像是修改一個已存在的建構一樣。
+<P><B>ALT:</B> 還有許多更簡單但缺乏彈性的替代程式可以用來處理電子郵件。   Pine 只要被適當地建構
+就可以獨立執行，例如：它還可以使用其他網頁瀏灠器的最新版本。
+<P><B>ALT:</B> Many are very enthusiastic regarding the Emacs
+companion Gnus as an email and news handler. 詳細的資訊可在下面找到：
+<P><CODE>
+<A HREF="http://www.ifi.uio.no/~larsi/">http://www.ifi.uio.no/~larsi/</A></CODE>
+<P><B>ALT:</B> An alternative to popclient is
+pop-perl5.  It is available from:
+<P><CODE>
+<A HREF="ftp://sunsite.unc.edu/pub/Linux/System/Mail/pop-perl5-1.1.tar.gz">ftp://sunsite.unc.edu/pub/Linux/System/Mail/pop-perl5-1.1.tar.gz</A></CODE>
+<P>
+<HR>
+<A HREF="ISP-Hookup-HOWTO-5.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="ISP-Hookup-HOWTO-3.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="ISP-Hookup-HOWTO.html#toc4"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

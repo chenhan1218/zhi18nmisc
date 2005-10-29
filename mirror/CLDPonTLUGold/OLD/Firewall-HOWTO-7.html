@@ -1,0 +1,345 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>防火牆和代理伺服器 - HOWTO: 安裝TIS代理伺服器</TITLE>
+ <LINK HREF="Firewall-HOWTO-8.html" REL=next>
+ <LINK HREF="Firewall-HOWTO-6.html" REL=previous>
+ <LINK HREF="Firewall-HOWTO.html#toc7" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Firewall-HOWTO-8.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Firewall-HOWTO-6.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Firewall-HOWTO.html#toc7"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s7">7. 安裝TIS代理伺服器</A></H2>
+
+<P>
+<H2><A NAME="ss7.1">7.1 取得軟件</A>
+</H2>
+
+<P>TIS FWTK軟件可從下列網址得到︰<B>ftp://ftp.tis.com/</B>.  
+千萬記住︰從TIS下載軟件後，首先閱讀README。TIS fwtk存放在伺服器的一個隱藏目錄內，需要<B>發電子郵件給fwtk-request@tis.com</B> 並在信文內填入<B>SEND</B>才能得知隱藏的目錄的名字。Subject欄內不必填入任何內容。在回覆的電子郵件內會告知存放軟件的目錄的名字，有效時間為12小時，得趕快下載。
+在編寫本文時，FWTK的最新版本為2.0（beta）。除了幾個小地方之外，這個版本在編輯時沒有問題，運行時也正常，此處就以這一版本為例。如有最後定本時，將在以後的HOWTO中增訂。
+安裝FWTK時，首先在 /usr/src下建立fwtk-2.0目錄。將FWTK（fwtk-2.0.tar.gz）放在這個目錄內解壓（tar zxf fwtk-2.0.tar.gz）。
+FWTK並無代理SSL的網路文件，Jean-Christophe Touvet寫了一些附加資料，可從<B>ftp://ftp.edelweb.fr/pub/contrib/fwtk/ssl-gw.tar.Z</B>取得。
+Eric Wedel寫了修訂本，其中包括使用網景（Netscape）的新聞伺服器。這套軟件可從下列網址取得︰<B>ftp://mdi.meridian-data.com/pub/tis.fwtk/ssl-gw/ssl-gw2.tar.Z</B>
+以下以Eric Wedel的版本為例。
+要安裝，只要在/usr/src/fwtk-2.0目錄內建立一個 ssl-gw目錄，把文檔放在其中即可。
+在安裝這個網關時，得要作些改動才能進行編輯。
+首先改變ssl-gw.c檔，其中遺漏了必要的include檔。
+<PRE>
+  #if defined(__linux)
+  #include        &lt;sys/ioctl.h>
+  #endif
+</PRE>
+
+其次，也沒有Makefile檔。不妨從其他網關目錄拷貝一個，然後將網關的名字改為ssl-gw。
+<P>
+<H2><A NAME="ss7.2">7.2 編輯TIS FWTK</A>
+</H2>
+
+<P>版本2.0的FWTK比以往任何一個版本都易于編輯。不過在編輯以前還需要對BETA版本作一些更動。希望這些更動會加附到最後定本中。
+修改方法如下︰首先進入/usr/src/fwtk/fwtk目錄，拷貝Makefile.config.linux檔，以此檔替代Makefile.config檔。
+<B>不要運行FIXMAKE</B>。雖然在說明中建議執行這個程序。但運行後會破壞每一個目錄中的makefile。
+修改fixmake的方法是在每一個Makefile的sed指令的include行中添加‘.’和"。按下例更改，便可運行無礙。
+<PRE>
+  sed 's/^include[        ]*\([^  ].*\)/include \1/' $name .proto > $name 
+</PRE>
+
+然後需要編輯Makefile.config檔，但首先得作兩項修改。
+Makefile.config檔中的source目錄應改為進行編輯的/usr/src，因此FWTKSRCDIR應作相應的改變。
+<PRE>
+  FWTKSRCDIR=/usr/src/fwtk/fwtk
+</PRE>
+
+有些Linux系統使用gdbm數據庫。Makefile.config使用dbm。例如，RedHat 3.0.3就使用dbm，因此需要作出相應更動。
+<PRE>
+  DBMLIB=-lgdbm
+</PRE>
+
+最後需要改x-gw。BETA版內socket.c中的下列數行必需刪除。
+<PRE>
+  #ifdef SCM_RIGHTS  /* 4.3BSD Reno and later */
+                       + sizeof(un_name->sun_len) + 1
+  #endif
+</PRE>
+
+如在FWTK源目錄中添加ssl-gw，則在Makefile的目錄單中也要加上ssl-gw。
+<PRE>
+  DIRS=   smap smapd netacl plug-gw ftp-gw tn-gw rlogin-gw http-gw x-gw ssl-gw
+</PRE>
+
+完成上述修改後，運行<B>make</B>。
+<P>
+<H2><A NAME="ss7.3">7.3 安裝TIS FWTK </A>
+</H2>
+
+<P>運行<B>make install</B>。
+默認的安裝目錄是/usr/local/etc。可以改到更加安全可靠的目錄進行安裝，但也可以不改，也可將其特權改為chmod 700。
+現在開始設定防火牆。
+<P>
+<H2><A NAME="ss7.4">7.4 設置TIS FWTK</A>
+</H2>
+
+<P>好﹗下面就比較有趣了﹗設定的系統要能調用這些新功能，並建立管制表管理這些功能。
+以下的說明並不是為了要重寫TIS FWTK的使用手冊，其目的只是為了顯示可行的設定、可能遇到的問題和解決的辦法。
+有三個文檔組成這些controls。
+<P>
+<UL>
+<LI>/etc/services
+<UL>
+<LI>告訴系統所定功能在何埠號</LI>
+</UL>
+</LI>
+</UL>
+
+<UL>
+<LI>/etc/inetd.conf
+<UL>
+<LI>當服務埠有動作時告訴inetd啟動那個程式</LI>
+</UL>
+</LI>
+</UL>
+
+<UL>
+<LI>/usr/local/etc/netperm-table
+<UL>
+<LI>告訴FWTK同意和拒絕來往的用戶</LI>
+</UL>
+</LI>
+</UL>
+
+要FWTK發揮作用，應徹底編輯這些檔案。編輯這些功能檔而不正確設定 inetd.conf或netperm-table，可能使系統完全無法作用。
+<P>
+<H3>netperm-table檔</H3>
+
+<P>這個檔控制何人可以使用TIS FWTK的功能。首先應該想到防火牆兩邊的需求。網路外面的用戶在進入網路之前應首先表明身份，但網路內部的用戶則可直接通過。
+在表明身份時，防火牆使用一個稱為<B>authsrv</B>的程式，其中存有用戶的ID和密碼。netperm-table中的authentication部分控制這一數據庫存放何處和誰可取用。
+要不讓人取用這一功能並不容易，在premit-hosts這一行中使用“*”，以致每人都能取用這一功能。這一行的正確設定應該是“<CODE>authsrv: premit-hosts localhost</CODE>”，但似乎不起作用。
+<PRE>
+  #
+  # Proxy configuration table：  代理伺服器設置表
+  #
+  # Authentication server and client rules
+  authsrv:      database /usr/local/etc/fw-authdb
+  authsrv:      permit-hosts *
+  authsrv:      badsleep 1200
+  authsrv:      nobogus true
+  # Client Applications using the Authentication server
+  *:            authserver 127.0.0.1 114
+</PRE>
+
+要啟動數據庫，以root在/var/local/etc內運行<B>./authsrv</B>，設立管理者的使用記錄。實際操作如下︰
+閱讀FWTK文檔了解如何添加用戶和用戶組。
+<PRE>
+    #
+    # authsrv
+    authsrv# list
+    authsrv# adduser admin &quot;Auth DB admin&quot;
+    ok - user added initially disabled
+    authsrv# ena admin
+    enabled
+    authsrv# proto admin pass
+    changed
+    authsrv# pass admin &quot;plugh&quot;
+    Password changed.
+    authsrv# superwiz admin
+    set wizard
+    authsrv# list
+    Report for users in database
+    user   group  longname           ok?    proto   last 
+    ------ ------ ------------------ -----  ------  -----
+    admin         Auth DB admin      ena    passw   never
+    authsrv# display admin
+    Report for user admin (Auth DB admin)
+    Authentication protocol: password
+    Flags: WIZARD
+    authsrv# ^D
+    EOT
+    #
+</PRE>
+
+Telnet的網關（tn-gw）控制直接了當，應首先設定。
+例如，允許在保護網路內的用戶不表明身份直接通過(permit-hosts 196.1.2.* -passok)。但其他用戶必需提供用戶ID和密碼才可使用代理伺服器(permit-hosts * -auth)。
+此外，有一個系統(196.1.2.202)也可直接使用防火牆。這只要設定inetacl-in.telnetd的內容即可。
+Telnet的timeout時間應該短暫。
+<PRE>
+  # telnet gateway rules:
+  tn-gw:                denial-msg      /usr/local/etc/tn-deny.txt
+  tn-gw:                welcome-msg     /usr/local/etc/tn-welcome.txt
+  tn-gw:                help-msg        /usr/local/etc/tn-help.txt
+  tn-gw:                timeout 90
+  tn-gw:                permit-hosts 196.1.2.* -passok -xok
+  tn-gw:                permit-hosts * -auth
+  # Only the Administrator can telnet directly to the Firewall via Port 24
+  netacl-in.telnetd: permit-hosts 196.1.2.202 -exec /usr/sbin/in.telnetd
+</PRE>
+
+r-command如同telnet的同一方式設定。
+<PRE>
+  # rlogin gateway rules:
+  rlogin-gw:    denial-msg      /usr/local/etc/rlogin-deny.txt
+  rlogin-gw:    welcome-msg     /usr/local/etc/rlogin-welcome.txt
+  rlogin-gw:    help-msg        /usr/local/etc/rlogin-help.txt
+  rlogin-gw:    timeout 90
+  rlogin-gw:    permit-hosts 196.1.2.* -passok -xok
+  rlogin-gw:    permit-hosts * -auth -xok
+  # Only the Administrator can telnet directly to the Firewall via Port
+  netacl-rlogind: permit-hosts 196.1.2.202 -exec /usr/libexec/rlogind -a
+</PRE>
+
+任何人均不得直接進入防火牆，其中包括FTP，因此，不要把FTP伺服器放在防火牆上。
+再者，permit-hosts行允許保護網路內的任何人自由進入網際網路，其他人則必需表明身份。下文附上送到和收到的每份文檔的記錄（-log { retr stor }）。
+FTP的timeout開關控制在多少時間後停止試接，以及在多少時間沒有動作後，放棄試接。
+<PRE>
+  # ftp gateway rules:
+  ftp-gw:               denial-msg      /usr/local/etc/ftp-deny.txt
+  ftp-gw:               welcome-msg     /usr/local/etc/ftp-welcome.txt
+  ftp-gw:               help-msg        /usr/local/etc/ftp-help.txt
+  ftp-gw:               timeout 300
+  ftp-gw:               permit-hosts 196.1.2.* -log { retr stor }
+  ftp-gw:               permit-hosts * -authall -log { retr stor }
+</PRE>
+
+通過WWW、gopher和瀏覽器進行的ftp由http-gw控制。最上面的兩行建立一個目錄，用于儲存經由防火牆的ftp和WWW文件。在本例中，這些文件屬root所有，因此放在只有root能夠進入的目錄內。
+WWW的連接應該短暫。它控制使用者在連接不通時的等待時間。
+<PRE>
+  # www and gopher gateway rules:
+  http-gw:      userid          root
+  http-gw:      directory       /jail
+  http-gw:      timeout 90
+  http-gw:      default-httpd   www.afs.net
+  http-gw:      hosts           196.1.2.* -log { read write ftp }
+  http-gw:      deny-hosts      * 
+</PRE>
+
+ssl-gw實際上是一個任何人都可通過的網關。應當當心設定。在本例中，任何保護網路中的用戶，除127.0.0.* 和192.1.1.* 外，均可連接網路外的任何伺服器，並只能使用443至563 埠號。443至563埠號一般稱為SSL埠號。
+<PRE>
+  # ssl gateway rules:
+  ssl-gw:   timeout 300
+  ssl-gw:   hosts           196.1.2.* -dest { !127.0.0.* !192.1.1.* *:443:563 }
+  ssl-gw:   deny-hosts      *
+</PRE>
+
+下面的例子說明如何利用plug-gw連接到新聞伺服器。在本例中，保護網路內的用戶只允許連接到一個系統，即連接到它的新聞埠。
+第二行使新聞伺服器將其資料送到保護網路。
+對新聞伺服器的timeout時間設定應該比較長，因為多數用戶大都聯機閱讀新聞。
+<PRE>
+ 
+  # NetNews Pluged gateway
+  plug-gw:        timeout 3600
+  plug-gw: port nntp 196.1.2.* -plug-to 199.5.175.22 -port nntp
+  plug-gw: port nntp 199.5.175.22 -plug-to 196.1.2.* -port nntp
+</PRE>
+<P>Finger網關的設定至為簡單。保護網路內的用戶只要首先登錄，就可使用防火牆上的finger程式。任何其他人就只收到一段message。
+<PRE>
+  # Enable finger service --------設定finger功能
+  netacl-fingerd: permit-hosts 196.1.2.* -exec /usr/libexec/fingerd
+  netacl-fingerd: permit-hosts * -exec /bin/cat /usr/local/etc/finger.txt
+</PRE>
+
+在這份HOWTO中，沒有設定Mail和X-windows功能。如任何人有這方面的實例，請發email給我。
+<P>
+<H3>inetd.conf的設置檔</H3>
+
+<P>下面附上/etc/inetd.conf的全部文檔。所有不需要的功能都用#符號注銷。在這份全部文檔中顯示取消了何種功能，以及顯示如何設定新的防火牆功能。
+<PRE>
+ 
+  #echo stream  tcp  nowait  root               internal 
+  #echo dgram   udp  wait    root       internal
+  #discard              stream  tcp  nowait  root       internal
+  #discard              dgram   udp  wait    root       internal
+  #daytime              stream  tcp  nowait  root       internal
+  #daytime              dgram   udp  wait    root       internal
+  #chargen              stream  tcp  nowait  root       internal
+  #chargen              dgram   udp  wait    root       internal
+  # FTP firewall gateway --------FTP防火牆網關
+  ftp-gw      stream  tcp  nowait.400  root  /usr/local/etc/ftp-gw  ftp-gw
+  # Telnet firewall gateway------Telnet防火牆網關
+  telnet        stream  tcp  nowait      root  /usr/local/etc/tn-gw /usr/local/etc/tn-gw
+  # local telnet services------用戶的telnet功能
+  telnet-a    stream  tcp  nowait      root  /usr/local/etc/netacl in.telnetd
+  # Gopher firewall gateway------Gopher防火牆網關
+  gopher        stream  tcp  nowait.400  root  /usr/local/etc/http-gw /usr/local/etc/http-gw 
+  # WWW firewall gateway------WWW防火牆網關
+  http  stream  tcp  nowait.400  root  /usr/local/etc/http-gw /usr/local/etc/http-gw 
+  # SSL firewall gateway------SSL防火牆網關
+  ssl-gw  stream  tcp     nowait  root /usr/local/etc/ssl-gw   ssl-gw
+  # NetNews firewall proxy (using plug-gw)------NetNews防火牆代理伺服器（使用plug-gw）
+  nntp    stream  tcp     nowait  root    /usr/local/etc/plug-gw plug-gw nntp
+  #nntp stream  tcp     nowait  root    /usr/sbin/tcpd  in.nntpd
+  # SMTP (email) firewall gateway------SMTP（email）防火牆網關
+  #smtp stream  tcp     nowait  root    /usr/local/etc/smap smap
+  #
+  # Shell, login, exec and talk are BSD protocols------ Shell, login, exec and talk均屬BSD協議
+  #
+  #shell        stream  tcp     nowait  root    /usr/sbin/tcpd  in.rshd
+  #login        stream  tcp     nowait  root    /usr/sbin/tcpd  in.rlogind
+  #exec stream  tcp     nowait  root    /usr/sbin/tcpd  in.rexecd
+  #talk dgram   udp     wait    root    /usr/sbin/tcpd  in.talkd
+  #ntalk        dgram   udp     wait    root    /usr/sbin/tcpd  in.ntalkd
+  #dtalk        stream  tcp     waut    nobody  /usr/sbin/tcpd  in.dtalkd
+  #
+  # Pop and imap mail services et al------Pop和imap mail功能
+  #
+  #pop-2   stream  tcp  nowait  root  /usr/sbin/tcpd    ipop2d
+  #pop-3   stream  tcp  nowait  root  /usr/sbin/tcpd    ipop3d
+  #imap    stream  tcp  nowait  root  /usr/sbin/tcpd    imapd
+  #
+  # The Internet UUCP service------網際網路UUCP功能
+  #
+  #uucp    stream  tcp  nowait  uucp  /usr/sbin/tcpd  /usr/lib/uucp/uucico -l
+  #
+  # Tftp service is provided primarily for booting.  Most sites
+  # run this only on machines acting as &quot;boot servers.&quot; Do not uncomment
+  # this unless you *need* it.  ----- Tftp功能主要用于啟動。一般只有作為&quot;boot伺服器&quot;時才需要tftp。因此，不要取消注銷（#）符號。
+  #
+  #tftp dgram   udp     wait    root    /usr/sbin/tcpd  in.tftpd
+  #bootps       dgram   udp     wait    root    /usr/sbin/tcpd  bootpd
+  #
+  # Finger, systat and netstat give out user information which may be
+  # valuable to potential "system crackers."  Many sites choose to disable 
+  # some or all of these services to improve security.------ Finger, systat and netstat會向駭客提供可貴的資料。許多網站取消一些或全部功能，以增安全。
+  #
+  # cfinger is for GNU finger, which is currently not in use in RHS Linux
+  # cfinger是GNU finger，目前在RHS Linux中並不使用。
+  #
+  finger        stream  tcp  nowait  root   /usr/sbin/tcpd  in.fingerd
+  #cfinger      stream  tcp  nowait  root   /usr/sbin/tcpd  in.cfingerd
+  #systat       stream  tcp  nowait  guest  /usr/sbin/tcpd  /bin/ps -auwwx
+  #netstat      stream  tcp  nowait  guest  /usr/sbin/tcpd  /bin/netstat -f inet
+  #
+  # Time service is used for clock syncronization.-----時間功能用于設定時間的同步。
+  #
+  #time stream  tcp  nowait  root  /usr/sbin/tcpd  in.timed
+  #time dgram   udp  wait    root  /usr/sbin/tcpd  in.timed
+  #
+  # Authentication-----查驗用戶身份
+  #
+  auth          stream  tcp  wait    root  /usr/sbin/tcpd  in.identd -w -t120
+  authsrv       stream  tcp  nowait  root  /usr/local/etc/authsrv authsrv
+  #
+  # End of inetd.conf-----inetd.cong設置檔結束
+</PRE>
+<P>
+<H3>/etc/services檔</H3>
+
+<P>
+<P>當用戶連接到防火牆時，會接到一個已知的埠（小于1024）。例如，telnet接到埠23。inetd deamon接到連接的動作，查看/etc/services上這些功能的名字。然後，它會啟動/etc/inetd.conf檔中這個名字所指定的程式。
+有時使用的功能並不在/etc/services檔中。這些功能可指定到任何想指定的埠。例如，管理員的telnet埠（telnet-a）可設定到埠24，也可設定到埠2323，悉聽尊便。如果管理員（指你本人）要直接連接到防火牆，則需telnet到埠24而非埠23。如按照下例設定netperm-table，則只能從保護的網路中的一個系統設定。
+<P>
+<PRE>
+ 
+  telnet-a         24/tcp
+  ftp-gw          21/tcp           # this named changed
+  auth            113/tcp   ident    # User Verification
+  ssl-gw           443/tcp
+</PRE>
+<P>
+<P>
+<HR>
+<A HREF="Firewall-HOWTO-8.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Firewall-HOWTO-6.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Firewall-HOWTO.html#toc7"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

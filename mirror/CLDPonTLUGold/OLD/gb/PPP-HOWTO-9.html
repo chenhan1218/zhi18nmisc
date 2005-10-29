@@ -1,0 +1,210 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>PPP HOWTO 中译版: 设定你的数据机及串列埠</TITLE>
+ <LINK HREF="PPP-HOWTO-10.html" REL=next>
+ <LINK HREF="PPP-HOWTO-8.html" REL=previous>
+ <LINK HREF="PPP-HOWTO.html#toc9" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="PPP-HOWTO-10.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="PPP-HOWTO-8.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="PPP-HOWTO.html#toc9"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="Modem"></A> <A NAME="s9">9. 设定你的数据机及串列埠</A></H2>
+
+<P>你应该确认你的数据机设定正确而且你知道它连接到哪个串列埠．
+<P>
+<P><B>谨记</B>:-
+<UL>
+<LI>DOS com1: = Linux /dev/cua0 (and /dev/ttyS0)</LI>
+<LI>DOS com2: = Linux /dev/cua1 (and /dev/ttyS1)<BR>
+等等</LI>
+</UL>
+<P>
+<P>还要提醒你就是如果你有四个串列埠，标准 PC 上让 com1 与 com3 共用 IRQ4 且让 com2 与 com4 共用 IRQ3．
+<P>
+<P>如果你有其它机装置和串列埠共用一个 IRQ 的话可能会有问题．
+你必须确定你的数据机串列埠拥有它自己，唯一的一个 IRQ．许多现在的串列埠卡(与品质较佳的主机板上的串列埠)允许你将串列埠上的 IRQ 移开．
+<P>
+<P>如果你在用 Linux 2.0.X 核心，你可以用 <CODE>cat /proc/interrupts</CODE> 检查使用中的 IRQ，你会看到像这样的输出结果
+<HR>
+<PRE>
+ 0:    6766283   timer
+ 1:      91545   keyboard
+ 2:          0   cascade
+ 4:     156944 + serial
+ 7:     101764   WD8013
+10:     134365 + BusLogic BT-958
+13:          1   math error
+15:    3671702 + serial
+</PRE>
+<HR>
+<P>
+<P>这里显示了一个串列埠在 IRQ4 (一个滑鼠)与一个串列埠在 IRQ15．
+(也有一串列埠在 com2, IRQ3 与 com4 是在 IRQ14，但并未使用，没有显示出来)．
+<P>
+<P>请小心 - 如果你要调你的 IRQ 的话你要确实知道你在做些什麽! 你不只需要打开你的电脑外壳，将界面卡拔下并调整 jumper，你还需要知道那个占用什麽 IRQ．
+以我的例子来说，这完全是以 SCSI 为主的 PC，因此我将主机板上的通常会占用 IRQ14 与 15 的 IDE 界面关掉．
+<P>
+<P>你还需要注意如果你的 PC 还跑了其它的作业系统，更动 IRQ 的位址可能使那个作业系统启动不正常，或根本开不了机!
+<P>
+<P>如果真的将串列埠移到了非标准的 IRQ，那麽你需要告诉 Linux 每一个埠所用的 IRQ 位址．
+这可以用 <CODE>setserial</CODE> 指令达成，而且最好将它放到 <CODE>rc.local</CODE>，或在 SysV 系统中由 <CODE>rc.local</CODE> 所呼叫的 <CODE>rc.serial</CODE> 里面成为开机过程的一部份．
+以我上面所列的机器来说，用这样的指令
+<HR>
+<PRE>
+/bin/setserial -b /dev/ttyS2 IRQ 11
+/bin/setserial -b /dev/ttyS3 IRQ 15
+</PRE>
+<HR>
+<P>
+<P>然而，如果你使用由 <CODE>kerneld</CODE> 行程所负责的动态载入串列模组，你不能像这样每次开机时设定一次 IRQ 後就把它忘了．
+这是因为如果串列模组被移除，Linux 就会忘了这些特殊的设定．
+<P>
+<P>因此，如果你以动态方式载入串列模组，你必须要在每入载入模组时重新设定 IRQ 才行．
+<P>
+<H2><A NAME="ss9.1">9.1 串列埠与速度相容性的注意事项</A>
+</H2>
+
+<P>如果你使用高速(外接式)数据机(14,400 baud 或更高)，你的串列埠速度必须能够处理这种数据机所产生的资料量，特在是当数据机在压缩资料时．
+<P>
+<P>你的串列埠需要一种新型的 UART (Universal Asynchronous Receiver Transmitter)，像是 16550(A)．
+如果你在使用一部旧的机器(或旧的串列卡)，很可能串列埠上只有旧的 8250 UART，这在你使用高速数据机时可能会发生问题．
+<P>
+<P>使用这个指令
+<BLOCKQUOTE><CODE>
+<PRE>
+setserial -a /dev/ttySx
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>让 Linux 回报你使用的 UART 类型．如果你没有 16550A 型的 UART，去买一块新的串列卡(不到 $50)．
+当你买一块新卡时，确定你能调整上面的 IRQ!
+<P>
+<P>注意: 最早版本的 16550 UART 晶片上有瑕疵．这点很快就被发现了而且也发行了新版的晶片 - 16550A UART．
+但仍有少部份有瑕疵的晶片流入了市面．虽然不太可能刚好就让你买到，但你还是应该看一下晶片类型是不是 16550A，特别是在一些较早期的串列卡上．
+<P>
+<H2><A NAME="ss9.2">9.2 串列埠名称</A>
+</H2>
+
+<P>以前，Linux 用 <CODE>cuaX</CODE> 表示拨出的串列埠名而 <CODE>ttySx</CODE> 表示拨入的名称．
+<P>
+<P>自核心 2.0.X 之後这样的要求已经改变了，所以你应该可以用 <CODE>ttySx</CODE> 同时表示拨入及拨出的名称．
+据我了解 <CODE>cuaX</CODE> 的装置名称在未来版本的核心中可能会取消．
+<P>
+<H2><A NAME="ss9.3">9.3 配置你的数据机</A>
+</H2>
+
+<P>为使用 PPP 你将得正确地配置你的数据机 － 要完成这件工作请阅读你的数据机使用手册! 
+大部分的数据机都有 PPP  所需求的的<B>出厂预设选项</B>．
+最基本的配置是:-
+<UL>
+<LI>硬体流量控制 (RTS/CTS) (&amp;K3 在许多采用 Hayes 指令集的数据机)</LI>
+</UL>
+<P>你应该要研究的其它设定（使用标准 Hayes 指令）是:
+<UL>
+<LI>E1 开启指令的本地回应 (chat 运作所需)</LI>
+<LI>Q0 回报执行结果代码 (chat 运作所需)</LI>
+<LI>S0=0 关闭自动回应 (除非你想让你的数据机接听电话)</LI>
+<LI>&amp;C1 只在连线之後侦测载波</LI>
+<LI>&amp;S0 Data Set Ready (DSR)永远设为开启</LI>
+<LI>(看情况)   Data Terminal Ready</LI>
+</UL>
+<P>
+<P>有一个站台提供你不断增加的数据机款式的设定，可能会对你有所帮助，在
+<A HREF="http://www.in.net/info/modems/index.html">Modem setup information</A>．
+<P>
+<P>在你的电脑与数据机之间的数据机串列面界面如何运作也值得研究了解．
+大部分现代的数据机都允许你以固定的速度使用串列界面，即使电话线路界面切换到最高的速度它跟远端数据机都能够处理．
+<P>
+<P>这称为 split speed operation．如果你的数据机能支援这项功能，把数据机的串列界面锁定在它的最高速度（通常是 115,200 baud ，但对 14,400 数据机来说可能是 38,400 baud）．
+<P>
+<P>使用你的通讯软体（例如 minicom）找出关於你数据机的配置资讯并且设为 PPP  所需的设定．
+许多数据机会在 AT&amp;V 指令的回应中回报它们目前的设定状况，但是你应该查看一下你的数据机使用手册．
+<P>如果你把设定全都弄乱了，那麽你可以藉由发出 AT&amp;F 指令回到稳定状态（通常可以） － 回到出厂设定．
+（在我遇过的大部分现代数据机中，出厂的设定包含所有使用 PPP 所需的设定 － 但是你应该做个检查）．
+<P>
+<P>一旦你找出了必要的设定字串就把它写下来．然後你必须做个决定: 你可以将这些设定值存在数据机上的非挥发性记忆体中这样可以用适当的 AT 指令就可叫出．
+另一个做法是将这些正确的设定在 PPP 的拨号过程中传入．
+<P>如果你只从 Linux 下使用数据机连接到 ISP 伺服器，最简单的做法就是将这些设定值存入数据机上的非挥发性记忆体(non-volatile RAM)．
+<P>另一方面，如果你要还在其它的应用程式或作业系统上使用数据机，最保险的做法是在每次拨号时才将这些资讯传入，
+如此可以确保在每次拨号时数据机总是在正确的状态．(记下这些设定字串还有个好处就是在数据机遗失了记忆体的内容时，这确实可能发生)．
+<P>
+<H2><A NAME="ss9.4">9.4 串列流量控制注意事项</A>
+</H2>
+
+<P>当资料在串列通讯线路上流动的时候，可能会发生资料到达的比电脑能处理的还要快这种情况（电脑可能忙著做其它的事 － 记得，Linux 是一个多使用者，多工的作业系统）．
+为了确保资料不会漏失（在缓冲区中的资料不会超载而因此漏失掉），需要某些控制资料流量的方法．
+<P>
+<P>有两种方法可以在串列线路上达成这个目的:-
+<UL>
+<LI>使用硬体信号(Clear To Send/Request to Send - CTS/RTS)</LI>
+<LI>使用软体信号(control S and control Q, also known as XON/XOFF).</LI>
+</UL>
+<P>
+<P>虽然後者用在终端机（文字）连结上可能很好，但是在 PPP  上的资料使用整个 8 bits 编码空间 － 而且在资料中的某个地方相当可能存在会被转成 control S  以及 control Q  的位元组．
+所以，如果数据机设成使用软体流量控制的话，那麽传输很容易被扰乱!
+<P>对於使用 PPP 的高速连结（使用 8 bits 资料编码）来说硬体流量控制是很重要的，因此你必须使用硬体流量控制．
+<P>
+<H2><A NAME="ss9.5">9.5 测试你的数据机的拨出功能</A>
+</H2>
+
+<P>在你完成了串列埠与数据机的设定之时试著拨到你的 ISP 上看看能否连上以确定设定是否有误．
+<P>
+<P>使用你的终端机通讯软体（像是 minicom），拨到你想使用 PPP  连线的那台 PPP  伺服器．
+<P>
+<P>（注意: 在这个阶段我们并不尝试建立 PPP  连线 － 只是要证实我们拥有正确的电话号码以及为了签入并且起动 PPP  而<B>确实地</B>找出伺服器究竟传送给我们什麽讯息）．
+<P>
+<P>在这个过程中，可以截取（记录到一个档案里）整个签入的过程或者是小心地（非常小心地）确实写下远端伺服器所给你提示输入你的使用者名称以及密码的讯息（以及任何建立 PPP  连线需要下达的指令）．
+<P>
+<P>如果你的伺服器使用 PAP，你可能不会看见签入的提示符号，而是(以文字表示的)连结通讯协定(看起来像是垃圾)出现在你的萤幕上．
+<P>
+<P>一些警告:-
+<P>
+<UL>
+<LI>某些伺服器相当聪明: 你可以用文字模式的使用者名称/密码方式或使用 PAP 签入．
+因此如果你的 ISP 或公司站台使用 PAP 但你没有立刻在萤幕上看到垃圾，也并不表示你做错了．</LI>
+<LI>某些站台要求你先输入一些起始的文字<EM>然後</EM>才启动标准的 PAP 程序．</LI>
+<LI>某些 PPP 伺服器是被动的 - 它们就坐在那里等待而不送出任何资料，直到客户端拨入并送出合法的连结控制协定．
+如果你要连接的 PPP 伺服器是被动模式的，你将不会看到任何垃圾!</LI>
+<LI>某些伺服器在你按下 <CODE>ENTER</CODE> 前不会启动 PPP - 因此如果你正确签入但未看到垃圾的话可以试试!</LI>
+</UL>
+<P>
+<P>这最少值得拨接两次 － 某些伺服器会在每次你签入时改变提示（例如依时间改变!）．
+你的 Linux 机器在每次你拨入的时候要能够辨认的两个主要的提示是:-
+<UL>
+<LI>要求你输入使用者名称的提示;</LI>
+<LI>要求你输入密码的提示;</LI>
+</UL>
+<P>
+<P>如果你必须发出某个指令来起动伺服端的 PPP，那麽你也需要找出一旦你签入之後伺服器所给你输入指令以启动 PPP 的提示．
+<P>
+<P>如果你的伺服器自动起动 PPP  的话，一旦你签入完成，你将开始见到萤幕上出现垃圾 － 这是 PPP  伺服端传送给你的机器以起动并且配置 PPP 连线的资讯．
+<P>
+<P>这看起来应该会是像这样的东西:-
+<HR>
+<PRE>
+~y}#.!}!}!} }8}!}$}%U}"}&amp;} } } } }%}&amp; ...}'}"}(}"} .~~y}
+</PRE>
+<HR>
+<P>
+<P>(而且它还会一直进来! )
+<P>
+<P>在某些系统中 PPP  必须在伺服端上明确地加以起动．这通常是因为该伺服器被设定成允许使用相同使用者名称／密码配对来做 PPP  签入及一般使用界面(shell) 的签入．
+如果是这样，一旦你签入就发出该指令．再一次，你将会见到 PPP  连线伺服端起动的垃圾资讯 － 所以现在你可以挂断了．
+<P>
+<P>如果你没有在连上时立即在萤幕上看到这些垃圾(如果必要的话先签入并启动 PPP 伺服器)，
+按下 <B>Enter</B> 试试能否启动 PPP 伺服器...
+<P>
+<P>这个时候，你就可以挂断你的数据机（通常是，快速地键入 <CODE>+++</CODE> 一旦你的数据机回应 OK 然後接著下 ATHO 指令）．
+<P>
+<P>如果你不能使你的数据机运作的话，阅读你的数据机使用手册，你通讯软体的线上使用手册以及 Serial HOWTO!  
+一旦你解决该问题，继续进行前面所说的．
+<P>
+<HR>
+<A HREF="PPP-HOWTO-10.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="PPP-HOWTO-8.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="PPP-HOWTO.html#toc9"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

@@ -1,0 +1,330 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>The Linux Kernel HOWTO: How to actually configure the kernel </TITLE>
+ <LINK HREF="Kernel-HOWTO-5.html" REL=next>
+ <LINK HREF="Kernel-HOWTO-3.html" REL=previous>
+ <LINK HREF="Kernel-HOWTO.html#toc4" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Kernel-HOWTO-5.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Kernel-HOWTO-3.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Kernel-HOWTO.html#toc4"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s4">4. How to actually configure the kernel </A></H2>
+
+<P>
+<P>
+<H2><A NAME="ss4.1">4.1 Getting the source </A>
+</H2>
+
+<P>
+<P>You can obtain the source via anonymous ftp from <CODE>ftp.kernel.org</CODE> in
+<CODE>/pub/linux/kernel/vx.y</CODE>, where <CODE>x.y</CODE> is the version (eg 2.2),
+and as mentioned before, the ones that end with an odd number are
+development releases and may be unstable.
+It is typically labelled <CODE>linux-x.y.z.tar.gz</CODE>, where <CODE>x.y.z </CODE>
+is the version number. The sites also typically carry ones with a suffix of
+<CODE>.bz2</CODE>, which have been compressed with bzip2 (these files will be
+smaller and take less time to transfer).
+<P>It's best to use <CODE>ftp.xx.kernel.org</CODE> where <CODE>xx</CODE> is your
+country code; examples being <CODE>ftp.at.kernel.org</CODE> for Austria,
+and <CODE>ftp.us.kernel.org</CODE> for the United States.
+<P>
+<P>
+<H2><A NAME="ss4.2">4.2 Unpacking the source </A>
+</H2>
+
+<P>
+<P>Log in as or <CODE>su</CODE> to `<CODE>root</CODE>', and <CODE>cd</CODE> to
+<CODE>/usr/src</CODE>.
+If you installed kernel source when you first installed linux (as most do),
+there will already be a directory called `<CODE>linux</CODE>' there, which
+contains the entire old source tree.
+If you have the disk space and you want to play it safe, preserve that
+directory. A good idea is to figure out
+what version your system runs now and rename the directory
+accordingly. The command `<CODE>uname -r</CODE>' prints the current
+kernel version.
+Therefore, if `<CODE>uname -r</CODE>' said `<CODE>1.0.9</CODE>', you would
+rename (with `<CODE>mv</CODE>') `<CODE>linux</CODE>' to `<CODE>linux-1.0.9</CODE>'.
+If you feel mildly reckless, just wipe out the entire
+directory. In any case, make certain there is no `<CODE>linux</CODE>' directory
+in <CODE>/usr/src</CODE> before unpacking the full source code.
+<P>
+<P>Now, in <CODE>/usr/src</CODE>, unpack the source with
+`<CODE>tar zxpvf linux-x.y.z.tar.gz</CODE>'
+(if you've just got a <CODE>.tar</CODE>  file with no <CODE>.gz</CODE> at the end,
+`<CODE>tar xpvf linux-x.y.z.tar</CODE>' works.).
+The contents of the source will fly by. When finished, there will be
+a new `<CODE>linux</CODE>' directory in <CODE>/usr/src</CODE>. <CODE>cd</CODE> to
+<CODE>linux</CODE> and look over the <CODE>README</CODE>  file.
+There will be a section with the label `<CODE>INSTALLING the kernel</CODE>'.
+Carry out the instructions when appropriate -- symbolic links that should
+be in place, removal of stale <CODE>.o</CODE> files, etc.
+<P>If you have a <CODE>.bz2</CODE> file and the bzip2 program (read about it at
+<CODE>http://www.muraroa.demon.co.uk/</CODE>), do this:
+<P>
+<PRE>
+     bz2cat linux-x.y.z.tar.bz2 | tar xvf -
+</PRE>
+<P>
+<H2><A NAME="ss4.3">4.3 Configuring the kernel </A>
+</H2>
+
+<P>
+<P>Note: Some of this is reiteration/clarification of a similar
+section in Linus' <CODE>README</CODE> file.
+<P>
+<P>The command `<CODE>make config</CODE>' while in <CODE>/usr/src/linux</CODE> starts
+a configure script which asks you many questions. It requires bash,
+so verify that bash is <CODE>/bin/bash</CODE>, <CODE>/bin/sh</CODE>,
+or <CODE>$BASH</CODE>.
+<P>
+<P>However, there are some much more pleasant alternatives to `<CODE>make
+config</CODE>' and you may very well find them easier and more comfortable to
+use.
+`<CODE>make menuconfig</CODE>' is probably the most widely-used. Whatever you
+choose, it's best to get familiar with the interface because you may find
+yourself back at it sooner than you think.
+For those ``running X,'' you can try `<CODE>make xconfig</CODE>' if you have Tk
+installed (`click-o-rama' - Nat). `<CODE>make menuconfig</CODE>' is for those
+who have
+(n)curses and would prefer a text-based menu. These interfaces have a rather
+clear advantage: If you goof up and make a
+wrong choice during configuration, it is simple to go back and fix it.
+<P>
+<P>The configuration options will appear in hierarchies with `<CODE>make
+menuconfig</CODE>' and `<CODE>make xconfig</CODE>'.
+<P>
+<P>You are ready to answer the questions, usually with `<CODE>y</CODE>' (yes) or
+`<CODE>n</CODE>' (no). Device drivers typically have an `<CODE>m</CODE>' option.
+This means ``module,'' meaning that the system will compile it, but not
+directly into the kernel, but as a loadable module. A more comical way to
+describe it is as ``maybe.'' Some of the
+more obvious and non-critical options are not described here; see the section
+``Other configuration options'' for short descriptions of a few others.
+With `<CODE>make menuconfig</CODE>', the space bar toggles the selection.
+<P>
+<P>In 2.0.x and later, there is a `?' option, which provides a brief
+description of the configuration parameter. That information is likely to
+be the most up-to-date. Here are a listing of some of the important
+features, which hierarchy they are in, and brief description.
+<P>
+<P>
+<H3>Kernel math emulation (Processor type and features)</H3>
+
+<P>If you don't have a math coprocessor (you have a bare 386 or
+486SX), you must say `<CODE>y</CODE>' to this. If you do have a coprocessor and
+you still say `<CODE>y</CODE>', don't worry too much -- the coprocessor is
+still used and the emulation ignored. For any halfway modern machine, the
+answer will be no, but don't worry if you say yes accidentally; if not
+needed, it is not used.
+<P>
+<P>
+<H3>Enhanced (MFM/RLL) disk and IDE disk/cdrom support (Block Devices)</H3>
+
+<P>
+<P>You probably need to support this; it means that the
+kernel will support standard PC hard disks, which most
+people have. This driver does not include SCSI drives; they come later in
+the configuration.
+<P>You will then be asked about the ``old disk-only'' and ``new IDE'' drivers.
+You want to choose one of them; the main difference is that the old driver
+only supports two disks on a single interface, and the new one supports a
+secondary interface and IDE/ATAPI cdrom drives. The new driver is 4k
+larger than the old one and is also supposedly ``improved,'' meaning that
+aside from containing a different number of bugs, it might improve your
+disk performance, especially if you have newer (EIDE-type) hardware.
+<P>
+<P>
+<H3>Networking support (General Setup)</H3>
+
+<P>
+<P>In principle, you would only say `<CODE>y</CODE>' if your machine is on a network
+such as the internet, or you want to use SLIP, PPP, term, etc to
+dial up for internet access. However, as many packages (such as the X
+window system)
+require networking support even if your machine does not live on a real
+network, you should say `<CODE>y</CODE>'. Later on, you will be asked if you
+want to support TCP/IP networking; again, say `<CODE>y</CODE>' here if you
+are not absolutely sure.
+<P>
+<P>
+<H3>System V IPC (General Setup)</H3>
+
+<P>
+<P>One of the best definitions of IPC (Interprocess Communication) is in the
+Perl book's glossary. Not surprisingly, some Perl programmers employ it to
+let processes talk to each other, as well as many other packages (DOOM,
+most notably), so it is not a good idea to say <CODE>n</CODE> unless you know
+exactly what you are doing.
+<P>
+<P>
+<H3>Processor family (Processor type and features)</H3>
+
+<P>(in older kernels: Use -m486 flag for 486-specific optimizations)
+<P>
+<P>Traditionally, this compiled in certain optimizations for a particular
+processor; the kernels ran fine on other chips, but the kernel was perhaps
+a bit larger. In newer kernels, however, this is no longer true, so you
+should enter the processor for which you are compiling the kernel. A
+``386'' kernel will work on all machines.
+<P>
+<P>
+<H3>SCSI support</H3>
+
+<P>
+<P>If you have SCSI devices, say `<CODE>y</CODE>'. You will be prompted for
+further information, such as support for CD-ROM, disks, and what kind
+of SCSI adapter you have. See the SCSI-HOWTO for greater detail.
+<P>
+<P>
+<H3>Network device support</H3>
+
+<P>
+<P>If you have a network card, or you would like to use SLIP, PPP, or a
+parallel port adapter for connecting to the Internet,
+say `<CODE>y</CODE>'. The config script will prompt
+for which kind of card you have, and which protocol to use.
+<P>
+<P>
+<H3>Filesystems</H3>
+
+<P>
+<P>The configure script then asks if you wish to support the following
+filesystems:
+<P>
+<P>Standard (minix) - Newer distributions don't create minix filesystems,
+and many people don't use it, but it may still be a good idea to
+configure this one. Some ``rescue disk'' programs use it, and still more
+floppies may have a minix filesystem, since the minix filesystem is less
+painful to use on a floppy.
+<P>
+<P>Second extended - This is the standard Linux filesystem. You
+almost definitely have one of these, and need to say `<CODE>y</CODE>'.
+<P>
+<P>msdos - If you want to use your MS-DOS hard disk
+partitions, or mount MS-DOS formatted floppy disks, say `<CODE>y</CODE>'.
+<P>
+<P>There are various other foreign operating system filesystem types available.
+<P>
+<P>/proc - (idea from Bell Labs, I guess). One doesn't make a proc
+filesystem on a disk; this is a filesystem interface to the kernel and
+processes. Many process listers (such as `<CODE>ps</CODE>') use it. Try
+`<CODE>cat /proc/meminfo</CODE>' or `<CODE>cat /proc/devices</CODE>' sometime.
+Some shells (rc, in particular) use <CODE>/proc/self/fd</CODE>  (known as
+<CODE>/dev/fd</CODE>
+on other systems) for I/O. You should almost certainly say `<CODE>y</CODE>' to
+this; many important linux tools depend on it.
+<P>
+<P>NFS - If your machine lives on a network and you want to use filesystems which
+reside on other systems with NFS, say `<CODE>y</CODE>'.
+<P>
+<P>ISO9660 - Found on most CD-ROMs. If you have a CD-ROM drive and you wish to
+use it under Linux, say `<CODE>y</CODE>'.
+<P>
+<P>
+<H3>But I don't know which filesystems I need!</H3>
+
+<P>
+<P>Ok, type `<CODE>mount</CODE>'. The output will look something like this:
+<P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+    blah# mount
+    /dev/hda1 on / type ext2 (defaults)
+    /dev/hda3 on /usr type ext2 (defaults)
+    none on /proc type proc (defaults)
+    /dev/fd0 on /mnt type msdos (defaults)
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Look at each line; the word next to `<CODE>type</CODE>' is the filesystem
+type. In this example, my <CODE>/</CODE>  and <CODE>/usr</CODE> filesystems are
+second extended, I'm using <CODE>/proc</CODE>, and there's a floppy
+disk mounted using the msdos (bleah) filesystem.
+<P>You can try `<CODE>cat /proc/filesystems</CODE>' if you have <CODE>/proc</CODE>
+currently enabled; it will list your current kernel's filesystems.
+<P>The configuration of rarely-used, non-critical filesystems can cause kernel
+bloat; see the section on modules for a way to avoid this and the
+``Pitfalls'' section on why a bloated kernel is undesirable.
+<P>
+<P>
+<H3>Character devices </H3>
+
+<P>
+<P>Here, you enable the drivers for your printer (parallel printer, that is),
+busmouse, PS/2 mouse (many notebooks use the PS/2 mouse protocol for their
+built-in trackballs), some tape drives, and other such ``character''
+devices. Say `<CODE>y</CODE>'
+when appropriate.
+<P>
+<P>Note: <CODE>gpm</CODE> is a program which
+allows the use of the mouse outside of the X window system for cut and paste
+between virtual consoles. It's fairly nice if you have a serial mouse,
+because it coexists well with X, but you need to do special tricks
+for others.
+<P>
+<P>
+<H3>Sound</H3>
+
+<P>
+<P>If you feel a great desire to hear <CODE>biff</CODE> bark, say
+`<CODE>y</CODE>',
+and you can tell the configuration program all about your
+sound board. (A note on sound card configuration: when it asks you if you
+want to install the full version of the driver, you can say `<CODE>n</CODE>'
+and save some kernel memory by picking only the features which you deem
+necessary.)
+<P>
+<P>If you are serious about sound card support, have a look at both the free
+drivers at <CODE>http://www.linux.org.uk/OSS/</CODE> and the commercial
+Open Sound System at <CODE>http://www.opensound.com/</CODE>.
+<P>
+<P>
+<H3>Other configuration options</H3>
+
+<P>Not all of the configuration options are listed here because they change
+too often or fairly self-evident (for instance, 3Com 3C509 support to
+compile the device drive for this particular ethernet card).
+There exists a fairly comprehensive list of all the options (plus a way to
+place them into the <CODE>Configure</CODE> script) in an effort started and
+maintained by Axel Boldt (<CODE>boldt@math.ucsb.edu</CODE>) and it's the online
+help. It's also available as one big file at the
+<CODE>Documentation/Configure.help</CODE> in your Linux kernel source tree as
+of version 2.0.
+<P>
+<P>
+<H3>Kernel hacking </H3>
+
+<P>
+<P>>From Linus' README:
+<P>the ``kernel hacking'' configuration details usually result in
+a bigger or slower kernel (or both), and can even make the
+kernel less stable by configuring some routines to actively try
+to break bad code to find kernel problems (kmalloc()).  Thus
+you should probably answer `n' to the questions for a
+``production'' kernel. 
+<P>
+<P>
+<H2><A NAME="ss4.4">4.4 Now what? (The Makefile) </A>
+</H2>
+
+<P>
+<P>After you finish configuration, a message tells you that your kernel has
+been configured, and to ``check the top-level <CODE>Makefile</CODE> for
+additional configuration,'' etc.
+<P>
+<P>So, look at the <CODE>Makefile</CODE>. You probably will not need to change it,
+but it never hurts to look. You can also change its options
+with the `<CODE>rdev</CODE>' command once the new kernel is in place. If you're
+feel lost when you look at the file, then don't worry about it.
+<P>
+<P>
+<HR>
+<A HREF="Kernel-HOWTO-5.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Kernel-HOWTO-3.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Kernel-HOWTO.html#toc4"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

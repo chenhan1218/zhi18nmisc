@@ -1,0 +1,125 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="LinuxDoc-Tools 0.9.16">
+ <TITLE>DNS HOWTO 中譯版: 常見問題解答</TITLE>
+ <LINK HREF="DNS-HOWTO-10.html" REL=next>
+ <LINK HREF="DNS-HOWTO-8.html" REL=previous>
+ <LINK HREF="DNS-HOWTO.html#toc9" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="DNS-HOWTO-10.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="DNS-HOWTO-8.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="DNS-HOWTO.html#toc9"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<HR>
+<H2><A NAME="qanda"></A> <A NAME="s9">9.</A> <A HREF="DNS-HOWTO.html#toc9">常見問題解答</A></H2>
+
+<P>本節中我將列出一些關於 DNS 以及本文件最常被提出的問題．還有解答 :-)
+在寫信給我前請先閱讀過本節．</P>
+<P>
+<OL>
+<LI>如何在防火牆之內使用 DNS ? 
+
+<P>一些提示: `<CODE>forwarders</CODE>', `<CODE>slave</CODE>', 
+以及參考本文件最後面的文獻列表．</P>
+
+</LI>
+<LI>如何利用 DNS 提供的可用位址於某一服務，如 <CODE>www.busy.site</CODE>，
+以獲得負荷平衡或類似的效果?
+
+<P>為 <CODE>www.busy.site</CODE> 加上許多 <B>A</B> 記錄，而且使用 <CODE>bind 4.9.3</CODE> 或以後的版本．
+這樣 <CODE>bind</CODE> 會使用 round-robin 演算法找尋答案．這<EM>不能</EM>在更早版本的 <CODE>bind</CODE> 上工作．</P>
+
+</LI>
+<LI>我想在一封閉的 Intranet 上架設 DNS．我該怎麼做?
+
+<P>把暫存檔案丟掉只留區域檔案．這也表示你將不需要更新暫存檔案．</P>
+
+</LI>
+<LI>我的系統沒有 <CODE>ndc</CODE> 程式．我該怎麼辦?
+
+<P>你的系統安裝過一舊的，可能過期的 <CODE>bind</CODE> 程式．
+如果安全性對你很重要: 立刻將 <CODE>bind</CODE> 升級．如果不是，你也可以用這舊的．
+你可直接執行 <CODE>named</CODE> 而不是 <CODE>ndc start</CODE>．
+<CODE>ndc reload</CODE> 變成 <CODE>named.reload</CODE> 而 <CODE>ndc restart</CODE> 變成 <CODE>named.restart</CODE>．
+所有這些程式可能都在 <CODE>/usr/sbin</CODE> 裡．</P>
+
+</LI>
+<LI>如何建立次要名稱伺服器?
+
+<P>如果主要名稱伺服器的地址是 <CODE>127.0.0.1</CODE>，
+在你的次要名稱伺服器的 <CODE>named.boot</CODE> 檔案中放一行:
+<HR>
+<PRE>
+  secondary     linux.bogus             127.0.0.1       sz/linux.bogus
+  
+</PRE>
+<HR>
+</P>
+
+</LI>
+<LI>我希望離線時 <CODE>bind</CODE> 仍繼續執行．
+
+<P>我收到來自 Ian Clark &lt;
+<A HREF="mailto:ic@deakin.edu.au">ic@deakin.edu.au</A>&gt; 
+的信件解釋他如何辦到這點．
+<BLOCKQUOTE><CODE>
+<PRE>
+I run named on my 'Masquerading' machine here. I have 
+two root.cache files, one called root.cache.real which contains 
+the real root server names and the other called root.cache.fake 
+which contains...
+
+--------------
+; root.cache.fake
+; this file contains no information
+--------------
+
+When I go off line I copy the root.cache.fake file to root.cache and
+restart named.
+
+When I go online I copy root.cache.real to root.cache and restart
+named.
+
+This is done from ip-down &amp; ip-up respectively.
+
+The first time I do a query off line on a domain name named doesn't
+have details for it puts an entry like this in messages..
+
+Jan 28 20:10:11 hazchem named[10147]: No root nameserver for class IN
+
+which I can live with.
+         
+It certainly seems to work for me. I can use the nameserver for
+local machines while off the 'net without the timeout delay for
+external domain names and I while on the 'net queries for external
+domains work normally
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+
+</LI>
+<LI>名稱伺服器將暫存資料保存在那兒? 有任何方法可以控制它的大小嗎?
+
+<P>所有的暫存資料都保存在記憶體中，任何時刻它都不會被寫入磁碟中．
+每次你殺掉 <CODE>named</CODE> 時這些暫存資料就沒有了．<EM>沒有</EM>任何方法可以控制暫存資料．
+<CODE>named</CODE> 用一些簡單的法則來管理它．你不能用任何理由任何方法控制暫存資料或其大小．
+如果你希望如此你可以自己去改 <CODE>named</CODE> 的程式．不過最好別這麼做．</P>
+
+</LI>
+<LI>如何在重新起始 <CODE>named</CODE> 之間保存暫存資料? 我可以把它存下來嗎?
+
+<P>不! <CODE>named</CODE> 被殺掉時<EM>不會</EM>保留暫存資料．
+這就是說暫存資料必須在每次你殺掉並重新起始 <CODE>named</CODE> 後重新建立．
+<EM>沒有</EM>辦法讓 <CODE>named</CODE> 將暫存資料存到檔案裡．
+如果你希望如此你可以自己去改 <CODE>named</CODE> 的程式．不過最好別這麼做．</P>
+
+</LI>
+</OL>
+</P>
+
+<HR>
+<A HREF="DNS-HOWTO-10.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="DNS-HOWTO-8.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="DNS-HOWTO.html#toc9"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

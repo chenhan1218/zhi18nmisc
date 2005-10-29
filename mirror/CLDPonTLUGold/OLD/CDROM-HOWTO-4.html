@@ -1,0 +1,947 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="LinuxDoc-Tools 0.9.16">
+ <TITLE>The Linux CD-ROM HOWTO -- 如何在 Linux 下安裝及使用 CD-ROM: 安裝</TITLE>
+ <LINK HREF="CDROM-HOWTO-5.html" REL=next>
+ <LINK HREF="CDROM-HOWTO-3.html" REL=previous>
+ <LINK HREF="CDROM-HOWTO.html#toc4" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="CDROM-HOWTO-5.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="CDROM-HOWTO-3.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="CDROM-HOWTO.html#toc4"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s4">4.</A> <A HREF="CDROM-HOWTO.html#toc4">安裝</A></H2>
+
+
+<P>在 Linux 下安裝 CD-ROM 包含了以下步驟:</P>
+<P>
+<OL>
+<LI>安裝硬體</LI>
+<LI>設置及重建 Linux 核心</LI>
+<LI>建立設備檔及設定啟動參數</LI>
+<LI>重新啟動 Linux 核心</LI>
+<LI>掛上媒體(片子)</LI>
+</OL>
+</P>
+
+<P>下幾節將會詳細列出該有的步驟。</P>
+
+<H2><A NAME="ss4.1">4.1</A> <A HREF="CDROM-HOWTO.html#toc4.1">安 裝 硬 體</A>
+</H2>
+
+
+<P>按照廠商的說明書指示去安裝硬體，或請廠商幫你裝。 
+詳細情形會因你使用的介面及內接或外接而有所不同。 對 Linux 來說，
+並沒有特別的安裝要求。 您也許要設定機器或介面卡上的跳線(jumper)以使之正常工作; 
+有些核心驅動程式有 README 檔教您如何做。</P>
+<P>就如同檔案<CODE>ide-cd</CODE>中所描述的，ATAPI CD-ROM
+在做排線上唯一的一台機器時，
+應調成 'single' 或 'master'，不要調 'slave'。
+(雖然最新的核心已經不那麼要求如此做了。)</P>
+
+<H2><A NAME="ss4.2">4.2</A> <A HREF="CDROM-HOWTO.html#toc4.2">設定及建立核心</A>
+</H2>
+
+
+<P>當開始從 CD-ROM 安裝 Linux 時您應該早就有一片 boot 或者 boot兼root 磁片。
+可能的話，您可以選有支援您的 CD-ROM 的 boot 磁片。 如果找不到包含您需要的
+ CD-ROM 驅動程式 的開機片，您可以:</P>
+<P>
+<OL>
+<LI>從光碟直接開機(如果您的機器和 Linux CD 支援的話)</LI>
+<LI>從網路安裝</LI>
+<LI>啟動DOS，將 Linux 檔案複製到您的硬碟上</LI>
+<LI>啟動DOS，一片一片地製作開機安裝片</LI>
+<LI>找個可以幫您做支援您 CD-ROM 的啟動磁片的人</LI>
+</OL>
+</P>
+<P>在
+<A HREF="http://metalab.unc.edu/LDP/HOWTO/Installation-HOWTO.html">Linux Installation HOWTO</A>
+(中文版翻譯中)
+中對安裝 Linux 有更詳細的步驟。 如果您是買Linux CD-ROM，經常也會有一些安裝指示
+(在 CD 盒的小封面底，或在 CD 的檔案裡)。</P>
+<P>Linux 剛安裝好時，多數人基於以下理由，會重新編譯核心:</P>
+<P>
+<UL>
+<LI>支援 CD-ROM 或其它硬體</LI>
+<LI>升級至更新的核心版本</LI>
+<LI>縮小核心，節省記憶體資源。</LI>
+</UL>
+</P>
+<P>有關建立核心的詳情請見
+<A HREF="http://metalab.unc.edu/LDP/HOWTO/Kernel-HOWTO.html">Linux Kernel HOWTO</A>
+(中文版在 
+<A HREF="http://www.linux.org.tw/CLDP/Kernel-HOWTO.html">http://www.linux.org.tw/CLDP/Kernel-HOWTO.html</A>)
+以下我只提到和 CD-ROM 有關的部份。</P>
+<P>很明顯的，您在 make config 時，需要加入對您的 CD-ROM 的支援。</P>
+<P>如果您有 ATAPI 的機種，您對下面問題應回答<CODE>yes</CODE></P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+Enhanced IDE/MFM/RLL disk/cdrom/tape support (CONFIG_BLK_DEV_IDE) [Y/n/?]
+Include IDE/ATAPI CDROM support (CONFIG_BLK_DEV_IDECD) [Y/n/?]
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>對 SCSI 機種，則要打開以下選項:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+SCSI support (CONFIG_SCSI) [Y/n/m/?]
+SCSI CD-ROM support (CONFIG_BLK_DEV_SR) [Y/n/m/?]
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>當然也要加入對您用的SCSI卡的支援，如這行提示:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+Adaptec AHA152X support (CONFIG_SCSI_AHA152X) [Y/n/m/?]
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>對專屬介面 CD-ROM，使用相對應的驅動程式。 
+您可以用上一章列的表得知您用的光碟機該用那種驅動程式。</P>
+<P>基本上所有 CD-ROM 碟片都用 ISO-9660 檔案系統，所以您也必須加入它:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ISO9660 cdrom filesystem support (CONFIG_ISO9660_FS) [Y/n/m/?]
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>雖說對 CD-ROM 運作不是必要的，如果您有 Linux 支援的音效卡，
+您也許會想在核心起動它，以便將來使用。
+<A HREF="http://metalab.unc.edu/LDP/HOWTO/Sound-HOWTO.html">Sound HOWTO</A>
+(中文版在 
+<A HREF="http://www.linux.org.tw/CLDP/Sound-HOWTO.html">http://www.linux.org.tw/CLDP/Sound-HOWTO.html</A>)
+將是一個很好的參考。</P>
+<P>然後您應該照正常的步驟去編譯及安裝核心。
+在您建造設備檔及照下一節設定啟動參數前，
+不要急著用新造的核心開機!</P>
+<P>ISO-9660 檔案系統及幾乎所有 CD-ROM 驅動程式都可被做成可載入模組。 
+這樣子一些核心驅動程式就不必重開機即可載入及去除。 建議您先不要做成模組。 
+可在(核心中)模組的文件及
+<A HREF="http://sunsite.unc.edu/mdw/HOWTO/Kernel-HOWTO.html">Kernel HOWTO</A>
+中找到使用模組的方法。</P>
+<P>如果列在這裡的機器並沒有被您的核心支援，那麼您八成需要更新核心....</P>
+<P>您也可能要自己抓核心之外的修補檔，這通常牽涉到修補核心。 一樣，
+<A HREF="http://metalab.unc.edu/LDP/HOWTO/Kernel-HOWTO.html">Kernel HOWTO</A>
+也解釋了如何做。</P>
+<P>注意新版的核心有個功能表式的核心設置(configuration)程式，
+可用 make menuconfig 叫出，或是 X11 式的設
+置程式(用 make xconfig 叫出)。 三種方法都提供線上求助。</P>
+
+<H2><A NAME="ss4.3">4.3</A> <A HREF="CDROM-HOWTO.html#toc4.3">建立設備檔及設定起動時參數</A>
+</H2>
+
+
+<P>核心使用設備檔來辨識該用那個驅動程式。 如果您用的是一個發行的 Linux 套件，
+安裝後您也許已經有必需的設備檔了。 例如說，在 Slackware Linux 下，有個選單型安
+裝程式<CODE>setup</CODE>，它包含了 CD-ROM 安裝。 多數系統也有 /dev/MAKEDEV 這個
+<EM>指令稿(script)</EM>。
+如果您不用這些方法，您可用像以下的手動的方法做。 即使您用了我們提到的方法，
+仍然建議您再確認一下這些設備檔，以確保它們的正確性。</P>
+<P>您可以用指出您機器型式的 shell 命令建立設備檔。 這應該可用
+<CODE>root</CODE>這個身份完成。 注意有些 Linux 安裝套件用的名稱可能不太一樣。</P>
+<P>另外也建議您建立一個符號連結，這會好記一點。 例如說，對一台 IDE 介面的機器來說
+，可以如下般建立:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+% ln -s /dev/hdd /dev/cdrom
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>如果您想放唱片，您就要設定檔案保護權限(不是符號連結檔，是真正的設備檔!)，
+使其它人也可讀取。</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+% chmod 666 /dev/hdd
+% ls -l /dev/hdd
+brw-rw-r--   1 root     disk      22， 64 Feb  4  1995 /dev/hdd
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>起動 Linux 時，驅動程式要確定該設備是否存在，這通常是靠自動偵測。 多數驅動程式
+會偵測好幾個位址，但因配備不同。 可能的設備衝突。 及硬體限制，有時需要手動給予這
+些資訊。 多數驅動程式支援從核心的命令列取得這些資訊。 這可以手動輸入，或加在您的
+開機載入程式裡。 例如說，您用 LILO 當開機載入程式的話，您可以在
+/etc/lilo.conf 用 <CODE>append</CODE> 命令:</P>
+
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+append = "sbpcd=0x230,SoundBlaster"
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>請看 LILO 的文件獲得更多資訊。</P>
+<P>下一節我討論每一種驅動程式，它的設備檔，啟動參數，及它們的具備的能力。 您也許
+只想看和您的機器有關的部份。 這些文件通常會放在
+/usr/src/linux/Documentation/cdrom 目錄下。</P>
+
+<H3>Sbpcd 驅動程式</H3>
+
+
+
+<P>
+<PRE>
+                  作者 : Eberhard Moenkeberg (emoenke@gwdg.de)
+      支援多次燒錄碟片?: 是 (但並非所有機種皆可)
+          支援多台機器?: 是
+      可做成可載入模組?: 可
+        可讀取數位音軌?: 可 (只有CR-562，CR-563及CD-200)
+            能自動偵測?: 能
+                 設備檔: /dev/sbpcd，主編號25
+                 設定檔: sbpcd.h
+         核心設定的問題: Matsushita/Panasonic CDROM support?
+             請另外閱讀: sbpcd
+</PRE>
+</P>
+<P>這個驅動程式支援以下型式的核心命令列:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+sbpcd=&lt;io-address&gt;,&lt;interface-type&gt;
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>第一個參數是 I/O 基底位址(如0x230)。 interface-type 可以是 ``SoundBlaster''
+，``LaserMate'' 或 ``SPEA'' ,請看 sbpcd.h 中的提示. 要關閉
+此驅動程式，用 sbpcd=0。</P>
+<P>可照下面建立設備檔:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+% mknod /dev/sbpcd b 25 0
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>一片卡最多可以裝到四台，後三台的設備次編號(minor device number)分別由一到三。
+如果您的界面卡更多，可建立主編號 26，27，28。 最多可有 4 片卡。
+(也就是 16 台 CD-ROM 可用，對一般使用者應該夠了 :-)。</P>
+<P>請看 sbpcd 檔案以獲得更多關於此驅動程式的資訊。</P>
+<P><EM>如果您最近才買 CD-ROM，不要假設接聲霸卡的就應該用這驅動程式。
+現在 Creative Labs 賣的幾乎都是 EIDE/ATAPI 的機種了。</EM></P>
+
+<H3>Sonycdu535 驅動程式</H3>
+
+
+<P>
+<PRE>
+                  作者 : Ken Pizzini (ken@halcyon.com)
+      支援多次燒錄碟片?: 否
+          支援多台機器?: 否
+      可做成可載入模組?: 是
+        可讀取數位音軌?: 不可
+            能自動偵測?: 不能
+                 設備檔: /dev/sonycd535，主編號 24
+                 設定檔: sonycd535.h
+         核心設定的問題: Sony CDU535 CDROM support?
+             請另外閱讀: sonycd535
+</PRE>
+</P>
+<P>這個驅動程式的命令列是這樣的:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+sonycd535=&lt;io-address&gt;
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>&lt;io-address&gt; 是基底位址(如 0x320)。 不然您也可以寫在
+sonycd535.h 裡編譯進去。</P>
+<P>設備檔這樣建立:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+% mknod /dev/sonycd535 b 24 0
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>有些 Linux 套件用 /dev/sonycd 這個檔。 舊版核心給它主編號 21，確定一下您的設備
+檔是正確的。</P>
+<P>這個驅動程式原本只是修補，不過現在已是標準核心的一部份了。 請參考
+sonycd535 檔案取得進一步資訊。</P>
+
+<H3>Cdu31a 驅動程式</H3>
+
+
+<P>
+<PRE>
+                  作者 : Corey Minyard (minyard@-rch.cirr.com)
+      支援多次燒錄碟片?: 是
+          支援多台機器?: 否
+      可做成可載入模組?: 可
+        可讀取數位音軌?: 可
+            能自動偵測?: 不能
+                 設備檔: /dev/cdu31a，主編號 15
+                 設定檔: cdu31a.h
+         核心設定的問題: Sony CDU31A/CDU33A CDROM support?
+             請另外閱讀: cdu31a
+</PRE>
+</P>
+<P>這個驅動程式的命令列是這樣的:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+cdu31a=&lt;io-address&gt;,&lt;interrupt&gt;,PAS
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>第一個參數是 I/O 基底位址(如 0x340)。 第二個是中斷號碼(0 代表不用中斷，用輪
+詢)，第三個參數只有在連接 Pro Audio Spectrum 16 音效卡時要加，固定是PAS，
+其它音效卡就不用了。</P>
+<P>如果是作成模組，命令列格式則有些不一樣。 用 modprobe 或 insmod 命令時，是以以下
+形式載入:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+cdu31a_port=&lt;io-address&gt; cdu31a_irq=&lt;interrupt&gt;
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>io-address 是必要的，而 interrupt 則可有可無。</P>
+<P>設備檔這樣建立:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+% mknod /dev/cdu31a b 15 0
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>詳細資訊請參見 cdu31a 檔案。</P>
+<P>這個驅動程式也有個資訊網站台，可在
+<A HREF="http://www.infinet.com/~zureal/cdu31a.html">http://www.infinet.com/~zureal/cdu31a.html</A>
+找到。 作者是 Jeffrey Oxenreider
+(
+<A HREF="mailto:zureal@infinet.com">zureal@infinet.com</A>)，包含了
+許多此驅動程式的常見問題。</P>
+
+<H3>Aztcd 驅動程式</H3>
+
+
+<P>
+<PRE>
+                  作者 : Werner Zimmermann (zimmerma@rz.fht-esslingen.de)
+      支援多次燒錄碟片?: 是
+          支援多台機器?: 否
+      可做成可載入模組?: 可
+        可讀取數位音軌?: 不可
+            能自動偵測?: 不能
+                 設備檔: /dev/aztcd0，主編號 29
+                 設定檔: aztcd.h
+         核心設定的問題: Aztech/Orchid/Okano/Wearnes (non IDE) CDROM support?
+             請另外閱讀: aztcd
+</PRE>
+</P>
+<P>核心命令列像這樣:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+aztcd=&lt;io-address&gt;
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>唯一的參數是 I/O 基底位址(如 0x340)</P>
+<P>設備檔如下建立:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+% mknod /dev/aztcd0 b 29 0
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>注意這個驅動程式僅供 CDA268-01A 用。 其他機型如 CDA268-03I 及 CDA269-031SE
+等不是專屬介面，應該用 IDECD (ATAPI) 驅動程式。</P>
+<P>詳細資訊請參考 aztcd 檔案</P>
+
+<H3>Gscd 驅動程式</H3>
+
+
+<P>
+<PRE>
+                  作者 : Oliver Raupach (raupach@nwfs1.rz.fh-hannover.de)
+      支援多次燒錄碟片?: 否
+          支援多台機器?: 否
+      可做成可載入模組?: 可
+        可讀取數位音軌?: 不可
+            能自動偵測?: 不能
+                 設備檔: /dev/gscd0，主編號 16
+                 設定檔: gscd.h
+         核心設定的問題: Goldstar R420 CDROM support?
+             請另外閱讀: gscd
+</PRE>
+</P>
+<P>核心命令列如下:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+gscd=&lt;io-address&gt;
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>它用 I/O 基底位址作為其參數。(如0x340)</P>
+<P>設備檔可照下例建:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+% mknod /dev/gscd0 b 16 0
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>詳細資訊請參考 gscd 檔案及其網站
+<A HREF="http://linux.rz.fh-hannover.de/~raupach">http://linux.rz.fh-hannover.de/~raupach</A>
+以取得更多資訊。</P>
+
+<H3>Mcd 驅動程式</H3>
+
+
+<P>
+<PRE>
+                  作者 : Martin  (martin@bdsi.com)
+      支援多次燒錄碟片?: 否
+          支援多台機器?: 否
+      可做成可載入模組?: 可
+        可讀取數位音軌?: 不可
+            能自動偵測?: 不能
+                 設備檔: /dev/mcd，主編號 23
+                 設定檔: mcd.h
+         核心設定的問題: Standard Mitsumi CDROM support?
+             請另外閱讀: mcd
+</PRE>
+</P>
+<P>這是舊版的 Mitsumi 機器驅動程式，出來很久了。 也許您想用新的 mcdx 驅動程式，
+它提供更多功能，但也許沒這麼穩。</P>
+<P>允許的核心命令列如下:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+mcd=&lt;io-address&gt;,&lt;irq&gt;
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>參數分別是介面卡的 I/O 基底位址(如 0x340)及 IRQ 要求號碼。</P>
+<P>設備檔如下建立:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+% mknod /dev/mcd b 23 0
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>詳情請參閱 mcd 檔案</P>
+
+<H3>Mcdx 驅動程式</H3>
+
+
+<P>
+<PRE>
+                  作者 : Heiko Schlittermann
+      支援多次燒錄碟片?: 是
+          支援多台機器?: 是
+      可做成可載入模組?: 可
+        可讀取數位音軌?: 不可(硬體不支援)
+            能自動偵測?: 不能
+                 設備檔: /dev/mcdx0，主編號 20
+                 設定檔: mcdx.h
+         核心設定的問題: Experimental Mitsumi support?
+             請另外閱讀: mcdx
+</PRE>
+</P>
+<P>這是新的實驗性 Mitsumi 驅動程式。 舊的 mcd 可能仍然比較穩，且仍然存在。</P>
+<P>可接受的核心命令列:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+mcdx=&lt;io-address&gt;,&lt;irq&gt;
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>參數分別是介面卡 I/O 基底位址(如 0x340)及 IRQ 要求號碼。</P>
+<P>設備檔照下面方法建:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+% mknod /dev/mcdx0 b 20 0
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>如果您最近買 Mitsumi 機器，不要假設它應該用這驅動程式; 新的 Mitsumi 機種和
+EIDE/ATAPI 相容 ，應該用 idecd 驅動程式。</P>
+<P>詳細資訊見 mcdx 檔</P>
+
+<H3>Cm206 驅動程式</H3>
+
+
+<P>
+<BLOCKQUOTE><CODE>
+作者 : David A. van Leeuwen (david@tm.tno.)
+支援多次燒錄碟片?: 是
+支援多台機器?: 否
+可做成可載入模組?: 可
+可讀取數位音軌?: 不可
+能自動偵測?: 能
+設備檔: /dev/cm206cd，主編號 32
+設定檔: cm206.h
+核心設定的問題: Philips/LMS CM206 CDROM support?
+請另外閱讀: cm206
+</CODE></BLOCKQUOTE>
+</P>
+<P>核心命令列像下面:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+cm206=&lt;io-address&gt;,&lt;interrupt&gt;
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>第一個是基底位址(如 0x340)，第二個是中斷號碼。</P>
+<P>照下面方法造設備檔:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+% mknod /dev/cm206cd b 32 0
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>更詳細的資訊請見 cm206 檔</P>
+
+<H3>Optcd 驅動程式</H3>
+
+
+<P>
+<PRE>
+                  作者 : Leo Spiekman (spiekman@dutette.et.tudelft.nl)
+      支援多次燒錄碟片?: 是
+          支援多台機器?: 否
+      可做成可載入模組?: 可
+        可讀取數位音軌?: 不可
+            能自動偵測?: 不能
+                 設備檔: /dev/optcd0，主編號 17
+                 設定檔: optcd.h
+         核心設定的問題: Experimental Optics Storage ... CDROM support?
+             請另外閱讀: optcd
+</PRE>
+</P>
+<P>它接受下面的核心命令列:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+optcd=&lt;io-address&gt;
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>參數是介面卡 I/O 基底位址。</P>
+<P>設備檔建立法:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+% mknod /dev/optcd0 b 17 0
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>詳細資訊見 optcd 檔。</P>
+
+<H3>Sjcd 驅動程式</H3>
+
+
+<P>
+<PRE>
+                  作者 : Vadim V. Model (vadim@rbrf.msk.su)
+      支援多次燒錄碟片?: 否
+          支援多台機器?: 否
+      可做成可載入模組?: 可
+        可讀取數位音軌?: 不可
+            能自動偵測?: 不能
+                 設備檔: /dev/sjcd，主編號 18
+                 設定檔: sjcd.h
+         核心設定的問題: Experimental Sanyo H94A CDROM support?
+             請另外閱讀: sjcd
+</PRE>
+</P>
+<P>核心命令列像下面這行:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+sjcd=&lt;io-address&gt;,&lt;interrupt&gt;,&lt;dma&gt;
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>指出基底位址，中斷，及DMA直接記憶體存取通道號碼。
+(如 sjcd=0x340,10,5)</P>
+<P>設備檔以下面方法做:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+% mknod /dev/sjcd b 18 0
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>詳情見 sjcd 檔案</P>
+
+<H3>Paride 驅動程式</H3>
+
+
+<P>
+<PRE>
+                  作者 : Grant R. Guenther (grant@torque.net)
+      支援多次燒錄碟片?: 否
+          支援多台機器?: 否
+      可做成可載入模組?: 可
+        可讀取數位音軌?: 不可
+            能自動偵測?: 能
+                 設備檔: /dev/pcd0，主編號 46
+                 設定檔: bpcd.h
+         核心設定的問題: Parallel port IDE device support?
+             請另外閱讀: paride.txt
+</PRE>
+</P>
+<P>這是許多種用印表機介面連接的儲存設備使用的驅動程式。
+通常這個驅動程式會自動偵測印表機介面上的設備。 如果自動偵測無法抓到的話，
+驅動程式文件中有描述如何設定設備的參數。</P>
+<P>設備檔的建造法:
+<BLOCKQUOTE><CODE>
+<PRE>
+# mknod /dev/pcd0 b 46 0
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>請看 /usr/src/linux/Documentation/paride.txt
+以取得本驅動程式的更深入資訊。 注意本驅動程式取代了舊版核心中的 bpcd
+驅動程式。</P>
+
+<H3>SCSI CD-ROM 驅動程式</H3>
+
+
+<P>
+<PRE>
+                  作者 : David Giller
+      支援多次燒錄碟片?: 是 (和機器有關)
+          支援多台機器?: 是
+      可做成可載入模組?: 可
+        可讀取數位音軌?: 不可
+            能自動偵測?: 能
+                 設備檔: /dev/scd0，主編號 11
+                 設定檔: cdrom.h
+         核心設定的問題: SCSI CDROM support?
+             請另外閱讀: 無
+</PRE>
+</P>
+<P>對每一種不同的 SCSI 卡而言，用的命令列參數不一樣，請參考
+<A HREF="ftp://metalab.unc.edu/pub/Linux/docs/HOWTO/unmaintained/SCSI-HOWTO">SCSI HOWTO</A>。</P>
+<P>可以接多台機器(至多接到 SCSI bus 能接的上限)。 設備檔主編號是 11，次編號由 0 起
+算:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+% mknod /dev/scd0 b 11 0
+% mknod /dev/scd1 b 11 1
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>(譯注: 在核心裡叫做 /dev/sr0，/dev/sr1，等，但其實它們就是/dev/scdX)</P>
+<P>此驅動程式本身不支援讀取數位音軌功能，然而有些 SCSI CD-ROM 有這能力，可用 
+cdda2wav 程式達成(它使用通用 SCSI 核心介面)。</P>
+<P>也請參考之前討論的IDE 模擬 SCSI驅動程式部份。</P>
+
+<H3>IDECD 驅動程式</H3>
+
+
+<P>
+<PRE>
+                  作者 : Scott Snyder (snyder@fnald0.fnal.gov)
+      支援多次燒錄碟片?: 是
+          支援多台機器?: 是
+      可做成可載入模組?: 不可
+        可讀取數位音軌?: 可 (在硬體支援的機種上)
+            能自動偵測?: 能
+                 設備檔: /dev/hd{a,b,c,d}，主編號 22
+                 設定檔: cdrom.h
+         核心設定的問題: Include support for IDE/ATAPI CDROMs?
+             請另外閱讀: ide-cd
+</PRE>
+</P>
+<P>這是 ATAPI CD-ROM 驅動程式。 它支援下面的命令列格式:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+hdx=cyls,heads,sects,wpcom,irq
+  或
+hdx=cdrom
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>這裡的 hdx 可以是 {hda,hdb,hdc,hdd}，或只有 hd，表示下一台機器。 只有前三個參數
+是必要的(cyls,heads,sects)，例如說，<CODE>hdc=1050,32,64 hdd=cdrom</CODE></P>
+<P>要讓 IDE 驅動程式認識您的 CD-ROM 可能有點麻煩，特別是您有超過二台設備或超過一
+個 IDE 接頭。 通常這需要由 LILO 送出正確的命令列參數。
+/usr/src/linux/Documentation/ide-cd這檔案有詳細介紹，請仔細看。</P>
+<P>最近的核心對多台 IDE 設備支援的更好了。 所以如果在舊核心上有問題，升級也許能解
+決。</P>
+<P>有些 IDE 介面硬體有問題，但核心可以處理。 這種情形您要送參數給核心以啟動此功能。
+細節請見核心內文件。</P>
+
+<H2><A NAME="ss4.4">4.4</A> <A HREF="CDROM-HOWTO.html#toc4.4">起動 Linux 核心</A>
+</H2>
+
+
+<P>現在您可以用新核心啟動了。 請注意看一下和以下的很像的訊息 ,它指出 CD-ROM 驅動程
+式有沒有發現您的 CD-ROM (訊息會因您用的 CD-ROM 種類不同而有變化)</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+hdd: NEC CD-ROM DRIVE:282，ATAPI CDROM drive
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>如果訊息捲動得太快了，應該也可以用 <CODE>dmesg</CODE> 或 <CODE>tail
+/var/adm/messages</CODE> 來查看。</P>
+<P>如果沒有找到該機器，那就代表有問題出現了，請看``問題與解決''一節。</P>
+
+<H2><A NAME="ss4.5">4.5</A> <A HREF="CDROM-HOWTO.html#toc4.5">掛上，卸下，及退出光碟片</A>
+</H2>
+
+
+<P>若想掛上 CD-ROM，把光碟片放進去，然後以 <CODE>root</CODE> 身份執行
+<CODE>mount</CODE> 命令。
+(這裡假設您已經如我們所建議的，做了符號連結，並且也有空的
+/mnt/cdrom 目錄)</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+% mount -t iso9660 -r /dev/cdrom /mnt/cdrom
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>現在您可以到 /mnt/cdrom 下去存取 CD 上的東西了。</P>
+<P>您也許還想用mount 命令的其它參數掛載 CD-ROM。 欲知詳情，見
+<CODE>mount(8)</CODE> 說明頁。</P>
+<P>您可以在 /etc/fstab 加進一行，使 Linux 開機時就自動掛上 CD-ROM，或給予一些掛載
+時的參數。 請看 <CODE>fstab(5)</CODE> 說明頁。</P>
+<P>注意，若想要聽 CD 唱片，那就<EM>不要</EM>掛上它。</P>
+<P>要卸下 CD-ROM，以 <CODE>root</CODE> 身份執行 <CODE>umount</CODE> 命令。</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+% umount /mnt/cdrom
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>只有在沒程序存取 CD-ROM 時(包括沒人目前目錄在 CD-ROM 時) 才可以卸下該片子。 卸下
+後就可以退片了。 大多數機器都有退片鈕，不過也有一個軟體退片程式
+<A HREF="http://www.pobox.com/~tranter/eject.html">eject</A>
+可以靠軟體控制退出片子。</P>
+<P>注意不要在碟片還在掛載中時退出片子
+(這種狀況有些 CD-ROM 可能發生，有些不會)
+有些 CD-ROM 驅動程式可以在卸下時自動退片，而掛上時自動進片。 (您可以重
+新編譯核心或用軟體命令關閉這功能)</P>
+<P>也有可能在放了 CD 唱片後，就無法掛上 CD-ROM 片子了。 這時您要用 CD 播放程式送出
+``停止'' 命令後再嘗試掛上。 這問題只在 SBPCD 驅動程式出現過。</P>
+<P>最近的核心支援了以核心為基礎，能提供對可抽換式媒體 (包括
+CD-ROM) 透明化掛載能力的 automounter。 您可在 
+<A HREF="ftp://ftp.kernel.org/pub/linux/daemons/autofs/">ftp://ftp.kernel.org/pub/linux/daemons/autofs/</A>
+找到使用它所需要的工具。</P>
+
+<H2><A NAME="ss4.6">4.6</A> <A HREF="CDROM-HOWTO.html#toc4.6">問題與解決</A>
+</H2>
+
+
+<P>如果您按照本 HOWTO 的指示去做卻還有問題，有一些地方可以先確認一下。 這裡由簡單
+到複雜一條條列出來。 如果問題剛好出現在某步驟，先解決這問題再進行下一步。</P>
+
+<H3>第一步: 確定您用您自己編譯的核心啟動系統</H3>
+
+
+<P>您可以檢查核心中的時間戳記，看看是不是有支援 CD-ROM 的版本。 您可以用
+<CODE>uname</CODE> 命令來檢查:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+% uname -a
+Linux fizzbin 2.2.4 #1 Tue Mar 232 11:23:21 EST 1999 i586 unknown
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>或顯示 <CODE>/proc/version</CODE> 檔中的內容:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+% cat /proc/version
+Linux version 2.2.4 (root@fizzbin) (gcc version 2.7.2.3) #1 Tue Mar 23 11:23:21
+EST 1999
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>如果這個時間戳記比您編譯還早，那您就是在用舊核心了。 您真的重開機過嗎? 如果您 
+用 LILO，是否忘記重裝一次(一般執行<CODE>/etc/lilo/install</CODE>)?
+用軟碟開機的話，您有做了一片新開機片，並用它開機了嗎?</P>
+
+<H3>第二步: 確定需要的核心驅動程式有被編譯進去</H3>
+
+
+<P>您可藉由觀察 <CODE>/proc/devices</CODE> 來看編譯進了什麼驅動程式:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+% cat /proc/devices
+Character devices:
+ 1 mem
+ 2 pty
+ 3 ttyp
+ 4 ttyS
+ 5 cua
+ 7 vcs
+
+Block devices:
+ 3 ide0
+22 ide1
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>首先看您的 CD-ROM 驅動程式。 CD-ROM 都是區塊設備。 在這裡我們看到主編號 22 的
+idecd 驅動程式存在著。</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+% cat /proc/filesystems
+        ext2
+nodev   proc
+nodev   devpts
+        vfat
+        iso9660
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>您也可以藉由看 /proc/ioports 檔來看使用了那些 I/O port:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+howto % cat /proc/ioports
+ ...
+0230-0233 : sbpcd
+ ...
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>如果有東西您記得有編譯但卻沒顯示，那麼就是您設置核心時出了問題。 從再設置及重建
+核心開始，再重複安裝核心的步驟。</P>
+
+<H3>第三步: 起動時，核心有偵測到您的機器嗎?</H3>
+
+
+<P>當核心起動時，確定您的 CD-ROM 被偵測到了。 應該在開機訊息裡可以看到。 如果訊息捲
+動太快，看不到，您可以用 <CODE>dmesg</CODE> 命令再顯示一遍:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+% dmesg
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>或者</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+% tail /var/adm/messages
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>如果開機沒找到，那一定某處有問題。 確定它開電源了，並且連線也都接對了。 如果您
+的機器有位址的跳線(如 SCSI ID 或 562B 的 ID)，確定它設在正確位置上(例如，若是
+只有一台則設 "drive 0") ATAPI CD-ROM 若是該 IDE 排線上唯一一台，則必須設 
+"single" 或 "master"，不要設 "slave"。 如果在 DOS 下很正常，那您就可以相信硬體
+是正常的了。</P>
+<P>有些驅動程式用自動偵測，有些不用，而且自動偵測也不是完全可信的。 使用您的驅動
+程式提供的核心命令列選項。 如果您不是很確定 I/O 位址或其它參數的話，您可能要試
+好幾遍不同的 I/O位址或其它參數。 LILO 可以被設成允許您起動時手動輸入參數。</P>
+<P>另一個可能就是您用錯驅動程式了。 有些文件將專屬介面寫成 IDE，使人們誤以為它是
+ATAPI 的機種。</P>
+<P>還有一個可能是您的機器(或介面卡)是那種需要 DOS 驅動程式來驅動它的所謂 ``相
+容型''。 這樣的話，您要先用 DOS 開機，載入這個驅動程式，再按
+<CODE>Control-Alt-Del</CODE> 重起動 Linux。</P>
+<P>如果本文件中沒列出您的機器，那可能在 Linux 下還沒有驅動程式。 您可以看一下文後
+的參考資料表，試著求一點幫助。</P>
+
+<H3>第四步: 您能從機器上讀出資料嗎?</H3>
+
+
+<P>試著從 CD-ROM 讀資料。 打入以下命令後，應該可以看到 CD-ROM 的燈亮起來(如果有燈
+的話)，而且也不會回報錯誤。 照您的驅動程式的設備檔，並確定放了一片 CD-ROM 片子;
+按下 Control-C 離開。</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+dd if=/dev/cdrom of=/dev/null bs=2048
+^C
+124+0 records in
+124+0 records out
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>如果成功，那核心就能成功的和機器通訊，您可以跳到下一步。</P>
+<P>如果不能的話，問題可能出在設備檔。 確定在 <CODE>/dev</CODE>
+下的設備檔的主編號及次編號如前面寫的一樣。 也檢查一下它是否允許讀取及寫入權。 </P>
+<P>也有一點點可能是硬體問題。 可能的話，在 DOS 下試試看，確認是不是這狀況。 </P>
+
+<H3>第五步: 您能掛上片子嗎?</H3>
+
+
+<P>如果您能讀取但不能掛上，首先確定一下核心有沒有支援 ISO-9660 檔案系統。 如前所
+述，看 /proc/filesystems 檔。</P>
+<P>注意一下，請在掛上時用 ``-t iso9660'' 及 ``-r''
+選項。 還有在 CD-ROM 中放的是資料碟片，不是唱片。 通常要以 root 身份執行掛上命令。</P>
+<P>確定掛載點存在，且是個空目錄。</P>
+<P>如果您想開機時自動掛載，確定在 /etc/fstab 中有正確的一行。</P>
+<P>如果您有跑 syslog，那可能您看不見有些核心發出的訊息。 試試 dmesg 命令:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+% dmesg
+SBPCD: sbpcd_open: no disk in drive
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>錯誤也可能記錄在 /var/adm 目錄下的檔案中，全看您的系統怎麼設的。</P>
+
+<H3>消除聽音樂時的問題</H3>
+
+
+<P>如果您的機器讀 CD-ROM 時沒問題，但聽唱片就有問題，這裡提供些解決之道。</P>
+<P>您需要些可放唱片的軟體。 有些程式可能和您的機器不相容。 試試其它的或重新編譯它。
+一個找軟體的好地方在
+<A HREF="ftp://metalab.unc.edu/pub/Linux/apps/sound/cdrom/">ftp://metalab.unc.edu/pub/Linux/apps/sound/cdrom/</A>。</P>
+<P>有些 CD-ROM 不支援放唱片。 檢查文件或原始碼，看看是不是這情形。</P>
+<P>檢查一下聲音是不是會從耳機孔出來。 如果可以，那八成和您的音效卡有關。 使用混音程
+式設定輸入頻道及音量。 確定您從 CD-ROM 接了條音源線到音效卡上。 也確認一下核心的
+音效卡驅動程式存在及可用(請看
+<A HREF="http://metalab.unc.edu/LDP/HOWTO/Sound-HOWTO.html">Sound HOWTO</A>)</P>
+
+<H3>要是一切都沒用呢?</H3>
+
+
+<P>如果您還有問題，這裡有一些最後的建議，您可以試試:</P>
+<P>
+<UL>
+<LI>小心地重讀這份 HOWTO 文件</LI>
+<LI>讀文後列出的參考文件，特別是相關的核心原始碼的相關檔案。</LI>
+<LI>在 comp.os.linux 或其它 USENET 新聞組貼帖子，問問題。</LI>
+<LI>送一個問題到 Linux 通信論壇</LI>
+<LI>用最新版的 Linux 核心</LI>
+<LI>向電腦公司求救</LI>
+<LI>找您的 CD-ROM 廠商</LI>
+<LI>寄封信給相關驅動程式的作者(在/usr/src/linux/MAINTAINERS有列舉)</LI>
+<LI>寄信給我(作者)</LI>
+<LI>叫出 emacs，打入<CODE>Esc-x doctor</CODE> (:-)</LI>
+</UL>
+</P>
+
+<HR>
+<A HREF="CDROM-HOWTO-5.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="CDROM-HOWTO-3.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="CDROM-HOWTO.html#toc4"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

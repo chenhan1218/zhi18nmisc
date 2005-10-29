@@ -1,0 +1,145 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" content="text/html; charset=gb2312">
+<TITLE>GTEK BBS-550 with Linux mini-HOWTO 中译版</TITLE>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+<PRE>
+
+   _
+   
+   GTEK BBS-550 with Linux mini-HOWTO _
+   
+   由 Wajihuddin Ahmed &lt;<a href="mailto:wahmed@sdnp.org.pk">wahmed@sdnp.org.pk</a>&gt; 制作
+   
+   v1.1. 20 八月 1997
+   
+   
+     _________________________________________________________________
+   
+   _
+   
+   GTEK 的 BBS-550 是一片 8-埠的序列卡，卡上面使用 16C550 UARTS 晶片，
+   全部的 8 个埠共用一个 IRQ， 在 Linux 之中不需要任何的驱动程式
+   因此核心 (kernel) 不须要重新编译但是核心 (kernel)
+   需要支援序列埠。 _
+   
+   
+     _________________________________________________________________
+   
+   
+   
+   1. 要使用那一个 I/O 地址 ?
+   2. rc.serial 档案和 IRQ 的选择
+   3.  uugetty 的设定
+   4. 最后的检查…
+   
+   
+     _________________________________________________________________
+   
+   
+   
+   1.在 Linux 之中如何设定序列埠的详细资料请看 
+   Serial-HOWTO，我就是从那边开始的。
+   
+   在我的Linux 电脑上，设定 BBS-550 使用从 0x100 到 0x140 的 I/O 地址 
+    (Slackware 2.3.核心 (kernel) 1.3.93)，主要的理由是
+   我的电脑中上述的地址没有被使用到，在 GTEK 手册的第 4 页中
+   写著有关 jumper 的设定，另外那个 I/O 地址的范围通常
+   很少被其它的硬体所使用，使用在 GTEK 磁碟片之中的 IOMAP.EXE 程式
+   ，来确定在你的电脑上的 I/O 地址那些是可以使用的
+   。
+   
+   
+     _________________________________________________________________
+   
+   
+   
+   2.你把卡片装入在你的电脑上之后 _你需要
+   设定序列埠_，它是十分容易的因为 rc.serial 这个
+   档案之中已经有 BOCA 8 埠卡的设定栏位这些栏位可以用在
+   GTEK上，这里是我的 rc.serial 档案， _不要忘记_从
+   rc.S 档案中把注销记号取掉这样一来才能执行。
+   
+   --
+   
+   #!/bin/sh
+   # /etc/rc.serial
+   # Initializes the serial ports on your system (在你的系统上初始化序列埠)
+   # Version 2.01 (版本 2.01)
+   cd /dev
+   SETSERIAL="/bin/setserial -a"
+   PORTS=`echo cua? cua??`
+   echo -n "Configuring serial ports...."
+   # Do wild interrupt detection (做中断侦查)
+   #
+   #${SETSERIAL} -W ${PORTS}
+   # Do AUTOMATIC_IRQ probing (做自动的_IRQ 分析)
+   #
+   #AUTO_IRQ=auto_irq
+   ${SETSERIAL} /dev/cua16 uart 16550A port 0x100 irq 5
+   ${SETSERIAL} /dev/cua17 uart 16550A port 0x108 irq 5
+   ${SETSERIAL} /dev/cua18 uart 16550A port 0x110 irq 5
+   ${SETSERIAL} /dev/cua19 uart 16550A port 0x118 irq 5
+   ${SETSERIAL} /dev/cua20 uart 16550A port 0x120 irq 5
+   #${SETSERIAL} /dev/cua21 uart 16550A port 0x128 irq 5
+   #${SETSERIAL} /dev/cua22 uart 16550A port 0x130 irq 5
+   #${SETSERIAL} /dev/cua23 uart 16550A port 0x138 irq 5
+   echo "done."
+   ${SETSERIAL} -bg ${PORTS}
+   
+   -- _
+   
+   注意我有使用 IRQ 5_，看一下 GTEK手册中的第 6 页有说明如何设定 IRQ 
+   。
+   
+   
+     _________________________________________________________________
+   
+   
+   
+   3.我使用 uugetty 作为拨入之用，这里是我从
+   /etc/inittab  (sys V) 的档案中取出。
+   
+   
+   
+   s1:45:respawn:/sbin/uugetty ttyS16 38400 vt100
+   s2:45:respawn:/sbin/uugetty ttyS17 38400 vt100
+   s3:45:respawn:/sbin/uugetty ttyS18 38400 vt100
+   s4:45:respawn:/sbin/uugetty ttyS19 38400 vt100
+   s5:45:respawn:/sbin/uugetty ttyS20 57600 vt100
+   #s6:45:respawn:/sbin/uugetty ttyS21 38400 vt100
+   #s7:45:respawn:/sbin/uugetty ttyS22 38400 vt100
+   #s8:45:respawn:/sbin/uugetty ttyS23 38400 vt100
+   
+   
+   
+   确定你在 /etc/gettydefs 的档案中有正确的的栏位存在
+   ，不要忘记在 /etc/deault 目录中建立一个新的 uugetty
+   设定档案。
+   
+   
+     _________________________________________________________________
+   
+   
+   
+   4.在开机时核心 (kernel) _不会_回报新的序列埠，
+   
+   在开机期间你可以从萤幕看到 rc.serial 执行的同时会设定序列埠。
+   
+   ps ax _显示 uugetty 被连接到序列埠_，这里是我的 ps
+   的部分输出显示。
+   
+   18208 ? S 0:00 /sbin/uugetty ttyS18 38400 vt100
+   18247 ? S 0:00 /sbin/uugetty ttyS20 57600 vt100
+   18254 ? S 0:00 /sbin/uugetty ttyS19 38400 vt100
+   18258 ? S 0:00 /sbin/uugetty ttyS17 38400 vt100
+   18260 ? S 0:00 /sbin/uugetty ttyS16 38400 vt100
+   
+   最后向外拨号看看测试一下这块卡 (使用 cuaXX)然后拨
+   入测试一下 (ttySXX)。
+   
+  祝你好运!
+  
+</PRE>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

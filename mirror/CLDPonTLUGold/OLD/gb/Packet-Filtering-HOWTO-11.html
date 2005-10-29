@@ -1,0 +1,65 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Linux 2.4 Packet Filtering HOWTO: 关於设计封包过滤的建议</TITLE>
+ <LINK HREF="Packet-Filtering-HOWTO-10.html" REL=previous>
+ <LINK HREF="Packet-Filtering-HOWTO.html#toc11" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<IMG SRC="img/next.gif" ALT="Next">
+<A HREF="Packet-Filtering-HOWTO-10.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Packet-Filtering-HOWTO.html#toc11"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s11">11. 关於设计封包过滤的建议</A></H2>
+
+<P>在电脑安全战场上最明智之举莫过於先挡掉一切，然後开放必需的。有一句至理名言是：`非请勿进'。我建议您牢记於心，假如您最注重安全的话。
+<P>
+<P>不要跑那些您用不到的服务，不管您是否以为已经将之挡下来了。
+<P>
+<P>如果您要建立一个指定式防火墙(dedicated firewall)，开始不要跑任何东西，同时挡掉所有封包，然後增加服务以及让所需的封包通过。
+<P>
+<P>我特别强调安全性：结合 tcp-wrappers(对於封包过滤本身的连接)、服务代理(对於通过封包过滤的连接)、路由验证、以及封包过滤等手段。路由验证是指，那些来自未预期界面的封包就会被丢弃：举例说，如果您的内部网路有一段 10.1.1.0/24 的地址，同时有一个来自该地址的封包却从外部界面进入，那它就会被丢弃掉。它可以为一个界面(如 ppp0) 设起来，如：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# echo 1 > /proc/sys/net/ipv4/conf/ppp0/rp_filter
+#
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>或是全部现有及将有的界面，如：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# for f in /proc/sys/net/ipv4/conf/*/rp_filter; do
+#     echo 1 > $f
+# done
+# 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Debian 在可能之下预设就会如此了。如果您有不对称路由(例如，您预期封包会从其它方向进入)，您应该在那些界面上关闭此一过滤。
+<P>
+<P>设定防火墙的时候，假如有某些东西不工作的话，记录功能就显得很有用了；但在一个实际运作的防火墙上，任何时候都要将它结合 `limit' 比对来一起使用，以避免有人灌爆您的记录档。
+<P>我强烈建议对安全系统做连线追踪：它虽然会引致一些负担(因为所有连线都要追踪)，但对於贵网路的连接控制却很有用。如果您的核心不会自动载入模组的话，您或许需要载入`ip_conntrack.o' 模组。假如您要精确追踪复杂的协定，您还需要载入合适的 helper 模组(如，`ip_conntrack_ftp.o' )。
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# iptables -N no-conns-from-ppp0
+# iptables -A no-conns-from-ppp0 -m state --state ESTABLISHED,RELATED -j ACCEPT
+# iptables -A no-conns-from-ppp0 -m state --state NEW -i ! ppp0 -j ACCEPT
+# iptables -A no-conns-from-ppp0 -i ppp0 -m limit -j LOG --log-prefix "Bad packet from ppp0:"
+# iptables -A no-conns-from-ppp0 -i ! ppp0 -m limit -j LOG --log-prefix "Bad packet not from ppp0:"
+# iptables -A no-conns-from-ppp0 -j DROP
+
+# iptables -A INPUT -j no-conns-from-ppp0
+# iptables -A FORWARD -j no-conns-from-ppp0
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>建置一个良好的防火墙已经超出这个 HOWTO 的□围了，但我的建议是： `一切从严(always be minimalist)'。对於在您机器上进行测试与探索的更多资料，就要参考 Security HOWTO 了。
+<P>
+<HR>
+<IMG SRC="img/next.gif" ALT="Next">
+<A HREF="Packet-Filtering-HOWTO-10.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Packet-Filtering-HOWTO.html#toc11"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

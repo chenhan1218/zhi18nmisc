@@ -1,0 +1,161 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>CVS-RCS- HOW-TO document for Linux (Source Code Control System): sget </TITLE>
+ <LINK HREF="CVS-RCS-HOWTO-21.html" REL=next>
+ <LINK HREF="CVS-RCS-HOWTO-19.html" REL=previous>
+ <LINK HREF="CVS-RCS-HOWTO.html#toc20" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="CVS-RCS-HOWTO-21.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="CVS-RCS-HOWTO-19.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="CVS-RCS-HOWTO.html#toc20"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="sget"></A> <A NAME="s20">20. sget </A></H2>
+
+<P><B>NOTE : <I>Korn shell /bin/ksh is got by installing pdksh*.rpm from Linux contrib cdrom</I></B>
+<P>Save this file as text file and chmod a+rx on it.
+<P>
+<HR>
+<PRE>
+#!/bin/ksh
+
+# CVS program sget
+# Program to check out the file from CVS read-only
+
+# Every filename is composed of 3 parts - Home directory, sub-directory 
+# and the filename. The full-path is $HOME/$subdir/$fname
+# And in CVS the same directory structure is maintained (by 
+# variable $subdir) therefore in cvs we will have $CVSROOT/$subdir/$fname
+# In this program these 4 variables $HOME, $CVSROOT, $subdir and $fname
+# play an important role. For example, sample values can be like
+# HOME=/home/aldev, subdir=myproject/src CVSROOT=/home/cvsroot 
+# and fname=foo.cpp
+
+# Caution: Put double-quotes to protect the variables having 
+#          spaces, like "$HOME/$subdir" if subdir is 'some foo.cpp'
+
+cmdname=`basename $0`
+
+Usage()
+{
+        print "\nUsage: $cmdname [-r revision_number/symbolic_tag_name] &lt;file/directory name> "
+        print "The options -r are optional "
+        print "For example - "
+        print " $cmdname -r 1.1 foo.cpp"
+        print " $cmdname foo.cpp "
+        print " $cmdname some_directory "
+        print "Extract by symbolic revision tag like - "
+        print " $cmdname -r REVISION_1 some_directory "
+        print " "
+        exit
+}
+
+# Command getopt will not supported in next major release.
+# Use getopts instead.
+while getopts r: ii
+do
+        case $ii in
+        r) FLAG1=$ii; OARG1="$OPTARG";;
+        ?) Usage; exit 2;;
+        esac
+done
+shift ` expr $OPTIND - 1 `
+
+#echo FLAG1 = $FLAG1 , OARG1 = $OARG1
+
+if [ $# -lt 1 ]; then
+        Usage
+fi
+
+bkextn=sget_bak
+
+homedir=` echo $HOME | cut -f1 -d' '  `
+if [ "$homedir" = "" ]; then
+        print "\nError: \$HOME is not set!!\n"
+        exit
+fi
+
+cur_dir=`pwd`
+#echo $cur_dir
+
+len=${#homedir}
+len=$(($len + 2))
+#echo $len
+
+subdir=` echo $cur_dir | cut -b $len-2000 `
+#echo "subdir is : " $subdir
+tmpaa=`dirname $1`
+if [ "$tmpaa" = "." ]; then
+        fname=$1
+        if [ "$subdir" = "" ]; then
+                subdir=$tmpaa
+        fi
+else
+        fname=`basename $1`
+        if [ "$subdir" = "" ]; then
+                subdir=$tmpaa
+        else
+                subdir="$subdir/$tmpaa"
+        fi
+fi
+#echo "subdir is : " $subdir
+#echo "fname is : " $fname
+
+# Check if file already exists....
+if [ -f "$HOME/$subdir/$fname" ]; then
+        tmpaa="$HOME/$subdir/$fname"
+        user_perms=" "
+        group_perms=" "
+        other_perms=" "
+        user_perms=`ls -l $tmpaa | awk '{print $tmpaa }' | cut -b3-3 `
+        group_perms=`ls -l $tmpaa | awk '{print $tmpaa }' | cut -b6-6 `
+        other_perms=`ls -l $tmpaa | awk '{print $tmpaa }' | cut -b9-9 `
+        if [ "$user_perms" = "w" -o "$group_perms" = "w"  \
+                        -o "$other_perms" = "w" ]; then
+                print "\nError: The file is writable. Aborting $cmdname ......"
+                print "       You should either backup, scommit or delete the file and"
+                print "       try $cmdname again\n"
+                exit
+        fi
+fi
+
+# Move the file
+mkdir -p "$HOME/$subdir"
+touch "$HOME/$subdir/$fname" 2>/dev/null
+\mv -f "$HOME/$subdir/$fname" "$HOME/$subdir/$fname.$bkextn"
+
+# Create subshell
+(
+        cd $homedir
+
+        # Use -A option to clear all sticky flags
+        if [ "$FLAG1" = "" ]; then
+                if [ "$subdir" = "." ]; then  # don't use dot, will mess up cvs
+                        cvs -r checkout -A $fname
+                else
+                        cvs -r checkout -A "$subdir/$fname"
+                fi
+        else
+                if [ "$subdir" = "." ]; then  # don't use dot, will mess up cvs
+                        cvs -r checkout -A -$FLAG1 $OARG1 $fname
+                else
+                        cvs -r checkout -A -$FLAG1 $OARG1 "$subdir/$fname"
+                fi
+        fi
+)
+#pwd
+
+if [ -f "$HOME/$subdir/$fname" ]; then
+        print "\nREAD-ONLY copy of the file $subdir/$fname obtained."
+        print "Done $cmdname"
+        #print "\nTip (Usage): $cmdname &lt;file/directory name> \n"
+fi
+</PRE>
+<HR>
+<HR>
+<A HREF="CVS-RCS-HOWTO-21.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="CVS-RCS-HOWTO-19.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="CVS-RCS-HOWTO.html#toc20"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

@@ -1,0 +1,377 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux/MIPS HOWTO: How do I set up a cross-compiler?</TITLE>
+ <LINK HREF="MIPS-HOWTO-10.html" REL=next>
+ <LINK HREF="MIPS-HOWTO-8.html" REL=previous>
+ <LINK HREF="MIPS-HOWTO.html#toc9" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="MIPS-HOWTO-10.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="MIPS-HOWTO-8.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="MIPS-HOWTO.html#toc9"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s9">9. How do I set up a cross-compiler?</A></H2>
+
+<P>
+<H2><A NAME="ss9.1">9.1 Available binaries</A>
+</H2>
+
+<P>The easiest way to setup a cross-compiler is to just download the binaries.
+For Linux/i386 hosts and big endian targets, these are the packages:
+<PRE>
+  binutils-mips-linux-2.8.1-1.i386.rpm
+  egcs-c++-mips-linux-1.1.2-2.i386.rpm
+  egcs-g77-mips-linux-1.1.2-2.i386.rpm
+  egcs-libstdc++-mips-linux-2.9.0-2.i386.rpm
+  egcs-mips-linux-1.1.2-2.i386.rpm
+  egcs-objc-mips-linux-1.1.2-2.i386.rpm
+ 
+</PRE>
+<P>And this is the list of packages for little endian targets:
+<PRE>
+  binutils-mipsel-linux-2.8.1-1.i386.rpm
+  egcs-c++-mipsel-linux-1.1.2-2.i386.rpm
+  egcs-g77-mipsel-linux-1.1.2-2.i386.rpm
+  egcs-libstdc++-mipsel-linux-2.9.0-2.i386.rpm
+  egcs-mipsel-linux-1.1.2-2.i386.rpm
+  egcs-objc-mipsel-linux-1.1.2-2.i386.rpm
+ 
+</PRE>
+<P>For 64-bit MIPS kernels, there is only one package available right
+now:
+<PRE>
+  egcs-mips64-linux-1.1.2-2.i386.rpm
+ 
+</PRE>
+<P>This compiler is only available in the big endian flavor as there currently
+is no little endian machine supported by the 64-bit kernel.  A little endian
+version of the compiler will be provided as soon as there is demand for one.
+<P>It's not necessary that you install all of these packages as most people can
+just omit the C++, Objective&nbsp;C and Fortran&nbsp;77 compilers.  The
+Intel binaries have been linked against GNU libc 2.1, so you may have
+to install that as well when upgrading.
+<P>
+<H2><A NAME="ss9.2">9.2 Recommended compiler versions</A>
+</H2>
+
+<P>Compilers older than egcs 1.1.2 are no longer supported for compiling kernels
+due to bugs in the generated code.  At this time, we still recommend
+binutils 2.8.1 despite their age.
+<P>
+<H2><A NAME="ss9.3">9.3 Building your own cross-compiler</A>
+</H2>
+
+<P>First of all, go and download the following source packages:
+<UL>
+<LI>binutils-2.8.1.tar.gz</LI>
+<LI>egcs-1.1.2.tar.gz</LI>
+<LI>glibc-2.0.6.tar.gz</LI>
+<LI>glibc-crypt-2.0.6.tar.gz</LI>
+<LI>glibc-localedata-2.0.6.tar.gz</LI>
+<LI>glibc-linuxthreads-2.0.6.tar.gz</LI>
+</UL>
+
+You can obtain these files from your favorite GNU archive or
+<A HREF="ftp://oss.sgi.com">oss.sgi.com</A>.  Furthermore, you'll
+need patches.  The unbundled patch files aren't always up-to-date and addional,
+not MIPS-specific, patches may be required for building.  Note that the
+unbundled patch files also use a different revision numbering and it is
+therefore recommended that you obtain the source and patches from the RPM packages
+distributed on 
+<A HREF="ftp://oss.sgi.com">oss.sgi.com</A>.
+<P>Those are the currently recommended versions.  Older versions may or may not
+be working.  If you're trying to use older versions, please don't send
+bug reports because we don't care.  When installing, please install things in the
+order of binutils, egcs, then glibc.  Unless you have older versions
+already installed, changing the order <I>will</I> fail.
+<P>
+<H2><A NAME="ss9.4">9.4 Disk space requirements</A>
+</H2>
+
+<P>For the installation, you'll have to choose a directory where the files will be
+installed. I'll refer to that directory below with &lt;prefix>.  To avoid a particular
+problem, it's best to use the same value for &lt;prefix> as your native gcc.
+For example, if your gcc is installed in /usr/bin/gcc, then choose /usr for
+&lt;prefix>.  You must use the same &lt;prefix> value for all the packages
+that you're going to install.
+<P>During compilation, you'll need about 31MB disk space for binutils. For
+installation, you'll need 7MB disk space on &lt;prefix>'s
+partition.  Building egcs requires 71MB, and installation 14MB.  GNU libc
+requires 149MB disk space during compilation, and 33MB for installation.
+Note, these numbers are just a guideline and may differ significantly for
+different processor and operating system architectures or compiler options.
+<P>
+<H2><A NAME="ss9.5">9.5 Byte order</A>
+</H2>
+
+<P>One of the special features of the MIPS architecture is that all processors
+except the R8000 can be configured to run either in big or in little endian
+mode.  Byte order means the way the processor stores multibyte numbers in
+memory.  Big endian machines store the byte with the highest value digits
+at the lowest address while little endian machines store it at the highest
+address.  Think of it as writing multi-digit numbers from left to
+right or vice versa.
+<P>In order to setup your cross-compiler correctly, you have to know the byte
+order of the cross-compiler target.  If you don't already know, check
+the section 
+<A HREF="MIPS-HOWTO-3.html#hardware-platforms">Hardware Platforms</A> for your
+machine's byte order.
+<P>
+<H2><A NAME="ss9.6">9.6 Configuration names</A>
+</H2>
+
+<P>Many of the packages based on autoconf support many different
+architectures and operating systems.  In order to differentiate between
+these many configurations, names are constructed with
+&lt;cpu>-&lt;company>-&lt;os>, or even
+&lt;cpu>-&lt;company>-&lt;kernel>-&lt;os>.  Expressed this way,
+the configuration names of Linux/MIPS are: mips-unknown-linux-gnu for big
+endian targets, or mipsel-unknown-linux-gnu for little endian targets.  These
+names are a bit long and are allowed to be abbreviated to mips-linux or
+mipsel-linux.  You <I>must</I> use the same configuration name for all
+packages that comprise your cross-compilation environment.  Also, while
+other names, like mips-sni-linux or mipsel-sni-linux, are legal configuration
+names, use mips-linux or mipsel-linux instead. These are the configuration
+names known to other packages, like the Linux kernel sources, and they would
+otherwise have to be changed for cross-compilation.
+<P>I'll refer to the target configuration name below with &lt;target>.
+<P>
+<H2><A NAME="ss9.7">9.7 Installation of GNU Binutils.</A>
+</H2>
+
+<P>This is the first and simplest part (at least as long as you're trying to
+install on any halfway-sane UNIX flavour).  Just cd into a directory with
+enough free space and do the following:
+<PRE>
+   gzip -cd binutils-&lt;version>.tar.gz | tar xf -
+   cd binutils-&lt;version>
+   patch -p1 &lt; ../binutils-&lt;version>-mips.patch
+   ./configure --prefix=&lt;prefix> --target=&lt;target>
+   make CFLAGS=-O2
+   make install
+  
+</PRE>
+
+This usually works correctly.  However, certain machines using GCC 2.7.x as
+compiler are known to dump core.  This is a known bug in GCC and can be fixed
+by upgrading the host compiler to GCC 2.8.1 or better.
+<P>
+<H2><A NAME="ss9.8">9.8 Assert.h</A>
+</H2>
+
+<P>Some people have an old assert.h header file installed, probably leftover
+from an old cross-compiler installation.  This file may cause autoconf
+scripts to fail silently. Assert.h was never necessary and was only installed
+because of a bug in older GCC versions.  Check to see if the file
+&lt;prefix>/&lt;target>/include/assert.h exists in your installation.  If
+so, just delete the it - it should never have been installed for any version
+of the cross-compiler and will cause trouble.
+<P>
+<H2><A NAME="ss9.9">9.9 Installing the kernel sources</A>
+</H2>
+
+<P>Installing the kernel sources is simple.  Just place them into some directory
+of your choice and configure them.  Configuring them is necessary so that
+files which are generated by the procedure will be installed.  Make sure
+you enable CONFIG_CROSSCOMPILE near the end of the configuration process.
+The only problem you may run into is that you may need to install some
+required GNU programs like bash or have to override the manufacturer-provided
+versions of programs by placing the GNU versions earlier in the PATH variable.
+Now, go to the directory &lt;prefix>/&lt;target>/include and create two
+symbolic links named asm and linux pointing to include/asm rsp. include/linux
+within your just installed and configured kernel sources.  These are
+necessary such that the necessary header files will be found during the next
+step.
+<P>
+<H2><A NAME="ss9.10">9.10 First installation of egcs</A>
+</H2>
+
+<P>Now the pain begins.  There is a so-called bootstrap problem.
+In our case, this means that the installation process of egcs needs an already
+installed glibc, but we cannot compile glibc because we don't have a
+working cross-compiler yet.  Luckily, you'll only have to go through this
+once when you install a cross-compiler for the first time.  Later, when you
+already have glibc installed, things will be much smoother.  So now do:
+<PRE>
+   gzip -cd egcs-1.1.2.tar.gz | tar xf -
+   cd egcs-&lt;version>
+   patch -p1 &lt; ../egcs-1.1.2-mips.patch
+   ./configure --prefix=&lt;prefix> --with-newlib --target=&lt;target>
+   make SUBDIRS="libiberty texinfo gcc" ALL_TARGET_MODULES= \
+           CONFIGURE_TARGET_MODULES= INSTALL_TARGET_MODULES= LANGUAGES="c"
+ 
+</PRE>
+
+Note that we deliberately don't build gcov, protoize, unprotoize, and the
+libraries.  Gcov doesn't make sense in a cross-compiler environment, and
+protoize and unprotoize might even overwrite your native programs - this
+is a bug in the gcc makefiles.  Finally, we cannot build the libraries
+because we don't have glibc installed yet.  If everything went successfully,
+install with:
+<PRE>
+   make SUBDIRS="libiberty texinfo gcc" INSTALL_TARGET_MODULES= \
+           LANGUAGES="c" install
+ 
+</PRE>
+<P>If you only want the cross-compiler for building the kernel, you're done.
+Cross-compiling libc is only required to be able to compile user applications.
+<P>
+<H2><A NAME="ss9.11">9.11 Test what you've done so far</A>
+</H2>
+
+<P>Just to make sure that what you've done so far is actually working, you
+may now try to compile the kernel.  Cd to the MIPS kernel's sources and
+type ``make clean; make dep; make''.  If everything went ok do ``make clean''
+once more to clean the sources.
+<P>
+<H2><A NAME="ss9.12">9.12 Installing GNU libc</A>
+</H2>
+
+<P><I>Note: Building glibc 2.0.6 using a compiler newer than egcs 1.0.3a is not
+recommended due to binary compatibility problems which may hit certain
+software.  It's recommended that you either use egcs 1.0.3a or use the files
+from a published binary package.  Crosscompiling GNU libc is always only the
+second best solution as certain parts of it will not be compiled when
+crosscompiling.  A proper solution will be documented here as soon as it is
+available and believed to be stable.</I>  With this warning given, here's the
+recipe:
+<PRE>
+   gzip -cd glibc-2.0.6.tar.gz | tar xf -
+   cd glibc-2.0.6
+   gzip -cd glibc-crypt-2.0.6.tar.gz | tar xf -
+   gzip -cd glibc-localedata-2.0.6.tar.gz | tar xf -
+   gzip -cd glibc-linuxthreads-2.0.6.tar.gz | tar xf -
+   patch -p1 &lt; ../glibc-2.0.6-mips.patch
+   mkdir build
+   cd build
+   CC=&lt;target>-gcc BUILD_CC=gcc AR=&lt;target>-ar RANLIB=&lt;target>-ranlib \
+         ../configure --prefix=/usr --host=&lt;target> \
+         --enable-add-ons=crypt,linuxthreads,localedata --enable-profile
+   make
+ 
+</PRE>
+
+You now have a compiled GNU libc which still needs to be installed.  Do
+<I>not</I> just type make install.  That would overwrite your host
+system's files with Linux/MIPS-specific files with disastrous effects.
+Instead, install GNU libc into some other arbitrary directory &lt;somedir>
+from which we'll move the parts we need for cross-compilation into the
+actual target directory:
+<PRE>
+   make install_root=&lt;somedir> install
+ 
+</PRE>
+
+Now cd into &lt;somedir> and finally install GNU libc manually:
+<PRE>
+   cd usr/include
+   find . -print | cpio -pumd &lt;prefix>/&lt;target>/include
+   cd ../../lib
+   find . -print | cpio -pumd &lt;prefix>/&lt;target>/lib
+   cd ../usr/lib
+   find . -print | cpio -pumd &lt;prefix>/&lt;target>/lib
+ 
+</PRE>
+
+GNU libc also contains extensive online documentation.  Your system might
+already have a version of this documentation installed, so if you don't
+want to install the info pages, which will save you a less than a megabyte,
+or already have them installed, skip the next step:
+<PRE>
+   cd ../info
+   gzip -9 *.info*
+   find . -name \*.info\* -print | cpio -pumd &lt;prefix>/info
+ 
+</PRE>
+
+If you're not bootstrapping, your installation is now finished.
+<P>
+<H2><A NAME="ss9.13">9.13 Building egcs again</A>
+</H2>
+
+<P>The first attempt of building egcs was stopped by lack of a GNU
+libc.  Since we now have libc installed we can rebuild egcs but this
+time as complete as a cross-compiler installation can be:
+<PRE>
+   gzip -cd egcs-&lt;version>.tar.gz | tar xf -
+   cd egcs-&lt;version>
+   patch -p1 &lt; ../egcs-1.1.2-mips.patch
+   ./configure --prefix=&lt;prefix> --target=&lt;target>
+   make LANGUAGES="c c++ objective-c f77"
+ 
+</PRE>
+
+As you can see, the procedure is the same as the first time, with the
+exception that we dropped the --with-newlib option.  This option was
+necessary to avoid the libgcc build breaking due to the lack of
+libc.  Now install with:
+<PRE>
+   make LANGUAGES="c c++ objective-c f77" install
+ 
+</PRE>
+
+You're almost finished.  If you think you don't need the Objective&nbsp;C or
+F77 compilers, you can omit them from above commands. Each will save you about
+3MB.  Do not build gcov, protoize, or unprotoize.
+<P>
+<H2><A NAME="ss9.14">9.14 Should I build the C++, Objective&nbsp;C or F77 compilers?</A>
+</H2>
+
+<P>The answer to this question largely depends on your use of your cross-compiler
+environment.  If you only intend to rebuild the Linux kernel, then you have
+no need for the full blown setup and can safely omit the Objective&nbsp;C and
+F77 compilers.  You must, however, build the C++ compiler, because building
+the libraries included with the egcs distribution requires C++.
+<P>
+<H2><A NAME="ss9.15">9.15 How about float.h?</A>
+</H2>
+
+<P>The installation of float.h is no longer necessary. Since about egcs 1.0.3a,
+a proper float.h header file will automatically be generated and installed.
+<P>
+<H2><A NAME="ss9.16">9.16 Known problem when cross-compiling</A>
+</H2>
+
+<P>
+<H3>IRIX crashes</H3>
+
+<P>Origin&nbsp;200 running IRIX 6.5.1 may crash when running ``make depend''
+on the Linux kernel sources.  IRIX&nbsp;6.5 on Indy and IRIX&nbsp;6.5.4 on
+Origin&nbsp;200 are known to work.  Further reports that help to isolate
+the problematic configuration are welcome.
+<P>
+<H3>Resource limits on System&nbsp;V based hosts</H3>
+
+<P>Typical System&nbsp;V-based Unices, like IRIX or Solaris, have limits for
+the maximum number of arguments to be passed to a child process which
+may be exceeded when cross-compiling some software like the Linux kernel
+or GNU libc.  For IRIX systems, the maximum length of the argument list
+defaults to 20KB, while Linux defaults to at least 128KB.  This size
+can be modified by the command ``systune ncargs 131072'' as root.
+<P>
+<H2><A NAME="ss9.17">9.17 GDB</A>
+</H2>
+
+<P>Building GDB as cross-debugger is only of interest to kernel developers. For
+them, GDB may be a life saver.  Such a remote debugging setup always
+consists of two parts:  the remote debugger GDB running on one machine, and
+the target machine running the Linux/MIPS kernel being debugged.  The machines
+are typically interconnected with a serial line.  The target machine's kernel
+needs to be equipped with a ``debugging stub'' which communicates with the
+GDB host machine using the remote serial protocol.
+<P>
+<P>Depending on the target's architecture, you may have to implement the
+debugging stub yourself.  In general, you'll only have to write very simple
+routines for the serial line.  The task is further simplified by the fact that most
+machines are using similar serial hardware, typically based on the 8250,
+16450 or derivatives.
+<P>
+<P>
+<P>
+<HR>
+<A HREF="MIPS-HOWTO-10.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="MIPS-HOWTO-8.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="MIPS-HOWTO.html#toc9"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

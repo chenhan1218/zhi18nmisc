@@ -1,0 +1,125 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux AX25-HOWTO, Amateur Radio.: The Packet Radio Protocols and Linux.</TITLE>
+ <LINK HREF="AX25-HOWTO-3.html" REL=next>
+ <LINK HREF="AX25-HOWTO-1.html" REL=previous>
+ <LINK HREF="AX25-HOWTO.html#toc2" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="AX25-HOWTO-3.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="AX25-HOWTO-1.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="AX25-HOWTO.html#toc2"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s2">2. The Packet Radio Protocols and Linux.</A></H2>
+
+<P>The <EM>AX.25</EM> protocol offers both connected and connectionless modes of
+operation, and is used either by itself for point-point links, or to carry
+other protocols such as TCP/IP and NetRom.
+<P>It is similar to X.25 level 2 in structure, with some extensions to make it
+more useful in the amateur radio environment.
+<P>The NetRom protocol is an attempt at a full network protocol and uses AX.25 at
+its lowest layer as a datalink protocol. It provides a network layer that is
+an adapted form of AX.25. The NetRom protocol features dynamic routing and
+node aliases.
+<P>The Rose protocol was conceived and first implemented by Tom Moulton W2VY and
+is an implementation of the X.25 packet layer protocol and is designed to
+operate with AX.25 as its datalink layer protocol. It too provides a network
+layer. Rose addresses take the form of 10 digit numbers. The first four digits
+are called the Data Network Identification Code (DNIC) and are taken from
+Appendix B of the CCITT X.121 recommendation. More information on the Rose
+protocol may be ontained from the
+<A HREF="http://www.rats.org/">RATS Web server</A>.
+<P>Alan Cox developed some early kernel based AX.25 software support for Linux.
+Jonathon Naylor <CODE>&lt;g4klx@g4klx.demon.co.uk></CODE> has taken up ongoing
+development of the code, has added NetRom and Rose support and is now the
+developer of the AX.25 related kernel code. DAMA support was developed by
+Joerg, DL1BKE, <CODE>jreuter@poboxes.com</CODE>. Baycom and SoundModem support
+were added by Thomas Sailer, <CODE>&lt;sailer@ife.ee.ethz.ch></CODE>. The AX.25
+utility software is now maintained by me.
+<P>The Linux code supports KISS based TNC's (Terminal Node Controllers),
+the Ottawa PI card, the Gracilis PacketTwin card and other Z8530 SCC based
+cards with the generic SCC driver and both the Parallel and Serial port Baycom
+modems. Thomas's new soundmodem driver supports Soundblaster and soundcards
+based on the Crystal chipset.
+<P>The User programs contain a simple PMS (Personal Message System), a beacon
+facility, a line mode connect program, `listen' an example of how to capture
+all AX.25 frames at raw interface level and programs to configure the NetRom
+protocol. Included also are an AX.25 server style program to handle and
+despatch incoming AX.25 connections and a NetRom daemon which does most of
+the hard work for NetRom support.
+<P>
+<H2><A NAME="ss2.1">2.1 How it all fits together.</A>
+</H2>
+
+<P>The Linux AX.25 implementation is a brand new implementation. While in many
+ways it may looks similar to NOS, or BPQ or other AX.25 implementations, it
+is none of these and is not identical to any of them. The Linux AX.25
+implementation is capable of being configured to behave almost identically
+to other implementations, but the configuration process is very different.
+<P>To assist you in understanding how you need to think when configuring this
+section describes some of the structural features of the AX.25 implementation
+and how it fits into the context of the overall Linux structure.
+<P><B><EM>Simplified Protocol Layering Diagram</EM></B>
+<BLOCKQUOTE><CODE>
+<PRE>
+-----------------------------------------------
+| AF_AX25 | AF_NETROM |  AF_INET    | AF_ROSE |
+|=========|===========|=============|=========|
+|         |           |             |         |
+|         |           |    TCP/IP   |         |
+|         |           ----------    |         |
+|         |   NetRom           |    | Rose    |
+|         -------------------------------------
+|            AX.25                            |
+-----------------------------------------------
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>This diagram simply illustrates that NetRom, Rose and TCP/IP all run directly
+on top of AX.25, but that each of these protocols is treated as a seperate
+protocol at the programming interface. The `<CODE>AF_</CODE>' names are
+simply the names given to the `<EM>Address Family</EM>' of each of these
+protocols when writing programs to use them. The important thing to note here
+is the implicit dependence on the configuration of your AX.25 devices before
+you can configure your NetRom, Rose or TCP/IP devices.
+<P>
+<P><B><EM>Software module diagram of Linux Network Implementation</EM></B>
+<PRE>
+----------------------------------------------------------------------------
+ User    | Programs  |   call        node    ||  Daemons | ax25d  mheardd
+         |           |   pms         mheard  ||          | inetd  netromd
+----------------------------------------------------------------------------
+         | Sockets   | open(), close(), listen(), read(), write(), connect()
+         |           |------------------------------------------------------
+         |           |    AF_AX25   |  AF_NETROM  |   AF_ROSE   |  AF_INET
+         |------------------------------------------------------------------
+Kernel   | Protocols |    AX.25     |   NetRom    |     Rose    | IP/TCP/UDP
+         |------------------------------------------------------------------
+         | Devices   |    ax0,ax1   |  nr0,nr1    | rose0,rose1 | eth0,ppp0
+         |------------------------------------------------------------------
+         | Drivers   |  Kiss   PI2   PacketTwin   SCC   BPQ     | slip ppp
+         |           |      Soundmodem      Baycom              | ethernet
+----------------------------------------------------------------------------
+Hardware | PI2 Card, PacketTwin Card, SCC card, Serial port, Ethernet Card
+----------------------------------------------------------------------------
+</PRE>
+
+This diagram is a little more general than the first. This diagram attempts to
+show the relationship between user applications, the kernel and the hardware.
+It also shows the relationship between the Socket application programming
+interface, the actual protocol modules, the kernel networking devices and the
+device drivers. Anything in this diagram is dependent on anything underneath
+it, and in general you must configure from the bottom of the diagram upwards.
+So for example, if you want to run the <EM>call</EM> program you must also
+configure the Hardware, then ensure that the kernel has the appropriate device
+driver, that you create the appropriate network device, that the kernel
+includes the desired protocol that presents a programming interface that the
+<EM>call</EM> program can use. I have attempted to lay out this document in
+roughly that order.
+<P>
+<HR>
+<A HREF="AX25-HOWTO-3.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="AX25-HOWTO-1.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="AX25-HOWTO.html#toc2"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

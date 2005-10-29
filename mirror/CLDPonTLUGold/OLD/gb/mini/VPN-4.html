@@ -1,0 +1,247 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>如何设置“虚拟私有网路(VPN)”: 开始建置</TITLE>
+ <LINK HREF="VPN-5.html" REL=next>
+ <LINK HREF="VPN-3.html" REL=previous>
+ <LINK HREF="VPN.html#toc4" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+<A HREF="VPN-5.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="VPN-3.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="VPN.html#toc4"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s4">4. 开始建置</A></H2>
+
+<P>
+<H2><A NAME="ss4.1">4.1 规划</A>
+</H2>
+
+<P>
+<P>在你开始设定系统前，你应该要先了解一下网路连接的细节。现在，我假定你有两个防火墙
+，各保护一个公司内部网路。所以，现在每个防火墙应该会有两个网路界面（至少）。拿一
+张纸，写下它们的 IP 位址和网路遮罩。每个 VPN 的防火墙，将会使用到数个 IP 位址区
+段。这些 IP 位址区段，应该设定在你公司现有的子网路的□围以外。我建议使用“私有”
+IP 位址区段的□围。如下所示：
+<P>
+<UL>
+<LI>10.0.0.0 - 10.255.255.255  </LI>
+<LI>172.16.0.0 - 172.31.255.255  </LI>
+<LI>192.168.0.0 - 192.168.255.255  </LI>
+</UL>
+<P>为了说明，此处我举了一个设定的案例：有两台 bastion [译注] 主机，分别被称为 fellini
+和 polanski。它们各有一个界面连接网际网路 (-out)，一个界面连接公司内部网路 (-in)
+，以及，一个界面连接 VPN (-vpn)。所有的 IP 位址和网路遮罩，如下：
+<P>
+<UL>
+<LI>fellini-out: 193.6.34.12 255.255.255.0  </LI>
+<LI>fellini-in: 193.6.35.12 255.255.255.0  </LI>
+<LI>fellini-vpn: 192.168.0.1 点对点</LI>
+<LI>polanski-out: 193.6.36.12 255.255.255.0  </LI>
+<LI>polanski-in: 193.6.37.12 255.255.255.0  </LI>
+<LI>polanski-vpn: 192.168.0.2 点对点</LI>
+</UL>
+<P>译注： bastion 是指暴露在公司网路外部的防火墙闸道。
+<P>所以我们有个计划。
+<P>
+<H2><A NAME="ss4.2">4.2 搜集工具</A>
+</H2>
+
+<P>
+<P>你将会需要
+<UL>
+<LI>Linux 防火墙</LI>
+<LI>核心</LI>
+<LI>非常少的设定</LI>
+<LI>ipfwadm 程式 </LI>
+<LI>fwtk 程式  </LI>
+<LI>VPN 所使用的工具</LI>
+<LI>ssh 程式 </LI>
+<LI>pppd 程式 </LI>
+<LI>sudo 程式 </LI>
+<LI>pty-redir 程式  </LI>
+</UL>
+<P>目前使用的版本：
+<UL>
+<LI>核心： 2.0.29 。请使用稳定的核心，而且，必须比 2.0.20 还新，因为 ping'o'death
+的错误。在撰写本文时，最後一个稳定的核心是版本 2.0.30，但是它有一些错误。如果
+，你想要使用最新版核心所提供，既快又酷的网路程式码，你自己可以尝试看看，版本
+2.0.30 对我而言，已经很好用了。</LI>
+<LI>基本的作业系统：我比较喜欢 Debian 所发行的版本。你绝对使用不到任何大型的
+软体套件，当然，也包含 sendmail 在内。你也绝对不能像其它的 UNIX 主机一样，允许
+telnet、ftp、和 'r' 命令，等功能的使用。</LI>
+<LI>ipfwadm 程式： 我使用的是 2.3.0。 </LI>
+<LI>fwtk 程式： 我使用的是 1.3。 </LI>
+<LI>ssh 程式： &gt;= 1.2.20。较旧的版本，下层的协定会有问题。</LI>
+<LI>pppd 程式： 我测试的是 2.2.0f，但是我无法确定它是否安全，这就是为什麽我会
+将它的 setuid 位元拿掉，并透过 sudo 来执行它的原因。</LI>
+<LI>sudo 程式： 我所知道的最新版本是 1.5.2。 </LI>
+<LI>pty-redir 程式： 这是我写。请至
+ftp://ftp.vein.hu/ssa/contrib/mag/pty-redir-0.1.tar.gz 取得。现在的版本是
+0.1 。如果使用上有任何问题，请来信告知。 </LI>
+</UL>
+<P>
+<H2><A NAME="ss4.3">4.3 编译与安装</A>
+</H2>
+
+<P>
+<P>你现在的工作不是编译就是安装所搜集到的工具。 并参阅其（以及 firewall-howto）
+详细的说明文件。现在，我们已经安装好这些工具了。 
+<P>
+<H2><A NAME="ss4.4">4.4 其它子系统的设定</A>
+</H2>
+
+<P>
+<P>设定防火墙以及其它的项目。你必须在两台防火墙主机之间，允许 ssh 资料的流通。这
+是指，主防火墙会有网路连线到次防火墙的埠 22。在次防火墙上启动 sshd，来验证是否
+允许你“登入(login)”。这个步骤尚未测试过，请告诉我你的测试结果。
+<P>
+<H2><A NAME="ss4.5">4.5 设定 VPN 的使用者帐户</A>
+</H2>
+
+<P>
+<P>以你日常使用的工具（例如，vi、mkdir、chown、chmod）在次防火墙上建立一个使用者帐
+户，你也可以在主防火墙上建立一个使用者帐户，但是，我认为在开机阶段设定连线就可以
+了，所以，使用原始的 root 帐户就已足够。有任何人可以为我们说明一下，在主防火墙上
+使用 root 帐户，会有什麽危险性？
+<P>
+<H2><A NAME="ss4.6">4.6 为 master 帐户，产生一个 ssh key </A>
+</H2>
+
+<P>
+<P>你可以使用 ssh-keygen 程式。如果，你要自动设置 VPN，你可以设定一个没有密码的
+“私人钥匙(private key)”。
+<P>
+<H2><A NAME="ss4.7">4.7 为 slave 帐户，设置自动的 ssh 登入环境。</A>
+</H2>
+
+<P>
+<P>在次防火墙中，复制你刚才产生的“公共钥匙(public key)”到，使用者帐户 slave 中
+的 .ssh/authorized_keys 档案里，并且，设定档案的使用权限，如下：
+<P>
+<PRE>
+drwx------ 2 slave slave 1024 Apr 7 23:49 ./  
+drwx------ 4 slave slave 1024 Apr 24 14:05 ../  
+-rwx------ 1 slave slave 328 Apr 7 03:04 authorized_keys  
+-rw------- 1 slave slave 660 Apr 14 15:23 known_hosts  
+-rw------- 1 slave slave 512 Apr 21 10:03 random_seed  
+</PRE>
+<P>其中，第一行是 ~slave/.ssh，第二行是 ~slave。
+<P>
+<H2><A NAME="ss4.8">4.8 加强 ssh 在 bastion 主机上的安全性。</A>
+</H2>
+
+<P>
+<P>请按照我在 sshd_conf 上的设定：
+<P>
+<PRE>
+PermitRootLogin no  
+IgnoreRhosts yes  
+StrictModes yes  
+QuietMode no  
+FascistLogging yes  
+KeepAlive yes  
+RhostsAuthentication no  
+RhostsRSAAuthentication no  
+RSAAuthentication yes  
+PasswordAuthentication no  
+PermitEmptyPasswords no 
+</PRE>
+<P>密码认证(PasswordAuthentication)被关闭了，所以，你只有使用授权过的 key，才能够
+完成登入的动作。（当然，你也已经关闭了，telnet 与  'r' 命令）。 
+<P>
+<H2><A NAME="ss4.9">4.9 允许 ppp 的执行，和这两个帐户的路由。</A>
+</H2>
+
+<P>
+<P>当你的 master 帐户是 root 时（以我的例子而言），你不必做任何事情。至於 slave 
+帐户，则会在你的 /etc/sudoers 的档案中出现一行：
+<P>
+<PRE>
+Cmnd_Alias VPN=/usr/sbin/pppd,/usr/local/vpn/route  
+slave ALL=NOPASSWD: VPN  
+</PRE>
+<P>正如你所看到的，我在次防火墙主机上，使用了一些命令稿(scripts)，来设定 ppp 和路由表。
+<P>
+<H2><A NAME="ss4.10">4.10 撰写命令稿程式</A>
+</H2>
+
+<P>
+<P>在主防火墙主机上，我使用了一个成熟的启始命令稿：
+<PRE>
+#! /bin/sh
+# 程式架构  这个档案是个建立在 /etc/init.d/ 目录下的命令稿实例。
+#               你应该在 /etc/init.d 目录下使用这个命令稿。
+#
+#               作者 Miquel van Smoorenburg &lt;miquels@cistron.nl>.
+#               Debian GNU/Linux 修订版作者
+#               Ian Murdock &lt;imurdock@gnu.ai.mit.edu>.
+#
+# 版本:               @(#)skeleton  1.6  11-Nov-1996  miquels@cistron.nl
+#
+
+PATH=/usr/local/sbin:/sbin:/bin:/usr/sbin:/usr/bin:/usr/bin/X11/:
+PPPAPP=/home/slave/ppp
+ROUTEAPP=/home/slave/route
+PPPD=/usr/sbin/pppd
+NAME=VPN
+REDIR=/usr/local/bin/pty-redir
+SSH=/usr/bin/ssh
+MYPPPIP=192.168.0.1
+TARGETIP=192.168.0.2
+TARGETNET=193.6.37.0
+MYNET=193.6.35.0
+SLAVEWALL=polanski-out
+SLAVEACC=slave
+
+test -f $PPPD || exit 0
+
+set -e
+
+case "$1" in
+  start)
+        echo setting up vpn
+        $REDIR $SSH -o 'Batchmode yes' -t -l $SLAVEACC $SLAVEWALL sudo $PPPAPP >/tmp/device
+        TTYNAME=`cat /tmp/device`
+echo tty is $TTYNAME
+        sleep 10s
+        if [ ! -z $TTYNAME ]
+        then
+        $PPPD $TTYNAME ${MYPPPIP}:${TARGETIP}
+        else
+                echo FAILED!
+                logger "vpn setup failed"
+        fi
+        sleep 5s
+        route add -net $TARGETNET gw $TARGETIP
+        $SSH -o 'Batchmode yes' -l $SLAVEACC $SLAVEWALL sudo $ROUTEAPP
+    ;;
+  stop)
+        ps -ax | grep "ssh -t -l $SLAVEACC " | grep -v grep | awk '{print $1}' | xargs kill
+    ;;
+  *)
+    # echo "Usage: /etc/init.d/$NAME {start|stop|reload}"
+    echo "Usage: /etc/init.d/$NAME {start|stop}"
+    exit 1
+    ;;
+esac
+
+exit 0
+ 
+</PRE>
+<P>slave 帐户可以使用命令稿来设定路由 (/usr/local/vpn/route)：     
+<PRE>
+#!/bin/bash  
+/sbin/route add -net 193.6.35.0 gw 192.168.0.1  
+</PRE>
+<P>而其 .ppprc 的内容，如下：
+<PRE>
+passive  
+</PRE>
+<P>
+<HR>
+<A HREF="VPN-5.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="VPN-3.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="VPN.html#toc4"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

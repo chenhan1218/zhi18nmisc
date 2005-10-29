@@ -1,0 +1,956 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux Laptop-HOWTO: Hardware In Detail</TITLE>
+ <LINK HREF="Laptop-HOWTO-7.html" REL=next>
+ <LINK HREF="Laptop-HOWTO-5.html" REL=previous>
+ <LINK HREF="Laptop-HOWTO.html#toc6" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Laptop-HOWTO-7.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Laptop-HOWTO-5.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Laptop-HOWTO.html#toc6"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s6">6. Hardware In Detail</A></H2>
+
+<P>
+<H2><A NAME="ss6.1">6.1 PCMCIA Controller</A>
+</H2>
+
+<P>
+<H3>Linux Compatibility Check</H3>
+
+<P>With the <CODE>probe</CODE> command, which is included in the PCMCIA-CS package by David Hinds you can get the type of the PCMCIA controller. Often this shows also up with <CODE>cat /proc/pci</CODE> .
+<P>
+<H3>Related HOWTOs</H3>
+
+<P>
+<P>
+<OL>
+<LI>PCMCIA-HOWTO</LI>
+</OL>
+<P>
+<H3>PCMCIA Configuration - Survey</H3>
+
+<P>In the mailing lists where I'm a member, the question &quot;How can I set up PCMCIA support, after the Linux installation?&quot; comes up sometimes. Therefore I try to give a short survey. But the authoritative source for the latest information about the <I>PCMCIA Card Services for Linux</I>, including documentation, files, and generic PCMCIA information is the 
+<A HREF="http://pcmcia.sourceforge.org">Linux PCMCIA Information Page</A> . For problems with PCMCIA and APM see the APM chapter.
+<P>
+<H3>Software</H3>
+
+<P>
+<OL>
+<LI>Read the PCMCIA HOWTO, usually included in the PCMCIA-CS package.</LI>
+<LI>Install the newest available PCMCIA-CS package, if you take a rpm or deb package it is quite easy.</LI>
+<LI>If necessary, install a new kernel. Note: With 2.2.x kernels PCMCIA kernel support seems no longer necessary. I had no time to look this up yet. Please read the according documents.</LI>
+<LI>Make sure your kernel has module support and PCMCIA support enabled (and often APM support)</LI>
+<LI>Make sure your kernel also includes support for the cards you want to use, e.g. network support for a NIC card, serial support for a modem card, SCSI support for a SCSI card and so on.</LI>
+<LI>If you have a custom made kernel, don't forget to compile the PCMCIA-CS source against your kernel.
+</LI>
+</OL>
+<P>
+<H3>PCMCIA Controller</H3>
+
+<P>
+<P>
+<OL>
+<LI>Use the <CODE>probe</CODE> command to get information whether your PCMCIA controller is detected or not.</LI>
+<LI>Edit the file /etc/sysconfig/pcmcia. It should include <CODE>PCMCIA=y</CODE> and the type of your PCMCIA controller, e.g. <CODE>PCIC=i82365</CODE>. </LI>
+<LI>Start the PCMCIA services typically via <CODE>/etc/init.d/pcmcia start</CODE>. If you get two high beeps, everything should be fine.</LI>
+<LI>If something doesn't work, check the messages in /var/log/messages . </LI>
+</OL>
+<P>
+<H3>PCMCIA Card</H3>
+
+<P>
+<OL>
+<LI>Check your card with <CODE>cardctl ident</CODE> .</LI>
+<LI>If your card is not in /etc/pcmcia/config, edit the file /etc/pcmcia/config.opts accordingly. Take an entry in the first file as a model. You may try every driver, just in case it might work, for instance the <CODE>pcnet_cs</CODE> supports many NE2000 compatible PCMCIA network cards.
+</LI>
+<LI>A list of supported cards is included in the PCMCIA-CS package. The current list you may find at 
+<A HREF="http://pcmcia-cs.sourceforge.net"> SUPPORTED.CARDS</A>. 
+<P>Since there are not all cards mentioned I have set up a page 
+<A HREF="http://mobilix.org/pcmcia_linux.html">PCMCIA Cards &quot;Unofficially&quot; Supported by Linux</A> .
+<P>
+</LI>
+<LI>If you use X, you can use <CODE>cardinfo</CODE> to insert, suspend, or restart a PCMCIA card via a nice graphical interface.
+</LI>
+</OL>
+<P>
+<H2><A NAME="ss6.2">6.2 Infrared Port</A>
+</H2>
+
+<P>
+<H3>Linux Compatibility Check</H3>
+
+<P>To get the IrDA port of your laptop working with Linux/IrDA you may use StandardInfraRed (SIR) or FastInfraRed (FIR).
+<P>
+<H3>SIR</H3>
+
+<P>Up to 115.200bps, the infrared port emulates a serial port like the 16550A UART. This will be detected by the kernel serial driver at boot time, or when you load the serial module. If infrared support is enabled in the BIOS, for most laptops you will get a kernel message like:
+<P>
+<HR>
+<PRE>
+Serial driver version 4.25 with no serial options enabled
+ttyS00 at 0x03f8 (irq = 4) is a 16550A     #first serial port /dev/ttyS0
+ttyS01 at 0x3000 (irq = 10) is a 16550A    #e.g. infrared port
+ttyS02 at 0x0300 (irq = 3) is a 16550A     #e.g. PCMCIA modem port
+</PRE>
+<HR>
+<P>
+<H3>FIR</H3>
+
+<P>If you want to use up to 4Mbps, your machine has to be equipped with a certain FIR chip. You need a certain Linux/IrDA driver to support this chip. Therefore you need exact information about the FIR chip. You may get this information in one of the following ways: 
+<P>
+<OL>
+<LI>Read the <I>specification</I> of the machine, though it is very rare that you will find enough and reliable information there. 
+</LI>
+<LI>Try to find out wether the FIR chip is a <I>PCI</I> device. Do a <CODE>cat /proc/pci</CODE> . The according files for 2.2.x kernels are in /proc/bus/pci . Though often the PCI information is incomplete. You may find the latest information about PCI devices and vendor numbers in the kernel documentation usually in /usr/src/linux/Documentation or at the page of Craig Hart 
+<A HREF="http://members.hyperlink.net.au/~chart">http://members.hyperlink.net.au/~chart</A> . From kernel 2.1.82 on, you may use <CODE>lspci</CODE> from the <CODE>pci-utils</CODE> package, too.
+</LI>
+<LI>Use the <I>DOS tool</I> <CODE>CTPCI330.EXE</CODE> provided in ZIP format by the German computer magazine CT 
+<A HREF="http://www.heise.de/ct/ftp/pci.shtml"> http://www.heise.de/ct/ftp/pci.shtml</A> . The information provided by this program is sometimes better than that provided by the Linux tools.
+</LI>
+<LI>Try to get information about <I>Plug-and-Play (PnP)</I> devices. Though I didn't use them for this purpose yet, the <CODE>isapnp</CODE> tools, could be useful.
+</LI>
+<LI>If you have installed the <I>Linux/IrDA software</I> load the FIR modules and watch the output of <CODE>dmesg</CODE>, whether FIR is detected or not.
+</LI>
+<LI>Another way how to figure it out explained by Thomas Davis (modified by WH): &quot;Dig through the FTP site of the vendor, find the <I>Windows9x FIR drivers</I>, and they have (for a SMC chip): 
+
+<HR>
+<PRE>
+-rw-rw-r--   1 ratbert  ratbert       743 Apr  3  1997 smcirlap.inf 
+-rw-rw-r--   1 ratbert  ratbert     17021 Mar 24  1997 smcirlap.vxd 
+-rw-rw-r--   1 ratbert  ratbert      1903 Jul 18  1997 smcser.inf 
+-rw-rw-r--   1 ratbert  ratbert     31350 Jun  7  1997 smcser.vxd 
+</PRE>
+<HR>
+
+
+If in doubt, always look for the .inf/.vxd drivers for Windows95. Windows95 doesn't ship with _ANY_ FIR drivers. (they are all third party, mostly from Counterpoint, who was assimilated by ESI).&quot; 
+</LI>
+<LI>Also Thomas Davis found a package of small <I>DOS utilities made by SMC</I>. Look at 
+<A HREF="http://www.smsc.com/ftppub/chips/appnote/ir_utils.zip">http://www.smsc.com/ftppub/chips/appnote/ir_utils.zip</A> . The package contains <CODE>FINDCHIP.EXE</CODE>. And includes a <CODE>FIRSETUP.EXE</CODE> utility that is supposed to be able to set all values except the chip address. Furthermore it contains <CODE>BIOSDUMP.EXE</CODE>, which produces this output:
+<P>Example 1 (from a COMPAQ Armada 1592DT)
+<P>
+<HR>
+<PRE>
+     In current devNode:
+           Size      = 78
+           Handle    = 14
+           ID        = 0x1105D041 = 'PNP0511' -- Generic IrDA SIR
+           Types:  Base = 0x07, Sub = 0x00,  Interface = 0x02
+                Comm. Device, RS-232, 16550-compatible
+           Attribute = 0x80
+                CAN be disabled
+                CAN be configured
+                BOTH Static &amp; Dynamic configuration
+      Allocated Resource Descriptor Block TAG's:
+           TAG=0x47, Length=7 I/O Tag, 16-bit Decode
+                                   Min=0x03E8, Max=0x03E8
+                                   Align=0x00, Range=0x08
+           TAG=0x22, Length=2 IRQ Tag, Mask=0x0010
+           TAG=0x79, Length=1 END Tag, Data=0x2F
+</PRE>
+<HR>
+<P>Result 1:
+<P><CODE>Irq Tag, Mask (bit mapped - ) = 0x0010 = 0000 0000 0000 0001 0000</CODE> so, it's IRQ 4. (start at 0, count up ..), so this is a SIR only device, at IRQ=4, IO=x03e8.
+<P>
+<P>Example 2 (from an unknown machine)
+<P>
+<HR>
+<PRE>
+     In current devNode:
+          Size      = 529
+          Handle    = 14
+          ID        = 0x10F0A34D = 'SMCF010' -- SMC IrCC
+          Types:  Base = 0x07, Sub = 0x00,  Interface = 0x02
+               Comm. Device, RS-232, 16550-compatible
+          Attribute = 0x80
+               CAN be disabled
+               CAN be configured
+               BOTH Static &amp; Dynamic configuration 
+
+     Allocated Resource Descriptor Block TAG's:
+          TAG=0x47, Length=7 I/O Tag, 16-bit Decode
+                                  Min=0x02F8, Max=0x02F8
+                                  Align=0x00, Range=0x08
+          TAG=0x22, Length=2 IRQ Tag, Mask=0x0008
+          TAG=0x47, Length=7 I/O Tag, 16-bit Decode
+                                  Min=0x02E8, Max=0x02E8
+                                  Align=0x00, Range=0x08
+          TAG=0x2A, Length=2 DMA Tag, Mask=0x02, Info=0x08
+          TAG=0x79, Length=1 END Tag, Data=0x00
+</PRE>
+<HR>
+<P>Result 2:
+<P>a) it's a SMC IrCC chip
+<P>b) one portion is at 0x02f8, has an io-extent of 8 bytes; irq = 3
+<P>c) another portion is at 0x02e8, io-extent of 8 bytes; dma = 1 (0x02 =0000 0010)
+<P>
+<P>Thomas Davis has placed some device information at 
+<A HREF="http://www.jps.net/tadavis/irda/devids.txt">http://www.jps.net/tadavis/irda/devids.txt</A> .
+<P>WARNING: The package is not intended for the end user, and some of the utilities could be harmful. The only documentation in the package is in M$ Word format. Linux users may read this with <CODE>catdoc</CODE>, available at 
+<A HREF="http://www.fe.msk.ru/~vitus/catdoc/">http://www.fe.msk.ru/~vitus/catdoc/</A> .
+<P>
+</LI>
+<LI>Use the <I>Device Manager</I> of Windows9x/NT.
+</LI>
+<LI>You may also use the <I>hardware surveys</I> mentioned below.
+</LI>
+<LI>And as a last ressort, you may even <I>open the laptop</I> and look at the writings at the chipsets themselfs.
+</LI>
+</OL>
+<P>
+<H3>Hardware Survey</H3>
+
+<P>I have made a hardware survey at 
+<A HREF="http://mobilix.org/ir_misc.html">http:/www.snafu.de/~wehe/ir_misc.html</A>. This list also contains information about infrared capable devices which are not mentioned here (mice, printers, remote control, transceivers, etc.).
+<P>To make this list more valuable, it is necessary to collect more information about the infrared devices in different hardware. You can help by sending me a short e-mail containing the exact name of the hardware you have and which type of infrared controller is used.
+<P>Please let me know also how well Linux/IrDA worked (at which tty, port and interrupt it works and the corresponding infrared device, e.g. printer, cellular phone).
+<P>Also you can help by contributing detailed technological information about some infrared devices, which is necessary for the development of drivers for Linux.
+<P>
+<H3>Related HOWTOs</H3>
+
+<P>
+<P>
+<OL>
+<LI>Linux/IR-HOWTO</LI>
+</OL>
+<P>
+<H3>IrDA Configuration - Survey</H3>
+
+<P>
+<H3>IrDA</H3>
+
+<P>The Linux infrared support is still experimental, but rapidly improving. I try to describe the installation in a short survey. Please read my 
+<A HREF="http://mobilix.org/howtos.html">Linux/IR-HOWTO</A> for detailed information.
+<P>
+<H3>Kernel</H3>
+
+<P>
+<P>
+<OL>
+<LI>Get a 2.2.x kernel.</LI>
+<LI>Compile it with all IrDA options enabled.</LI>
+<LI>Also enable experimental, sysctl, serial and network support.</LI>
+</OL>
+<P>
+<H3>Software</H3>
+
+<P>
+<P>
+<OL>
+<LI>Get the Linux/IrDA software <CODE>irda-utils</CODE> at 
+<A HREF="http://irda.sourceforge.net">The Linux IrDA Project</A> .</LI>
+<LI>Untar the package.</LI>
+<LI>Do a <CODE>make depend; make all; make install</CODE></LI>
+</OL>
+<P>
+<H3>Hardware</H3>
+
+<P>
+<P>
+<OL>
+<LI>Enable the IrDA support in the BIOS.</LI>
+<LI>Check for SIR or FIR support, as described above.</LI>
+<LI>Start the Linux/IrDA service with <CODE>irmanager -d 1</CODE> .</LI>
+<LI>Watch the kernel output with <CODE>dmesg</CODE> .</LI>
+</OL>
+<P>
+<H3>Linux Remote Control - LiRC</H3>
+
+<P>Linux Remote Control 
+<A HREF="http://fsinfo.cs.uni-sb.de/~columbus/lirc/">http://fsinfo.cs.uni-sb.de/~columbus/lirc/</A> is maintained by Christoph Bartelmus. &quot;Lirc is a package that supports receiving and sending IR signals of the most common IR remote controls. It contains a device driver for hardware connected to the serial port, a daemon that decodes and sends IR signals using this device driver, a mouse daemon that translates IR signals to mouse movements and a couple of user programs that allow to control your computer with a remote control.&quot; I don't have valid information about how much infrared remote control is working with laptop infrared devices.
+<P>
+<H2><A NAME="ss6.3">6.3 Graphic Chip</A>
+</H2>
+
+<P>
+<H3>Linux Compatibility Check</H3>
+
+<P>
+<H3>Video Mode</H3>
+
+<P>The tool <CODE>SuperProbe</CODE> is part of XFree86 and is able to check many graphic chips. Please read the documentation carefully, because it might crash your hardware. From <CODE>man SuperProbe</CODE>:
+<P>&quot;SuperProbe is a a program that will attempt to determine the type of video hardware installed in an EISA/ISA/VLB-bus system by checking for known registers in various combinations at various locations (MicroChannel and PCI machines may not be fully supported; many work with the use of the <CODE>-no_bios</CODE> option). This is an error-prone process, especially on Unix (which usually has a lot more esoteric hardware installed than MS-DOS system do), so SuperProbe may likely need help from the user.
+<P>...
+<P>At this time, SuperProbe can identify MDA, Hercules, CGA, MCGA, EGA, VGA, and an entire horde of SVGA chipsets (see the -info option, below). It can also identify several HiColor/True-color RAMDACs in use on SVGA boards, and the amount of video memory installed (for many chipsets). It can identify 8514/A and some derivatives, but not XGA, or PGC (although the author intends to add those capabilities). Nor can it identify other esoteric video hardware (like Targa, TIGA, or Microfield boards).&quot;:
+<P>For testing reasons start the X server with <CODE>X 2&gt; &lt;error.msg&gt;</CODE>. And try to change the resolution by typing <CODE>&lt;CTL&gt;&lt;ALT&gt;&lt;+&gt;</CODE> or <CODE>&lt;CTL&gt;&lt;ALT&gt;&lt;-&gt;</CODE>. Note: the + or - sign have to be taken from the numeric pad, which can be emulated at the letter pad by some laptops.
+<P>
+<H3>Text Mode</H3>
+
+<P>Just watch the display and determine if it works properly. If not, try to enable different video modes at startup time. Setting up X can sometimes be an exercise in trial and error.
+<P>
+<H3>Related HOWTOs</H3>
+
+<P>
+<P>
+<OL>
+<LI>XFree86-HOWTO</LI>
+<LI>XFree86-Video-Timings-HOWTO</LI>
+<LI>XFree86-XInside-HOWTO</LI>
+<LI>X-Big-Cursor-mini-HOWTO (useful when running X on a notebook with low contrast LCD)</LI>
+<LI>Keyboard-and-Console-HOWTO</LI>
+<LI>vesafb-mini-HOWTO</LI>
+</OL>
+<P>
+<H3>Survey X-Servers</H3>
+
+<P>You might discover that some features of your laptop are not supported by XFree86, e.g. high resolutions, accelerated X or an external monitor. Therefore I give a survey of available X servers.
+<P>
+<OL>
+<LI>XFree86 
+<A HREF="http://www.xfree86.org">http://www.xfree86.org</A></LI>
+<LI>VESA Frame-Buffer-Device, available with 2.2.x kernels and XFree86 3.3.2 </LI>
+<LI>Xinside aka AcceleratedX 
+<A HREF="http://www.xig.com">http://www.xig.com</A> , commercial </LI>
+<LI>SciTech 
+<A HREF="http://www.scitechsoft.com">http://www.scitechsoft.com</A> , commercial</LI>
+<LI>Metro-X at 
+<A HREF="http://www.metrolink.com"> http://www.metrolink.com</A>, commercial .
+</LI>
+</OL>
+<P>If you can't get an appropriate X server working, but don't want to effort a commercial X server you may try the VGA16 or the mono server included in XFree86.
+<P>
+<H3>Resources</H3>
+
+<P>You may find a survey about X windows resources at Kenneth E. Harker's page 
+<A HREF="http://www.cs.utexas.edu/users/kharker/linux-laptop/">Linux on Laptops</A> and a survey about current graphic chips used in laptops at 
+<A HREF="http://mobilix.org/">MobiliX</A>.
+<P>
+<H3>External Monitor</H3>
+
+<P>There are several different methods to activate support for an external monitor: as a <I>BIOS option</I> or during runtime with a <I>keystroke</I> e.g. <CODE>&lt;Fn&gt;+&lt;F4&gt;</CODE>. Maybe you have to edit /etc/XF86Config by configuring <CODE>int_disp</CODE> and <CODE>ext_disp</CODE>. If you can't get this to work with XFree, try a demo version of the commercial X servers mentioned above. Also check with the RedHat and SuSE WWW sites as they may have new, binary-only, X servers that may work with your laptop.
+<P>
+<H3>Miscellaneous</H3>
+
+<P>Sometimes you may encounter a display not working properly in text mode. Currently I don't have any recommendations, please see Keyboard-Console-HOWTO.
+<P>Take care of the <I>backlight</I> AFAIK this device can only bear a limited number of uptime circles. So avoid using screensavers too much.
+<P>For problems with X windows and APM please see the APM chapter.
+<P>
+<H2><A NAME="ss6.4">6.4 Sound</A>
+</H2>
+
+<P>
+<H3>Linux Compatibility Check</H3>
+
+<P>The only way I know to check this, is to compile the different sound drivers into the kernel and check whether they are detected or not. The best way to do so, is to compile them as modules because it's easier to load different parameters such as interrupts and IO ports than. For the new 2.2.x kernels, read the /usr/src/linux/Documentation/sound/Introduction document by Wade Hampton. This document may help you get started with sound. Also, you might try one of the commercial sound drivers mentionend below.
+<H3>Related HOWTOs</H3>
+
+<P>
+<P>
+<OL>
+<LI>Sound-HOWTO
+</LI>
+<LI>Visual-Bell-mini-HOWTO
+</LI>
+</OL>
+<P>
+<H3>Survey Sound Drivers</H3>
+
+<P>Many new laptops come with 16-bit sound. But MWave and some other sound technologies won't work or are very hard to get working, e.g. booting to DOS, loading a driver, then using the soundcard as a standard SB-PRO. So you might need a commercial sound driver. With the recent announcement of Linux support by IBM, it would be GREAT if IBM supported the MWave under Linux (hint, hint...). As a last ressort you may try the speaker module <CODE>pcsnd</CODE>, which tries to emulate a soundcard.
+<P>
+<OL>
+<LI>Kernel Sound Driver by Hannu Savolainen</LI>
+<LI>ALSA 
+<A HREF="http://alsa.jcu.cz">Advanced Linux Sound Architecture</A> , commercial or at least non-GPL (since I found a Debian/GNU Linux package I'm not sure anymore, about the commercial status)</LI>
+<LI>OSS 
+<A HREF="http://www.4front-tech.com/usslite/ossfree.html">UNIX Sound System Lite / OSS</A>, commercial or at least non-GPL (since the 2.2.x kernels I'm not sure about the commercial status), also available from 
+<A HREF="http://www.opensound.com">http://www.opensound.com</A> .</LI>
+</OL>
+<P>
+<H2><A NAME="ss6.5">6.5 Keyboard</A>
+</H2>
+
+<P>
+<H3>Linux Compatibility Check</H3>
+
+<P>Usually there are no problems with Linux and the keyboard. Though there are two minor caveats: First the <CODE>setleds</CODE> program might not work. Second the key mapping might not fit your needs. Some Unix users and <CODE>vi</CODE> users expect to find the &lt;CONTROL&gt; key to the left of the &lt;A&gt; key. Many PC-type keyboards have the &lt;CAPS-LOCK&gt; key there. You may use <CODE>xmodmap</CODE> or <CODE>loadkeys</CODE> to re-map the keyboard. Some laptops (e.g., Toshiba) allow you to swap the &lt;CAPS-LOCK&gt; and &lt;CONTROL&gt; keys. Mark Alexander offered this solution in the linux-laptop mailing list: On RedHat, it's a one-line patch to /usr/lib/kbd/keytables/us.map , or whatever file is referenced in /etc/sysconfig/keyboard:
+<P>
+<HR>
+<PRE>
+*** us.map~     Tue Oct 31 14:00:07 1995
+--- us.map      Thu Aug 28 13:36:03 1997
+***************
+*** 113,119 ****
+  keycode  57 = space            space           
+        control keycode  57 = nul             
+        alt     keycode  57 = Meta_space      
+! keycode  58 = Caps_Lock       
+  keycode  59 = F1               F11              Console_13      
+        control keycode  59 = F1              
+        alt     keycode  59 = Console_1       
+--- 113,119 ----
+  keycode  57 = space            space           
+        control keycode  57 = nul             
+        alt     keycode  57 = Meta_space      
+! keycode  58 = Control       
+  keycode  59 = F1               F11              Console_13      
+        control keycode  59 = F1              
+        alt     keycode  59 = Console_1       
+</PRE>
+<HR>
+<P>
+<H3>External (Second) Keyboard</H3>
+
+<P>A second (or external) keyboard can be attached using the PS/2 port (I suppose this is not possible via the serial port, since there is no keyboard controller for the serial port). Also there is one laptop with a detachable keyboard the Siemens Scenic Mobile 800. This machine uses an infrared connection to the keyboard, but I don't know whether this works with Linux. WARNING: Don't plug the external keyboard in while the laptop is booted, or plug the mouse in the keyboard port and the keyboard in the mouse port. On a Toshiba, this caused one user to have to completely shutdown the laptop, remove the keyboard/mouse, and do a cold reboot.
+<P>For PS/2 ports there are so called Y-Cable available, which make it possible to use external mouse and external keyboard at the same time if your laptop supports this feature.
+<P>
+<A HREF="http://www.suse.cz/development/input/"> Parport to AUX port adapter</A> In some cases one kbd port and one aux port is not enough and you may want to add another keyboard or mouse. You can use this adapter, together with the <CODE>parkbd.c</CODE> module for that.
+<P>On some laptops a splitter works to allow both mouse and keyboard
+to be plugged in; on others it doesn't work at all.If you might
+want to use both you had better check that it works, or you may
+find yourself waiting anxiously for USB support.
+<P>
+<A HREF="http://www.suse.cz/development/input/">Sun keyboard to PC serial port adapter</A>: Many people have dreamed having their Sun Type 5 keyboard attached to their Linux box up to now. And with this adapter, it is finally possible. Because the standard Sun keyboards use TTL RS232 at 1200 bps to talk to the Suns, it's very easy to make them talk to any non-Sun computer by converting this to true RS232. All what you need is a MAX232 chip that'll take care about the correct voltage levels, and also some chip to invert the signals (CD4049 in the pic, I've used a 7400 quad-nand myself), since the MAX232 inverts them as well, and we don't need this. This all easily fits into a 25-pin serial connector.
+<P>
+<H2><A NAME="ss6.6">6.6 Pointing Devices - Mice and Their Relatives</A>
+</H2>
+
+<P>
+<H3>Linux Compatibility Check</H3>
+
+<P>You may check your mouse with the <CODE>mev</CODE> command from the GPM package.
+<H3>Related HOWTOs</H3>
+
+<P>
+<P>
+<OL>
+<LI>3-Button-Mouse-mini-HOWTO for serial mice</LI>
+<LI>Bus-Mouse-HOWTO</LI>
+<LI>Kernel-HOWTO</LI>
+</OL>
+<P>
+<H3>Mice Species</H3>
+
+<P>
+<P>
+<OL>
+<LI>Trackpad, Touchpad, used with the majority of current laptops</LI>
+<LI>Trackball, e.g. COMPAQ LTE</LI>
+<LI>Pop-up-Mouse, e.g. HP OmniBook 800</LI>
+<LI>Trackpoint, Mouse-Pin, e.g. IBM ThinkPad and Toshiba</LI>
+<LI>3 Button Mice, e.g. IBM Thinkpads at least the 600s. I have heard rumor about a 3 button mouse for Texas Instruments Travelmates, but couldn't verify this yet. </LI>
+</OL>
+<P>
+<H3>PS/2 Mice</H3>
+
+<P>Most of the mice used in laptops are PS/2 mice (actually I don't know one with another mouse protocol). You may communicate with the PS/2 mouse through /dev/psaux or /dev/psmouse. If you use X windows this device and the protocol has to be set in /etc/XF86Config, too. In earlier releases, sometimes the GPM mouse manager and X windows had trouble sharing a mouse when enabled at the same time. But AFAIK this is no problem anymore for the latest versions. 
+<P>Speaking of Emulate3Buttons, 100ms is usually better than the 50ms
+allowed in most default setups of /etc/X11/XF86Config.
+<HR>
+<PRE>
+Section &quot;Pointer&quot;
+Protocol    &quot;PS/2&quot;
+Device      &quot;/dev/psaux&quot;
+Emulate3Buttons
+Emulate3Timeout    100
+EndSection
+</PRE>
+<HR>
+<P>
+<H3>Touchpad</H3>
+
+<P>Usually a touchpad works with the PS/2 mouse driver. A tip: I've heard that tipping with one , two or three fingers on the touchpad simultaneously results in pressing the left, middle and respectively the right mouse-button (by Martin Hoffmann &lt;mh@rrz.uni-hamburg.de&gt; for an IPC-Radiance 900).
+<P>There is also a dedicated touchpad driver available. 
+<A HREF="http://www.pdos.lcs.mit.edu/~cananian/Synaptics/">The Synaptics Touchpad Linux Driver</A> supports pointing devices used in notebooks by Acer, Compaq, Dell, Gateway, Olivetti, Texas Instruments, Winbook, and others. Other URL 
+<A HREF="http://compass.com/synaptics/">N.N.</A>.
+<P>The recent <CODE>gpm</CODE> package (
+<A HREF="ftp://ftp.prosa.it/pub/gpm/">gpm &gt;=1.8</A>) includes the above mentioned synaptics touchpad device driver. This device driver has been developed by H. Davies &lt;hdavies@ameritech.net&gt;. Instead of using the PS/2 compatibility mode of touchpad devices, you can now use native touchpad mode with some pretty impressive features. 
+<P>In addition to translating finger motion into mouse motion and supporting the buttons, this support currently has several features (from the README):
+<P>
+<UL>
+<LI>a &quot;tap&quot; on the TouchPad causes a left mouse click
+</LI>
+<LI>a &quot;tap&quot; followed quickly by a finger motion causes a left button drag type action.
+</LI>
+<LI>a &quot;tap&quot; in one of the corners causes an action the default configuration is upper right causes middle mouse click and lower right causes right mouse click
+</LI>
+<LI>more pressure on the touch pad speeds the motion of the cursor
+</LI>
+<LI>a &quot;tap&quot; with a motion component (default &gt; 2mm) initiates a toss and catch sequence. This is terminated by a finger touch on the pad (the toss also ends after 1 sec since that is the idle timeout period for the touchpad).
+</LI>
+<LI>if the finger moves close to an edge then the mouse motion will be continued in that direction so that you don't need to pick up your finger and start moving again. This continued motion is pressure sensitive (more pressure is faster motion).
+</LI>
+</UL>
+<P>These features can be enabled/disabled and many of them have time and speed parameters which can be adjusted to the taste of the user.
+<P>It seems <CODE>gpm</CODE> is best known as a console biased tool. This is true, but you may use it as an X input device. <CODE>gpm</CODE> is used as a repeater device. In this way you can use both the built-in synaptics touchpad with all the features and at the same time a serial mouse (with three buttons). This all works smoothly together. X reads the mouse events from a named pipe /dev/gpmdata in a protocol it understands, which in my case is <I>Mouse-Systems-Compatible</I> (5bytes). Most 3-button mice use the default protocol. So a simple reconfiguration in XF86Config is all that is required, after starting <CODE>gpm</CODE> in an appropriate way, of course. 
+<P><CODE>gpm</CODE> could be started on your laptop with the following arguments : <CODE>/usr/bin/gpm -t synps2 -M -t ms -m /dev/ttyS0</CODE> . Both touchpad and serial mouse work in console and X mode. You do have to create the named pipe /dev/gpmdata yourself.
+<P>Tapping with two fingers simultaneously to simulate a middle mouse
+button works on Logitech touchpads used in a few machines.
+<P>Thanks to Geert Van der Plas for most of the touchpad chapter.
+<P>
+<H3>Touchscreen</H3>
+
+<P>The only laptop I know which includes a touchscreen is the Fujitsu Biblo 112. It may work in PS/2 or serial mouse compatibility mode. But I couldn't check this yet.
+<P>
+<H3>COMPAQ Concerto Pen</H3>
+
+<P>The latest version of the 
+<A HREF="http://www.cs.nmsu.edu/~pfeiffer/#pen">Linux Compaq Concerto Pen Driver</A> is available from Joe Pfeiffer's home page.
+<P>
+<H3>External Mouse</H3>
+
+<P>For better handling, e.g. with a 3 button mouse you may use an external mouse. This usually a serial mouse or a PS/2 mouse, according to the port your laptop offers. Usually this is no problem.
+<P>For PS/2 ports there are so called Y-Cable available, which make it possible to use external mouse and external keyboard at the same time if your laptop supports this feature.
+<P>WARNING: Don't plug in the external mouse while powered up. If you have separate mouse and keyboard ports, make sure you plug the mouse in the mouse port and the keyboard in the keyboard port. If you don't, you may have to do a hard reboot of the laptop to get it to recover.
+<P>
+<H2><A NAME="ss6.7">6.7 Advanced Power Management - APM</A>
+</H2>
+
+<P>
+<H3>Linux Compatibility Check</H3>
+
+<P>From the Battery-Powered-mini-HOWTO &quot; .. for APM to work on any notebook or energy-conscious desktop, the system BIOS ROM in the machine must support the 
+<A HREF="http://www.intel.ocm/IAL/powermgm">APM Specification</A> standard. Furthermore, for APM to work with the Linux operating system, the system BIOS ROM must support either the 1.0 or 1.1 version of the APM standard, and it must also support 32-bit protected mode connections. A system that supports APM 1.1 is preferred, as it provides more features that the device driver and supporting utilities can take advantage of.&quot;
+<P>You may get information about the APM version with the <CODE>dmesg</CODE> command and in the /proc/apm file. 
+<P>
+<H3>Introduction</H3>
+
+<P>Features of APM according to Documentation/Configure.help: &quot;The system time will be reset after a USER RESUME operation, the /proc/apm device will provide battery status information, and user-space programs will receive notification of APM <I>events</I> (e.g., battery status change). &quot;
+<P>APM support consists of two parts: <I>kernel</I> support and <I>user-land</I> support.
+<P>
+<H3>Kernel Land</H3>
+
+<P>For <I>kernel</I> support, enable the parameters in the corresponding kernel section. Some features need special tweaking with certain machines (e.g. IBM ThinkPad) or even don't work, (&quot;TI 4000M TravelMate and the ACER 486/DX4/75 because they don't have compliant BIOSes&quot;). Currently all distributions I know don't provide a kernel with APM support enabled. So you usually have to compile your custom kernel. Please see Kernel-HOWTO or distribution manual for details. The available APM options are (please see Documentation/Configure.help in the kernel source tree for more details):
+<P>
+<UL>
+<LI><CODE>CONFIG_APM_IGNORE_USER_SUSPEND</CODE> Just a workaround for some NEC Versa M series laptops.
+</LI>
+<LI><CODE>CONFIG_APM_DO_ENABLE</CODE> Enable APM features at boot time. 
+</LI>
+<LI><CODE>CONFIG_APM_CPU_IDLE</CODE>. Puts CPU in power save mode, if there is nothing to do for the kernel.
+</LI>
+<LI><CODE>CONFIG_APM_DISPLAY_BLANK</CODE> Some laptops can use this to turn off the LCD backlight when the screen blanker of the Linux virtual console blanks the screen. Note that this is only used by the virtual console screen blanker, and won't turn off the backlight when using the X Window system.
+</LI>
+<LI><CODE>CONFIG_APM_POWER_OFF</CODE> Turns the machine completely down, when using <CODE>halt</CODE>. This feature works with most laptops without problems.
+</LI>
+<LI><CODE>CONFIG_APM_IGNORE_MULTIPLE_SUSPEND</CODE> Just a workaround for IBM ThinkPad 560.
+</LI>
+<LI><CODE>CONFIG_APM_IGNORE_SUSPEND_BOUNCE</CODE> Just a workaround for Dell Inspiron 3200 and other notebooks.
+</LI>
+<LI><CODE>CONFIG_APM_RTC_IS_GMT</CODE> Stores time in Greenwich Mean Time format. It is in fact recommended to store GMT in your real time clock (RTC) in the BIOS.
+</LI>
+<LI><CODE>CONFIG_APM_ALLOW_INTS</CODE> Resolves some problems with <I>Suspend to Disk</I> for some laptops, for instance many newer IBM ThinkPads.
+</LI>
+</UL>
+<P>Joey Hess &lt;joey@kitenet.net&gt; wrote at debian-laptop@lists.debian.org
+&quot;I just installed kernel 2.2.12 on my laptop, and was having some trouble
+getting apm working. it said <I>apm disabled on user request</I> at boot time.
+Well, some grepping the kernel sources found that passing <CODE>apm=on</CODE> to the
+kernel at boot time enables it now. I can't find any record or docs of this
+change.
+<P>
+<H3>User Land</H3>
+
+<P>
+<P>The utilities for <I>userland</I> support may be found at 
+<A HREF="http://worldvisions.ca/~apenwarr/apmd/">http://worldvisions.ca/~apenwarr/apmd/</A>. APMD is a set of programs that control the Advanced Power Management system found in most modern laptop computers. If you run a 2.2.x kernel and want to experiment, Gabor Kuti &lt;seasons@falcon.sch.bme.hu&gt; has made a kernel patch that allows you to <I>hibernate</I> any Linux system to disk, even if your computers APM BIOS doesn't support it directly. IMHO you don't need this features if your laptop provides a function key to invoke suspend mode directly.
+<P>When you first install Linux, you will probably have to recompile the kernel. The kernel that came with your distribution probably does not have APM enabled.
+<P>Please see the Battery Powered Linux Mini-HOWTO by &lt;kontakt@hanno.de&gt; 
+<A HREF="http://www.hanno.de">Hanno Mueller</A> and the page of 
+<A HREF="http://www.cs.utexas.edu/users/kharker/linux-laptop/">Kenneth E. Harker</A> for detailed information.
+<P>
+<P>README <CODE>apmd</CODE>?:On laptop computers, the APM support provides access to battery status
+information and may help you to conserve battery power, depending on your
+laptop and the APM implementation.
+<P>Rik Faith &lt;faith@acm.org&gt; has transferred maintenance of the Linux apmd
+package over to me, Avery Pennarun &lt;apenwarr@worldvisions.ca&gt; and I'm
+finally getting around to making a release with the many updates we've
+collected since the last release back in 1996.
+<P>Here's what <CODE>apmd</CODE> can do:
+<P>
+<UL>
+<LI>apmd(8): logs the battery status to syslog every now and then and handles background power management tasks;</LI>
+<LI>apm(1): a command-line tool to print the current battery status or suspend the computer;</LI>
+<LI>xapm(1x): provides a battery meter for X;</LI>
+<LI>libapm.a: a library for writing similar APM applications.</LI>
+</UL>
+<P>Richard Gooch wrote: I'have had a look at the beta version of <CODE>apmd</CODE>, and I still don't like it, because:
+<P>
+<UL>
+<LI>Only supports one command to run at suspend time.
+</LI>
+<LI>Doesn't distinguish between user and system suspends.
+</LI>
+<LI>doesn't provide a way to disable policy (the <CODE>sync()</CODE>; <CODE>sleep(0) </CODE>; <CODE>sync()</CODE>; <CODE>sleep(1)</CODE>; sequence)
+</LI>
+<LI>Does not document extra features.
+</LI>
+<LI>And I'm not sure that what we want is a single super daemon. A collection of smaller daemons might be better, since it allows people to pick and choose. A super daemon is bloat for those who only want one small feature. 
+</LI>
+</UL>
+<P>Though this topic was discussed controversly Richard Gooch has put together a package <CODE>suspendd</CODE> at 
+<A HREF="http://www.atnf.csiro.au/~rgooch/linux/">http://www.atnf.csiro.au/~rgooch/linux/</A> .
+<P>Also, have a look at <CODE>apmcd</CODE> (<CODE>apm</CODE> based crontab) at 
+<A HREF="ftp://ftp.binary9.net/pub/linux/">ftp://ftp.binary9.net/pub/linux/</A> . A tool made by Nicolas J. Leon &lt;nicholas@binary9.net&gt; 
+<A HREF="http://mrnick.binary9.net/">http://mrnick.binary9.net/</A>.
+<P>Note: I didn't check wether this features are merged into one package (<CODE>apmd</CODE> eventually) already.
+<P>
+<H3>Caveats</H3>
+
+<P>If you have another operating system preinstalled or use another operating system at the same disk, make sure there is no &quot;hibernation&quot; or &quot;suspend&quot; tool installed, which could severely interfere with Linux, e.g. it might use disk space which is occupied by Linux or vice versa.
+<P>
+<H3>Troubleshooting</H3>
+
+<P>If your machine worked with 2.0.x kernels but not with the 2.2.x series, take this advice from Klaus Franken kfr@klaus.franken.de : &quot;The default changed in 2.2. Search in the init-scripts for <CODE>halt</CODE> and change it to <CODE>halt -p</CODE> or <CODE>poweroff</CODE>. See <CODE>man halt</CODE> , if you don't have this option you need a newer version of <CODE>halt</CODE>.&quot; You may find it in the <CODE>SysVinit</CODE> package.
+<P>On some new machines (for instance HP Omnibook 4150 - 366 MHz model) when accessing /proc/apm, you may get a kernel fault <CODE>general protection fault: f000</CODE>. Stephen Rothwell &lt;Stephen.Rothwell@canb.auug.org.au&gt; 
+<A HREF="http://www.canb.auug.org.au/~sfr/">http://www.canb.auug.org.au/~sfr/</A> explaines: &quot;This is your APM BIOS attempting to use a real mode segment while in protected mode, i.e. it is a bug in your BIOS. .. We have seen a few of these recently, except all the others are in the power off code in the BIOS wher we can work around it by returning to real mode before attempting to power off. Here we cannot do this.&quot;
+<P><CODE> apmd-rhcn-2.4phil-1</CODE> by RedHat 
+<A HREF="ftp://rhcn.redhat.com/pub/rhcn/">ftp://rhcn.redhat.com/pub/rhcn/</A> contains an unofficial patch for shutting down the PCMCIA sockets before a suspend and patches for multiple batteries.
+<P>According to Documentation/Configure.help: &quot;Some other things you should try when experiencing seemingly random, <I>weird</I> problems:
+<P>
+<OL>
+<LI>make sure that you have enough swap space and that it is enabled. </LI>
+<LI>pass the <CODE>no-hlt</CODE> option to the kernel.</LI>
+<LI>switch on floating point emulation in the kernel and pass the <CODE>no387</CODE> option to the kernel.</LI>
+<LI>pass the <CODE>floppy=nodma</CODE> option to the kernel.</LI>
+<LI>pass the <CODE>mem=4M</CODE> option to the kernel (thereby disabling all but the first 4 MB of RAM).</LI>
+<LI>make sure that the CPU is not over clocked.</LI>
+<LI>read the sig11 FAQ at 
+<A HREF="http://www.bitwizard.nl/sig11/">http://www.bitwizard.nl/sig11/</A> .</LI>
+<LI>disable the cache from your BIOS settings.</LI>
+<LI>install a fan for the video card or exchange video RAM.</LI>
+<LI>install a better fan for the CPU.</LI>
+<LI>exchange RAM chips. </LI>
+<LI>exchange the motherboard.
+</LI>
+</OL>
+<P>
+<H3>APM and PCMCIA</H3>
+
+<P>PCMCIA Card Services and Advanced Power Management (from the PCMCIA-HOWTO):
+<P>&quot;Card Services can be compiled with support for APM (Advanced Power Management) if you've configured your kernel with APM support. ...  The PCMCIA modules will automatically be configured for APM if a compatible version is detected on your system. Whether or not APM is configured, you can use <CODE>cardctl suspend</CODE> before suspending your laptop, and <CODE>cardctl resume</CODE> after resuming, to cleanly shut down and restart your PCMCIA cards.  This will not work with a modem that is in use, because the serial driver isn't able to save and restore the modem operating parameters. APM seems to be unstable on some systems. If you experience trouble with APM and PCMCIA on your system, try to narrow down the problem to one package or the other before reporting a bug. Some drivers, notably the PCMCIA SCSI drivers, cannot recover from a suspend/resume cycle.  When using a PCMCIA SCSI card, always use <CODE>cardctl eject</CODE> prior to suspending the system.&quot;.
+<P>
+<H3>APM and Resuming X Windows</H3>
+
+<P>&quot;Many (most?) BIOSes fail to save and restore display
+controller chip registers, and X has no protocol to
+be notified of resume events, so on many systems
+suspend/resume is more-or-less incompatible with X.&quot;
+<A HREF="http://www.linuxlaptops.com/ll/xresume.html">Linux Laptops</A>
+has created a fix for this problem.
+<P>Sometimes X windows and APM don't work smoothly together, the machine might even hang. A recommendation from Steve Rader: Some linux systems have their X server hang when doing <CODE>apm -s</CODE>. Folks with this affliction might want switch to the console virtual terminal then suspend <CODE>chvt 1; apm -s</CODE> as root, or, more appropiately.<CODE>sudo chvt 1; sudo apm -s</CODE>. I have these commands in a script, say, <CODE>my-suspend</CODE> and then do <CODE>xapmload --click-command my-suspend</CODE> .
+<P>
+<H3>Modularization of APM</H3>
+
+<P>As far as I remember this is controversly discussed, but I don't remember the URL. It isn't a kernel feature yet.
+<P>
+<H3>APM Resume Options</H3>
+
+<P>The new 3.0beta versions add a new feature to apmd:  it can run arbitrary
+commands (like <CODE>cardctl suspend</CODE>) when you suspend or resume your system. 
+It also supports BIOS clocks that are set to UTC time.
+<P>
+<H3>APM and Sound</H3>
+
+<P>Lots of BIOSes fail to restore sound chip registers, so you may get
+a squeal of feedback when you wake up the machine.  A script in 
+/etc/apm/event.d can use <CODE>aumix</CODE> to save and restore sound mixer settings.
+<P>
+<H3>Software Suspend</H3>
+
+<P>
+<A HREF="http://falcon.sch.bme.hu/~seasons/linux/swsusp.html">Software suspend</A>
+enables the possibilty of suspendig machine. It doesn't need APM. You may suspend your machine by either pressing Sysrq-d
+or with 'swsusp' or 'shutdown -z (patch for sysvinit needed). It creates an image which is saved in your active swaps. By the
+next booting the kernel detects the saved image, restores the memory from it and then it continues to run as before you've
+suspended. If you don't want the previous state to continue use the 'noresume' kernel option. 
+<P>
+<H2><A NAME="ss6.8">6.8 ACPI</A>
+</H2>
+
+<P>ACPI stands for <I>Advanced Configuration and Power Interface</I>. This is a specification by Toshiba, Intel and Microsoft. Besides many other things it also defines power management. This is why it is often compared to APM.
+<P>The ACPI4Linux project has started at the beginning of 1999. The ACPI4Linux project is a kernel driver project aimed at implementing full ACPI support for Linux, including fan control, dock/undock detection and a WindowMaker dockable temperature meter. You may reach it at 
+<A HREF="http://phobos.fachschaften.tu-muenchen.de/acpi/">ACPI4Linux</A>. 
+<P>
+<H2><A NAME="ss6.9">6.9 Batteries</A>
+</H2>
+
+<P>For information about available battery types, take a look at the Hardware Features chapter above.
+<P>Please see Battery Powered Linux Mini-HOWTO by Hanno Mueller &lt;kontakt@hanno.de&gt; 
+<A HREF="http://www.hanno.de/">http://www.hanno.de</A> 
+<A HREF="http://mobilix.org/energy_laptops.html">Power Supplies for Laptops - (Draft)</A> for further information.
+<P>Stephen Rothwell 
+<A HREF="http://www.canb.auug.org.au/~sfr/">http://www.canb.auug.org.au/~sfr/</A> is currently integrating a patch that will add multiple battery support to the kernel APM. 
+<P>From the <CODE>mobile-update</CODE> page (modified by WH): Discharge the battery. If your battery runs only for about 20 minutes, you probably suffer from memory effects. Most laptops do not discharge the battery properly. With low powered devices like old computer fans they can be discharged completely. This removes memory effects. You should do so even with LiIon batteries, though they don't suffer much from memory effext (the manual of an IBM Thinkpad says to cycle the batteries through a full charge/discharge cycle 3 times every few months or so).
+<P>WARNING: Try this at your own risk! Make sure the voltage of the fans is compatible to your battery. It works for me.
+<P>In the US, this company has most batteries for anything and can rebuild many that are no longer manufactured: Batteries Plus, 2045 Pleasant Hill Road, Duluth, GA 30096 +1 770 495 1644.
+<P>
+<H2><A NAME="ss6.10">6.10 Memory</A>
+</H2>
+
+<P>Unfortenately most laptops come with a proprietary memory chips. So they are not interchangeable between different models. But this seems changing.
+<P>
+<H2><A NAME="ss6.11">6.11 Plug-and-Play Devices (PnP)</A>
+</H2>
+
+<P>The <I>Plug and Play driver project</I> for Linux is a project to create support within the Linux kernel (see Linux.Org for more information) for handling Plug and Play (and other semi-PnP) devices in a clean, consistent way. It aims to allow a driver of any type of hardware to have this hardware configured by the PnP driver in the kernel. This driver is then notified when the device is reconfigured, or even removed from the system, so as to allow for graceful action in these circumstances 
+<A HREF="http://www.io.com/~cdb/mirrors/lpsg/pnp-linux.html">http://www.io.com/~cdb/mirrors/lpsg/pnp-linux.html</A> . 
+<P><I>ISA PnP tools</I> is another useful package.
+<P>And there is a project at RedHat 
+<A HREF="http://www.redhat.com/pnp/overview.html">http://www.redhat.com/pnp/overview.html</A> .
+<P>The latest PCMCIA driver package (>&gt;3.1.0) has utilities <CODE>lspnp</CODE> and
+<CODE>setpnp</CODE> to manipulate PNP settings. Note that in 3.1.0 you may
+need this patch to compile them:
+<HR>
+<PRE>
+-#ifdef __GLIBC__
++#if 0 /* def __GLIBC__ */
+ #include &lt;byteswap.h>
+ #else
+</PRE>
+<HR>
+<P>
+<H2><A NAME="ss6.12">6.12 Docking Station / Port Replicator</A>
+</H2>
+
+<P>
+<H3>Definitions</H3>
+
+<P>First some definitions. There is a difference between <I>docking station</I> and <I>port replicator</I>.
+<P>I use the term <I>docking station</I> for a box which contains slots to put some interface cards in, and space to put a harddisk, etc. in. This box can be permanently connected to a PC. A <I>port replicator</I> is just a copy of the laptop ports which may be connected permanently to a PC.
+<P>
+<H3>Other Solutions</H3>
+
+<P>I don't use a docking station. They seem really expensive and I can't see any usefulness. OK you have to mess up with some more cables, but is it worth so much money? Docking stations are useful in an office environment when you have a permanent network connection, or need the docking station's SCSI adaptor (e.g., for a CD-R).
+<P>Also all docking stations I know are proprietary models, so if you change your laptop you have to change this device, too. I just found one exception a docking station which connects to your laptop via IrDA the IRDocking IR-660 by Tekram 
+<A HREF="http://www.tekram.com/Hot_Products.asp?Product=IR-660">http://www.tekram.com/Hot_Products.asp?Product=IR-660</A> . It supports these connectors: 10Base-T (RJ-45); PS/2 Keyboard; PS/2 Mouse; 25-Pin Printer Port (LPT); IR Transceiver; Power (6 VDC). So it seems that a VGA port and a port to connect a desktop PC directly are missing. This device should work with Linux/IrDA, though I couldn't check it out.
+<P>I would prefer to buy a PC instead and connect it via <I>network</I> to the laptop.
+<P>Or use an external display, which usually works well as described above, and an external keyboard and mouse. If your laptop supports an extra PS/2 port you may use a cheap solution a <I>Y cable</I>, which connects the PS/2 port to an external keyboard and an external monitor. Note: Your laptop probably has support for the <I>Y cable</I> feature, e.g. the COMPAQ Armada 1592DT.
+<P>
+<H3>Connection Methods</H3>
+
+<P>AFAIK there are <I>three solutions</I> to connect a laptop to a docking station:
+<P>
+<OL>
+<LI>SCSI port</LI>
+<LI>parallel port</LI>
+<LI>(proprietary) docking port</LI>
+</OL>
+<P>From 
+<A HREF="http://www.mjedev.demon.co.uk/index.html">Martin J. Evans martin@mjedev.demon.co.uk </A> &quot;The main problem with docking stations is getting the operating system to detect you are docked. Fortunately, if you configure your kernel with the /proc file system (does anyone not do this?) you can examine the devices available and thus detect a docked state. With this in mind a few simple scripts is all you need to get your machine configured correctly in a docked state.
+<P>You may want to build support for the docking station hardware as modules instead of putting it directly into the kernel. This will save space in your kernel but your choice probably largely depends on how often you are docked.
+<P>1) Supporting <I>additional disks</I> on the docking station SCSI card
+<P>To my mind the best way of doing this is to:
+<P>
+<OL>
+<LI>Either build support for the SCSI card into the kernel or build it as a module.</LI>
+<LI>Put the mount points into /etc/fstab but use the &quot;noauto&quot; flag to prevent them from being mounted automatically with the <CODE>mount -a</CODE> flag. In this way, when you are docked you can explicitly mount the partitions off any disk connected to the docking station SCSI card.</LI>
+</OL>
+<P>2) Supporting <I>additional network adaptors</I> in the docking station
+<P>You can use a similar method to that outlined above for the graphics card. Check the /proc filesystem in your rc scripts to see if you are docked and then set up your network connections appropriately. &quot;
+<P>Once you determine this information, you may use a script, similar to the following example, to configure the connection to your docking station at startup. The script is provided by Friedhelm Kueck:
+<P>
+<P>
+<HR>
+<PRE>
+# check, if Laptop is in docking-station (4 PCMCIA slots available)
+# or if it is standalone (2 slots available)
+# Start after cardmgr has started
+#
+# Friedhelm Kueck mailto:fk@impress.de
+# 08-Sep-1998
+#
+# Find No. of Sockets
+SOCKETS=`tail -1 /var/run/stab | cut -d &quot;:&quot; -f 1`
+
+case &quot;$SOCKETS&quot; in
+
+&quot;Socket 3&quot;)
+echo Laptop is in Dockingstation ...
+echo Disabeling internal LCD Display for X11
+echo
+cp /etc/XF86Config_extern /etc/XF86Config
+#
+# Setup of PCMCIA Network Interface after start of cardmge
+#
+echo
+echo &quot;Setting up eth0 for use at Network ...&quot;
+echo
+/sbin/ifconfig eth0 10.1.9.5 netmask 255.255.0.0 broadcast 10.1.255.255
+/sbin/route add -net 10.1.0.0 gw 10.1.9.5
+/sbin/route add default gw 10.1.10.1
+;;
+
+&quot;Socket 1&quot;)
+echo Laptop is standalone
+echo Disabling external Monitor for X11
+cp /etc/XF86Config_intern /etc/XF86Config
+echo
+echo Network device NOT setup
+;;
+esac
+</PRE>
+<HR>
+<P>
+<H2><A NAME="ss6.13">6.13 Network Connections</A>
+</H2>
+
+<P>
+<H3>Related HOWTOs</H3>
+
+<P>
+<P>
+<OL>
+<LI>PLIP-mini-HOWTO</LI>
+<LI>NET-3-HOWTO</LI>
+<LI>Ethernet-HOWTO</LI>
+<LI>Term-Firewall-mini-HOWTO</LI>
+</OL>
+<P>
+<H3>Connection Methods</H3>
+
+<P>
+<H3>PCMCIA Network Card</H3>
+
+<P>If your laptop supports PCMCIA this is the easiest and fastest way to get network support. Make sure your card is supported before buying one.
+<P>
+<H3>Serial Null Modem Cable</H3>
+
+<P>Probably the cheapest way to connect your laptop to another computer, but quite slow. You may use PPP or SLIP to start the connection.
+<P>
+<H3>Parallel Port NIC (Pocket Adaptor)</H3>
+
+<P>
+<A HREF="http://www.unix-ag.uni-siegen.de/~nils/accton_linux.html">Accton Pocket Ethernet and Linux</A> This ethernet adaptor uses a parallel port and delivers approximately 110k Bytes/s throughput for those notebooks that do not have PCMCIA slots.
+<P>
+<A HREF="http://www.cs.utexas.edu/users/kharker/linux-laptop/linksys.html">Linux and Linksys Ethernet Adaptors</A> A short note on the use of the Linksys parallel-port ethernet adaptor under Linux. This is a widely available networking adaptor that doesn't require a PCMCIA slot.
+<P>
+<H3>Parallel &quot;Null&quot; Modem Cable</H3>
+
+<P>Offers more speed than a serial connection. Some laptops use chipsets that will not work with PLIP. Please see PLIP-HOWTO for details.
+<P>
+<H3>Docking Station NIC</H3>
+
+<P>I don't have experience with a NIC in a docking station yet.
+<P>
+<H2><A NAME="ss6.14">6.14 Modem</A>
+</H2>
+
+<P>
+<H3>Modem Types</H3>
+
+<P>There are three kinds of modems available: internal, PCMCIA card or external serial port modems. But some internal modems will NOT work with Linux such as the MWave modems (IBM) or if the laptop has a WinModem. This is caused by non-standard hardware. So you have to use either a PCMCIA card modem or an external modem.
+<P>Quotation from the Kernel-FAQ: &quot;9.Why aren't WinModems supported? (REG, quoting Edward S. Marshall) The problem is the lack of specifications for this hardware. Most companies producing so-called <I>WinModems</I> refuse to provide specifications which would allow non-Microsoft operating systems to use them. The basic issue is that they don't work like a traditional modem; they don't have a DSP, and make the CPU do all the work. Hence, you can't talk to them like a traditional modem, and you -need- to run the modem driver as a realtime task, or you'll have serious data loss issues under any kind of load. They're simply a poor design.&quot;
+<P>&quot;<I>Win</I> modems are lobotomized modems which expect Windows to do some of their thinking for them. If you do not have Windows, you do not have a connection. &quot;
+<P>Anyway, I have set up a page collecting information on laptops with internal modems at 
+<A HREF="http://mobilix.org/">http://mobilix.org/</A> . Maybe it's possible to run such modems with MS-Windows9x/NT emulators like <CODE>wine</CODE> or <CODE>VMware</CODE>, but I don't know it.
+<P>Recently there is a driver for Lucent WinModems (alpha) available at 
+<A HREF="http://www.suse.cz/development/ltmodem/">SuSE - Labs</A> and 
+<A HREF="http://www.close.u-net.com">LTModem diagnostic tool</A>.
+<P>
+<H3>Caveats</H3>
+
+<P>WARNING: Pay attention to the different kinds of phone lines: analog and ISDN. You can't connect an analog modem to an ISDN port and vice versa. Though there might be hybrid modems available. Connecting to the wrong port may even destroy your modem. Trick: If you are looking for an analog phone port in an office building which is usually wired with ISDN, take a look at the fax lines, they are often analog lines.
+<P>For tracking the packets on PPP you may use <CODE>pppstats</CODE>. Or <CODE>pload</CODE> this provides a graphical view of the traffic (in and out) of the PPP connection. It is based on athena widgets hence is very portable. It also uses very little CPU time. The home of <CODE>pload</CODE> is  
+<A HREF="http://www.engr.utk.edu/~mdsmith/pload/">http://www.engr.utk.edu/~mdsmith/pload/</A> .
+<P>
+<H2><A NAME="ss6.15">6.15 SCSI</A>
+</H2>
+
+<P>
+<H3>Hardware Compatibility Check</H3>
+
+<P>If unsure about the right SCSI support, compile a kernel with all available SCSI drivers as modules. Load each module step by step until you get the right one.
+<P>
+<H3>Related HOWTOs</H3>
+
+<P>
+<P>
+<OL>
+<LI>SCSI-HOWTO</LI>
+</OL>
+<P>
+<H3>Survey</H3>
+
+<P>AFAIK there is no laptop yet with a SCSI harddisk. Though there are two models with a built in SCSI port: Texas Instruments TI 4000 and HP OmniBook 800. Maybe the PowerBook G3 has a SCSI disk, but I didn't check this yet. The old Apple Powerbook Duo models had a SCSI hard disk.
+<P>For other models, if you need SCSI support you may get it by using a SCSI-PCMCIA card or via a SCSI adapter in a docking station.
+<P>
+<H2><A NAME="ss6.16">6.16 Universal Serial Bus - USB</A>
+</H2>
+
+<P>
+<H3>Linux Compatibility Check</H3>
+
+<P>You should get information about the USB controller with <CODE>cat /proc/pci</CODE> and about USB devices with <CODE>cat /proc/bus/usb/devices</CODE>.
+<P>
+<H3>Miscelleaneous</H3>
+
+<P>Newer laptops come with the Universal Serial Bus (USB). I haven't tried it on any of my systems because I don't have any USB devices.
+<P>Visit 
+<A HREF="http://www.linux-usb.org">http://www.linux-usb.org</A> for the USB Linux home page. Also I have set up a page collecting information about laptops and USB at 
+<A HREF="http://mobilix.org/">MobiliX</A> .
+<P>
+<H2><A NAME="ss6.17">6.17 Floppy Drive</A>
+</H2>
+
+<P>
+<H3>Linux Compatibility Check</H3>
+
+<P>Usually there are no problems connecting a floppy drive to a Linux laptop. But with a laptop floppy drive you may sometimes not be able to use every feature. I encountered the <CODE>superformat</CODE> command (from the fdutils package) couldn't format more than 1.44MB with my HP OmniBook 800. You may also have difficulty when the floppy drive and CD drive are mutually exclusive, or when the floppy drive is a PCMCIA device (as with the Toshiba Libretto 100). With older laptops, there might be a minor problem if they use a 720K drive. AFAIK all distributions come with support for 1.44M (and sometimes 1.2M) floppies only. Though it's possible to install Linux anyway. Please see Installation chapter. Please see kernel documentation for boot time parameters concerning certain laptop floppy drives, for instance IBM ThinkPad. Or <CODE>man bootparam</CODE> .
+<P>
+<H2><A NAME="ss6.18">6.18 CD Drive</A>
+</H2>
+
+<P>Most notebooks today come with CD drives. If floppy and CD drive are swappable they are usually mutually exclusive. Sometimes they come as PCMCIA devices. Or as SCSI device (HP OmniBook 800). AFAIK there are discmans available which have a port to connect them to a computer or even a SCSI port. I found an article published by Ziff-Davis Publishing Company (September 1996 issue, but missed to note the URL) written by Mitt Jones: &quot;Portable PC Card CD-ROM drives transform laptops into mobile multimedia machines&quot;, which listed: Altec Lansing AMC2000 Portable Multimedia CD-ROM Center; Axonix ProMedia 6XR; CMS PlatinumPortable; EXP CDS420 Multimedia Kit; H45 QuickPCMCIA CD; Liberty 115CD; Panasonic KXL-D740; Sony PRD-250WN CD-ROM Discman.
+<P>
+<H2><A NAME="ss6.19">6.19 DVD Drive</A>
+</H2>
+
+<P>
+<A HREF="http://livid.on.openprojects.net">The Linux Video and DVD Project</A> has made great headway since its start last February. They have just released the source code ( http://livid.on.openprojects.net/css.tgz) so that a DVD decoder card can unlock and read the DVD. Also provided on the site are links to various documents discussing DVD chipset specifications. The Linux Video and DVD Project is avidly seeking help from the opensource community for development.
+<P>
+<A HREF="http://www.trylinux.com/projects/udf/index.html">Universal Disk Format (UDF) Driver</A>: &quot;UDF is a newer CDROM filesystem standard that's required for DVD roms. It's meant to be a replacement for the ISO9660 filesystem used on today's CDROMs, but the immediate impact for most will be DVD. DVD multimedia cdroms use the UDF filesystem to contain MPEG audio and video streams.   To access DVD cdroms you would need a DVD cdrom drive, the kernel driver for the cdrom drive, some kind of MPEG video support, and a UDF filesystem driver (like this one). Some DVD cdroms may contain both UDF filesystems and ISO9660 filesystems. In that case, you could get by without UDF support.&quot;
+<P>
+<H2><A NAME="ss6.20">6.20 Harddisk</A>
+</H2>
+
+<P>
+<H3>Linux Compatibility Check</H3>
+
+<P>Useful programms are <CODE>hdparm</CODE>, <CODE>dmesg</CODE>, <CODE>fsck</CODE> and <CODE>fdisk</CODE> .
+<P>
+<H3>Miscellaneous</H3>
+
+<P>Be careful when using your laptop abroad. I have heard about some destroyed harddisks due to a magnetic field emitted from the magnetic-holds at the backresttable of the seats in a german railway waggon.
+<P>Though I am quite satisfied with the quality of the harddisk in my laptop, when I removed it from the case I unintendedly dropped it, I recommend to be very careful.
+<P>
+<H3>Form Factors</H3>
+
+<P>AFAIK there is only one form factor for harddisks used in laptops the 2.5&quot; format. This format seems to be available in different heights (Please note I couldn't verify this information yet):
+<P>
+<UL>
+<LI>  18mm: laptops build before 1996 usually have drives 18mm high
+</LI>
+<LI>12.7mm: I got a report about such disks but without a notebook model or manufacturer name
+</LI>
+<LI>  11mm: since 1996 the drives are 11mm high
+</LI>
+<LI>   9mm: many laptops, including the subnotebooks, now use a 9mm-high disk drive. The largest available in this format in late 1999 is IBM <I>12GN</I>.
+</LI>
+<LI> 9.5mm: Toshiba Libretto L70 and L100 have a 9.5mm HD
+</LI>
+<LI>8.45mm: Toshiba Libretto 20, 30, 50 and 60 have 8.45mm tall HDs
+</LI>
+<LI>6.35mm: Toshiba Libretto L1000 has a 6.35mm HD
+</LI>
+</UL>
+<P>It might be possible to use a hard disk wich doesn't fit with some case modifications.
+<P>Some laptops come with a removable hard disk in a tray, for instance the KAPOK 9600D. There seem to be no SCSI drives for laptops available.
+<P>
+<H2><A NAME="ss6.21">6.21 Video Port / ZV Port</A>
+</H2>
+
+<P>Some high end laptops come with a video or ZV port (NTSC/PAL). Since I don't have a laptop with a ZV or video port yet, I can provide only some URLs 
+<A HREF="http://www.thp.uni-koeln.de/~rjkm/linux/bttv.html"> http://www.thp.uni-koeln.de/~rjkm/linux/bttv.html </A> (driver) 
+<A HREF="http://www.mathematik.uni-kl.de/~wenk/xwintv.html"> http://www.mathematik.uni-kl.de/~wenk/xwintv.html </A> (tvviewer). For further information see video4linux at 
+<A HREF=" http://roadrunner.swansea.uk.linux.org/v4l.shtml">http://roadrunner.swansea.uk.linux.org/v4l.shtml</A>. To collect information about laptops with video port I have setup a page at 
+<A HREF="http://mobilix.org/">http://mobilix.org/</A> . Alternatively to the ZV port you might use the USB port.
+<P>
+<HR>
+<A HREF="Laptop-HOWTO-7.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Laptop-HOWTO-5.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Laptop-HOWTO.html#toc6"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

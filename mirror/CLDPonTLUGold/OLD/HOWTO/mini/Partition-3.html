@@ -1,0 +1,300 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux Partition HOWTO: What Partitions do I need?</TITLE>
+ <LINK HREF="Partition-4.html" REL=next>
+ <LINK HREF="Partition-2.html" REL=previous>
+ <LINK HREF="Partition.html#toc3" REL=contents>
+<SCRIPT src="../../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(2, 8, 2);</SCRIPT>
+<A HREF="Partition-4.html"><IMG SRC="../../img/next.gif" ALT="Next"></A>
+<A HREF="Partition-2.html"><IMG SRC="../../img/prev.gif" ALT="Previous"></A>
+<A HREF="Partition.html#toc3"><IMG SRC="../../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s3">3. What Partitions do I need?</A></H2>
+
+<H2><A NAME="ss3.1">3.1 How many partitions do I need?</A>
+</H2>
+
+<P>
+<P>Okay, so what partitions do you need? Well, some operating
+systems do not believe in booting from logical partitions for
+reasons that are beyond the scope of any sane mind. So you
+probably want to reserve your primary partitions as boot
+partitions for your MS-DOS, OS/2 and Linux or whatever you are
+using. Remember that one primary partition is needed as an
+extended partition, which acts as a container for the rest of
+your disk with logical partitions.
+<P>Booting operating systems is a real-mode thing involving BIOSes
+and 1024 cylinder limitations. So you probably want to put all
+your boot partitions into the first 1024 cylinders of your hard
+disk, just to avoid problems. Again, read the "large-disk"
+Mini-Howto for the gory details.
+<P>
+<P>To install Linux, you will need at least one partition. If the
+kernel is loaded from this partition (for example by LILO),
+this partition must be readable by your BIOS. If you are using
+other means to load your kernel (for example a boot disk or the
+LOADLIN.EXE MS-DOS based Linux loader) the partition can be
+anywhere. In any case this partition will be of type 0x83
+"Linux native".
+<P>Your system will need some swap space. Unless you swap to files
+you will need a dedicated swap partition. Since this partition
+is only accessed by the Linux kernel and the Linux kernel does
+not suffer from PC BIOS deficiencies, the swap partition may be
+positioned anywhere.  I recommed using a logical partition for
+it (/dev/?d?5 and higher).  Dedicated Linux swap partitions are
+of type 0x82 "Linux swap".
+<P>These are minimal partition requirements. It may be useful to
+create more partitions for Linux. Read on.
+<P>
+<P>
+<H2><A NAME="ss3.2">3.2 How large should my swap space be?</A>
+</H2>
+
+<P>
+<P>If you have decided to use a dedicated swap partition, which is
+generally a Good Idea [tm], follow these guidelines for
+estimating its size:
+<P>
+<UL>
+<LI> In Linux RAM and swap space add up (This is not true for all
+Unices). For example, if you have 8 MB of RAM and 12 MB swap
+space, you have a total of about 20 MB virtual memory.
+</LI>
+<LI> When sizing your swap space, you should have at least 16 MB
+of total virtual memory. So for 4 MB of RAM consider at least
+12 MB of swap, for 8 MB of RAM consider at least 8 MB of
+swap.
+</LI>
+<LI> In Linux, a single swap partition can not be larger than 128
+MB.  That is, the partition may be larger than 128 MB, but
+excess space is never used. If you want more than 128 MB of
+swap, you have to create multiple swap partitions.
+</LI>
+<LI> When sizing swap space, keep in mind that too much swap space
+may not be useful at all.
+
+Every process has a "working set". This is a set of in-memory
+pages which will be referenced by the processor in the very
+near future. Linux tries to predict these memory accesses
+(assuming that recently used pages will be used again in the
+near future) and keeps these pages in RAM if possible. If the
+program has a good "locality of reference" this assumption
+will be true and prediction algorithm will work.
+
+Holding a working set in main memory does only work if there
+is enough main memory. If you have too many processes running
+on a machine, the kernel is forced to put pages on disk that
+it will reference again in the very near future (forcing a
+page-out of a page from another working set and then a
+page-in of the page referenced). Usually this results in a
+very heavy increase in paging activity and in a sustantial
+drop of performance. A machine in this state is said to be
+"thrashing" (For you german readers: That's "thrashing"
+("dreschen", "schlagen", "haemmern") and not trashing
+("muellen")).
+
+On a thrashing machine the processes are essentially running
+from disk and not from RAM. Expect performance to drop by
+approximately the ratio between memory access speed and disk
+access speed.
+
+A very old rule of thumb in the days of the PDP and the Vax
+was that the size of the working set of a program is about
+25% of its virtual size. Thus it is probably useless to
+provide more swap than three times your RAM.
+
+But keep in mind that this is just a rule of thumb. It is
+easily possible to create scenarios where programs have
+extremely large or extremely small working sets. For example,
+a simulation program with a large data set that is accessed
+in a very random fashion would have almost no noticeable
+locality of reference in its data segment, so its working set
+would be quite large.
+
+On the other hand, an xv with many simultaneously opened
+JPEGs, all but one iconified, would have a very large data
+segment. But image transformations are all done on one single
+image, most of the memory occupied by xv is never touched.
+The same is true for an editor with many editor windows
+where only one window is being modified at a time.  These
+programs have - if they are designed properly - a very high
+locality of reference and large parts of them can be kept
+swapped out without too severe performance impact.
+
+One could suspect that the 25% number from the age of the
+command line is no longer true for modern GUI programs
+editing multiple documents, but I know of no newer papers
+that try to verify these numbers.</LI>
+</UL>
+<P>So for a configuration with 16 MB RAM, no swap is needed for a
+minimal configuration and more than 48 MB of swap are probably
+useless. The exact amount of memory needed depends on the
+application mix on the machine (what did you expect?).
+<P>
+<H2><A NAME="ss3.3">3.3 Where should I put my swap space?</A>
+</H2>
+
+<P>
+<P>
+<UL>
+<LI> Mechanics are slow, electronics are fast.
+
+Modern hard disks have many heads. Switching between heads of
+the same track is fast, since it is purely electronic.
+Switching between tracks is slow, since it involves moving
+real world matter.
+
+So if you have a disk with many heads and one with less heads
+and both are identical in other parameters, the disk with
+many heads will be faster.
+
+Splitting swap and putting it on both disks will be even
+faster, though.
+</LI>
+<LI> Older disks have the same number of sectors on all tracks.
+With this disks it will be fastest to put your swap in the
+middle of the disks, assuming that your disk head will move
+from a random track towards the swap area.
+</LI>
+<LI> Newer disks use ZBR (zone bit recording). They have more
+sectors on the outer tracks. With a constant number of rpms,
+this yields a far greater performance on the outer tracks
+than on the inner ones. Put your swap on the fast tracks.
+</LI>
+<LI> Of course your disk head will not move randomly. If you have
+swap space in the middle of a disk between a constantly busy
+home partition and an almost unused archive partition, you
+would be better of if your swap were in the middle of the
+home partition for even shorter head movements. You would be
+even better off, if you had your swap on another otherwise
+unused disk, though.</LI>
+</UL>
+<P><B>Summary:</B> Put your swap on a fast disk with many heads that is
+not busy doing other things. If you have multiple disks: Split
+swap and scatter it over all your disks or even different
+controllers.
+<P><B>Even better:</B> Buy more RAM.
+<P>
+<H2><A NAME="ss3.4">3.4 Some facts about file systems and fragmentation</A>
+</H2>
+
+<P>
+<P>Disk space is administered by the operating system in units of
+blocks and fragments of blocks. In ext2, fragments and blocks
+have to be of the same size, so we can limit our discussion to
+blocks.
+<P>Files come in any size. They don't end on block boundaries.  So
+with every file a part of the last block of every file is
+wasted. Assuming that file sizes are random, there is
+approximately a half block of waste for each file on your disk.
+Tanenbaum calls this "internal fragmentation" in his book
+"Operating Systems".
+<P>You can guess the number of files on your disk by the number of
+allocated inodes on a disk. On my disk
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# df -i
+Filesystem           Inodes   IUsed   IFree  %IUsed Mounted on
+/dev/hda3              64256   12234   52022    19%  /
+/dev/hda5              96000   43058   52942    45%  /var
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+<P>there are about 12000 files on <CODE>/</CODE> and about 44000 files on <CODE>/var</CODE>.
+At a block size of 1 KB, about 6+22 = 28 MB of disk space are
+lost in the tail blocks of files. Had I chosen a block size of
+4 KB, I had lost 4 times this space.
+<P>
+<P>Data transfer is faster for large contiguous chunks of data,
+though. That's why ext2 tries to preallocate space in units of
+8 contigous blocks for growing files. Unused preallocation is
+released when the file is closed, so no space is wasted.
+<P>Noncontiguous placement of blocks in a file is bad for
+performance, since files are often accessed in a sequential
+manner. It forces the operating system to split a disk access
+and the disk to move the head. This is called "external
+fragmentation" or simply "fragmentation" and is a common
+problem with DOS file systems. 
+<P>ext2 has several strategies to avoid external fragmentation.
+Normally fragmentation is not a large problem in ext2, not even
+on heavily used partitions such as a USENET news spool. While
+there is a tool for defragmentation of ext2 file systems, nobody
+ever uses it and it is not up to date with the current release
+of ext2. Use it, but do so on your own risk.
+<P>The MS-DOS file system is well known for its pathological
+managment of disk space. In conjunction with the abysmal buffer
+cache used by MS-DOS the effects of file fragmentation on
+performance are very noticeable. DOS users are accustomed to
+defragging their disks every few weeks and some have even
+developed some ritualistic beliefs regarding defragmentation.
+None of these habits should be carried over to Linux and ext2.
+Linux native file systems do not need defragmentation under
+normal use and this includes any condition with at least 5% of
+free space on a disk.
+<P>
+<P>The MS-DOS file system is also known to lose large amounts of
+disk space due to internal fragmentation. For partitions larger
+than 256 MB, DOS block sizes grow so large that they are no
+longer useful (This has been corrected to some extent with
+FAT32).
+<P>ext2 does not force you to choose large blocks for large file
+systems, except for very large file systems in the 0.5 TB range
+(that's terabytes with 1 TB equaling 1024 GB) and above, where 
+small block sizes become inefficient. So
+unlike DOS there is no need to split up large disks into
+multiple partitions to keep block size down. Use the 1 KB
+default block size if possible. You may want to experiment with
+a block size of 2 KB for some partitions, but expect to meet
+some seldom exercised bugs: Most people use the default.
+<P>
+<H2><A NAME="ss3.5">3.5 File lifetimes and backup cycles as partitioning criteria</A>
+</H2>
+
+<P>
+<P>With ext2, Partitioning decisions should be governed by backup
+considerations and to avoid external fragmentation from
+different file lifetimes.
+<P>Files have lifetimes. After a file has been created, it will
+remain some time on the system and then be removed. File
+lifetime varies greatly throughout the system and is partly
+dependent on the pathname of the file. For example, files in
+<CODE>/bin</CODE>, <CODE>/sbin</CODE>, <CODE>/usr/sbin</CODE>, <CODE>/usr/bin</CODE> and similar directories are
+likely to have a very long lifetime: many months and above.
+Files in <CODE>/home</CODE> are likely to have a medium lifetime: several
+weeks or so. File in <CODE>/var</CODE> are usually short lived: Almost no
+file in <CODE>/var/spool/news</CODE> will remain longer than a few days,
+files in <CODE>/var/spool/lpd</CODE> measure their lifetime in minutes or
+less.
+<P>
+<P>For backup it is useful if the amount of daily backup is
+smaller than the capacity of a single backup medium. A daily
+backup can be a complete backup or an incremental backup.
+<P>You can decide to keep your partition sizes small enough that
+they fit completely onto one backup medium (choose daily full
+backups). In any case a partition should be small enough that
+its daily delta (all modified files) fits onto one backup
+medium (choose incremental backup and expect to change backup
+media for the weekly/monthly full dump - no unattended
+operation possible).
+<P>Your backup strategy depends on that decision.
+<P>When planning and buying disk space, remember to set aside a
+sufficient amount of money for backup! Unbackuped data is
+worthless! Data reproduction costs are much higher than backup
+costs for virtually everyone!
+<P>
+<P>For performance it is useful to keep files of different
+lifetimes on different partitions. This way the short lived
+files on the news partition may be fragmented very heavily.
+This has no impact on the performance of the <CODE>/</CODE> or <CODE>/home</CODE>
+partition.
+<P>
+<HR>
+<A HREF="Partition-4.html"><IMG SRC="../../img/next.gif" ALT="Next"></A>
+<A HREF="Partition-2.html"><IMG SRC="../../img/prev.gif" ALT="Previous"></A>
+<A HREF="Partition.html#toc3"><IMG SRC="../../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

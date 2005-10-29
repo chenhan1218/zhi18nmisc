@@ -1,0 +1,168 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>The X Window User HOWTO: X Startup</TITLE>
+ <LINK HREF="XWindow-User-HOWTO-6.html" REL=next>
+ <LINK HREF="XWindow-User-HOWTO-4.html" REL=previous>
+ <LINK HREF="XWindow-User-HOWTO.html#toc5" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="XWindow-User-HOWTO-6.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="XWindow-User-HOWTO-4.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="XWindow-User-HOWTO.html#toc5"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s5">5. X Startup</A></H2>
+
+<P>We will presume for the following examples that we have picked a
+fairly stable window manager, such as <B>FVWM2</B>, to try out some
+sample configurations.  I would suggest giving that a shot for the
+purpose of learning these topics, as most of what you will learn here
+and in the following sections will apply to any window manager out
+there, but the topics seem most easily picked up using FVWM2.
+<P>
+<H2><A NAME="ss5.1">5.1 A Sample Starting Configuration</A>
+</H2>
+
+<P>Our first step is to write ourselves an initialization file for X
+itself.  This file can be either a system-wide file, in which case it
+would likely be placed in <EM>/var/X11R6/lib/xinit/xinitrc</EM>, or
+it can be overridden on a per-user basis by placing the file
+<CODE>.xinitrc</CODE> in your home directory. Generally, it is expected
+that there will be a basic, default file in the system-wide location,
+possibly enforced if necessary for security reasons, but otherwise
+users will probably wish to configure the file themselves.
+<P>First let's create a file in your home directory called
+<CODE>.xinitrc</CODE>. Open up your ``favorite'' text editor, and paste
+the following, or something like it, in that file:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ #!/bin/sh
+ 
+ # if your backspace and delete are reversed, try this:
+ xmodmap -e &quot;keysym BackSpace=Delete&quot; -e &quot;keysym
+Delete-BackSpace&quot;
+ 
+ xsetroot -solid darkslateblue
+ 
+ # start some basic applications
+ xclock -geometry 96x96+2+2 -bg grey40 -fg black -hl white &amp;
+ xload -geometry 120x96+2+147 -bg grey40 -fg white -hl darkred -update 4
+&amp;
+ xterm -sb -ls -geom 80x25-2+2 -title "shell" &amp;
+ xterm -sb -ls -geom 80x25-2-2 &amp;
+ 
+ # start the window manager
+ /usr/X11R6/bin/fvwm2
+ 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>There are plenty of things to learn from this example. First of all,
+this file will be a shell script, as indicated by the first line. The
+<B>xsetroot</B> command on the second line turns the background of
+our desktop to a pleasant blue color, not a bad idea if we're going
+to be staring at that color predominantly all day.
+<P>The third and fourth lines are some programs that I like to leave
+running while I'm fast at work. You'll notice that some of the
+options make for a nicer setup, for example, specifying the colors
+and geometry (location on screen).  I'll give you some tips for
+figuring this stuff out in a bit. The fifth and sixth lines follow
+similarly, opening up two handy <B>xterm</B> windows for us, which
+we will no doubt be needing soon.
+<P>The last line is very important--it is this line that starts up your
+window manager! Notice that the only commands we did not run as
+<EM>background processes</EM> (by putting the <B>&amp;</B> at the
+end)
+were <B>xsetroot</B>, <B>xmodmap</B>, <B>fvwm2</B>. With these
+first two it doesn't matter, as the programs exit immediately. But all
+the rest of the programs have to be in the background, otherwise when
+you
+closed one, it would kill your X Window session. That would not be very
+pleasant, nor very expected. As shown above, when you close
+<B>fvwm2</B>, you exit X.
+<P>
+<H2><A NAME="ss5.2">5.2 A More Intelligent Startup</A>
+</H2>
+
+<P>We can add lots to our primitive example of a startup file. For
+instance, this is a good way to warn yourself when you may have
+carelessly stared X as the root user.  Red Hat users seem to do this
+often, for many of the configuration programs which must be run as
+root,
+must also be run in X.  You can avoid this by issuing an <B>su</B>
+command to become root during your normal X user session, and then
+calling the program you need to run as root with the option
+<B>-display
+:0.0</B> discussed above.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ # change background color for root 
+ if [ &quot;$USER&quot; = &quot;root&quot; ];
+ then
+      xsetroot -solid darkred
+ else xsetroot -solid darkslateblue
+ fi
+ 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>This will check to see if you are the user named root, and if you are,
+it will set the background to a harsh red, rather than the usual
+friendly blue, to warn you. This next bit of code, also intended for
+your
+<CODE>.xinitrc</CODE> file, will merge in your user-specific and
+system-wide
+resources, first checking to be sure the files exist.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ userresources=$HOME/.Xresources
+ usermodmap=$HOME/.Xmodmap
+ sysresources=/usr/X11R6/lib/X11/xinit/.Xresources
+ sysmodmap=/usr/X11R6/lib/X11/xinit/.Xmodmap
+ # Merge in defaults and keymaps
+ if [ -f $sysresources ]; then
+    xrdb -merge $sysresources; fi
+ if [ -f $sysmodmap ]; then
+    xmodmap $sysmodmap; fi
+ if [ -f $userresources ]; then
+    xrdb -merge $userresources; fi
+ if [ -f $usermodmap ]; then
+    xmodmap $usermodmap; fi
+ 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss5.3">5.3 Getting The Windows Where You Want Them</A>
+</H2>
+
+<P>Placing everything on your screen by guesswork with the
+<EM>-geometry</EM> option can get very tedious indeed. Particularly
+when you consider that you can specify the <EM>-geometry</EM> option
+to pretty much any program you can run in X. This allows a great
+precision in tuning the interface, but that's a heck of a lot of
+options to set, indeed.
+<P>This brings up one very nice feature of the FVWM window managers. By
+default, when you move a window around the screen, you see the
+geometry specification appear on the screen. Go ahead, try moving a
+window around with the left button.  Now try resizing it. As you can
+see, you can get some primitive specifications this way. However,
+even this method can be a little difficult, and it would be nice to
+have all the details about your window in one concise list.
+<P>It is at this point that we will introduce the program
+<B>xwininfo</B>. To use this program, go to an <B>xterm</B>
+window and type in that program name. It will ask you to click on
+another window that you want information about, and after you click
+it will dump out useful information that it knows about that window.
+This is useful for plugging information about windows once you have
+them set up how you want them on your screen - run this program, then
+click on the window, then put in those parameters in your startup
+file, and your window system will henceforth be frozen in a pristine
+state of immaculate precision.
+<P>
+<HR>
+<A HREF="XWindow-User-HOWTO-6.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="XWindow-User-HOWTO-4.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="XWindow-User-HOWTO.html#toc5"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

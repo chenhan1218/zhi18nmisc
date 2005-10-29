@@ -1,0 +1,193 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux Partition HOWTO: What is a partition anyway?</TITLE>
+ <LINK HREF="Partition-3.html" REL=next>
+ <LINK HREF="Partition-1.html" REL=previous>
+ <LINK HREF="Partition.html#toc2" REL=contents>
+<SCRIPT src="../../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(2, 8, 2);</SCRIPT>
+<A HREF="Partition-3.html"><IMG SRC="../../img/next.gif" ALT="Next"></A>
+<A HREF="Partition-1.html"><IMG SRC="../../img/prev.gif" ALT="Previous"></A>
+<A HREF="Partition.html#toc2"><IMG SRC="../../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s2">2. What is a partition anyway?</A></H2>
+
+<P>
+<P>When PC hard disks were invented people soon wanted to install
+multiple operating systems, even if their system had only one
+disk.  So a mechanism was needed to divide a single physical
+disk into multiple logical disks. So that's what a partition
+is: A contiguous section of blocks on your hard disk that is
+treated like a completely seperate disk by most operating
+systems.
+<P>It is fairly clear that partitions must not overlap: An
+operating system will certainly not be pleased, if another
+operating system installed on the same machine were overwriting
+important information because of overlapping partitions. There
+should be no gap between adjacent partitions, too. While this
+constellation is not harmful, you are wasting precious disk
+space by leaving space between partitions.
+<P>A disk need not be partitioned completely. You may decide to
+leave some space at the end of your disk that is not assigned
+to any of your installed operating systems, yet. Later, when it
+is clear which installation is used by you most of the time,
+you can partition this left over space and put a file system on
+it.
+<P>
+<P>Partitions can not be moved nor can they be resized without
+destroying the file system contained in it. So repartitioning
+usually involves backup and restore of all file systems touched
+during the repartitioning.  In fact it is fairly common to mess
+up things completely during repartitioning, so you should back
+up anything on any disk on that particular machine before even
+touching things like <CODE>fdisk</CODE>.
+<P>Well, some partitions with certain file system types on them
+actually <EM>can</EM> be split into two without losing any data (if
+you are lucky). For example there is a program called "fips"
+for splitting MS-DOS partitions into two to make room for a
+Linux installation without having to reinstall MS-DOS. You are
+still not going to touch these things without carefully backing
+up everything on that machine, aren't you? 
+<P>
+<H2><A NAME="ss2.1">2.1 Backups are important</A>
+</H2>
+
+<P>
+<P>Tapes are your friend for backups. They are fast, reliable and
+easy to use, so you can make backups often, preferably
+automatically and without hassle.
+<P>Step on soapbox: And I am talking about real tapes, not that
+disk controller driven ftape crap. Consider buying SCSI: Linux
+does support SCSI natively. You don't need to load ASPI
+drivers, you are not losing precious HMA under Linux and once
+the SCSI host adapter is installed, you just attach additional
+disks, tapes and CD-ROMs to it. No more I/O addresses, IRQ
+juggling or Master/Slave and PIO-level matching. 
+<P>Plus: Proper SCSI host adapters give you high I/O performance
+without much CPU load. Even under heavy disk activity you will
+experience good response times. If you are planning to use a
+Linux system as a major USENET news feed or if you are about to
+enter the ISP business, don't even think about deploying a
+system without SCSI. Climb of soapbox.
+<P>
+<H2><A NAME="ss2.2">2.2 Device numbers and device names</A>
+</H2>
+
+<P>
+<P>The number of partitions on an Intel based system was limited
+from the very beginning: The original partition table was
+installed as part of the boot sector and held space for only
+four partition entries.  These partitions are now called primary
+partitions. When it became clear that people needed more
+partitions on their systems, logical partitions were invented.
+The number of logical partitions is not limited: Each logical
+partition contains a pointer to the next logical partition,
+so you can have a potentially unlimited chain of partition
+entries.
+<P>For compatibility reasons, the space occupied by all logical
+partitions had to be accounted for. If you are using logical
+partitions, one primary partition entry is marked as "extended
+partition" and its starting and ending block mark the area
+occupied by your logical partitions. This implies that the
+space assigned to all logical partitions has to be contiguous. 
+There can be only one extended partition: no <CODE>fdisk</CODE> program
+will create more than one extended partition.
+<P>Linux cannot handle more than a limited number of partitions per
+drive. So in Linux you have 4 primary partitions (3 of them
+useable, if you are using logical partitions) and at most 15
+partitions altogether on an SCSI disk (63 altogether on an IDE
+disk).
+<P>In Linux, partitions are represented by device files. A device
+file is a file with type c (for "character" devices, devices
+that do not use the buffer cache) or b (for "block" devices,
+which go through the buffer cache). In Linux, all disks are
+represented as block devices only. Unlike other Unices, Linux
+does not offer "raw" character versions of disks and their
+partitions.
+<P>The only important thing with a device file are its major and
+minor device number, shown instead of the files size:
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+$ ls -l /dev/hda
+brw-rw----   1 root     disk       3,   0 Jul 18  1994 /dev/hda
+                                   ^    ^
+                                   |    minor device number
+                                   major device number
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+<P>When accessing a device file, the major number selects which
+device driver is being called to perform the input/output
+operation. This call is being done with the minor number as a
+parameter and it is entirely up to the driver how the minor
+number is being interpreted. The driver documentation usually
+describes how the driver uses minor numbers. For IDE disks,
+this documentation is in <CODE>/usr/src/linux/Documentation/ide.txt</CODE>.
+For SCSI disks, one would expect such documentation in
+<CODE>/usr/src/linux/Documentation/scsi.txt</CODE>, but it isn't there. One
+has to look at the driver source to be sure
+(<CODE>/usr/src/linux/driver/scsi/sd.c:184-196</CODE>). Fortunately, there
+is Peter Anvin's list of device numbers and names in
+<CODE>/usr/src/linux/Documentation/devices.txt</CODE>; see the entries for
+block devices, major 3, 22, 33, 34 for IDE and major 8 for SCSI
+disks. The major and minor numbers are a byte each and that is
+why the number of partitions per disk is limited.
+<P>By convention device files have certain names and many system
+programs have knowledge about these names compiled in. They
+expect your IDE disks to be named <CODE>/dev/hd*</CODE> and your SCSI disks
+to be named <CODE>/dev/sd*</CODE>. Disks are numbered a, b, c and so on, so
+<CODE>/dev/hda</CODE> is your first IDE disk and <CODE>/dev/sda</CODE> is your first SCSI
+disk. Both devices represent entire disks, starting at block
+one.  Writing to these devices with the wrong tools will
+destroy the master boot loader and partition table on these
+disks, rendering all data on this disk unusable or making your
+system unbootable. Know what you are doing and, again, back up
+before you do it.
+<P>Primary partitions on a disk are 1, 2, 3 and 4. So <CODE>/dev/hda1</CODE> is
+the first primary partition on the first IDE disk and so on.
+Logical partitions have numbers 5 and up, so <CODE>/dev/sdb5</CODE> is the
+first logical partition on the second SCSI disk.
+<P>Each partition entry has a starting and an ending block address
+assigned to it and a type. The type is a numerical code (a
+byte) which designates a particular partition to a certain type
+of operating system. For the benefit of computing consultants
+partition type codes are not really unique, so there is always
+the probability of two operating systems using the same type
+code.
+<P>Linux reserves the type code 0x82 for swap partitions and 0x83
+for "native" file systems (that's ext2 for almost all of you).
+The once popular, now outdated Linux/Minix file system used the
+type code 0x81 for partitions. OS/2 marks it's partitions with
+a 0x07 type and so does Windows NT's NTFS. MS-DOS allocates
+several type codes for its various flavors of FAT file systems:
+0x01, 0x04 and 0x06 are known.  DR-DOS used 0x81 to indicate
+protected FAT partitions, creating a type clash with Linux/Minix
+at that time, but neither Linux/Minix nor DR-DOS are widely
+used any more. The extended partition which is used as a
+container for logical partitions has a type of 0x05, by the way.
+<P>Partitions are created and deleted with the <CODE>fdisk</CODE> program.
+Every self respecting operating system program comes with an
+<CODE>fdisk</CODE> and traditionally it is even called <CODE>fdisk</CODE> (or <CODE>FDISK.EXE</CODE>)
+in almost all OSes. Some <CODE>fdisk</CODE>s, noteable the DOS one, are
+somehow limited when they have to deal with other operating
+systems partitions. Such limitations include the complete
+inability to deal with anything with a foreign type code, the
+inability to deal with cylinder numbers above 1024 and the
+inability to create or even understand partitions that do not
+end on a cylinder boundary. For example, the MS-DOS fdisk can't
+delete NTFS partitions, the OS/2 fdisk has been known to
+silently "correct" partitions created by the Linux fdisk that
+do not end on a cylinder boundary and both, the DOS and the
+OS/2 fdisk, have had problems with disks with more than 1024
+cylinders (see the "large-disk" Mini-Howto for details on such
+disks).
+<P>
+<HR>
+<A HREF="Partition-3.html"><IMG SRC="../../img/next.gif" ALT="Next"></A>
+<A HREF="Partition-1.html"><IMG SRC="../../img/prev.gif" ALT="Previous"></A>
+<A HREF="Partition.html#toc2"><IMG SRC="../../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

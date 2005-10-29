@@ -1,0 +1,148 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>The Linux GCC HOWTO中譯版V0.2: GCC的安裝與GCC的設定</TITLE>
+ <LINK HREF="GCC-HOWTO-4.html" REL=next>
+ <LINK HREF="GCC-HOWTO-2.html" REL=previous>
+ <LINK HREF="GCC-HOWTO.html#toc3" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="GCC-HOWTO-4.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="GCC-HOWTO-2.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="GCC-HOWTO.html#toc3"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s3">3. GCC的安裝與GCC的設定</A></H2>
+
+<H2><A NAME="index.14"></A> <A NAME="index.13"></A> <A NAME="index.12"></A> <A NAME="ss3.1">3.1 GCC的版本</A>
+   </H2>
+
+<P>在shell的提示符號下鍵入<CODE>gcc -v</CODE>，螢幕上就會顯示出你目前正在使用的GCC的版本。同時這也是一個相當可靠的方法，可以確定你現在所用的是ELF或是a.out。在我的系統上，執行gcc -v的結果是：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ gcc -v
+Reading specs from /usr/lib/gcc-lib/i486-box-linux/2.7.2/specs
+gcc version 2.7.2
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>上面的訊息指出了幾件重要的事情：
+<UL>
+<LI> <CODE>i486</CODE> 這是指明你現在正在用的gcc是為了486的微處理器而寫的---你的電腦可能是386或是586。這3種微處理器的晶片所編譯而成的程式碼，彼此間是可以相容使用的。差別之處是486的程式碼在某些地方有加上padding的功能，所以可以在486上面跑得比較快。這對386的機器而言，執行程式的效能並不會有什麼不良的影響，只不過真的會讓程式碼變得稍稍的大了一些。
+</LI>
+<LI> <CODE>box</CODE> 這可以說一點也<EM>不</EM>重要；不過也可能另有所指（像是<CODE>slackware</CODE>或者是<CODE>debian</CODE>），或者根本什麼也不是（所以囉！完整的目錄名稱是<CODE>i486-linux</CODE>）。假如你是實務派的佼佼者，親自動手建立屬於自己的gcc，那麼你可以在建立的過程中設定這一項，以裝點門面。就像我做的一樣<CODE>:-)</CODE>。
+</LI>
+<LI> <CODE>linux</CODE> 其實這是指<CODE>linuxelf</CODE>或是<CODE>linuxaout</CODE>。這一項會令人引起不必要的困惑，究竟是指哪一種會根據你所用的版本而異。
+
+<UL>
+<LI> <CODE>linux</CODE> 意指ELF若版本序號是2.7.0.（或是更新的版本）；否則的話，就是a.out的了。
+</LI>
+<LI><CODE>linuxaout</CODE> 意指a.out的格式。當<CODE>linux</CODE>的定義從a.out更換到ELF時，linuxaout就會順水推舟，搖身一變，成了一個目標物。因此，你不會看到任何版本新於2.7.0.的gcc有linuxaout的。
+
+<A NAME="index.15"></A>  </LI>
+<LI><CODE>linuxelf</CODE> 已經過時了。通常這是指2.6.3版的gcc，而且這個版本也可以用來產生ELF的可執行檔。要注意的是，gcc 2.6.3版在產生ELF程式碼時會有bugs，所以如果你目前用的恰好是這個版本，建議你趕快昇級。
+</LI>
+</UL>
+</LI>
+<LI> <CODE>2.7.2</CODE> 版本的序號。</LI>
+</UL>
+<P>所以，總結起來，我有2.7.2版的gcc，可以產生ELF格式的程式碼。就這麼簡單，驚訝吧！eh？
+<P>
+<H2><A NAME="ss3.2">3.2 東東裝好後都到哪兒去了?</A>
+</H2>
+
+<P>如果安裝gcc時沒有仔細的看著螢幕，或者你是從一個完整的發行系統裡把gcc單獨抓出來安裝的話，那麼也許你會想知道到底這些東東裝好後是住在整個檔案系統的那些地方。幾個重點如下：
+<P>
+<UL>
+<LI><CODE>/usr/lib/gcc-lib/</CODE><EM>target</EM><CODE>/</CODE><EM>version</EM><CODE>/</CODE> （與子目錄）大部份的編譯器就是住在這個地方的。在這兒有可執行的程式，實際在做編譯的工作；另外，還有一些特定版本的程式庫與標頭檔等也會儲存在此。
+</LI>
+<LI> <CODE>/usr/bin/gcc</CODE> 指的是編譯器的驅動程式---也就是你實際在命令列(command line)上執行的程式。這個目錄可供各種版本的gcc使用，只要你用不同的編譯器目錄（如上所述）來安裝就可以了。要知道內定的版本是那一個，在shell提示符號下打<CODE>gcc -v</CODE>。要是想強迫執行某個版本，就換打<CODE>gcc -V </CODE><EM>version</EM>。例如：
+
+<BLOCKQUOTE><CODE>
+<PRE>
+# gcc -v
+Reading specs from /usr/lib/gcc-lib/i486-box-linux/2.7.2/specs
+gcc version 2.7.2
+# gcc -V 2.6.3 -v
+Reading specs from /usr/lib/gcc-lib/i486-box-linux/2.6.3/specs
+gcc driver version 2.7.2 executing gcc version 2.6.3
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI> <CODE>/usr/</CODE><EM>target</EM><CODE>/(bin|lib|include)/</CODE>
+如果你裝了數種的目標物件，例如a.out與elf，或是某一種的交叉編譯器(cross-compiler)等等，那些屬於非主流目標物件（non-native target(s)）的程式庫，binutils（<CODE>as</CODE>、<CODE>ld</CODE>等等）工具與標頭檔等都可以在這兒找到。即使你只安裝了一種gcc，還是可以在這兒找到這些原本就是替它們準備的東東。如果不是在這兒，那麼就應該是在<CODE>/usr/(bin|lib|include)</CODE>了。
+ </LI>
+<LI> <CODE>/lib/</CODE>，<CODE>/usr/lib</CODE> 與其它的目錄等都是主流系統（native-system）的程式館目錄。許多的應用程式都會用到<CODE>/lib/cpp</CODE>，因此你也需要它---作法上，不是從<CODE>/usr/lib/gcc-lib/</CODE><EM>target</EM><CODE>/</CODE><EM>version</EM><CODE>/ </CODE>目錄裡拷貝，就是弄個符號連結（symlink）指向那兒。
+[譯者註:所謂的native，是指目前你的系統是以a.out或elf的格式為主，或者內定的gcc是哪一種版本等等。native的意思是‘本土的’、‘本國的’與‘天生的’……等等；當你拿到一片CD-ROM重頭至尾將Linux安裝完成，讓Linux出生，成為你個人特色濃厚的作業平台後，如果再加裝一些不一樣的目標物件，自然就有‘本土’與‘外省’﹙ 無關政治﹚，‘本國’與‘外國’、‘天生’與‘人為’等等的區別，同時也含有內定（default）的意思在。假若再附加上你個人的價值觀判斷和喜好，我想用主流（native）與非主流（non-native）來翻譯應該還算恰當。]
+
+<A NAME="index.16"></A>  </LI>
+</UL>
+<P>
+<H2><A NAME="index.17"></A> <A NAME="ss3.3">3.3 標頭檔ㄋㄟ?標頭檔ㄋㄟ?</A>
+ </H2>
+
+<P>假如把你自行安裝在<CODE>/usr/local/include</CODE>目錄底下的標頭檔排除在外的話，Linux還有另外3種主要的標頭檔：
+<P>
+<UL>
+<LI> <CODE>/usr/include/</CODE>與其子目錄底下的標頭檔，大部份都是由H.J.Lu發展的libc套件(libc binary package)所提供的。我會只說‘大部份’的原因，是因為你可能有其它來源的標頭檔（像是<CODE>curses</CODE>與<CODE>dbm</CODE>程式庫等等）擺在這兒；尤其是，如果你現在用的是最新的libc發行系統的話（新版本不像舊版那樣，已經不再支援curses或dbm了。），那東東之多是人人為之咋舌的！
+[譯者註:libc binary package意指以二進位形式(machine code)儲存之套件，並非原始碼（text），若要以中文全稱譯出，則成‘libc二進位檔套件’，似有聱牙之嫌，故略去binary，以libc套件通稱。]
+
+<A NAME="index.18"></A>  
+<A NAME="index.19"></A>  
+</LI>
+<LI> 在核心原始碼的發行系統內(kernel source distribution) ，<CODE>/usr/include/linux</CODE> 與 <CODE>/usr/include/asm</CODE> （裡頭有這些檔案：<CODE>&lt;linux/*.h&gt;</CODE> 與 <CODE>&lt;asm/*.h&gt;</CODE>）應該有符號連結（symbolic links）可以連結至目錄<CODE>linux/include/linux</CODE> 與 <CODE>linux/include/asm</CODE>。如果你有鴻鵠之志的話，安裝這些東東後，就不應該只是拿來編譯核心（kernel）而已。
+
+把原始碼解壓縮（unpacking）後，可能你也會發現，需要在核心的目錄（kernel directory）底下做<CODE>make config</CODE>的動作。很多的檔案都會依賴<CODE>&lt;linux/autoconf.h&gt;</CODE>的幫忙，可是這個檔案卻有可能因版本不同而不存在。若干核心版本裡，<CODE>asm</CODE>就只是它自己的一個符號連結，僅僅是在<CODE>make config</CODE>時才建立出來而已。
+[譯者註:原文提及autoconf.h時是‘Many files depend on <CODE>&lt;linux/autoconf.h&gt;</CODE>,which otherwise may not exist,*’。此處之otherwise之詞性應為形容詞(adj)，指‘另一情況’、‘另一種’、‘不同的’之意，將原文形容詞子句拆開來應為：(i) Many files depend on <CODE>&lt;linux/autoconf.h&gt;</CODE>.
+(ii)<CODE>&lt;linux/autoconf.h&gt;</CODE> <EM>of other condition</EM> may not exist.
+與下一句互相比對，此處應同指在不同版本之情況下。]
+
+所以，當你在目錄<CODE>/usr/src/linux</CODE>底下，解開核心的程式碼時，就照著下面指示的做吧！
+
+<BLOCKQUOTE><CODE>
+<PRE>
+$ cd /usr/src/linux
+$ su
+# make config
+(回答接下來的問題。通常回答得正不正確並不重要，除非你打算繼續築造核心。)
+# cd /usr/include
+# ln -s ../src/linux/include/linux .
+# ln -s ../src/linux/include/asm .
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+<A NAME="index.20"></A>  
+<A NAME="index.21"></A>  
+<A NAME="index.22"></A>  
+<A NAME="index.23"></A>  
+<A NAME="index.24"></A>  
+</LI>
+<LI> 諸如<CODE>&lt;float.h&gt;</CODE>、<CODE>&lt;limits.h&gt;</CODE>、<CODE>&lt;varargs.h&gt;</CODE>、<CODE>&lt;stdarg.h&gt;</CODE> 與<CODE>&lt;stddef.h&gt;</CODE>之類的檔案，會隨著不同的編譯器版本而異，屬於你‘個人的’檔案，可以在 <CODE>/usr/lib/gcc-lib/i486-box-linux/2.7.2/include/</CODE>與其它相類似（相同）的目錄名稱的地方找到。
+
+11/11/97譯
+5/14/98修正
+</LI>
+</UL>
+<P>
+<H2><A NAME="ss3.4">3.4 建立交叉編譯器(Building cross compilers)</A>
+</H2>
+
+<H3>將Linux當作標的作業平台(target platform)</H3>
+
+<P> 假設你已經拿到gcc的原始碼，通常你只要依循INSTALL檔的指示便可完成一切的設定。 make後面再接<CODE>configure --target=i486-linux --host=XXX</CODE> on platform <CODE>XXX</CODE>，就能幫你變把戲了。要注意的是，你會需要Linux還有核心的標頭檔；同時也需要建立交叉組譯器(cross assembler)與交叉連結器(cross linker)，來源是
+<A HREF="ftp://tsx-11.mit.edu/pub/linux/packages/GCC/">ftp://tsx-11.mit.edu/pub/linux/packages/GCC/</A>。
+<P>
+<H3>Linux當成原始作業平台(source platform)而MSDOS作為標的作業平台</H3>
+
+<P> Ugh。很明顯的，這個大概需要用到套件“emx”或是延伸套件“go”。請自行去
+<A HREF="ftp://sunsite.unc.edu/pub/Linux/devel/msdos">ftp://sunsite.unc.edu/pub/Linux/devel/msdos</A>看看。我並沒有測試過這些個東西，所以沒有辦法保證什麼。
+<P>
+<P>
+<HR>
+<A HREF="GCC-HOWTO-4.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="GCC-HOWTO-2.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="GCC-HOWTO.html#toc3"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

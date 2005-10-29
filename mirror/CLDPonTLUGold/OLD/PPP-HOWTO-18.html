@@ -1,0 +1,156 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>PPP HOWTO 中譯版: 偵錯</TITLE>
+ <LINK HREF="PPP-HOWTO-19.html" REL=next>
+ <LINK HREF="PPP-HOWTO-17.html" REL=previous>
+ <LINK HREF="PPP-HOWTO.html#toc18" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="PPP-HOWTO-19.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="PPP-HOWTO-17.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="PPP-HOWTO.html#toc18"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="problems"></A> <A NAME="s18">18. 偵錯</A></H2>
+
+<P>你的連線有各種可能的原因無法運作 －  chat 無法正確地完成，你的線路雜訊很大等等．
+所以，檢查你的系統記錄找尋線索．
+<P>
+<H2><A NAME="ss18.1">18.1 我把 PPP 編譯進去但是 Linux 說我沒有...</A>
+</H2>
+
+<P>一個非常常見的問題是人們已經將 PPP 編譯到核心之中並且嘗試執行 pppd，但核心仍然抱怨說它不支援 PPP!
+有許多原因可能導致此事發生．
+<P>
+<H3>你啟動的是正確的核心嗎?</H3>
+
+<P>雖然你<B>已經</B>重新編譯核心以支援 PPP，你卻沒有啟動新的核心．
+這可能是因為你沒有更新 <CODE>/etc/lilo.conf</CODE> 並重跑 lilo．
+<P>
+<P>檢查的方法是下這個指令 <CODE>uname -a</CODE>，將產生像這樣的結果 
+<P>
+<HR>
+<PRE>
+Linux archenland 2.0.28 #2 Thu Feb 13 12:31:37 EST 1997 i586
+</PRE>
+<HR>
+<P>
+<P>它給出了核心的版本及核心編譯的日期 - 這樣你就知道到底發生了什麼事．
+<P>
+<H3>你將 PPP 核心支援編譯為模組嗎?</H3>
+
+<P>如果你將 PPP 核心支援編譯為模組，但卻沒有編譯及安裝模組，你就會得到這個錯誤．
+看一下 
+<A HREF="Kernel-HOWTO.html">Kernel-HOWTO</A> 以及在 <CODE>/usr/src/linux</CODE> 下的 <CODE>README</CODE> 檔案!
+<P>
+<P>另一個模組連結的可能問題是你期望需要的模組自動地被載入，但卻沒有執行 <CODE>kerneld</CODE> (會自動載入並移除模組的工具)．
+看一下 
+<A HREF="mini/Kerneld.html">kerneld mini-HOWTO</A> 裡的資訊說明如何設定 <CODE>kerneld</CODE>．
+<P>
+<H3>你是否你用正確的 PPP 版本配合你的核心?</H3>
+
+<P>你<B>必須</B>使用 ppp-2.2 以配合核心 2.0.X．
+你可以在核心 1.2.X 使用 ppp-2.2 (如果你修補過核心)否則你必須使用 ppp-2.1.2．
+<P>
+<H3>你是否以 root 身份執行 pppd?</H3>
+
+<P>如果你不是以 root 身份執行 pppd (並且 pppd 並未設定為以 root 身份執行)，你就會收到此訊息．
+<P>
+<H2><A NAME="ss18.2">18.2 我的數據機連上了但 PPP 並未啟動</A>
+</H2>
+
+<P>同樣也有許不盡的原因(參考一下 comp.os.linux...)．
+<P>
+<P>一個<B>最常見</B>的錯誤是在你的指令稿裡你少打了某些東西．
+這裡唯一可做的是你將 Linux PC 與伺服器的對話記到你的系統記錄中(<CODE>/var/log/messages</CODE>)然後<EM>一行一行地</EM>看個仔細．
+你可能還需要再次以手動方法撥入伺服器檢查一遍．
+<P>你得要從頭到尾小心地檢查 － 而且心裡要記得我們人類有種傾向，閱讀的是我們認為我們鍵入的 － 而不是真的在那裡的!
+<P>
+<H2><A NAME="ss18.3">18.3 系統記錄說 &ldquo;<CODE>serial line is not 8 bit clean</CODE>...&rdquo;</A>
+</H2>
+
+<P>這也有許多的類似情形 - 像是 <CODE>serial line looped back</CODE> 等等，導致的原因可能是許多事情中的一件(或一系列)．
+<P>
+<P>要知道到底發生了什麼，必須對 pppd 背後做了些什麼有點了解．
+<P>
+<P>當 pppd 啟動後，它會送出連結控制協定(link control protocol)封包到遠端機器．
+如果它收到合法的回應才會走到下一階段(使用 IPCP - IP 控制封包)而且只有在這協商完成之後實際的 IP 層才會建立因此你才能使用 PPP 連結．
+<P>
+<P>如果當你的 PC 送出協商封包時在遠端沒有 PPP 伺服器在運作，這些封包在遠端簽入過程中將被彈回來．
+因為這些封包是使用 8 bits，彈回來時會將第八個位元截掉(記任，ASCII 是七位元的碼)．
+PPP 因此而抱怨此訊息．
+<P>
+<P>有許多原因會造成協商封包被彈回．
+<P>
+<H3>你沒有正確地簽入伺服器</H3>
+
+<P>當你的 chat 指令稿完成後，你的 PC 會啟動 pppd．然而，如果你並未完成在伺服器的簽入過程(包括送出任何必要在伺服器上啟動 PPP 的指令)，PPP 就不會開始．
+<P>
+<P>因此連結控制協定封包被彈回你也因此收到這個錯誤．
+<P>
+<P>你必須小心地檢查並修正(必要的話)你的 chat 指令稿(參見上面說明)．
+<P>
+<H3>你並未啟動伺服器上的 PPP</H3>
+
+<P>某些 PPP 伺服器在你完成簽入過程後需要你輸入指令或按下 <CODE>RETURN</CODE> 才會在遠端啟動 PPP．
+<P>
+<P>檢查你的 chat 指令稿(參見上面說明)．
+<P>
+<P>如果你以手動方式簽入時發現你必須送出 <CODE>RETURN</CODE> 才會在遠端啟動 PPP，簡單地在你的 chat 指令稿尾端加上空白的期待/送出字串對(空的送出字串實際上會送出 <CODE>RETURN</CODE>)．
+<P>
+<H3>遠端的 PPP 過程啟動很慢</H3>
+
+<P>這有點兒技巧!
+<P>
+<P>預設的情況下你的 Linux pppd 被編譯成最多送出十個連線控制要求封包．
+如果伺服器啟動有點慢，十個連線封包可能在遠端 PPP 準備好接收前就全部送出了．
+<P>
+<P>於是在你的機器上，pppd 看到十個封包被彈回(第八位元被截去)而結束．
+<P>
+<P>有兩個方法可以解決此事:-
+<P>
+<P>在你的 PPP 選項中加上 <CODE>lcp-max-configure 30</CODE>．
+這增加 pppd 在放棄前送出的連線封包的最大數目．對一個真的很慢的伺服器來說，你可能還需要更多．
+<P>
+<P>或者，你可以回過來用一些技巧．你或許會注意到當你以手動簽入 PPP 伺服器並讓 PPP 啟動時，收到的垃圾的<B>第一個</B>字完總是 tilde(~) 字元．
+<P>
+<P>利用此點我們可以在 chat 指令稿尾端加上新的期待/送出字串對，期待 tilde 字元並不送出任何東西．
+這看起來像這樣:-
+<P>
+<HR>
+<PRE>
+\~      ''
+</PRE>
+<HR>
+<P>
+<P>注意: 因為 tilde 字元對 shell 來說有特殊意義，必須加逸出符號(就是前面的倒斜線)．
+<P>
+<H2><A NAME="ss18.4">18.4 不能設立預設遞送路徑</A>
+</H2>
+
+<P>如果 pppd 拒絕建立預設遞送路徑，這是因為(應該沒錯)它拒絕移除或取代已有的預設遞送路徑．
+<P>
+<P>通常的原因是因為某些套件將你的乙太網路卡設為預設遞送路徑而不是設為指定的網路遞送．
+<P>
+<P>參見 Linux NAG 與 Net2/3 HOWTOs 裡的資訊以正確地設定你的乙太網路卡及相關的遞送． 
+<P>
+<P>另一可能原因是你的區域網路已使用了閘道器或路由器而且你的遞送表格已設定為將預設遞送路徑指向這裡．
+<P>
+<P>要修正這種情況需要更多的網路知識而已經超出此份 HOWTO 的範圍了．
+建議你取得一些專家的意見(經由新聞組群或你周圍可以問的人)．
+<P>
+<H2><A NAME="ss18.5">18.5 其它問題</A>
+</H2>
+
+<P>還有許多原因導致 PPP 無法連接或是無法正確運作．
+<P>
+<P>現在仔細看看 PPP FAQ （這真的是一系列的問題與回答）．這是一份非常詳實的文件而且答案就在裡面! 
+以我自己（很爛）的經驗，如果你的問題答案不在其中，那麼該問題就不是 PPP 的錯! 
+以我為例我使用 ELF 核心而且沒有升級適當的核心模組．在曙光出現之前我僅僅浪費了大概兩天（以及一個晚上的大部分時間）詛咒去那個事實上已非常良好的 PPP 伺服器．
+<P>
+<HR>
+<A HREF="PPP-HOWTO-19.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="PPP-HOWTO-17.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="PPP-HOWTO.html#toc18"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

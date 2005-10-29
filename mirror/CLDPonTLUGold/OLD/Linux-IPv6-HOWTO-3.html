@@ -1,0 +1,510 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="LinuxDoc-Tools 0.9.16">
+ <TITLE>Linux IPv6 HOWTO: 地址的類型</TITLE>
+ <LINK HREF="Linux-IPv6-HOWTO-4.html" REL=next>
+ <LINK HREF="Linux-IPv6-HOWTO-2.html" REL=previous>
+ <LINK HREF="Linux-IPv6-HOWTO.html#toc3" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Linux-IPv6-HOWTO-4.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="Linux-IPv6-HOWTO-2.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="Linux-IPv6-HOWTO.html#toc3"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s3">3.</A> <A HREF="Linux-IPv6-HOWTO.html#toc3">地址的類型</A></H2>
+
+<H2><A NAME="ss3.1">3.1</A> <A HREF="Linux-IPv6-HOWTO.html#toc3.1">沒有前綴的地址</A>
+</H2>
+
+<H3>Localhost 地址</H3>
+
+<P>這是一個特別為loopback interface(回送界面或環繞)定義的地址, 
+就像IPv4的 "127.0.0.1" 對於IPv6 localhost address 是:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+0000:0000:0000:0000:0000:0000:0000:0001  
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<P>或縮減成
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+::1
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+<P>這個地址的數據包將它當作host(主機)發送的來源和目標.</P>
+
+<H3>未指明的地址</H3>
+
+<P>這是一個在IPv4當中表示 "所有" 或"0.0.0.0". 對於IPv6為: 
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+0000:0000:0000:0000:0000:0000:0000:0000 
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<P>或者是:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+::
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<P> 這些地址大多 用在/顯示 socket 捆綁(到所有IPv6地址)或路由表當中.</P>
+<P>注意:未說明的地址不能當成目標地址來使用.</P>
+
+<H3>植入了IPv4地址的IPv6地址</H3>
+
+<P>它包含了兩個地址其中一個為IPv4地址.</P>
+
+<H3>IPv4映射IPv6地址</H3>
+
+<P>IPv4-only IPv6-compatible 是由IPv6後台產生的有時 用於或顯示 sockets .
+它只捆綁IPv4地址.</P>
+<P>這些地址被定義為擁有長度為96的前綴特殊地址(a.b.c.d 是IPv4地址):
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+0:0:0:0:0:ffff:a.b.c.d/96
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<P>或者使用縮寫形式</P>
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+::ffff:a.b.c.d/96
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<P>這些地址也用於自動遂道, 已經被6to4tunneling取代.</P>
+
+
+<H2><A NAME="ss3.2">3.2</A> <A HREF="Linux-IPv6-HOWTO.html#toc3.2">網路部分,也叫做前綴</A>
+</H2>
+
+<P>設計者定義並預留了一部份空間以便於將來遇到像現在這樣的需求.
+RFC 2373 [July 1998] / IP Version 6 Addressing Architecture
+(http://rfc.net/rfc2373.html) 定義了現在的地址設計, 
+但已經有了新的草案 (ftp://ftp.ietf.org/internet-drafts/)draft-ietf-ipngwg-addr-arch-*.txt</P>
+<P>讓我們來看一下不同的前綴定義(和地址類型):</P>
+
+<H3>連結本地地址的類型</H3>
+
+<P>這些地址不對外界(Internet)連接有效. 以這些地址為目標的數據包不會通過路由器.
+這種連結用於以下情形:</P>
+<P>
+<UL>
+<LI>同其它任意一個也使用這個連結的人進行通訊.</LI>
+<LI>同其它任意一個擁有特殊地址的連結進行通訊.(例如尋找路由)</LI>
+</UL>
+</P>
+<P>它們的地址由以下這些開頭("x"是任意的十六進制字符,一般是"0")
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+fe8x:  &lt;- 目前只有這個在用.
+fe9x:
+feax:
+febx:
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<P>一個開頭為以上這些前綴的地址, 由IPv6沒有在界面指定IP地址的時候創立.</P>
+<P> 目前只有fe80在使用.</P>
+
+<H3>本地站點的地址定義</H3>
+
+<P>這些地址和IPv4相似(http://rfc.net/rfc1918.html RFC 1918 / Address Allocation for Private Internets)
+它的優勢: 只用16bits 就可以定義65536個子網.同IPv4的10.0.0.0/8相似.</P>
+
+<P>另一個優勢:在IPv6的界面上可以定義多個IP地址, 
+在已有本地站點地址的基礎上還可以加上一個global(全局)地址.</P>
+
+<P>它們的地址由以下這些開頭("x"是任意的十六進制字符,一般是"0")
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+fecx:  &lt;- 大多數使用這個
+fedx:
+feex:
+fefx:
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<H3>Global(全局)地址類型 "(Aggregatable) global unicast"可聚合的全局唯一地址.</H3>
+
+<P>今天,只有一個全局地址類型的定義(第一個設計,也是多年以來一直使用的叫做
+"provider based," 
+<A HREF="http://rfc.net/rfc1884.html">RFC 1884 / IP Version 6 Addressing Architecture [obsolete]</A>)
+您能在早期的核心源代碼中找到一些.</P>
+<P>它們的地址由以下這些開頭("x"是任意的十六進制字符,一般是"0")
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+2xxx: 
+3xxx:
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<P>注意: 前綴"aggregatable" 被當前的草案拋棄了.
+下面有一些更有意義的子類型定義:</P>
+<H3>6bone test addresses</H3>
+
+<P>這些是最初定義和使用的全局地址. 它們的開頭是
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+3ffe:
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<P>例子
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+3ffe:ffff:100:f102::1
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<P>一個無唯一全局化的特別6bone例子
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+3ffe:ffff:100:f102::1
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<P>這些主要都是例子, 因為如果使用真實的地址,可能會有些人將它拷貝&amp;貼上 
+到他們自己的配置中去. 從而不注意地複製了全局唯一地址,
+這樣會導致原來擁有這個地址的主機產生一些問題(比如,請求的回應包不會被發送.)
+您可以從這些前綴當中申請一個,
+看這裡: "如何加入6bone" 也有一些在 tunnel brokers 
+他們發佈用於測試6bone 的地址前綴.</P>
+
+<H3>6to4 地址</H3>
+
+<P>這些地址是為特別tunneling機制設計的. 
+<A HREF="http://rfc.net/rfc3056.html/">[RFC 3056 / Connection of IPv6 Domains via IPv4 Clouds</A>
+和 
+<A HREF="http://rfc.net/rfc2893.html">RFC 2893 / Transition Mechanisms for IPv6 Hosts and Routers]</A>,
+給IPv4地址和可能的子網編碼並以類似下面的形式開頭:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+2002:
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<P>例子,重新對192.168.1.1/5編碼:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+2002:c0a8:0101:5::1
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<P>這個shell命令將幫助您用一個IPv4地址產生這樣的地址:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+ipv4="1.2.3.4"; sla="5"; printf "2002:%02x%02x:%02x%02x:%04x::1" `echo $ipv4 | tr "." " "` $sla
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<P>參照tunneling using 6to4 and information about 6to4 relay routers.</P>
+
+<H3>從分級路由分配到的地址</H3>
+
+<P>這些地址分配給Internet服務供商(ISP)並且有類似如下的開頭:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+2001:
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<P>主ISP(擁有骨幹網路)的前綴是由local registries分配的,
+並且現在他們分配的前綴長度為35.</P>
+<P>主ISPs通常分配給下級ISPs的前綴長度為48.</P>
+
+<H3>Multicast addresses(多點傳送的地址)</H3>
+
+<P>Multicast addresses 應用於服務當中.</P>
+<P>它們總是有同下面相類似的開頭(xx是範圍值)</P>
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+ffxy:
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<P>它們有著不同的範圍和類型:</P>
+
+<H3>Multicast scopes(多點傳達送範圍)</H3>
+
+<P>Multicast scope 是用來定義發送實體的multicast 數據包有效最遠傳輸值的參數.</P>
+
+<P>通常,下面的範圍已經被定義:
+<UL>
+<LI>ffx1: 本地節點, 數據包不會離開節點.</LI>
+<LI>ffx2: 本地連結, 數據包不會被路由,所以它們不會離開這個特別的連結.</LI>
+<LI>ffx5: 本地站點, 數據包不會離開站點.</LI>
+<LI>ffx8: 本地組織, 數據包不會離開組織(執行起來不那麼容易,必須依靠路由協議) </LI>
+<LI>ffxe: 全局範圍.</LI>
+<LI>其它的都被保留</LI>
+</UL>
+</P>
+
+<H3>Multicast(多點傳送)類型</H3>
+
+<P> 許多類型都已經定義/保留(細節請參照
+<A HREF="http://rfc.net/rfc2373.html"> RFC 2373 / IP Version 6 Addressing Architecture</A>).
+這裡有一些例子:
+<UL>
+<LI>所有節點地址: ID=1h, 所有本地節點主機的地址(ff01:0:0:0:0:0:0:1)
+或已連接好的地址(ff02:0:0:0:0:0:0:1).</LI>
+<LI>所有路由地址:ID=2h,所有本地節點的路由地址(ff01:0:0:0:0:0:0:2), 已連接的(ff02:0:0:0:0:0:0:2),
+或本地站點(ff05:0:0:0:0:0:0:2).</LI>
+</UL>
+</P>
+<H3>Solicited node link-local multicast address(本地多播請求的節點地址)</H3>
+
+<P>在neighborhood discovery(多播發現)中當成目標地址使用的特別多播地址.
+與IPv4不同,ARP(地址解析協議)將不在IPv6中使用.</P>
+<P>例子:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+ff02::1:ff00:1234
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<P>使用前綴表示它是一個本地多播地址, 後綴由目標地址產生.
+這個例子當中將有一個數據包發往"fe80::1234", 但是網路堆棧並不知道第二層的MAC(多媒體通路).
+它將上部份的104 bits 更改為 "ff02:0:0:0:0:1:ff00::/104" 下部分24 bits 不變.
+現在這個地址以on-link(在線)的形式尋找相應的節點(這個節點應當發送了包含有第二層 MAC 地址的回應包)</P>
+
+<H3>Anycast addresses(隨播地址)</H3>
+
+<P>Anycast addresses是一個特別的地址, 它用於鄰近的DNS或DHCP服務, 或用於相似的dynamic groups(動態組群).
+地址從 unicast address (單播地址aggregatable global or site-local at the moment)空間中取得.
+隨播地址的機制(從客戶端的觀點來看)由動態路由協議控制.</P>
+<P>注意:隨播地址不能成為作為來源地址, 它必需以目標地址的身份出現.</P>
+
+<H3>Subnet-router Anycast addresses(子網路隨播路由器)</H3>
+
+<P>一個Subnet-router Anycast addresses的例子.
+假設一個分配了如下IPv6地址的節點:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+3ffe:ffff:100:f101:210:a4ff:fee3:9566/64  &lt;- 節點的地址
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<P>Subnet-router將使用沒有後綴的地址 (least significant 64 bits):
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+3ffe:ffff:100:f101::/64  &lt;- subnet-router anycast address
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<H2><A NAME="ss3.3">3.3</A> <A HREF="Linux-IPv6-HOWTO.html#toc3.3">地址類型(主機)</A>
+</H2>
+
+<P>因為自動的配製/隨機分配,在當前的地址類型中主機使用更低的 64 bits地址.
+因此每個subnet(子網)可以擁有大量的地址.</P>
+
+<P>主機的地址分配可以有如下幾種形式:</P>
+
+<H3>自動分配(also known as stateless)</H3>
+
+<P>在自動分配當中,主機的地址由界面的MAC地址決定.
+使用EUI-64方法,指定一個IPv6 地址. 如果沒有可用的MAC(如:虛擬設備),
+就用其它的代替(如IPv4地址或物理界面的MAC地址)</P>
+<P>再看一下前面的例子:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+3ffe:ffff:100:f101:210:a4ff:fee3:9566
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<P>這裡:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+210:a4ff:fee3:9566 
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+<P>主機地址由NIC的MAC地址決定:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+00:10:A4:E3:95:66 
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+<P>用
+<A HREF="http://standards.ieee.org/regauth/oui/tutorials/EUI64.html">IEEE-Tutorial EUI-64 </A> 作為EUI-48 的標識符.</P>
+
+<H3>自動分配帶來的隱私問題</H3>
+
+<P>因為自動分配的是唯一地址,客戶端在不通過任何代理的情況下容易被跟蹤.
+這是個公認的問題,它的解決方法是:privacy extension,定義於
+<A HREF="http://rfc.net/rfc3041.html">RFC 3041 / Privacy Extensions for Stateless Address Autoconfiguration in IPv6</A> 
+這裡也有一個草案:
+<A HREF="ftp://ftp.ietf.org/internet-drafts/">draft-ietf-ipngwg-temp-addresses-*.txt</A> 使用不同的靜態數值,
+每次產生一個新的後綴. 注意: 只對client 的連接有效, 對於servers 沒有什麼用處.</P>
+
+<H3>手動設定</H3>
+
+<P>對於servers來說, 大概很容易記起簡單的地址.
+同時也可以向它的界面添加一個IPv6地址:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+3ffe:ffff:100:f101::1
+ 
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+<P>手動設定的後綴為"::1",例子當中最重要的第6 bits設定為"0", 它為anycast addresses(任意傳送地址)保留
+(the universal/local bit of the automatically generated identifier).</P>
+<H2><A NAME="ss3.4">3.4</A> <A HREF="Linux-IPv6-HOWTO.html#toc3.4">路由的前綴長度</A>
+</H2>
+
+<P>在早期設計階級,使用完全分離的路由分級來最大層度地縮小路由表.
+論證的方法是使用當前IPv4的核心路由數目(> 104 thousand in May 2001)
+減少硬體記憶體的需求來控制路由表和速度(較少的個數使查找速度加快).</P>
+
+<H3>前綴長度(也叫做子網路遮罩)</H3>
+
+<P>同IPv4相似, 網路產生可路由的路徑.
+因為128 bits標準的netmasks 看起來不怎麼樣. 設計者借鑒了IPv4的風格:
+Classless Inter Domain Routing (CIDR
+<A HREF="http://rfc.net/rfc1519.html">RFC 1519 / Classless Inter-Domain Routing</A>)
+它們是用於IP地址路由的bits號碼.
+也叫做"/"</P>
+
+<P>例子:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+3ffe:ffff:100:1:2:3:4:5/48
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<P>它們可以被擴展成:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+網路:
+3ffe:ffff:0100:0000:0000:0000:0000:0000
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+子網路遮罩:
+ffff:ffff:ffff:0000:0000:0000:0000:0000
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<H3>Matching a route(路由匹配)</H3>
+
+<P>在一般情況下(no QoS),
+在路由表裡查找一個重要的地址數值意味著路由前綴的長度必需先匹配.</P>
+<P>例子, 如果路由表像下面那樣(清單未完全例出):
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+3ffe:ffff:100::/48     ::            U  1 0 0 sit1 
+2000::/3               ::192.88.99.1 UG 1 0 0 tun6to4
+ 
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<P>IPv6的目標地址將被下面的設備路由:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+
+3ffe:ffff:100:1:2:3:4:5/48  ->  routed through device sit1
+3ffe:ffff:200:1:2:3:4:5/48  ->  routed through device tun6to4
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+ </P>
+
+<HR>
+<A HREF="Linux-IPv6-HOWTO-4.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="Linux-IPv6-HOWTO-2.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="Linux-IPv6-HOWTO.html#toc3"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

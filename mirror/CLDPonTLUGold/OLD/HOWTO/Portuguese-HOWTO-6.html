@@ -1,0 +1,992 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux Portuguese-HOWTO: Configuração dos vários programas </TITLE>
+ <LINK HREF="Portuguese-HOWTO-7.html" REL=next>
+ <LINK HREF="Portuguese-HOWTO-5.html" REL=previous>
+ <LINK HREF="Portuguese-HOWTO.html#toc6" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Portuguese-HOWTO-7.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Portuguese-HOWTO-5.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Portuguese-HOWTO.html#toc6"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s6">6. Configuração dos vários programas </A></H2>
+
+<P>
+<H2><A NAME="ss6.1">6.1 Aplicativos</A>
+</H2>
+
+<P>A maioria das aplicações que rodam no Unix usa algum tipo de arquivo de
+configuração que o usuário coloca em seu diretório de trabalho (home) e
+cujo nome normalmente é <CODE>.alguma-coisarc</CODE>. Tanto quanto possível,
+tentei evitar que isso fosse necessário, pois além de dar mais trabalho ao
+usuário (e ao administrador da rede ;-) pode dificultar um pouco as
+coisas. Por exemplo, aqui no CPMet temos o diretório <EM>home</EM>
+compartilhado entre um servidor Alpha rodando DEC UNIX com os PCs rodando
+Linux via NFS (até a maior parte do Linux está instalada no Alpha, os
+PCs só têm a partição raiz e uma área de swap). Os arquivos podem
+necessitar algum ajuste dependendo da plataforma e nem todos os programas
+possuem flexibilidade bastante para isso.
+<P>Uma opção que muitos programas também oferecem é especificar em uma
+variável de ambiente o nome do arquivo de configuração ou o uso de
+arquivos padrão que normalmente ficam em um diretório
+<CODE>/usr/lib/alguma-coisa</CODE> ou <CODE>/etc/alguma-coisa</CODE>. 
+<P>
+<H3>Bash (biblioteca GNU readline)</H3>
+
+<P>Os programas que utilizam a biblioteca GNU readline para ler a linha
+de comando procuram por um arquivo chamado <CODE>.inputrc</CODE> no diretório ``HOME''
+do usuário caso não exista uma variável de ambiente <CODE>INPUTRC</CODE> contendo o
+caminho para um arquivo de configuração.
+<P>Coloque uma linha no seu arquivo <CODE>/etc/profile</CODE> contendo
+<PRE>
+    INPUTRC="/etc/inputrc"
+    export INPUTRC
+</PRE>
+
+e crie um arquivo /etc/inputrc contendo
+<PRE>
+    set meta-flag on
+    set convert-meta off
+    set output-meta on
+</PRE>
+
+Outra alternativa é criar um arquivo <CODE>.inputrc</CODE> no diretório <EM>home</EM>
+do usuário com o conteúdo acima, mas é muito difícil manter atualizados
+os arquivos de todos os usuários, principalmente quando eles são muitos.
+Um <CODE>inputrc</CODE> mais completo pode ser obtido via WWW na página do
+Portuguese HOWTO. Ele contém opções para vários tipos de terminal e permite
+usar as teclas de movimento de cursor para percorrer o histórico de
+comandos (setas para cima e para baixo); ir para o primeiro e para o último
+comandos do histórico (teclas PageUp e PageDown); posicionar o cursor na linha
+(setas para a esquerda e direita) e posicionar o cursor no início e no fim da
+linha (teclas Home e End).
+<P>Para maiores informações leia os manuais do <B>bash</B> e da biblioteca
+<B>readline</B> com os comandos
+<PRE>
+    man bash
+    man readline
+</PRE>
+<P>
+<H3>Emacs</H3>
+
+<P>O pai de todos os editores pode ser configurado criando-se um arquivo
+chamado <CODE>.emacs</CODE> no diretório do usuário, contendo as seguintes linhas: 
+<PRE>
+    (set-input-mode nil nil 1)
+    (standard-display-european t)
+    (require 'iso-syntax)
+</PRE>
+<P>Para tornar esta configuração global, na distribuição Slackware coloque os
+comandos no arquivo <CODE>/usr/lib/emacs/site-lisp/site-start.el</CODE>. Na
+distribuição Debian o emacs executa todos os scripts contidos no diretório
+<CODE>/etc/emacs/site-start.d</CODE> ao ser carregado. Tudo que se tem a fazer
+é colocar esses comandos em um arquivo chamado, por exemplo,
+<CODE>01portugues-emacs.el</CODE>.
+<P>Se o estimado leitor, assim como eu, não se agrada do tratamento dado pelo
+Emacs às teclas de <EM>Delete</EM>, <EM>Home</EM> e <EM>End</EM>, aproveite a oportunidade
+e acrescente ao mesmo arquivo o seguinte:
+<PRE>
+    (global-unset-key [backspace] )
+    (global-set-key [backspace] 'delete-backward-char)
+    (global-unset-key [delete] )
+    (global-set-key [delete] 'delete-char)
+    (define-key global-map [home] 'beginning-of-line)
+    (define-key global-map [C-home] 'beginning-of-buffer)
+    (define-key global-map [end] 'end-of-line)
+    (define-key global-map [C-end] 'end-of-buffer)
+</PRE>
+<P>Arquivos de configuração prontos podem ser obtidos via WWW na página do
+Portuguese HOWTO. Para Slackware, há um <CODE>site-start-emacs.el</CODE>, que deve
+ser copiado para o diretório <CODE>/usr/lib/emacs/site-lisp</CODE> com o nome
+de <CODE>site-start.el</CODE>. Para Debian, há um <CODE>01portugues-emacs.el</CODE> que
+deve ser copiado para o diretório <CODE>/etc/emacs/site-start.d</CODE>.
+<P>Certifique-se de estar usando a versão 24-out-1998 ou mais recente do arquivo
+de mapa de teclado para o X, pois ela possui uma correção no tratamento das
+teclas modificadoras Alt e Meta, que são muito usadas pelo Emacs.
+<P>
+<H3>flex</H3>
+
+<P>Especifique a opção <B>-8</B> se o <EM>parser</EM> a gerar necessitar de ler
+dados de 8 bit. 
+<P>
+<H3>Fortune</H3>
+
+<P>Fortune é aquele programa que toda vez que é invocado apresenta uma
+pequena mensagem, geralmente bem humorada. Ele é inspirado nos biscoitos
+da fortuna chineses (em inglês <EM>fortune cookies</EM>, daí o nome).
+Eis algumas mensagens típicas:
+<PRE>
+    dROGA!!oNDE ESTA O cAPSLOCK??
+
+    Mouse não encontrado, bater no gato? (S/N)
+
+    Que fio é ess&lt;=V++088.../NO CARRIER
+
+    Quem ri por último está conectado a 2400Bit/s.
+</PRE>
+
+Tudo que o programa faz é escolher aleatoriamente uma mensagem em um
+repositório mantido no diretório <CODE>/usr/games/fortunes</CODE> (Slackware)
+ou <CODE>/usr/share/games/fortunes</CODE> (Debian). Neste diretório existem
+diversos arquivos com as ``fortunas'' e um arquivo índice para cada um deles,
+que possui a extensão <CODE>.dat</CODE>. O formato dos arquivos é muito simples:
+cada fortuna é composta de uma série de linhas de texto. As fortunas são
+separadas umas das outras por linhas contendo apenas um caracter <B>%</B>. Veja
+o trecho a seguir:
+<PRE>
+    O que são quatro pontos na parede? Four migas. Ugh!
+    %
+    Errar é humano, botar a culpa no computador é mais humano ainda.
+    %
+    Aí ela me disse: Ou eu ou o modem! Sinto muitas saudades dela...
+</PRE>
+
+Tudo que temos a fazer é criar um arquivo com as fortunas chamado, digamos
+<CODE>fortunes</CODE> com o formato descrito acima. Depois basta usar o programa
+<CODE>strfile</CODE> para gerar o índice:
+<PRE>
+    strfile fortunes
+</PRE>
+
+e um arquivo chamado <CODE>fortunes.dat</CODE> será criado. Claro que se quisermos
+que o fortune mostre apenas mensagens em Português, teremos que remover os
+arquivos existentes no diretório original. Sugiro simplesmente renomeá-lo para
+<CODE>fortunes-en</CODE> (de <EM>En</EM>glish) e criar outro vazio.  Eu coletei algumas
+fortunas e as coloquei no arquivo <CODE>fortunes-pt.tar.gz</CODE> que pode ser
+obtido via WWW na página do Portuguese HOWTO. Não esqueça de colocar no seu
+/etc/profile algumas linhas contendo uma chamada ao fortune, por exemplo
+<PRE>
+    if [ -x /usr/games/fortune -a ! -e $HOME/.hushlogin ]; then
+       echo
+       /usr/games/fortune
+       echo
+    fi
+</PRE>
+
+Uma última informação: se o nome de um arquivo termina com o sufixo
+<CODE>-o</CODE> o fortune só o consulta se for chamado com a opção
+<CODE>-o</CODE>. Esses arquivos são os que contém mensagens cujo conteúdo pode
+ser considerado ofensivo por algumas pessoas, tais como
+<PRE>
+    Só não mando a sogra pro inferno, com pena do Diabo.
+</PRE>
+
+Claro que existem coisas muito mais ofensivas por aí, mas este é um
+Linux HOWTO e não queremos realmente ofender ninguém, certo?
+<P>
+<H3>Ispell</H3>
+
+<P>Dicionários para o Português de Portugal podem ser obtidos via WWW
+na página do <EM>Projecto Natura</EM> em
+<A HREF="http://www.di.uminho.pt/~jj/pln/pln.html">http://www.di.uminho.pt/~jj/pln/pln.html</A>. Para o Brasil, há
+uma versão compilada pelo Ueda:
+<A HREF="http://www.ime.usp.br/~ueda/">http://www.ime.usp.br/~ueda/</A>.
+<P>
+<BLOCKQUOTE>
+Eu gostaria de poder
+colocar maiores informações, mas ainda não tenho conhecimento suficiente
+sobre o Ispell e não posso ensinar o que não sei. Preciso de ajuda
+aqui.
+</BLOCKQUOTE>
+<P>
+<H3>JDK (inclui ICQJava)</H3>
+
+<P>
+<BLOCKQUOTE>
+Esta informação é baseada em uma mensagem da qual guardei o conteúdo mas não o
+remetente. Peço desculpas e espero que perdoe a falha. Não testei pessoalmente
+a informação e peço que me escrevam confirmando tanto a correção quanto, se
+possível, a identidade do autor.
+</BLOCKQUOTE>
+<P>O JDK utiliza fontes padrão que não suportam acentos. Isto quer dizer que
+letras com acentos são ignoradas e, geralmente, confundem o resto do texto.
+Resolver isto é extremamente fácil:
+<UL>
+<LI>entre no diretório <CODE>jdk1.1.5/lib</CODE> (no meu caso,
+<CODE>/jdk1.1.5/lib</CODE>);</LI>
+<LI>copie o arquivo <CODE>font.properties.hu</CODE> sobrescrevendo o
+<CODE>font.properties</CODE> atual (lembre-se de fazer backups!);</LI>
+<LI>entre no jdk e divirta-se! Fazendo isto, seu ICQ e todos os
+aplicativos que usem o jdk estarão aptos a lerem acentos! (fácil, não?)</LI>
+</UL>
+<P>
+<H3>Joe</H3>
+
+<P>Invoque o joe com a opção <CODE>-asis</CODE> na linha de comando ou altere os
+arquivos de configuração para ativar tal opção. Na Slackware eles estão no
+diretório <CODE>/usr/lib/joe</CODE>. Tudo que se tem a fazer é remover o
+espaço em branco existente no início de cada linha. Outra alternativa é
+acrescentar a seguinte linha ao arquivo <CODE>/etc/profile</CODE>:
+<PRE>
+    alias joe='joe -asis'
+</PRE>
+<P>Joe pode emular os editores Pico, emacs e WordStar. Um arquivo <EM>joerc</EM> está
+disponível via WWW na página do Portuguese HOWTO, contendo configurações que
+permitem usar as teclas <EM>Home</EM> e <EM>End</EM> para movimentar o cursor para o
+início e fim da linha.
+<P>
+<H3>Less</H3>
+
+<P>Coloque as seguintes linhas no seu arquivo <CODE>/etc/profile</CODE>: 
+<PRE>
+    LESS="-MM -i"
+    LESSCHARSET="latin1"
+    LESSKEY="/etc/lesskey"
+    LESSOPEN='|lesspipe.sh "%s"'
+    export LESS LESSCHARSET LESSKEY LESSOPEN
+</PRE>
+
+LESSKEY informa o nome de um arquivo contendo uma tabela de seqüências de
+caracteres geradas por cada tecla e as ações a serem tomadas pelo less.  Para
+criar o arquivo <CODE>/etc/lesskey</CODE>, crie primeiro o arquivo
+<CODE>/etc/lesskey.in</CODE> contendo as seguintes linhas: 
+<PRE>
+    # Termianl ANSI (console do Linux, XTerm, etc)
+    \e[1~       goto-line
+    \e[4~       goto-end
+    \e[5~       back-screen
+    \e[6~       forw-screen
+    \e[7~       goto-line
+    \e[8~       goto-end
+    \e[A        back-line
+    \e[B        forw-line
+    # XTerm
+    \eOH        goto-line
+    \eOF        goto-end
+    \e[H        goto-line
+    \e[F        goto-end
+    # Console Sun (testado com teclados Type 4/5)
+    \e[214z     goto-line
+    \e[220z     goto-end
+    \e[216z     back-screen
+    \e[222z     forw-screen
+    # Arquivo seguinte/anterior
+    :n  next-file
+    :N  next-file
+    :p  prev-file
+</PRE>
+
+Depois ``compile-o'' usando o comando
+<PRE>
+    # lesskey -o /etc/lesskey /etc/lesskey.in
+</PRE>
+
+Crie o arquivo <CODE>/usr/bin/lesspipe.sh</CODE> contendo
+<PRE>
+    #!/bin/sh
+    # This is a preprocessor for 'less'.  It is used when this environment
+    # variable is set:   LESSOPEN="|lesspipe.sh %s"
+
+    case "$1" in
+      *.rpm) rpm -qilp "$1" 2>/dev/null ;;
+      *.tar) tar tvvf "$1" 2>/dev/null ;;
+      *.tgz | *.tar.gz | *.taz | *.tar.Z | *.tar.z)
+        tar tzvvf "$1" 2>/dev/null ;;
+      *.tbz2 | *.tar.bz2)
+        bzip2 -dc "$1" | tar tvvf - 2>/dev/null ;;
+      *.Z) gzip -dc "$1"  2>/dev/null ;;
+      *.z) gzip -dc "$1"  2>/dev/null ;;
+      *.[1-9].gz | *.n.gz | *.man.gz)
+        FILE=`file -Lz "$1" | cut -d ' ' -f 2`
+        if [ "$FILE" = "troff" ]; then
+          gzip -dc "$1" | groff -s -p -t -e -Tlatin1 -mandoc
+        fi ;;
+      *.gz) gzip -dc "$1"  2>/dev/null ;;
+      *.zip) unzip -l "$1" 2>/dev/null ;;
+      *.[1-9] | *.n | *.man)
+        FILE=`file -L "$1" | cut -d ' ' -f 2`
+        if [ "$FILE" = "troff" ]; then
+          groff -s -p -t -e -Tlatin1 -mandoc "$1"
+        fi ;;
+    esac
+</PRE>
+
+Não esqueça de torná-lo executável:
+<PRE>
+    chmod 755 /usr/bin/lesspipe.sh
+</PRE>
+<P>Na distribuição Debian já existe um script <CODE>/usr/bin/lesspipe</CODE>
+(note a ausência da extensão <CODE>.sh</CODE>). Para os curiosos a
+respeito da referência a ``*.rpm'', embora na máquina em questão se use
+Slackware, é possível ter o utilitário RPM instalado também, o que facilita
+tomar ``emprestados'' pacotes do Red Hat, Caldera e S.u.S.E.. Existe um
+<EM>RPM+Slackware Mini-HOWTO</EM> que explica como fazer isso.
+<P>
+<H3>ls</H3>
+
+<P>Acrescente a seguinte linha ao arquivo <CODE>/etc/profile</CODE> :
+<PRE>
+    alias ls="ls -N"
+</PRE>
+
+ou
+<PRE>
+    alias ls="ls -b"
+</PRE>
+
+Se a sua distribuição de Linux usa o GNU ls (todas as que eu conheço usam)
+basta acrescentar ao arquivo <CODE>/etc/profile</CODE> ou <CODE>.profile</CODE> as
+seguintes linhas:
+<PRE>
+    # -----------------------------------------
+    # Set up the color-ls environment variables
+    # -----------------------------------------
+    if [   "$SHELL" = "/bin/bash" -o \
+           "$SHELL" = "/bin/sh" ]; then
+       eval `dircolors -b`
+    elif [ "$SHELL" = "/bin/zsh" ]; then
+       eval `dircolors -z`
+    elif [ "$SHELL" = "/bin/ash" ]; then
+       eval `dircolors -s`
+    elif [ "$SHELL" = "/bin/ksh" -o \
+           "$SHELL" = "/bin/pdksh" ]; then
+       eval `dircolors -k`
+    elif [ "$SHELL" = "/bin/csh" -o \
+           "$SHELL" = "/bin/tcsh" ]; then
+       eval `dircolors -c`
+    else
+       eval `dircolors -b`
+    fi
+</PRE>
+
+Se o seu shell é o csh ou tcsh, acrescente a seguinte linha ao arquivo
+<CODE>/etc/csh.login</CODE> ou <CODE>~/.login</CODE>:
+<PRE>
+    alias ls 'ls --color'
+</PRE>
+<P>
+<H3><A NAME="SEC:LYX"></A> LyX</H3>
+
+<P>Para aqueles que acham trabalhoso escrever documentos para o LaTeX usando um
+simples editor de texto (e realmente é) LyX é uma excelente opção.  Este
+programa cria uma interface gráfica através da qual editamos os documentos que
+serão depois formatados pelo LaTeX. O ambiente é quase-WYSIWYG (What You See
+Is What You Get - O que tu vês é o que tu obténs). LyX não roda apenas em
+Linux, mas em qualquer Unix. Maiores informações podem ser obtidas em
+<P>
+<BLOCKQUOTE>
+<A HREF="http://www.lyx.org">http://www.lyx.org</A></BLOCKQUOTE>
+<P>A partir da versão 1.0.1 do LyX já tem a interface com o usuário em Português,
+traduzida por Pedro Kröger, que também está traduzindo os manuais, junto
+com Roberto Mello. Estas traduções já fazem parte da
+distribuição oficial do LyX.
+<P>Tendo o LyX instalado, é muito fácil criar documentos com acentuação em
+Português. Seguindo as seguintes regras:
+<P>
+<UL>
+<LI>Se o teclado foi configurado para ter <EM>dead keys</EM> usando um dos
+mapas aqui fornecidos, não é necessário fazer mais nada. Basta digitar o
+texto normalmente usando as seqüências de acentuação. A única exceção é
+o c-cedilha que não pode ser gerado usando a seqüência <CODE>'c</CODE>, pois o
+LyX gera um c com acento. Temos que usar a seqüência Compose-vírgula-c.</LI>
+<LI>Se o teclado <B>não</B> foi configurado para ter <EM>dead keys</EM> ainda
+assim é possível acentuar no LyX. Selecione o <EM>menu</EM>
+<CODE>Options/Keyboard</CODE>. Na caixa de diálogo ``Key Mappings'',
+selecione no ítem <CODE>Language/Primary</CODE> a opção ``American''.
+Com isto o LyX fará a composição dos caracteres acentuados usando regras
+semelhantes às das <EM>dead keys</EM>.
+<UL>
+<LI>A vírgula será tratada como cedilha. Para obter um `Ç'digite
+<CODE>,C</CODE> e para obter uma vírgula digite <CODE>,,</CODE>. Cuidado! A
+seqüência <CODE>,</CODE>&lt;espaço&gt; gerará uma cedilha isolada e
+não uma vírgula!</LI>
+<LI><CODE>~ ^ ' e `</CODE> serão tratados como acentos. Vale a mesma
+regra anterior: para obter apenas o acento, pressione a tecla duas
+vezes consecutivas. </LI>
+<LI><CODE>: ; . / ?</CODE> e <CODE>-</CODE> também serão tratados como
+acentos. <CODE>?a</CODE> gerará um `&aring;' e assim por diante.</LI>
+</UL>
+</LI>
+</UL>
+<P>Para o LyX imprimir corretamente, é necessário que, ao criar um novo
+documento, sejam selecionados a língua e a codificação de caracteres
+adequadas. Crie um documento selecionando o <EM>menu</EM> <CODE>File/New</CODE>.
+Depois selecione o <EM>menu</EM> <CODE>Layout/Document</CODE>. Na caixa de diálogo
+``Document Layout'' selecione no ítem <CODE>Language</CODE> a opção ``brazil'' ou
+``portuges'' (sem o <EM>u</EM> mesmo); no ítem <CODE>Encoding</CODE> selecione
+``latin1''.
+<P>Veja a observação sobre o pacote <EM>algorithm</EM> na seção&nbsp;
+<A HREF="#SEC:LATEX">TeX e LaTeX</A><P>Uma observação final sobre o LyX: a versão atual (1.0.x) utiliza a biblioteca
+XForms para construir a interface com o usuário. Como essa biblioteca não tem
+suporte para acentuação, não é possível digitar letras acentuadas nas caixas
+de diálogo, somente no corpo do documento editado. Segundo os desenvolvedores,
+nas novas versões do LyX será possível escolher o tipo de interface ao
+compilar o programa, o que permitirá o uso de <EM>toolkits</EM> mais flexíveis. Já
+existe uma versão de LyX portada para o toolkit Qt, usado no KDE, chamada
+KLyX. Os autores são Matthias Ettrich -- autor original do LyX -- e Kalle
+Dalheimer. Para maiores informações, consulte via WWW: 
+<A HREF="http://www-pu.informatik.uni-tuebingen.de/users/ettrich/">http://www-pu.informatik.uni-tuebingen.de/users/ettrich/</A>.
+<P>
+<H3><A NAME="SEC:MAN"></A> Man, groff, troff</H3>
+
+<P>Pode-se usar a opção de linha de comando <CODE>-Tlatin1</CODE> para o groff,
+mas é mais simples colocar uma linha no seu arquivo <CODE>/etc/profile</CODE>
+contendo
+<PRE>
+    GROFF_TYPESETTER="latin1" 
+    export GROFF_TYPESETTER
+</PRE>
+
+Para maiores informações leia o manual do groff com o comando
+<PRE>
+    man groff
+</PRE>
+<P>No Linux, o comando <EM>man</EM> usa o <EM>groff</EM> para formatar os manuais e deve
+ser configurado para usar o conjunto Latin 1, ou não será possível formatar
+satisfatoriamente manuais que contenham caracteres não pertencentes ao
+conjunto ASCII, como é o caso do ``man iso_8859_1''. Na distribuição
+Slackware, é preciso editar o arquivo <CODE>/usr/lib/man.config</CODE> e
+alterar as definições NROFF e NEQN, trocando a opção ``-Tascii'' para
+``-Tlatin1'':
+<PRE>
+    NROFF           /usr/bin/groff -Tlatin1 -mandoc
+    NEQN            /usr/bin/geqn -Tlatin1
+</PRE>
+
+ou, se usarmos a variável de ambiente GROFF_TYPESETTER, podemos simplesmente
+eliminar a opção -Tascii. Na distribuição Debian não é necessário fazer
+nenhuma configuração para o man, bastando configurar GROFF_TYPESETTER e na
+Red Hat (incluindo Conectiva) o arquivo é <CODE>/etc/man.config</CODE>
+<P>Groff também pode ser configurado para fazer a separação silábica em
+português, o que é muito útil se tivermos páginas de manual em Português. Isto
+é bastante simples, porque quando James Clarck pôs suporte a hifenização no
+groff ele usou o mesmo algoritmo de hifenização do TeX. Para ter hifenização
+em português, basta copiar o arquivo de regras do TeX e fazer o <CODE>groff</CODE>
+usá-lo. O arquivo <CODE>hyphen.pt</CODE> pode ser obtido junto com os demais na página
+do HOWTO. Trata-se do arquivo <CODE>pt8hyph.tex</CODE> (ver seção 
+<A HREF="#SEC:LATEX">TeX e LaTeX</A>) ao qual foi adicionado apenas um comentário.
+<P>Ele deve ser copiado para o diretório
+<CODE>/usr/share/groff/tmac/</CODE> ou <CODE>/usr/lib/groff/tmac/</CODE>,
+dependendo da distribuição. É conveniente criar um ``link'' simbólico para
+<CODE>hyphen.br</CODE>. Para usar esse arquivo, basta colocar no início do seu
+documento troff/groff as linhas a seguir:
+<PRE>
+    .if \n(.g \{\
+    .hla pt
+    .hpf hyphen.pt
+    .\}
+</PRE>
+
+O <CODE>.if</CODE> não é necessário para a acentuação, mas ele testa se o
+processador usado é o groff. Deste modo pode-se usar o mesmo documento em
+outros UNIX nos quais se use o troff normal sem que ele gere mensagens de erro
+sobre comandos desconhecidos.
+<P>
+<H3>Midnight Comander (mc)</H3>
+
+<P>No menu <CODE>Options</CODE> sub-menu <CODE>Display bits...</CODE> ligue a opção
+``Full 8 bits'' ou ``ISO 8859-1''. Na versão 3.2.11 isso permite
+que sejam mostrados nomes de arquivos contendo caracteres acentuados, mas
+não foi possível digitar tais caracteres na linha de comando ou nas caixas
+de diálogo.
+<P>
+<H3>Minicom</H3>
+
+<P>Coloque uma linha no seu arquivo <CODE>/etc/profile</CODE> contendo
+<PRE>
+    MINICOM="-m -c on" 
+    export MINICOM
+</PRE>
+
+Isso permitirá usar a tecla Alt para ativar os comandos (exatamente como o
+Telix) e também usar cores. Para maiores informações, leia o manual do
+Minicom usando o comando
+<PRE>
+    man minicom
+</PRE>
+
+Mais uma dica sobre o Minicom: para fazê-lo usar usar corretamante a tecla
+<EM>Meta</EM> para ativação dos comandos rodando dentro de um <EM>xterm</EM>, deve-se
+invocá-lo com a opção ``-m'' e passar a opção ``-xrm "*eightBitInput: false"''
+para o xterm. Se usarmos o <EM>rxvt</EM> então o minicom deve ser chamado com a
+opção ``-m'' e a tecla de ativação dos comandos será <EM>Alt</EM>. Fiz uma
+adaptação no script <CODE>xminicom</CODE> que pode ser obtido via WWW na página do
+Portuguese HOWTO.
+<P>Segundo Arnaldo Carvalho de Melo, as versões mais recentes do Minicom suportam
+internacionalização. Suporte para o Português foi acrescentado pelo pessoal da
+Conectiva. O código fonte pode ser obtido na página do Jukka (atual mantenedor
+do Minicom) em
+<BLOCKQUOTE>
+<A HREF="http://www.clinet.fi/~walker/minicom.html">http://www.clinet.fi/~walker/minicom.html</A></BLOCKQUOTE>
+<P>
+<H3>Netscape Communicator</H3>
+
+<P>O Communicator, assim como muitas aplicações que utilizam <EM>toolkits</EM>
+baseados no X Toolkit (Xt), permite que se modifiquem muitas de suas
+características por meio de arquivos de configuração (X Resources). No caso
+específico do Communicator, pode-se criar um arquivo chamado <CODE>Netscape</CODE>
+no diretório <CODE>/usr/X11R6/lib/X11/app-defaults</CODE> contendo estas
+opções.
+<P>Na distribuição brasileira Conectiva, o pacote do Communicator vem com um
+arquivo <CODE>/usr/lib/netscape/i18n/Netscape.ad.pt_BR</CODE> e um script
+<CODE>/usr/bin/netscape</CODE> que executa o Communicator fazendo-o ler este
+arquivo. Uma cópia do <CODE>Netscape.ad.pt_BR</CODE> pode ser obtida na página
+oficial do Portuguese-HOWTO. Para usá-lo, simplesmente copie-o para
+<CODE>/usr/X11R6/lib/X11/app-defaults/Netscape</CODE>, se sua distribuição não
+o possuir, mas fique atento que seu uso pode criar problemas com novas versões
+do programa.
+<P>Maiores informações sobre ``X Resources'' podem ser obtidas em [GET94],
+[McC94] e no manual do programa <CODE>xrdb</CODE>, com o comando
+<P>
+<PRE>
+    man xrdb
+</PRE>
+<P>
+<H3>nn</H3>
+
+<P>
+<BLOCKQUOTE>
+Alô, alô, alguém usa nn? Informação mais atualizada será bem recebida.
+</BLOCKQUOTE>
+
+Acrescente a seguinte linha ao arquivo <CODE>~/.nn/init</CODE>:
+<PRE>
+    set data-bits 8
+</PRE>
+<P>
+<H3>Pine e Pico</H3>
+
+<P>Para o Pine utilizar o conjunto de caracteres Latin 1, coloque uma linha
+no arquivo .pinerc, no diretório do usuário, contendo
+<PRE>
+    character-set=ISO-8859-1
+</PRE>
+
+ou crie um arquivo geral de configuração contendo tal linha. Esse arquivo
+normalmente é <CODE>/usr/local/lib/pine.conf</CODE> ou
+<CODE>/usr/lib/pine.conf</CODE>
+<P>A configuração também pode ser feita usando o próprio programa. No <EM>menu</EM>
+de entrada selecione as opções Setup/Configuration. Vá até o ítem
+``character-set'' e preencha-o com ``ISO-8859-1''. Para maiores informações
+leia o manual do pine com o comando
+<PRE>
+    man pine
+</PRE>
+<P>
+<H3>tcsh</H3>
+
+<P>Nenhuma medida especial é necessária se for feita a correta configuração das
+variáveis de ambiente ``LANG'' e ``LC_ALL'', conforme mostrado mostrado na
+seção&nbsp;
+<A HREF="Portuguese-HOWTO-4.html#SEC:LIBC">Biblioteca libc</A>.
+<P>Tcsh tem suporte a internacionalização e na distribuição Debian há um pacote
+chamado tcsh-i18n com suporte para French, German, Greek and Spanish.
+<P>
+<H3><A NAME="SEC:LATEX"></A> TeX e LaTeX</H3>
+
+<P>
+<BLOCKQUOTE>
+Esta seção foi escrita com ajuda de Klaus Steding-Jessen.
+</BLOCKQUOTE>
+<P>
+<H3>O pacote Babel</H3>
+
+<P>O pacote <EM>Babel</EM>, criado por Johannes Braams provê suporte a um grande
+número de idiomas para o LaTeX. De acordo com o idioma selecionado ele define
+muitas coisa como, por exemplo, os títulos dos capítulos (Chapter, Capítulo,
+Kapitel) e o título das tabelas (Tabela, Table, Tabelle). Para usar o pacote,
+basta incluir no preâmbulo de seu documento LaTeX o comando
+<P>
+<PRE>
+    \usepackage[portuges]{babel}
+
+    ou
+
+    \usepackage[brazil]{babel}
+</PRE>
+<P>Há diferenças sutis entre o Portugues do Brasil e o de Portugal, tais como
+as normas para escrita de datas e nomes de meses com a primeira letra
+maiúscula ou minúscula.
+<P>Pode-se misturar mais de um idioma no mesmo documento. Para Alemão e
+Português ficaria:
+<P>
+<PRE>
+    \usepackage[german,brazil]{babel}
+</PRE>
+<P>Nesse caso a última opção (brazil) fica sendo o idioma corrente. Para
+mudar ao longo do texto, entre um e outro, use:
+<P>
+<PRE>
+    \selectlanguage{german}
+
+    [...]
+
+    \selectlanguage{brazil}
+</PRE>
+<P>Isto é muito útil também quando queremos que uma palavra não seja separada.
+Basta definir um novo idioma e usá-lo nas palavras que não podem ser
+separadas. Coloque no preâmbulo:
+<P>
+<PRE>
+    \newlanguage\nohyphen
+    \newcommand\nh[1]{{\language\nohyphen #1}}
+</PRE>
+<P>E use com \nh{FOO BAR}. É melhor do que usar <CODE>\mbox</CODE>, que
+impede quebra no espaco em <CODE>\mbox{FOO BAR}</CODE>.
+<P>
+<H3>Separação silábica</H3>
+
+<P>Normalmente apenas os suportes a separação silábica para Inglês e Alemão são
+carregados.  Para configurar hifenização no <B>teTeX</B>, execute o utilitário
+<EM>texconfig</EM>, que na distribuição Slackware deve ser o programa
+<CODE>/usr/lib/teTeX/bin/texconfig</CODE> e na Debian é
+<CODE>/usr/bin/texconfig</CODE>.  Digite o comando
+<P>
+<PRE>
+    texconfig hyphen
+</PRE>
+<P>O editor usado normalmente é o <B>vi</B>. Se o seu editor predileto for
+outro, crie uma variável de ambiente chamada <B>EDITOR</B> contendo o nome desse
+programa, como no exemplo a seguir:
+<P>
+<PRE>
+    EDITOR=pico
+    export EDITOR
+</PRE>
+<P>O editor de texto será carregado, para editar o arquivo
+<CODE>language.dat</CODE>. Procure uma linha que começa por <B>%portuges</B> e
+remova o <B>%</B>. Grave o arquivo e saia do editor. O texconfig atualizará
+diversos arquivos de configuração (não se assuste com a quantidade de
+mensagens que aparecem na tela).
+<P>Se o nome da tabela de hifenização que consta no seu <CODE>language.dat</CODE>
+é <CODE>pthyph.tex</CODE> então provavelmente trata-se da versão 1.0, de
+1987. A versão 1.2, de 1996, pode ser obtida via FTP anônimo em
+<BLOCKQUOTE>
+<A HREF="ftp://ftp.tex.ac.uk/tex-archive/language/portuguese/pt8hyph.tex">ftp://ftp.tex.ac.uk/tex-archive/language/portuguese/pt8hyph.tex</A></BLOCKQUOTE>
+
+Copie-o para o mesmo diretório onde se encontra o <CODE>pthyph.tex</CODE>, que
+dependendo de sua distribuição pode ser
+<CODE>/usr/lib/texmf/tex/generic/hyphen</CODE>
+<CODE>/usr/share/texmf/tex/generic/hyphen</CODE> ou
+<CODE>/usr/lib/teTeX/texmf/tex/generic/hyphen</CODE>. Execute o comando
+<CODE>texconfig~hash</CODE> e na mesma linha mencionada anteriormente insira um `8'
+no nome do arquivo, de modo que fique <CODE>pt8hyph.tex</CODE>.
+<P>
+<H3>Uso de Font Encoding T1</H3>
+
+<P>Se o conjunto de caracteres (<EM>encoding</EM>) de uma fonte não provê acesso
+direto a caracteres acentuados, (como é o caso do OT1, padrão do LaTeX) então
+o TeX gera estes caracteres sobrepondo o caracter base mais o acento. O
+algoritmo de hifenização, contudo, não hifeniza palavras formadas dessa forma.
+<P>Se uma fonte já provê acesso direto a caracteres acentuados, como as de
+codificação T1, estes caracteres são usados diretamente sem prejuízo do
+algoritmo de hifenização.  O uso de <EM>encoding</EM> T1 é fundamental para a
+correta hifenização em Português.
+<P>Note que trata-se da mesma fonte, por falta a Computer Modern, apenas o que
+muda é o seu <EM>encoding</EM>, isto é, a ordem/disponibilidade dos caracteres
+dentro da mesma. Para selecionar estas fontes, inclua no preâmbulo do seu
+documento o comando
+<P>
+<PRE>
+    \usepackage[T1]{fontenc}
+</PRE>
+<P>O antigo pacote <CODE>t1enc</CODE> não deve mais ser usado e existe hoje apenas por
+questões de compatibilidade com documentos antigos. O <CODE>fontenc</CODE> é mais
+atual, continua a ser mantido e é de uso mais geral, portanto preferível.
+<P>
+<H3>Edição de documentos</H3>
+
+<P>Normalmente a introdução de caracteres acentuados no texto exige o uso
+de <EM>seqüências de escape</EM> bastante trabalhosas. Para gerar um ``ö''
+deve-se digitar \"o. Com <EM>babel</EM> pode-se digitar apenas "o, o que não
+deixa de ser inconveniente para ler o fonte do documento. Há um pacote chamado
+<B>inputenc</B> que permite especificar a codificação em que estão os
+caracteres de um documento. Lembre-se porém que se o seu documento for
+enviado para outro usuário que não possua o <B>inputenc</B> ele poderá não
+conseguir processá-lo, mas esse recurso já está disponível desde a
+liberação do LaTeX2e em dezembro 1994. Todas as distribuições de Linux
+atuais o incluem.
+<P>Sugestão: uma configuração do GNU Emacs para gerar caracteres
+acentuados, própria para o uso com o pacote inputenc:
+<P>
+<PRE>
+    (add-hook 'LaTeX-mode-hook
+              (lambda ()
+                (standard-display-european 1)
+                (load-library "iso-acc")
+                (iso-accents-mode 1)
+                (iso-accents-customize "portuguese")
+                (auto-fill-mode 1)
+                ))
+</PRE>
+<P>E outra que não requer o inputenc.  O uso da biblioteca `iso-cvt' faz a
+transformação de ISO-8859-1 (no buffer do Emacs) para o padrão do LaTeX (no
+arquivo).
+<P>
+<PRE>
+    (add-hook 'LaTeX-mode-hook
+              (lambda ()
+                (standard-display-european 1)
+                (load-library "iso-cvt")
+                (load-library "iso-acc")
+                (iso-accents-mode 1)
+                (iso-accents-customize "portuguese")
+                (auto-fill-mode 1)
+                ))
+</PRE>
+<P>Muitas vezes o usuario já possui muitos arquivos num formato de acento do
+LaTeX e gostaria de passar tudo para o formato ISO, próprio para uso do pacote
+inputenc. Uma boa opção para isto é usar o programa <CODE>recode</CODE>. Se você
+possui arquivos .tex e deseja converte-lo para formato ISO-8859-1 pode usar:
+<P>
+<PRE>
+    recode -d LaTeX:l1 file.tex
+</PRE>
+<P>O código-fonte do GNU recode pode ser obtido via FTP anônimo em 
+<A HREF="ftp://prep.ai.mit.edu/pub/gnu/recode/recode-3.4.tar.gz">ftp://prep.ai.mit.edu/pub/gnu/recode/recode-3.4.tar.gz</A> e em muitos
+espelhos do GNU mundo afora. A distribuição Debian tem um pacote pronto e
+outras também devem ter.
+<P>
+<H3>Teste da configuração do LaTeX</H3>
+
+<P>Para testar a nova configuração copie o seguinte trecho para um arquivo
+chamado, digamos, <CODE>exemplo.tex</CODE>:
+<P>
+<PRE>
+    \documentclass[a4paper]{article}
+    \usepackage[latin1]{inputenc}
+    \usepackage[T1]{fontenc}
+    \usepackage[portuges]{babel}
+    %%
+    %% ou \usepackage[brazil]{babel}
+    %%
+
+    \begin{document}
+    \title{Linux Portuguese-HOWTO}
+    \author{Carlos Augusto Moreira dos Santos}
+    \date{\today}
+
+    \maketitle
+
+    \section{Introdução}
+
+    Este documento pretende ser um guia de referência de configuração
+    do \textbf{Linux} e seus programas, teclados e fontes de
+    caracteres, permitindo sua internacionalização/utilização confortável
+    por pessoas que falem a Língua Portuguesa.
+
+    \end{document}
+</PRE>
+<P>Esse texto contém de propósito uma ``palavra'' bastante longa para forçar a
+separação silábica. Ele está disponível via WWW no arquivo <CODE>exemplo.tex</CODE>
+na página do Portuguese HOWTO. Para processá-lo, use o comando <CODE>latex</CODE>,
+conforme mostrado a seguir:
+<PRE>
+    bash$ latex exemplo.tex
+    This is TeX, Version 3.14159 (C version 6.1)
+    (exemplo.tex
+    LaTeX2e &lt;1996/06/01>
+    Hyphenation patterns for english, german, portuges, loaded.
+    (/usr/lib/teTeX/texmf/tex/latex/base/article.cls
+    Document Class: article 1996/05/26 v1.3r Standard LaTeX document class
+    (/usr/lib/teTeX/texmf/tex/latex/base/size10.clo))
+    (/usr/lib/teTeX/texmf/tex/latex/base/inputenc.sty beta test version
+    (/usr/lib/teTeX/texmf/tex/latex/base/latin1.def))
+    (/usr/lib/teTeX/texmf/tex/latex/base/fontenc.sty
+    (/usr/lib/teTeX/texmf/tex/latex/base/T1enc.def))
+    (/usr/lib/teTeX/texmf/tex/generic/babel/babel.sty (portuges.ldf
+    (/usr/lib/teTeX/texmf/tex/generic/babel/babel.def))) (exemplo.aux) [1]
+    (exemplo.aux) )
+    (see the transcript file for additional information)
+    Output written on exemplo.dvi (1 page, 812 bytes).
+    Transcript written on exemplo.log.
+</PRE>
+
+A mensagem ``Hyphenation patterns for english, german, <B>portuges</B>,
+loaded.'' indica que a configuração foi bem sucedida. Se o seu computador
+está rodando o X o documento formatado poderá ser visto com
+o comando
+<PRE>
+    xdvi exemplo.dvi
+</PRE>
+<P>Observe que o ``<CODE>\today</CODE>'' gera a data corrente. No ``portugues'' seria
+``17 de Julho de 1998'' mas no ``brazil'' seria ``17 de julho de 1998''.
+<P>
+<H3>Problemas com alguns pacotes do teTeX</H3>
+
+<P>Há um problema com o pacote <EM>algorithm</EM> do LaTeX, que não é suportado pelo
+babel, fazendo com que a lista de algoritmos saia com o título ``List of
+Algorithms'' e o título de cada um deles seja impresso como ``Algorithm #''.
+Para evitar esse problema, coloque no preâmbulo de seu documento LaTeX, após o
+comando ``<CODE>\usepackage{algorithm}</CODE>'' o seguinte:
+<P>
+<PRE>
+    \makeatletter
+    \renewcommand{\ALG@name}}{Algoritmo}}
+    \makeatother
+    \renewcommand{\listalgorithmname}}{Lista de Algoritmos}}
+</PRE>
+<P>No teTeX 0.4 (versão 1.2h do portuges.ldf) o título do ambiente <EM>proof</EM>,
+encontrado nas classes <EM>amsbook</EM>, <EM>amsart</EM>, etc., sai como ``Proof.''.
+Para corrigir isso, coloque no preâmbulo de seu documento o comando
+<P>
+<PRE>
+    \renewcommand{\proofname}}{Demonstra\c{c}\~ao}
+</PRE>
+<P>mas o mais recomendável é que se atualize a versão do teTeX.
+<P>Usuários do LyX podem incluir esses comandos no preâmbulo do documento usando
+o menu <CODE>Layout/LaTeX Preamble</CODE>. Pode-se resolver o problema
+alterando o arquivo <CODE>portuges.ldf</CODE> que contém as definições necessárias
+ao Português, mas esta solução não é portável, pois exigirá que tal arquivo
+seja alterado em todas os computadores em que o documento deva ser processado.
+<P>A licença do Babel não me permite distribuir o <CODE>portuges.ldf</CODE> separado do
+resto do pacote, mas para os interessados, coloquei à disposição na página do
+HOWTO um arquivo chamado <CODE>portuges.ldf.patch</CODE> que criei para o meu teTeX
+antigo (Slackware 3.4).  Para aplicar a atualização, copie-o para o diretório
+<CODE>/usr/lib/teTeX/texmf/tex/generic/babel</CODE> (Slackware), faça uma
+cópia de reserva do <CODE>portuges.ldf</CODE> original e invoque o utilitário
+<CODE>patch</CODE>:
+<P>
+<PRE>
+    cp -p portuges.ldf portuges.ldf.backup
+    patch &lt; portuges.ldf.patch
+</PRE>
+<P>Use o patch por sua conta e risco! Se você deixar o backup no diretório
+original ele será incluído no arquivo <CODE>ls-R</CODE> da próxima vez que o
+programa <EM>texhash</EM> for executado.  Isso não fará mal algum, mas pode-se
+mover o backup para algum lugar seguro (eu uso <CODE>/usr/backup</CODE>).
+<P>
+<H3>Lista TeX-BR</H3>
+
+<P>Há uma lista de discussão brasileira de usuários de TeX/LaTeX, chamada TeX-BR,
+que roda no servidor de listas da FURG. Para entrar da lista mande um mail
+contendo apenas a palavra ``subscribe'' no corpo para &lt;
+<A HREF="mailto:tex-br-request@listas.furg.br">tex-br-request@listas.furg.br</A>&gt;. Esta lista é administrada por Rafael
+Rodrigues Obelheiro.
+<P>Há uma página na WWW em 
+<A HREF="http://biquinho.furg.br/tex-br/">http://biquinho.furg.br/tex-br/</A> por meio
+da qual se pode ler o histórico de mensagens. Também há referências para
+muitos documentos sobre LaTeX, alguns em Português e outros em Inglês.
+<P>
+<H3>LaTeX-demo</H3>
+
+<P>Pode ser útil também um documento de exemplo para ter onde começar.  Pensando
+nisso, Klaus Steding-Jessen preparou
+um pequeno documento em Português com o objetivo de ser um guia ``by example''
+para o usuário de LaTeX iniciante e intermediário, que pode ser obtido via WWW
+em 
+<A HREF="http://biquinho.furg.br/doc/LaTeX-demo/">http://biquinho.furg.br/doc/LaTeX-demo/</A>.
+<P>Klaus ecreveu também uma série três artigos destinados a ``descrever o sistema
+LaTeX como uma alternativa mais eficiente aos processadores de texto WYSIWYG''
+que podem ser lidos via WWW em 
+<A HREF="http://biquinho.furg.br/tex-br/doc/artigo-1-jessen/">http://biquinho.furg.br/tex-br/doc/artigo-1-jessen/</A>.
+<P>
+<P>
+<H3>WordPerfect</H3>
+
+<P>O Corel Wordperfect para Linux versão 8 suporta a acentuação por teclas
+mortas. Não é necessário nenhum procedimento especial. Como um entusiasta de
+software livre, entretanto, recomendo enfaticamente que se use o 
+<A HREF="http://www.lyx.org/">LyX</A>, que já foi inclusive traduzido para
+nossa língua, conforme mencionado na seção&nbsp;
+<A HREF="#SEC:LYX">LyX</A>.
+<P>
+<H3>Xemacs (antigo lucid emacs)</H3>
+
+<P>
+<BLOCKQUOTE>
+Agradeço a colaboração de Judson Santos Santiago e Goedson Teixeira
+Paixão que ajudaram a identificar os problemas com o Xemacs.
+</BLOCKQUOTE>
+<P>O 
+<A HREF="http://www.xemacs.org/">Xemacs</A> já tem suporte à
+acentuação direta no teclado usando ``dead keys'', mas há um erro na
+configuração original que o impede de reconhecer o acento circunflexo.  Este
+problema não ocorre se for usada a biblioteca <EM>Xlib</EM> aterada por Thomas
+Quinot, mencionada na seção&nbsp;
+<A HREF="Portuguese-HOWTO-5.html#SEC:CONTOR-X">Contornando os limites do X</A>, mas mesmo que não a usemos, basta colocar os seguintes
+comandos no seu arquivo de configuração <CODE>.emacs</CODE>:
+<PRE>
+    ;; Ajuste para fazer o acento circunflexo funcionar
+    ;; Contribuição de Goedson Teixeira Paixao &lt;gopaixao@dcc.ufmg.br>
+    (require 'x-compose)
+    (define-key global-map 'dead-circumflex compose-circumflex-map)
+</PRE>
+<P>Na distribuição Debian 2.0 o Xemacs 20.4 executa todos os scripts contidos no
+diretório <CODE>/etc/xemacs20/site-start.d</CODE> ao ser carregado. Tudo que
+se tem a fazer é colocar esses comandos em um arquivo chamado, por exemplo,
+<CODE>01portugues-xemacs.el</CODE>. Não é necessário instalar o <EM>xemacs20-mule</EM>,
+que possui extensões para línguas que não usam o alfabeto romano. Os pacotes a
+instalar são os seguintes:
+<P>
+<UL>
+<LI>xemacs20-bin</LI>
+<LI>xemacs20-nomule</LI>
+<LI>xemacs20-support</LI>
+<LI>xemacs20-supportel</LI>
+</UL>
+<P>Se você instalou o Xemacs no Slackware ou outro Unix, à moda antiga (dowload,
+compilação, instação), então o arquivo a alterar é o <CODE>site-start.el</CODE>, que
+deve estar no diretório <CODE>/usr/lib/xemacs/site-lisp</CODE> ou
+<CODE>/usr/local/lib/xemacs/site-lisp</CODE>, dependendo de sua instalação.
+<P>Observe que a partir da versão 20.3 o Xemacs usa uma variável especial para
+controlar o comportamento da tecla ``Delete'', não existente nos outros emacs
+chamada <B>delete-key-deletes-forward</B>. Para ativar este comportamento
+coloque no seu arquivo <CODE>.emacs</CODE> uma linha contendo
+<P>
+<PRE>
+    (setq delete-key-deletes-forward t)
+</PRE>
+<P>Arquivos de configuração prontos podem ser obtidos via WWW na página do
+Portuguese HOWTO. Para Slackware, há um <CODE>site-start-xemacs.el</CODE>, que deve
+ser copiado para o diretório correto com o nome de <CODE>site-start.el</CODE>. Para
+Debian, há um <CODE>01portugues-xemacs.el</CODE> que deve ser copiado para o
+diretório <CODE>/etc/xemacs20/site-start.d</CODE>.
+<P>Certifique-se de estar usando a versão 24-out-1998 ou mais recente do arquivo
+de 
+<A HREF="Portuguese-HOWTO-7.html#SEC:FICHEIROS">mapa de teclado</A> para o X, pois ela possui
+uma correção no tratamento das teclas modificadoras Alt e Meta, que são muito
+usadas pelo Xemacs.
+<P>
+<P>
+<H2><A NAME="ss6.2">6.2 Rede local e Internet</A>
+</H2>
+
+<P>
+<H3>FTP (File Transfer Protocol)</H3>
+
+<P>Existem dois modos de transferência de arquivos: <EM>binary</EM> e <EM>ASCII</EM>,
+sendo este  utilizado para textos.  Deve-se tomar cuidado ao transferir um
+arquivo, pois o modo de transfêrencia
+<CODE>ASCII</CODE> remove o oitavo bit de cada caracter transmitido, o que terá como
+conseqüência a perda de todos os caracteres acentuados. Desta forma é
+aconselhado o envio de documentação em modo <CODE>binary</CODE> de forma a manter a
+integridade da mesma.
+<P>Cuidado! Algumas versões mais antigas do pacote net-tools do Linux têm
+um cliente FTP que não reconhece corretamente quando o servidor remoto
+roda Unix. Deste modo ele não comutará o modo de transferência para
+binário automaticamente. Além disso,
+alguns servidores FTP também não fornecem a informação corretamente.
+Certifique-se de digitar o comando <CODE>bin</CODE> antes de um <CODE>get</CODE> quando
+quiser que a transferência seja binária!
+<P>
+<H3>Correio eletrônico</H3>
+
+<P>O mesmo tipo de restrições do FTP se aplica ao envio de documentos contendo
+caracteres acentuados através de correio eletrônico. Embora isto não aconteça
+em todos os sistemas em uso na internet, bastará que o correio enviado passe
+no seu trajecto por um sistema que não suporte 8 bits de informação para que o
+nosso documento seja deturpado. 
+<P>Para que não hajam problemas, deve-se utilizar um programa de emeil, que
+suporte o formato MIME (Multipurpose Internet Mail Extensions), formato
+este que permite o envio de documentação em modo 8 bits.  Exemplos de
+programas de correio eletrônico com suporte para MIME, são o Eudora e o
+Pine. 
+<P>Se o destinatário da mensagem não usa um agente com suporte para MIME,
+existe a opção de codificar os documentos com o utilitário UUENCODE. Para
+maiores informações a esse respeito, leia a documentação usando os
+comandos
+<P>
+<PRE>
+    man uuencode
+    man uudecode
+</PRE>
+<P>
+<HR>
+<A HREF="Portuguese-HOWTO-7.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Portuguese-HOWTO-5.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Portuguese-HOWTO.html#toc6"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

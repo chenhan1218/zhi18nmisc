@@ -1,0 +1,189 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Linux PCMCIA HOWTO 中文版: 除错小技巧及程式设计资讯</TITLE>
+ <LINK HREF="PCMCIA-HOWTO-6.html" REL=previous>
+ <LINK HREF="PCMCIA-HOWTO.html#toc7" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<IMG SRC="img/next.gif" ALT="Next">
+<A HREF="PCMCIA-HOWTO-6.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="PCMCIA-HOWTO.html#toc7"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s7">7. 除错小技巧及程式设计资讯</A></H2>
+
+<H2><A NAME="ss7.1">7.1 提出有用的小虫报告</A>
+</H2>
+
+<P>提出小虫报告的最好的方法是使用在 Linux PCMCIA 资讯站的超媒体新闻讯
+息列表。这样可让其他人知道最新的问题有哪些 (并修改或改变方法 )。这
+儿是小虫报告内应让有的资料：
+<P>
+<UL>
+<LI>您的系统类型，以及 <CODE>probe</CODE> 命令的输出讯息。</LI>
+<LI>您使用哪些 PCMCIA 卡。</LI>
+<LI>您的 Linux 核心程式版本及 PCMCIA 驱动程式版本。</LI>
+<LI>您对 <CODE>/etc/pcmcia</CODE> 档或 PCMCIA 启动手稿所做的改变。</LI>
+<LI> 在系统日志档内所有与 PCMCIA 有关的讯息。</LI>
+</UL>
+<P>所有的 PCMCIA 程式模组和 <CODE>cardmgr</CODE> 精灵所传到系统日志档的讯息。
+通常为 <CODE>/var/log/messages</CODE>  或 <CODE>/usr/adm/messages</CODE>。
+当追踪一个问题时这应该时第一个要察看的地方。当您提出小虫报告时请连
+同包括这个档案。      如果您在找系统讯息有任何问题时，      请检查
+<CODE>/etc/syslogd.conf</CODE> 来看有哪些不同的讯息类别被处理了。
+<P>在提出小虫报告前，请您检查一下确认您使用的是最新版的驱动程式套件。
+如果能先看已被我改正除错後的报告的话会让人稍稍高兴一下，不然就有点
+没建设性地辜负我的心血了。
+<P>如果你的问题是核心的部份，从错误的地方之错误倾印只有你能够追纵错误
+位址－ EIP 才有用。 如果错误是在主要核心内，看看在 <CODE>System.map</CODE>
+内的位址，找出错误的功能函数。如果出错的地方是在可载入式模组内，那
+麽就很难追纵了。 使用目前的模组工具 ``<CODE>ksyms -m</CODE>'' 会提出一份每
+一个可载入模组的基位址。选取包含了 EIP 位址的模组，然後把 EIP 减掉
+基位址即可获得模组内的位移。 然後， 执行 <CODE>gdb</CODE> 在该模组上，使用
+<CODE>list</CODE> 命令找到位移。 这项功能只有在你有使用 <CODE>-g</CODE> 选项在编译
+该模组时加入了除错资讯的功能。
+<P>如果你没有使用网路，小虫报告也可以寄到 <CODE>dhinds@hyper.stanford.edu</CODE>
+来给我，我较希望你能把小虫报告贴到我的网站上，这样子其他人也都可以
+看到。
+<P>
+<H2><A NAME="ss7.2">7.2 低阶 PCMCIA 除错辅助</A>
+</H2>
+
+<P>PCMCIA 模组含有许多条件编译的除错码。 大部份的这些码都在前置处理器
+<CODE>PCMCIA_DEBUG</CODE> 定义的控制下。如果它没被定义，除错码就不会被编译
+。如果设定位 0，控制码会被编译进入但不会被启用。愈大的数字指定会变
+得更冗长了。 以 <CODE>PCMCIA_DEBUG</CODE> 定义来建立的模组都会有个整数参数
+<CODE>pc_debug</CODE>，它会控制它的输出之多寡。 这可以在模组被载入时加以调
+整，在不需重新编译下使得输出可以被控制成以每个模组为单位了。
+<P>在 PCMCIA 供应版内的 <CODE>debug_tools/</CODE>  子目录内有一些除错的工
+具。 <CODE>dump_tcic</CODE> 和 <CODE>dump_i365</CODE> 两个公用程式会产生 PCMCIA 控
+制器的完整暂存器的倾印，并且将许多暂存器资讯的解码。如果你有对相关
+的控制晶片做存取的话，   这些资讯最最有用的了。   <CODE>dump_tuples</CODE>
+公用程式列出了卡片的 CIS (卡片资讯结构 )，并将一些较重要的资料解码
+出来。  <CODE>dump_cisreg</CODE>  公用程式显示卡片的本地端建构暂存器(local
+configuration registers)资料。
+<P>有时候 <CODE>memory_cs</CODE> 记忆体卡驱动程式用来除错很好用。它可以与任何
+的 PCMCIA 卡相连接，而且不会干扰到其他的驱动程式。它可以被用来对任
+何卡片的属性记忆体或通用记忆体的直接存取。
+<P>
+<H2><A NAME="ss7.3">7.3 为新卡片写卡片服务驱动程式</A>
+</H2>
+
+<P>Linux PCMCIA 程式设计师指引是 Linux PCMCIA 介面的最好文件。 最新的
+版本你都可以从 <CODE>hyper.stanford.edu</CODE> 的 <CODE>/pub/pcmcia/doc</CODE>
+目录内或是在网站 
+<A HREF="http://hyper.stanford.edu/HyperNews/get/pcmcia/home.html">http://hyper.stanford.edu/HyperNews/get/pcmcia/home.html</A>
+内找到。
+<P>对於那些接近於一般的   ISA  介面设备来说，  你也许可以使用已存在的
+Linux 驱动程式来驱动。有时候，最大的障碍是修改一个已存在的驱动程式
+使它可以在开机後处理加入或移出设备。在现行的驱动程式中，只有记忆体
+卡是唯一 `` 自我包含的 '' 驱动程式－并不依赖  Linux 的核心的其他部
+份来做苦工。
+<P>在很多例子中，要支援一张新卡的最大障碍在於从它的制造版那儿得到技术
+资讯。    要知道问谁才对或是解释哪些资讯是必需的也很难。    然而，
+只有少数例子外，在没有从制造厂得到技术资讯的情况下要写个该卡的驱动
+程式几乎很难。
+<P>我写了一个含了备注来解说许多有关一个驱动程式如何与 Card 服务程式相
+灌通的架构驱动程式。       你可以在       PCMCIA        原始档案的
+<CODE>modules/skeleton.c</CODE> 内找到。
+<P>
+<H2><A NAME="ss7.4">7.4 给 PCMCIA 客户自定驱动程式的作者的指引</A>
+</H2>
+
+<P>
+<P>我决定若要供应所有的 PCMCIA 客户端驱动程式来成为 PCMCIA 套件的一部
+份的话，这样并不适合我。每一个新的驱动程式都会让主要套件渐渐地难以
+来维护。而且包含的这些驱动程式也会不请自来地将维护的工作从作者那儿
+转移到我的身上。因此，我会基於使用者的需求以及可维护性来以个案的方
+式决定是否要包含哪些供应的驱动程式。对於那些不被包含在核心套装的驱
+动程式，我建议这些驱动程式的作者可以使用下面的方案来打包您的驱动程
+式作为供应用。
+<P>驱动程式的档案应该被安排放在与 PCMCIA 来源供应版商的相同目录结构下
+，如此，驱动程式就可被解开到完整的 PCMCIA 原始程式树的上面了。一个
+驱动程式应该包含原始程式档案 (在 <CODE>./modules/</CODE>)， man 页 (在
+<CODE>./man/</CODE>)，建构档案 (在 <CODE>./etc/</CODE>)。 在最上层的目录内
+也应该有个 README 读我档案。
+<P>最上层目录也应该包含一个 makefile，它是一个组合用来执行 ``<CODE>make
+-f ...</CODE> all'' 以及 ``<CODE>make -f...  install</CODE>'' 编译驱动程式并安装
+适当的档案。如果这个 makefile 有个 <CODE>.mk</CODE> 附加档名，那麽它会自动
+地被上层的 <CODE>Makefile</CODE>  命令加上 <CODE>all</CODE> 以及 <CODE>install</CODE> 目标
+地时来执行。
+<P>以下是一个   makefile   如何被建立的例子：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# Sample Makefile for contributed client driver
+FILES = sample_cs.mk README.sample_cs \
+        modules/sample_cs.c modules/sample_cs.h \
+        etc/sample etc/sample.opts man/sample_cs.4
+all:
+        $(MAKE) -C modules MODULES=sample_cs.o
+install:
+        $(MAKE) -C modules install-modules MODULES=sample_cs.o
+        $(MAKE) -C etc install-clients CLIENTS=sample
+        $(MAKE) -C man install-man4 MAN4=sample_cs.4
+dist:
+        tar czvf sample_cs.tar.gz $(FILES)
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>这个 makefile 使用 2.9.10 版本（含）以後的 PCMCIA 套装程式所定义的
+安装目标地。它还包含了一个 ``dist'' 目标地来给驱动程式的作者方便性
+。        你也许想要加上版本编号到最後的套装档名上。       (例如，
+<CODE>sample_cs-1.5.tar.gz</CODE>)。一个完整供应版可以如下：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+sample_cs.mk
+README.sample_cs
+modules/sample_cs.c
+modules/sample_cs.h
+etc/sample
+etc/sample.opts
+man/sample_cs.4
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>以这样的安排，当供应版本驱动程式被解开时，它会变为 PCMCIA 原始程式
+树的必要成员。这样它就可以使用 PCMCIA 档头档案以及检查使用者系统建
+构的机能、自动相关性检查，就像是个 `` 一般的 '' 客户端驱动程式一样
+。
+<P>我接受那些依照这个规格所准备的客户端驱动程式将它们放在我的  FTP 档
+案传输站  <CODE>hyper.stanford.edu</CODE>  的 <CODE>/pub/pcmcia/contrib</CODE>
+目录内。在这个目录内的 README 档案会述明如何解开供应的驱动程式。
+<P>PCMCIA 客户端驱动程式介面一直以来都没有变动很多， 并且还都有保留向
+後相容的功能。一客户端驱动程式并不需在主要的 PCMCIA 套件小部份的改
+版时就得升级一次。我也会试著通知那些供应驱动程式的作者对於他们的驱
+动程式需要更动的地方。
+<P>
+<H2><A NAME="ss7.5">7.5 给 Linux 供应版本维护人员的导引 </A>
+</H2>
+
+<P>
+<P>如果您使用的供应商版本提供系统建构工具程式使您须注意 PCMCIA 部份，
+请使用在 <CODE>/etc/pcmcia</CODE>  内的 <CODE>*.opts</CODE> 档案来”挂上”
+那些功能。如果使用者编译及安装新版的 PCMCIA 套件时它们将不会被更动
+。如果您修改了主建构手稿後再安装个新的 PCMCIA 套件时，这将会悄悄地
+把您已自订的手稿给覆盖而中断您之前与建构工具间的连接。如果您不晓得
+怎麽来写个合适的选项手稿，您可以与我连络。
+<P>如果您能将您使用的供应商版本中有关 PCMCIA 套件的使用与本文件之不同
+的地方写成文件将对其他的使用者以及我本人有助益的。特别是，请在文件
+上付上启动手稿及建构手构的不同处。
+<P>如果您想做 Linux 供应版的 PCMCIA，最好也把非 PCMCIA 主要程式的其他
+分享驱动程式一起包括进去。为了方便维护，我会尽力地将核心套件的大小
+限制在一定□围内，除非有我觉得会被大家感兴趣的部份才会再加进去。如
+前面所说，其他的驱动程式会被分开地供应。对於被整合和分开於核心部份
+的驱动程式之界定是随意且有些是有其历史性的，因此我们不能以为它们在
+品质上有任何的不同。
+<P>
+<P>後记:
+<P>译者按: 在翻译本篇文章的过程中，共遇到二次翻译到一半而原作者修正文
+件及重新编排的状况。因此，本译文可能有翻译不周延或错字之处，烦请发
+现错误地方的朋友来信到 <CODE>
+<A HREF="mailto:linuxer.bbs@cis.nctu.edu.tw">linuxer.bbs@cis.nctu.edu.tw</A></CODE>
+给我，以便修正，谢谢您!
+<P>
+<HR>
+<IMG SRC="img/next.gif" ALT="Next">
+<A HREF="PCMCIA-HOWTO-6.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="PCMCIA-HOWTO.html#toc7"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

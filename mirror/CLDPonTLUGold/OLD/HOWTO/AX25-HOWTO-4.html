@@ -1,0 +1,296 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux AX25-HOWTO, Amateur Radio.: Installing the AX.25/NetRom/Rose software.</TITLE>
+ <LINK HREF="AX25-HOWTO-5.html" REL=next>
+ <LINK HREF="AX25-HOWTO-3.html" REL=previous>
+ <LINK HREF="AX25-HOWTO.html#toc4" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="AX25-HOWTO-5.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="AX25-HOWTO-3.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="AX25-HOWTO.html#toc4"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s4">4. Installing the AX.25/NetRom/Rose software.</A></H2>
+
+<P>To successfully install AX.25 support on your linux system you must configure
+and install an appropriate kernel and then install the AX.25 utilities.
+<P>
+<H2><A NAME="ss4.1">4.1 Compiling the kernel.</A>
+</H2>
+
+<P>If you are already familiar with the process of compiling the Linux Kernel
+then you can skip this section, just be sure to select the appropriate options
+when compiling the kernel. If you are not, then read on.
+<P>The normal place for the kernel source to be unpacked to is the
+<CODE>/usr/src</CODE> directory into a subdirectory called <CODE>linux</CODE>.
+To do this you should be logged in as <CODE>root</CODE> and execute a series
+of commands similar to the following:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# mv linux linux.old
+# cd /usr/src
+# tar xvfz linux-2.0.31.tar.gz
+# tar xvfz /pub/net/ax25/ax25-module-14e.tar.gz 
+# patch -p0 &lt;/usr/src/ax25-module-14/ax25-2.0.31-2.1.47-2.diff
+# cd linux
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>After you have unpacked the kernel source and applied the upgrade, you need
+to run the configuration script and choose the options that suit your hardware
+configuration and the options that you wish built into your kernel.
+You do this by using the command:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# make menuconfig
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>You might also try:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# make config
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>I'm going to describe the full screen method (menuconfig) because it is easier
+to move around, but you use whichever you are most comfortable with.
+<P>In either case you will be offered a range of options at which you must
+answer `Y' or `N'. (Note you may also answer `M' if you are using modules.
+For the sake of simplicity I will assume you are not, please make appropriate
+modifications if you are).
+<P>The options most relevant to an AX.25 configuration are:
+<P>
+<PRE>
+Code maturity level options  --->
+    ...
+    [*] Prompt for development and/or incomplete code/drivers
+    ...
+General setup  --->
+    ...
+    [*] Networking support
+    ...
+Networking options  --->
+    ...
+    [*] TCP/IP networking
+    [?] IP: forwarding/gatewaying
+    ...
+    [?] IP: tunneling
+    ...
+    [?] IP: Allow large windows (not recommended if &lt;16Mb of memory)
+    ...
+    [*] Amateur Radio AX.25 Level 2
+    [?] Amateur Radio NET/ROM
+    [?] Amateur Radio X.25 PLP (Rose)
+    ...
+Network device support  --->
+    [*] Network device support
+    ...
+    [*] Radio network interfaces
+    [?] BAYCOM ser12 and par96 driver for AX.25
+    [?] Soundcard modem driver for AX.25
+    [?] Soundmodem support for Soundblaster and compatible cards
+    [?] Soundmodem support for WSS and Crystal cards
+    [?] Soundmodem support for 1200 baud AFSK modulation
+    [?] Soundmodem support for 4800 baud HAPN-1 modulation
+    [?] Soundmodem support for 9600 baud FSK G3RUH modulation
+    [?] Serial port KISS driver for AX.25
+    [?] BPQ Ethernet driver for AX.25
+    [?] Gracilis PackeTwin support for AX.25
+    [?] Ottawa PI and PI/2 support for AX.25
+    [?] Z8530 SCC KISS emulation driver for AX.25
+    ...
+</PRE>
+<P>The options I have flagged with a `<CODE>*</CODE>' are those that you <B>must</B> must
+answer `Y' to. The rest are dependent on what hardware you have and what
+other options you want to include. Some of these options are described in more
+detail later on, so if you don't know what you want yet, then read ahead
+and come back to this step later.
+<P>After you have completed the kernel configuration you should be able to
+cleanly compile your new kernel:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# make dep
+# make clean
+# make zImage
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>maake sure you move your <CODE>arch/i386/boot/zImage</CODE> file wherever you
+want it and then edit your <CODE>/etc/lilo.conf</CODE> file and rerun <EM>lilo</EM>
+to ensure that you actually boot from it.
+<P>
+<H3>A word about Kernel modules</H3>
+
+<P>I recommend that you <B>don't</B> compile any of the drivers as modules. In
+nearly all installations you gain nothing but additional complexity. Many
+people have problems trying to get the modularised components working, not
+because the software is faulty but because modules are more complicated to
+install and configure.
+<P>If you've chosen to compile any of the components as modules, then you'll
+also need to use:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# make modules
+# make modules_install
+</PRE>
+</CODE></BLOCKQUOTE>
+
+to install your modules in the appropriate location.
+<P>You will also need to add some entries into your <CODE>/etc/conf.modules</CODE>
+file that will ensure that the <EM>kerneld</EM> program knows how to handle the
+kernel modules. You should add/modify the following:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+alias net-pf-3     ax25
+alias net-pf-6     netrom
+alias net-pf-11    rose
+alias tty-ldisc-1  slip
+alias tty-ldisc-3  ppp
+alias tty-ldisc-5  mkiss
+alias bc0          baycom
+alias nr0          netrom
+alias pi0a         pi2
+alias pt0a         pt
+alias scc0         optoscc    (or one of the other scc drivers)
+alias sm0          soundmodem
+alias tunl0        newtunnel
+alias char-major-4 serial
+alias char-major-5 serial
+alias char-major-6 lp
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H3>What's new in 2.0.*+ModuleXX or 2.1.* Kernels ?</H3>
+
+<P>The <CODE>2.1.*</CODE> kernels have enhanced versions of nearly all of the protocols
+and drivers. The most significant of the enhancements are:
+<DL>
+<DT><B>modularised</B><DD><P>the protocols and drivers have all been modularised so
+that you can <EM>insmod</EM> and <EM>rmmod</EM> them whenever you wish. This reduces
+the kernel memory requirements for infrequently used modules and makes
+development and bug hunting much simpler. That being said, it also makes
+configuration slightly more difficult.
+<DT><B>All drivers are now network drivers</B><DD><P>all of the network devices such
+as Baycom, SCC, PI, Packettwin etc now present a normal network interface, that
+is they now look like the ethernet driver does, they no longer look like KISS
+TNC's. A new utility called <EM>net2kiss</EM> allows you to build a kiss interface
+to these devices if you wish.
+<DT><B>bug fixed</B><DD><P>there have been many bug fixes and new features added to
+the drivers and protocols. The Rose protocol is one important addition.
+</DL>
+<P>
+<H2><A NAME="ss4.2">4.2 The network configuration tools.</A>
+</H2>
+
+<P>Now that you have compiled the kernel you should compile the new network
+configuration tools. These tools allow you to modify the configuration of
+network devices and to add routes to the routing table.
+<P>The new alpha release of the standard <CODE>net-tools</CODE> package includes
+support for AX.25 and NetRom support. I've tested this and it seems to
+work well for me.
+<P>
+<H3>A patch kit that adds Rose support and fixes some bugs.</H3>
+
+<P>The standard net-tools-1.33.tar.gz package has some small bugs that affect
+the AX.25 and NetRom support. I've made a small patch kit that corrects these
+and adds Rose support to the tools as well.
+<P>You can get the patch from:
+<A HREF="ftp://zone.pspt.fi/pub/linux/ham/ax25/net-tools-1.33.rose.tjd.diff.gz">zone.pspt.fi</A>.
+<P>
+<P>
+<H3>Building the standard net-tools release.</H3>
+
+<P>Don't forget to read the <CODE>Release</CODE> file and follow any instructions
+there. The steps I used to compile the tools were:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# cd /usr/src
+# tar xvfz net-tools-1.33.tar.gz
+# zcat net-tools-1.33.rose.tjd.diff.gz | patch -p0
+# cd net-tools-1.33
+# make config
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>At this stage you will be presented with a series of configuration questions,
+similar to the kernel configuration questions. Be sure to include support for
+all of the protocols and network devices types that you intend to use. If you
+do not know how to answer a particular question then answer `Y'.
+<P>When the compilation is complete, you should use the:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# make install
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>command to install the programs in their proper place.
+<P>
+<P>If you wish to use the IP firewall facilities then you will need the latest
+firewall administration tool <CODE>ipfwadm</CODE>. This tool replaces the older
+<CODE>ipfw</CODE> tool which will not work with new kernels.
+<P>I compiled the <CODE>ipfwadm</CODE> utility with the following commands:
+<BLOCKQUOTE><CODE>
+<PRE>
+# cd /usr/src
+# tar xvfz ipfwadm-2.0beta2.tar.gz
+# cd ipfwadm-2.0beta2
+# make install
+# cp ipfwadm.8 /usr/man/man8
+# cp ipfw.4 /usr/man/man4
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss4.3">4.3 The AX.25 user and utility programs.</A>
+</H2>
+
+<P>After you have successfully compiled and booted your new kernel, you need to
+compile the user programs. To compile and install the user programs you should
+use a series of commands similar to the following:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# cd /usr/src
+# tax xvfz ax25-utils-2.1.42a.tar.gz
+# cd ax25-utils-2.1.42a
+# make config
+# make
+# make install
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>The files will be installed under the <CODE>/usr</CODE> directory by default
+in subdirectories: <CODE>bin</CODE>, <CODE>sbin</CODE>, <CODE>etc</CODE> and <CODE>man</CODE>.
+<P>If this is a first time installation, that is you've never installed any
+ax25 utilities on your machine before you should also use the:
+<BLOCKQUOTE><CODE>
+<PRE>
+# make installconf
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>command to install some sample configuration files into the <CODE>/etc/ax25/</CODE>
+directory from which to work.
+<P>
+<P>If you get messages something like:
+<PRE>
+gcc -Wall -Wstrict-prototypes -O2 -I../lib -c call.c
+call.c: In function `statline':
+call.c:268: warning: implicit declaration of function `attron'
+call.c:268: `A_REVERSE' undeclared (first use this function)
+call.c:268: (Each undeclared identifier is reported only once
+call.c:268: for each function it appears in.)
+</PRE>
+<P>then you should double check that you have the <EM>ncurses</EM> package
+properly installed on your system. The configuration script attempts
+to locate your ncurses packages in the common locations, but
+some installations have ncurses badly installed and it is unable
+to locate them.
+<P>
+<HR>
+<A HREF="AX25-HOWTO-5.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="AX25-HOWTO-3.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="AX25-HOWTO.html#toc4"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

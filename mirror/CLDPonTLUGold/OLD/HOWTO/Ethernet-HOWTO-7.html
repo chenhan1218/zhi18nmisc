@@ -1,0 +1,453 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux Ethernet-Howto: Technical Information</TITLE>
+ <LINK HREF="Ethernet-HOWTO-8.html" REL=next>
+ <LINK HREF="Ethernet-HOWTO-6.html" REL=previous>
+ <LINK HREF="Ethernet-HOWTO.html#toc7" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Ethernet-HOWTO-8.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Ethernet-HOWTO-6.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Ethernet-HOWTO.html#toc7"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="tech-intro"></A> <A NAME="s7">7. Technical Information</A></H2>
+
+<P>
+<P>For those who want to understand a bit more about how the card
+works, or play with the present drivers, or even try to make
+up their own driver for a card that is presently unsupported, this
+information should be useful. If you do not fall into this category,
+then perhaps you will want to skip this section.
+<P>
+<H2><A NAME="data-xfer"></A> <A NAME="ss7.1">7.1 Programmed I/O vs. Shared Memory vs. DMA</A>
+</H2>
+
+<P>
+<P>If you can already send and receive back-to-back packets, you just
+can't put more bits over the wire. Every modern ethercard can receive
+back-to-back packets. The Linux DP8390 drivers (wd80x3, SMC-Ultra,
+3c503, ne2000, etc) come pretty close to
+sending back-to-back packets (depending on the current interrupt
+latency) and the 3c509 and AT1500 hardware have no problem at all
+automatically sending back-to-back packets.
+<P>
+<P>
+<H3>Programmed I/O (e.g. NE2000, 3c509)</H3>
+
+<P>
+<P>Pro: Doesn't use any constrained system resources,
+just a few I/O registers, and has no 16M limit.
+<P>Con: Usually the slowest transfer rate, the CPU is waiting
+the whole time, and interleaved packet access is usually
+difficult to impossible.
+<P>
+<H3>Shared memory (e.g. WD80x3, SMC-Ultra, 3c503)</H3>
+
+<P>
+<P>Pro: Simple, faster than programmed I/O, and allows random
+access to packets. Where possible,
+the linux drivers compute the checksum of
+incoming IP packets as they are copied off the card, resulting in
+a further reduction of CPU usage vs. an equivalent PIO card.
+<P>Con: Uses up memory space (a big one for DOS users, essentially
+a non-issue under Linux), and it still ties up the CPU.
+<P>
+<H3>Slave (normal) Direct Memory Access (e.g. none for Linux!)</H3>
+
+<P>
+<P>Pro: Frees up the CPU during the actual data transfer.
+<P>Con: Checking boundary conditions, allocating contiguous buffers,
+and programming the DMA registers makes it the slowest
+of all techniques.  It also uses up a scarce DMA
+channel, and requires aligned low memory buffers.
+<P>
+<H3><A NAME="master"></A> Bus Master Direct Memory Access (e.g. LANCE, DEC 21040) </H3>
+
+<P>
+<P>Pro: Frees up the CPU during the data transfer, can string
+together buffers, can require little or no CPU time lost on
+the ISA bus.  Most of the bus-mastering linux drivers now use
+a `copybreak' scheme where large packets are put directly into
+a kernel networking buffer by the card, and small packets are
+copied by the CPU which primes the cache for subsequent
+processing.
+<P>Con: (Only applicable to ISA bus cards)
+Requires low-memory buffers and a DMA channel for
+cards. Any bus-master will have problems with other bus-masters
+that are bus-hogs, such as some primitive SCSI adaptors. A few
+badly-designed motherboard chipsets have problems with
+bus-masters. And a reason for not using <EM>any</EM> type of
+DMA device is using a 486 processor designed for
+plug-in replacement of a 386: these processors must
+flush their cache with each DMA cycle. (This includes
+the Cx486DLC, Ti486DLC, Cx486SLC, Ti486SLC, etc.)
+<P>
+<P>
+<H2><A NAME="ss7.2">7.2 Performance Implications of Bus Width</A>
+</H2>
+
+<P>
+<P>The ISA bus can do 5.3MB/sec (42Mb/sec), which sounds like more than
+enough for 10Mbps ethernet. In the case of the 100Mbps cards, you
+clearly need a faster bus to take advantage of the network bandwidth.
+<P>
+<H3><A NAME="8-vs-16"></A> ISA Eight bit vs ISA 16 bit Cards</H3>
+
+<P>
+<P>You probably can't buy a new 8 bit ISA ethercard anymore,
+but you will find lots of them turning up at computer swap
+meets and the like for the next few years, at very low prices.
+This will make them popular for ``home-ethernet'' systems.
+The above holds true for 16 bit ISA cards now as well, since PCI
+cards are now very common.
+<P>Some 8 bit cards that will provide adequate performance for
+light to average use are the wd8003, the 3c503 and the ne1000.
+The 3c501 provides poor performance, and these poor 12 year
+old relics of the XT days should be avoided. (Send them to
+Alan, he collects them...)
+<P>The 8 bit data path doesn't hurt performance that much, as you
+can still expect to get about 500 to 800kB/s ftp download speed
+to an 8 bit wd8003 card (on a fast ISA bus) from a fast host.
+And if most of your net-traffic is going to remote sites, then
+the bottleneck in the path will be elsewhere, and the only speed
+difference you will notice is during net activity on your local
+subnet.
+<P>
+<H2><A NAME="ss7.3">7.3 32 Bit (VLB/EISA/PCI) Ethernet Cards</A>
+</H2>
+
+<P>
+<P>Note that a 10Mbs network typically doesn't justify  requiring
+a 32 bit interface.
+See 
+<A HREF="#data-xfer">Programmed I/O vs. ...</A> as to why
+having a 10Mbps ethercard on an 8MHz ISA bus is really not a
+bottleneck. Even though having the ethercard on a fast bus won't
+necessarily mean faster transfers, it will usually mean reduced
+CPU overhead, which is good for multi-user systems.
+Of course for 100Mbps networks, which are now commonplace,
+the 32 bit interface is a must to make use of the full bandwidth.
+<P>
+<H2><A NAME="skel"></A> <A NAME="ss7.4">7.4 Writing a Driver</A>
+</H2>
+
+<P>
+<P>The only thing that one needs to use an ethernet card with Linux
+is the appropriate driver. For this, it is essential that the
+manufacturer will release the technical programming information to
+the general public without you (or anyone) having to sign your life
+away. A good guide for the likelihood of getting documentation
+(or, if you aren't writing code, the likelihood that someone
+else will write that driver you really, really need) is the
+availability of the Crynwr (nee Clarkson) packet driver. Russ
+Nelson runs this operation, and has been very helpful in supporting
+the development of drivers for Linux. <EM>Net-surfers</EM> can try this
+URL to look up Russ' software.
+<P>
+<A HREF="http://www.crynwr.com">Russ Nelson's Packet Drivers</A><P>Given the documentation, you can write a driver for
+your card and use it for Linux (at least in theory).
+Keep in mind that some old hardware that was designed for XT type
+machines will not function very well in a multitasking
+environment such as Linux. Use of these will lead to major
+problems if your network sees a reasonable amount of traffic.
+<P>Most cards come with drivers for MS-DOS interfaces such as
+NDIS and ODI, but these are useless for Linux. Many people
+have suggested directly linking them in or automatic
+translation, but this is nearly impossible. The MS-DOS
+drivers expect to be in 16 bit mode and hook into `software
+interrupts', both incompatible with the Linux kernel. This
+incompatibility is actually a feature, as some Linux drivers
+are considerably better than their MS-DOS counterparts. The
+`8390' series drivers, for instance, use ping-pong transmit
+buffers, which are only now being introduced in the MS-DOS world.
+<P>(Ping-pong Tx buffers means using at least 2 max-size
+packet buffers for Tx packets. One is loaded while the card
+is transmitting the other. The second is then sent as soon
+as the first finished, and so on. In this way, most cards
+are able to continuously send back-to-back packets onto
+the wire.)
+<P>OK. So you have decided that you want to write a driver for the
+Foobar Ethernet card, as you have the programming information,
+and it hasn't been done yet. (...these are the two main
+requirements ;-) You should start with the skeleton
+network driver that is provided
+with the Linux kernel source tree. It can be found in the file
+<CODE>linux/drivers/net/skeleton.c</CODE> in all recent kernels.
+In 2.4.x (and newer) kernels it has been renamed
+to <CODE>isa-skeleton.c</CODE>
+Also have a look at the Kernel Hackers Guide, at the
+following URL:
+<A HREF="http://www.redhat.com:8080/HyperNews/get/khg.html">KHG</A><P>
+<P>
+<H2><A NAME="ss7.5">7.5 Driver interface to the kernel</A>
+</H2>
+
+<P>
+<P>Here are some notes on the functions that you would have to
+write if creating a new driver. Reading this in conjunction
+with the above skeleton driver may help clear things up.
+<P>
+<P>
+<H3>Probe</H3>
+
+<P>
+<P>Called at boot to check for existence of card. Best if it
+can check un-obtrsively by reading from memory, etc. Can
+also read from I/O ports. Initial writing to I/O ports in a probe
+is <EM>not good</EM> as it may kill another device.
+Some device initialization is usually done here (allocating
+I/O space, IRQs,filling in the dev-&gt;??? fields etc.)
+You need to know what io ports/mem the card can be
+configured to, how to enable shared memory (if used)
+and how to select/enable interrupt generation, etc.
+<P>
+<H3>Interrupt handler</H3>
+
+<P>
+<P>Called by the kernel when the card posts an interrupt.
+This has the job of determining why the card posted
+an interrupt, and acting accordingly. Usual interrupt
+conditions are data to be rec'd, transmit completed,
+error conditions being reported. You need to know
+any relevant interrupt status bits so that you can
+act accordingly.
+<P>
+<H3>Transmit function</H3>
+
+<P>
+<P>Linked to dev-&gt;hard_start_xmit() and is called by the
+kernel when there is some data that the kernel wants
+to put out over the device. This puts the data onto
+the card and triggers the transmit. You need to
+know how to bundle the data and how to get it onto the
+card (shared memory copy, PIO transfer, DMA?) and in
+the right place on the card. Then you need to know
+how to tell the card to send the data down the wire, and
+(possibly) post an interrupt when done.
+When the hardware can't accept additional packets it should set
+the dev-&gt;tbusy flag. When additional room is available, usually
+during a transmit-complete interrupt, dev-&gt;tbusy should be cleared
+and the higher levels informed with <CODE>mark_bh(INET_BH)</CODE>.
+<P>
+<H3>Receive function</H3>
+
+<P>
+<P>Called by the kernel interrupt handler when the card reports
+that there is data on the card. It pulls the data off
+the card, packages it into a sk_buff and lets the
+kernel know the data is there for it by doing a
+netif_rx(sk_buff). You need to know how to enable
+interrupt generation upon Rx of data, how to check any
+relevant Rx status bits, and how to get that data off the
+card (again sh mem, PIO, DMA, etc.)
+<P>
+<H3>Open function</H3>
+
+<P>
+<P>linked to dev-&gt;open and called by the networking layers
+when somebody does <CODE>ifconfig eth0 up</CODE> - this
+puts the device on line and enables it for Rx/Tx of
+data. Any special initialization incantations that were
+not done in the probe sequence (enabling IRQ generation, etc.)
+would go in here.
+<P>
+<H3>Close function (optional)</H3>
+
+<P>
+<P>This puts the card in a sane state when someone
+does <CODE>ifconfig eth0 down</CODE>.
+It should free the IRQs and DMA channels if the hardware permits,
+and turn off anything that will save power (like the transceiver).
+<P>
+<H3>Miscellaneous functions</H3>
+
+<P>
+<P>Things like a reset function, so that if things go south,
+the driver can try resetting the card as a last ditch effort.
+Usually done when a Tx times out or similar. Also a function
+to read the statistics registers of the card if so equipped.
+<P>
+<H2><A NAME="3com-tech"></A> <A NAME="ss7.6">7.6 Technical information from 3Com</A>
+</H2>
+
+<P>
+<P>If you are interested in working on drivers for 3Com cards,
+you can get technical documentation from 3Com. Cameron has
+been kind enough to tell us how to go about it below:
+<P>3Com's Ethernet Adapters are documented for driver writers
+in our `Technical References' (TRs). These manuals describe
+the programmer interfaces to the boards but they don't talk
+about the diagnostics, installation programs, etc that end
+users can see.
+<P>The Interface Products Group marketing department has the
+TRs to give away. To keep this program efficient, we
+centralized it in a thing called `CardFacts.' CardFacts is
+an automated phone system. You call it with a touch-tone
+phone and it faxes you stuff. To get a TR, call CardFacts
+at 408-727-7021. Ask it for Developer's Order Form,
+document number 9070. Have your fax number ready when you
+call. Fill out the order form and fax it to 408-764-5004.
+Manuals are shipped by Federal Express 2nd Day Service.
+<P>There are people here who think we are too free with the
+manuals, and they are looking for evidence that the system
+is too expensive, or takes too much time and effort.
+So far, 3Com customers have been really good about
+this, and there's no problem with the level of requests
+we've been getting. We need your continued cooperation and
+restraint to keep it that way.
+<P>
+<H2><A NAME="amd-notes"></A> <A NAME="ss7.7">7.7 Notes on AMD PCnet / LANCE Based cards</A>
+</H2>
+
+<P>
+<P>The AMD LANCE (Local Area Network Controller for Ethernet)
+was the original offering, and has since been replaced by
+the `PCnet-ISA' chip, otherwise known as the 79C960.
+Note that the name `LANCE'
+has stuck, and some people will refer to the new chip by the old
+name. Dave Roberts of the Network Products Division of AMD was kind
+enough to contribute the following information regarding this chip:
+<P>`Functionally, it is equivalent to a NE1500. The register set
+is identical to the old LANCE with the 1500/2100 architecture
+additions. Older 1500/2100 drivers will work on the PCnet-ISA.
+The NE1500 and NE2100 architecture is basically the same.
+Initially Novell called it the 2100, but then tried to distinguish
+between coax and 10BASE-T cards. Anything that was 10BASE-T only was
+to be numbered in the 1500 range. That's the only difference.
+<P>Many companies offer PCnet-ISA based products, including HP,
+Racal-Datacom, Allied Telesis, Boca Research, Kingston Technology, etc.
+The cards are basically the same except that some manufacturers
+have added `jumperless' features that allow the card to
+be configured in software. Most have not. AMD offers a standard
+design package for a card that uses the PCnet-ISA and many
+manufacturers use our design without change.
+What this means is that anybody who wants to write drivers for
+most PCnet-ISA based cards can just get the data-sheet from AMD. Call
+our literature distribution center at (800)222-9323 and ask for the
+Am79C960, PCnet-ISA data sheet. It's free.
+<P>A quick way to understand whether the card is a `stock' card
+is to just look at it. If it's stock, it should just have one large
+chip on it, a crystal, a small IEEE address PROM, possibly a socket
+for a boot ROM, and a connector (1, 2, or 3, depending on the media
+options offered). Note that if it's a coax card, it will have some
+transceiver stuff built onto it as well, but that should be near the
+connector and away from the PCnet-ISA.'
+<P>A note to would-be card hackers is that different LANCE
+implementations do `restart' in different ways. Some pick up
+where they left off in the ring, and others start right from
+the beginning of the ring, as if just initialised.
+<P>
+<H2><A NAME="promisc"></A> <A NAME="ss7.8">7.8 Multicast and Promiscuous Mode</A>
+</H2>
+
+<P>
+<P>Another one of the things Donald has worked on is
+implementing multicast and promiscuous mode hooks.
+All of the <EM>released</EM> (i.e. <B>not</B> ALPHA) ISA drivers
+now support promiscuous mode.
+<P>Donald writes:
+`I'll start by discussing promiscuous mode, which is
+conceptually easy to implement. For most hardware you
+only have to set a register bit, and from then on you get
+every packet on the wire. Well, it's almost that easy;
+for some hardware you have to shut the board (potentially
+dropping a few packet), reconfigure it, and then re-enable
+the ethercard.
+OK, so that's easy, so I'll move on something that's not
+quite so obvious: Multicast. It can be done two ways:
+<P>
+<OL>
+<LI>    Use promiscuous mode, and a packet filter like the
+Berkeley packet filter (BPF). The BPF is a pattern matching
+stack language, where you write a program that picks out the
+addresses you are interested in. Its advantage is that it's
+very general and programmable. Its disadvantage is that there
+is no general way for the kernel to avoid turning on promiscuous
+mode and running every packet on the wire through every registered
+packet filter. See 
+<A HREF="#bpf">The Berkeley Packet Filter</A>
+for more info.
+        </LI>
+<LI>    Using the built-in multicast filter that most etherchips have.
+</LI>
+</OL>
+<P>I guess I should list what a few ethercards/chips provide:
+<P>
+<PRE>
+        
+        Chip/card  Promiscuous  Multicast filter
+        ----------------------------------------
+        Seeq8001/3c501  Yes     Binary filter (1)
+        3Com/3c509      Yes     Binary filter (1)
+        8390            Yes     Autodin II six bit hash (2) (3)
+        LANCE           Yes     Autodin II six bit hash (2) (3)
+        i82586          Yes     Hidden Autodin II six bit hash (2) (4)
+        
+</PRE>
+<P>
+<OL>
+<LI>    These cards claim to have a filter, but it's a simple
+yes/no `accept all multicast packets', or `accept no
+multicast packets'.
+</LI>
+<LI>    AUTODIN II is the standard ethernet CRC (checksum)
+polynomial. In this scheme multicast addresses are hashed
+and looked up in a hash table. If the corresponding bit
+is enabled, this packet is accepted. Ethernet packets are
+laid out so that the hardware to do this is trivial -- you
+just latch six (usually) bits from the CRC circuit (needed
+anyway for error checking) after the first six octets (the
+destination address), and use them as an index into the
+hash table (six bits -- a 64-bit table).
+        </LI>
+<LI>    These chips use the six bit hash, and must have the
+table computed and loaded by the host. This means the
+kernel must include the CRC code.
+        </LI>
+<LI>    The 82586 uses the six bit hash internally, but it
+computes the hash table itself from a list of multicast
+addresses to accept.
+</LI>
+</OL>
+<P>Note that none of these chips do perfect filtering, and we
+still need a middle-level module to do the final
+filtering. Also note that in every case we must keep a
+complete list of accepted multicast addresses to recompute
+the hash table when it changes.
+<P>
+<H2><A NAME="bpf"></A> <A NAME="ss7.9">7.9 The Berkeley Packet Filter (BPF)</A>
+</H2>
+
+<P>
+<P>The general idea of the developers is
+that the BPF functionality should not be provided
+by the kernel, but should be in a (hopefully little-used)
+compatibility library.
+<P>For those not in the know: BPF (the Berkeley Packet Filter)
+is an mechanism for specifying to the kernel networking layers
+what packets you are interested in. It's implemented as a
+specialized stack language interpreter built into a low level
+of the networking code. An application passes a program
+written in this language to the kernel, and the kernel runs the
+program on each incoming packet. If the kernel has multiple
+BPF applications, each program is run on each packet.
+<P>The problem is that it's difficult to deduce what kind of
+packets the application is really interested in from the packet
+filter program, so the general solution is to always run the
+filter. Imagine a program that registers a BPF program to
+pick up a low data-rate stream sent to a multicast address.
+Most ethernet cards have a hardware multicast address filter
+implemented as a 64 entry hash table that ignores most unwanted
+multicast packets, so the capability exists to make this a very
+inexpensive operation. But with the BPF the kernel must switch
+the interface to promiscuous mode, receive _all_ packets, and
+run them through this filter. This is work, BTW, that's very
+difficult to account back to the process requesting the packets.
+<P>
+<HR>
+<A HREF="Ethernet-HOWTO-8.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Ethernet-HOWTO-6.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Ethernet-HOWTO.html#toc7"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

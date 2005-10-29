@@ -1,0 +1,471 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Draft//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" content="text/html; charset=big5">
+<TITLE>Linux High Availability HOWTO: 連結共享儲存設備</TITLE>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 5);</SCRIPT>
+<A HREF="High-Availability-HOWTO-6.html"><IMG SRC="prev.gif" ALT="Previous"></A>
+<A HREF="High-Availability-HOWTO-8.html"><IMG SRC="next.gif" ALT="Next"></A>
+<A HREF="High-Availability-HOWTO.html#toc7"><IMG SRC="toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s7">7. 連結共享儲存設備</A></H2>
+
+<P>
+<P>
+<H2><A NAME="disk-scsi"></A> <A NAME="ss7.1">7.1 磁碟技術 -- SCSI</A>
+</H2>
+
+<P>
+<P>
+<P>最初， Linux-HA 將支援 multi-tailed SCSI 連結。
+一個以上的外部儲存盒將被連接到兩個以上的節點。 
+<P>這需要一塊目前並不存在於大量 PC 市場的新硬體：ㄚ型電纜，
+於節點中連結 SCSI 配接卡（看圖示） 並允許外部的匯流排終端電阻。 
+如果於配接卡上使用內部的 SCSI 終端電阻，配接卡或電源故障也將使這張配接卡上 active 的終端電阻無效。
+剩餘的 SCSI 裝置充其量將有令人不可預期的反應。
+ㄚ型電纜不是連結到匯流排的終端阻抗包就是連結到另一個連到下個節點的 SCSI F/W/D 電纜。
+匯流排的端點需要連結終端電阻。
+以下就是以 2 個叢集節點和 2 個外部磁碟或磁碟盒為主的一個簡單例子。
+<P>
+<CENTER>
+<EPS FILE="y-cable.eps">
+<IMG SRC="y-cable.gif">
+<BR>
+<CENTER>ㄚ型電纜不是連結終端電阻包就是連結電纜到下個節點或 SCSI 裝置。
+</CENTER>
+</CENTER>
+<P>由於節點必須不可在 SCSI 鍊的端點，
+一個可以連結 2 條電纜或一條電纜和一個終端電阻包的對稱式ㄚ型電纜是必須的。
+<P>
+<P>
+<A NAME="chg-ultra-scsi"></A> 
+只有差動式 SCSI 會被支援，
+原因是由於電氣串擾造成單一端點的長電纜缺乏穩定性。
+理想上，你會想要使用 Ultra 或 fast/wide/differential SCSI 匯流排。
+由於電纜長度的限制，對於多重主機連結而言，單一端點的 Ultra SCSI 
+（和潛在所有可能即將來臨的甚至具備較高傳輸率的平行 SCSI 技術）
+似乎是不可用的。
+<P>由於 ANSI SCSI 標準中的限制，
+除非你使用光纖或其他的匯流排延伸器，
+否則 Fast 和 Ultra wide/differential SCSI 的最大匯流排長度是 25 公尺。 
+這些都必須被列入評估。
+<P>如果你使用 SCSI ，請確定你在一個節點中使用多張配接卡，多個匯流排和多個外部儲存裝置（可能有磁碟鏡射）。
+否則，配接卡或電纜故障將造成節點的失效接管。 
+<P>在多重主機連結中，請確定配接卡所有的 SCSI ID 都不相同。 
+<P>對於 BusLogic （或 Adaptec ）而言， SCSI ID 可由 AutoSCSI 設定（或 SCSI-Select ），
+在初始主機配接卡的 BIOS 時可以按下 Ctrl-B （或 Ctrl-A ）來使用組態設定公用程式。
+主機配接卡 SCSI ID 連同其他可設定的參數一起儲存於非揮發性的記憶體。
+（ Leonard Zubkoff ）
+<A NAME="chg-diff-scsi-ids"></A> 對 Symbios Logic 8751D 卡而言也是一樣的 -- SCSI ID
+可以用 ROM 組態設定工具來改變（在啟動時按下
+Ctrl-C ） 並儲存於 NVRAM 。
+<P>在一個 W/D SCSI 匯流排上，只有 16 個可用的 SCSI 地址。
+這限制了可被連結的裝置數量。
+外部的 RAID 盒可能是最佳抉擇。
+確認這些盒子都有冗餘設計，即多個電源供應器等。
+一些 RAID 盒是 "host-based" ，也就是說他們需要在所連結的主機上有裝置驅動程式。
+<P>當談到配接卡時，只有標準 Linux 核心所支援的配接卡的子集合會被 Linux-HA 支援，
+理由是對於某些 HA 相關的情況需要標準化的錯誤訊息（例如 SCSI 配接卡永久的失效，磁碟斷斷續續的錯誤等）。
+其他裝置驅動程式的作者也受邀加入及重寫他們的錯誤報告碼。
+這應由 Linux SCSI 維護者來協調（目前是 Leonard Zubkoff ，如他所建議；他寫給我，
+<EM>事實上，我們真正需要修改的地方是在中間和上面的層級，在驅動程式本身並不多。
+如果驅動程式從最後呼叫的錯誤回復功能傳回一致的結果
+，那麼中間/上面層級就可以確認發出適當而一致的 HA-aware 訊息。
+</EM>)。
+<P>請記住磁碟本身可能也是個 SPOF 。
+你應該不是使用 RAID 盒或就是用 MD 驅動程式來鏡射資料。
+以下顯示的設定肯定比前一個來得好。
+它橫跨於多個磁碟配接卡，磁碟和連結的電纜來鏡射資料。
+由於效能和可用性的理由，執行軟體 RAID 於單一 SCSI 通道意義並不大。
+<P>
+<P>
+<P>
+<CENTER>
+<EPS FILE="better.eps">
+<IMG SRC="better.gif">
+<BR>
+<CENTER>如果可能的話，不是使用 RAID 盒就是橫跨多個磁碟，配接卡和電纜來做資料鏡射。
+</CENTER>
+</CENTER>
+<P>也有一些 RAID 盒有多個 SCSI 連接器，
+例如來自
+<A HREF="http://www.kingston.com/prod/storage/ds500wp.htm">Kingston Technology</A> 的這個。
+如此一來，ㄚ型電纜就不需要了。（感謝 
+<A HREF="mailto:chel@vangennip.nl">Chel van Gennip</A> 的這項提示）
+<P>
+<P>
+<P>
+<H3><A NAME="chg-termpwr"></A> 分享相同的 TERMPWR 線</H3>
+
+<P>
+<P>將外部 SCSI 磁碟（或磁碟盒）分接（ twintailing ）到多個節點的壞處之一是，
+這些節點和磁碟需要連結到相同的電力來源，或更多類似的情形 ! 
+<P>原因是 SCSI 連結不是自由電位的，而且這些裝置共用相同的接地線。
+對於差動式的 SCSI ，
+就資料線而言這並不會造成損害（到達某個限制），
+但是終端電源線（ TERMPWR ）始終是非對稱的並且由保險絲保護著。
+<P>現在如果連結到匯流排上的裝置/機器之一從電源插座抽出更多的電力，
+將會在個別的接地線（由於電線電阻不等於零的事實）上產生可能達到好幾伏特的電位差。
+這非常可能燒壞 SCSI 匯流排上的一個或更多的終端電源供應器的 TERMPWR 保險絲。
+這已經由過去的實際經驗證實 ... 
+<P>底線是，連結所有包括節點和 SCSI 裝置到相同的電源插座，盡可能地靠近，以降低 GND 電位移。
+但是：這個電源插座將是個必須由 UPS 保護的 SPOF !
+<P>
+<P>
+<H2><A NAME="ssa"></A> <A NAME="ss7.2">7.2 磁碟技術 -- 串列式儲存架構 (SSA)
+</A>
+</H2>
+
+<P>
+<P>串列式儲存架構（ SSA ）是由 X3 授權標準委員會的 X3T10 技術委員會中的 X3T10.1 工作群組
+所正在發展的高效能串列式電腦與週邊介面。
+最初由 IBM 發展， 現今 SSA 是由
+<A HREF="http://www.ssaia.org">SSA 工業協會</A> 推廣的開放技術。
+<P>SSA 基本上是一個執行於 SCSI-2 軟體協定的串列式技術。
+意思是 SSA 配接卡的裝置驅動程式應該可以很容易地整合到現有的 Linux SCSI 子系統。
+底線是，資料是透過以 200 MBit/s 全雙工傳輸的雙絞電纜來傳送，
+而這比 68 線的平行 Wide SCSI 技術更易於處理。
+更進一步的資訊請參閱
+<A HREF="http://www.ssaia.org/intro/ssafact.html">SSA Fact Sheet</A>。
+<P> SSA 相較於 SCSI 的好消息是：
+<P>
+<UL>
+<LI>它更易於設定和接線 -- 不需要終端電阻 !
+</LI>
+<LI>它內建了 HA 特徵。SSA 迴圈架構（相對於 SCSI 匯流排）
+沒有 SPOF （看以下圖示）。 
+如果部份的迴圈失效，
+裝置驅動程式將自動並透明地重新自我設定以確保所有的 SSA 裝置可被存取而沒有任何明顯的中斷。
+</LI>
+<LI>它沒有使用 SCSI ID 定址，意指設定配接卡毫無困難。
+</LI>
+<LI>SSA 迴圈可以傳送 4 倍於 20 MByte/s -- 兩個獨立的讀取和兩個獨立的寫入橫跨每個迴圈方向。
+目前實際的配接卡實作允許每張配接卡有 35 MByte/s 。
+</LI>
+<LI>相對於 SCSI ， SSA 沒有使用匯流排裁決。
+而是使用類似網路的設計。
+資料以 128 位元組的封包被送出和接收，而且迴圈上的所有裝置可以獨立的請求 time slots 。
+反過來 SCSI 需要匯流排裁決，如果 initiator 沒有及時釋放匯流排可能導致效能死結。
+</LI>
+<LI> SSA 允許每兩個裝置間相距 25 公尺。
+再者，有允許資料穿過 50 微米的光纖電纜傳送達 2.4 公里的距離的光纖延伸器。
+如果設定適當的話，會使得它甚至合適於站台災難回復。
+</LI>
+<LI>大部分的 SSA 配接卡支援兩個獨立的迴圈，使得連結鏡射的磁碟到不同迴圈以提高可用性成為可能。
+</LI>
+<LI>SSA 迴圈是對稱的，雙絞線，自由電位的。沒有 TERMPWR 電位移的問題。 
+</LI>
+</UL>
+<P>
+<CENTER>
+<EPS FILE="ssa.eps">
+<IMG SRC="ssa.gif">
+<BR>
+<CENTER>SSA 迴圈已經內建高可用性。
+SSA 配接卡可以經由兩個路徑到達每個裝置。
+萬一一個路徑失效，它會在運作中重新自我設定。
+</CENTER>
+</CENTER>
+<P><BR>
+<P>圖中所顯示的簡易範例可藉著在每個節點上增加第二個 SSA 配接卡來增強，
+使得這個節點可以執行節點內部的配接卡失效接管。
+<P>
+<P>SSA 也有些壞處：
+<P>
+<UL>
+<LI>實際上， SSA 磁碟只能從 IBM 購買。
+雖然有來自 SSA 工業協會會員的其他磁碟製造商的贊助，可是還沒有一個趕上潮流實際銷售磁碟。
+這些磁碟價格都比得上可以從不同的 Unix 硬體廠商購買的 SCSI 磁碟價格
+-- 而且這些價格遠高於來自大量的 PC 市場上的磁碟。
+然而這些磁碟比較強固，而且他們在出廠前經歷較徹底的測試。
+在抱怨磁碟價格前請記住那。
+顧客不會想要只因僅僅比較便宜 1000 美元的磁碟而拿他們的企業冒險。
+</LI>
+</UL>
+<P>
+<P>
+<H3>Linux SSA 裝置驅動程式</H3>
+
+<P>
+<P>現今沒有 Linux SSA 的裝置驅動程式，
+然而 IBM 的系統儲存體部門（ SSD ）將支援我們取得一個為 IBM PCI SSA 配接卡所撰寫的驅動程式
+-- 並且可能官方地為它背書，至少那是一般的程序。
+在 Linux 社群中至少有兩位著名的 SCSI 裝置驅動程式作者十分熱衷於撰寫驅動程式。
+我將及時取得借貸的硬體和裝置驅動程式發展工具包。
+雖然這個借貸合約將只有有效 90 天，之後我們將可能需要歸還借貸的硬體。
+<B>歡迎踴躍捐贈 ! </B> 
+<P>
+<P>
+<A NAME="pathlight"></A> 
+我也聯絡了
+<A HREF="http://www.pathlight.com">Pathlight Technology Inc.</A>。 
+Pathlight 提供一個較簡易且可能較 IBM 的配接卡便宜的單一迴圈
+<A HREF="http://www.pathlight.com/pci-ssa/strmline/stream.htm">PCI SSA 配接卡</A> 。
+Pathlight 也將支援我們，
+但是他們目前在釋出驅動程式的原始碼方面遇到問題，因為它包含一些被視為機密的部份。
+<P>SSA 文件可在 SSA 工業協會的<A HREF="http://www.ssaia.org/docs/">文件與標準</A>網頁或從 
+<A HREF="ftp://ftp.symbios.com/pub/standards/io/x3t10.1/drafts">Symbios Logic, Inc.</A> 的匿名 FTP 伺服器免費取得。
+<P>在適度地完成 SSA 裝置驅動程式前，必須先達成幾個先決條件。
+SSA 和 外部的 RAID 盒比較起來主要的不同在於所有的磁碟都被作業系統視為個別的。
+由於 Linux 核心中主要/次要裝置編號設計，這目前限制我們使用到 16 SCSI/SSA 磁碟。
+（顯示出目前的發展傾向想要使用 64 位元的 dev_t 值，
+這將允許我們使用至少 16 位元作為次要的裝置號碼。）
+<P><B>注意：</B>
+IBM 也有一張以硬體達成 RAID levels 0 （ striping ）， 1 （ mirroring ）和 5 （ striping with parity ）
+的 PCI SSA RAID 配接卡。
+然而目前配接卡的韌體並沒有支援於一個迴圈中超過一張配接卡，
+這使得它不可用於多重主機連結。
+這可能很快就會有所改變。
+以 RAID 5 組織起來的一群磁碟以單一實體呈現於作業系統中，
+並且在 RAID 5 設定中配接卡可以聚集多達 14 加 1 個磁碟。
+由於現今最大的 SSA 磁碟是 9.1 GB ，總和達到 14 乘以 9.1 GB = 127.4 GB 作為一個單一實體。
+請記住由於每次寫入運作都需要計算同位位元加總，
+鏡射的設定 (RAID level 1 ) 在寫入方面通常較 RAID level 5 快。
+<P>根據 SCSI 開發的人們，目前 Linux SCSI 中間層級的代碼太慢而無法有效率地處理 SSA 資料速度。
+希望有可用的 SSA 裝置驅動程式後能儘快修正這個已知的問題。
+<P><B>設計要求：</B> 我在此請求 Linux SCSI 開發人員 / 維護者儘快修正這，
+以及重設計磁碟和裝置編號設計以支援超過 16 個 SCSI 磁碟。
+<P>SSA 驅動程式也將需要支援 SSA Target Mode （參閱
+<A HREF="High-Availability-HOWTO-8.html#non-ip-heartbeat">Non-IP Heartbeat</A> 一節）。
+<P>
+<H3>The Vicom SLIC</H3>
+
+<P>
+<P>另一個連結 SSA 磁碟到 Linux 機器的方法是使用由
+<A HREF="http://www.ssaia.org/members/vicom.html">Vicom Systems, Inc.</A>所製造所謂的
+<A HREF="http://www.ssaia.org/news/vicom1.html">串列式迴圈介面卡（ Serial Loop Interface Card ）</A> （ SLIC ）。 
+IBM 也以特徵代碼#7190 提供這個裝置。
+SLIC 基本上轉換 F/W/D SCSI 匯流排到一個可達到 32 個磁碟的單一 SSA 迴圈。
+SLIC 以 32 個 SCSI LUN （邏輯單元）在單一 SCSI ID 上呈現磁碟於作業系統
+（記住在 Linux 中我們仍然有 16 個 SCSI 磁碟的限制）。
+好消息是只要 SLIC 是 SCSI 匯流排上唯一的 SCSI target ，就沒有匯流排裁決的 overhead 。
+這導致 18 MByte/s 的最大持續 throughput 。
+現今的 SLIC 只支援不適用於 twin-tailed 設定的每個迴圈一個 SSA initiator ，
+但對 multiple-initiator 的需求已被認可並最終將實現。
+也將有近乎兩倍 throughput 的 Ultra-SCSI 版本。
+<P>
+<H3>Pathlight Technology Inc.</H3>
+
+<P>
+<P>之前所提及的 Pathlight 也將釋出一些 SCSI-to-SSA 轉換工具。
+在 NAB 97 ，他們宣佈了一些有趣的新產品：一個已完成的並且生產中的 SSA 16 埠集線器，
+使 SSA 和 Ultra Wide SCSI 和 Ethernet 互相連結於一個盒子，
+並且讓 SCSI 和 SSA initiators 和 targets 之間可以彼此傳輸資料的 SSA 網路代理程式。
+他們也宣佈了一個在雙絞銅線上延長 SSA 電纜長度到 100 公尺（ 300 英呎）的一個新的稱為 "Magic" 的小型黑盒子。
+<P>
+<P>
+<P>
+<H2><A NAME="ss7.3">7.3 其他磁碟技術</A>
+</H2>
+
+<P>
+<P>當其他磁碟技術成為可用時可能會被支援，
+例如 Fibre Channel Arbitrated Loop (FC-AL), IEEE 1394 ("Firewire") 等。
+<P>
+<P>
+<P>
+<P>
+<H2><A NAME="raw-devices"></A> <A NAME="ss7.4">7.4 原始磁碟裝置</A>
+</H2>
+
+<P>
+<P>目前，所有的 <CODE>/dev/sd*</CODE> 和 <CODE>/dev/hd*</CODE> 裝置都是有緩衝的，
+即寫入不是立即交付 （雖然 Linux 核心碼不這麼建議；實際上是有 O_SYNC 但沒有實作）。
+取而代之的，讀取和寫入都經由緩衝快取送達。
+對檔案系統效能而言這可能很好，但對儲存體的強固性毫無用處。
+有對於寫入磁碟有全部的控制的原始裝置，
+許多資料庫產品（例如 Adabas D 和 Yard ）可以做得更好。
+我被告知由於原始裝置未就緒，移植 Oracle 到 Linux 上的動作已經停止。
+加上，用現在緩衝的裝置，同步存取一點都不可能。
+<P>我很感謝任何其他可以配合原始裝置的資料庫的提示。
+<P>根據 SCSI 開發的人們，在檢視 SCSI 中間層級代碼期間原始裝置將最終被引入。
+<P>
+<P>
+<P>
+<H2><A NAME="chg-accessing-disks"></A> <A NAME="ss7.5">7.5 安全地存取磁碟</A>
+</H2>
+
+<P>
+<P>我們必須確定磁碟僅被 "active" 節點存取。
+由於目前沒有鎖定機制，無法同時掛載檔案系統於多個節點。
+（如果你需要同步存取檔案系統，我建議使用如 NFS 的網路檔案系統來替代。
+儘管 NFS V2 效能不佳。）
+<P>
+<P>AIX 有個機制稱為 "varying on/off a volume
+group". 由於在 Linux 中我們還沒有 Logical Volume Manager
+（ 雖然有這方面的計畫，參考 
+<A HREF="http://dynamic.isdn.uiuc.edu/~roth/vps/">Linux Virtual Partition System Project</A>，請參閱
+<A HREF="http://www4.ncsu.edu/eos/users/c/cddukes/pub/vps/">這裡</A>)，所以目前沒有這樣的機制。  
+不過如果我們於接管時載入 / 卸載適當的驅動程式模組，我們可以模擬所想要的行為。
+這有兩種情況：
+<P>
+<UL>
+<LI>載入 / 卸載 SCSI 磁碟模組 <CODE>sd.o</CODE> -- 這只有當內部磁碟不是 SCSI 的而是 EIDE 才可能。
+</LI>
+<LI>載入 / 卸載個別的 SCSI 配接卡裝置驅動程式模組 --
+這只有當潛在的內部 SCSI 裝置被連結到不同配接卡型態才可能，例如 NCR vs. DPT 。
+</LI>
+<LI>透過指令，經由<CODE>/proc/scsi/scsi</CODE> 介面來啟動/停止 SCSI 磁碟。
+</LI>
+</UL>
+<P>模組的載入 / 卸載不可由 <CODE>kerneld</CODE> 完成，因為
+Linux-HA 必須控制磁碟的存取。 我們將使用明確的
+<CODE>insmod</CODE>/<CODE>rmmod</CODE> 呼叫取代。
+<P>相同的邏輯也將同樣地應用到 SSA 。
+<P>叢集管理監控程式（或一個子行程）可能執行嘗試在短暫時間間隔內讀取/更改/寫入磁碟上的特定資料區塊的 
+"磁碟看門狗" 以確保他們仍然活著。
+而這也將犧牲些微的效能以檢查配接卡，電纜和匯流排終端（以及一個 SSA SLIC，如果有的話）。
+不過這只有當有原始磁碟裝置時才可能，否則我們將總是讀取緩衝的快取而不是磁碟。
+<P>SCSI 磁碟一般由 initiator 使用 "SCSI Reserve" 指令來保留。
+在一個節點失效後，Reserve Flag 仍將被設定於磁碟上，
+因此接管的節點將必須強迫 "break reservation" 。
+這個特徵尚未實作於 SCSI 程式碼中。
+<P>第三種經由
+<CODE>/proc/scsi/scsi</CODE>
+介面啟動/停止磁碟的方法可能導致當整合的節點首先啟動磁碟而後必須立即停止它的情形。
+加上當處理大量的磁碟時，這可能變得非常困難和容易出錯。
+不過它允許外部的和內部的 SCSI 磁碟連結到相同的配接卡。
+<P>
+<P>
+<P>
+<H2><A NAME="ss7.6">7.6 冗餘磁碟設定</A>
+</H2>
+
+<P>
+<P>只要仍然支援只到 16 個 SCSI 磁碟，許多使用者將尋求外部 RAID 盒。
+另一方面，商業的 AIX 市場上的標準解決方案是在 SSA 磁碟上作軟體鏡射。
+標準核心中的
+<CODE>md</CODE> （多重裝置）驅動程式允許在分割區基礎上作 mirroring ，striping 和 concatenation 。
+RAID 5 目前在發展中。
+<P>如果對原始磁碟裝置的需求（參閱 
+<A HREF="#raw-devices">原始磁碟裝置</A>一節）仍然存在， <CODE>md</CODE> 
+也必須支援他們。 
+<P>
+<P>
+<P>
+<H2><A NAME="filesystems"></A> <A NAME="ss7.7">7.7 檔案系統</A>
+</H2>
+
+<P>
+<P>
+<H3>日誌結構檔案系統</H3>
+
+<P>
+<P>目前近乎標準的 Extended-2 檔案系統 (ext2) 在單一機器上十分穩定和強健。
+然而萬一一個節點故障，檔案系統沒有被乾淨地卸載，在接管的節點上會造成耗時的檔案系統檢查。
+加上並不保證自動的檔案系統檢查會（<CODE>fsck -a -A</CODE>）偵測並修復所有遭遇的錯誤。
+手動的介入可能是必須的。
+<P>在顧客預期一個接管的節點於幾秒鐘或幾分鐘內啟動並執行而不需使用者介入的 HA 環境中，這是完全且絕對不可用的。
+<P>因此，我們需要以交易導向方式運作的檔案系統：所謂的日誌結構檔案系統。
+目前， 4.5 潛在的解決方案經鑑定為： 
+<A NAME="chg-lfs"></A> <P>
+<UL>
+<LI>
+<A HREF="http://hp.cso.uiuc.edu/~c-cook/prof/lfs/">Linux Log-structured Filesystem Project</A>
+被建立來基於 4.4BSD LFS 重頭撰寫一個日誌結構的檔案系統。
+有些人說 BSD LFS 效能低落。
+目前，發展似乎停止了。
+</LI>
+<LI>由 Martin v. Loewis 所撰寫與維護的 Windows NT 檔案系統（ NTFS ）（參閱
+<A HREF="http://www.informatik.hu-berlin.de/~loewis/ntfs/">http://www.informatik.hu-berlin.de/~loewis/ntfs/</A>）。
+就 metadata 而言 NTFS 是交易導向的，並且應該有所需的性質。
+不過目前 Linux NTFS 驅動程式是唯讀的。
+</LI>
+<LI>Yggdrasil 的 Adam Richter 正致力於一個尚未完全的壓縮的日誌結構檔案系統在
+Yggdrasil 於 1994 年秋和1995年秋釋出的 熱插拔 Linux 的 /usr/src/linux/fs/logfs 。
+你可以在
+<A HREF="ftp://ftp.yggdrasil.com/private/adam/linux-2.0.12.ygg.tar.gz">ftp://ftp.yggdrasil.com/private/adam/linux-2.0.12.ygg.tar.gz</A>
+找到這個檔案系統的一個模組化但仍未有作用的版本。
+有個匹配的 mkfs 程式在：
+<A HREF="ftp://ftp.yggdrasil.com/private/adam/mklogfs.c">ftp://ftp.yggdrasil.com/private/adam/mklogfs.c</A>。
+</LI>
+<LI>
+<A HREF="mailto:bofh@snoopy.virtual.net.au">Russell Coker</A>的
+<A HREF="http://www.virtual.net.au/~rjc/enh/">The Enhanced File system project</A>。
+它仍在設計階段。 
+</LI>
+<LI>要旨， ext3fs 應該也是日誌的（雖然不是日誌結構的）。
+再者， Stephen Tweedie 致力於 ext2 的日誌。
+也許，將會在 VFS 層做改變以便所有存取 VFS 層的檔案系統將從日誌獲益。
+</LI>
+</UL>
+<P>交易導向檔案系統上的工作可能需要關於 Linux-HA工作的主要部份。
+開發人員受邀加入這些計畫之一以儘速完成它。
+<P>同時，我們必須接受 ext2 檔案系統執行於緩衝的區塊裝置上。
+記住事實上並不存在 O_SYNC 旗標! 
+我們甚至無法真正地以同步的模式掛載檔案系統。 
+<P>
+<P>當接管檔案系統時，我們需要確認位於所有連結的節點上的 <CODE>/etc/fstab</CODE>
+都處於同步。 
+如果所有節點上的內部 SCSI 磁碟數量都一樣（或如果你只有內部的 EIDE 磁碟），
+只需要複製 <CODE>/etc/fstab</CODE> 的相關部份到各處。
+否則我們將必須視情況來調整關於外部磁碟的項目。
+替代的方案為，
+設定介面可能包含一個用於設定/相配磁碟分割區和檔案系統的公用程式，
+而且磁碟接管事件命令稿可能明確地依照組態設定資料庫來掛載檔案系統。 
+<P>由於分割表（ partition table ）將從磁碟讀取，我們不需要對各個節點作任何同步。
+即使於 active 節點上有所改變也一樣。
+只有當加入磁碟分割區/檔案系統時， <CODE>/etc/fstab</CODE> 才需要相對應地被更新。
+<P>當執行 "乾淨的" （即手動控制）失效接管時，我們
+應該執行 <CODE>lsof</CODE> 以找出並可能地關閉所有位於外部磁碟的檔案， 
+而且也應該停止所有位於那裡的應用程式。
+這未必總是可行，
+例如如果應用程式已經當掉而且處於 zombie 狀態。
+在這個案例中，
+磁碟可能未被離開叢集的節點乾淨的釋放。
+因為這個原因，極建議不要在外部的儲存體上執行任何應用程式。
+只有應用程式的使用者資料應該放置在那裡。
+<P>你可能考慮鏡射內部磁碟（而且也可能是 root 分割區）
+以確保當一個內部磁碟失效時機器不會失效。
+這並非不重要的，而是希望將於一份 mini-HOTO 中說明。
+它最近在 linux-raid 通信論壇上被討論著。
+<P>
+<H3>NFS 檔案系統</H3>
+
+<P>
+<P>有時候透過 NFS cross-mount 檔案系統是有用的，
+例如如果掛載於一個叢集節點上的資料也必須被另一個叢集節點存取。
+商業上的 HA 軟體通常使用標準的 NFS 掛載，但是這麼做有個壞處。
+如果在本地端有掛載磁碟的節點失效，
+接管的節點將必須在本地端掛載磁碟之前卸載 NFS 掛載（並接管 IP 地址，從而接管之前的 NFS 伺服器的功能）。
+由於之前的 NFS 伺服器已死， <CODE>umount</CODE> 失敗，而
+<CODE>umount</CODE> 行程必須等待 RPC 逾時，而造成長久的接管時間。
+<P>最好使用 4.4BSD 自動掛載
+<CODE>amd</CODE> 來替代。 <CODE>amd</CODE> 有兩個良好的特徵使它非常適合這個情況：
+<P>
+<UL>
+<LI>當一個 NFS 伺服器失效時，它能夠乾淨地卸載檔案系統而不會造成 RPC 逾時；
+</LI>
+<LI>它可以根據優先權列表從多個不同的來源掛載檔案系統
+（首先試著透過 NFS 檔案掛載，否則嘗試在本地端掛載）。
+</LI>
+</UL>
+<P>
+<H3><A NAME="chg-coda"></A> 其他檔案系統</H3>
+
+<P>
+<P>我被提示往 
+<A HREF="http://www.coda.cs.cmu.edu">Coda 檔案系統計畫</A>。 它允諾一個容錯的網路檔案系統，
+並且它看起來似乎可助於在 HA NFS 伺服器群中置換 NFS 。
+<P>
+<P>
+<P>
+<P>
+<H2><A NAME="ss7.8">7.8 其他內部儲存裝置</A>
+</H2>
+
+<P>
+<P>今天 SCSI 內部所需的最佳裝置是高容量的磁帶裝置如 DAT 或 Exabyte 。
+如果有可用的主從備份解決方案，可能就不需要本地端的磁帶裝置。
+內部的光碟機可以是 ATAPI 的，連結到一個主機板上的 EIDE 通道。
+內部的磁碟也可以是 EIDE 的，而且現在已有大於 6 GB 容量的 EIDE 磁碟。
+兩個這樣的磁碟再以 <CODE>md</CODE> 做鏡射將提供高容量與冗餘。
+因為可用性與效率的理由，磁碟應連結到主機板上不同的 EIDE 通道。
+<P>
+<P>
+<HR>
+<A HREF="High-Availability-HOWTO-6.html"><IMG SRC="prev.gif" ALT="Previous"></A>
+<A HREF="High-Availability-HOWTO-8.html"><IMG SRC="next.gif" ALT="Next"></A>
+<A HREF="High-Availability-HOWTO.html#toc7"><IMG SRC="toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

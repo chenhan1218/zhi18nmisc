@@ -1,0 +1,523 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="LinuxDoc-Tools 0.9.16">
+ <TITLE>Linux IPv6 HOWTO: Configuring IPv6-in-IPv4 tunnels(设定遂道)</TITLE>
+ <LINK HREF="Linux-IPv6-HOWTO-10.html" REL=next>
+ <LINK HREF="Linux-IPv6-HOWTO-8.html" REL=previous>
+ <LINK HREF="Linux-IPv6-HOWTO.html#toc9" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Linux-IPv6-HOWTO-10.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="Linux-IPv6-HOWTO-8.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="Linux-IPv6-HOWTO.html#toc9"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s9">9.</A> <A HREF="Linux-IPv6-HOWTO.html#toc9">Configuring IPv6-in-IPv4 tunnels(设定遂道)</A></H2>
+
+<H2><A NAME="ss9.1">9.1</A> <A HREF="Linux-IPv6-HOWTO.html#toc9.1">遂道的类型</A>
+</H2>
+
+<P>将IPv6数据包传输到IPv4连结不只有一种可能.</P>
+<H3>Static point-to-point tunneling: 6bone (以点对点方式构建的遂道)</H3>
+
+<P>IPv6和IPv4的遂道定义在 
+<A HREF="http://rfc.net/rfc2893.html">RFC 2893 / Transition Mechanisms for IPv6 Hosts and Routers</A></P>
+<P>必备条件:
+<UL>
+<LI>遂道另一端的IPv4地址必需是static(静态的).global unique and reachable from the foreign tunnel endpoint</LI>
+<LI>您以经拥有的一个global IPv6 prefix(前缀),参照 6bone registry.</LI>
+<LI>有一个可以将您的IPv6 prefix 路由到本地端的外界tunnel端(通常需要进行远端操作)</LI>
+</UL>
+</P>
+<H3>Automatically tunneling(遂道操作自动化)</H3>
+
+<P>当一个节点直接同另一个节点进行连结,在得到节点IPv4地址之前,节点就会执行遂道操作自动化.</P>
+
+<H3>6to4-Tunneling(遂道操作)</H3>
+
+<P>它使用一个简单的机制实行Tunneling(遂道操作)
+<A HREF="http://rfc.net/rfc3056.html">RFC 3056 / Connection of IPv6 Domains via IPv4 Clouds</A>.
+每个节点的global unique IPv4 (唯一全局地址)可以成为 6to4 tunnel 的终点(如果没有IPv4防火墙限制通讯).
+6to4-Tunneling(遂道操作)不是专用于一对一的遂道,
+这个案例可以分开针对upstream and downstream (上级和下级)的遂道操作.
+同样,一个特别的IPv6地址会指出这个节点使用6to4-Tunnel同全世界的 IPv6 网路进行连结.</P>
+<H3>Generation of 6to4 prefix(产生6to4的前缀).</H3>
+
+<P> 6to4 的地址像下面这样定义:(源自
+<A HREF="http://rfc.net/rfc3056.html">RFC 3056 / Connection of IPv6 Domains via IPv4 Clouds</A>) 
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+__________________________________________________________________ 
+|   3+13   |    32     |    16  |            64 bits             | 
++---+------+-----------+--------+--------------------------------+ 
+|  FP+TLA  |  V4ADDR   | SLA ID |           Interface ID         | 
+|  0x2002  |           |        |                                | 
++---+------+-----------+--------+--------------------------------+
+  
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<P>FP是global addresses(全局地址)的前缀. TLA是top level aggregator(最高层集)
+V4ADDR是IPv4全局唯一地址((in hexadecimal notation). SLA是子网路标致(65536 local subnets possible).
+这些前缀产生时的SLA 为"0000" 后缀是 "::1" 并分配到6to4 tunnel interface(界面).</P>
+
+
+<H3>6to4 upstream tunneling(上级遂道操作)</H3>
+
+<P>节点知道向哪里发送含有IPv6数据包的IPv4数据包.
+早期的6to4遂道,必需设定一个专用的上级路由器接受这种操作.
+参照                    
+<A HREF="http://www.kfu.com/~nsayer/6to4/">NSayer's 6to4 information </A>里的路由列印.
+现在 6to4上级路由器可以使用anycast address 192.88.99.1 它由后台的路由协议控制.
+参照                    
+<A HREF="http://www.faqs.org/rfcs/rfc3068.html">RFC 3068 / An Anycast Prefix for 6to4 Relay Routers</A></P>
+
+<H3>6to4 downstream  tunneling(下级遂道操作)</H3>
+
+<P>The downstream (6bone -> your 6to4 enabled node) is not really fix and can vary from foreign host which originated packets were send to. There exist two possibilities:
+它还没有正式修正对数据包来源的确定, 存在以下两种可能:
+<UL>
+<LI>外部主机直接使用6to4把IPv6数据包发回给您.</LI>
+<LI>外部主机通过全球IPv6网路, 依靠动态路建立一个automatic tunnel 由将IPv6数据包发回给您.</LI>
+</UL>
+</P>
+<H3>Possible 6to4 traffic(6to4的几种通讯方法)</H3>
+
+<P>
+<UL>
+<LI>从 6to4 到 6to4: 通常在两个 6to4 enabled 主机之间直接进行遂道操作 tunneled between the </LI>
+<LI>从 6to4 到 non-6to4: 通过上级遂道操作发送数据包.</LI>
+<LI>从 non-6to4 到 6to4: 通过下级遂道操作发送数据包.</LI>
+</UL>
+</P>
+
+<H2><A NAME="ss9.2">9.2</A> <A HREF="Linux-IPv6-HOWTO.html#toc9.2">列印现存的tunnels(遂道)</A>
+</H2>
+
+<H3>使用 "ip"</H3>
+
+<P>用法:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# /sbin/ip -6 tunnel show [&lt;device>] 
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<P>例子:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# /sbin/ip -6 tunnel show 
+sit0: ipv6/ip remote any local any ttl 64 nopmtudisc 
+sit1: ipv6/ip remote 195.226.187.50 local any ttl 64
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+
+
+<H3>使用 "route"</H3>
+
+<P>用法:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# /sbin/route -A inet6 
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<P>例子:只列印从sit0界面通过的遂道.
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# /sbin/route -A inet6 | grep "\Wsit0\W*$" 
+::/96      ::               U   256  2  0  sit0 
+2002::/16  ::               UA  256  0  0  sit0 
+2000::/3   ::193.113.58.75  UG    1  0  0  sit0 
+fe80::/10  ::               UA  256  0  0  sit0 
+ff00::/8   ::               UA  256  0  0  sit0
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+
+<H2><A NAME="ss9.3">9.3</A> <A HREF="Linux-IPv6-HOWTO.html#toc9.3">Setup of point-to-point tunnel(设定点对点的遂道)</A>
+</H2>
+
+<P>有3种方法可以加入/移除point-to-point tunnel</P>
+
+<H3>Add point-to-point tunnels (加入)</H3>
+
+<H3>使用 "ip"</H3>
+
+<P>目前针对少量tunnels的方法</P>
+<P>设定tunnel device (它不会立既启用.TTL必需指定, 因为初始值是0)</P>
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# /sbin/ip tunnel add &lt; device &gt; mode sit ttl &lt; ttldefault &gt; remote
+? &lt; ipv4addressofforeigntunnel &gt; local &lt; ipv4addresslocal &gt;
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+<P>用法(这个例子中有三个遂道)</P>
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# /sbin/ip tunnel add sit1 mode sit ttl &lt;ttldefault> remote
+? &lt;ipv4addressofforeigntunnel1> local &lt;ipv4addresslocal>
+# /sbin/ip set dev sit1 up
+# /sbin/ip -6 route add &lt;prefixtoroute1> dev sit1 metric 1
+# /sbin/ip tunnel add sit2 mode sit ttl &lt;ttldefault>
+? &lt;ipv4addressofforeigntunnel2> local &lt;ipv4addresslocal>
+# /sbin/ip set dev sit2 up
+# /sbin/ip -6 route add &lt;prefixtoroute2> dev sit2 metric 1
+# /sbin/ip tunnel add sit3 mode sit ttl &lt;ttldefault>
+? &lt;ipv4addressofforeigntunnel3> local &lt;ipv4addresslocal>
+# /sbin/ip set dev sit3 up
+# /sbin/ip -6 route add &lt;prefixtoroute3> dev sit3 metric 1
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<H3>使用 "ifconfig" and "route" (deprecated)</H3>
+
+<P>不推荐一次就 Non Broadcast Multiple Access (NBMA)这么多,因为您如果只想关闭第一个但又要让其它的继续运行,有点难啊.只加一个是没有问题的.
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# /sbin/ifconfig sit0 up
+# /sbin/ifconfig sit0 tunnel &lt;ipv4addressofforeigntunnel1>
+# /sbin/ifconfig sit1 up
+# /sbin/route -A inet6 add &lt;prefixtoroute1> dev sit1
+# /sbin/ifconfig sit0 tunnel &lt;ipv4addressofforeigntunnel2>
+# /sbin/ifconfig sit2 up
+# /sbin/route -A inet6 add &lt;prefixtoroute2> dev sit2
+# /sbin/ifconfig sit0 tunnel &lt;ipv4addressofforeigntunnel3>
+# /sbin/ifconfig sit3 up
+# /sbin/route -A inet6 add &lt;prefixtoroute3> dev sit3
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+<P>警告:这样做有很大的风险, 因为任何人可以从Internet的任何地点使用"automatic tunneling"同您进行连结.我不推荐您这样做.</P>
+
+<H3>使用 "route" only </H3>
+
+<P>当然可以设定tunnel使用 Non Broadcast Multiple Access (NBMA)非多地址广播的方式
+这种方法可以一次就加入很多tunnel.
+使用方法 (三个tunnel的基本例子):
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# /sbin/ifconfig sit0 up
+# /sbin/route -A inet6 add &lt;prefixtoroute1> gw
+? ::&lt;ipv4addressofforeigntunnel1> dev sit0
+# /sbin/route -A inet6 add &lt;prefixtoroute2> gw
+? ::&lt;ipv4addressofforeigntunnel2> dev sit0
+# /sbin/route -A inet6 add &lt;prefixtoroute3> gw
+? ::&lt;ipv4addressofforeigntunnel3> dev sit0
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+<P>警告:这样做有很大的风险, 因为任何人可以从Internet的任何地点使用"automatic tunneling"同您进行连结.我不推荐您这样做.</P>
+
+<H3>Removing point-to-point tunnels(移除遂道)</H3>
+
+<P>手工方式不经常使用,可以用scripts移除/重新设定IPv6tunnels</P>
+
+<H3>使用 "ip"</H3>
+
+<P>移除遂道设备的用法:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# /sbin/ip tunnel del &lt;device>
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<P>Usage (三个tunnel的基本例子):
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# /sbin/ip -6 route del &lt;prefixtoroute1> dev sit1
+# /sbin/ip set sit1 down
+# /sbin/ip tunnel del sit1
+# /sbin/ip -6 route del &lt;prefixtoroute2> dev sit2
+# /sbin/ip set sit2 down
+# /sbin/ip tunnel del sit2
+# /sbin/ip -6 route del &lt;prefixtoroute3> dev sit3
+# /sbin/ip set sit3 down
+# /sbin/ip tunnel del sit3
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<H3>使用 "ifconfig" and "route" (因为不怎么有趣所以不赞成这么做)</H3>
+
+<P>Usage (三个tunnel的基本例子):您必需反向移除它们, 也就是先建立的必需先移除.
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# /sbin/route -A inet6 del &lt;prefixtoroute3> dev sit3
+# /sbin/ifconfig sit3 down
+# /sbin/route -A inet6 del &lt;prefixtoroute2> dev sit2
+# /sbin/ifconfig sit2 down
+# /sbin/route -A inet6 add &lt;prefixtoroute1> dev sit1
+# /sbin/ifconfig sit1 down
+# /sbin/ifconfig sit0 down
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<H3>使用 "route"</H3>
+
+<P>移除IPv6路由.
+使用方法 (三个tunnel的基本例子):
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# /sbin/route -A inet6 del &lt;prefixtoroute1> gw
+? ::&lt;ipv4addressofforeigntunnel1> dev sit0
+# /sbin/route -A inet6 del &lt;prefixtoroute2> gw
+? ::&lt;ipv4addressofforeigntunnel2> dev sit0
+# /sbin/route -A inet6 del &lt;prefixtoroute3> gw
+? ::&lt;ipv4addressofforeigntunnel3> dev sit0
+# /sbin/ifconfig sit0 down
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<H3>Numbered point-to-point tunnels(有限的点对点遂道)</H3>
+
+<P>有时需要设定一个point-to-point 遂道 和IPv6地址,
+但方法中只有第一个(ifconfig+route - deprecated)和第三个(ip+route)可行.
+在这些案例中您可以加入一个IPv6地址到 tunnel interface(用于遂道操作的那个界面)</P>
+
+<H2><A NAME="ss9.4">9.4</A> <A HREF="Linux-IPv6-HOWTO.html#toc9.4">Setup of 6to4 tunnels (设定 IPv6至IPv4的遂道)</A>
+</H2>
+
+<P>注意:6to4 tunnels 目前缺乏vanilla 2.2.x系列核心的支持.
+同样要注意的是6to4地址的前缀长度是16 所有的 6to4 主机都在相同的第二层.</P>
+<H3>Add a 6to4 tunnel(增加一个 6to4 遂道)</H3>
+
+<P>首先, 您必需用可路由的本地IPv4 global 地址来计算 6to4 的前缀.
+(如果您的主机没有可路由的本地IPv4 global 地址, 在闸道边缘的NAT地址也行
+in special cases NAT on border gateways is possible):</P>
+<P>假定您的IPv4地址为:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+1.2.3.4
+ 
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+<P>产生的6to4 prefix(前缀)为 :
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+2002:0102:0304::
+ 
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+<P>本地的 6to4 闸道需要手工设定后缀为"::1", 因此您的6to4地址就成为:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+2002:0102:0304::1
+ 
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+<P>以下依据指定的IPv4地址产生6to4地址:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+ipv4="1.2.3.4"; printf "2002:%02x%02x:%02x%02x::1" `echo $ipv4 | tr "." " "`
+ 
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<P>目前有两种方法可以设定6to4遂道</P>
+<H3>使用 "ip" 和专用的遂道设备.</H3>
+
+<P>这是被推荐的做法.
+创建一个遂道设备.
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# /sbin/ip tunnel add tun6to4 mode sit remote any local &lt;localipv4address>
+ 
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<P> Bring interface up(激活它)
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# /sbin/ip link set dev tun6to4 up 
+ 
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<P>将本地6to4地址加入到界面.(注意:它的前缀长度必需是16)
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# /sbin/ip -6 addr add &lt;local6to4address>/16 dev tun6to4 
+ 
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+<P>加入一个用all-6to4-routers IPv4 anycast 地址作为到达global IPv6 网路的路由(缺省的路由)</P>
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# /sbin/ip -6 route add 2000::/3 via ::192.88.99.1 dev tun6to4 metric 1
+ 
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<H3>使用 "ifconfig" and "route" and generic tunnel device "sit0" (不被推荐的做法)</H3>
+
+<P>不被推荐是因为tunnel device sit0 不支持特别的过虑器应用在每个设备上.</P>
+<P>Bring generic tunnel interface sit0 up(将界面sit0激活)
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# /sbin/ifconfig sit0 up 
+ 
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Add local 6to4 address to interface(向界面添加本地 6to4 地址)
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# /sbin/ifconfig sit0 add &lt;local6to4address>/16
+ 
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+<P>加入一个用all-6to4-relays IPv4 anycast地址作为到达global IPv6 网路的路由(缺省的路由)</P>
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# /sbin/route -A inet6 add 2000::/3 gw ::192.88.99.1 dev sit0
+ 
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<H3>Remove a 6to4 tunnel(移除 6to4 遂道)</H3>
+
+<H3>使用 "ip" and a 专用遂道设备</H3>
+
+<P>从dedicated tunnel device 移除所有路由
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# /sbin/ip -6 route flush dev tun6to4
+ 
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Shut down interface(关闭界面)
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# /sbin/ip link set dev tun6to4 down
+ 
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<P>Remove created tunnel device(移除遂道设备)
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# /sbin/ip tunnel del tun6to4 
+ 
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<H3>使用 "ifconfig" and "route" and generic tunnel device "sit0" (不被推荐的做法)</H3>
+
+<P>移除 6to4 界面上遂道的路由
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# /sbin/route -A inet6 del 2000::/3 gw ::192.88.99.1 dev sit0 
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<P>Remove local 6to4 address to interface(从界面移除本地 6to4 地址)
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# /sbin/ifconfig sit0 del &lt;local6to4address>/16
+ 
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+<P>并闭 generic tunnel device (当心, 可能它还在使用当中)
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# /sbin/ifconfig sit0 down 
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<HR>
+<A HREF="Linux-IPv6-HOWTO-10.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="Linux-IPv6-HOWTO-8.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="Linux-IPv6-HOWTO.html#toc9"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

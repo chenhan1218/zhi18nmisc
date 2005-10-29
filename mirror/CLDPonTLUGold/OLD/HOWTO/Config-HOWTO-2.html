@@ -1,0 +1,748 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE> Configuration HOWTO: General System Setup</TITLE>
+ <LINK HREF="Config-HOWTO-3.html" REL=next>
+ <LINK HREF="Config-HOWTO-1.html" REL=previous>
+ <LINK HREF="Config-HOWTO.html#toc2" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Config-HOWTO-3.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Config-HOWTO-1.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Config-HOWTO.html#toc2"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s2">2. General System Setup</A></H2>
+
+<P>
+<P>
+<P>
+<H2><A NAME="ss2.1">2.1 A Few Words About Security</A>
+</H2>
+
+<P>
+<P>Even before your system boots, you should decide what level of security you
+want to implement. To begin with, don't connect your machine to the network
+until you have decided what to do.
+<P>Security is a vast subject that goes beyond the scope of this HOWTO; two
+good starting points are the Linux Security Administrator's Guide at 
+<A HREF="http://www.securityportal.com/lasg">http://www.securityportal.com/lasg</A> and the Linux Security Guide at
+<A HREF="http://nic.com/~dave/SecurityAdminGuide/index.html">http://nic.com/~dave/SecurityAdminGuide/index.html</A>. You should
+consider at least the following steps: using shadow passwords (Shadow
+Password HOWTO), restricting network access to the machine (Section
+<A HREF="Config-HOWTO-3.html#Restricting">Restricting Network Access</A>), using the Secure
+Shell (
+<A HREF="http://www.openssh.org">http://www.openssh.org</A>) or the Secure Remote Password
+(
+<A HREF="http://srp.stanford.edu/srp/">http://srp.stanford.edu/srp/</A>). Good luck.
+<P>
+<P>
+<H2><A NAME="ss2.2">2.2 Start the Logbook!</A>
+</H2>
+
+<P>
+<P>To keep your installation in shape, it's <EM>essential</EM> that you know
+exactly what happened to your machine, which packages you installed that
+day, what you removed or modified, and so on. So, the first thing you'll do
+before you tamper with your machine is start a ``logbook''. Therein you'll
+take note of <EM>every</EM> move you make as root; in my own logbook I also
+keep a section where I list all modified system files, additional .rpms, and
+.tar.gz I installed. Optimally, backtracking your moves you should be able
+to re-obtain a fresh installation.
+<P>Make a backup copy of the system files you touch. Better still, use RCS;
+you'll be able to backtrack all changes. Never work as root without logging
+your moves!
+<P>
+<P>
+<H2><A NAME="ss2.3">2.3 Keyboard</A>
+</H2>
+
+<P>
+<P>If you missed this step during installation or have changed your keyboard,
+you'll have to:
+<P>
+<UL>
+<LI> look for a suitable key table starting from
+/usr/lib/kbd/keymaps/i386; for example,
+querty/it-latin1.kmap.gz supports the Italian keyboard;
+</LI>
+<LI> edit the file /etc/sysconfig/keyboard so as it reads:
+<CODE>KEYTABLE="it-latin1"</CODE>;
+</LI>
+<LI> to set up the keyboard repeat rate and delay time, add this line to
+/etc/rc.d/rc.sysinit:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+/sbin/kbdrate -s -r 16 -d 500  # or whatever you like
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+</UL>
+<P>To load the key table, issue 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+/etc/rc.d/init.d/keytable start
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Other special keys will be dealt with in the following sections. To enable
+NumLock on by default, add these lines to /etc/rc.d/rc.sysinit:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+for tty in /dev/tty[1-9]*; do
+  setleds -D +num &lt; $tty
+done
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Normally, the Linux console doesn't distinguish between, say, Arrow and
+Shift-arrow, but some applications (namely, the editor 
+<A HREF="Config-HOWTO-4.html#jed">Jed</A>) do. Normally, these key bindings are only available in xterm.
+The following key map, which you can choose to load at boot time, is very
+handy:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# Load this key map with: loadkey shift.map
+# Shift + Up
+shift keycode 103 = F100
+string F100 = "\033[a"
+# Shift + Left
+shift keycode 106 = F101
+string F101 = "\033[c"
+# Shift + Right
+shift keycode 105 = F102
+string F102 = "\033[d"
+# Shift + Down
+shift keycode 108 = F103
+string F103 = "\033[b"
+# Ctrl + Ins
+control keycode 110 = F104
+string F104="\033[2^"
+# Shift + Ins
+shift keycode 110 = F105
+string F105="\033[2$"
+# Shift + PgUp
+shift keycode 104 = F106
+string F106 = "\033[5$"
+# Shift + PgDn
+shift keycode 109 = F107
+string F107 = "\033[6$"
+# Shift + Home
+shift keycode 102 = F108
+string F108 = "\033[1$"
+# Shift + End
+shift keycode 107 = F109
+string F109 = "\033[4$"
+# Shift + Del
+shift keycode 111 = F110
+string F110 = "\033[3$"
+# Ctrl + Del
+control keycode 111 = F111
+string F111 = "\033[3^"
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>
+<P>
+<H2><A NAME="ss2.4">2.4 Boot and Rescue Floppy</A>
+</H2>
+
+<P>
+<P>Make a couple of boot floppies for your newly installed system. Your
+distribution may include a command for creating such a floppy (say,
+<CODE>mkbootdisk</CODE> or something like that); if not, these
+commands will do:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#~ dd if=/boot/vmlinuz-2.0.36-0.7 of=/dev/fd0  # use your kernel image
+#~ rdev /dev/fd0 /dev/hda2                     # your Linux root partition
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Also, have at least a couple of rescue disks ready. There's a wide choice of
+rescue disks at 
+<A HREF="ftp://metalab.unc.edu/pub/Linux/system/recovery">ftp://metalab.unc.edu/pub/Linux/system/recovery</A>;
+if you don't know which one to choose, I suggest you try out Tomsbtrt, whose
+home page is 
+<A HREF="http://www.toms.net/rb">http://www.toms.net/rb</A>. It's very complete, but
+some utilities seem missing at first; for example, <CODE>ftp</CODE> is not there
+but you get <CODE>nc</CODE> (netcat) instead. Please read its documentation.
+<P>
+<P>
+<H2><A NAME="ss2.5">2.5 Kernel Matters</A>
+</H2>
+
+<P>
+<P>IMHO, the first thing to do next is build a kernel that best suits your
+system. It's very simple to do but, in any case, refer to the
+<CODE>README</CODE> file in /usr/src/linux/ or the Kernel HOWTO.
+Hints:
+<P>
+<UL>
+<LI> consider carefully your needs. Choosing a kernel configuration,
+applying the patches, and compiling it once and for all is more productive
+than reconfiguring and recompiling each month; this is especially true if
+your Linux box is a server. Don't forget to include support for all the
+hardware you might likely add in the future (e.g. SCSI, Zip, network cards,
+etc); using modules is usually the best choice;
+</LI>
+<LI> notebook users: if you plan to use a PCMCIA modem/fax,
+remember to compile serial support <EM>in the kernel</EM>. Don't compile
+it as a module, or your PCMCIA modem won't work;
+</LI>
+<LI> remember to compile everything you need; i.e., don't forget the
+pcmcia modules, or the ALSA sound drivers;
+</LI>
+<LI> to save time the next time you reconfigure and recompile the kernel,
+it's a good idea to save your configuration on a file and keep it in a safe
+place. If you upgrade the kernel and use ``make oldconfig'', your old config
+file will be taken and any not included features will be prompted whether
+they should be included, resulting in a new, upgraded config file.
+</LI>
+</UL>
+<P>
+<P>
+<H2><A NAME="ss2.6">2.6 Hard Disk Performance</A>
+</H2>
+
+<P>
+<P>Your (E)IDE hard disk's performance can be greatly enhanced by
+<EM>carefully</EM> using <CODE>hdparm</CODE>(8). If your Linux distribution
+doesn't include it, you'll find on 
+<A HREF="ftp://metalab.unc.edu/pub/Linux/system/hardware">ftp://metalab.unc.edu/pub/Linux/system/hardware</A>; look for a
+file called hdparm-X.Y.tar.gz.
+<P>Since many details depend on your hard disk and HD controller, I can't give
+you a general recipe. You risk to toast your filesystem, so <EM>read
+the man page carefully</EM> before using some of the options. At its simplest,
+you could add the following line to /etc/rc.d/rc.sysinit:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+/sbin/hdparm -c1 /dev/hda  # first IDE drive assumed
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>which enables (E)IDE 32-bit I/O support. As for the `<CODE>-m</CODE>' option,
+this is what <CODE>hdparm</CODE> author Mark Lord emailed me:
+<P>
+<BLOCKQUOTE>
+(...) if your system uses components from the past couple of years [&lt; 1997],
+it will be fine. Older than that, there *may* be a problem (unlikely). The
+really buggy chips were the CMD0646 and RZ1000 chips, used *extensively* on
+486 and (early) 586 motherboards about 2-3 years ago.
+</BLOCKQUOTE>
+<P>For recent machines, these settings should work fine:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+/sbin/hdparm -c1 -A1 -m16 -d1 /dev/hda
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>
+<H2><A NAME="ss2.7">2.7 Parallel Port Zip Drive</A>
+</H2>
+
+<P>
+<P>Stock kernels include the driver for both old (ppa) and new (imm) Zip
+drives. If you recompile the kernel, make sure that SCSI support and SCSI
+disk support are enabled. Remember, there can be conflicts between the
+printer and the Zip drive on the same parallel port, so you have better use
+kernel modules.
+<P>Zip disks are sold preformatted on partition /dev/sda4. To
+enable the Zip, append this to /etc/rc.d/rc.sysinit:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# Enable the Zip drive
+/sbin/modprobe ppa  # imm for recent models
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Zip disks can be mounted via /etc/fstab as shown below, or via 
+Mtools adding this line to your /etc/mtools.conf:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+drive z: file="/dev/sda4" exclusive
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>besides, the command <CODE>mzip</CODE> allows you to eject, query the status,
+write and password protect Zip disks; <CODE>man mzip</CODE> for details. 
+The Mtools home page is at
+<A HREF="http://linux.wauug.org/pub/knaff/mtools">http://linux.wauug.org/pub/knaff/mtools</A>.
+<P>
+<P>
+<H2><A NAME="ss2.8">2.8 Device Drivers</A>
+</H2>
+
+<P>
+<P>Devices in <CODE>/dev</CODE> (or better, links to the actual device drivers) may
+be missing. Check what devices your mouse, modem, and CD--ROM drive
+correspond to, then do what follows:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+~# cd /dev
+/dev# ln -s ttyS0 mouse; ln -s ttyS1 modem; ln -s hdb cdrom; ln -s sda4 zip
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>In most notebooks the mouse device is /dev/psaux: take this
+into account when configuring X11. If you wish, do <CODE>chmod 666</CODE> to
+these devices to make them fully accessible by every user.
+<P>
+<P>
+<P>
+<H2><A NAME="ss2.9">2.9 Sound Card</A>
+</H2>
+
+<P>
+<P>My desktop PC is fitted with an old Sound Blaster 16; even if you've got
+something different, you may take what follows as guidelines.
+<P>I compiled the sound card support as a module (<CODE>sb.o</CODE>).
+Then I put this in /etc/conf.modules:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+options sb io=0x220 irq=5 dma=1 dma16=5 mpu_io=0x330
+alias sound sb
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>To enable the sound, make sure that <CODE>modprobe sound</CODE> is invoked in
+/etc/rc.d/rc.sysinit. Alternatively, get the tool 
+<CODE>sndconfig</CODE> from the RedHat site.
+<P>Besides the standard kernel sound drivers, the Alsa drivers (
+<A HREF="http://www.alsa-project.org">http://www.alsa-project.org</A>) are an excellent choice. Strangely,
+though, the sound channels are muted by default. You'll want to use
+<CODE>aumix</CODE> and this /etc/aumixrc to set the volume to
+100%:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+vol:100:100:P
+synth:100:100:P
+pcm:100:100:P
+line:100:100:P
+mic:100:100:R
+cd:100:100:P
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>
+<H2><A NAME="ss2.10">2.10 Login Messages</A>
+</H2>
+
+<P>
+<P>If you wish to customise the login messages, check whether your
+/etc/rc.d/rc.local overwrites /etc/issue and
+/etc/motd. (RedHat does.) If so, get on with your editor.
+<P>If you'd like a colourised login message, you may adapt your
+<CODE>rc.local</CODE> inserting lines like these:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# put a real escape character instead of ^[. To do this:
+# emacs: ^Q ESC   vi: ^V ESC   joe:  ` 0 2 7   jed: ` ESC
+ESC="^["  # a real escape character
+BLUE="$ESC[44;37m"
+NORMAL="$ESC[40;37m"
+CLEAR="$ESC[H$ESC[J"
+
+> /etc/issue
+echo "$CLEAR" >> /etc/issue
+echo "$BLUE   Welcome to MyServer (192.168.1.1)   " >> /etc/issue
+echo "$NORMAL " >> /etc/issue
+echo "" >> /etc/issue
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>
+<H2><A NAME="Hostname"></A> <A NAME="ss2.11">2.11 Hostname </A>
+</H2>
+
+<P>
+<P>Issuing the command <CODE>hostname new_host_name</CODE> may not be enough. To
+avoid the dreaded <CODE>sendmail</CODE> lock, follow these steps (only valid
+for a stand--alone machine):
+<P>
+<UL>
+<LI> edit /etc/sysconfig/network and change the hostname 
+therein (e.g. <CODE>new_host_name.your_domain</CODE>);
+</LI>
+<LI> edit /etc/HOSTNAME appropriately;
+</LI>
+<LI> append the new hostname in the line in /etc/hosts:
+<BLOCKQUOTE><CODE>
+<PRE>
+127.0.0.1       localhost  new_host_name.your_domain
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+</UL>
+<P>
+<P>
+<H2><A NAME="ss2.12">2.12 Mouse</A>
+</H2>
+
+<P>
+<P><CODE>gpm</CODE> mouse services are useful to perform cut and paste in tty mode,
+and to use the mouse in some applications. Make sure that you have a file
+called /etc/sysconfig/mouse and that it reads:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+MOUSETYPE="Microsoft"
+XEMU3=yes
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Moreover, you must have a file /etc/rc.d/init.d/gpm, where
+you'll put additional command line parameters. Mine reads:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+...
+       daemon gpm -t $MOUSETYPE -d 2 -a 5 -B 132 # two-button mouse
+...
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Obviously, make sure this configuration is right for your mouse type. In
+most notebooks, <CODE>MOUSETYPE</CODE> is ``<CODE>PS/2</CODE>''.
+<P>If you like to use menus in console with Ctrl-button, then configure
+<CODE>gpm-root</CODE>. Edit the default menu in /etc/gpm-root.conf,
+then launch <CODE>gpm-root</CODE> from /etc/rc.d/rc.local.
+<P>
+<P>
+<H2><A NAME="ss2.13">2.13 Mount Points</A>
+</H2>
+
+<P>
+<P>It's handy to have mount points for the floppy, other devices and
+NFS-exported directories. For example, you can do the following:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+~# cd /mnt; mkdir floppy cdrom win zip server
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>This creates mount points for a DOS/Win floppy, the CD--ROM, the Windows
+partition, the parallel port Zip drive, and an NFS directory.
+<P>Now edit the file /etc/fstab and add the following entries:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+/dev/fd0        /mnt/floppy     auto            user,noauto 0 1
+/dev/cdrom      /mnt/cdrom      iso9660         ro,user,noauto 0 1
+/dev/zip        /mnt/zip        vfat            user,noauto,exec 0 1
+/dev/hda1       /mnt/win        vfat            user,noauto 0 1
+server:/export  /mnt/server     nfs             defaults
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Obviously, you must use the correct device in the first field.
+<P>Note the `auto' filesystem type in the first line; it allows you to mount
+both ext2 and vfat (DOS/Windows) floppies, but you need a recent version of
+<CODE>mount</CODE>. You may find <CODE>mtools</CODE> more convenient.
+<P>
+<P>
+<H2><A NAME="ss2.14">2.14 Automount Points</A>
+</H2>
+
+<P>
+<P>If you don't like the mounting/unmounting thing, consider using
+<CODE>autofs</CODE>(5). You tell the autofs daemon what to automount and where
+starting with a file, /etc/auto.master. Its structure is simple:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+/misc   /etc/auto.misc
+/mnt    /etc/auto.mnt
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>In this example you tell autofs to automount media in /misc and
+/mnt, while the mountpoints are specified in
+/etc/auto.misc and /etc/auto.mnt. An example of
+/etc/auto.misc:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# an NFS export
+server          -ro                     my.buddy.net:/pub/export
+# removable media
+cdrom           -fstype=iso9660,ro      :/dev/hdb
+floppy          -fstype=auto            :/dev/fd0
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Start the automounter. From now on, whenever you try to access the
+inexistent mount point /misc/cdrom, il will be created and the
+CD-ROM will be mounted.
+<P>
+<P>
+<H2><A NAME="ss2.15">2.15 lilo(8) and LOADLIN.EXE</A>
+</H2>
+
+<P>
+<P>Many users run both Linux and DOS/Windows on their PC, and want to
+choose at boot time which os to use; this should be done at install time,
+but in case, do what follows. Let's suppose that 
+/dev/hda1 contains DOS/Windows and that /dev/hda2
+contains Linux.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+~# fdisk
+Using /dev/hda as default device!
+
+Command (m for help):a
+Partition number (1-4): 2
+
+Command (m for help):w
+~#
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>This makes the Linux partition bootable. Then write this basic
+/etc/lilo.conf file:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+boot = /dev/hda2
+compact                # may conflict with "linear"
+delay = 100            # 10 seconds
+linear                 # gets rid of the "1024 cylinder" problem
+message = /boot/bootmesg.txt  # write your own, if you will
+root = current
+image = /boot/vmlinuz  # boot linux by default as this entry comes first
+  label = linux
+  read-only
+#  append="mem=128M"   # to see more memory than 64M
+other = /dev/hda1
+  table = /dev/hda
+  label = win
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Now issue /sbin/lilo and you're done. Being <CODE>lilo</CODE> a
+crucial part of your installation, you're strongly advised to read its
+documentation anyway.
+<P>To boot Linux from DOS/Windows without resetting, put <CODE>LOADLIN.EXE</CODE>
+in a directory (in the DOS partition!) included in the DOS path; then copy
+your kernel to, say, <CODE>C:\TEMP\VMLINUZ</CODE>. The following simple
+<CODE>.BAT</CODE> file will boot Linux:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+rem   linux.bat
+smartdrv /C
+loadlin c:\temp\vmlinuz root=/dev/hda2 ro
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>If you use Windows 9x, set the properties of this <CODE>.BAT</CODE> so as it
+starts in MS--DOS mode.
+<P>
+<P>
+<H3>Security Tip</H3>
+
+<P>
+<P>Making a backup copy of your MBR before installing Linux is a safe move.
+Prepare a Windows rescue floppy, and make sure it includes <CODE>FDISK.EXE</CODE>.
+To restore the MBR, all you have to do is
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+A:\> fdisk /mbr
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>art MIME format. These two lines, put in
+-*- etc/mailcap, should let you read those messages:
+-*- 
+-*- 
+<BLOCKQUOTE><CODE>
+<PRE>
+ -*- text/plain; less %s; needsterminal
+ -*- text/html; lynx -force_html %s; needsterminal
+ -*- 
+</PRE>
+</CODE></BLOCKQUOTE>
+
+--> 
+<P>
+<H2><A NAME="ss2.16">2.16 Printer Configuration</A>
+</H2>
+
+<P>
+<P>All distributions I know have a configuration tool for setting up the
+printer (<CODE>printtool</CODE>, <CODE>yast</CODE>, or <CODE>magicfilter</CODE>); if you
+don't have it, this is a basic manual configuration.
+<P>Let's suppose you have a non--PostScript (non ``Windows-only'' too!) printer
+you want to use to print raw text (e.g., C source files) and PostScript
+files via Ghostscript, which is assumed to be already installed.
+<P>Setting up the printer involves a few steps:
+<P>
+<UL>
+<LI> find out which one the parallel print device is: try 
+
+<BLOCKQUOTE><CODE>
+<PRE>
+~# echo "hello, world" > /dev/lp0
+~# echo "hello, world" > /dev/lp1
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+and take note which one works.
+</LI>
+<LI> make two spool directories:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+~# cd /var/spool/lpd
+/var/spool/lpd/# mkdir raw; mkdir postscript
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI> if your printer exibits the ``staircase effect'' (most inkjets do),
+you'll need a filter. Try to print two lines with
+
+<BLOCKQUOTE><CODE>
+<PRE>
+~# echo "first line" > /dev/lp1 ; echo "second line" > /dev/lp1
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+if the output is like this:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+first line
+          second line
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+then save this script as /var/spool/lpd/raw/filter:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+#!/bin/sh
+# This filter eliminates the "staircase effect"
+awk '{print $0, "\r"}'
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+and make it executable with <CODE>chmod 755 /var/spool/lpd/raw/filter</CODE>.
+</LI>
+<LI> make a filter for PostScript emulation. Write the following filter as
+/var/spool/lpd/postscript/filter:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+#!/bin/sh
+
+DEVICE=djet500
+RESOLUTION=300x300
+PAPERSIZE=a4
+SENDEOF=
+
+nenscript -TUS -ZB -p- |
+if [ "$DEVICE" = "PostScript" ]; then
+  cat -
+else
+  gs -q -sDEVICE=$DEVICE \
+    -r$RESOLUTION \
+    -sPAPERSIZE=$PAPERSIZE \
+    -dNOPAUSE \
+    -dSAFER \
+    -sOutputFile=- -
+fi
+
+if [ "$SENDEOF" != "" ]; then
+  printf "\004"
+fi
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+(in this example an HP DeskJet printer is assumed. Adapt it to your
+printer).
+</LI>
+<LI> finally, add the following entries in /etc/printcap:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+# /etc/printcap
+lp|ps|PS|PostScript|djps:\
+        :sd=/var/spool/lpd/postscript:\
+        :mx#0:\
+        :lp=/dev/lp1:\
+        :if=/var/spool/lpd/postscript/filter:\
+        :sh:
+raw:\
+        :sd=/var/spool/lpd/raw:\
+        :mx#0:\
+        :lp=/dev/lp1:\
+        :if=/var/spool/lpd/raw/filter:\
+        :sh:
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+</UL>
+<P>For more complex or exotic printing configurations, the Printing-HOWTO
+awaits you. 
+<P>If you use <CODE>printtool</CODE>, be aware that the GSDEVICE chosen by Printtool
+will work, but not necessarily at its best for your printer. You may
+consider fiddling a bit with the file <CODE>postscript.cfg</CODE>; for instance,
+I changed GSDEVICE from <CODE>cdj500</CODE> to <CODE>djet500</CODE> and now my
+prints come out much quicker.
+<P>
+<P>
+<H2><A NAME="SVGA"></A> <A NAME="ss2.17">2.17 SVGATextMode </A>
+</H2>
+
+<P>
+<P>This utility, available on
+<A HREF="ftp://tsx-11.mit.edu/pub/linux/sources/sbin">ftp://tsx-11.mit.edu/pub/linux/sources/sbin</A>,
+is useful for changing the console screen resolution, font, and cursor
+shape. Users whose language include accented characters will be able to use
+them in console applications, while notebook users may change the cursor
+shape to make it more visible.
+<P>Edit /etc/TextConfig or /etc/TextMode, starting 
+with the default VGA definition. Europeans should be happy with this
+``LoadFont'' section:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+Option "LoadFont"
+FontProg "/usr/bin/setfont"
+FontPath "/usr/lib/kbd/consolefonts"
+FontSelect "lat1u-16.psf"   8x16 9x16 8x15 9x15
+FontSelect "lat1u-14.psf"   8x14 9x14 8x13 9x13
+FontSelect "lat1u-12.psf"   8x12 9x12 8x11 9x11
+FontSelect "lat1u-08.psf"   8x8  9x8  8x7  9x7
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Once you're done, try your configuration with a command like 
+<CODE>SVGATextMode "80x34x9"</CODE>, and if everything appears to be working
+fine, remove the warnings from
+/etc/TextMode and include this line in
+etc/rc.d/rc.sysinit:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# SVGATextMode
+/usr/sbin/SVGATextMode "80x34x9"
+</PRE>
+</CODE></BLOCKQUOTE>
+ 
+<P>Please note that the block cursor only works with some modes; on my
+notebook, "80x30x9".
+<P>
+<P>
+<HR>
+<A HREF="Config-HOWTO-3.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Config-HOWTO-1.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Config-HOWTO.html#toc2"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

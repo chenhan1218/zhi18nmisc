@@ -1,0 +1,405 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" content="text/html; charset=big5">
+<TITLE>SLIP/PPP 模擬器 HOWTO</TITLE>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+<h1>SLIP/PPP 模擬器 HOWTO</h1>
+<h2>3.0版 ( 8/7/97 Irish 更新)</h2>
+
+	本文將介紹如何透過 SLIP/PPP 模擬器譬如 SLiRP 或是 TIA 將你的
+ Linux Box 連接到一般的站台[generic site]。本人不保證使用本文件的結果，
+ 不過歡迎來信指教。<p>
+ 
+	在這裡我將不會嘗試敘述當連線建立後所有可做的事，不過我會告訴你哪
+裡可以取得相關的文件或網址。<p>
+
+	好了，我們開始吧!!<p>
+<hr><ul>
+<li>	1.0 模擬器是如何運作的?<p>
+
+	基本上，了解 SLIP-PPP 模擬器如何運作和它的限制是相當重要的。首先，
+你並不用在你的機器上安裝模擬器，它是安裝在你的遠端主機上。你的機器只需要在
+核心裏支援 TCP/IP 和 SLIP 或 PPP 通訊協定，另外還須要一些客戶端軟體就行了。
+<p>
+
+	運作的情形是這樣的：你的機器透過 SLIP/PPP 連線向遠端主機發出網路服
+務請求，模擬器會攔截此一要求並將之整個送至網路上。然後，當網路上的回應送回
+至你遠端主機上的帳號時，模擬器會再次攔截它並經由 SLIP/PPP 連線傳回至你的機
+器上。所以，對網路來說，它只是在和你的遠端主機上的帳號溝通，但是對你來說，
+你就好像是真的連接上了網路一樣。<p>
+
+	你應該可以看出來，這樣有時會讓網路上的其它電腦混淆了。譬如說：talk 
+程式沒有辦法透過模擬器正常工作，因為外部的向你發出交談請求時，它其實是嘗試
+在你的遠端主機上建立 talk 監控程式[daemon]，而不是在你的機器上。<p>
+	
+模擬器和真的 SLIP/PPP 最大的不同在於，模擬器並沒有真的指定 IP 位址給你。記
+住，你只是把一個撥接帳號轉換成 SLIP/PPP 連結而已。<p>
+
+<li>	1.1 什麼是 TIA ? <p>
+
+	<a href="http://www.marketplace.com/tia/tiahome.html">網路轉接器
+[The Internet Adaptor]</a> 是由一群 marketplacce.com 的人員所寫的。他們目前
+已經離開該工作而且也認為這已經是個成熟的產品了，所以已經停止研發了。最新的
+版本是 2.05 ，而且如果你要使用TIA，請使用此版本。！注意！根據最新的報導，TIA 
+目前只提供位址授權[site licence]。<p>
+
+<li>	1.2 什麼是 SLiRP ?</p>
+
+	SLiRP 是一套 GNU 公開版權的免費軟體，它目前已經是正式版且十分穩定。
+它的功能較 TIA 稍多，而且(據說)其主機資源較不吃緊。你在各大Linux FTP站都可以
+找到此軟體。 <P>
+
+<li>	1.3 什麼是 Term ?<p>
+
+	如果在某些情況下，你沒有你的主機上 root 的權限，而你又沒有辦法請其他
+人安裝 SLIP 和 dip ，這時你幾乎毫無選擇地要使用 Term 了。欲知 Term 的詳細資訊
+，請參閱 Sunsite 上的 HOWTO。<p>
+
+<li>	1.4 什麼是真的 SLIP/PPP ?<p>
+	
+	嘿！對非專業的撥接使用來說，現在到處都可以合理的價格買到真的 SLIP/PPP。
+如果你負擔的起，或是你真的需要它，那就買吧！真的總是比模擬器來的好。不過，模擬
+器可以提供安全。它就像一個堅固的防火牆，有了它，你就和你的提供者[provider]一樣
+安全。不過你也得付出代價，透過模擬器將降低速度，而且並非支援所有的網路協定。總
+而言之，使用模擬器來連接至網路是一個不錯的選擇，而且對大多數人來說，模擬器就很
+夠用了。<p>
+
+</ul>
+<hr>
+	夠了，這些我都知道了! 我到底要如何架設模擬器呢?<p>
+
+	沒問題，別猴急，就快到那兒了。不過在那之前還是有一些你須要知道的資訊，
+和進一步的解釋。<p>
+
+	首先，如果你不知道你的 IP 位址的話，你必須向提供者那兒索取。你可以以下列
+方法來做，在系統提示符號下鍵入'who'，或者閱讀他們的 /etc/hosts 檔案，甚至就直接
+問他們吧!當你拿到了之後，你還必須要知道 POP/SMTP 主機和 NNTP 伺服器的 IP 位址(如
+果你不知道那是什麼的話，相信我，就直接問吧，你會需要它的)。<p>
+
+	接下來，讓我簡單的來解釋一下什麼是主機名稱[hostnames]和網域名稱[domain names]。
+你機器名稱的第一部份就是主機名稱，而剩下來的部份就是網域[domain]。舉例來說：
+hostname.domain.name(也有四個部份的情形hostname.do.main.name)。而兩者合起來
+就是一個有效的網域名稱[Fully Qualified Domain Name, FQDN]。<p> 
+
+	你的 Linux 機器的名稱是儲存在 /etc/HOSTNAME ，是的，你也可以更改它。事實
+上，我也建議你更改(如果你是使用 Slackware，其預設值是"darkstar.frop.org")。請直接
+編輯 /etc/HOSTNAME ，將它改成任何你想要的名稱 --- 記住，如果你是使用模擬器，事實
+上你在網路上是完全隱形的，所以，取名字時儘可能的發揮你的想像力吧。然而，如果日後
+你要使用真的 SLIP-PPP 連接，記得要確定好你的名稱要是你的提供者的子網路[sub-net]。
+舉例來說，如果你的提供者是 "info.superhiway.com"，網域就是 "superhiway.com"，而主
+機名稱就是 "info"。所以你可以叫做"offramp.info.superhiway.com"或者就叫做
+"offramp.superhiway.com"，兩者都可以。在兩種情形下，你的主機名稱都叫做"offramp"。<p>
+
+<ul>
+<li>	2.0 準備你的 Linux 機器<p>
+
+	概括地說，以下就是你所需要的。我會就前三項作詳細的說明。<p> 
+	<ul>
+	<li>	-> 編譯包含 SLIP 和 TCP/IP 的核心[kernal]
+	<li>	-> 編輯一些 /etc 下的檔案
+	<li>	-> 安裝並設定 dip
+	<li>	-> 安裝 pppd (非必須的，只用於PPP)
+	</ul>
+	你也要取得正確的模擬器二進位檔並安裝於你的遠端主機。SLiRP 可以在  <a
+href="ftp://sunsite.unc.edu/pub/Linux/INDEX.html">Sunsite</a> 或其它各大 
+Linux Ftp 站找到。其它所有的 TIA 的相關資訊則可見於  <a
+href="http://marketplace.com/tiahome/tia.html"> TIA 的首頁</a>。 <p>
+
+</ul>
+	就這樣，我們開始吧!<p>
+<ul>
+<li>	2.1 編譯你的核心<p>
+
+	如果你以前從來沒有試過，你應該試一下。而且你應該先看看 FAQ，不過不用
+擔心，它很簡單的。如果你需要的話，你可以寄 e-mail 給我，我會幫忙的。<p>
+	限於篇幅，在這裡我假設你曾經做過。當你在 'make config'，注意 
+"Network Devices"，選'y'。當然，在 SLIP ，CSLIP(或是PPP) 和 TCP/IP 選'y'。除
+非你有網路卡或是其它原因須要加入其它協定，否則其它的一律選'n'。 <b>如果你不這
+樣做的話，那將無法正確的執行! </b>當你完成了編釋和安裝新的核心之後，接下來，<p>
+
+<li>	2.2 編輯一些 /etc 下的檔案<p>
+
+	這些檔案將會設定連往遠端主機的路徑。 /etc 是系統設定[system configurations]
+的目錄。請將以下所有雙引號(")裏的內容更改為適當的值(但是不用包含雙引號，在這它
+只是為了表示方便，在實際的檔案中是沒有這些雙引號的)。以下就是你所需要更改的檔
+案。<p>
+
+	<ul>
+	<li>/etc/hosts:
+	<pre>
+#The next line is required to be EXACTLY as below.
+127.0.0.1       localhost
+
+#Note at the end of the next two entries the hostname is repeated. 
+#This abbreviation is an alias, and is required for the first entry.
+#If you're on a LAN, you'll need to substitute your IP address for 
+#the first one below.
+192.0.2.1       "yourhostname.domain.name  yourhostname"
+"XXX.XXX.XX.XX"	"remotehostname.domain.name  remotehostname"  
+	</pre>
+
+
+	<li>/etc/host.conf:
+	<pre>
+order hosts, bind
+multi on
+	</pre>
+
+	<li>/etc/resolv.conf:
+	<pre>
+domain "yourdomain.name" 	
+#The next line usually uses the same remote IP address that's in /etc/hosts
+nameserver "XXX.XXX.XX.XX"	
+	</pre>
+
+	<li>如果要使用 NNTP 伺服器，請在 /etc/profile 中加入這一行: 
+<p>
+export NNTPSERVER="remote.hosts.nntpservername"<p>
+	</ul>
+
+<li>	2.3.1 DIP<p>
+	
+	DIP [Dialup Internet Protocol] 是用來撥接到你的遠端主機時、啟動模擬器
+、並將線路轉到SLIP/PPP。在 Slackware 中，它存在於"N"集合中，其中還有一些客戶
+端軟體和工具程式，裏面有一些你可能也會想要安裝它 =)。或者你也可以到 <a 
+href="ftp://sunsite.unc.edu/pub/Linux/INDEX.html">Sunsite</a> 取得個別的 tar 
+檔案。<p>
+	一但你安裝好了之後，你便須要 dip 命令稿[script]，下面為一範例，只要把
+雙引號(")裏的內容更改為適當的資訊就可以了(但是不用包含雙引號，在這它只是為了
+表示方便)
+<p>
+
+
+----------從這開始--------------------------------<p>
+<pre>
+main:
+  get $local "yourhostname.domain.name"
+  get $remote "remotehostname.domain.name"
+
+#Your port here
+  port cua"?" 
+
+#Use 115200 for 28.8 modems 
+  speed 57400
+  reset
+
+#don't use spaces in your AT command string! 
+  init AT "string of commands" 
+  wait OK 5
+
+# This will redial. If it doesn't work, play with the wait time (listen 
+# to your modem). If it still doesn't work, mail me.
+# <b>See also; the note at the bottom of the script re: error codes.</b>
+
+dial:
+  dial "phonenumber"
+  print Dialing...
+  if $errlvl != 0 goto error
+
+#You may need to change this wait time to suit your modem
+  wait BUSY 20
+  if $errlvl == 0 goto dial	
+
+login:
+  print Connected and Logging in...
+
+#This wait and send gets me past my hosts Annex. <b>Change for your site!</b>
+  wait ==> 60
+  send 4\n
+  wait ogin: 60
+  if $errlvl != 0 goto login_error1
+  send "LOGIN"\n
+  wait assword: 60
+  if $errlvl != 0 goto login_error2
+  send "PASSWORD"\n
+
+loggedin:
+  wait "SYSTEM PROMPT" 60
+  if $errlvl != 0 goto shell_error
+  print Logged in!
+  send "emulator startup command"\n
+  wait "emulator startup response" 60
+  if $errlvl != 0 goto emu_error
+
+#The recommended mtu setting is 1500, but this is faster interactively. 
+#Ftp may be slower, so adjust to taste.
+  get $mtu 296
+  default
+
+done:
+  print CONNECTED to $remote with address $rmtip
+  mode CSLIP
+  goto exit
+
+error:
+  print Dialing Error
+
+login_error1:
+  print No Login
+
+login_error2:
+  print No Password prompt
+
+shell_error:
+  print No shell prompt
+
+emu_error:
+  There was a problem starting the emulator
+
+exit:
+
+#This will error out when the -v flag is used, but work when run normally 
+#(ends dip at a local prompt).
+  \r		
+</pre>
+-------------到這為止-----------------------------<p>
+
+<p><li>2.3.2 DIP 註解</p>
+
+	新版本的 dip 不會回應出數據機的狀態訊息 (忙線，沒有撥號音…等)，它
+是以數字來代替。下面是列表：<p>
+<ul>
+<li>0 = 正常[OK]
+<li>1 = 連線[CONNECT]
+<li>2 = 錯誤[ERROR]
+<li>3 = 忙線中[BUSY]
+<li>4 = 沒有撥號音[NO CARRIER]<p>
+</ul>
+	所以你的撥接段將會長成像這樣：
+<pre>
+dial:
+  dial "phonenumber"
+  print Dialing...
+  if $errlvl != 0 goto error
+  wait 1 20	
+  if $errlvl != 1 goto dial
+</pre><p>
+	這要歸功於 Lee Olds (lee@eskimo.com)。 <p>
+
+        \n = 新行[newline]， \r = 輸送筒轉回[carriage return]。在某些地方
+你也許會用這兩個參數。如果不行的話，再多試試吧! <p>
+	關於等待和傳送的形式，如果範例中還不夠清楚的話，下面就是實際的情形：
+<pre>
+  wait ogin: 60
+	(此命令稿會等待遠端主機送出 'ogin:' 字串60秒的時間。當收到之後，命令
+	稿會繼續進行。如果它等不到該字串，在60秒逾時之後，它才會繼續進行。)
+  if $errlvl != 0 goto login_error1 (這一整行可選擇性的使用)
+	(如果之前有收到等待的字串，則此行會被跳過，繼續進行接下來的命令。但
+	若沒有收到，而是逾時的話，它便會跳到你設定的地方執行 (在這個例子中是'login_error1')
+  send "LOGIN"\n
+	(DIP 會送出'LOGIN'字串和一換行字元) 
+</pre><p>
+	如果須要的話，你可以放入睡眠敘述，像這樣："sleep 10"。這可以讓你的命
+	令稿暫停10秒。<p>
+	當你將些檔案編輯好了之後，請將它重新命名，例如，remote.dip。然後放到
+ /root 目錄。接下來，以 root 身份執行'dip remote'。首次執行時請使用 -v 參數
+來進行除錯('dip -v remote')，這樣會顯示出 dip 進行的所有步驟。<p>
+	Dip 只能以 root 身份執行，不過有一個方法可以讓你以使用者的身份來執行
+它。如果你真的須要相關的資訊，再問我。如果有夠多的人須要，我可以會將它加入到
+這個檔案裏來。<p>
+	   如果 dip 出現錯誤訊息，將命令稿中的註解刪除再試試看。
+<p>
+
+<li>	2.4 PPP<p>
+
+	到目前為止，我們已經知道了 CSLIP，在幾乎所有的情形下它都非常好。由於
+是在核心的層面支援該協定，這使得它真的很容易運轉 --- 只要你確定它在那並且正
+運作中。<p>
+	然而，你們有些人仍可能想用 PPP ，為了什麼原因，那只有問你了。在這兒我
+不打算告訢你如何建立它，那幾乎又是另外一整篇專屬的 HOWTO 了。在這裏我只打算告
+訴你在模擬器中使用 PPP 需要特別注意的地方。 <p>
+	首先，最新版的 DIP 表示你可以用它來啟動 PPP，但是 dip 僅能啟動 PPP 
+監控程式[daemon]，但是沒有旗標的顯示訊息等等。所以如果你打算使用 DIP 來啟動
+ PPP，記得要把你所有的起動資訊[startup info]放進 /etc/ppp/options 檔案中，不
+然是不會成功的。 <P>
+	提到有關 options 這個檔案，不論你要如何起動你的 pppd ，有一樣東西是
+"必須"要存在的：'192.0.2.1:XXX.XXX.XX.XX' 這是表示 '本地 IP 位址:遠端 IP 位址'。
+之所以需要它的原因是因為通常 pppd 會自動將其填成空白，但當連接至模擬器時會失敗。
+<P>
+	別忘記要取得最新且最好的 pppd 套件。似乎在最近的某些版本有一些小問題。
+<P>
+	最後，除非你有足夠的理由支持你使用 PPP，或者你只是想要試著學習它是如何
+運作的，不然的話你真的不需要它。我已經試用過兩者，和客戶端的標準設定比較起來並
+不會有任何感覺得到的表現。當然啦，你遇到的狀況是否會像我一樣順利我就不敢保証了
+。 : ) <P>
+
+</ul>
+<hr>
+<ul>
+<li>	3.0 現在我可以做什麼?<p>
+
+	嘿! 如果一切順利的話，你現在應該已經連接到網路上了! 試試看 'telnet 遠
+端主機' (還記得在你 hosts 檔案中的縮寫嗎? )。你應該可以得到遠端主機上的簽入提
+示符號。繼續，試一下吧! 你現在可以由你的本地端機器直接 telnet / FTP / etc. 網
+路上的任何地方。我該怎麼做? 你的機器現在利用遠端主機當做名稱伺服器[nameserver]
+來解析位址(resolv.conf)。做個實驗吧! 找出那些可以運作而那些不行。<p>
+	你的遠端主機沒有提供的服務則你也無法使用! 舉例來說，如果你的遠端主機不
+能執行 telnet，那多半你也無法在本地主機上做。為什麼? 因為模擬器其實只是針對已
+經可用服務做重新導向[re-directing]而已。<p>
+
+<li>	3.1 郵件[Mail]<p>
+
+	文字基礎的解決方法當然非 Pine 莫屬，你可以從 <a 
+href="ftp://ftp.cac.washington.edu">華盛頓大學</a>下載。<p>
+
+	至於'以X視窗為基礎的最佳郵件閱讀軟體'，我推薦 XFmail。它已經是正式且穩
+定的版本，安裝容易。它不需要在本地端安裝郵件伺服系統(不過可以與本地端的
+排存[spools]共同運作)，因為它已經內建了POP 的功能，並容易使用 - 不再需要額外的
+ popclient/fetchpop ! 圖形使用者界面[GUI]介面可客製化[customizable]，也支援 
+MIME。趕快從 <a 
+href="http://burka.netvision.net.il/xfmail/xfmail.html"> XFmail 的首頁</a>
+下載吧!<p>
+
+<li>	3.2 新聞[News]<p>
+
+	文字界面的新聞閱讀軟體 <a
+href="ftp://space.mit.edu/pub/davis/slrn">SLRN</a> 安裝和使用都非常簡單。它是
+一個純種的 NNTP 新聞閱讀軟體，即是指 <i>不需要本地端的新聞傳送[news transport]
+</i>就能正常工作(就是說你不需要安裝 Cnews 或 INN)。它真正唯一需要的就只須存取
+ NNTP伺服器，而大多數的 ISP 都有提供。雖然它是一個以文字為基礎的程式，但
+它是彩色的，支援滑鼠，並可以在 rxvt 終端機視窗上執行。 <p>
+
+	以X視窗為基礎的新聞閱讀軟體 <a 
+href="http://www.student.nada.kth.se/~su95-kjo/knews.html">KNews</a> 則幾乎是
+完美的。如同上述的 SLRN 一樣，不需要本地端的新聞傳送[news transport]，只需要
+ NNTP伺服器，值得一試。<p>
+
+<li>	3.3 Mosaic/Netscape<p>
+
+	顯然地，你必須要先執行X視窗才能執行它，然後你只要下載二進位檔，解壓縮
+，再安裝就好了，這是件再簡單不過的工作了。 <p>
+
+</ul>
+<hr>
+<ul>
+<li>	4.0 雜項<p>
+
+	如果我還遺漏了什麼，或者你仍然有什麼問題，沒關係，我天天看信的哦。而
+相關的資訊更新非常的頻繁，所以你最好常常回來看看(我會更新版本號碼)。當然啦，
+你貢獻的越多，這裏所能提供的資料也就多。所以如果你有任何可以提供的，請不要猶
+豫了，告訢我吧。<p>
+	如果你需要任何幫助，或是在安裝的過程中糟遇了任何問題，我可以提供幫助
+， <i>不過你必須要給我下列資訊：</i> 1. 拷貝一份你的三個 /etc 檔案。
+ 2. 拷貝一份你以 -v 參數的命令稿輸出(並<b>請~~</b>你移除你的密碼保護!)</p>
+	即使你無法提供其它貢獻，也請你將這些資訊處理正確，然後寄給我，這很重
+要。</p>
+
+<li>	4.1 參考資料<p>
+
+	文中所提到的 Sunsite 為一 FTP 站<a
+href="ftp://sunsite.unc.edu/pub/Linux/INDEX.html"> sunsite.unc.edu</a>，是一
+個名符其實擁有任何 Linux 相關資訊，包括幾乎所有的FAQ，HOWTO，和README。<p>
+	<a href="http://marketplace.com/">Marketplace.com </a>則是 TIA 的首
+頁，也是它唯一可以取得的地方。</p> 
+	我是 Irish，<a href="mailto:irish@eskimo.com">
+irish@eskimo.com</a>，當我沒有在安撫我的貓或是抱抱我的小孩時，我都在對 Linux
+ 寫評論。<p> <p> 
+	這份 HOWTO 可以在下列位址取得：
+	<ul>
+	<li>http://www.eskimo.com/~irish 
+	<li>ftp://ftp.eskimo.com/u/i/irish
+	<li>ftp://sunsite.unc.edu/pub/Linux/docs/HOWTO/mini/TIA 
+	</ul> 
+</ul>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

@@ -1,0 +1,512 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>The Linux BootPrompt-HowTo 中译版: 小型电脑智慧介面(SCSI)周边的启动参数</TITLE>
+ <LINK HREF="BootPrompt-HOWTO-5.html" REL=next>
+ <LINK HREF="BootPrompt-HOWTO-3.html" REL=previous>
+ <LINK HREF="BootPrompt-HOWTO.html#toc4" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="BootPrompt-HOWTO-5.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="BootPrompt-HOWTO-3.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="BootPrompt-HOWTO.html#toc4"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s4">4. 小型电脑智慧介面(SCSI)周边的启动参数</A></H2>
+
+<P>
+<P>这一节包含用来传递有关小型电脑智慧介面(SCSI)卡(host adapters)及
+SCSI 设备之资讯的启动参数说明。
+<P>
+<H2><A NAME="ss4.1">4.1 中层驱动程式的参数</A>
+</H2>
+
+<P>
+<P>中层驱动程式处理像磁碟，光碟及磁带等等而不深入介面卡的特性。
+<P>
+<H3>最大侦测逻辑号码(LUN)数(`max_scsi_luns=')</H3>
+
+<P>
+<P>每个 SCSI 设备本身里面都可以包含一个‘子设备’号码。
+最常见的例子是那些一次可以放好几张片子的新型 SCSI 光碟机。
+每张光碟由指定之设备的‘逻辑号码(Logical Unit Number: LUN)’定址。
+但大部份的设备，像硬碟机，磁带机等等都是单一个的设备，
+而逻辑号码设为零。
+<P>只有一个逻辑编号的设备若轫体写得不好就会出问题。
+某些设计不良的
+SCSI
+设备（旧的以及就那麽巧被你碰上的新设备）无法接受不为零的逻辑编号侦测。
+它们会挂在那，而且有可能把整个 SCSI 汇流排(bus)都带著一起陪葬。
+<P>较新的核心有一个配置选项可以让你设定所要侦测之最大逻辑编号。
+预设只侦测到逻辑编号零以必免上述问题。
+<P>在启动时指定要侦测的逻辑号码可以键入 `max_scsi_luns=n' 作为启动参数，
+其中 n 是介於壹到捌的数字。
+要避免上述问题可以使用 n=1 以避免这些个烂设备不高兴。
+<P>
+<H3>SCSI 磁带驱动程式的参数(`st=')</H3>
+
+<P>
+<P>SCSI  磁带驱动程式的某些启动时期配置可以藉由使用下列参数达成：
+<P>
+<HR>
+<PRE>
+        st=buf_size[,write_threshold[,max_bufs]]
+</PRE>
+<HR>
+<P>前面两个数字的单位是千位元组。预设的 <CODE>buf_size</CODE> 是 32kB。
+最多可以指定为 16384kB，大的荒谬。
+<CODE>write_threshold</CODE> 缓冲区确认送至磁带的值，预设为 30kB。
+最大缓冲区个数视侦测到的装置数量而定，预设值为二。使用□例如：
+<P>
+<HR>
+<PRE>
+        st=32,30,2
+</PRE>
+<HR>
+<P>完整的细节可以在 <CODE>README.st</CODE> 档案中找到，
+位於核心原始程式码结构(tree)的 <CODE>scsi</CODE> 目录里。
+<P>
+<H2><A NAME="ss4.2">4.2 SCSI 卡的参数</A>
+</H2>
+
+<P>
+<P>本节的常见标记：
+<P><CODE>iobase</CODE> --
+SCSI 卡进驻的第一个输出入埠。
+以十六进制表示法指定，而且通常落在 <CODE>0x200</CODE>  到 <CODE>0x3ff</CODE> 之间。
+<P><CODE>irq</CODE> --
+介面卡设定使用的硬体中断。
+其可用的值与介面卡有关，
+但通常是 5, 7, 9, 10, 11, 12, 以及 15。其它值通常由一般的周边设备使用，
+像是 IDE 硬碟，软碟，串列埠等等。
+<P><CODE>dma</CODE> --
+介面卡使用的直接记忆体存取(Direct Memory Access:DMA)通道。
+典型只用於具汇流排主控(bus-mastering)能力的卡。
+PCI 及 VLB 介面卡本即具汇流排主控，且不需要任何 ISA 直接记忆体存取通道。
+<P><CODE>scsi-id</CODE> --
+在 SCSI 汇流排上，介面卡用来识别它本身的识别号码。
+只有某些介面卡允许你改变这个值，大部份则都内定且永久不变。
+通常预设值是七，但西捷(Seagate)以及 Future Domain TMC-950 卡使用六。
+<P><CODE>parity</CODE> --
+SCSI 介面卡是否期望所连接的设备交换资讯时提供同位检查码。
+指定一表示打开同位检查，零则为关闭。
+同样地，并非所有的介面卡都支援选用同位检查这个启动参数。
+<P>
+<H3>Adaptec aha151x, aha152x, aic6260, aic6360, SB16-SCSI (`aha152x=')</H3>
+
+<P>
+<P>aha 编号对照卡而 aic 编号对照这些卡上实际的 SCSI 晶片，
+包含 Soundblaster-16 SCSI。
+<P>侦测这些 SCSI 卡的程式码寻找从卡上安装进来的基本输出入系统，
+如果没有，就找不到你的卡。然後你就得使用这种型式的启动参数：
+<P>
+<HR>
+<PRE>
+
+aha152x=iobase[,irq[,scsi-id[,reconnect[,parity]]]]
+</PRE>
+<HR>
+<P>注意，如果此驱动程式编译时有打开错误侦测，则可以指定第六个值以设定侦错层级。
+<P>所有参数都如本节最前面所述，而 <CODE>reconnect</CODE>
+值如果不为零则允许设备离线／重新连线。
+使用□例如下：
+<P>
+<HR>
+<PRE>
+        aha152x=0x340,11,7,1
+</PRE>
+<HR>
+<P>注意，参数必须依序指定，意谓如果你想指定同位检查，
+那麽你也得指定 iobase, irq, scsi-id 以及 reconnect 值。
+<P>
+<H3>Adaptec aha154x (`aha1542=')</H3>
+
+<P>
+<P>这些是 aha154x 系列的卡。
+aha1542 系列的卡板子上有一个 i82077 软碟控制器，而 aha1540 系列的卡没有。
+<P>这些卡是汇流排主控卡，而且有可以设定”公平性”的参数，用来与其它设备共用汇流排。
+其启动参数看起来像下面这样。
+<P>
+<HR>
+<PRE>
+        aha1542=iobase[,buson,busoff[,dmaspeed]]
+</PRE>
+<HR>
+<P>可用的 <CODE>iobase</CODE> 值通常是：
+<CODE>0x130, 0x134, 0x230, 0x234, 0x330, 0x334</CODE> 其中之一。
+仿(Clone)卡可能允许使用其它值。
+<P><CODE>buson, busoff</CODE>
+的值是该卡占用工业标准架构(ISA)汇流排的毫秒数(microsecond)。
+预设值是 11us on, and 4us off，如此其它的卡
+（像是工业标准架构介面的 LANCE
+乙太网路卡）就有机会存取工业标准架构汇流排。
+<P><CODE>dmaspeed</CODE> 的值是进行直接记忆体存取的速率（以百万位元组每秒为单位）。
+预设为 5MB/s。
+新版的卡可以让你从软体配置(soft-configuration)中选择这个值，
+较旧的卡则使用跳接(jumpers)。假设你的主机板够力的话可以使用 10MB/s。
+如果使用 5MB/s 以上的值请小心试验。
+<P>
+<H3>Adaptec aha274x, aha284x, aic7xxx (`aic7xxx=')</H3>
+
+<P>
+<P>这些卡可以接受此种格式的参数。
+<P>
+<HR>
+<PRE>
+        aic7xxx=extended,no_reset
+</PRE>
+<HR>
+<P>如果 <CODE>extended</CODE>
+的值不为零则表示打开对大容量磁碟的延伸转换(extended translation)。
+<CODE>no_reset</CODE> 值如果不为零则是告诉驱动程式启动时，
+设定介面卡的时候不要重置 SCSI 汇流排。
+<P>
+<H3>AdvanSys SCSI Host Adaptors (`advansys=')</H3>
+
+<P>
+<P>AdvanSys  驱动程式最多能接受四个输出入位址以侦测 AdvanSys SCSI
+卡。注意，这些值（若使用的话）完全不会影响 EISA 或是 PCI  的
+侦测。它们仅用来侦测 ISA  以及 VLB  介面卡。还有，如果此驱动
+程式编译时有打开错误侦测的话，那麽错误侦测的输出输出层级可以
+藉由加入 0xdeb[0-f] 参数来设定。
+<P>
+<H3>Always IN2000 介面卡 (`in2000=')</H3>
+
+<P>
+<P>跟其它 SCSI 卡的启动参数不同，
+IN2000 驱动程式使用由美国标准交换码(ASCII)
+所组成的前置(prefix)字串代表大部份的整数参数。
+这是一份支援列表：
+<P>ioport:addr --
+其中 addr 是卡（通常没有唯读记忆体）的输出入位址。
+<P>noreset --
+没有选用的参数。这避免启动时期的 SCSI 汇流排重置动作。
+<P>nosync:x --
+x 是个位元遮罩(bitmask)，其中前面七个位元对应到七个 SCSI
+设备
+（第零个位元是第零号设备，馀类推）。
+<P>设定其中的位元以避免对该设备进行同步(sync)协商(negotiation)。
+驱动程式预设是关闭所有设备之同步。
+<P>period:ns --
+ns 是以奈秒(nanoseconds)为单位之最小 SCSI 资料传输时间区段
+(period)。预设为 500; 可接受的值是 250 到 1000。
+<P>disconnect:x --
+x = 0 即绝不允许离线，2 即一定可以离线。
+x = 1 则为’适当’时可离线，这是预设值，
+而且是一般情况的最佳选择。
+<P>debug:x
+如果定义了 `DEBUGGING_ON' 则 x
+就是设定不同错误侦测输出的位元遮罩
+－参见 in2000.h 中定义的 DB_xxx。
+<P>proc:x --
+如果定义了 `PROC_INTERFACE' 则 x 就是决定 /proc
+介面运作方式及功能的位元遮罩－参见 in2000.h 中定义的
+PR_xxx。
+<P>下面列出一些使用□例：
+<P>
+<HR>
+<PRE>
+        in2000=ioport:0x220,noreset
+        in2000=period:250,disconnect:2,nosync:0x03
+        in2000=debug:0x1e
+        in2000=proc:3
+</PRE>
+<HR>
+<P>
+<H3>使用 AMD AM53C974 的硬体 (`AM53C974=')</H3>
+
+<P>
+<P>与其它驱动程式不同，这一个不使用启动参数来传达输出入埠，
+硬体中断或直接记忆体存取通道。
+（既然 AMD53C974 是个 PCI 设备，其实也不需要作这些设定。）
+取而代之的是用来传达介面卡与设备间传输模式与传输率的参数。
+这最好用□例来解释：
+<P>
+<HR>
+<PRE>
+        AM53C974=7,2,8,15
+</PRE>
+<HR>
+<P>这会被解释成这样：‘对於 SCSI-ID 7 的控制器与 SCSI-ID 2 的设备间之通讯，
+使用最大 8MHz 之同步模式传输率。应协商 15 位元组的偏移值。’
+详细资料可在 <CODE>linux/drivers/scsi/README.AM53C974</CODE> 档案里找到。
+<P>
+<H3>BusLogic SCSI 介面卡与 v1.2 的核心 (`buslogic=')</H3>
+
+<P>
+<P>在旧版的核心中， buslogic 驱动程式只接受一个参数，就是输出入位址。
+它能接受下列值：<CODE>0x130, 0x140, 0x230, 0x234, 0x330, 0x334</CODE>。
+<P>
+<H3>BusLogic SCSI 介面卡与 v2.x 的核心 (`BusLogic=')</H3>
+
+<P>
+<P>在 v2.x 核心中，BusLogic 驱动程式接受许多参数。
+（注意上面的大小写；是大写的 B  以及 L!!! ）。
+下面的细节是直接从 v2.0 核心中的 Leonard N. Zubkoff's 驱动程式拿过来的。
+<P>这个 BusLogic 驱动程式的核心命令列是由 "BusLogic" 驱动程式识别字，
+加上各个以逗号格开的选用性整数序列，後面跟著各个选用性的字串序列所组成。
+每行命令列都用於一张 BusLogic 卡，
+在使用多张 BusLogic 卡的系统上可以使用多个命令列来设定。
+<P>第一个整数指定介面卡所在的 I/O 位址。如果不指定则预设值为零，
+表示把这个参数设为预设侦测顺序中找到的第一张 BusLogic 卡。
+如果在命令列上指定了任何的 I/O 位址参数，预设侦测顺序就会被忽略。
+<P>第二个整数指定用於支援伫列运作(Tagged Queuing)的目标设备之伫列深度。
+伫列深度是容许同时送出的 SCSI 指令数。如果没有指定则预设值为零，
+表示使用根据介面卡的总伫列深度及数目，种类，速度，
+以及侦测目标设备的能力所自动判断的值。
+对於需要使用 ISA 错误缓冲区(Bounce Buffers)的介面卡，
+伫列深度自动设为 BusLogic_TaggedQueueDepth_BB 以避免 DMA
+错误缓冲记忆体的过载。
+不支援伫列运作的目标设备使用 BusLogic_UntaggedQueueDepth 定义的伫列深度。
+<P>第三个整数指定汇流排停置(Settle)时间，以秒为单位。
+这乃是重置介面卡使 SCSI 汇流排重置到发出 SCSI 指令之间的时间。
+如果没有指定则预设值为零，表示使用 BusLogic_DefaultBusSettleTime 的值。
+<P>第四个整数指定区域选项。如果没有指定则预设值为零。
+注意，区域选项只用於特定的介面卡。
+<P>第五个整数指定全域选项。如果没有指定，预设值为零。
+注意，全域选项应用於所有的介面卡。
+<P>字串选项用来提供对伫列运作，错误回复，以及介面卡侦测之控制。
+<P>伫列运作的指定以 "TQ:"  开头，
+可以明确地指定是否允许有此支援的目标设备使用伫列运作。
+下面是可用的指定选项：
+<P>TQ:Default --
+伫列运作的允许与否以 BusLogic
+卡的轫体版本以及伫列深度的值是否允许多重指令作为判断基础。
+<P>TQ:Enable --
+对所有接在这张卡上的目标设备打开伫列运作，忽略介面卡轫体版本所加诸的限制。
+<P>TQ:Disable --
+对所有接在这张卡上的目标设备关闭伫列运作。
+<P>TQ:&lt;每个目标的设定&gt; --
+各别控置对每个目标设备的伫列运作。
+&lt;每个目标的设定&gt;是由 "Y", "N", and "X"  字元组成的串列。
+"Y" 打开伫列运作，"N" 关闭伫列运作，而 "X"  接受以轫体版本为基础的预设值。
+第一个字元代表目标设备 0，第二个代表设备 1，依此类推；
+如果 "Y", "N" and "X" 字元串列并未涵盖所有的目标设备，
+未指定的字元将被假设为 "X"。
+<P>注意，明确地指定要使用伫列运作可能会出问题；
+这主要是方便用来关闭对某些没能正确实作此功能之目标设备的伫列运作。
+<P>错误回复策略的指定以 "ER:"  开头，可以明确地指定因 SCSI 指令失败，
+无法成功完成而呼叫 ResetCommand 时执行的错误回复动作。
+下面是可用的指定选项。
+<P>ER:Default --
+错误回复依 SCSI 子系统的建议选择强制重置(Hard
+Reset)与汇流排设备重置其中之一。
+<P>ER:HardReset --
+错误回复将会启始介面卡的强制重置，这也会引起 SCSI  汇流排的重置。
+<P>ER:BusDeviceReset --
+错误回复将送出汇流排设备重置讯息给引起错误的目标设备。
+<P>如果该目标设备再次造成错误回复而且送出汇流排设备重置讯息之後该目标设备没有一次成功完成
+SCSI 指令的话，
+则尝试进行强置重置。
+<P>ER:None --
+错误回复将被冻结。
+这个选项应该只用於 SCSI
+汇流排重置或汇流排设备重置会使目标设备无法回复的情况。
+<P>ER:&lt;每个目标的设定&gt; --
+错误回复将对每个目标设备进行各别控制。
+&lt;每个目标的设定&gt;是由 "D", "H", "B", and "N" 字元所组成的串列。
+"D" 选择预设值，"H" 选择强置重置，"B" 选择汇流排设备重置，而
+"N"选择不重置。
+第一个字元代表目标设备 0，第二个代表设备 1，依此类推；
+如果 "D", "H" , "B" and "N" 字元串列并未涵盖所有的目标设备，
+未指定的字元将被假设为 "X"。
+<P>介面卡侦测的指定包含下列字串：
+<P>NoProbe --
+不执行任何一种侦测，因此不会侦测到 BusLogic 介面卡。
+<P>NoProbeISA --
+不侦测标准 ISA I/O 位址，因此只会侦测到 PCI 介面卡。
+<P>NoSortPCI --
+依 PCI BIOS 所提供的顺序列举 PCI 介面卡，
+忽略任何 AutoSCSI "Use Bus And Device # For PCI Scanning Seq."
+选项的设定。
+<P>
+<H3>EATA SCSI 介面卡 (`eata=')</H3>
+
+<P>
+<P>新的 v2.0 核心之 EATA 驱动程式能接受一个启动参数指定所要侦测的输出入位址。
+格式为：
+<P>
+<HR>
+<PRE>
+
+eata=iobase1[,iobase2][,iobase3]...[,iobaseN]
+</PRE>
+<HR>
+<P>此驱动程式会依所列顺序侦测这些位址。
+<P>
+<H3>Future Domain TMC-8xx, TMC-950 (`tmc8xx=')</H3>
+
+<P>
+<P>侦测这些 SCSI 卡的程式码寻找从卡上安装进来的基本输出入系统，
+如果没有，就找不到你的卡。
+或者，如果 BIOS 的签章(signature)字串不被认可那麽也会找不到。
+不管是那一种情况，你都得使用这种型式的启动参数：
+<P>
+<HR>
+<PRE>
+        tmc8xx=mem_base,irq
+</PRE>
+<HR>
+<P><CODE>mem_base</CODE> 的值是界面卡使用的记忆体对映(memory mapped)输出入区域的值。
+此值通常会是下列其中之一：
+<CODE>0xc8000, 0xca000, 0xcc000, 0xce000, 0xdc000, 0xde000</CODE>。
+<P>
+<H3>Future Domain TMC-16xx, TMC-3260, AHA-2920 (`fdomain=')</H3>
+
+<P>
+<P>这个驱动程式根据一份已知基本输出入系统唯读记忆体签章列表侦测这些介面卡。
+完整的列表请参见 <CODE>linux/drivers/scsi/fdomain.c</CODE>，
+该档前面有许多资讯。
+如果此驱动程式不认得你的基本输出入系统，你可以使用这种格式变更：
+<P>
+<HR>
+<PRE>
+        fdomain=iobase,irq[,scsi_id]
+</PRE>
+<HR>
+<P>
+<H3>IOMEGA Parallel Port / ZIP drive (`ppa=')</H3>
+
+<P>
+<P>这个驱动程式用於 IOMEGA ZIP 磁碟附的 IOMEGA 并列埠 SCSI 卡。
+它也可以配合原先的 IOMEGA PPA3 设备使用。
+此驱动程式的启动参数格式为：
+<P>
+<HR>
+<PRE>
+        ppa=iobase,speed_high,speed_low,nybble
+</PRE>
+<HR>
+<P>除了 iobase 之外其馀皆为选用值。如果你想改变这三个选用参数中的任何一个，
+建议你读读 <CODE>linux/drivers/scsi/README.ppa</CODE>
+中有关它们控制些什麽的细节。
+<P>
+<H3>NCR5380 based controllers (`ncr5380=')</H3>
+
+<P>
+<P>跟你的介面卡有关， 5380 的型式可以是输出入对应或记忆体对应。
+（低於 0x400 的位址意谓著输出入对应，
+但 PCI 以及 EISA 硬体使用 0x3ff 以上的输出入位址。）不管是那一种情况，
+你都是指定位址，硬体中断以及直接记忆体存取通道的值。
+输出入对应介面卡的□例像是： <CODE>ncr5380=0x350,5,3</CODE>。
+如果该卡不使用中断，那麽 255(<CODE>0xff</CODE>)这个硬体中断值会关闭中断的使用。
+254 这个应体中断值表自动侦测。
+更细节的资讯可以在 <CODE>linux/drivers/scsi/README.g_NCR5380</CODE>
+这个档案里找到。
+<P>
+<H3>NCR53c400 based controllers (`ncr53c400=')</H3>
+
+<P>
+<P>标准 53c400 的支援是由与上述标准 5380 之支援相同的驱动程式所提供。
+启动参数与上述完全相同，除了 53c400 不使用直接记忆体存取之外。
+<P>
+<H3>NCR53c406a based controllers (`ncr53c406a=')</H3>
+
+<P>
+<P>此驱动程式使用这种格式的启动参数：
+<P>
+<HR>
+<PRE>
+        ncr53c406a=PORTBASE,IRQ,FASTPIO
+</PRE>
+<HR>
+<P>其中 IRQ 以及 FASTPIO 参数为选用项。中断值零关闭中断之使用。
+使用一与 FASTPIO 参数启用 <CODE>insl</CODE> 以及 <CODE>outsl</CODE> 指令以取代一个位元组的
+<CODE>inb</CODE> 以及 <CODE>outb</CODE> 指令。
+此驱动程式也可以由编译时期选项设定使用直接记忆体存取。
+<P>
+<H3>Pro Audio Spectrum (`pas16=')</H3>
+
+<P>
+<P>PAS16 使用 NCR5380 SCSI 晶片，新款还支援无跳接配置。启动参数的格式为：
+<P>
+<HR>
+<PRE>
+        pas16=iobase,irq
+</PRE>
+<HR>
+<P>唯一的不同是你可以指定 255 这个硬体中断值，
+这会告诉驱动程式不要使用中断，然效能会降低。
+<CODE>iobase</CODE> 通常是 <CODE>0x388</CODE>。
+<P>
+<H3>Seagate ST-0x (`st0x=')</H3>
+
+<P>
+<P>侦测这些 SCSI 卡的程式码寻找从卡上安装进来的基本输出入系统，
+如果没有，就找不到你的卡。或者，如果 BIOS
+的签章字串不被认可那麽也会找不到。
+不管是那一种情况，你都得使用这种型式的启动参数：
+<P>
+<HR>
+<PRE>
+        st0x=mem_base,irq
+</PRE>
+<HR>
+<P><CODE>mem_base</CODE> 的值是界面卡使用的记忆体对映(memory mapped)输出入区域的值。
+此值通常会是下列其中之一：
+<CODE>0xc8000, 0xca000, 0xcc000, 0xce000, 0xdc000, 0xde000</CODE>。
+<P>
+<H3>Trantor T128 (`t128=')</H3>
+
+<P>
+<P>这些介面卡也是以 NCR5380 晶片为基础，接受下列选项：
+<P>
+<HR>
+<PRE>
+        t128=mem_base,irq
+</PRE>
+<HR>
+<P>The valid values for <CODE>mem_base</CODE> are as follows:
+<CODE>0xcc000, 0xc8000, 0xdc000, 0xd8000</CODE>.
+可用於 <CODE>mem_base</CODE> 的值如下：
+<CODE>0xcc000, 0xc8000, 0xdc000, 0xd8000</CODE>。
+<P>
+<H3>Ultrastor SCSI cards (`u14-34f=')</H3>
+
+<P>
+<P>注意，此卡有两个互相独立的驱动程式，名为 <CODE>CONFIG_SCSI_U14_34F</CODE> 者使用
+<CODE>u14-34f.c</CODE> 而 <CODE>CONFIG_SCSI_ULTRASTORE</CODE> 使用 <CODE>ultrastor.c</CODE>。
+u14-34f 这一个（新的 v2.0 核心用它）接受一个格式如下的启动参数：
+<P>
+<HR>
+<PRE>
+
+u14-34f=iobase1[,iobase2][,iobase3]...[,iobaseN]
+</PRE>
+<HR>
+<P>此驱动程式会依所列顺序侦测这些位址。
+<P>
+<H3>Western Digital WD7000 cards (`wd7000=')</H3>
+
+<P>
+<P>这个驱动程式寻找它所知道的基本输出入系统唯读记忆体字串来侦测
+wd7000 并且知道数个标准的配置设定。
+如果它没能用正确的值动起来，或不认得你的基本输出入系统版本，
+那麽你可以使用这种格式的启动参数。
+<P>
+<HR>
+<PRE>
+        wd7000=irq,dma,iobase
+</PRE>
+<HR>
+<P>
+<P>
+<H2><A NAME="ss4.3">4.3 不接受启动参数的 SCSI 卡</A>
+</H2>
+
+<P>
+<P>目前为止，下列 SCSI 介面卡不使用任何启动时期参数。在某些情况下，
+你可以直接编辑驱动程式本身把值<EM>写死(hard-wire)</EM>进去，如果真的必要的话。
+<P>
+<PRE>
+        Adaptec aha1740 (EISA probing),
+        NCR53c7xx,8xx (PCI, both drivers)
+        Qlogic Fast (0x230, 0x330)
+        Qlogic ISP (PCI)
+</PRE>
+<P>
+<HR>
+<A HREF="BootPrompt-HOWTO-5.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="BootPrompt-HOWTO-3.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="BootPrompt-HOWTO.html#toc4"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

@@ -1,0 +1,411 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Font HOWTO: WYSIWYG Publishing and Fonts</TITLE>
+ <LINK HREF="Font-HOWTO-8.html" REL=next>
+ <LINK HREF="Font-HOWTO-6.html" REL=previous>
+ <LINK HREF="Font-HOWTO.html#toc7" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Font-HOWTO-8.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Font-HOWTO-6.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Font-HOWTO.html#toc7"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s7">7. WYSIWYG Publishing and Fonts</A></H2>
+
+<H2><A NAME="ss7.1">7.1 Introduction and Overview</A>
+</H2>
+
+<P>Installing fonts for WYSIWYG publishing on Linux is a relatively
+complex task. It typically involves three steps:
+<UL>
+<LI>Make the font available to the X server</LI>
+<LI>Make the font available to ghostscript</LI>
+<LI>Make the font available to the application</LI>
+</UL>
+
+The main reason for the complexity is that 
+the <EM>font printing system</EM> ( ghostscript ) is unrelated 
+to the <EM>screen font system</EM>. In a way, Linux's left hand
+does not know what it's right hand is doing.
+This problem is nontrivial to solve, because it is possible that 
+printer fonts and display fonts reside on different machines, so there
+is no guarantee that all fonts the XClient uses are printable.
+<P>The good news is that most WYSIWYG applications use what is a reasonable solution
+to this problem. The solution involves constructing some kind of
+mechanism that maps screen fonts to printer fonts ( this is the main issue.
+There are also other issues, such as grouping bold, italic and roman variants
+into ``families'' of fonts ).
+Unfortunately, there is no standard way to do this. It seems that font management
+standards which address this issue would greatly simplify the installation
+of fonts into WYSIWYG publishing systems, because all applications could 
+use a system-wide ( as opposed to application-specific ) configuration.
+<H2><A NAME="ss7.2">7.2 Applixware</A>
+</H2>
+
+<P>There are two ways to install fonts into Applixware. One method 
+involves using FontTastic, which is Applixware's ``private'' font
+server. The other method involves editing Applixware's fontmap,
+to use a font already installed on the system. Installing into the
+font server is more convenient, but fonts installed in this manner may 
+only be printed at 300 dpi.
+<H3>FontTastic</H3>
+
+<P>Using FontTastic is the easy way to do it. To install new fonts
+like this, simply do the following:
+<OL>
+<LI>Run Applixware as root</LI>
+<LI>Click on the <EM>tools</EM> menu.</LI>
+<LI>Choose ``Font Installer''</LI>
+<LI>Check ``OK'' in the popup dialog</LI>
+<LI>Click the ``Catalogs'' menu and choose ``create''</LI>
+<LI>Fill in the <EM>catalog name</EM> box. It 
+doesn't matter what you put there. For the rest of this example,
+we'll assume it's called ``foobar''</LI>
+<LI>Select your foobar catalog from the catalog manipulations 
+list.</LI>
+<LI>From the ``Services'' menu, select
+``install fonts into -&gt; FontTastic font server''</LI>
+<LI>Make sure catalog foobar is selected in the catalogs list,
+then press the ``select files'' button.</LI>
+<LI>Use the select files dialog to select the fonts you want to
+install. Press ``OK'' when you've selected the files.
+For example, if you want to select arial.ttf in 
+the directory /usr/share/fonts/ttfonts/, you would type 
+<EM>/usr/share/fonts/ttfonts</EM> in the ``Current Directory''
+dialog, then select arial.ttf from the files dialog box, then click
+``OK''. Note that you can select multiple files, but they all must
+come from the same directory.</LI>
+<LI>You can edit your list by checking on the different fonts in the
+list box and possibly removing or renaming them.</LI>
+<LI>When you're ready, click the ``install fonts'' button. Then click
+``OK''.</LI>
+<LI>Go to the ``services'' menu and choose ``update''. Check ``OK''
+on the annoying modal dialog, then choose exit from the services menu.
+Exit applix. </LI>
+<LI>Congrats, you're done ! The new fonts will be available when you
+restart Applix.</LI>
+</OL>
+<H3>Using System Wide Fonts With Applixware</H3>
+
+<P>This method is more involved,  but produces better results. I recommend
+that this method is used for fonts that are really important, and that 
+you use a lot. There are a few steps to this:
+<H3>Make the fonts available to X</H3>
+
+<P>This is explained 
+<A HREF="Font-HOWTO-4.html#xfonts">in the previous section</A><H3>Make the fonts available to ghostscript</H3>
+
+<P>This is explained in 
+<A HREF="Font-HOWTO-5.html#ghostscript">in the previous section</A><H3>Edit the fontmap.dir</H3>
+
+<P>This is the final step in making your fonts available to Applix, and 
+also the most time consuming step. The file <EM>fontmap.dir</EM>
+is in under the <EM>axdata/fontmetrics</EM> of your applix installation.
+The purpose of this step is basically to tell applix which screen fonts
+go with which outline fonts. This is in general a very nontrivial problem,
+because the screen fonts are not always on the same computer that the 
+application is installed.
+<P>We describe how to add  fonts to fontmap.dir. In this example, we
+add the font Baskerville Italic.
+<P>
+<OL>
+<LI>First, we add a line that says 
+FontRecord = Baskerville-Normal-Italic
+In fact, the name we use in FontRecord is completely arbitrary.
+However, the font record must be unique to the font. Because of
+this, it's good practice to use the name that ghostscript
+uses for the font. </LI>
+<LI>Next, we a line that says
+Family = Baskerville
+The family name for a font is the name that appears 
+in Applix's font selection menu. Typically, it is <EM>non-unique</EM>,
+since bold, italic, roman and bold-italic variants of a font will
+typically go under the same family.</LI>
+<LI>If the font is either a bold, or italic variant, or both, we need to add the
+following lines:
+<PRE>
+        Slant = 1 
+        
+</PRE>
+
+if the font is italic, and
+<PRE>
+        Weight = 1 
+        
+</PRE>
+
+if the font is bold.
+If the font is bold <EM>and</EM> italic, we add both lines.
+In this example, we need only add the line
+<PRE>
+        Slant = 1 
+        
+</PRE>
+</LI>
+<LI>We add a line that looks like this:
+<PRE>
+        ScreenName = "-paradise-baskerville-medium-i-normal--0-0-0-0-p-0-iso8859-1"
+        
+</PRE>
+
+The screen name is the name that the X-server uses for the font. 
+We can list font names containing the string ``bask'' by typing
+<PRE>
+        xlsfonts|grep -i bask
+        
+</PRE>
+</LI>
+<LI>Now we add a line that gives the name of the printer font:
+PostScriptPrinterName = Baskerville-Normal-Italic</LI>
+<LI>Next, we need to specify the location of the font metric file 
+and the outline file
+<PRE>
+        MetricsFile = /usr/share/fonts/misc/baskvli.afm
+        Type1FontFileName = /usr/share/fonts/misc/baskvli.pfb
+        
+</PRE>
+
+
+If you are adding a TrueType file, you can use <CODE>ttf2pt1 </CODE>
+to generate an <CODE>afm</CODE> file :
+<PRE>
+                ttf2pt1 -A foo.ttf - &gt; foo.afm
+                
+</PRE>
+
+( or get the ttfutils package and use <CODE>ttf2afm</CODE> )
+Then you use something like this:
+<PRE>
+        MetricsFile = /usr/share/fonts/misc/foo.afm
+        
+</PRE>
+
+Do <EM>not</EM> include a <CODE>Type1FontFileName</CODE> directive --
+let ghostscript take care of this.</LI>
+</OL>
+<P>That's it. Now after adding the whole family of fonts, you should 
+have something like this:
+<PRE>
+        FontRecord = Baskerville-Normal
+        Family = Baskerville
+        ScreenName = "-paradise-baskerville-medium-r-normal--0-0-0-0-p-0-iso8859-1"
+        PostScriptPrintName = Baskerville-Normal
+        MetricsFile = /usr/share/fonts/misc/baskvl.afm
+        Type1FontFileName = /usr/share/fonts/misc/baskvl.pfb
+
+        FontRecord = Baskerville-Normal-Italic
+        Family = Baskerville
+        Slant = 1
+        ScreenName = "-paradise-baskerville-medium-i-normal--0-0-0-0-p-0-iso8859-1"
+        PostScriptPrintName = Baskerville-Normal-Italic
+        MetricsFile = /usr/share/fonts/misc/baskvli.afm
+        Type1FontFileName = /usr/share/fonts/misc/baskvli.pfb
+
+        FontRecord = Baskerville-Bold
+        Family = Baskerville
+        Weight = 1
+        ScreenName = "-paradise-baskerville-bold-r-normal--0-0-0-0-p-0-iso8859-1"
+        PostScriptPrintName = Baskerville-Bold
+        MetricsFile = /usr/share/fonts/misc/baskvlb.afm
+        Type1FontFileName = /usr/share/fonts/misc/baskvlb.pfb     
+
+        FontRecord = Baskerville-Bold-Italic
+        Family = Baskerville
+        Weight = 1
+        Slant = 1
+        ScreenName = "-paradise-baskerville-bold-i-normal--0-0-0-0-p-0-iso8859-1"
+        PostScriptPrintName = Baskerville-Bold-Italic
+        MetricsFile = /usr/share/fonts/misc/baskvlbi.afm
+        Type1FontFileName = /usr/share/fonts/misc/baskvlbi.pfb     
+</PRE>
+<P>
+<P>It is possible to do more with this configuration file. The file itself 
+has a <EM>glossary</EM> which explains the format of the configuration
+file.
+<H2><A NAME="ss7.3">7.3 Star Office</A>
+</H2>
+
+<P>Here, we cover Star Office 5.0. The procedure with Star Office 5.1 
+is similar,
+but the utility is called <CODE>spadmin</CODE>, not <CODE>psetup</CODE>.
+It's worth mentioning up front that 
+<A HREF="http://www.mindspring.com/~john_mcl/adding_fonts.html">John McLaughlin's page</A>
+is an excellent source on this issue, and it inspired most
+of what follows.
+<P>Having tried both Star Office 5.0, and 5.1, I have found that Star Office
+5.1 seems to give me less grief when adding new fonts. I was not succesful
+adding true type fonts to Star Office 5.0, but it proved somewhat easier
+with Star Office 5.1.
+<H3>Backup Your Configuration Before you Start !</H3>
+
+<P>It's good to make a backup in case you inadvertantly hose your 
+configuration. Modifying fonts will impact several files in the
+<CODE>xp3</CODE>.
+You should definitely backup the file <CODE>xp3/psstd.fonts</CODE>. 
+I recommend going further and backing up the whole <CODE>xp3</CODE>
+directory. You can do this by cd-ing to your Star Office
+directory, then using
+<PRE>
+        tar cvzf xp3.tgz xp3
+        
+</PRE>
+
+to create a backup. To restore a backup,
+delete the <CODE>xp3</CODE> directory and unpack the archive
+<PRE>
+        rm -rf xp3
+        tar xvzf xp3.tgz
+        
+</PRE>
+<H3>Adding Type1 Fonts to Star Office</H3>
+
+<P>Adding Type1 fonts to Star Office is relatively simple.
+If you want to use your TrueType fonts with Star Office 5.0,
+the best thing to do is convert them to Type1 fonts, and then follow
+the procedure outlined here. If you have Star Office 5.1, you 
+might wish to use the proceedure for installing TrueType fonts
+instead ( though it is somewhat more difficult ).
+Firstly, do the usual thing -- make the font available to both X and 
+ghostscript. Once this is done, the font can be installed into Star Office
+using the <CODE>psetup</CODE> tool. The procedure is as follows:
+<OL>
+<LI>As root, run psetup ( or spadmin if you have Star Office 5.1 )</LI>
+<LI>Press the ``add fonts'' button. </LI>
+<LI>The easiest thing to do after 
+this is press the ``initialize font paths'' button. This puts a
+list of all fonts in your X font path in the list box. </LI>
+<LI>Choose 
+the directory containing the font you wish to install ( it should
+be in the box ), and then press ``OK''. </LI>
+<LI>Click the ``convert all font metrics button''.</LI>
+</OL>
+
+That's it. You're done. You can exit ( or click ``OK'' until it exits ). 
+When you restart Star Office, you will have the new fonts.
+<H3>Adding TrueType Fonts to Star Office</H3>
+
+<P>Adding TrueType fonts to Star Office is 
+nontrivial, but possible.
+After some hard work, and long hours stareing at 
+<A HREF="http://www.mindspring.com/~john_mcl/adding_fonts.html">John McLaughlin's page</A>
+page, I finally got them working in Star Office 5.1.
+Note that this does not work with version 5.0.
+The following steps are appropriate it you are printing 
+through ghostscript:
+<UL>
+<LI>Make the fonts available to X.</LI>
+<LI>Make the fonts available to ghostscript.</LI>
+<LI>You need to have <CODE>afm</CODE> files for the fonts you wish to
+add. Use 
+<PRE>
+        ttf2pt1 -A foo.ttf - &gt; foo.afm
+                
+</PRE>
+
+to create the <CODE>afm</CODE> files.
+Alternatively, you can get the </LI>
+<LI>
+<A HREF="http://pegasus.rutgers.edu/~elflord/font_howto/ttfutils-0.2.tar.gz">ttfutils</A>
+package 
+and use <CODE>ttf2afm</CODE> The advantage of this 
+is you can handle several at a time, eg 
+<PRE>
+        ttf2afm *.ttf
+        
+</PRE>
+</LI>
+<LI>Star Office needs <CODE>pfb</CODE> files corresponding 
+to each <CODE>ttf</CODE> file. You can create them 
+with the command
+<PRE>
+        touch foo.pfb
+        
+</PRE>
+
+Actually, Star Office only uses these files for printing purposes.
+And by enterring the font in the PPD, thus duping Star Office into
+thinking the fonts are inside your printer ( when they're actually
+inside ghostscript's rendering system ), you get around needing to
+use these files. Star Office just seems to require that the 
+<CODE>pfb</CODE> file exists to install the font.
+        </LI>
+<LI>    Now you can run <CODE>spadmin</CODE> and install the font(s).</LI>
+<LI>    
+Now add the fonts to the PPD file corresponding to your 
+printer configuration. The name you use for the font should
+be the same name Star Office uses for it, <EM>not</EM> the 
+ghostscript font name. For example, if the font is 
+<CODE>foobar.ttf</CODE> and the corresponding <CODE>afm</CODE> 
+file is <CODE>foobar.afm</CODE>, you use the name
+``foobar'' for the font in the PPD file. The entry 
+should look something like this:
+<PRE>
+*Font cloistrk: Standard "(001.002)" Standard ROM
+                
+</PRE>
+
+                        </LI>
+</UL>
+<P>On the other hand, if you are not printing from ghostscript,
+you have different issues to deal with. In this case, 
+tricking Star Office into thinking that your printer has the fonts
+is a bad idea, because your printer does <EM>not</EM> have the
+fonts in the ROM, so while <CODE>gv</CODE> will display the postscript
+files nicely, your printer will not be able to print them.
+If you have a postscript printer, the main differences are as follows:
+<UL>
+<LI>Do not edit the PPD file.</LI>
+<LI>Instead of using <CODE>touch foo.pfb</CODE> to create empty <CODE>pfb</CODE>
+files, you need the <CODE>pfb</CODE> files to be Type42 postscript
+fonts. A Type42 font is really a ``printer TrueType font''.
+You don't really notice Type42 fonts even when you use them, because
+most applications handle them transparently.
+To create Type42 fonts, you use 
+<A HREF="ftp://ftp.dcs.ed.ac.uk/pub/jek/programs/ttfps.tar.gz">ttfps</A> to create the files. 
+<PRE>
+        ttfps foo.ttf foo.pfb
+                        
+</PRE>
+</LI>
+</UL>
+<P>
+<P>There are some gotchas. Sometimes, Star Office might not choose the
+screen font you like. It is sometimes worth checking 
+<CODE>xp3/psstd.fonts</CODE> and possibly editing it to make sure
+that Star Office is really using the font you had in mind for screen 
+display.
+Also, Star Office doesn't handle configuration problems gracefully.
+If there's something wrong with your configuration, it's
+possible that the word processor will not even start. This is why 
+you should back up your <CODE>xp3</CODE> directory.
+<H3>Under the Hood</H3>
+
+<P>If you wish to install TrueType fonts in Star Office, you may need
+to learn how Star Office handles things. When you run <CODE>spadmin</CODE>
+or <CODE>psetup</CODE>, the following happens:
+<UL>
+<LI>Star Office makes symbolic links to the <CODE>pfb</CODE> outline 
+files in your <CODE>xp3/pssoftfonts</CODE> directory.</LI>
+<LI>The <CODE>afm</CODE> file is copied into the directory
+<CODE>xp3/fontmetrics/afm/</CODE></LI>
+<LI>An entry is added to the <CODE>xp3/psstd.fonts</CODE> file.
+This file stores the names of all the screen fonts used by 
+Star Office ( in particular, it maps the screen fonts to the outline
+filenames ).</LI>
+</UL>
+<P>This is why it's good to simply backup the whole <CODE>xp3</CODE> directory --
+it is the only convenient way to restore Star Office to a 
+clean configuration.
+<H2><A NAME="ss7.4">7.4 Word Perfect</A>
+</H2>
+
+<P>Nothing yet. 
+<A HREF="http://www.rodsbooks.com/wpfonts/">Rod Smith's webpage</A>
+is the definitive resource regarding installing fonts on Word Perfect.
+<HR>
+<A HREF="Font-HOWTO-8.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Font-HOWTO-6.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Font-HOWTO.html#toc7"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

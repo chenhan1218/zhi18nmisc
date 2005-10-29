@@ -1,0 +1,300 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>From VMS to Linux HOWTO: Advanced Topics </TITLE>
+ <LINK HREF="VMS-to-Linux-HOWTO-9.html" REL=next>
+ <LINK HREF="VMS-to-Linux-HOWTO-7.html" REL=previous>
+ <LINK HREF="VMS-to-Linux-HOWTO.html#toc8" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="VMS-to-Linux-HOWTO-9.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="VMS-to-Linux-HOWTO-7.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="VMS-to-Linux-HOWTO.html#toc8"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="Advanced Topics"></A> <A NAME="s8">8. Advanced Topics </A></H2>
+
+<P>
+<P>Here the game gets tough. Learn these features, then you'll be ready to say
+that you `know something about Linux' ;-)
+<P>
+<P>
+<H2><A NAME="Permissions"></A> <A NAME="ss8.1">8.1 Permissions and Ownership </A>
+</H2>
+
+<P>
+<P>Files and directories have permissions (`protections') and ownership, just
+like under VMS. If you can't run a program, or can't modify a file, or can't
+access a directory, it's because you don't have the permission to do so,
+and/or because the file doesn't belong to you. Let's have a look at the
+following example:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ ls -l /bin/ls
+-rwxr-xr-x   1 root     bin         27281 Aug 15  1995 /bin/ls*
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>The first field shows the permissions of the file <CODE>ls</CODE> (owner root, 
+group bin). There are three types of ownership: owner, group, and others
+(similar to VMS owner, group, world), and three types of permissions: 
+read, write (and delete), and execute.
+<P>From left to right, <CODE>-</CODE> is the file type (<CODE>-</CODE> = ordinary file, <CODE>d</CODE>
+= directory, <CODE>l</CODE> = link, etc); <CODE>rwx</CODE> are the permissions for the file
+owner (read, write, execute); <CODE>r-x</CODE> are the permissions for the group of
+the file owner (read, execute); <CODE>r-x</CODE> are the permissions for all other
+users (read, execute).
+<P>To change a file's permissions:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ chmod &lt;whoXperm> &lt;file>
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>where who is <CODE>u</CODE> (user, that is owner), <CODE>g</CODE> (group), <CODE>o</CODE> (other), 
+X is either <CODE>+</CODE> or <CODE>-</CODE>, perm is <CODE>r</CODE> (read), <CODE>w</CODE> (write), or 
+<CODE>x</CODE> (execute). Examples:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ chmod u+x file
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>this sets the execute permission for the file owner. Shortcut:
+<CODE>chmod +x file</CODE>.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ chmod go-wx file
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>this removes write and execute permission for everyone except the owner.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ chmod ugo+rwx file
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>this gives everyone read, write, and execute permission. 
+<P>A shorter way to refer to permissions is with numbers: <CODE>rwxr-xr-x</CODE> can be 
+expressed as 755 (every letter corresponds to a bit: <CODE>---</CODE> is 0, 
+<CODE>--x</CODE> is 1, <CODE>-w-</CODE> is 2...).
+<P>For a directory, <CODE>rx</CODE> means that you can <CODE>cd</CODE> to that directory, and 
+<CODE>w</CODE> means that you can delete a file in the directory (according to the 
+file's permissions, of course), or the directory itself. All this is only
+part of the matter---RMP.
+<P>To change a file's owner:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ chown username file
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>To sum up, a table:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+VMS                             Linux                   Notes
+------------------------------------------------------------------------------
+
+SET PROT=(O:RW) file.txt        $ chmod u+rw file.txt
+                                $ chmod 600 file.txt
+SET PROT=(O:RWED,W) file        $ chmod u+rwx file
+                                $ chmod 700 file
+SET PROT=(O:RWED,W:RE) file     $ chmod 755 file
+SET PROT=(O:RW,G:RW,W) file     $ chmod 660 file
+SET FILE/OWNER_UIC=JOE file     $ chown joe file
+SET DIR/OWNER_UIC=JOE [.dir]    $ chown joe dir/
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>
+<H2><A NAME="Multitasking"></A> <A NAME="ss8.2">8.2 Multitasking: Processes and Jobs </A>
+</H2>
+
+<P>
+<P>More about running programs. There are no `batch queues' under Linux as
+you're used to; multitasking is handled very differently. Again, this is
+what the typical command line looks like:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ command -s1 -s2 ... -sn par1 par2 ... parn &lt; input > output &amp;
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>where <CODE>-s1</CODE>, ..., <CODE>-sn</CODE> are the program switches, 
+<CODE>par1</CODE>, ..., <CODE>parn</CODE> are the program parameters.
+<P>Now let's see how multitasking works. Programs, running in foreground or
+background, are called `processes'.
+<P>
+<UL>
+<LI> To launch a process in background:
+<BLOCKQUOTE><CODE>
+<PRE>
+$ progname [-switches] [parameters] [&lt; input] [> output] &amp;
+[1] 234
+</PRE>
+</CODE></BLOCKQUOTE>
+
+the shell tells you what the `job number' (the first digit; see below) and 
+PID (Process IDentifier) of the process are. Each process is identified 
+by its PID.
+</LI>
+<LI> To see how many processes there are:
+<BLOCKQUOTE><CODE>
+<PRE>
+$ ps -ax
+</PRE>
+</CODE></BLOCKQUOTE>
+
+This will output a list of currently running processes.
+</LI>
+<LI> To kill a process:
+<BLOCKQUOTE><CODE>
+<PRE>
+$ kill &lt;PID>
+</PRE>
+</CODE></BLOCKQUOTE>
+
+You may need to kill a process when you don't know how to quit it 
+the right way... ;-). Sometimes, a process will only be killed by 
+one of the following:
+<BLOCKQUOTE><CODE>
+<PRE>
+$ kill -15 &lt;PID>
+$ kill -9 &lt;PID>
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+</UL>
+<P>In addition to this, the shell allows you to stop or temporarily suspend a
+process, send a process to background, and bring a process from background
+to foreground. In this context, processes are called `jobs'.
+<P>
+<UL>
+<LI> To see how many jobs there are:
+<BLOCKQUOTE><CODE>
+<PRE>
+$ jobs
+</PRE>
+</CODE></BLOCKQUOTE>
+
+jobs are identified by the numbers the shell gives them, not by their PID.
+</LI>
+<LI> To stop a process running in foreground:
+<BLOCKQUOTE><CODE>
+<PRE>
+$ CTRL-C
+</PRE>
+</CODE></BLOCKQUOTE>
+
+(it doesn't always work)
+</LI>
+<LI> To suspend a process running in foreground:
+<BLOCKQUOTE><CODE>
+<PRE>
+$ CTRL-Z
+</PRE>
+</CODE></BLOCKQUOTE>
+
+(ditto)
+</LI>
+<LI> To send a suspended process into background (it becomes a job):
+<BLOCKQUOTE><CODE>
+<PRE>
+$ bg &lt;job>
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI> To bring a job to foreground:
+<BLOCKQUOTE><CODE>
+<PRE>
+$ fg &lt;job>
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI> To kill a job:
+<BLOCKQUOTE><CODE>
+<PRE>
+$ kill &lt;%job>
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+</UL>
+<P>
+<H2><A NAME="ss8.3">8.3 Files, Revisited</A>
+</H2>
+
+<P>
+<P>More information about files.
+<P>
+<UL>
+<LI> <B>stdin, stdout, stderr</B>: under UNIX, every system component is
+treated as if it were a file. Commands and programs get their input from a
+`file' called <CODE>stdin</CODE> (standard input; usually, the keyboard), put their
+output on a `file' called <CODE>stdout</CODE> (usually, the screen), and error
+messages go to a `file' called <CODE>stderr</CODE> (usually, the screen).
+
+Using <CODE>&lt;</CODE> and <CODE>&gt;</CODE> you redirect input and output to a different
+file. Moreover, <CODE>&gt;&gt;</CODE> appends the output to a file instead of
+overwriting it; <CODE>2&gt;</CODE> redirects error messages (stderr); 2&gt;&amp;1
+redirects stderr to stdout, while 1&gt;&amp;2 redirects stdout to stderr.
+There's a `black hole' called <CODE>/dev/null</CODE>: everything redirected to
+it disappears;
+</LI>
+<LI> <B>wildcards</B>: '<CODE>*</CODE>' is almost the same. Usage: * matches all 
+files except the hidden ones; .* matches all hidden files; *.* matches 
+only those that have a '.' in the middle, followed by other characters; 
+p*r matches both `peter' and `piper'; *c* matches both `picked' and `peck'.
+'<CODE>%</CODE>' becomes '<CODE>?</CODE>'. There is another wildcard: the 
+<CODE>[]</CODE>. Usage: <CODE>[abc]*</CODE> matches files starting with a, b, c; 
+<CODE>*[I-N,1,2,3]</CODE> matches files ending with I, J, K, L, M, N, 1, 2, 3;
+</LI>
+<LI> <CODE>mv</CODE> (<CODE>RENAME</CODE>) doesn't work for multiple files; that is, 
+<CODE>mv *.xxx *.yyy</CODE> won't work;
+</LI>
+<LI> use <CODE>cp -i</CODE> and <CODE>mv -i</CODE> to be warned when a file is going to 
+be overwritten.
+</LI>
+</UL>
+<P>
+<P>
+<H2><A NAME="Print Queues"></A> <A NAME="ss8.4">8.4 Print Queues </A>
+</H2>
+
+<P>
+<P>Your prints are queued, like under VMS. When you issue a print command, you
+may specify a printer name. Example:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ lpr file.txt          # this goes to the standard printer
+$ lpr -Plaser file.ps   # this goes to the printer named 'laser'
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>To handle the print queues, you use the following commands:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+
+VMS                                     Linux
+------------------------------------------------------------------------------
+
+$ PRINT file.ps                         $ lpr file.ps
+$ PRINT/QUEUE=laser file.ps             $ lpr -Plaser file.ps
+$ SHOW QUEUE                            $ lpq
+$ SHOW QUEUE/QUEUE=laser                $ lpq -Plaser
+$ STOP/QUEUE                            $ lprm &lt;item>
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>
+<HR>
+<A HREF="VMS-to-Linux-HOWTO-9.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="VMS-to-Linux-HOWTO-7.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="VMS-to-Linux-HOWTO.html#toc8"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

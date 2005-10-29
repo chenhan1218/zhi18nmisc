@@ -1,0 +1,145 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>RPM HOWTO (RPM at Idle): Multi-architectural RPM Building</TITLE>
+ <LINK HREF="RPM-HOWTO-8.html" REL=next>
+ <LINK HREF="RPM-HOWTO-6.html" REL=previous>
+ <LINK HREF="RPM-HOWTO.html#toc7" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="RPM-HOWTO-8.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="RPM-HOWTO-6.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="RPM-HOWTO.html#toc7"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s7">7. Multi-architectural RPM Building</A></H2>
+
+<P>RPM 目前可用於 build 各式作業平台之程式套件， 如 Intel i386、
+安裝 Linux 之 Digital Alpha、 與 Sparc 機器，
+而且有人測試報告， 說明它也可以在 SGI 與 HP 工作站上使用。
+RPM 有許多特色， 使得它能夠輕鬆地支援在各式作業平台上 build
+程式套件， 第一個特色便是在 <CODE>/etc/rpmrc</CODE> 檔案裡的
+``optflags'' 設定項目， 當我們在 build 軟體套件時，
+它可用於指定平台架構的相關設定值。 另一個特色是 spec 檔案裡的
+``arch'' macro 項目， 根據所要進行 build 的平台架構，
+您可以指定它們執行不同的工作。
+另一個特色是在檔案 header 處的 ``Exclude'' 設定項目。
+<P>
+<H2><A NAME="ss7.1">7.1 Sample spec File</A>
+</H2>
+
+<P>下列以 ``fileutils'' 程式套件為例， 其 spec 檔案的部份內容，
+可用來在 Alpha 與 Intel 平台架構上， 進行 build 的工作。
+<BLOCKQUOTE><CODE>
+<PRE>
+Summary: GNU File Utilities
+Name: fileutils
+Version: 3.16
+Release: 1
+Copyright: GPL
+Group: Utilities/File
+Source0: prep.ai.mit.edu:/pub/gnu/fileutils-3.16.tar.gz
+Source1: DIR_COLORS
+Patch: fileutils-3.16-mktime.patch
+
+%description
+These are the GNU file management utilities.  It includes programs
+to copy, move, list, etc, files.
+
+The ls program in this package now incorporates color ls!
+
+%prep
+%setup
+
+%ifarch alpha
+%patch -p1
+autoconf
+%endif
+%build
+configure --prefix=/usr --exec-prefix=/
+make CFLAGS="$RPM_OPT_FLAGS" LDFLAGS=-s
+
+%install
+rm -f /usr/info/fileutils*
+make install
+gzip -9nf /usr/info/fileutils*
+
+.
+.
+.
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss7.2">7.2 Optflags</A>
+</H2>
+
+<P>在此一範例中， 您可以發現 ``optflags'' 設定項目，
+是如何由 <CODE>/etc/rpmrc</CODE> 檔案中發揮作用。
+首先決定您所進行 build 動作的機器， 是哪一種平台架構，
+請將其正確之設定值， 指定到 <CODE>RPM_OPT_FLAGS</CODE>。
+您必須針對程式套件之 Makefile 檔案， 進行 patch 的動作，
+將一些通用的變數設定值， 加以改變以適用於您的環境
+( 如 <CODE>-m486</CODE> 與 <CODE>-O2</CODE> )。
+您可以 install 這份 source 套件， 接著解開 source 並檢查其 Makefile 檔案，
+以進一步找出更好的設定方式， 然後觀察 Makefile 的 patch 內容，
+以了解我們必須做哪些改變。
+<P>
+<H2><A NAME="ss7.3">7.3 Macros</A>
+</H2>
+
+<P><CODE>%ifarch</CODE> 此一 macro 設定項目是非常重要的， 在許多場合，
+您須要只針對某一特定平台架構， 進行一兩個 patch 工作，
+這種情況下， RPM 能夠讓您僅針對某一平台架構， 採用必要的 patch。
+<P>在上述範例中， fileutils 有個提供給 64 bit 機器使用的 patch，
+很明顯地， 這項 patch 僅需要由 Alpha 機器所採用， 因此，
+我們針對 64 bit 的 patch 部份， 增加一個 <CODE>%ifarch</CODE> 的 macro
+設定項目， 其範例如下：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+%ifarch axp
+%patch1 -p1
+%endif
+</PRE>
+</CODE></BLOCKQUOTE>
+
+這樣能保證， 除了 Alpha 機器之外， 其他平台架構的機器並不會採用此 patch。
+<P>
+<H2><A NAME="ss7.4">7.4 Excluding Architectures from Packages</A>
+</H2>
+
+<P>您可以在一個目錄內， 同時管理各式作業平台的 RPM 原始檔案，
+這項功能使得我們在製作程式套件的時候， 不必限定於某些作業平台上。
+因此您可以這樣下指令：
+<BLOCKQUOTE><CODE>
+<PRE>
+rpm --rebuild /usr/src/SRPMS/*.rpm
+</PRE>
+</CODE></BLOCKQUOTE>
+
+使得正確的程式套件能夠被 build。
+如果您尚未移植某個應用程式至某一特定的作業平台，
+可以加上這樣的一行內容：
+<BLOCKQUOTE><CODE>
+<PRE>
+ExcludeArch: axp
+</PRE>
+</CODE></BLOCKQUOTE>
+
+到 source 程式套件當中， spec 檔案的 header 處，
+然後在原本進行 build 的作業平台上， 再做一次 rebuild 動作。
+此時， 您就有了一份在 Intel 機器上 build 完成的 source 程式套件，
+同時它也很容易便能移稙至 Alpha 機器上。
+<P>
+<H2><A NAME="ss7.5">7.5 Finishing Up</A>
+</H2>
+
+<P>使用 RPM 來製作「多作業平台」的程式套件， 通常會比各別在該平台製作來得容易，
+而且隨著您製作越多的程式套件， 其效應會更加明顯， 因為，
+我們可以參考其他類似的原始程式套件內容， 得以處理製作時遇到的問題。
+<P>
+<HR>
+<A HREF="RPM-HOWTO-8.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="RPM-HOWTO-6.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="RPM-HOWTO.html#toc7"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

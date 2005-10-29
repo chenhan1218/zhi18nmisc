@@ -1,0 +1,242 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" content="text/html; charset=gb2312">
+<TITLE>Cyrus IMAP mini-HOWTO 中译版</TITLE>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+<PRE>
+<HR>
+原始文件：Cyrus IMAP mini-HOWTO
+档案叙述：如何安装 Cyrus IMAP 伺服器
+翻译日期：2000/04/30
+翻译维护：黄德庆  happyhuang@sohu.com
+<HR>
+
+mini-HOWTO install Cyrus IMAP Server
+Kevin Mitchell (kevin@iserv.net)
+v0.9, 21 January 1998
+
+本文档旨在提供在 Linux 系统中安装 Cyrus IMAP 服务器的一些帮助.
+</PRE>
+
+1. 介绍:
+<p>
+感谢 Bob Anderson (boba@iserv.net) 和 Jorge Paramo (jorge@iserv.net), 他们在我使用 linux 的历程中给了我许多帮助.
+<p>
+什么是 IMAP 以及为什么要使用它?
+<p>
+IMAP( 互联网邮件访问协议 ) 提供了一种访问远程服务器上的电子邮件或 BBS 邮件的方法. IMAP 普遍被认为是 POP ( 邮局协议 ) 邮件的替代者. IMAP 允许用户从不同的机子上访问他们的电子邮件而不用下载那些邮件.
+这种邮件的访问方式更加有效, 而且对终端用户来说有更多的好处. 
+<p>
+可以在下面的网址下找到更详细的资料:<br>
+ [1]http://www.imap.org/whatisIMAP.html
+<p>
+IMAP 和 POP 的比较可参见:<br>
+ [2]http://www.imap.org/imap.vs.pop.brief.html
+<p>
+为什么要用 Cyrus 服务器?
+<p>
+Cyrus 被设计成在一台不允许一般用户登录的服务器上运行. Cyrus 也被认为是 Unix 上的两个最普遍的 IMAP 服务器之一. 另一个是华盛顿大学的 IMAP 服务器.<br>
+[3]ftp://ftp.cac.washington.edu/imap/imap.tar.Z
+<p>
+2. 我的系统之细节
+<p>
+我已经成功地在分别运行 Linux Kernel 2.1.79 和 2.0.33 的 486DX66 和 Pentium 两台机子上安装了 Cyrus 
+系统. 这两台机器是基于 Slackware 3.4 的.
+<p>
+3. Tcl 的安装
+<p>
+在安装 Cyrus 之前先确认你已经在自己的机子上安装了 Tcl, 否则你将无法使用 Cyrus Admin Tool (cyradm).
+<p>
+你可以在下面的网址找到最新 tcl 的资源: <br>
+[4]ftp://ftp.sunlabs.com/pub/tcl/
+<p>
+在安装之后, 确认在目录 /usr/local/lib/ 下存在 libtcl.a 文件. Tcl 8.0 使用的是 libtcl8.0.a, 你应当
+用下面的命令为它建立一个软连接:
+<pre>
+        # ln -s libtcl8.0.a libtcl.a
+</pre>
+4. makedepend 安装
+<p>
+在你的系统中检查是否有 makedepend 命令. 如果没有也不用担心, Cyrus 资源中就有. ( 在我安装的
+Slackware 3.4 中就没有 makedepend 命令. )
+<p>
+为了安装 makedepend , 先解压 Cyrus 的分发版, 然后进入 makedepend 目录, 输入下面的命令:
+<pre>
+        ./configure
+        make
+        cp ./makedepend /usr/local/bin/makedepend
+</pre>
+5. Cyrus 的安装
+<p>
+请小心地按照 Cyrus 分发版中的注意事项进行安装. 你可以在下面的网址中找到这些注意事项的一个拷贝:<br>
+  [5]http://andrew2.andrew.cmu.edu/cyrus/imapd/install.html
+<p>
+关于某些安装步骤的一些提示:
+<p>
+如果你用的是 Slackware 3.4 ( 使用 影子口令 ), 你应当这样配置 :
+<pre>
+        ./configure --with-login=unix_pwcheck
+</pre>
+并直接这样 make 就可以:
+<pre>
+        make depend
+        make all CFLAGS=-O
+</pre>
+第一步: 当加入 cyrus 用户时, 我将用户信息加锁, 以最小化可能的安全漏洞.
+<p>
+第三步: 我不单单是拷贝一个 /etc/syslog.conf , 而且编辑它们.
+<p>
+第九步: 在 linux 下, 确认象下面那样启动 pwcheck , 否则服务器便不会正确地工作:
+<pre>
+        umask 0;/usr/cyrus/bin/pwcheck &
+        umask 022
+</pre>
+然后把下面的代码加到启动脚本中:
+<pre>
+        if [ -f /usr/cyrus/bin/pwcheck ]; then
+        echo -n "Starting pwcheck for imap"
+        umask 0;/usr/cyrus/bin/pwcheck &
+        umask 022
+        fi
+</pre>
+我将这些代码加入到我的 /etc/rc.d/rc.local 中, 它们运行正常.
+
+第十二步: 当编辑 /etc/inetd.conf 的时候, 记得将 TCP 包 包含进去,如下:
+<font size=-1>
+<pre>
+ imap    stream  tcp     nowait  cyrus   /usr/sbin/tcpd  /usr/cyrus/bin/imapd
+</pre>
+</font>
+还有当你编辑完成后, 不要忘了给 inetd 发送-HUP信号:
+<pre>
+        # ps ax | grep inetd
+           61  ?  S    0:00 /usr/sbin/inetd
+        # kill -HUP 61
+</pre>
+6. Sendmail 的设定
+<p>
+如果你没有 sendmail 的源码, 现在就下载吧.  除了运行 IMAP 外, 你还可以用它来做许多有趣的事, 比如设置反垃圾邮件的特性等等.
+<p>
+下面是我的 mc 文件. 除非在 /etc/sendmail.cN 文件中有用户名的入口, 否则它将把邮件转移给 IMAP. 它允许像 root 那样的系统用户把他们的邮件保存在缓冲池里; 然而, 一般的用户账号缺省地将使用 IMAP. 不要简单的拷贝下面的代码,  因为 sendmail 会因为用的是空格而不是制表符而出错:
+<font size=-1>
+<pre>
+  divert(-1)
+  #
+  #       (C) Copyright 1995 by Carnegie Mellon University
+  #
+  #                      All Rights Reserved
+  #
+  # Permission to use, copy, modify, and distribute this software and its
+  # documentation for any purpose and without fee is hereby granted,
+  # provided that the above copyright notice appear in all copies and that
+  # both that copyright notice and this permission notice appear in
+  # supporting documentation, and that the name of CMU not be
+  # used in advertising or publicity pertaining to distribution of the
+  # software without specific, written prior permission.
+  #
+  # CMU DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE, INCLUDING
+  # ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO EVENT SHALL
+  # CMU BE LIABLE FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR
+  # ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS,
+  # WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
+  # ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS
+  # SOFTWARE.
+  #
+  #       Contributed to Berkeley by John Gardiner Myers .
+  #
+  #       This sample mc file is for a site that uses the Cyrus IMAP server
+  #       exclusively for local mail.
+  #
+
+  divert(0)dnl
+  VERSIONID(`@(#)cyrusproto.mc    8.3 (Carnegie Mellon) @(#)cyrusproto.mc 8.3')
+  OSTYPE(linux)
+  define(`confBIND_OPTS',`-DNSRCH -DEFNAMES')
+  FEATURE(nouucp)
+  FEATURE(nocanonify)
+  FEATURE(always_add_domain)
+  MAILER(smtp)
+  MAILER(local)
+  MAILER(cyrus)
+
+  define(`confLOCAL_MAILER',`cyrus')
+
+  LOCAL_RULE_0
+  R$=N                            $: $#local $: $1
+  R$=N < @ $=w . >                $: $#local $: $1
+  Rbb + $+ < @ $=w . >            $#cyrusbb $: $1
+
+  LOCAL_CONFIG
+  FN /etc/sendmail.cN
+
+  # end of mc file
+</pre>
+</font>
+在生成 /etc/sendmail.cf 文件后, 创建一个叫 /etc/sendmail.cN 的文件, 将不打算用 IMAP 发送功能的用户帐号写入其中:
+<pre>
+	root
+	majordom
+	stan
+	mothra
+</pre>
+在安装完 Sendmail 8.8.8 之后我还安装了 mail.local 作为给其他用户账号使用的本地发信程序. 下面是生成 mail.local 的诀窍.  先进入 sendmail 安装点下的 mail.local 的目录, 然后执行以下操作:
+<pre>
+        cp Makefile Makefile.orig
+        cp Makefile.dist Makefile
+        make
+        cp mail.local /bin/mail.local
+        chmod 4555 /bin/mail.local
+</pre>
+执行完之后, 重启 sendmail.
+<p>
+还有不要忘了关掉 Cyrus 安装指南.
+<p>
+7. 设置信箱
+<p>
+确认要按照 IMAP 服务器的测试进行, 如果一切顺利, 就继续设置其他一些信箱.
+<p>
+8. 不承诺
+<p>
+不作任何担保, 也没有金钱回报, 请自己承担使用的风险. 
+<p>
+9. 资源
+<p>
+必要的安装包.
+
+<p>
+Cyrus 的主页:<br>
+[6]http://andrew2.andrew.cmu.edu/cyrus/imapd/
+<p>
+最新的 Cyrus 版本可以从下面的地点下载:<br>
+[7]ftp://ftp.andrew.cmu.edu/pub/cyrus-mail/
+<p>
+Tcl 的主页:<br>
+[8]http://sunscript.sun.com/
+<p>
+最新的 Tcl 资源可以从下面的地点下载:<br>
+[9]ftp://ftp.sunlabs.com/pub/tcl/
+<p>
+Sendmail 的主页:<br>
+[10]http://www.sendmail.org/
+<p>
+最新的 Sendmail 版本可以从下面的地点下载:<br>
+[11]ftp://ftp.sendmail.org/ucb/src/sendmail/
+
+<p>
+参考资料:
+<font size=-1>
+<pre>
+   1. http://www.imap.org/whatisIMAP.html
+   2. http://www.imap.org/imap.vs.pop.brief.html
+   3. ftp://ftp.cac.washington.edu/imap/imap.tar.Z
+   4. ftp://ftp.sunlabs.com/pub/tcl/
+   5. http://andrew2.andrew.cmu.edu/cyrus/imapd/install.html
+   6. http://andrew2.andrew.cmu.edu/cyrus/imapd/
+   7. ftp://ftp.andrew.cmu.edu/pub/cyrus-mail/
+   8. http://sunscript.sun.com/
+   9. ftp://ftp.sunlabs.com/pub/tcl/
+  10. http://www.sendmail.org/
+  11. ftp://ftp.sendmail.org/ucb/src/sendmail/
+</pre>
+</font>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>

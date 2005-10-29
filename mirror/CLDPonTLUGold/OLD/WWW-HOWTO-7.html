@@ -1,0 +1,410 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>中文 Linux WWW HOWTO : Apache</TITLE>
+ <LINK HREF="WWW-HOWTO-8.html" REL=next>
+ <LINK HREF="WWW-HOWTO-6.html" REL=previous>
+ <LINK HREF="WWW-HOWTO.html#toc7" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="WWW-HOWTO-8.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="WWW-HOWTO-6.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="WWW-HOWTO.html#toc7"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="apache"></A> <A NAME="s7">7. Apache</A></H2>
+
+<P>Apache最新版本為1.3.9。它的主要網站為
+<A HREF="http://www.apache.org/">http://www.apache.org/</A>。
+Apacheweek也有不錯的資料網站為：
+<A HREF="http://www.apacheweek.com/">http://www.apacheweek.com/</A>。
+Apache的文件還好啦！所以我不必再多加細述如何設定Apache。他們在網站上，也跟
+原始程式在一起﹝HTML格式﹞。雖然也有一般文字檔格式，但以HTML格式較佳。等
+到Apache  Documentation  Project完成後，它應該會更好。但現在大部份的文件
+都由他們的開發者自行撰寫。我並不是要批評他們，但是如果不瞭解其中的術語，
+還真不瞭解這些文件。
+<P>
+<H2><A NAME="ss7.1">7.1 如何取得</A>
+</H2>
+
+<P>RedHat 、 Slackware 及 OpenLinux中即已經有 Apache。版本可能不是最新的，但
+二位元檔絕對可靠。不幸的是，各種版本都使用不同的目錄。
+<P>原始程式可從
+<A HREF="http://www.apache.org/dist/">http://www.apache.org/dist/</A>取得。二位元檔可從
+<A HREF="ftp://sunsite.unc.edu/pub/Linux/apps/www/servers/">ftp://sunsite.unc.edu/pub/Linux/apps/www/servers/</A>取得。使用
+RedHat的人還可以從
+<A HREF="ftp://ftp.redhat.com/pub/contrib/i386/">ftp://ftp.redhat.com/pub/contrib/i386/</A>取得RPM檔。
+<P>如果你的伺服器是用於商業用途，最好是從Apache的網頁下載原始程式自行編譯。也
+可以使用如 RedHat、 Slackware或  OpenLinux本來就附帶的二位元檔。如果你用其他執
+行檔，其中可能會有駭客偷加的'後門'。也可能因為一些patch不夠安定，而造成當機。
+如果自行編譯，你還可以掌握實際編譯進去的模組，你也可以決定要放在那一個目錄中。
+編譯並不難，而且從編譯的過程中，你還能學到如何成為真正的Linux使用者;)
+<P>
+<P>
+<H2><A NAME="ss7.2">7.2 編譯及安裝</A>
+</H2>
+
+<P>首先將文件庫打開﹝untar﹞。放入一暫存目錄中，然後到src目錄。如要加入特殊模組，
+就在此修改configuration檔案﹝平常主要的模組已經加入了﹞。然後執行此configuration 
+shell script(<CODE>./Configure</CODE>)。須確定它正確敘述你是在用Linux平台，而且以
+gcc為編譯器。接下來，你可以修改http.h來改變預設的目錄﹝放config檔﹞預設為
+<CODE>/usr/local/etc/httpd/</CODE>，你可能會考慮簡化為<CODE>/etc/httpd/</CODE>。伺服器
+的根目錄﹝放HTML首頁﹞預設為<CODE>/usr/local/etc/httpd/htdocs/</CODE>，你也可能考
+慮改為<CODE>/home/httpd/html</CODE>﹝這個是RedHat的預設目錄﹞。如果你要使用su-exec
+目錄﹝參考後述的各項功能細說﹞，你也可以考慮簡化之。伺服器的預設根目錄還可以用
+config檔來更改。如果Apache無法讀到config檔時，還是在http.h中定義編譯後的根目錄
+位置吧。其他的的預設目錄都必須用config檔案來修改。最後，在此執行make檔來編譯
+Apache。
+<P>如果因為遺漏include檔案，而在編譯時出問題，下面這些項目值得檢查一下：確定已安裝
+了適合你的核心系統版本的Kernel header﹝即include檔案﹞。並檢查下述的連結是正確的，
+<BLOCKQUOTE><CODE>
+<PRE>
+/usr/include/linux should be a link to /usr/src/linux/include/linux
+/usr/include/asm should be a link to /usr/src/linux/include/asm
+/usr/src/linux should be a link to the Linux source directory (ex.linux-2.0.30)
+</PRE>
+</CODE></BLOCKQUOTE>
+
+要連結檔案可用<CODE>ln -s</CODE>指令。這和cp指令相類似，只是它連結而不是複製
+﹝<CODE>ln -s source-dir destination-link</CODE>﹞。
+<P>如果在執行make時沒有問題，現在的目錄中應有個叫httpd的執行檔。把它移到bin目錄中。
+<CODE>/usr/sbin</CODE>或<CODE>/usr/local/sbin</CODE>都可。
+<P>另外將conf.、logs及 icons三個次目錄從src目錄複製到伺服器的home目錄。然後將conf次
+目錄中的三個檔案名稱修改一下，拿掉其中的<CODE>-dist</CODE>，﹝例：將
+<CODE>httpd.conf-dist</CODE>改成<CODE>/usr/local/sbin</CODE>﹞。
+<P>Apache中還有些支援程式。他們都在<CODE>support</CODE>目錄中，都要各別編譯並安裝。大部份這
+些程式都可用該目錄﹝你執行<CODE>configure</CODE> script時，已編譯好了﹞中的makefile來編譯。
+你使用Apache時，並不一定要用到這些程式，但其中有些可以簡化系統管理員的工作。
+<P>
+<H2><A NAME="ss7.3">7.3 設定</A>
+</H2>
+
+<P>此時在<CODE>conf</CODE>次目錄中，你應該會有四個檔案。其中，<CODE>httpd.conf</CODE>用來設定伺服器
+守護神﹝port號碼、使用者等‧‧﹞。<CODE>srm.conf</CODE>用來設定root documen  tree、 
+special handle等。而<CODE>access.conf</CODE>用來設定基本存取。最後，<CODE>mine.types</CODE>用來告
+訴伺服器，那一個延伸檔案名代表送給瀏覽器那一種mine型式。
+<P>一旦瞭解其中怪術語，你就會發現這些設定檔中有許多附帶說明。在你啟用伺服器之前，徹
+徹底底得讀它一遍。其中的每一個項目在Apache文件中都有說明。
+<P><CODE>mine.types</CODE>檔案並不是真正的設定檔。伺服器在送資料給瀏覽器之前，將延伸檔案名譯
+為mine型式。一般的 mine型式都已在此檔案中了，大多情況下不須修改此一檔案。未來一些
+日子以後，有一些新的mine型式開發出來以後，此時才真正要修改這一檔案。
+<P>記著一點！每當你改變了設定檔，就須重新啟動Apache。不然也要用<CODE>kill</CODE>送一個SIGNUP
+訊號，來啟動新的設定。這個訊號是要送到父程式而不是子程式。要查出父程式的代號有些
+方法，父程式的代號一般較小。父程式的代號也可從log次目錄的<CODE>httpd.pid</CODE>檔案中查到。
+而且如果你送<CODE>kill</CODE>給子程式，子程式死了，而父程式又會立刻產生一個子程式。
+<P>我不想帶著你一步一步地去設定Apache。我想針對一些特殊的案例、選項及功能加以說明。
+強烈建議好好讀一讀Apache文件中的保全訣竅。它可以從
+<A HREF="http://www.apache.org/docs/mics/security_tips.html">http://www.apache.org/docs/mics/security_tips.html</A>下載。
+<P>
+<H2><A NAME="ss7.4">7.4 建立虛擬網站主機</A>
+</H2>
+
+<P>虛擬主機用於一台電腦擁有數個網域名稱的情況。老的方法是給每一虛擬主機一個專用的
+IP位址。新的方法只用一個共用的IP位址，但是如果瀏覽器不支援HTTP 1.1則沒有用。
+<P>我建議，如果是用在商業上，先用老方法，直到人人的瀏覽器都支援HTTP 1.1時，再改用
+新方法。而且老方法的說明也較多。兩種方法都有虛擬mail功能﹝這對嗎？﹞，但只有老
+方法才有虛擬FTP功能。
+<P>如果用在小組織或個人網頁，你可考慮新的方法。它可以省去你昂貴的IP位址。
+<P>你還可以在同一伺服器混合兩種方法。相關細節參考Apacheweek：
+<A HREF="http://www.apacheweek.com/features/vhost">http://www.apacheweek.com/features/vhost</A>。
+<P>
+<H3>專用IP位址﹝IP based﹞虛擬主機</H3>
+
+<P>以此一方法，每一虛擬主機各有一個IP位址。使用每一請求﹝request﹞所送往之IP位址
+，Apache及其他程式，決定要用那一個網域來完成服務。這個步驟非常浪費IP空間。以
+我的虛擬網域所在的伺服器來舉例，他們都有35,000個虛擬帳號，也就是35,000個IP位址
+，但我相信只有不到50個伺服器是真正在運作。
+<P>設定這種虛擬主機有兩大步驟，第一是設定Linux，使它能接受兩個以上的IP位址。其次
+，是設定Apache使它支援虛擬主機功能。
+<P>第一步驟，設定Linux，使它接受數個IP位址，這要建立一個新的核心系統，就是使它支
+援IP networking 及IP aliasing。﹝在2.0版及其後的版本，這步驟較容易﹞。編譯核
+心的說明，參考
+<A HREF="http://sunsite.unc.edu/LDP/HOWTO/Kernel-HOWTO.html">kernel howto</A>。
+<P>第二步驟，要設定開機程序中的介面。如果你用的是Red Hat，可用控制台來設定。用
+root打開X-Windows，你應該可以看到控制台。雙擎Network configuration，點選
+interface panel並選擇你的Network card。點選底下的alias，填入資料，然後點選done。
+每一虛擬主機都要一一設定。
+<P>如果你不是用Red Hat，你就要用手動方式來設定，在<CODE>/etc/rc.d</CODE>目錄中的
+<CODE>rc.local</CODE>檔案中加入指令。每一設施都要有個<CODE>ifconfig</CODE>及<CODE>route</CODE>指令。
+同名設施為一主要設施的次設施。例如：eth0：1 、eth0：2等。下述為設定一同名設施的
+例子：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ifconfig eth0:0 192.168.1.57
+route add -host 192.168.1.57 dev eth0:0
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>還可以在ifconfig命令中加入broadcast address及netmask。如果有許多同名地址，可以用
+for loop來簡化命令檔。
+<P>相關細節參考
+<A HREF="http://sunsite.unc.edu/LDP/HOWTO/mini/IP-Alias.html">IP alias mini howto</A>。
+<P>接下來就是設定網域名稱伺服器﹝DNS﹞來查詢這些新的網域。如果你沒有你的網域名稱
+，可到
+<A HREF="http://www.internic.net">Internic</A>註冊。可參考DNS-HOWTO來
+設定你的DNS。
+<P>最後要設定Apache來讓這些虛擬網域正常工作。使用<CODE>httpd.conf</CODE>設定檔。其中有個例
+子，可以參考。所有的指令都放在<CODE>virtualhost</CODE>指令標簽之內，任何指令都可放入。一
+般來說，要設定各別的根目錄，script目錄及log檔案目錄，只要加入<CODE>virtualhost</CODE>標簽
+，就可以不斷加入新的虛擬主機。
+<P>在一些極特殊的情況下，如果某一個虛擬主機需要使用某一指令，但不幸它又不能放入虛
+擬主機的標簽中，那就只好使用不同伺服器。Bindaddress指令即為一例。每一個伺服器都
+要有不同的名稱及設定檔。每一伺服器只負責一個由Bindaddress指令所指定的位址。結果
+系統資源就被大大的浪費掉了。
+<P>
+<H3>共用IP位址虛擬主機</H3>
+
+<P>此為建立虛擬主機的新方法。單一IP位址被採用，因而IP位址是用在真實機器上﹝而非虛
+擬主機﹞。在上述例子中，30,000個虛擬主機只會用掉50個IP位址﹝每台機器一個﹞。這
+要搭配HTTP1.1協議，瀏覽器在送出請求時，通知伺服器它要接到那個網站。如果瀏覽器
+無法支援HTTP1.1，就會去讀伺服器的首頁，其中應有選單供選擇要使用的虛擬主機。這樣
+子，原來你以為你擁有自己的伺服器的那種感覺，就會被破壞了。
+<P>設定步驟比固定IP位址的方式容易。你仍然要從Intenic註冊你的網域名稱，然後設定網
+域名稱伺服器。但是網域名稱伺服器卻是要指到原來網域名稱的IP位址。Apache的設定方
+式仍然不變。因為你在virtualhost標簽內使用相同IP位址，Apache就知道你的虛擬主機
+要共用IP位址。
+<P>針對老式的瀏覽器則有幾種調整工作要做，我只介紹其中最佳者。首先須將你的首頁目錄
+設為一個虛擬主機﹝固定IP或共用IP位址﹞。這樣子你的首頁目錄就可以騰出來用於連接
+到各個虛擬主機上去。然後就是為老式瀏覽器開一個'後門'。作法是用<CODE>ServerPath</CODE>
+指令，為每一個<CODE>virtualhost</CODE>標簽內的虛擬主機定義路徑。例如，在www.mysite.com
+中加一個<CODE>ServerPath /mysite/</CODE>，老的瀏覽器就可以用www.mysite.com/mysite/
+存取該主機的資料。然後在首頁目錄放入一預設首頁，其中好好地勸使用者改用新的瀏覽
+器，並且條列該主機上各個網站的'後門'。如此一旦一個老式瀏覽器讀到此站，就會顯
+示一個首頁，告知如何連到正確的網頁。而新式瀏覽器則可直接連到正確的網頁。還要注
+意一件事，即你的首頁中的連結必須定義清楚。因為每一頁都可以以兩個不同的URL來連結
+﹝例如：www.mysite.com和www.mysite.com/mysite/﹞。
+<P>希望到此為止，你還能保持頭腦清晰，終究上述的內容並不容易搞清楚。搞不好，你最後
+還是決定使用專用IP位址。
+相關資料可以從Apache網站取得
+<A HREF="http://www.apache.org/manual/host.html">http://www.apache.org/manual/host.html</A>。
+<P>如果有人有關於共用IP位址的資料，請告訴我。我想知道到底有多少瀏覽器可支援
+HTTP 1.1。如有一份清單列出他們的版本就更好。
+<P>
+<H2><A NAME="ss7.5">7.5 CGI scripts</A>
+</H2>
+
+<P>有兩種方式讓你的網站用戶運用CGI script功能。第一種方式是，只要是CGI script，其
+延伸檔名即為<CODE>.cgi</CODE>。另一種方式是建立一script次目錄﹝通常叫<CODE>cgi-bin</CODE>﹞。
+兩種方式也可並用。不論使用那一種方式，你的script必須設成可執行模式
+﹝<CODE>chmod 711</CODE>﹞。但是讓用戶使用script存取可能會有保全的風險，所以先要細心的
+研究。
+<P>我個人比較喜歡使用第一種方式，尤其是當script很複雜時。這種方式允許把script放在
+任何目錄中。我個人喜愛將script放入相關首頁目錄中。如果一個網站有許許多多的script
+，那麼將他們分散安置比集中在一個目錄中要容易看得多了。而且設定也比較簡單。首先
+在<CODE>srm.conf</CODE>檔後面開啟﹝uncomment﹞<CODE>.cgi</CODE>標式，然後檢查是否每一目錄的
+<CODE>access.conf</CODE>檔中都有<CODE>option ExecCGI</CODE>或<CODE>All</CODE>。
+<P>建立script次目錄則較為保全。作法是在<CODE>srm.conf</CODE>檔中使用scriptAlias指令。第一
+個參數是代名﹝Alias﹞,第二個參數是真實目錄。例如指令
+<CODE>ScriptAlias /cgi-bin/ /usr/httpd/cgi-bin/</CODE>定義:
+當呼叫目錄<CODE>/cgi-bin/</CODE>時，真正的script是在<CODE>/usr/httpd/cgi-bin/</CODE>中執行。
+為了保全的理由，在<CODE>access.conf</CODE>檔中設定該目錄的特性為
+<CODE>Options none，AllowOveride none</CODE>﹝只要開啟﹝uncomment﹞該行即可﹞。但要注意
+，不要把它設為任何首頁的次目錄。例如說，如果你的首頁目錄為
+<CODE>/home/httpd/html/</CODE>，不要設為<CODE>/home/httpd/html/cgi-bin</CODE>，但可以設為
+<CODE>/home/httpd/cgi-bin</CODE>。
+<P>如果要允許用戶有自己的script次目錄，可以使用數個<CODE>ScriptAlias</CODE>命令。如果使用虛
+擬主機，則在<CODE>virtualhost</CODE>標簽內放入<CODE>ScriptAlias</CODE>命令。有人可以告訴我不須要
+一一加入ScriptAlias命令的方法嗎？
+<P>
+<H2><A NAME="ss7.6">7.6 使用者網頁目錄</A>
+</H2>
+
+<P>有兩種不同方式來設定使用者的網頁目錄。第一個方法是在使用者的網頁目錄下建立一個
+個別的次目錄。﹝一般為<CODE>public_html</CODE>﹞。第二個方法是，另外為每一個網頁目錄建
+立一個目錄樹，兩種方法都須在<CODE>access.conf</CODE>檔中設定存取選項。
+<P>第一個方法是Apache預設的方式。這種方法是，當要讀<CODE>/~bob/</CODE>的網頁，Apache讀
+<CODE>public_html</CODE>目錄中bob的首頁目錄。作法是在<CODE>srm.conf</CODE>檔中用<CODE>UserDir</CODE>指令
+來設定。該目錄必須是world可讀取及world可執行。因為要Apache來讀取使用者的目錄，該
+目錄必須為world可執行，所以會產生一些保全的風險。
+<P>第二種方法則較容易設定。只有<CODE>srm.conf</CODE>檔中的<CODE>UserDir</CODE>指令需要被
+修改。格式有很多種，請參考Apache的文件，弄清楚各種定義。如果想讓每ㄧ使用者在目
+錄<CODE>/home/httpd/</CODE>下，有自己的目錄，就要使用指令<CODE>UserDir /home/httpd</CODE>。
+那麼當<CODE>/~bob/</CODE>被讀取時，讀取的目錄就會變為<CODE>/home/httpd/bob/</CODE>。若
+是要讓bob的目錄下另加一個次目錄做為他的首頁目錄，就用
+<CODE>UserDir /home/httpd/*/html</CODE>指令。讀取的目錄就變成
+<CODE>/home/httpd/bob/html/</CODE>，同時也建立一個script目錄﹝例如：
+<CODE>/home/httpd/bob/cgi-bin/</CODE>﹞。
+<P>
+<H2><A NAME="ss7.7">7.7 Daemon模式與Inetd模式</A>
+</H2>
+
+<P>Apache可在下述兩種模式下運作。其一為daemon模式，在這個模式下Apache不停運作﹝
+Apache稱之為  standalong﹞。另一為inetd super-server。
+<P>daemon模式比inetd模式好。Apache以它為預設模式。使用inetd模式的唯一情況是，當使用
+率很低時，例如內部測試script、小型企業的區域網路等‧‧‧。Inetd模式可節省記憶體
+空間，因為Apache只有當必要時才開啟，平常記憶體中只有inetd daemon。
+<P>如果你不常使用Apache，可以考慮讓它維持在daemon模式，而且只有必要時才啟動Apache。
+那麼你不再需要時，可以殺掉Apache﹝要殺的是父程式序而不是子程序﹞。
+<P>要設定Inetd模式，有一些檔要修改。首先查一下<CODE>/etc/services</CODE>檔案，看一看
+http是否存在，如果不在，則以下列方式加入
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+http    80/tcp
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>在Port 79 ﹝finger﹞的後面也許值得考慮。然後修改<CODE>/etc/inetd.conf</CODE>檔案，
+加入
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+http    stream  tcp     nowait  root    /usr/sbin/httpd httpd
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>如果Apache在不同位置，路徑要隨Apache的目錄來改變。第二個http不是typo，它只是
+inetd daemon的需求。如果你不再使用inetd daemon，那就把檔案中你不想啟動的服務改為
+註解行﹝像FTP、 finger、 telnet及其他常用於inetd daemon的服務項目﹞。
+<P>如果你在用inetd daemon,只要給它一個SIGHUP訊號﹝用kill命令，參考kill的man page﹞
+或重新啟動系統讓修改項目生效。如果<CODE>inetd</CODE>不在使用，可以以手動方式啟動的。
+也可以加在init檔案﹝也許是<CODE>rc.local</CODE>檔﹞中，使得開機時Inetd自動啟動。
+<P>
+<H2><A NAME="ss7.8">7.8 開放Put及delete命令</A>
+</H2>
+
+<P>新的網頁發行工具支援以http上載網頁﹝而不限於用FTP﹞。其中有的甚至還不支援FTP
+上載。Apache也支援http上載，但所要用的script則沒有包含，因而上載所用的script
+可能成為保全的大漏洞。在寫或用別人的script前，請先搞清楚狀況。
+<P>如果有人知道任何此類的script，請告訴我。我會把它的網址納入。
+<P>相關細節參考 Apacheweek 
+<A HREF="http://www.apacheweek.com/features/put">http://www.apacheweek.com/features/put</A>。
+<P>
+<H2><A NAME="ss7.9">7.9 使用Authentication/Access Control</A>
+</H2>
+
+<P> 
+這是我最喜愛的一個功能。它讓你不須要用到CGI script就可以保護目錄或檔案。它還
+可以依據用戶的IP位址或網域名稱來決定用戶的存取權。這是一種把不速之客剔出用戶名
+單的好方法﹝只要從log檔案查出它們的IP位址及網域名稱即可﹞。
+<P>要設定 Authentication，目錄中<CODE>access.conf</CODE>檔案中必須要有
+<CODE>AllowOverrides Authconfig</CODE>。而設定access control﹝使用網域名稱或IP
+位址﹞，則加入AllowOverrides Limit。
+<P>設定目錄，就要在其中放入<CODE>.htaccess</CODE>檔案。要設定使用者的Authentication，
+要用到<CODE>.htpasswd</CODE>檔或外帶一<CODE>.htgroup</CODE>檔。這兩個檔還可由數個
+<CODE>.htaccess</CODE>檔共用。
+<P>為了保全的理由，我個人建議，每個使用者都在他們的access.conf檔使用下述指令：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+&lt;files ~ "/\.ht"&gt;
+order deny,allow
+deny from all
+&lt;/files&gt;
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>如果你不是系統管理員，但你的目錄已經設為AllowOverride Limit，你仍然可以在
+你的 .htaccess檔案中加入這些指令。他們可以防止別人偷窺你的access control
+檔案﹝.htaccess 、.htpasswd等﹞。
+<P>Access control可運用在許多不同的選項及檔案型式。這已超出本文的範疇。設定使用
+者 Authentication的資訊，請參考
+<A HREF="http://www.apacheweek.com/features/userauth">http://www.apacheweek.com/features/userauth</A>，或NCSA的網頁
+at 
+<A HREF="http://hoohoo.ncsa.uiuc.edu/docs-1.5/tutorials/user.html">http://hoohoo.ncsa.uiuc.edu/docs-1.5/tutorials/user.html</A>。
+<P>
+<H2><A NAME="ss7.10">7.10 su-exec</A>
+</H2>
+
+<P>su-exec功能能以owner的地位執行CGI script。平常都以網頁伺服器﹝不是一般的人﹞
+的地位來執行CGI script。因此，使用者不須將他們的CGI script的存取模式設為world 
+writable﹝這是一個漏洞﹞。但是如果不熟悉su-exec，你可能會搞出更大的漏洞。平常
+su-exec在執行前會作保全檢查，但如果設定錯誤，反而產生保全的漏洞。
+<P>su-exec不是設計給外行人用的。如果沒有搞清楚，最好不要用，不然你搞出來的漏洞
+可以讓使用者具備root存取能力。無論如何不要修改程式，要讀通所有相關文件。
+su-exec那麼難設定，是故意設計出來讓外行人知難而退﹝全部手動操作，沒有make檔
+，也沒有安裝script﹞。
+<P>su-exec是放在<CODE>support</CODE>目錄中。首先要為系統修改<CODE>suexec.h</CODE>檔，然後用下面的
+命令編譯su-exec程式
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+gcc suexec.c -o suexec
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>然後將su-exec的可執行檔複製到適當的目錄。Apache的預設目錄為
+<CODE>/usr/local/etc/httpd/sbin/</CODE>。如要改變預設目錄，可修改Apache原始程式中
+的<CODE>httph</CODE>，在重新編譯Apache。Apache只會搜尋該目錄，而不會搜尋路徑。另外要
+把su-exec的使用者改為root(<CODE>chown root suexec</CODE>)，並且設定suid bit
+(<CODE>chmod 4711 suexec</CODE>)。最後重新啟動Apache。此時Apache應該會在螢幕上顯示
+su-exec正在運作。
+<P>CGI script仍要設為world executable。他們可以以CGI script owner的身份執行。如果
+設定他們的SUID﹝set user id﹞bit，則不會執行。如果他們的目錄為world或
+group writable，也不會執行。如果owner為system user ﹝root、bin等﹞也不會執行。
+相關保全狀況，參考su-exec的文件。如果還有問題，檢查su-exec的log檔<CODE>cgi.log</CODE>。
+<P>在Apache的inetd模式，su-exec不運作，只有在daemon模式才運作。下一版可能會改善
+，因為inetd模式不會再用到了。要玩原始程式的話，就修改http.main.c。你可以刪除
+其中使用su-exec wrapper的Apache宣告﹝它在每個輸出之前居然都印一次﹞。
+<P>好好讀一下Apache有關su-exec的文件。他們和su-exec的原始程式都在Apache網站中
+<A HREF="http://www.apache.org/docs/suexec.html">http://www.apache.org/docs/suexec.html</A>。
+<P>
+<H2><A NAME="ss7.11">7.11 Imagemaps</A>
+</H2>
+
+<P>Apache能用來處理伺服器端imagemaps。Imagemaps是網站上的圖形，使用者點選圖形中
+某個位置，可以用來決定要連結到那裏去。要啟動imagemaps，先確定imagemap模式是否
+已安裝﹝它是預設要安裝的一個模式﹞。然後將<CODE>srm.conf</CODE>檔中的<CODE>.map</CODE> 標記
+開啟﹝uncomment﹞。此時所有以<CODE>.map</CODE>結尾的檔案都變成了imagemap檔案。
+Imagemap檔用一個圖形的各個位置連結到不同的網頁。Apache以標準NCSA格式使用投影
+﹝map﹞檔。下述為投影檔的一例：
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+&lt;a href="/map/mapfile.map"&gt;
+&lt;img src="picture.gif" ISMAP&gt;
+&lt;/a&gt;
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>例中，<CODE>mapfile.map</CODE>即為投影檔。而<CODE>picture.gif</CODE>為點選用的圖形。
+<P>有很多程式可用來產生能與NCSA投影檔共存的檔案，你也可以自己編寫一支。相關細
+節請參考：Apacheweek 
+<A HREF="http://www.apacheweek.com/features/imagemaps">http://www.apacheweek.com/features/imagemaps</A>。
+<P>
+<H2><A NAME="ss7.12">7.12 SSI/XSSI</A>
+</H2>
+
+<P>伺服器端加入﹝SSI﹞可在靜態的網頁中以動態方式加入某些內容。要加入的項目在
+網頁中以說明﹝comment﹞的方式表示。伺服器先解析這些項目，然後將所要的內容
+加入。SSI可在檔案中加入header及footer，也可以加入最後修改日期，也可執行系
+統命令或CGI script。如果使用延伸型伺服端加入
+﹝XSSI; eXtended Server Side Includes﹞，可做的就更多了。它可
+加入變數及流程控制﹝如if、else等﹞。這簡直就像一個在使用一個程式語言。
+<P>如要對每一個HTML檔都加以解析，會消費太多系統資源。所以要有個方法使那些有SSI
+項目的檔案看來不一樣。一般的作法是，把這些HTML的延伸檔名改為<CODE>.stml</CODE>。
+<P>要啟用SSI/XSSI，首先確認是否該功能的模式已經安裝。然後就可修改<CODE>srm.conf</CODE>
+檔，為<CODE>.shml</CODE>型式的<CODE>AddType</CODE>及<CODE>AddHandler</CODE>開啟﹝uncomment﹞。最後
+用<CODE>Options Includes</CODE>來定義那些目錄下SSI/XSSI檔可運行。這一步驟是在
+<CODE>access.conf</CODE>檔中。那麼所有具<CODE>.shtml</CODE>延伸檔名的檔案都會被解析執行
+SSI/XSSI。
+<P>另一種在網頁中加入內容的方式是使用<CODE>XBitHack</CODE>指令。這個指令一開啟，它會
+檢查該檔案是否為user exectable。如果是，而且該目錄用<CODE>Options Includes</CODE>開
+啟的話，該檔案就被視為SSI檔案。但這種方式只對mime 型式的text/html
+﹝<CODE>.html .htm</CODE>檔案﹞有效。所以不是最好的方法。
+<P>用SSI來執行系統命令及CGI script，會導致一些保全的風險。所以在
+<CODE>access.conf</CODE>檔中最好使用<CODE>Option IncludesNOEXEC</CODE>而不要用Option Includes。
+其他SSI命令則不須修改。
+<P>相關細節參考原始程式附帶的Apache mod-includes文件。
+可以從
+<A HREF="http://www.apache.org/docs/mod/mod_include.html">http://www.apache.org/docs/mod/mod_include.html</A>取得。
+<P>SSI/XSSI實現的相關細節參考Apacheweek
+<A HREF="http://www.apacheweek.com/features/ssi">http://www.apacheweek.com/features/ssi</A>.
+<P>有關SSI命令的資訊，參考NCSA文件
+<A HREF="http://hoohoo.ncsa.uiuc.edu/docs/tutorials/includes.html">http://hoohoo.ncsa.uiuc.edu/docs/tutorials/includes.html</A>。
+<P>而有關XSSI命令的資訊，參考
+<A HREF="ftp://pageplus.com/pub/hsf/xssi/xssi-1.1.html">ftp://pageplus.com/pub/hsf/xssi/xssi-1.1.html</A>。
+<P>
+<H2><A NAME="ss7.13">7.13 模組系統</A>
+</H2>
+
+<P>Apache可用模組的方式加入任何東西。現在已有的模組很多，但只有一般常用的模組
+附帶在Apache套件中。
+<P>要查查看還有那些模組，請參考Apache模組寶庫
+<A HREF="http://www.zyzzyva.com/module_registry/">http://www.zyzzyva.com/module_registry/</A>。
+<P>而有關模組化設計的資訊，參考
+<A HREF="http://www.zyzzyva.com/module_registry/reference/">http://www.zyzzyva.com/module_registry/reference/</A>。
+<P>
+<P>
+<P>
+<P>
+<HR>
+<A HREF="WWW-HOWTO-8.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="WWW-HOWTO-6.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="WWW-HOWTO.html#toc7"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

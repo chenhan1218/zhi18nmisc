@@ -1,0 +1,262 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" content="text/html; charset=big5">
+<TITLE>Linux Quota mini-HOWTO 中譯版</TITLE>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+<PRE>
+原始文件：Linux Quota mini-HOWTO
+檔案敘述：磁碟空間限制簡易使用說明
+翻譯日期：1996/09/20  1997/10/21
+翻譯維護：<a href="mailto:asdchen@ms1.hinet.net">asdchen@ms1.hinet.net</a>
+修    訂：<a href="mailto:cwhuang@phys.ntu.edu.tw">cwhuang@phys.ntu.edu.tw</a>   (1997/10/21)                              
+---------------------------------------------------------------Ｘ---
+                                                                 
+如何在 Linux 上啟動 Quota
+
+更新日期: Fri Aug 8 09:45:05 HKT 1997
+
+序言: 這份文件的版權由 Albert M.C. Tam (<a href="mailto:bertie@scn.org">bertie@scn.org</a>) 所保留。
+同意這份文件的使用、複製，因此非商業性的散布是允許的，但是所有的
+拷貝以及／或是沒有修改直接援用的文件上須有作者與編者的名字及這份
+注意事項。這份文件是因為希望能有所幫助而散布的，但不負任何責任，
+無論是明白的或隱含的。雖然能夠確定這份文件裡的資訊之正確性的所有
+工作都做了，作者／編者／維護者對於錯誤，或是因為使用這份文件所含
+的資訊而造成任何毀損的結果沒有任何責任。
+
+這份文件描述如何在 Linux  主機上啟用檔案系統的 quota ， 為使用者
+指定 quota  ，以及其它 quota  指令的用法。它適用執行 2.x  版核心
+的使用者（最近在 Red Hat 4.1 核心 2.0.27  上測試過）。建議舊版核
+心的使用者進行更新。
+
+如果你發現其中有錯誤，或者是遺漏了任何資訊，請不要在意將它們寄給
+<a href="mailto:bertie@scn.org">bertie@scn.org</a>。我會很感激的!
+
+----------------------------------------------------------------
+
+什麼是 Quota?
+
+  Quota 讓你可以從兩方面指定磁碟的儲存限制: 使用者所能夠支配的索引
+  節點(inodes)數量；以及使用者可以取用的磁碟區塊數量。
+
+  Quota 背後的含意是強制使用者在大部分的時間中保持在他們的磁碟使用
+  限制之下，取消他們在系統上無限制地使用磁碟空間的能力。
+
+  Quota 是以每一使用者，每一檔案系統為基礎的．如果使用者可能在超過
+  一個以上的檔案系統上建立檔案，那麼必須在每一檔案系統上分別設定
+  quota．
+
+
+Quota 目前在 Linux  上的情況
+
+  Quota 的支援據我所知自從 1.3.8x 版開始已經整合到核心之中，而且它
+  也在 2.0  版的核心裡。如果你的系統不支援 quota  那麼我建議你來次
+  更新。
+
+  目前為止，quota 只能在 ext2  檔案系統上運作。
+
+
+在 Linux 上使用 Quota 的需求
+
+核心
+
+2.x 版的核心可以從這裡取得
+
+     <a href="http://sunsite.unc.edu/pub/Linux/kernel/v2.0">http://sunsite.unc.edu/pub/Linux/kernel/v2.0</a>
+
+Quota 軟體
+
+  端視你的 Linux  發行套件而定，在你的系統上可能已經裝好也可能沒有
+  quota 軟體。quota 軟體的原始程式碼可以從這裡取得
+
+     <a href="ftp://ftp.funet.fi/pub/Linux/PEOPLE/Linus/subsystems/quota/all.tar.gz">ftp://ftp.funet.fi/pub/Linux/PEOPLE/Linus/subsystems/quota/all.tar.gz</a>
+
+----------------------------------------------------------------
+
+
+在 Linux  上設定 quota -  第一部份: 配置
+
+1.  配置你的核心
+
+  重新配置你的核心並且對這個選項回答 y  以加入 quota  的支援:
+
+     Quota support (CONFIG_QUOTA) [n] y
+
+2.  編譯並安裝 quota 軟體
+
+  Quota 軟體的原始程式碼可以從這裡取得
+
+     <a href="ftp://ftp.funet.fi/pub/Linux/PEOPLE/Linus/subsystems/quota/all.tar.gz">ftp://ftp.funet.fi/pub/Linux/PEOPLE/Linus/subsystems/quota/all.tar.gz</a>
+
+3.  修改你系統的啟動指令稿以檢查 quota  並且在啟動時期打開 quota
+
+  這裡有個範例:
+
+        # Check quota and then turn quota on.
+        if [ -x /usr/sbin/quotacheck ]
+        then
+                echo "Checking quotas. This may take some time."
+                /usr/sbin/quotacheck -avug
+                echo " Done."
+        fi
+
+        if [ -x /usr/sbin/quotaon ]
+        then
+                echo "Turning on quota."
+                /usr/sbin/quotaon -avug
+        fi
+
+  不變的規則是＊永遠＊得要在掛入你 /etc/fstab 裡的檔案系統＊之後＊
+  打開 quota ， 否則 quota  將不會運作。我建議在你系統的啟動指令稿
+  最後面打開 quota ， 或者，如果你喜歡，在你的系統指令稿剛掛入檔案
+  系統之處打開它。
+
+4. 修改 /etc/fstab
+
+  還沒有啟用 quota  的分割區一般看起來像:
+
+        /dev/hda1       /       ext2    defaults        1       1
+        /dev/hda2       /usr    ext2    defaults        1       1
+
+  要在檔案系統上加入 quota  的話，在包含 "defaults" 這個字的第四個
+  欄位加上 "usrquota" 。
+
+        /dev/hda1       /       ext2    defaults            1       1
+        /dev/hda2       /usr    ext2    defaults,usrquota   1       1
+
+  如果你需要在一檔案系統中的群組 quota 支援，將 "usrquota" 改為
+  "grpquota"．
+
+        /dev/hda1       /       ext2    defaults            1       1
+        /dev/hda2       /usr    ext2    defaults,grpquota   1       1
+
+  如果要同時支援使用者 quota 與群組 quota 的話   
+   
+        /dev/hda1       /       ext2    defaults            1       1
+        /dev/hda2       /usr    ext2    defaults,usrquota,grpquota  1   1
+
+5.  建立 "quota.user" 這個 quota  記錄
+
+  這個 quota  記錄檔，quota.user ， 應該由 root 擁有，而且 root 有
+  讀寫的權限而其他任何人都沒有。
+
+  以 root 的身分簽入。進入你想要啟用 quota  之分割區的最上層，並且
+  這樣建立 quota.user:
+
+        touch /partition/quota.user
+        touch /partition/quota.group
+        chmod 600 /partition/quota.user
+        chmod 600 /partition/quota.group
+
+6.  重新啟動
+
+  現在重新啟動系統以便讓你所作的變更生效。
+
+  同時注意以後對於你還想要啟用 quota  的其它分割區只需要步驟 4, 5,
+  以及 6  。
+
+  在 Linux  上設定 quota -  第二部份: 為使用者及群組指定 Quota
+
+  這項操作是使用 edquota 指令執行的。(詳情參考 man edquota)．
+
+  我通常在編輯 quota 之前會先使用 quotacheck 並加上參數 -avug 以
+  取得最新的檔案系統使用狀況．這只是一個個人習慣，並非必要步驟．
+
+
+為特定使用者指定 quota
+   
+  這兒有個例子．在我的系統上有一個名叫 bob 的使用者．使用
+  "edquota bob" 這個指令將會把你帶進 vi （或是在你的 $EDITOR  環
+  境變數中所指定的編輯器）以便為使用者 "bob"  編輯在每個啟用 
+  quota  的分割區上的 quota :
+
+
+        Quotas for user bob:
+        /dev/hda2: blocks in use: 2594, limits (soft = 5120, hard = 6400)
+                inodes in use: 356, limits (soft = 1000, hard = 1500)
+
+  "blocks in use" 是使用者在某個分割區上已經使用的區塊總數（以千位
+  元組為單位）
+
+  "inodes in use" 是使用者在某個分割區上所擁有的檔案總數。
+
+
+為特定群組指定 quota
+
+  現在在我的系統上有一群組叫 games．"edquota -g games" 再度將我帶入
+  vi 以便為 games 群組編輯 quota :
+
+        Quotas for group games:
+        /dev/hda4: blocks in use: 5799, limits (soft = 8000, hard = 10000)
+                inodes in use: 1454, limits (soft = 3000, hard = 4000)
+
+
+為一群使用者指定相同的 quota 值
+   
+  為了快速地為我系統上的一群使用者，例如一百名，設定和 bob 相同的
+  quota 值，我首先以手動編輯 bob 的 quota 資訊，然後執行:
+
+        edquota -p bob `awk -F: '$3 > 499 {print $1}' /etc/passwd`
+
+  這是假設你使用 csh，並且你的使用者 UID 從 500 開始．   
+
+  除了 edquota  之外，還有三個你應該熟習的其它專有名詞: 軟性限制，
+  硬性限制，以及緩衝期間。
+
+ 軟性限制
+
+  一般來說，軟性限制指出 quota  使用者在分割區上擁有的磁碟用量總數
+  。但是合併使用緩衝期間的時候，它的動作就如同一道臨界線，當 quota
+  使用者超越時便發出有關他即將違犯 quota  的警告。
+
+ 硬性限制
+
+  硬性限制只在設定有緩衝期間時才會運作。它指出磁碟用量的絕對限制，
+  quota 使用者不能超越他的硬性限制。
+
+ 緩衝期間
+
+  以 "edquota -t" 指令執行，緩衝期間是對 quota  使用者實行軟性限制
+  之前的時間限制。可以使用的時間單位是秒、分、小時、日、星期、以及
+  月。這是你使用 "edquota -t" 指令將會見到的:
+
+        Time units may be: days, hours, minutes, or seconds
+        Grace period before enforcing soft limits for users:
+        /dev/hda2: block grace period: 0 days, file grace period: 0 days
+
+  把 0 days 這個部份變更為你覺得合理的任何期限。我個人選擇  7 days
+  （或是 1 week ）。
+
+----------------------------------------------------------------
+
+其它的 Quota  指令
+
+Quotacheck
+
+  Quotacheck  是用來掃描檔案系統的磁碟用量，並更新 "quota.user" 此
+  quota 記錄檔到最新的狀態。我建議定期在系統啟動時執行  quotacheck
+  或藉由 cronjob  每隔一段時間執行一次（像是，一星期? ）。
+
+Repquota
+
+  Repquota  產生檔案系統之摘要 quota  資訊。這裡有份 repquota 所得
+  的輸出範例:
+
+        # repquota -a
+                                Block limits               File limits
+        User            used    soft    hard  grace    used  soft  hard  grace
+        root      --  175419       0       0          14679     0     0
+        bin       --   18000       0       0            735     0     0
+        uucp      --     729       0       0             23     0     0
+        man       --      57       0       0             10     0     0
+        user1     --   13046   15360   19200            806  1500  2250
+        user2     --    2838    5120    6400            377  1000  1500
+
+Quotaon 以及 Quotaoff
+
+  Quotaon 是用來打開 quota  的計算； quotaoff 則是將其關閉。實際上
+  兩者很類似。它們是在系統啟動與關機時執行的。
+
+</PRE>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>
+

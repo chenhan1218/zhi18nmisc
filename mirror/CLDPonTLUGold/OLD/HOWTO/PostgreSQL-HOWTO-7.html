@@ -1,0 +1,399 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Database-SQL-RDBMS HOW-TO document for Linux (PostgreSQL Object Relational Database System): Quick Start Guide</TITLE>
+ <LINK HREF="PostgreSQL-HOWTO-8.html" REL=next>
+ <LINK HREF="PostgreSQL-HOWTO-6.html" REL=previous>
+ <LINK HREF="PostgreSQL-HOWTO.html#toc7" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="PostgreSQL-HOWTO-8.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="PostgreSQL-HOWTO-6.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="PostgreSQL-HOWTO.html#toc7"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s7">7. Quick Start Guide</A></H2>
+
+<P>Refer also to 
+<A HREF="PostgreSQL-HOWTO-6.html#Quick-Installation">Quick Installation</A> chapter.
+<H2><A NAME="ss7.1">7.1 Creating, Dropping, Renaming Database</A>
+</H2>
+
+<P>You can use the user friendly GUI called 'pgaccess' to create and drop databases,
+or you can use the command line 'psql' utility.
+<HR>
+<PRE>
+If you are logged in as root, switch user to 'postgres' :
+# xhost +  (To give display access for pgaccess)
+# su - postgres
+bash$ man createdb
+bash$ createdb mydatabase
+bash$ man psql
+bash$ psql mydatabase
+..... in psql press up/down arrow keys for history line editing or \s
+
+bash$ export DISPLAY=&lt;hostname>:0.0
+bash$ man pgaccess
+bash$ pgaccess mydatabase
+</PRE>
+<HR>
+
+Now you can start <B>rapidly BANGING away</B> SQL commands at psql or pgaccess !!
+<P>To drop the database do :
+<HR>
+<PRE>
+bash$ man dropdb
+bash$ man destroydb   (for older versions of pgsql)
+bash$ dropdb &lt;dbname>
+</PRE>
+<HR>
+
+It is also possible to destroy a database from within an SQL session by using:
+<HR>
+<PRE>
+> drop database &lt;dbname>
+</PRE>
+<HR>
+
+To rename a database see 
+<A HREF="#backup_restore">Backup and Restore</A><H2><A NAME="ss7.2">7.2 Creating, Dropping users</A>
+</H2>
+
+<P>To create new users, login as unix user 'postgres'. 
+You can use user friendly GUI tool called 'pgacess' to create, drop users.
+<HR>
+<PRE>
+bash$ man pgaccess
+bash$ pgaccess &lt;database_name>
+</PRE>
+<HR>
+
+and click on "Users" tab and then click Object|New or Object|Delete
+<P>You can also use command line scripts.
+Use the shell script called 'createuser' which invokes psql
+<HR>
+<PRE>
+bash$ man createuser
+bash$ createuser &lt;username>
+bash$ createuser -h host -p port -i userid &lt;username>
+</PRE>
+<HR>
+<P>To drop a postgres user, use shell script 'destroyuser' -
+<HR>
+<PRE>
+bash$ man dropuser
+bash$ man destroyuser  (older versions of pgsql)
+bash$ destroyuser
+</PRE>
+<HR>
+<H2><A NAME="ss7.3">7.3 Creating, Dropping Groups</A>
+</H2>
+
+<P>Currently, there is no easy interface to set up user groups. You have
+to explicitly insert/update the <B>pg_group</B> table. For example:
+<HR>
+<PRE>
+bash$ su - postgres
+bash$ psql &lt;database_name>
+..... in psql press up/down arrow keys for history line editing or \s
+
+psql=> insert into pg_group (groname, grosysid, grolist)
+psql=> values ('posthackers', '1234', '{5443, 8261}' );
+INSERT 58224
+psql=> grant insert on foo to group posthackers;
+CHANGE
+psql=>
+</PRE>
+<HR>
+
+The fields in <B>pg_group</B> are:
+<B>groname</B> The group name. This name should be purely alphanumeric; do not
+include underscores or other punctuation.
+<P><B>grosysid</B> The group id. This is an int4, and should be unique for each group.
+<P><B>grolist</B> The list of <B>pg_user</B> IDs that belong in the group. This is
+an int4[].
+<P>To drop the group:
+<HR>
+<PRE>
+bash$ su - postgres
+bash$ psql &lt;database_name>
+..... in psql press up/down arrow keys for history line editing or \s
+
+psql=> delete from pg_group where groname = 'posthackers';
+</PRE>
+<HR>
+<H2><A NAME="ss7.4">7.4 Create, Edit, Drop a table</A>
+</H2>
+
+<P>You can use user friendly GUI tool 'pgaccess' or command line tool 'psql'
+to create, edit or drop a table in a database.
+<HR>
+<PRE>
+bash$ man pgaccess
+bash$ pgaccess &lt;database_name>
+</PRE>
+<HR>
+
+Click on Table | New | Design buttons.
+<HR>
+<PRE>
+bash$ man psql
+bash$ psql &lt;database_name>
+..... in psql press up/down arrow keys for history line editing or \s
+</PRE>
+<HR>
+
+At psql prompt, give standard SQL statements like 'create table', 'alter table'
+or 'drop table' to manipulate the tables.
+<H2><A NAME="ss7.5">7.5 Create, Edit, Drop records in a table</A>
+</H2>
+
+<P>You can use user friendly GUI tool 'pgaccess' or command line tool 'psql'
+to create, edit or drop records in a database table.
+<HR>
+<PRE>
+bash$ man pgaccess
+bash$ pgaccess &lt;database_name>
+</PRE>
+<HR>
+
+Click on Table | &lt; pick a table &gt; | Open buttons.
+<HR>
+<PRE>
+bash$ man psql
+bash$ psql &lt;database_name>
+..... in psql press up/down arrow keys for history line editing or \s
+</PRE>
+<HR>
+
+At psql prompt, give standard SQL statements like 'insert into table_name', 'update table_name'
+or 'delete from table_name' to manipulate the tables.
+<H2><A NAME="ss7.6">7.6 Switch active Database</A>
+</H2>
+
+<P>You can use user friendly GUI tool 'pgaccess' or command line tool 'psql'
+to switch active database.
+<HR>
+<PRE>
+bash$ man pgaccess
+bash$ pgaccess &lt;database_name>
+</PRE>
+<HR>
+
+Click on Database | Open buttons.
+<HR>
+<PRE>
+bash$ man psql
+bash$ psql &lt;database_name>
+..... in psql press up/down arrow keys for history line editing or \s
+
+psql=> connect &lt;database_name> &lt;user>
+</PRE>
+<HR>
+<H2><A NAME="backup_restore"></A> <A NAME="ss7.7">7.7 Backup and Restore database </A>
+</H2>
+
+<P>PostgreSQL provides two utilities to back up your system: <B>pg_dump</B>
+to backup individual databases, and <B>pg_dumpall</B> to back up all the
+databases in just one step.
+<HR>
+<PRE>
+bash$ su - postgres
+bash$ man pd_dump
+bash$ pd_dump &lt;database_name> > database_name.pgdump
+
+To dump all databases -
+bash$ man pg_dumpall
+bash$ pg_dumpall -o > db_all.out
+
+To reload (restore) a database dumped with pg_dump:
+bash$ cat database_name.pgdump | psql &lt;database_name>
+
+To reload (restore) all databases dumped with pg_dumpall:
+bash$ psql -e template1 &lt; db_all.out
+</PRE>
+<HR>
+
+This technique can be used to move databases to new locations, and to rename 
+existing databases.
+<P><B>WARNING:</B> Every database should be backed up on a regular basis. Since
+PostgreSQL manages its own files in the file sysetem, it is not advisable to rely
+on system backups of your file system for your database backups; there is 
+no guarantee that the files will be in an usable, consistent 
+state after restoration.
+<P><B>BACKUP LARGE DATABASES:</B> Since Postgres allows tables larger than the
+maximum file size on your system, it can be problematic to dump the table to
+a file, because the resulting file likely will be larger than the maximum
+size allowed by your system. As <B>pg_dump</B> writes to <B>stdout</B>,
+you can just use standard unix tools to work around this possible problem -
+use compressed dumps.
+<HR>
+<PRE>
+bash$ pg_dump &lt;database_name> | gzip > filename.dump.gz
+Reload with :
+bash$ createdb &lt;database_name>
+bash$ gunzip -c filename.dump.gz | psql &lt;database_name>
+Or
+bash$ cat filename.dump.gz | gunzip | psql &lt;database_name>
+Use split:
+bash$ pg_dump &lt;database_name> | split -b 1m - filename.dump.
+Note: There is a dot (.) after filename.dump in the above command!! 
+You can reload with:
+bash$ man createdb 
+bash$ createdb &lt;database_name>
+bash$ cat filename.dump.* | pgsql &lt;database_name>
+</PRE>
+<HR>
+
+Of course, the name of the file (filename) and the content of the <B>pg_dump</B>
+output need not match the name of the database. Also, the restored database
+can have an arbitrary new name, so this mechanism is also suitable for
+renaming databases.
+<P><B>Backup LARGE Objects:</B> 
+Large objects are not handled by pg_dump. The directory <I>contrib/pg_dumplo </I>
+of the Postgres source tree contains a program that can do that.
+<P><B>FILESYSTEM BACKUP :</B> 
+You can use the linux OS tools and commands to backup the entire database.
+But you <B>must completely</B> shutdown the postgresql database server before doing backup
+or restore with this method.
+The filesystem backup or restore may be <B>2 to 3 times faster</B> 
+than the pg_dump command, but only disadvantage is that you <B>must completely</B>
+shutdown the database server.
+It is very highly recommended that you use backup and restore tools 
+like Arkeia, Bru which are
+given in Mic-Lin analogy list sub-heading "Backup and Restore Utility" at
+<A HREF="http://aldev.8m.com">http://aldev.8m.com</A>
+and mirror sites are at
+<A HREF="http://aldev.webjump.com">webjump</A>,
+<A HREF="http://www.angelfire.com/nv/aldev">angelfire</A>,
+<A HREF="http://www.geocities.com/alavoor/index.html">geocities</A>,
+<A HREF="http://aldev.virtualave.net">virtualnet</A>,
+<A HREF="http://aldev.bizland.com">bizland</A>,
+<A HREF="http://members.theglobe.com/aldev/index.html">theglobe</A>,
+<A HREF="http://members.spree.com/technology/aldev">spree</A>,
+<A HREF="http://homepages.infoseek.com/~aldev1/index.html">infoseek</A>,
+<A HREF="http://www3.bcity.com/aldev">bcity</A>,
+<A HREF="http://aldev.50megs.com">50megs</A>
+.The OS commands to use are -
+<HR>
+<PRE>
+bash$ man tar
+bash$ tar -cvf backup.tar /usr/local/pgsql/data
+or using compression
+bash$ tar -zcvf backup.tgz /usr/local/pgsql/data
+</PRE>
+<HR>
+<P><B>INCREMENTAL BACKUP :</B> This is in todo list and will appear in 
+future release of PostgreSQL.
+<H2><A NAME="ss7.8">7.8 Security of database</A>
+</H2>
+
+<P>See the chapter on 
+<A HREF="PostgreSQL-HOWTO-11.html#security">PostgreSQL Security</A>.
+<H2><A NAME="ss7.9">7.9 Online help</A>
+</H2>
+
+<P>It is very important that you should know how to use online help facilities of PostgreSQL,
+since it will save you lot of time and provides very quick access to information.
+<P>See the online man pages on various commands like createdb, createuser, etc..
+<HR>
+<PRE>
+bash$ man createdb
+</PRE>
+<HR>
+<P>See also online help of psql, by typing \h at psql prompt
+<HR>
+<PRE>
+bash$ psql mydatabase
+psql> \h
+
+Tip: In psql press up/down arrow keys for history line editing or \s
+</PRE>
+<HR>
+<H2><A NAME="ss7.10">7.10 Creating Triggers and Stored Procedures</A>
+</H2>
+
+<P>To create triggers or stored procedures,
+First run 'createlang' script to install 'plpgsql'
+in the particular database you are using. If you want
+by default then install it in 'template1' and subsequent
+created databases will be clones of template1.
+See 'createlang' web page in User guide at /usr/doc/postgresql-7.0.2/user/index.html. 
+<P>
+<HR>
+<PRE>
+bash$ man createlang
+bash$ createdb mydb
+bash$ export PGLIB=/usr/lib/pgsql
+bash$ createlang plpgsql mydb
+bash$ createlang plpgsql template1
+</PRE>
+<HR>
+
+See also the trigger, stored procedures examples in
+<A HREF="PostgreSQL-HOWTO-6.html#Examples RPM">Examples RPM</A>
+. One sample code from examples RPM:
+<HR>
+<PRE>
+create function tg_pfield_au() returns opaque as '
+begin
+    if new.name != old.name then
+        update PSlot set pfname = new.name where pfname = old.name;
+    end if;
+    return new;
+end;
+' language 'plpgsql';
+ 
+create trigger tg_pfield_au after update
+    on PField for each row execute procedure tg_pfield_au();
+</PRE>
+<HR>
+
+Another trigger example sample code:
+<HR>
+<PRE>
+create trigger check_fkeys_pkey_exist
+        before insert or update on fkeys
+        for each row
+        execute procedure
+        check_primary_key ('fkey1', 'fkey2', 'pkeys', 'pkey1', 'pkey2');
+</PRE>
+<HR>
+<P>You must also install the TEST package - postgresql-test-7.0.2-2.rpm 
+and read the example sql scripts at - /usr/lib/pgsql/test/regress/sql
+<P>To see the list of triggers in database do -
+<HR>
+<PRE>
+bash$ psql mydb
+psql=> \?
+psql=> \dS
+psql=> \d pg_trigger
+psql=> select tgname from pg_trigger order by tgname;
+</PRE>
+<HR>
+<P>To see the list of functions and stored procedures in database do -
+<HR>
+<PRE>
+bash$ psql mydb
+psql=> \?
+psql=> \dS
+psql=> \d pg_proc
+psql=> select proname, prosrc from pg_proc order by proname;
+psql=> \df
+</PRE>
+<HR>
+<H2><A NAME="ss7.11">7.11 PostgreSQL Documentation</A>
+</H2>
+
+<P>More questions, read the fine manuals of PostgreSQL which are very
+extensive.
+PostgreSQL documentation is distributed with package. See the
+'User's Guide', 'Programmer's Guide', 'Administrator's Guide' and
+other manuals. The release docs are 
+at 
+<A HREF="http://www.postgresql.org/users-lounge/docs">http://www.postgresql.org/users-lounge/docs</A>.
+<HR>
+<A HREF="PostgreSQL-HOWTO-8.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="PostgreSQL-HOWTO-6.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="PostgreSQL-HOWTO.html#toc7"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

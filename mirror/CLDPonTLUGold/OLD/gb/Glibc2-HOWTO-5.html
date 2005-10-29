@@ -1,0 +1,329 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Glibc 2 HOWTO 中文版: 安装成主要函式库</TITLE>
+ <LINK HREF="Glibc2-HOWTO-6.html" REL=next>
+ <LINK HREF="Glibc2-HOWTO-4.html" REL=previous>
+ <LINK HREF="Glibc2-HOWTO.html#toc5" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Glibc2-HOWTO-6.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Glibc2-HOWTO-4.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Glibc2-HOWTO.html#toc5"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="primary-install"></A> <A NAME="s5">5. 安装成主要函式库</A></H2>
+
+<P>
+<P>这一节的内容是关於将 glibc2 安装成你的主要 C 函式库。
+任何你编译的新程式都将会连结到这一个函式库，
+除非你用了特殊的编译选项来连结到其它的版本。
+<P>假如你是用 RedHat 或 Debian 并且已下载相关的 rpm 或 deb 档，
+请参阅 RedHat 或 Debian 的安装说明，你可以直接跳过这一节。
+<P>
+<H2><A NAME="compiling"></A> <A NAME="ss5.1">5.1 由原始码编译函式库</A>
+</H2>
+
+<P>
+<P>这一节解释如何由原始码编译 glibc 2 与附加套件。
+如果你想要改变最佳化与组态选项或使用额外的套件，那你就必须编译函式库。
+<P>
+<H3>需求</H3>
+
+<P>
+<P>
+<UL>
+<LI>约 150 MB 的磁碟空间</LI>
+<LI>GNU make 3.75</LI>
+<LI>gcc &gt;= 2.7.2 (最好是 2.7.2.1)</LI>
+<LI>binutils 2.8.1 (假如是 alpha 你需要 snapshot)</LI>
+<LI>bash 2.0</LI>
+<LI>autoconf 2.12 (假如你更动了 configure.in)</LI>
+<LI>texinfo 3.11</LI>
+</UL>
+<P>在一安装有 64MB 记忆体的 i586@133 机器上，
+编译完整的函式库与附加套件大约需要三个小时。
+而在 i686@200 的机器上则约需要一个半小时。
+<P>
+<H3>解开原始码</H3>
+
+<P>
+<P>你需要从 archive 中解出原始码才能编译它，
+最好的方式是：
+<BLOCKQUOTE><CODE>
+<PRE>
+ tar xzf glibc-2.0.6.tar.gz
+ cd glibc-2.0.6
+ tar xzf ../glibc-linuxthreads-2.0.6.tar.gz
+ tar xzf ../glibc-crypt-2.0.6.tar.gz
+ tar xzf ../glibc-localedata-2.0.6.tar.gz
+ 
+</PRE>
+</CODE></BLOCKQUOTE>
+
+这将会把 linuxthreads、crypt 与 localedata 等目录放到 glibc-2.0.6 目录下，
+如此 configure 才能找到这些附加套件。
+<P>
+<H3>设定组态</H3>
+
+<P>
+<P>在 <CODE>glibc-2.0.6</CODE> 的目录底下，建立一个新的目录 compile，
+并且 cd 到 compile 底下，所也的工作都会在这个目录中完成，
+这会简化後续的清除工作。
+(发展者似乎并未让 'make clean' 作得很好)
+<BLOCKQUOTE><CODE>
+<PRE>
+ mkdir compile
+ cd compile
+ 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>执行 <CODE>../configure</CODE>。
+要使用附加套件你必需用 --enable-add-ons 来指定，
+例如 --enable-add-ons=linuxthreads,crypt,localedata。
+也许你也会想要指定安装的目录，要符合 linux 标准架构，
+指定为 --prefix=/usr。
+(当在 linux 系统上 prefix 被设为 <CODE>/usr</CODE>，
+configure 知道要调整其它的路径，
+好将 libc.so 以及其它重要的函式库放到 <CODE>/lib</CODE>)
+完整的 configure 命令如下：
+<BLOCKQUOTE><CODE>
+<PRE>
+ ../configure --enable-add-ons=linuxthreads,crypt,localedata --prefix=/usr
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H3>编译</H3>
+
+<P>
+<P>要编译与验证，
+执行：
+<BLOCKQUOTE><CODE>
+<PRE>
+ make
+ make check
+ 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss5.2">5.2 准备安装</A>
+</H2>
+
+<P> 
+<P>无论是由原始码编译或是预先编译好的版本，你现在必需移动某些档案来迎接新的函式库。
+任何新编译的程式会被连结到 glibc，但是旧有静态连结的程式仍然倚靠著 libc 5，
+所以你不能只是覆盖掉旧有的版本。
+<P>
+<OL>
+<LI>建立一个新的目录来放置旧档案：
+<BLOCKQUOTE><CODE>
+<PRE>
+ mkdir -p /usr/i486-linuxlibc5/lib
+ 
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>旧的标头档必需从 <CODE>/usr/include</CODE> 移开：
+<BLOCKQUOTE><CODE>
+<PRE>
+ mv /usr/include /usr/i486-linuxlibc5/include
+ 
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>建立一个新的 include 目录，并且设定到其它 include 目录的连结：
+<BLOCKQUOTE><CODE>
+<PRE>
+ mkdir /usr/include
+ ln -s /usr/src/linux/include/linux /usr/include/linux
+ ln -s /usr/src/linux/include/asm /usr/include/asm
+ ln -s /usr/X11R6/include/X11 /usr/include/X11
+ ln -s /usr/lib/g++-include /usr/include/g++
+ 
+</PRE>
+</CODE></BLOCKQUOTE>
+
+这些连结须要视你的系统而稍作调整。
+最少在 Slackware 中，g++ 标头档案在 <CODE>/usr/local/g++-include</CODE>，
+而 Debian 却放在 <CODE>/usr/include/g++</CODE>，
+并且将 <CODE>/usr/lib/g++-include</CODE> 连结到 <CODE>/usr/include/g++</CODE>。
+在後者的情形，你也许会想要将原始的 g++ include 目录移回到
+<CODE>/usr/include</CODE>。
+</LI>
+<LI>回存所有额外的标头档与连结。
+某些非标准的函式库会将档案放至 <CODE>/usr/include</CODE>，
+或是在 <CODE>/usr/include</CODE> 放置一连结到它们的 include 目录下。
+这些档案与连结必须回存，如此才可以正确的使用这些额外的函式库。
+</LI>
+<LI>将你的新函式库路径
+(例如 <CODE>/usr/i486-linuxlibc5/lib</CODE>)
+加入到 <CODE>/etc/ld.so.conf</CODE> 的<EM>顶端</EM>。
+你最好要有 ld.so 1.8.8 或是更新的版本，
+以避免在安装完 glibc 之後出现一些奇怪的讯息。
+</LI>
+<LI>搬移或复制所有的旧函式库到新的目录。
+<BLOCKQUOTE><CODE>
+<PRE>
+ mv /usr/lib/libbsd.a /usr/i486-linuxlibc5/lib
+ mv /usr/lib/libc.a /usr/i486-linuxlibc5/lib
+ mv /usr/lib/libgmon.a /usr/i486-linuxlibc5/lib
+ mv /usr/lib/libm.a /usr/i486-linuxlibc5/lib
+ mv /usr/lib/libmcheck.a /usr/i486-linuxlibc5/lib
+ mv /usr/lib/libc.so /usr/i486-linuxlibc5/lib
+ mv /usr/lib/libm.so /usr/i486-linuxlibc5/lib
+ cp /lib/libm.so.5.* /usr/i486-linuxlibc5/lib
+ cp /lib/libc.so.5.* /usr/i486-linuxlibc5/lib
+ 
+</PRE>
+</CODE></BLOCKQUOTE>
+
+假如你的 <CODE>/usr</CODE> 与 <CODE>/</CODE> 是在不同的 partition 上，
+那 <CODE>libm.so.5</CODE> 与 <CODE>libc.so.5</CODE> 应该用复制的非搬移，
+因为一些用来启动 linux 的程式会需要这两个函式库，
+因此必须要位在 root partition。
+</LI>
+<LI>将 <CODE>/usr/lib/*.o</CODE> 移到新的目录下。
+<BLOCKQUOTE><CODE>
+<PRE>
+ mv /usr/lib/crt1.o /usr/i486-linuxlibc5/lib
+ mv /usr/lib/crti.o /usr/i486-linuxlibc5/lib
+ mv /usr/lib/crtn.o /usr/i486-linuxlibc5/lib
+ mv /usr/lib/gcrt1.o /usr/i486-linuxlibc5/lib
+ 
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>在你的函式库移动後，
+更新 library cache。
+<BLOCKQUOTE><CODE>
+<PRE>
+ ldconfig -v
+ 
+</PRE>
+</CODE></BLOCKQUOTE>
+</LI>
+</OL>
+<P>
+<H2><A NAME="ss5.3">5.3 由预先编译好的套件安装</A>
+</H2>
+
+<P>
+<P>如果你是由一已预先编译好的 glibc 安装，
+你必须：
+<BLOCKQUOTE><CODE>
+<PRE>
+ cd /
+ gzip -dc glibc-2.0.bin.i386.tar.gz | tar tvvf -
+ gzip -dc glibc-crypt-2.0.bin.i386.tar.gz | tar tvvf -
+ ldconfig -v
+ 
+</PRE>
+</CODE></BLOCKQUOTE>
+
+如果你用的是不同的系统架构或是版本，请置换适当的档名。
+<P>
+<H2><A NAME="ss5.4">5.4 由原始码安装</A>
+</H2>
+
+<P>
+<P>要由原始码安装，
+执行：
+<BLOCKQUOTE><CODE>
+<PRE>
+ make install
+ ldconfig -v
+ 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss5.5">5.5 更新 gcc specs</A>
+</H2>
+
+<P>
+<P>安装的最後一步
+(不管你是由预先编译好的套件或是由原始码安装)
+是更新 gcc 的 <CODE>spec</CODE> 档，
+让你可以正确的连结你的程式。
+要知道 gcc 所用的是那一个 spec 档，
+如下输入：
+<BLOCKQUOTE><CODE>
+<PRE>
+ % gcc -v
+ reading specs from /usr/lib/gcc-lib/i486-unknown-linux/2.7.2.2/specs
+ gcc version 2.7.2.2
+ 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>在这里，系统是 i486-unknown-linux，
+而版本则是 2.7.2.2。
+你必须将 <CODE>/usr/lib/gcc-lib/&lt;系统&gt;</CODE> 复制到旧的系统目录下：
+<BLOCKQUOTE><CODE>
+<PRE>
+ cd /usr/lib/gcc-lib/
+ cp -r i486-unknown-linux i486-linuxlibc5
+ 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>到原先的目录与版本目录下：
+<BLOCKQUOTE><CODE>
+<PRE>
+ cd /usr/lib/gcc-lib/i486-unknown-linux/2.7.2.2
+ 
+</PRE>
+</CODE></BLOCKQUOTE>
+
+并修改在同一目录下的 <CODE>specs</CODE>。
+将这档案中的 <CODE>/lib/ld-linux.so.1</CODE> 改成 <CODE>/lib/ld-linux.so.2</CODE>，
+并且要将所有的 <CODE>%{...:-lgmon}</CODE> 表示式删除，
+因为 glibc 不使用 gmon 函式库来做 profiling。
+你可以在 
+<A HREF="Glibc2-HOWTO-9.html#specs">Specs 档□例</A> 找到一份 specs 档的□例。
+<P>
+<H2><A NAME="ss5.6">5.6 测试你的安装</A>
+</H2>
+
+<P>
+<P>要测试安装是否正确，
+请建立 glibc.c 如下：
+<BLOCKQUOTE><CODE>
+<PRE>
+ #include &lt;stdio.h&gt;
+
+ main()
+ {
+     printf("hello world!\n");
+ }
+ 
+</PRE>
+</CODE></BLOCKQUOTE>
+
+并且 compile 这个程式：
+<BLOCKQUOTE><CODE>
+<PRE>
+ % gcc glibc.c -o glibc
+ 
+</PRE>
+</CODE></BLOCKQUOTE>
+
+使用 ldd 来查证这个程式是连结到 glibc2 而非你的旧 libc：
+<BLOCKQUOTE><CODE>
+<PRE>
+ % ldd glibc
+ libc.so.6 => /lib/libc.so.6 (0x4000e000)
+ /lib/ld-linux.so.2 => /lib/ld-linux.so.2 (0x40000000)
+ 
+</PRE>
+</CODE></BLOCKQUOTE>
+
+假如这个程式可以通过 compile，并且在执行後产生 &quot;hello world!&quot;
+的输出，那麽表示已经安装成功。
+<P>
+<P>
+<HR>
+<A HREF="Glibc2-HOWTO-6.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Glibc2-HOWTO-4.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Glibc2-HOWTO.html#toc5"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

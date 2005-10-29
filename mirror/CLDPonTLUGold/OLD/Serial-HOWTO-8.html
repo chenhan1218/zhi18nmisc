@@ -1,0 +1,97 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Linux Serial HOWTO 中譯版: 我能使用超過兩個的串列裝置嗎?</TITLE>
+ <LINK HREF="Serial-HOWTO-9.html" REL=next>
+ <LINK HREF="Serial-HOWTO-7.html" REL=previous>
+ <LINK HREF="Serial-HOWTO.html#toc8" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Serial-HOWTO-9.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Serial-HOWTO-7.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Serial-HOWTO.html#toc8"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="irqaddr"></A> <A NAME="s8">8. 我能使用超過兩個的串列裝置嗎?</A></H2>
+
+<P>你不需要閱讀這一節，除非你想要使用三個或更多的串列設備...(假定你沒有多埠卡的話)．
+<P>假如你有另一個多餘的串列埠，是的，你可以．
+你可以使用的串列埠數目受限於我們必須使用的硬體中斷要求以及埠輸出入位址的數目．
+這並不是 Linux 的限制，而是 PC 匯流排的限制．必須指定中斷跟位址給每一個串列設備．
+串列設備可以是串列埠，內接式數據機或是多埠卡．
+<P>多埠卡是為了擁有許多個串列埠來分享卡上所有串列埠所使用的相同 IRQ 而特別設計的．
+Linux 對卡上的每一個埠使用不同的輸出入位址以便從它們獲取資料．
+<P>
+<H2><A NAME="ss8.1">8.1 選擇串列設備的中斷位址</A>
+</H2>
+
+<P>你的 PC 一般會將 <CODE>ttyS0</CODE> 以及 <CODE>ttyS2</CODE> 設在 IRQ 4 而將 <CODE>ttyS1</CODE> 以及 <CODE>ttyS3</CODE> 設在 IRQ 3．
+經由檢視 <CODE>/proc/interrupts</CODE> 你可以知道那些 IRQs 正被使用．
+要使用兩個以上的串列設備的話，你必須重新指定一個中斷．
+一個好選擇是從你的並列埠那邊重新指定一個中斷．你的 PC 一般會設定 IRQ5 或是 IRQ7 當你的並列埠，但是很少人會使用兩個並列埠．
+你可以重新指定其中一個中斷給串列設備，並而仍然能順利地使用一個並列埠．
+你將會需要用到 <CODE>setserial</CODE> 程式來做這件事．此外，你必須調整你板子上的跳接設定(Jumpers)，查看你主機板的說明文件．
+跳接你想要給每個埠使用的 IRQ．
+<P>你將得要做些設定讓每個串列設備都有一個，並且是唯一的一個中斷．
+這裡是我在 <CODE>/etc/rc.d/rc.local</CODE> 裡所用的設定 - 你應該在啟動系統時的某個地方做這件事．
+<BLOCKQUOTE><CODE>
+<PRE>
+        /sbin/setserial /dev/ttyS0 irq 3        # my serial mouse
+        /sbin/setserial /dev/ttyS1 irq 4        # my Wyse dumb terminal
+        /sbin/setserial /dev/ttyS2 irq 5        # my Zoom modem 
+        /sbin/setserial /dev/ttyS3 irq 9        # my USR modem
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>標準的 IRQ 指定:
+<PRE>
+              IRQ  0    Timer channel 0
+              IRQ  1    Keyboard
+              IRQ  2    Cascade for controller 2
+              IRQ  3    Serial port 2
+              IRQ  4    Serial port 1
+              IRQ  5    Parallel port 2
+              IRQ  6    Floppy diskette
+              IRQ  7    Parallel port 1
+              IRQ  8    Real-time clock
+              IRQ  9    Redirected to IRQ2
+              IRQ 10    not assigned 
+              IRQ 11    not assigned
+              IRQ 12    not assigned
+              IRQ 13    Math coprocessor
+              IRQ 14    Hard disk controller 1
+              IRQ 15    Hard disk controller 2
+</PRE>
+<P>在選擇中斷時真的沒有什麼正確的．只要確定它不是已經被主機板，或是其它界面卡所使用．
+2, 3, 4, 5 或是 7 是好選擇．``not assigned''的意思是目前並沒有什麼東西在標準情況下會固定使用這些硬體中斷要求．
+也要注意到 IRQ 2 跟 IRQ 9 是一樣的．你可以稱它為 2 或 9，串列驅動程式非常了解這一點．
+如果你有一塊 16-bit 匯流排連接頭的串列卡，你也可以使用 IRQ 10, 11, 12 或 15．
+<P>只要確定你使用的並非是 IRQ 0, 1, 6, 8, 13 或是 14! 它們是由你的主機板所使用的．
+如果你拿走她的 IRQs 的話，會使得她很不高興．
+完成之後，再次檢查 <CODE>/proc/interrupts</CODE> 以確定沒有衝突發生．
+<P>
+<H2><A NAME="ss8.2">8.2 設定串列設備的位址</A>
+</H2>
+
+<P>接下來，你必須設埠位址．查看你主機板手冊的跳接設定．就像中斷，每個位址只能有一個串列設備．
+你的埠通常會配置成像下面這樣：
+<BLOCKQUOTE><CODE>
+<PRE>
+        ttyS0 address 0x3f8
+        ttyS1 address 0x2f8
+        ttyS2 address 0x3e8
+        ttyS3 address 0x2e8
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>選擇你想要給每一個串列設備使用的位址並且依此來設定跳接．
+我將我的數據機設在 <CODE>ttyS3</CODE> ，我的滑鼠在 <CODE>ttyS0</CODE>，而我的終端機在 <CODE>ttyS2</CODE>．
+<P>當你重新啟動時， Linux 應該會在你所設定的位址看到你的串列埠．
+Linux 所看到的 IRQ 可能不會跟你跳接設定的相符．
+不必擔心這一點． Linux 在它啟動的時候並沒有做任何的 IRQ 偵測，
+因為 IRQ 偵測是危險並且有可能被欺騙的．使用 <CODE>setserial</CODE> 來告訴 Linux 那個埠使用那個 IRQ．
+你也可以檢查 <CODE>/proc/ioports</CODE> 來看看在 Linux 啟動後那些輸出輸入埠位址被使用．
+<P>
+<HR>
+<A HREF="Serial-HOWTO-9.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Serial-HOWTO-7.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Serial-HOWTO.html#toc8"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

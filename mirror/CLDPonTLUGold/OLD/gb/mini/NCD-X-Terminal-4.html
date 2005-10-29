@@ -1,0 +1,110 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE> NCD X terminal mini HOWTO: 设定 UNIX 主机</TITLE>
+ <LINK HREF="NCD-X-Terminal-5.html" REL=next>
+ <LINK HREF="NCD-X-Terminal-3.html" REL=previous>
+ <LINK HREF="NCD-X-Terminal.html#toc4" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+<A HREF="NCD-X-Terminal-5.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="NCD-X-Terminal-3.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="NCD-X-Terminal.html#toc4"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s4">4. 设定 UNIX 主机</A></H2>
+
+<P>在开机时，X 终端机自网路上的远端系统取得这些必要档案 (包含它的 X server )
+当终端机开机以後，X server 将会控制输入，显示以及 X 通讯息定的沟通。
+X server 是在 X 终端机上执行的，所以它并不需要与存放它的主机需要相容。
+<P>
+<H2><A NAME="ss4.1">4.1 TFTP 以及 BootP</A>
+</H2>
+
+<P>一并提及 tftp (trivial file transfer protocol) 还有 BootP (boot protocol
+server) 都被使用於 X 终端机透过网路取得远端主机上的 X server 以及设定档， 这两种服务典型的都是被 inetd ( Internet Daemon ) 启动。
+<P>
+<P>X 终端机开机以後，如果它设定成自网路开机，它将会以 BootP ( TCP/IP bootstrap protocol ) 送出广播的讯息。
+这份开机的资讯将会包含X 终端机的网路卡卡号资料，
+这份资料是用来让开机用的处机利用来回应 X 终端机的。
+<P>
+<P>当远端主机机收到远端开机的要求时， inetd ( 这个 daemon 是在倾听在 /etc/services 所开的 Port )启动 BootP 这个被 /etc/services 指定的 daemon 。
+<P>
+<P>在 inetd.conf 这个设定档里面，建立或是取消 TFTP 以及 BootP 的设定列。
+tftpd 这设定的最终一项参数，以下方这个设定为例子，是一个存放 X 终端机需要的档案所存放的目录。虽然存放的目录不是限定的，但是为了安全因素，它们应该放在一个限制只能由 tftp 存取的特殊路径。
+<P>
+<P>/etc/inetd.conf 的□例档：
+<PRE>
+# tftp 主要是提供开机的服务。许多的站台
+# 执行这个服务只是为了提供开机。
+tftp   dgram udp wait root /usr/sbin/tcpd /usr/sbin/in.tftpd /usr/X11/lib/X11/ncd/
+bootps dgram udp wait root /usr/sbin/tcpd /usr/sbin/in.bootpd
+</PRE>
+<P>
+<P>起始化时， BootP 这个在主机上执行的 daemon会去读它 /etc/bootptab 的资料库档。
+每一个 X 终端机都必须在这个设定档里面存有一组资料。 
+每一笔资料被 '：' 字元所分隔。
+每部主机的名字都是每一笔资料的头一个标记。
+<P>有用的 bootptab 标记：
+<P>
+<DL>
+<DT><B><B>hd</B></B><DD><P>开机用的家目录 ( 例如 /usr/X11/lib/X11/ncd/ )。
+<DT><B><B>ip</B></B><DD><P>X 终端机的网路位址 ( 例如 10.0.0.1)。
+<P>
+<DT><B><B>sm</B></B><DD><P>子网路遮罩 ( 例如 255.0.0.0)。如果欲知如何使用子网路遮罩以及其他的 IP 网路原则，
+请参阅 Linux NET-3 (networking) HOWTO document。
+<P>
+<DT><B><B>gw</B></B><DD><P>闸道的 IP 位置 ( 例如 10.0.0.1)。
+<DT><B><B>ht</B></B><DD><P>硬体装置类型 - 在这个例子中是 Ethernet。
+<DT><B><B>ha</B></B><DD><P>X 终端机的硬体位置 ( 6 个位元组的表示的乙太网路卡号 )
+<P>依据 bootptab 的 UNIX 说明，'ht' 标记必须比 'ha' 标记在前面。
+X 终端机的乙太网路卡号会在终端机第一次接上电源时显示。
+这个位置有点像是六组被分号分开的两位数的十六进位符号
+所表达 ( 例如 00:00:A7:12:26:19 )。
+<P>
+<DT><B><B>tc</B></B><DD><P>表格内的资料继续下去。
+<P>
+<DT><B><B>ds</B></B><DD><P>名称伺服器的 IP 位址 ( 例如 10.0.0.3 )。
+如果不用解析电脑的名称，这一个项目是不需要的。
+<P>
+<DT><B><B>bf</B></B><DD><P>X 终端机的开机档案 ( 终端机的名称常常用做为档案名称，例如 Xncd19r)。
+</DL>
+<P>
+<P> 接下来列的是一个 BootP 伺服器资料库档案的/etc/bootptab 例子。
+'\'这个字元是用作换行的字元。
+<P>
+<PRE>
+# 这是一笔资料 ( 它给定一些预设的设定资讯 )
+# 指定所有 BootP 客户端的共同资讯
+default:hd=/usr/X11/lib/X11/ncd/:\
+        ds=10.0.0.3:\
+        sm=255.0.0.0:\
+        gw=10.0.0.1:
+
+# 这笔 X 终端资料的主机名称为 myxterm
+# 注意， tc 这个标记是参阅预设的资料
+myxterm:ht=ethernet:\
+        ha=0x0000a7122619:\
+        ip=10.0.0.2:\
+        tc=default:\
+        bf=Xncd19r:
+</PRE>
+<P>
+<P>当一个符合 bootptab 资料库的开机要求被侦测到时
+bootpd 会从资料库中找到相符的资讯，
+并送出一个符合这个硬体卡号的 IP 位址。
+档案藉由 TFTP 透过 IP 协定传送出去。
+<P>X 终端机的主机名称能被存放於开机主机的 /etc/hosts 这个档案里的某一笔资料决定。
+这个档案用来解析主机名称对应於 IP 位置的关系。
+在这个□例中， X 终端机 ( IP 位址为 10.0.0.2) 被分配成 myxterm 。
+<P>
+<PRE>
+10.0.0.1        linuxhost       # 开机用的主机
+10.0.0.2        myxterm         # X 终端机
+</PRE>
+<P>
+<HR>
+<A HREF="NCD-X-Terminal-5.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="NCD-X-Terminal-3.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="NCD-X-Terminal.html#toc4"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

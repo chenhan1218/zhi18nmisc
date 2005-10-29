@@ -1,0 +1,90 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="LinuxDoc-Tools 0.9.16">
+ <TITLE>Beowulf 中文HOWTO : 架構簡介</TITLE>
+ <LINK HREF="Beowulf-HOWTO-4.html" REL=next>
+ <LINK HREF="Beowulf-HOWTO-2.html" REL=previous>
+ <LINK HREF="Beowulf-HOWTO.html#toc3" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Beowulf-HOWTO-4.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="Beowulf-HOWTO-2.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="Beowulf-HOWTO.html#toc3"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s3">3.</A> <A HREF="Beowulf-HOWTO.html#toc3">架構簡介</A></H2>
+
+
+
+<H2><A NAME="ss3.1">3.1</A> <A HREF="Beowulf-HOWTO.html#toc3.1">它長什麼樣？</A>
+</H2>
+
+<P>我認為描述Beowulf超級電腦架構最合適的方法是舉一個真實的範例，並且是大多數系統管理者所熟悉的。那就是一個UNIX主機實驗室，內有一台伺服端和一群用戶端，更精準地說，我會舉位在南昆士蘭大學理學院DEC
+Alpha大學部計算機實驗室為例，伺服器被稱為 <I>beldin</I> 用戶端機器分別稱為 <I>scilab01</I>, <I>scilab02</I>,
+<I>scilab03</I>, 一直到 <I>scilab20</I>.  每台用戶端內部都安裝Digital
+Unix 4.0作業系統，但是使用者檔案空間（<CODE>/home</CODE>）和 <CODE>/usr/local</CODE> 都是透過NFS（網路檔案系統）從伺服端上獲得，每個用戶端都可以進入伺服端，並且所有其他的用戶端都會記載在
+<CODE>/etc/hosts.equiv</CODE> 檔案內，因此每個用戶端都可以用遠端操作殼（rsh）。伺服端也是整個實驗室的NIS伺服器，因此所有的機器都有相同的帳號資料，某人可以坐在<I>scilab02</I>的控制台前登入，就像他登入伺服端或<I>scilab15</I>.  一樣有相同的環境，所有的用戶端有相同環境的原因在於所有的機器都安裝和規劃相同的作業系統，並且使用者的<CODE>/home</CODE>
+和 <CODE>/usr/local</CODE> 區域實體上都位在伺服端上，可以透過NFS進入。NIS和NFS更進一步的
+訊息請參閱 
+<A HREF="http://sunsite.unc.edu/LDP/HOWTO/NIS-HOWTO.html">NIS</A> 和 
+<A HREF="http://sunsite.unc.edu/LDP/HOWTO/NFS-HOWTO.html">NFS</A>
+HOWTOs.</P>
+
+
+<H2><A NAME="ss3.2">3.2</A> <A HREF="Beowulf-HOWTO.html#toc3.2">如何有效利用其他節點？</A>
+</H2>
+
+
+<P>現在我們對系統架構有些概念，讓我們看看如何使用計算機實驗室內可供使用的CPU。任何人可以登入任何一台機器，並且在每個人自己的目錄下執行程式，他們也可以透過遠端操作殼在其他電腦上啟動（spawn）相同的程式。舉例來說，假設我們要計算1到10內整數平方根的總和，我們寫了個簡單的程式名為 <CODE>sigmasqrt</CODE> （請參見
+<A HREF="Beowulf-HOWTO-6.html#sigmasqrt">source code</A>) ，為了得到結果，我們執行以下的步驟
+<PRE>
+[jacek@beldin sigmasqrt]$ time ./sigmasqrt 1 10
+22.468278
+
+real    0m0.029s
+user    0m0.001s
+sys     0m0.024s
+</PRE>
+
+<CODE>time</CODE> 指令可以告訴我們執行程式所花的時間（實際經過的時間），我們可以看到，這個例子只花了很短的時間（0.029秒），假如我想計算1到1,000,000,000內整數的平方根總和，讓我們試試看，重新計算所花的時間</P>
+<P>
+<PRE>
+[jacek@beldin sigmasqrt]$ time ./sigmasqrt 1 1000000000
+21081851083600.559000
+
+real    16m45.937s
+user    16m43.527s
+sys     0m0.108s
+</PRE>
+</P>
+
+<P>這次執行程式所花的時間非常久，一個明顯的問題就是我們如何加快執行的時間？我們該如何改變執行程式的方式以減少執行所花的時間？最明顯的答案就是將整個工作分成許多小工作，並且同時在所有的電腦上執行，我們可以將加法的工作分成二十份，每個部份做一段開根號的工作，並加起來，當所有的節點完成計算，並傳回來，將二十個數加起來就得到最後的答案。在執行程式之前，我們需要做個標有記號的輸送管，可以讓所有的行程寫下它們的結果。</P>
+<P>
+<PRE>
+[jacek@beldin sigmasqrt]$ mkfifo output
+[jacek@beldin sigmasqrt]$ ./prun.sh &amp; time cat output | ./sum
+[1] 5085
+21081851083600.941000
+[1]+  Done                    ./prun.sh
+
+real    0m58.539s
+user    0m0.061s
+sys     0m0.206s
+</PRE>
+</P>
+<P>這回我們花了大約58.5秒，這時間是從開始到所有的節點都完成計算，並將結果寫到輸送管，這個時間並不包括最後將二十個數加起來，不過那個時間非常地短，可以忽略不計。我們可以看到平行計算可以有效地改進執行程式，事實上這個平行工作整整快了約17倍，相對於使用了二十倍CPU數目，效能是相當合理的。上述範例的目的是要展示同時平行程式最簡單的方法，實際操作上，如此簡單的範例是很少見的，其他技巧（PVM和MPI
+APIs）經常用來達成平行的工作。</P>
+
+
+<H2><A NAME="ss3.3">3.3</A> <A HREF="Beowulf-HOWTO.html#toc3.3">Beowulf如何與COW不同？</A>
+</H2>
+
+<P>上述的計算機實驗室算是一個工作站群（Cluster of Workstations，COW），那麼Beowulf有何不同？它和COW有何差異？實際上二者沒多大差別，不過Beowulf倒是有些不同的特色。第一、大多數的Beowulf群的用戶端沒有鍵盤、滑鼠、顯示卡和螢幕，所有到用戶端的方式都是從伺服端、特定控制端或是序列控制端經過遠端連接登入，因為對用戶端而言，從電腦群外登入電腦或是從外頭的電腦直接登入用戶端是沒有必要的，用戶端通常是使用私有的IP位址，例如從10.0.0.0到10.0.0.8或是192.168.0.0到192.168.0.16（參見RFC 1918 
+<A HREF="http://www.alternic.net/rfcs/1900/rfc1918.txt.html">http://www.alternic.net/rfcs/1900/rfc1918.txt.html</A>).  通常唯一要用到第二張網路卡對外連接的機器是伺服端，使用這套電腦群最常見的方法是直接進入伺服端，或是從個人工作站使用telnet或遠端登入伺服端。一但進入伺服端，使用者可以編輯和編譯他們的程式，也可以在電腦群內的用戶端上啟動行程。大多數情形的COW是在晚上用來執行平行計算，和在人們不使用工作站的週末時間，使用閒置的CPU。而通常Beowulf專用來平行計算，並且對這些平行計算做最佳化，當利用市售電腦零組件和免費軟體建構的Beowulf也提供較好的價格效能比，並且Beowulf給人一種單一系統的印象，很容易讓使用者將Beowulf群看作是一台計算用工作站。</P>
+
+
+<HR>
+<A HREF="Beowulf-HOWTO-4.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="Beowulf-HOWTO-2.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="Beowulf-HOWTO.html#toc3"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

@@ -1,0 +1,132 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Bridging mini-Howto: Setup</TITLE>
+ <LINK HREF="Bridge-2.html" REL=next>
+
+ <LINK HREF="Bridge.html#toc1" REL=contents>
+<SCRIPT src="../../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(2, 8, 2);</SCRIPT>
+<A HREF="Bridge-2.html"><IMG SRC="../../img/next.gif" ALT="Next"></A>
+<IMG SRC="../../img/prev.gif" ALT="Previous">
+<A HREF="Bridge.html#toc1"><IMG SRC="../../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s1">1. Setup</A></H2>
+
+<P>
+<OL>
+<LI>Get ``Bridge Config'':
+<BLOCKQUOTE><CODE>
+<A HREF="ftp://ftp.tux.org/people/alan-cox/BRCFG.tgz">ftp://ftp.tux.org/people/alan-cox/BRCFG.tgz</A></CODE></BLOCKQUOTE>
+
+<PRE>
+BRCFG may also be found at:
+        
+</PRE>
+
+<BLOCKQUOTE><CODE>
+<A HREF="http://coledd.com/networking/bridge/">http://coledd.com/networking/bridge/</A></CODE></BLOCKQUOTE>
+
+</LI>
+<LI>Enable multiple ethernet devices on your machine by
+adding this to your <CODE>/etc/lilo.conf</CODE>,
+and re-run <CODE>lilo</CODE>:
+<BLOCKQUOTE><CODE>
+<PRE>
+append = "ether=0,0,eth1"
+        
+</PRE>
+</CODE></BLOCKQUOTE>
+
+If you have three interfaces on your bridge, use this line instead:
+<BLOCKQUOTE><CODE>
+<PRE>
+append = "ether=0,0,eth1 ether=0,0,eth2"
+        
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+More interfaces can be found by adding more ether statements.
+By default a stock Linux kernel probes for a single ethercard,
+and once one is found the probe ceases.
+The above append statement tells the kernel to keep probing
+for more ethernet devices after the first one is found.
+
+Alternatively, the boot parameter can be used instead:
+<BLOCKQUOTE><CODE>
+<PRE>
+linux ether=0,0,eth1
+        
+</PRE>
+</CODE></BLOCKQUOTE>
+
+Or, with 3 interfaces, use:
+<BLOCKQUOTE><CODE>
+<PRE>
+linux ether=0,0,eth1 ether=0,0,eth2
+        
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>Recompile the kernel with <CODE>BRIDGING</CODE> enabled.
+</LI>
+<LI>A bridge should not have an IP address.
+It CAN, but a plain bridge doesn't need one.
+To remove the IP address from your bridge, go to
+<CODE>/etc/sysconfig/network-scripts/</CODE> (for a RedHat system)
+and copy <CODE>ifcfg-lo0</CODE> to <CODE>ifcfg-eth0</CODE> &amp;
+<CODE>ifcfg-eth1</CODE>.
+In these 2 eth files, change the line containing
+``<CODE>DEVICE=lo</CODE>'' to ``<CODE>DEVICE=eth0</CODE>''
+and ``<CODE>DEVICE=eth1</CODE>''.
+Other distributions may deviate from this, do what you need to do!
+If there are more than 2 interfaces to this bridge,
+be sure to make the corresponding configurations to those, as well.
+</LI>
+<LI>Reboot, so you are running the new kernel with bridging in it,
+and also to make sure that an IP addresses are not bound to the
+network interfaces.
+</LI>
+<LI>Once the system is back up,
+put the ethernet cards into promiscuous mode,
+so they will look at every packet that passes by its interface:
+<BLOCKQUOTE><CODE>
+<PRE>
+ifconfig eth0 promisc ; ifconfig eth1 promisc
+        
+</PRE>
+</CODE></BLOCKQUOTE>
+
+All interfaces which are connected to network segments to be bridged
+are to be put into promiscuous mode.
+</LI>
+<LI>Turn bridging ON using the <CODE>brcfg</CODE> program:
+<BLOCKQUOTE><CODE>
+<PRE>
+brcfg -ena
+        
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>Verify that there is different traffic on each interface:
+<BLOCKQUOTE><CODE>
+<PRE>
+tcpdump -i eth0      (in one window)
+tcpdump -i eth1      (in another window)
+        
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>Run a sniffer or <CODE>tcpdump</CODE> on another machine
+to verify the bridge is separating the segment correctly.</LI>
+</OL>
+<HR>
+<A HREF="Bridge-2.html"><IMG SRC="../../img/next.gif" ALT="Next"></A>
+<IMG SRC="../../img/prev.gif" ALT="Previous">
+<A HREF="Bridge.html#toc1"><IMG SRC="../../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

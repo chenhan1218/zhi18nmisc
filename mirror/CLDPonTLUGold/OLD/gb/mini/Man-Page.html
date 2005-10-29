@@ -1,0 +1,675 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" content="text/html; charset=gb2312">
+<TITLE>Linux Man-Page mini-HOWTO 中译版</TITLE>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+<PRE>
+
+   _LINUX MAN-PAGE-HOWTO 中文版_
+   
+   版权所有1995、96、97、98，作者Jens Schweikhardt，请发email给
+      
+   &lt;<a href="mailto:schweikh@noc.dfn.de">schweikh@noc.dfn.de</a>&gt;
+
+   中文译者
+   Joe Ren &lt;<a href="mailto:joeren@163.net">joeren@163.net</a>&gt;
+
+   校对者（欢迎加入我们的行列！）
+   Zeng Zhaorong <zzr_mail@263.net>
+      
+   请参阅后面的复制条款，那里有更多的说明。
+   
+   最后更新日期：1998年3月。单击这里可以浏览作者这篇文章的最新版本。
+   欢迎提出修正和其他建议！
+   
+   http://www.shuttle.de/schweikh/home.html
+   
+   中文翻译日期：1999年9月。
+   
+   如果你要写个可以通过man(1)命令访问的在线文档（也称为手册页）的话，本文
+   告诉你一些应当牢记的问题。在这份HOWTO里，一份手册将统称为手册页，而不
+   管它的实际长度是多少，也不管其性别倾向（man在英文里是男人的意思）。
+   
+   _目录_
+   
+* 0) 文档化的一点想法
+* 1）手册页是如何被访问的？
+* 2）一个设定好格式的手册页看起来该是什么样子？
+* 3）我如何在一个手册页里替几个程序/函数编写文档？
+* 4）我该使用哪个宏命令包?
+* 5）我该使用哪个预处理器?
+* 6）我应该发布我的源文件还是格式化好的文档呢？
+* 7）使用字体的惯例是什么？
+* 8）如何使手册页精益求精？
+* 9）如何得到没有^H^标记的纯文本手册页？
+* 10）如何得到高质量的Postscript手册页？
+* 11）如何使apropos和whatis干活？
+* A）复制条款
+
+   _0) 文档化的一点想法_
+   
+   我们为什么要写文档？问得有点天真。因为我们想要别人会使用我们的程序、库函
+   数或我们编制好并可以使用的任何东东。可是光是写文档并不是事情的全部：
+
+   * 文档必须能让人访问得到。如果它藏在某些不标准的地方，以致文档相关工具找
+     不到它——那它又有什么用呢？
+   * 文档必须准确可信。没有什么比程序的行为与文档不一致更讨厌的了。用户会诅
+     咒你，发给你愤怒的邮件，并将你的工作扔进垃圾桶，坚决不再安装这个怪人
+     所写的一切东西。
+
+   传统且广为人知的UNIX文档化方法是通过man(1)命令实现的。这份HOWTO描述了如
+   何写出一个手册页，使文档相关工具能够正确地处理它。这些工具中最重要的是
+   man(1)、xman(1x)、apropos(1)、makewhatis(8)和catman(8)。当然，要使信息
+   准确可信只能靠你自己了。但即使在这个方面，下面的内容也可以帮助你少走一些
+   弯路。
+
+   _1）手册页是如何被访问的？_
+   
+   为了替你的手册页起个正确的名字并安装在正确的位置上，你需要知道访问手册页
+   过程的机理。所有的手册页都属于一个特定的领域，用一个字符来表示。Linux下
+   最通用的领域及其名称及说明如下：
+
+   领域		名称			及说明
+   1		用户命令，		可由任何人启动的。
+   2		系统调用，		即由内核提供的函数。
+   3		例程，			即库函数。
+   4		设备，			即/dev目录下的特殊文件。
+   5		文件格式描述，		例如/etc/passwd。
+   6		游戏，			不用解释啦！
+   7		杂项，			例如宏命令包、惯例等。
+   8		系统管理员工具，	只能由root启动。
+   9		其他（Linux特定的），	用来存放内核例行程序的文档。
+   n		新文档，		可能要移到更适合的领域。
+   o		老文档，		可能会在一段期限内保留。
+   l		本地文档，		与本特定系统有关的。
+
+   手册页源文件（格式化系统的输入）的名字就是命令、函数或文件名的名称，后面
+   跟一个点，再跟著领域字符。如果你要为“passwd”文件的格式写个手册页，你必
+   须把源文件起名为“passewd.5”。这里我们也有了一个文件名跟命令名一样的例
+   子。可能还有个库函数也叫passwd。一般是通过分成不同的领域来解决这种冲突的：
+   命令的用法在文件“passwd.1”而假想的库函数说明在“passwd.3”里面。
+
+       有时候在文件名后面会有附加的字符，比如说“xterm.1x”或“wish.1tk”。
+       这样做的用意是指明该文档是为X Window程序或Tk应用程序编制的。某些手册
+       浏览器可以使用这些附加的信息。例如xman在可用文档列表中使用“xterm(x)”
+       和“wish(tk)”这样的名称。
+       
+   请勿使用n、o和l领域；按照文件系统标准的说法，不赞成使用这些领域。只要用
+   数字领域就好了。谨防与现有的程序、函数或文件名发生命名冲突。编写另一个编
+   辑器并叫它ed、sed（聪明的ed）或red（Rocky的ed）实在是个坏主意。确保你的
+   程序名是唯一的，就能避免有人运行了你的程序却读到了别人的手册页，或反之。
+   要做到这点，在lsm数据库查询程序名是一个办法。
+
+   现在我们知道了该给文件起什么名字。下一步要决定的事情是它最终会被安装（即
+   用户在你的包里运行make install命令）在什么地方。Linux系统里面，所有的手
+   册页都放在环境变量MANPATH指定的目录下面。正如shell使用“PATH”环境变量来
+   确定可执行文件的位置一样，文档相关工具需要使用MANPATH来确定手册页的位置。
+   实际上， MANPATH的格式跟PATH是一样的。 它们都用冒号来分隔开一组目录列表
+   （有点不同的是MANPATH不允许空域，也不许使用相对路径，只能使用绝对路径）。
+   如果MANPATH变量没有设置，或没有被引出来，将会使用一组缺省值，这至少会包
+   含/usr/man目录。为了加快搜索，并减少目录的大小，由MANPATH指定的目录（也
+   称为基本目录）有一组子目录分支命名为“man<s>”。这里<s>代表上面的表格中
+   介绍的领域字符代码。并非所有的领域都由一个子目录代表，理由很简单，没道理
+   保留一个空白的“mano”目录。然而 ， 会有名叫 “cat<s>” 、 “dvi<s>” 和
+   “ps<s>”的目录，用于保存用于显示或打印的文档。下面还会介绍。在基本目录
+   中只能存在一个名为“whatis”的文件，此文件的作用和建立的方法将在本文11）
+   段那里谈到。要把领域<s>的手册页安装到正确的地方，最安全的方法就是把它放
+   到/usr/man/man<s>目录下。然而，一个好的Makefile会允许用户通过一个make变
+   量例如MANDIR自行选择基本目录。大多数GNU包可以使用--prefix=/what/ever选项。
+   于是手册将被安装到基本目录/what/ever/man下。我建议你也提供一种类似的方法。
+   
+   由于出现了Linux文件系统标准（FS-Stnd），事情变得更复杂了。FS-Stnd 1.2上
+   说：（译注：对于只用英语的编程者是更复杂了，但是对于用中文的人却是福音！）
+
+       “应该对/usr/man目录的结构有所规定，以便支持用其他语言（多语言）写成
+       的手册页。”
+
+   这一点是通过引入另外一级用以区分不同语言的目录级别来实现的 。 再次引FS-
+   Stnd1.2的话：
+
+      “/usr/man的这种语言子目录命名方案是基于POSIX 1003.1附录E中的标准制订
+      的，这一标准描述了地区标识字符串——最为人接受的描述文化环境的方法。
+      地区字符串的格式如下：
+      <语言>[_<地区>][.<字符集>][,<版本>]”
+      
+    （请参阅FS-Stnd以了解一些常见的地区字符串。） 依据这些原则，我们应该将
+    手册页放在/usr/man/<地区>/man[1-9lno] 目录下。而已格式化的版本应该放在
+   /usr/man/<地区>/cat[1-9lno]目录下，如果不遵循这一原则，我们就只能为一个
+   地区提供手册页了。 然而， 我现在还不能推荐你切换到这些目录结构下。 FS-
+   Stnd 1.2也允许
+
+        “所有的手册页仅使用一种语言和代码集的系统可以忽略地区子串并将所有
+        的手册页都放在<mandir>下。例如，如果系统只用ASCII编码的英语手册页，
+        它们可以存放在/usr/man（的man[1-9]子目录）目录下。（这是传统的做法
+        和实际安排。）”
+
+   在所有的工具（例如xman、tkman、info和许多别的读取手册页的工具）都能处理
+   新的目录结构前我不会转到这个结构。
+   （译注：这是英文作者的意见，但是对我们中文用户，转到新结构是唯一能与国际
+   接轨的方法。）
+
+   _2）一个设定好格式的手册页看起来该是什么样子？_
+
+   让我给你介绍个例子。下面我会详细介绍内容。光是看这段纯文本，那些特殊的字
+   样（黑体和斜体)你是看不到的。请参阅“使用字体的惯例是什么？”一节，那里
+   有更多的解释。这里是为（假想的）foo程序写的手册页。
+ 
+ FOO(1)                     User Manuals                    FOO(1)
+
+
+_NAME
+_     foo - frobnicate the bar library
+
+_SYNOPSIS
+_     _foo [-bar] [-c_ _config-file_ _]_ _file_ _...
+
+DESCRIPTION
+_     _foo_  frobnicates the bar library by tweaking internal symbol
+     tables. By default it parses all baz segments and rearranges
+     them  in  reverse  order  by time for the _xyzzy_(1) linker to
+     find them. The symdef entry is then compressed using the WBG
+     (Whiz-Bang-Gizmo) algorithm.  All files are processed in the
+     order specified.
+
+_OPTIONS
+_     -b   Do not write `busy' to stdout while processing.
+
+     -c config-file
+          Use the alternate system wide  _config-file_  instead  of
+          _/etc/foo.conf_.   This overrides any _FOOCONF_ environment
+          variable.
+
+     -a   In addition to the baz segments, also parse the  blurfl
+          headers.
+
+     -r   Recursive  mode.  Operates  as fast as lightning at the
+          expense of a megabyte of virtual memory.
+
+_FILES
+_     _/etc/foo.conf
+_          The system wide configuration file. See _foo_(5) for fur-
+          ther details.
+     _~/.foorc
+_          Per  user  configuration  file.  See _foo_(5) for further
+          details.
+
+_ENVIRONMENT
+_     FOOCONF
+          If non-null the full pathname for an  alternate  system
+          wide _foo.conf_.  Overridden by the -c option.
+
+_DIAGNOSTICS
+_     The following diagnostics may be issued on stderr:
+
+     Bad magic number.
+          The input file does not look like an archive file.
+     Old style baz segments.
+          foo  can  only  handle  new  style  baz segments. COBOL
+          object libraries are not supported in this version.
+
+_BUGS
+_     The command name should have been chosen more  carefully  to
+     reflect its purpose.
+
+_AUTHOR
+_     Jens Schweikhardt <schweikh@noc.dfn.de>
+
+_SEE ALSO
+_     _bar_(1), _foo_(5), _xyzzy_(1)
+
+Linux                Last change: MARCH 1995                    2
+
+   我答应过解释的，现在请看吧。
+   
+   _NAME（名称）段_
+
+    ……这是唯一必须要有的段落。没有名称段的手册页就象北极的电冰箱一样毫无
+    作用。同时这个段有个标准化的格式：一连串用逗号隔开的程序或函数名，后面
+    跟个破折号，接著是简短（通常只有一行）的说明，介绍该程序（函数、文件）
+    应该提供的功能。通过makewhatis(8)，名称段的内容将收集到whatis数据库文件
+    中。名称段必须要有而且必须遵循以上格式的理由正是这个makewhatis程序。在
+    groff源文件里它看起来一定要象这样子：
+
+   .SH NAME foo \- frobnicate the bar library
+
+   这里\-很重要，其中的反斜线是不可或缺的，它的作用是将后面的破折号同可能在
+   命令名称中和该单行描述中用到的其它连字号区分开来。
+
+   _SYNOPSIS（大纲）段_
+
+   ……这一段用以给出可用的程序选项的概览。对于函数来说这个段列出相应的包含
+   文件和原型，相应的包含文件和原型，以便程序员知道参数和返回值的类型和个数。
+
+   _DESCRIPTION（描述）段_
+   ……你要在这里无可辩驳地证明你的0和1的序列是有点价值的。这里是写下你所有
+   知识的地方。它是个名人堂。通过提供详尽和可信的第一手资料，你能赢得其他程
+   序员和用户的赞美。要解释参数的用途、文件的格式，以及你完成这件复杂工作所
+   用的算法。
+
+   _OPTIONS（选项）段_
+   ……给出每个选项如何影响你程序行为的描述。你是知道那是怎么一回事的，是不
+   是？
+
+   _FILES（文件）段_
+
+   ……列出程序或函数用到的文件。例如，配置文件、启动文件、程序直接操作的文
+   件等。最好给出这些文件的完整路径名，并使安装程序可以改变这个目录，以便让
+   用户可以自己选定参数：groff的手册有一个缺省的目录前缀/usr/local，因此缺
+   省情况下要访问到/usr/local/lib/groff/* 这些文件 。 然而 ， 如果你使用命令
+   “make prefix=/opt/gnu” 进行 安装 ， 那么 手册页 的 存放 地点 将 改为
+   /opt/gnu/lib/groff/*。
+
+   _ENVIRONMENT（环境）段_
+
+   ……列出所有对你的程序或函数有影响环境变量，当然还要说明是如何影响的。最
+   常见的环境变量是些路径名、文件名或缺省设置等等。
+
+   _DIAGNOSTICS（诊断）段_
+
+   ……应当概略地说明来自你的程序的最常见的错误信息，并指出应当如何处理。不
+   必解释系统错误信息（在perror(3)中列出的）或致命错误信号（在psignal(3)中
+   列出），因为它们在运行任何程序的过程中都会发生。
+
+   _BUGS（臭虫）段_
+
+   ……理想状态下应该没有这段。如果你有勇气，你可以在这里描述你的系统局限性、
+   已知的麻烦之处、某些人会认为是缺陷的特性等。如果你胆子小，将它改名为“应
+   该如此”段 ;-)
+
+   _AUTHOR（作者）段_
+
+   ……当你的文档或程序行为（哎呀！）有很多错误并且你想要别人的臭虫报告电邮
+   的时候，写上这个节是个好办法。
+
+   _SEE ALSO（参见）节_
+ 
+   这是按照字母顺序给出的相关手册页的列表。
+ 
+   按照惯例，这个是最后一个节。如果这些节都不能满足你，你可以自由地另外发明
+   一些节（译者注：这意味著，除了NAME段不能改名字外，你可以将其它所有的段名
+   都改成中文。）。那么如何正确地生成该手册页呢？我早就知道你会这样问了，这
+   里就是源文件，看吧：
+
+.\" Process this file with
+.\" groff -man -Tascii foo.1
+.\"
+.TH FOO 1 "MARCH 1995" Linux "User Manuals"
+.SH NAME
+foo \- frobnicate the bar library
+.SH SYNOPSIS
+.B foo [-bar] [-c
+.I config-file
+.B ]
+.I file
+.B ...
+.SH DESCRIPTION
+.B foo
+frobnicates the bar library by tweaking internal
+symbol tables. By default it parses all baz segments
+and rearranges them in reverse order by time for the
+.BR xyzzy (1)
+linker to find them. The symdef entry is then compressed
+using the WBG (Whiz-Bang-Gizmo) algorithm.
+All files are processed in the order specified.
+.SH OPTIONS
+.IP -b
+Do not write `busy' to stdout while processing.
+.IP "-c config-file"
+Use the alternate system wide
+.I config-file
+instead of
+.IR /etc/foo.conf .
+This overrides any
+.B FOOCONF
+environment variable.
+.IP -a
+In addition to the baz segments, also parse the
+blurfl headers.
+.IP -r
+Recursive mode. Operates as fast as lightning
+at the expense of a megabyte of virtual memory.
+.SH FILES
+.I /etc/foo.conf
+.RS
+The system wide configuration file. See
+.BR foo (5)
+for further details.
+.RE
+.I ~/.foorc
+.RS
+Per user configuration file. See
+.BR foo (5)
+for further details.
+.SH ENVIRONMENT
+.IP FOOCONF
+If non-null the full pathname for an alternate system wide
+.IR foo.conf .
+Overridden by the
+.B -c
+option.
+.SH DIAGNOSTICS
+The following diagnostics may be issued on stderr:
+
+Bad magic number.
+.RS
+The input file does not look like an archive file.
+.RE
+Old style baz segments.
+.RS
+.B foo
+can only handle new style baz segments. COBOL
+object libraries are not supported in this version.
+.SH BUGS
+The command name should have been chosen more carefully
+to reflect its purpose.
+.SH AUTHOR
+Jens Schweikhardt <schweikh@noc.dfn.de>
+.SH "SEE ALSO"
+.BR bar (1),
+.BR foo (5),
+.BR xyzzy (1)
+
+   _3）我如何在一个手册页里替几个程序/函数编写文档？_
+
+   很多程序（grep、egrep等）和函数（printf、fprintf等）的文档都在同一个手册
+   页里。然而，如果这些手册页只能通过同一个名字访问的话就会变得一点用处都没
+   有。我们不能指望用户会记得egrep的手册页正好就是grep的手册页。因此有必要
+   使同一个手册页可以通过不同的名字访问。为此目的我们有几种可行的方法：
+    1． 为每个名字弄一个手册页的拷贝。
+    2． 用硬连接把所有手册页连到同一个文件。
+    3． 使用符号连接指向世纪的手册页。
+    4． 使用groff通过“.so”提供的“源”机制。
+
+   第一种方法明显地是在浪费磁盘空间。第二种方法我们不建议使用，理由是catman
+   的智能版本可以通过查看文件类型和内容节省很多工作。硬连接将妨碍catman变得
+   聪明。（catman的作用是将所有的手册页格式化以便加快显示速度。）第三种方法
+   有点小缺点：如果关心的是可移植性，你要注意到有些文件系统不能支持符号连接。
+   分析的结果，最佳方案（商标）就是使用groff的源机制。做法如下：如果你打算
+   让你的手册页可以用领域1中的名称“foo”和“bar”访问 ， 那么将手册页做在
+   foo.1并使得bar.1做成这样子：
+
+   .so man1/foo.1
+
+   指定“man1/”目录部分是非常重要的，文件名“foo.1”同样如此，因为当groff
+   由浏览器启动的时候它会以手册基本目录作为其工作目录（cwd），而且groff是参
+   照cwd来处理.so的参数的。
+
+   _4）我该使用哪个宏命令包?_
+
+   有好几个宏命令包是特别为编写手册页而设计的。通常它们放在groff的宏命令目
+   录/usr/lib/groff/tmac下。其文件名是tmac.<东西>,这里<东西>是groff的-m选项
+   的参数。 当给出“-m <东西>”参数时groff会使用tmac.<东西>这个文件。 通常
+   “-m”和“<东西>”之间的空格被忽略，所以我们当我们要使用“tmac.an”宏命
+   令包来格式化手册页时可以打命令“groff -man”。这就是为什么要起这么个古怪
+   的名字 “tmac.an” 的理由 。 除了 “tmac.an” 外还有另一个常用的宏命令包
+   tmac.doc，它来源于加利福尼亚的伯克莱大学。很多BSD手册页使用它，看起来UCB
+   已经将它作为文档化的标准了。Tmac.doc宏命令确实非常灵活，可是，唉，有些手
+   册浏览器不会使用它，而总是使用groff -man。例如，所有我所见过的xman程序都
+   会把需要tmac.doc的手册页弄得一团糟。所以，请养成习惯：使用tmac.an——使
+   用任何别的宏命令包都被认为有害。tmac.andoc是一个伪宏命令包，它查看源文件
+   并载入tmac.an或tmac.doc。实际上任何手册页浏览都器应当使用它，但是直到现
+   在都不是所有的程序都这样做，因此最好是坚持使用tmac.an。直到目前我告诉你
+   的关于宏命令的东西仅适用于tmac.an。如果你一定要使用tmac.doc，这里有个网
+   址指向关于如何使用它的详细信息：http://www.bsdi.com/bsdi-man 在该网页上
+   有个可供查询的索引。输入mdoc.samples它会找到mdoc.samples(7)，这是一个编
+   写BSD手册页的教程样例。
+
+   _5) 我该使用哪个预处理器?_
+
+   Groff 配有至少三个预处理器：tbl、 eqn和pic （在某些系统里面它们叫做gtbl、
+   geqn和gpic。）它们的作用是将预处理器宏及其数据翻译成正式的troff输入。Tbl
+   是个表格预处理器，eqn是个公式/数学预处理器，而pic是个图形预处理器。请参
+   考其有关的手册页以获得它们提供的功能的更多信息。请将它们放到一边：不要编
+   写依赖于任何预处理器的手册页。eqn在类打字机的设备上通常产生出极糟糕的输
+   出，不幸的是99%的手册页都是在该类型的设备上看的。例如，XAllocColor.3x使
+   用了少量幂函数公式。由于类打字机设备的特点，幂指数会和底数放在同一行。N
+   的二次方会显示成“N2"。应当避免使用tbl，因为我所见的所有xman程序都会失败。
+   Xman 3.1 使用下列命令来格式化手册页（以signal(7)为例）：
+
+   gtbl /usr/man/man7/signal.7 | geqn | gtbl | groff -Tascii -man
+   /tmp/xmana01760 2> /dev/null
+
+   这将把使用gtbl的源文件弄的一团糟，因为gtbl的输出被反送到gtbl去，其结果是
+   个没有表格的手册页。我不知道gtbl过滤掉自己的输出是个缺点还是特点，也不知
+   道xman能否放聪明点不要调用两次gtbl…… 说到底，如果你需要一个表格，自己
+   将它格式化好并把它放到.nf 和.fi行之间以便它能保持无格式状态就好。这种情
+   况下你不能使用黑体和斜体，但是这个方法能使你的表格在任何情况下都有可以接
+   受的样子。我曾见过需要pic预处理器的手册页。但是我不喜欢它。正如以上所说，
+   xman不会使用它而且groff确实会对输入作些令人胆战心惊的事情。
+
+   _6）我应该发布我的源文件还是格式化好的文档呢？_
+   
+   让我们使用优点（+）和缺点（-）来分析几种可能的选择吧：
+    1.只有源文件：
+       + 发行包更小。
+       - 在没有groff的系统下无法访问。
+    2.只有未经压缩的已格式化文件：
+       + 即使在没有groff的系统仍可访问。
+       - 用户不能生成dvi或postscript格式的文件。
+       - 在可以处理压缩页的系统中浪费了磁盘空间。
+    3. 只有压缩的已格式化文件：
+       + 即使在没有groff的系统仍可访问。
+       - 用户不能生成dvi或postscript格式的文件。
+       - 要使用哪个压缩格式？.Z？.z？.gz？还是所有的格式？
+    4. 同时有源文件及未压缩的已格式化文件：
+       + 即使在没有groff的系统仍可访问。
+       - 发行包更大。
+       - 某些系统可能需要已压缩的格式化手册页。
+       - 对已经安装groff的系统来说有点累赘。
+
+   恕我直言最好的方法是仅发布源文件。主要的缺点是它在没有groff的系统里无法
+   访问，但这没有关系。Linux文档计划里面超过500个手册页都只有源文件。 来自
+   FSF的手册页是只有源文件的。事实上，我很少听说过有软件发布格式化好的手册
+   页。如果系统管理员真的关心手册页的可访问性，那么他应该已经装好了groff。
+
+   _7) 使用字体的惯例是什么？_
+
+   首先：不要直接使用字体操作符例如\fB \fP等等。使用带参数的宏命令。这样你
+   可以避免一个常见的问题：忘记在单词的末尾把字体改回来，结果把粗体和斜体设
+   置扩展到了下一次改字体的时候 。 相信我 ， 这种 情况的发生比你想象中普遍。
+   tmac.an宏命令提供了以下字体式样：
+
+       .B 粗体
+
+       .BI 粗体跟斜体
+
+       .BR 粗体跟正体
+
+       .I 斜体
+
+       .IB 斜体跟粗体
+
+       .IR 斜体跟正体
+
+       .RB 正体跟粗体
+
+       .RI 正体跟斜体
+
+       .SM 小（缩放到正常大小的9/10）
+
+       .SB 小跟黑体（所跟的黑体不会缩小）
+
+   “X 跟 Y” 意味著奇数的参数就用X字体，而偶数的参数用Y字体。例如：
+
+       .BI "参数1是黑体，" "参数2是斜体，" "又是黑体" "又是斜体"
+
+   要在参数中使用空格，必须使用双引号。能提供的就这么多。现在告诉你如何使用
+   这些字体：（一部分是厚著脸皮从man(7)中偷出来的）
+
+   尽管UNIX世界的手册页里有很多随意的惯例，已有的数百个Linux特定的手册页仍然
+   规定了我们的标准：对于函数，参数总是指定为斜体，即使在其他部分要指定为黑
+   体的用法段里也一样：
+
+       .BI "myfunction(int " argc ", char **" argv );
+
+   文件名总是斜体，除非在大纲段中，该段中所包含的文件名要用黑体。所以你要用
+
+       .I /usr/include/stdio.h
+
+   和
+
+       .B #include <stdio.h>
+
+
+   通常用大写字母表示的特殊宏，用黑体：
+
+       .B MAXINT
+
+   要列举错误代码时，这些代码用黑体。这个列表通常按如下方法使用.TP（使用开
+   放标记的段落）宏：
+
+       .TP
+       .B EBADF
+       .I fd is not a valid file descriptor.
+       .TP
+       .B EINVAL
+       .I fd is unsuitable for reading
+
+   对其他手册页（或本手册页）的引用是黑体的。如果给出手册领域号，它使用正体，
+   且不带空格：
+
+       .BR man (7)
+
+   缩写词用小字体看上去效果最好。因此我建议
+
+       .SM UNIX
+       
+       .SM ASCII
+       
+       .SM TAB
+       
+       .SM NFS
+       
+       .SM LALR(1)
+
+   _8) 如何使手册页精益求精？_
+
+   以下是一些指引，可以提高你的文档的可靠性、可读性和“可格式化性”。
+
+   * 测试示例，如果它们能运行的话（使用剪切和粘贴来保证确切地将手册页中的东
+     西传给shell），然后将程序的输出放进手册页中，不要把你想象的程序输出敲
+     进去。
+
+   * 校对、检查拼写，让别人阅读，如果你的母语不是英语，这点尤其重要。你读的
+     这份HOWTO现在还没通过这最后一步，你是否乐意帮点忙呢？
+   
+   * 测试你的手册页：格式化你的手册页时groff有没有抱怨？最好将所用到的groff
+     命令行写成注解。当你调用“man 你的程序”时man(1)命令有没有埋怨？Man(1)
+     命令使用格式化系统有没有产生出预期的结果？xman(1x)和tkman(1tk)能处理你
+     的手册吗？XFree86 3.1使用xman 3.1.6 - X11R6,它会试图使用
+
+       gzip -c -d < %s > %s
+       zcat < %s > %s
+
+     来解压缩。
+
+   * Makewhatis(8)命令能否从NAME段中取出在线描述？
+
+
+   _9）如何得到完全没有^H^标记的纯文本手册页？_
+
+   请看col(1)，col可以过滤掉退格序列。只要大小写正确，你不用等很久的：
+
+   funnyprompt$ groff -t -e -mandoc -Tascii manpage.1 | col -bx >
+   manpage.txt
+
+   -t和-e开关告诉groff 使用tbl和eqn进行预处理。对于不需要预处理的手册页这样
+   做有点多余，但是浪费一点CPU周期并不会造成什么损害。另一方面，当-t选项确
+   实会造成损害时不要用它：比如表格被格式化得很可怕。你甚至用以下命令可以找
+   出（嗯，说“猜想”可能更好）要格式化某个groff文档（不光是手册页)需要什么
+   命令：
+
+   funnyprompt$ grog /usr/man/man7/signal.7 groff -t -man
+   /usr/man/man7/signal.7
+
+   “Grog”意思是“猜（guess）groff”，其作用正如所述——猜，如果它已经完美
+   的话我们就不再需要什么选项。我曾经见过它猜错了宏命令包，但从没见过猜错预
+   处理器的。这里有我写的一个小perl脚本，可以删除页眉和页脚，因此在打印滔滔
+   不绝的手册页时能省下几页纸。 将它保存成名叫strip-headers的文件 ， 并使用
+   chmod 755命令。
+   
+    #!/usr/bin/perl -wn
+    #  make it slurp the whole file at once:
+    undef $/;
+    #  delete first header:
+    s/^\n*.*\n+//;
+    #  delete last footer:
+    s/\n+.*\n+$/\n/g;
+    #  delete page breaks:
+    s/\n\n+[^ \t].*\n\n+(\S+).*\1\n\n+/\n/g;
+    #  collapse two or more blank lines into a single one:
+    s/\n{3,}/\n\n/g;
+    #  see what's left...
+    print;
+
+   你必须使用它作为“man”命令后面的第一个过滤器，因为它依赖于由groff输出的
+   换行符数量，比如：
+
+   funnyprompt$ man bash | strip-headers | col -bx > bash.txt
+
+   _10）如何得到高质量的Postscript手册页？_
+
+   使用你喜欢的PostScript打印机或解释器打印。选项的详细解释请参见问题9）。
+
+   _11）如何使apropos和whatis干活?_
+
+   假定你想知道你系统里装了什么编译器，以及如何调用它们。解决这个（经常问到
+   的）问题的方法是
+
+   funnyprompt$ apropos compiler
+   f77 (1) - Fortran 77 compiler
+   gcc (1) - GNU C and C++ compiler
+   pc (1) - Pascal compiler
+
+   Apropos和Whatis程序用于快速查找相关主题的手册页。这两个程序都查找许多个
+   名叫 “whatis” 的文件 ， 它们可以在每个手册基本目录下找到。 正如前述，
+   whatis数据库文件为目录树下每个手册页准备了一行入口。实际上，这行正是NAME
+   段（更精确的说法是：将该行加入，将连字符去掉，同时用圆括号括起该段作为注
+   记）。whatis数据库文件是由makewhatis程序建立的。它有好几个版本，所以请参
+   考其手册页看看有些什么选项可以使用。为了使makewhatis能正确取出NAME段，坚
+   持按照问题2）所述的格式编写NAME段是很重要的。apropos和whatis不同之处是所
+   查找的内容在行中的位置和查找的内容。Apropos（相当于man -k）查找其参数在
+   行中的任意出现，而whatis（相当于man -f）试图匹配完整的命令名，即连字符前
+   面的内容。因此，“whatis cc”在有cc的手册时会告诉你，但是并不告诉你关于
+   gcc的东西。
+
+
+   _ A）复制条款_
+
+   除非另有声明，Linux HOWTO文档是由其各自的作者拥有的。Linux HOWTO文档可以
+   部分或全部复制或发布于任何的物理或电子媒体，但是本版权声明必须在所有拷贝
+   中保留。商业性的再发布是允许并受到鼓励的；然而，作者会乐意看到在这样的的
+   在发布前得到通知。所有的翻译、派生工作或汇总为任何Linux HOWTO文档的工作
+   必须含有这份版权声明。这意味著，你不能通过从一份HOWTO文件中派生一些工作
+   然后对其附加额外的发布约束。 在得到特许时， 这些规则可以违背，请跟Linux 
+   HOWTO协调者联系，其地址列在下面。简而言之，我们希望通过尽可能多的途径促
+   进这些信息的传播。然而我们不愿意保留HOWTO文档的版权，但是愿意在任何HOWTO
+   文件再发布前得到通知。如果有任何问题，请联系Greg Hankins，Linux HOWTO协
+   调者，电子邮件是gregh@sunsite.unc.edu。
+
+   Copyright 1995,96,97 by Jens Schweikhardt <schweikh@noc.dfn.de>
+   
+   Voice: ++49 7151 909516
+   
+   Unless otherwise stated, Linux HOWTO documents are copyrighted by
+   their respective authors. Linux HOWTO documents may be reproduced and
+   distributed in whole or in part, in any medium physical or electronic,
+   as long as this copyright notice is retained on all copies. Commercial
+   redistribution is allowed and encouraged; however, the author would
+   like to be notified of any such distributions. All translations,
+   derivative works, or aggregate works incorporating any Linux HOWTO
+   documents must be covered under this copyright notice. That is, you
+   may not produce a derivative work from a HOWTO and impose additional
+   restrictions on its distribution. Exceptions to these rules may be
+   granted under certain conditions; please contact the Linux HOWTO
+   coordinator at the address given below. In short, we wish to promote
+   dissemination of this information through as many channels as
+   possible. However, we do wish to retain copyright on the HOWTO
+   documents, and would like to be notified of any plans to redistribute
+   the HOWTOs. If you have questions, please contact Greg Hankins, the
+   Linux HOWTO coordinator, at gregh@sunsite.unc.edu via email.
+
+</PRE>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>
+   

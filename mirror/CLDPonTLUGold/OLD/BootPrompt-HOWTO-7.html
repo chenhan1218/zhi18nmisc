@@ -1,0 +1,263 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>The Linux BootPrompt-HowTo 中譯版: 其它硬體設備</TITLE>
+ <LINK HREF="BootPrompt-HOWTO-8.html" REL=next>
+ <LINK HREF="BootPrompt-HOWTO-6.html" REL=previous>
+ <LINK HREF="BootPrompt-HOWTO.html#toc7" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="BootPrompt-HOWTO-8.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="BootPrompt-HOWTO-6.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="BootPrompt-HOWTO.html#toc7"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s7">7. 其它硬體設備</A></H2>
+
+<P>
+<P>其它任何不適合放在上面分類中的設備都堆在這裡。
+<P>
+<H2><A NAME="ss7.1">7.1 乙太網路設備 (`ether=')</A>
+</H2>
+
+<P>
+<P>不同的驅動程式使用不同的參數，
+但它們至少都共用 IRQ, I/O 埠位址值以及名稱。最標準的格式看起來像：
+<P>
+<HR>
+<PRE>
+
+ether=irq,iobase[,param_1[,param_2,...param_8]]],name
+</PRE>
+<HR>
+<P>第一個不是數字的參數被當作名稱。<CODE>param_n</CODE>
+的值（如果配得起來）對每張不同的介面卡／驅動程式通常都代表不同的意義。
+典型的 <CODE>param_n</CODE> 值是用來指定像共享記憶體位址，介面的選擇，
+DMA 通道等等諸如此類的東東。
+<P>此參數最常見的用法是在預設值僅偵測到一張網路卡的時候強制偵測第二張乙太網路卡。
+可以用這個簡單的指令達成：
+<P>
+<HR>
+<PRE>
+        ether=0,0,eth1
+</PRE>
+<HR>
+<P>注意，上述範例中 IRQ 與 I/O 位址零告訴驅動程式自動去偵測。
+<P>模組使用者者請注意：
+如果驅動程式作為執行期間可載入模組（不編譯到核心裡）
+使用則上述指令<EM>不會</EM>強制偵測第二張介面卡。
+大部份的 Linux
+發行套件都使用一個基本的核心配合許許多多做成模組的驅動程式。
+此 <CODE>ether=</CODE> 參數只對直接編譯在核心裡的驅動程式有效。
+<P>在乙太網路說明(Ethernet-HowTo)中對使用多張網路卡以及 <CODE>param_n</CODE>
+值的使用場合，網路卡／驅動程式對這些值的實作等等有更完整、更廣泛的文件。
+有興趣的讀者應該參考該文件中有關自己網路卡的章節。
+<A HREF="http://sunsite.unc.edu/mdw/HOWTO/Ethernet-HOWTO.html">Ethernet-HowTo</A><P>
+<H2><A NAME="ss7.2">7.2 軟碟驅動程式 (`floppy=')</A>
+</H2>
+
+<P>
+<P>軟碟驅動程式有許多選項，
+全部都列在 <CODE>linux/drivers/block</CODE> 裡的 <CODE>README.fd</CODE> 中。
+這是直接從該檔取得的資訊。
+<P>floppy=mask,allowed_drive_mask
+<P>設定允許使用之磁碟機位元遮罩為 <CODE>mask</CODE> 。
+依預設，只允許每個軟碟控制器的第零及第一個單元。
+這樣做是因為有些非標準的硬體（華碩的 PCI 主機板）
+在存取第二或第三個單元時會當掉鍵盤。此選項差不多已經被 cmos 選項給取代了。
+<P>floppy=all_drives
+<P>設定允許使用之磁碟機位元遮罩為所有磁碟機。
+如果你在軟碟控制器上接了兩個以上的磁碟機的話可以使用。
+<P>floppy=asus_pci
+<P>設定位元遮罩為只允許第零及第一個單元。（預設值）
+<P>floppy=daring
+<P>告訴軟碟驅動程式你有個行為良好的軟碟控制器。
+這樣運作上會比較有效率、比較平順，但有些控制器可能無法使用。
+這可以加速某些部份的運作。
+<P>floppy=0,daring
+<P>告訴軟碟驅動程式你的軟碟控制器得小心看管。
+<P>floppy=one_fdc
+<P>告訴軟碟驅動程式你只有一個軟碟控制器。（預設值）
+<P>floppy=two_fdc <EM>or</EM> floppy=address,two_fdc
+<P>告訴軟碟驅動程式你有兩個軟碟控制器。
+第二個軟碟控制器假設位於 address 指定的地方。
+如果沒有給 address，假設為 0x370 。
+<P>floppy=thinkpad
+<P>告訴軟碟驅動程式你有一台 Thinkpad。
+Thinkpads 的磁碟變更偵測線路(disk change line)之使用與一般相反。
+<P>floppy=0,thinkpad
+<P>告訴軟碟驅動程式你沒有 Thinkpad。
+<P>floppy=drive,type,cmos
+<P>設定 <CODE>drive</CODE> 的 cmos 類型為 <CODE>type</CODE>。
+條件是，這個磁碟機在位元遮罩中必須是可用的。
+如果你有兩個以上的磁碟機（實體 cmos 只能指定兩個）
+或是你的基本輸出入系統使用非標準的 CMOS 類型那這就有用了。
+把前兩個磁碟機的 cmos 設為 0（預設值）
+會使得軟碟驅動程式為這些磁碟機讀取實體 cmos。
+<P>floppy=unexpected_interrupts
+<P>接收到非預期之中斷時印出警告訊息（預設）
+<P>floppy=no_unexpected_interrupts <EM>or</EM> floppy=L40SX
+<P>接收到非預期之中斷時不印出警告訊息。
+IBM L40SX 膝上型電腦在某些顯示模式下需要它。
+（這看來是影像與軟碟之間的某種相互關係。
+此非預期之中斷只會影響效能，可以安全地忽略。）
+<P>
+<H2><A NAME="ss7.3">7.3 音效驅動程式 (`sound=')</A>
+</H2>
+
+<P>
+<P>音效驅動程式也可以接受啟動參數以變更編譯時的值。
+不過並不建議這樣做，因為這樣會更複雜。
+相關說明放在（曾經？）Readme.Linux 中，
+位於 <CODE>linux/drivers/sound</CODE> 裡。它接受這種型式的參數：
+<P>
+<HR>
+<PRE>
+
+sound=device1[,device2[,device3...[,device11]]]
+</PRE>
+<HR>
+<P>其中每個 <CODE>deviceN</CODE> 值的格式為下列的 <CODE>0xTaaaId</CODE>
+而每個位元組的使用如下：
+<P>T - 設備種類: 1=FM, 2=SB, 3=PAS, 4=GUS, 5=MPU401, 6=SB16,
+7=SB16-MPU401
+<P>aaa - 十六進位的輸出入位址。
+<P>I - 十六進位之中斷線 (i.e 10=a, 11=b, ...)
+<P>d - 記憶體直接存取通道。
+<P>如你所見，這相當雜亂，建議你最好把自己設備的值編譯進去。
+使用啟動參數 `sound=0' 將會玩全關閉音效驅動程式。
+<P>
+<H2><A NAME="ss7.4">7.4 匯流排滑鼠驅動程式 (`bmouse=')</A>
+</H2>
+
+<P>
+<P>匯流排滑鼠驅動程式只接受一個參數，就是硬體所使用的 IRQ 值。
+<P>
+<H2><A NAME="ss7.5">7.5 微軟匯流排滑鼠驅動程式 (`msmouse=')</A>
+</H2>
+
+<P>
+<P>微軟滑鼠驅動程式只接受一個參數，就是硬體所使用的 IRQ 值。
+<P>
+<H2><A NAME="ss7.6">7.6 印表機驅動程式 (`lp=')</A>
+</H2>
+
+<P>
+<P>在高於 1.3.75
+以上的核心上你可以告訴印表機驅動程式使用那個埠以及<EM>不</EM>使用那個埠。
+如果你不想讓印表機驅動程式拿到所有可用的並列埠那麼後者很方便，
+這樣其它的驅動程式(e.g. PLIP, PPA)就可以使用它們。
+<P>這個參數的格式是多個 i/o, IRQ 的組合。
+例如，
+<CODE>lp=0x3bc,0,0x378,7</CODE> 會以不需 IRQ(polling) 的模式使用位於 0x3bc 的埠，
+並且對位於 0x378 的埠使用 IRQ 7。
+位於 0x278 的埠（如果有的話）將不會被偵測到，
+因為自動偵測只用於沒有 `lp=' 參數的情況下。
+可以使用 <CODE>lp=0</CODE> 關閉整個印表機驅動程式。
+<P>
+<H2><A NAME="ss7.7">7.7 ICN 整體服務數位網路(ISDN)驅動程式 (`icn=')</A>
+</H2>
+
+<P>
+<P>這個整體服務數位網路驅動參數的啟動參數格式為：
+<P>
+<HR>
+<PRE>
+        icn=iobase,membase,icn_id1,icn_id2
+</PRE>
+<HR>
+<P>其中 <CODE>iobase</CODE> 是該卡的輸出入埠位址，
+<CODE>membase</CODE> 是該卡的共享記憶體基底位址，
+而那兩個 <CODE>icn_id</CODE> 是唯一識別的 ASCII 辨識字串。
+<P>
+<H2><A NAME="ss7.8">7.8 PCBIT ISDN 驅動程式 (`pcbit=')</A>
+</H2>
+
+<P>
+<P>這個啟動參數格式使用一對整數參數：
+<P>
+<HR>
+<PRE>
+        pcbit=membase1,irq1[,membase2,irq2]
+</PRE>
+<HR>
+<P>其中 <CODE>membaseN</CODE> 是第 N 張卡的共享記憶體基底，
+而 <CODE>irqN</CODE> 是第 N 張卡的中斷設定。
+預設值是 IRQ 5 以及 membase <CODE>0xD000</CODE>。
+<P>
+<H2><A NAME="ss7.9">7.9 Teles ISDN 驅動程式 (`teles=')</A>
+</H2>
+
+<P>
+<P>這個 ISDN 驅動程式的啟動參數格式為：
+<P>
+<HR>
+<PRE>
+        teles=iobase,irq,membase,protocol,teles_id
+</PRE>
+<HR>
+<P>其中 <CODE>iobase</CODE> 是該卡的 i/o 埠位址，
+<CODE>membase</CODE> 是該卡的共享記憶體基底位址，<CODE>irq</CODE> 是該卡使用的中斷，
+而 <CODE>teles_id</CODE> 是唯一識別的 ASCII 辨識字串。
+<P>
+<H2><A NAME="ss7.10">7.10 DigiBoard 驅動程式 (`digi=')</A>
+</H2>
+
+<P>
+<P>DigiBoard 驅動程式接受由六個逗號隔開之的辨識字串或整數。
+六個值依序為：
+<P>
+<PRE>
+        打開／關閉該卡
+        卡的種類： PC/Xi(0), PC/Xe(1), PC/Xeve(2), PC/Xem(3)
+        打開／關閉其它針腳排列(alternate pin arrangement)
+        該卡上的埠數
+        該卡設定的輸出入埠（如果以字串指定則為十六進位）
+        記憶窗的基底（如果以字串指定則為十六進位）
+</PRE>
+<P>正確的啟動參數之範例（字串以及整數格式）如：
+<P>
+<HR>
+<PRE>
+        digi=E,PC/Xi,D,16,200,D0000
+        digi=1,0,0,16,512,851968
+</PRE>
+<HR>
+<P>注意，這個驅動程式若無 <CODE>digi=</CODE> 啟動參數其預設輸出入為 <CODE>0x200</CODE> ，
+共享記憶體基底為 <CODE>0xD0000</CODE> 。不執行自動偵測。
+更進一步的細節可以在 <CODE>linux/Documentation/digiboard.txt</CODE>
+檔案裡找到。
+<P>
+<H2><A NAME="ss7.11">7.11 RISCom/8 多埠串列卡驅動程式 (`riscom8=')</A>
+</H2>
+
+<P>
+<P>Up to four boards can be supported by supplying four
+unique i/o port values for each individual board installed.
+Other details can be found in the file
+<CODE>linux/Documentation/riscom8.txt</CODE>.
+<P>可以支援達四張卡，須提供四個唯一的輸出入埠給每張卡。
+其餘細節可以在 <CODE>linux/Documentation/riscom8.txt</CODE> 檔案裡找到。
+<P>
+<H2><A NAME="ss7.12">7.12 Baycom 串列／並列無線數據機 (`baycom=')</A>
+</H2>
+
+<P>
+<P>這些設備的啟動參數格式如下。
+<P>
+<HR>
+<PRE>
+        baycom=modem,io,irq,options[,modem,io,irq,options]
+</PRE>
+<HR>
+<P>使用 modem=1 表示你有 ser12 設備，modem=2 表示你有 par96 設備。
+使用 options=0 表示使用硬體 DCD，options=1 則表示使用軟體 DCD。
+<CODE>io</CODE> 以及 <CODE>irq</CODE> 跟往常一樣是輸出入埠以及中斷設定。
+在 <CODE>/linux/drivers/char/</CODE> 目錄下的 <CODE>README.baycom</CODE>
+檔案裡有更多的細節。
+<P>
+<HR>
+<A HREF="BootPrompt-HOWTO-8.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="BootPrompt-HOWTO-6.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="BootPrompt-HOWTO.html#toc7"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

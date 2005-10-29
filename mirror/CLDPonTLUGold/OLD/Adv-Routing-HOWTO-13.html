@@ -1,0 +1,231 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Linux 2.4 Advanced Routing HOWTO: 更多的分類器 (More classifiers)</TITLE>
+ <LINK HREF="Adv-Routing-HOWTO-14.html" REL=next>
+ <LINK HREF="Adv-Routing-HOWTO-12.html" REL=previous>
+ <LINK HREF="Adv-Routing-HOWTO.html#toc13" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Adv-Routing-HOWTO-14.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Adv-Routing-HOWTO-12.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Adv-Routing-HOWTO.html#toc13"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s13">13. 更多的分類器 (More classifiers)</A></H2>
+
+<P>分類器(classifier)就是核心用來決定封包需要送入哪一個佇列的方法。有許多形形色色的分類器﹐各司其職。
+<P>
+<DL>
+<DT><B>fw</B><DD><P>根據防火牆如何標識封包來作判斷。
+<P>
+<DT><B>u32</B><DD><P>根據封包裡面的欄位作判斷 (例如﹕來源 IP 位址﹐等)。
+<P>
+<DT><B>route</B><DD><P>根據封包之路由作判斷。
+<P>
+<DT><B>rsvp, rsvp6</B><DD><P>根據目標(目的位址﹐協定)﹐或以來源作判斷。
+<P>
+<DT><B>tcindex</B><DD><P>FIXME﹕有待補充
+</DL>
+<P>請注意﹐大體上您有多種辦法來分類封包﹐但會降低系統之整體執行效能。
+<P>一般而言﹐分類器都能接受不同參數。為方便起見﹐茲列如下﹕
+<P>
+<DL>
+<DT><B>protocol</B><DD><P>分類器所能接受的協定。通常您可能只會接受 IP 流量。必須指定。
+<P>
+<DT><B>parent</B><DD><P>為分類器指定接管(handle)﹐只能是已經存在的類別(class)。必須指定。
+<P>
+<DT><B>prio</B><DD><P>分類器的優先等級。數值越高越快。
+<P>
+<DT><B>handle</B><DD><P>指定不同事物到不同的過濾器去。
+<P>
+<P>FIXME﹕增加選項
+</DL>
+<P>下面的章節均假設您要將流量引導至 <CODE>HostA</CODE> ﹐還假設頂層(root)類別已經設定為 1﹕﹐同時您要將挑選出來的流量送至 1:1 去。
+<P>
+<H2><A NAME="ss13.1">13.1 "fw" 分類器 (The "fw" classifier)</A>
+</H2>
+
+<P> "fw" 分類器要依靠防火牆把需要引導的封包標識起來。所以﹐我們必須先設定好防火牆﹐為它們打標籤。
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# iptables -I PREROUTING -t mangle -p tcp -d HostA \
+ -j MARK --set-mark 1
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>好了﹐所有傳給該主機的封包都被標識為 1。現在我們建立規則﹐以真正引導封包﹐我們只要指定好被標識為 1 的封包要送到類別 1:1 那邊去。透過如下命令就可以﹕
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# tc filter add dev eth1 protocol ip parent 1:0 prio 1 handle 1 fw classid 1:1
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>命令本身應該說得蠻清楚的了。附在 1:0 類別的過濾器獲得的優先值為 1﹐過濾那些被防火牆標識為 1 的封包﹐再送到類別 1:1 那邊去。注意﹐這裡的 handle 要如何使用﹐取決於封包如何標識。
+<P>不經寒徹骨﹐哪得梅花香﹖這已是較為簡單的方法了﹐至於其它方法﹐我覺得更為難懂。注意﹐您可以完全將防火牆程式的功能應用在此分類器上面﹐包括比對 MAC 位址﹑用戶身份﹑以及所有其它防火牆所能比對的事物。
+<P>
+<H2><A NAME="ss13.2">13.2 "u32" 分類器 (The "u32" classifier)</A>
+</H2>
+
+<P>U32 過濾器是目前實作中所能找到的最強勁的過濾器。它完全依靠雜湊表(hashing tables)﹐配合眾多過濾規則而變得扎實耐用。
+<P>最簡單的做法是﹐U32 過濾器有一整列的記錄(records)﹐各自包含兩個欄位﹕選擇器(selector)和動作(action)。選擇器(後面會介紹)﹐會與當前處理的 IP 封包做比較﹐當碰到第一個符合的封包﹐然後就作出相應的動作。最簡單的動作﹐是將封包送至指定的 CBQ 類別去。
+<P>我們可用 <CODE>tc filter</CODE> 命令程式去設定過濾器﹐一共有 3 個部份﹕過濾器的規格(specification)﹑選擇器﹑以及動作。過濾器規則可以如下定義﹕
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+tc filter add dev IF [ protocol PROTO ]
+                     [ (preference|priority) PRIO ]
+                     [ parent CBQ ]
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>其中的 <CODE>protocol</CODE> 欄位說明過濾器所適用的協定﹐我們這裡只就 <CODE>ip</CODE> 協定進行討論。至於 <CODE>preference(偏好值)</CODE> 欄位(也可以用<CODE>priority</CODE> 來代替)﹐設定當前過濾器的優先值。這很重要﹐因為您或許會有好幾個過濾器(規則列表)﹐各自擁有不同的優先值。每一列規則按照規則新增順序通過﹐然後才處理低優先值(高偏好值)的規則列。最後的 <CODE>parent</CODE> 欄位定義出過濾器所屬的 CBQ 樹頂(如 1:0)。
+<P>以上選項均適用於所有過濾器﹐非 U32 獨美。
+<P>
+<H3>U32 選擇器 (U32 selector)</H3>
+
+<P>U32 選擇器包含式樣(pattern)定義﹐以比對當前處理的封包。它一絲不苟的定義出哪些封包標頭的位元(bits) 要用來比對﹐心無旁騖﹐然卻四兩撥千斤。不如讓我們看看以下範例﹐直接取自一個複雜且真實的過濾器﹕
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# filter parent 1: protocol ip pref 10 u32 fh 800::800 order 2048 key ht 800 bkt 0 flowid 1:3 \
+  match 00100000/00ff0000 at 0
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>我們暫時不用管第一行 --- 全部參數度是用來描述過濾器之雜湊表而已。且讓我們仔細看看關於選擇器那一行﹐也就是帶 <CODE>match</CODE> 關鍵字的那行。選擇器會比對第 2 個 byte 為 0x10(0010) 的 IP 標頭。或許您已猜到﹐那個 00ff 數字就是比對遮罩(mask)。目前為 0xff﹐所以﹐這個 byte 只能是 0x10。然後 <CODE>at</CODE> 關鍵字意思是說﹐這個比對是從指定的 offset(以 bytes 算)開始 --- 在目前範例中﹐在封包的一開始處。換成我們的人類語言來說的話﹐如果封包的 Type of Serice 欄位帶有 `low delay` 位元設定﹐那這個比對就符合了。讓我們在看看另一個規則吧﹕
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# filter parent 1: protocol ip pref 10 u32 fh 800::803 order 2051 key ht 800 bkt 0 flowid 1:3 \
+  match 00000016/0000ffff at nexthdr+0
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>此處﹐有一個 <CODE>nexthdr</CODE> 選項﹐代表 IP 封包裡面的下一個標頭﹐例如上層協定的標頭。這個比對也是從下一個標頭的一開始處進行。比對應該出現在標頭首 32-bit 中的第二個字(word)。在 TCP 和 UDP 協定裡﹐此欄位包含封包目的端埠口(port)。此數字以 big-endian 格式顯示﹐例如 older 位元排前面﹐所以我們只要將 0x0016  換成十進位就是 22 了﹐換而言之﹐如果這是 TCP 的話﹐那他就是 SSH 服務。正如您所猜的﹐如果離開相關承接(我們後面再述)﹐這個比對會變得不明所以。
+<P>
+<P>當我們對前述都有一定了解之後﹐就會發現如下這個選擇器其實蠻好理解的﹕<CODE>match c0a80100/ffffff00 at 16</CODE> 。我們只要從 IP 標頭開始﹐比對第 17 個 byte 起的 3 個 byte 即可。這會比對所有目的地為網路 192.168.1/24 的封包。看過這些範例之後﹐然後讓我們將所學的歸納一下吧。
+<P>
+<H3>通用選擇器 (General selectors)</H3>
+
+<P>通用選擇器定義出式樣(pattern)﹑遮罩(mask)﹑還有封包內容裡關於比對式樣的 offsest。使用通用選擇器﹐您實際上可以比對 IP (或上層) 標頭裡的每一個單獨的位元(bit) 。比較後面介紹的特定選擇器﹐它們更難讀寫。通用選擇器的語法如下﹕
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+match [ u32 | u16 | u8 ] PATTERN MASK [ at OFFSET | nexthdr+OFFSET]
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P><CODE>u32</CODE>﹑<CODE>u16</CODE>﹑或 <CODE>u8</CODE> 這些關鍵字﹐各自指定位元裡的式樣長度。PATTERN 和 MASK 必須接在前面關鍵詞定義的長度後面。至於 OFFSET 參數﹐則以 byte 為單位﹐指定開始比對的 offset 所在。如果 <CODE>nexthdr+</CODE> 有設定﹐那麼 offset 則相對的從上層協定標頭開始算起。
+<P>
+<P>範例﹕
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# tc filter add dev ppp14 parent 1:0 prio 10 u32 \
+     match u8 64 0xff at 8 \
+     flowid 1:4
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>如果存活期(TTL)為 64 的話﹐封包就符合比對。從 IP 標頭數起﹐第 8 個 byte 開始就是 TTL 欄位了。
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# tc filter add dev ppp14 parent 1:0 prio 10 u32 \
+     match u8 0x10 0xff at nexthdr+13 \
+     protocol tcp \
+     flowid 1:3 \
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>此規則僅比對帶 ACK 位元設定的 TCP 封包。這裡我們可以看到一個範例中使用兩個選擇器﹐最終結果則將兩個結果用 AND 邏輯運算得出。如果我們仔細的看看 TCP 標頭結構圖﹐我們會發現 ACK 位元﹐是 TCP 標頭第 14 個 byte 算起(<CODE>at nexthdr+13</CODE>)第 2 個 older 位元(0x10)。至於第二個選擇器﹐如果我們想試試克難的方法﹐不指定選擇器使用 <CODE>protocol tcp</CODE>﹐可這樣寫﹕ <CODE>match u8 0x06 0xff at 9</CODE>﹐因為 TCP 的協定號碼是 6﹐位於 IP 標頭的第 10 個 byte。相對而言﹐在此範例中﹐我們不能用特定選擇器來做第一個比對 --- 這是因為沒有特定選擇器可以比對 TCP ACK 位於之故。
+<P>
+<H3>特定選擇器 (Specific selectors)</H3>
+
+<P>如下表格列出了本章作者所從 <CODE>tc</CODE> 程式中發現的全部特定選擇器。他們幫您省掉許多工作﹐同時讓您的過濾器設定更具可讀性。
+<P>FIXME: 表格存放位置 --- 存於另外的檔案﹕selector.html。
+<P>FIXME: 只有波蘭語 :-(
+<P>FIXME: 有待轉成 sgml 格式。
+<P>範例:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# tc filter add dev ppp0 parent 1:0 prio 10 u32 \
+     match ip tos 0x10 0xff \
+     flowid 1:4
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>以上規則會比對那些 TOS 欄位設為 0x10 的封包。TOS 欄位從封包的第 2 個 byte 開始﹐並佔一個 byte 的長度﹐這樣好比我們另寫一個相等的通用選擇器﹕<CODE>match u8 0x10 0xff at 1</CODE>。由此﹐我們就可以一窺 U32 過濾器的內裡乾坤 --- 特定規則都會被轉換為通用規則﹐同時以此形式存於核心記憶體之內。舉一反三 --- <CODE>tcp</CODE> 和 <CODE>udp</CODE> 選擇器也是如法泡制﹐這也是為何您不能用單獨的 <CODE>match tcp dst 53 0xffff</CODE> 選擇器﹐來比對那些送給特定埠口(port) 的 TCP 封包 --- 它們也同時比對送至此埠口的 UDP 封包。另外﹐您不要忘了指定協定哦﹐並且最後產生如下規則﹕
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# tc filter add dev ppp0 parent 1:0 prio 10 u32 \
+        match tcp dst 53 0xffff \
+        match ip protocol 0x6 0xff \
+        flowid 1:2
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>
+<H2><A NAME="ss13.3">13.3 "route" 分類器 (The "route" classifier)</A>
+</H2>
+
+<P>此分類過濾器根據路由表格(routing tables)而定。當一個封包穿越分類(classes)抵達被標識為 "route" 的過濾器之後﹐它會按照路由表格的資訊分離(split)這個封包。
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# tc filter add dev eth1 parent 1:0 protocol ip prio 100 route
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>這裡﹐我們新增一個 route 分類器給上游節點(parent node) 1:0 ﹐其優先值為 100。當封包抵達這個節點後(因為這是頂層(root) 分類﹐所以馬上生效)﹐它會查詢路由表格﹐並且﹐如果有一個比對符合的話﹐就把它送給指定的分類﹐同時賦予 100 的優先值。最後﹐您增加一個恰當的路由記錄﹐交由動作(action)處理﹕
+<P>這裡的訣竅是﹐要根據目的(destination)或來源(source)來定義一個所謂的 'realm' ﹐參考如下﹕
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# ip route add Host/Network via Gateway dev Device realm RealmNumber
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>比方說﹐我們可以定義目的網路 192.168.10.0﹐它的 realm 號碼是 10﹕  
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# ip route add 192.168.10.0/24 via 192.168.10.1 dev eth1 realm 10
+</PRE>
+</CODE></BLOCKQUOTE>
+  
+<P>在增加 route 過濾器之後﹐我們可以使用 realm 號碼來代表網路或主機﹐同時指定路由如何配對(match)過濾器。
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# tc filter add dev eth1 parent 1:0 protocol ip prio 100 \
+  route to 10 classid 1:10
+</PRE>
+</CODE></BLOCKQUOTE>
+  
+<P>以上規則是說﹐送給網路 192.168.10.0 的封包﹐會配對 class id 1:10。
+<P>Route 過濾器還可以用來比對源路由(source routes)。例如﹐有一個子網接到 Linux router 的 eth2 界面﹕
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# ip route add 192.168.2.0/24 dev eth2 realm 2
+# tc filter add dev eth1 parent 1:0 protocol ip prio 100 \
+  route from 2 classid 1:2
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>這裡﹐過濾器指定出來自子網 192.168.2.0 (realm 2) 的封包﹐就配對 class id 1:2 。
+<P>
+<H2><A NAME="ss13.4">13.4 "rsvp" 分類器 (The "rsvp" classifier)</A>
+</H2>
+
+<P>FIXME: 有待補充
+<P>
+<H2><A NAME="ss13.5">13.5 "tcindex" 分類器 (The "tcindex" classifier)</A>
+</H2>
+
+<P>FIXME: 有待補充
+<P>
+<HR>
+<A HREF="Adv-Routing-HOWTO-14.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Adv-Routing-HOWTO-12.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Adv-Routing-HOWTO.html#toc13"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

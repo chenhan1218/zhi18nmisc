@@ -1,0 +1,87 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>The Linux Plug-and-Play HOWTO 中文版: 附录</TITLE>
+ <LINK HREF="Plug-and-Play-HOWTO-4.html" REL=previous>
+ <LINK HREF="Plug-and-Play-HOWTO.html#toc5" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<IMG SRC="img/next.gif" ALT="Next">
+<A HREF="Plug-and-Play-HOWTO-4.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Plug-and-Play-HOWTO.html#toc5"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s5">5. 附录</A></H2>
+
+<H2><A NAME="addresses_"></A> <A NAME="ss5.1">5.1 地址 </A>
+</H2>
+
+<P>有三类地址: 主内存地址, I/O 地址和配置地址(仅限于 PCI 总线).
+"地址"在本文档中有时表示一个连续的地址范围. 因为地址是以字节方式给出的,
+一个单一地址只包含一个字节, 但 I/O(和主内存)地址包含的比这多.
+当分配给设备的地址较多时, 常用一个地址来表示I/O设备的全部连续地址范围. 如:
+对于串行口(一个 I/O 设备)只给出它占用的八个地址的起始地址,
+因为大家都知道此设备用八个字节的地址. 起始地址叫"基本地址". (翻译者:
+上面翻译的东西我回头看看都不十分明了, 给大家举个例子吧.
+我们说某个串口的地址为 3f8, 其实是说它的地址是从 3f8 开始的八个地址,
+因为默认的设备地址□围是八个地址.)
+<P>访问I/O和(主内存)地址空间使用的是相同的物理地址总线(在 PC 机中, 它们的地址总线在硬件上是共享的).
+那麽设备如何知道地址总线上的数据表示的是 I/O 地址还是内存地址呢? 其实,
+在总线上有四个专用连线来区分地址数据的含义. 假如这四个连线中的某个起作用,
+就表示 CPU 想访问 I/O 地址, 那麽内存就会忽略总线上的地址信息.
+其它三个连线类似用法. 
+<P>通常, 大多数 I/O 设备仅使用 I/O 存储器与 CPU 通信. 例如, 串行口就是这样.
+设备驱动程序从 I/O 地址中读写数据并且通常情况下把数据放到主内存.
+快一点的方法是设备把数据直接送到主内存.
+这样做的一种方法是使用 
+<A HREF="Plug-and-Play-HOWTO-2.html#dma_">DMA 通道</A>.
+另一种方法是在主内存中分配一定空间给设备.
+这种方法不需借助 DMA 便可以直接读写主内存. 这样的设备通常有
+I/O 地址和主内存地址.
+<P>
+<H2><A NAME="interrupt_detail"></A> <A NAME="ss5.2">5.2 中断 -- 详述 </A>
+</H2>
+
+<P>中断用间接的方式传送信息.
+中断信号(线路上的一个电平)告诉中断控制器一个特定的设备有话要说.
+中断控制器再通知 CPU. CPU 会启动"中断服务例程"来处理.
+"例程"会试图找出发生什麽了事情并处理象需要传输等问题.
+"例程"能容易的找出发生什麽了事情, 因为驱动程序知道设备的寄存器地址.
+这些寄存器包含关于设备的信息. 软件读这些寄存器中的内容并分析它们,
+找出发生了什麽, 并采取适当的行动.
+<P>
+<H2><A NAME="isolation_"></A> <A NAME="ss5.3">5.3 Isolation </A>
+</H2>
+
+<P>仅用于 ISA 总线. Isolation 是给 ISA 总线上的 PnP 设备分配句柄(id 号)的复杂的方法.
+尽管有更有效的方法(也更复杂)来做这件事, 但有些人认为简单一点好.
+只有一个可以写所有 PnP 设备的写地址,
+所以写这个地址就可以告诉所有正在侦听的PnP设备.
+这个写地址用于向各个 PnP 设备送一个唯一的句柄.
+分配句柄要求句柄送到公用地址时只有一个设备在侦听. isolation 有些像一个"游戏".
+用一个公用总线连线连接所有 PnP 设备和 isolation 程序. 
+<P>"游戏"的首次循环, 所有的 PnP 设备监听总线的同时并向总线上发送数据位流.
+数据位不是1就是0. 每个 PnP 设备发送自己的编号, 从高位开始, 一位接一位.
+假如一个设备发送一个1, 1会被其它所有的设备听到.
+假如所有的设备发送 0 那麽总线上就什麽也听不到. 在首次循环的最後,
+除了最高编号的设备外其它设备都被排除掉了.(所有的编号长度都一样.)
+<P>首先考虑的是最高位. 假如一个 PnP 设备发送 0, 可监听到的是 1, 就表示有更高编号的
+PnP 设备存在,
+它将临时退出循环不再侦听直到此循环结束(当最大编号设备被赋予一个句柄时).
+现在保留下来的设备有相同的前导位(一个 1),
+我们在未来的处理中把前导位去掉只考虑剩馀的部分.
+重新开始循环直到全部编号(所有设备)都被处理(都是 0 的情况看下面).
+<P>假如前导位都是 0 会发生什麽? 所有的设备留在游戏中. 0 会被象 1 一样屏蔽掉,
+开始下一轮循环.
+<P>在循环结束时只有最高编号的 PnP 设备会保留下来. 它会得到一个句柄并退出游戏.
+上次循环中被淘汰出局的设备会再次进入游戏开始一个新的循环.
+直到所有设备都有一个句柄. 这样做是很简单的.
+<P>设备有了句柄, 就有了向 PnP 设备发送和读取配置信息的地址.
+需要注意的是这些句柄只用于配置 PnP 设备不能用于正常的通信. 当机器启动後,
+所有的句柄都会丢失, 所以每次你启动机器 BIOS 都会做一次这样的工作.
+<P>
+<HR>
+<IMG SRC="img/next.gif" ALT="Next">
+<A HREF="Plug-and-Play-HOWTO-4.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Plug-and-Play-HOWTO.html#toc5"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

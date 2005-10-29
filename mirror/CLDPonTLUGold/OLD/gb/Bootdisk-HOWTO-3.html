@@ -1,0 +1,107 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="LinuxDoc-Tools 0.9.16">
+ <TITLE>The Linux Bootdisk HOWTO: Bootdisks与开机流程 -- Bootdisks and the boot process</TITLE>
+ <LINK HREF="Bootdisk-HOWTO-4.html" REL=next>
+ <LINK HREF="Bootdisk-HOWTO-2.html" REL=previous>
+ <LINK HREF="Bootdisk-HOWTO.html#toc3" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Bootdisk-HOWTO-4.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="Bootdisk-HOWTO-2.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="Bootdisk-HOWTO.html#toc3"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s3">3.</A> <A HREF="Bootdisk-HOWTO.html#toc3">Bootdisks与开机流程 -- Bootdisks and the boot process</A></H2>
+
+<P>
+<!--
+boot process
+-->
+</P>
+<P>bootdisk 基本上是放在软碟片内的一个小型而自足的 Linux 系统。它必须执行许多和完整又 full-size 的 Linux 系统相同的功能。在建造 bootdisk 之前，你应该了解基本的 Linux 开机流程。我们在此只做基本的介绍，但已足够让你了解本文之后的内容。很多细节与替代选项已被省略。</P>
+
+<H2><A NAME="ss3.1">3.1</A> <A HREF="Bootdisk-HOWTO.html#toc3.1">开机流程 -- The boot process</A>
+</H2>
+
+<P>
+<!--
+boot sector
+-->
+</P>
+<P>所有 PC 系统开始开机流程都是藉由执行 ROM (明确地说，就是 BIOS) 中的程式，从开机磁碟机的第 0 磁区、第 0 磁柱载入可供开机的磁区。开机磁碟机通常是第一台软碟机 (如 DOS 的 <CODE>A槽 </CODE> 与 Linux 的 /dev/fd0)。接著 BIOS 会尝试执行这个磁区。在大部分可开机的 disks 上，第 0 磁区、第 0 磁柱包含以下两者之一：</P>
+<P>
+<UL>
+<LI> 开机载入程式 (boot loader ，如 LILO)的程式码，它会找出 kernel 所在位置，接著载入并执行它以启动开机程序。
+</LI>
+<LI> 一个作业系统 kernel 的开头 (start) ，诸如 Linux 。</LI>
+</UL>
+</P>
+<P>如果一个 Linux kernel 已利用 raw-copied 的方式置入一张磁片内，那么这张磁片的第一个磁区就是 Linux kernel 本身的第一个磁区。这个磁区将从开机设备载入 kernel 的剩馀部分以继续开机流程。</P>
+<P>一旦 kernel 载入完毕，一些基本设备也完成初始化 (initialization) 。然后系统将尝试从某个设备载入以及挂上 (mount) <B>root filesystem</B> 。所谓的 root filesystem 只是一个被挂上当作 ``/'' 目录的 filesystem 。 kernel 必须被告知可从哪里找到此 root filesystem ；如果 kernel 在那里找不到一个可载入的影像档 (image) ，系统就会停止运作 (halt) 。</P>
+<P>在某些开机情况下 -- 常常是从软碟片开机 -- root filesystem 会被载入到 <B>ramdisk</B> 中，也就是被系统所存取的 RAM ，如同系统存取磁碟一般。为何系统会载入到 ramdisk 的理由有二。第一， RAM 是几个比软碟片快的有序磁性体，所以系统在其上运作较快； 第二， kernel 可以从软碟片载入一个 <B>压缩的filesystem</B> 并且在解压缩后放到 ramdisk 上，如此可让更多的档案储存在软碟片上。</P>
+<P>一旦 root filesystem 被载入并挂上，你会看到一行讯息像：
+<PRE>
+        VFS: Mounted root (ext2 filesystem) readonly.
+</PRE>
+</P>
+<P>
+<!--
+init
+-->
+
+<!--
+inittab
+-->
+
+<!--
+sysinit
+-->
+</P>
+<P>此时系统会在 root filesystem 上找到 <CODE>init</CODE> 程式 ( 在 /bin or /sbin) 并执行它。 init 读取它的组态设定档 (configuration file) /etc/inittab ，找出档中标明 <CODE>sysinit</CODE> 的一行，并执行被指名的script。这个 <CODE>sysinit</CODE> script 通常类似 /etc/rc 或 /etc/init.d/boot 这两个档。这个 script 是一组建立基本系统服务的 shell 指令，诸如：</P>
+<P>
+<UL>
+<LI> 对所有磁碟执行 <CODE>fsck</CODE>,</LI>
+<LI> 载入必备的核心模组 (modules),</LI>
+<LI> 启动 swapping,</LI>
+<LI> 进行网路初始化,</LI>
+<LI> 将指定在 <CODE>fstab</CODE> 内的磁碟挂上。</LI>
+</UL>
+</P>
+<P>这个 script 常会启动其它各种不同的 scripts 执行模组的 (modular) 初始化。举例来说，在一般的 SysVinit 架构下， /etc/rc.d/ 这个目录包含一个复杂的子目录架构，其中的档案指出如何启动与关闭大部分的系统服务。然而，在一张 bootdisk 上，这样的 sysinit script 常常是非常简单的。</P>
+<P>当 sysinit script 结束后，控制权回到 <CODE>init</CODE> 上，接著进入 <EM> 预设的runlevel</EM> ，此预设的 runlevel 以 <CODE>initdefault</CODE> 这个关键字被指定在 inittab 内。此 runlevel line 通常指定一个像  <CODE>getty</CODE> 的程式，这个程式负责处理 console 与 ttys 之间的通讯。事实上，就是 <CODE>getty</CODE> 程式在萤幕上印出熟悉的 ``<CODE>login:</CODE>'' 提示。 <CODE>getty</CODE> 程式并转而呼叫 <CODE>login</CODE> 程式以处理 login 是否有效，并于之后建立 user sessions 。</P>
+
+<H2><A NAME="ss3.2">3.2</A> <A HREF="Bootdisk-HOWTO.html#toc3.2">磁碟类型 -- Disk types</A>
+</H2>
+
+
+<P>如果你已了解基本的开机流程，那么我们现在可以定义所涉及到之各种不同类型的磁碟。我们将磁碟分类成四种。本文与在此讨论所称之 ``磁碟 (disk)'' 除非有特别声明，否则都是指软碟片，虽然绝大部分的讨论也同样可应用在硬碟上。</P>
+<P>
+<DL>
+
+<DT><B>boot</B><DD><P>一张包含可被启动之 kernel 的磁片。这张磁片被用来启动 kernel ，接著这个 kernel 会载入在另一张磁片上的 root file system 。在 bootdisk 上的 kernel 通常必须被告知到哪去找它的 root filesystem 。</P>
+<P>bootdisk 常会从另一张磁片载入一个 root filesystem ，但是相反地， bootdisk 也有可能被设定成载入硬碟的 root filesystem 。一般在测试新 kernel 时会这样做 (事实上， ``<CODE>make zdisk</CODE>'' 会自动地从 kernel 的原始码制造出这样的一张 bootdisk 。</P>
+
+<DT><B>root</B><DD><P>在其 filesystem 上包含运作 Linux 系统必备档案的一张磁片。这张磁片不一定有 kernel 或 boot loader 。 
+<!--
+root disk
+-->
+</P>
+<P>一旦 kernel 被启动后， root disk 就可以独立于其它磁片来运作系统。通常 root disk 的内容会被自动地 copy 到 RAM 而成为 ramdisk 。这使得 root disk 的存取变得更为快速，而且可释放一台软碟机给工具程式磁片 (utility disk)。</P>
+
+<DT><B>boot/root</B><DD><P>一张同时包含 kernel 与 root filesystem 的磁片。换句话说，这张磁片包含不用硬碟而能启动与运作 Linux 系统之所有必备项目。这种磁片的优点在于简单轻便 -- 每一项必备的东西都放在同一张磁片上。然而，随著档案 size 的逐渐增加，让所有东西都存在同一张磁片上就越显困难，甚至利用压缩也一样。</P>
+
+<DT><B>utility</B><DD><P>一张包含 filesystem 的磁片，但是并不是要挂上做为 root file system 来使用。这张磁片可视为额外的资料片 (data disk) 。你可以利用这种磁片把原本过多而不能放在 root disk 上的工具程式放在其上。
+<!--
+utility diskette
+-->
+</P>
+</DL>
+</P>
+<P>一般而言，当我们提及 ``建造一张 bootdisk'' 时，是指造出 boot ( kernel ) 与 root (files) 这两个部分。这两个部分不是放在一起 (一张单张的boot/root disk) ，就是两张分开的磁片 (boot + root disks) 。对救援磁片而言最具弹性之做法，可能是使用两张分开的 boot 与 root 磁片，再加上一张或多张的 utility diskettes 以处理多出来的东西。</P>
+
+<HR>
+<A HREF="Bootdisk-HOWTO-4.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="Bootdisk-HOWTO-2.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="Bootdisk-HOWTO.html#toc3"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

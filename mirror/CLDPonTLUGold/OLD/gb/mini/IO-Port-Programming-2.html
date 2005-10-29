@@ -1,0 +1,99 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>如何在 Linux 下撰写程式来使用 I/O 埠: 如何在 C 语言下使用 I/O 埠</TITLE>
+ <LINK HREF="IO-Port-Programming-3.html" REL=next>
+ <LINK HREF="IO-Port-Programming-1.html" REL=previous>
+ <LINK HREF="IO-Port-Programming.html#toc2" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+<A HREF="IO-Port-Programming-3.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="IO-Port-Programming-1.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="IO-Port-Programming.html#toc2"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s2">2. 如何在 C 语言下使用 I/O 埠</A></H2>
+
+<H2><A NAME="ss2.1">2.1 正规的方法</A>
+</H2>
+
+<P>用来存取 I/O 埠的常式 (Routine) 都放在档案 <CODE>/usr/include/asm/io.h</CODE> 里
+(或放在核心原始码程式集的 <CODE>linux/include/asm-i386/io.h</CODE> 档案里).
+这些常式是以单行巨集 (inline macros) 的方式写成的, 所以使用时只要以
+<CODE>#include &lt;asm/io.h&gt;</CODE> 的方式引用就够了; 不需要附加任何函式馆
+(libraries).
+<P>译注: 常式(Routine) 通常是指系统呼叫(System Call)与函式(Function)的总称.
+<P>因为 gcc (至少出现在 2.7.2.3 和以前的版本) 以及 egcs (所有的版本) 的限制,
+你在编译任何使用到这些常式的原始码时 <EM>必须</EM> 打开最佳化选项
+(<CODE>gcc -O1</CODE> 或较高层次的), 或者是在做 <CODE>#include &lt;asm/io.h&gt;</CODE> 
+这个动作前使用 <CODE>#define extern</CODE> 将 extern 定义成空白.
+<P>为了除错的目的, 你编译时可以使用 <CODE>gcc -g -O</CODE> (至少现在的 gcc 版本是这样),
+但是最佳化之後有时可能会让除错器 (debugger) 的行为变的有点奇怪. 
+如果这个状况对你而言是个困扰, 你可以将所有使用到 I/O 
+埠的常式集中放在一个档案里并只在编译该档案时□打开最佳化选项.
+<P>在你存取任何 I/O 埠之前, 你必须让你的程式有如此做的权限. 要达成这个目的
+你可以在你的程式一开始的地方 (但是要在任何 I/O 埠存取动作之前) 呼叫 
+<CODE>ioperm()</CODE> 这个函式 (该函式被宣告於档案 <CODE>unistd.h</CODE> , 并且被定义在
+核心中). 使用语法是 <CODE>ioperm(from, num, turn_on)</CODE>,
+其中 <CODE>from</CODE> 是第一个允许存取的 I/O 埠位址, <CODE>num</CODE> 是接著连续存取
+I/O 埠位址的数目. 例如, <CODE>ioperm(0x300, 5, 1)</CODE> 的意思就是说允许存取埠
+0x300 到 0x304 (一共五个埠位址). 而最後一个参数是一个布林代数值用来指定是否
+给予程式存取 I/O 埠的权限 (true (1)) 或是除去存取的权限 (false (0)). 你
+可以多次呼叫函式 <CODE>ioperm()</CODE> 以便使用多个不连续的埠位址. 至於语法的细节请
+参考 <CODE>ioperm(2)</CODE> 的使用说明文件.
+<P>你的程式必须拥有 root 的权限□能呼叫函式 <CODE>ioperm()</CODE> ; 所以你如果不是以
+root 的身份执行该程式, 就是得将该程式 setuid 成 root. 当你呼叫过函式 <CODE>ioperm()</CODE>
+打开 I/O 埠的存取权限後你便可以拿掉 root 的权限. 在你的程式结束之後并不特别
+要求你以 <CODE>ioperm(..., 0)</CODE> 这个方式拿掉 I/O 埠的存取权限; 因为当你的程式
+执行完毕之後这个动作会自动完成.
+<P>呼叫函式 <CODE>setuid()</CODE> 将目前执行程式的有效使用者识别码 (ID) 设定成非 
+root 的使用者并不影响其先前以 <CODE>ioperm()</CODE> 的方式所取得的 I/O 埠存取权限,
+但是呼叫函式 <CODE>fork()</CODE> 的方式却会有所影响 (虽然父行程 (parent process) 
+保有存取权限, 但是子行程 (child process) 却无法取得存取权限). 
+<P>函式 <CODE>ioperm()</CODE> 只能让你取得埠位址 0x000 到 0x3ff 的存取权限; 至於
+较高位址的埠, 你得使用函式 <CODE>iopl()</CODE>  (该函式让你一次可以存取所有的埠位址).
+将权限等级参数值设为 3 (例如, <CODE>iopl(3)</CODE>) 以便你的程式能够存取 <EM>所有的</EM>
+I/O 埠 (因此要小心 --- 如果存取到错误的埠位址将对你的电脑造成各种不可预期的损害. 
+同样地, 呼叫函式 <CODE>iopl()</CODE> 你得拥有 root 的权限.至於语法的细节请参考 
+<CODE>iopl(2)</CODE> 的使用说明文件.
+<P>接著, 我们来实际地存取 I/O 埠... 要从某个埠位址输入一个 byte (8 个 bits)
+的资料, 你得呼叫函式 <CODE>inb(port)</CODE> , 该函式会传回所取得的一个 byte 的资料.
+要输出一个  byte 的资料, 你得呼叫函式 <CODE>outb(value, port)</CODE>  (请记住参数的次序).
+要从某二个埠位址 <CODE>x</CODE> 和 <CODE>x+1</CODE> (二个 byte 组成一个 word, 故使用组合语言
+指令 <CODE>inw</CODE>) 输入一个 word (16 个 bits) 的资料, 你得呼叫函式 <CODE>inw(x)</CODE> ;
+要输出一个 word 的资料到二个埠位址, 你得呼叫函式 <CODE>outw(value, x)</CODE> .
+如果你不确定使用那个埠指令 (byte 或 word), 你大概须要 <CODE>inb()</CODE> 与 <CODE>outb()</CODE>
+这二个埠指令 --- 因为大多数的装置都是采用 byte 大小的埠存取方式来设计的. 
+注意所有的埠存取指令都至少需要大约一微秒的时间来执行.
+<P>如果你使用的是 <CODE>inb_p()</CODE>, <CODE>outb_p()</CODE>, <CODE>inw_p()</CODE>, 以及 <CODE>outw_p()</CODE>
+等巨集指令, 在你对埠位作址存取动作之後只需很短的(大约一微秒)延迟时间就可以完成;
+你也可以让延迟时间变成大约四微秒方法是在使用 <CODE>#include &lt;asm/io.h&gt;</CODE>
+之前使用 <CODE>#define REALLY_SLOW_IO</CODE>. 这些巨集指令通常 (除非你使用的是
+<CODE>#define SLOW_IO_BY_JUMPING</CODE>, 这个方法可能较不准确) 会利用输出资料到埠位址 
+0x80 以便达到延迟时间的目的, 所以你得先以函式 <CODE>ioperm()</CODE> 取得埠位址 0x80
+的使用权限 (输出资料到埠位址 0x80 不应该会对系统的其他其他部分造成影响). 至於
+其他通用的延迟时间的方法, 请继续读下去. 
+<P><CODE>ioperm(2)</CODE>, <CODE>iopl(2)</CODE> 等函式, 和上面所述及的巨集指令的使用说明会收录在
+最近出版的 Linux 使用说明文件集中.
+<P>
+<H2><A NAME="ss2.2">2.2 另一个替代的方法: <CODE>/dev/port</CODE></A>
+</H2>
+
+<P>另一个存取 I/O 埠的方法是以函式 <CODE>open()</CODE> 开启档案 <CODE>/dev/port</CODE> 
+(一个字元装置,主要装置编号为 1, 次要装置编号为 4) 以便执行读且/或写的动作
+(注意标准输出入 (stdio) 函式 <CODE>f*()</CODE> 有内部的缓冲 (buffering), 所以要避免使用).
+接著使用 <CODE>lseek()</CODE> 函式以便在该字元装置档案中找到某个 byte 资料的正确位置
+(档案位置 0 = 埠位址 0x00, 档案位置 1 = 埠位址 0x01, 以此类推), 然後你可以使用
+<CODE>read()</CODE> 或 <CODE>write()</CODE> 函式对某个埠位址做读或写一个 byte 或 word 资料的动作.
+<P>这个替代的方法就是在你的程式里使用 read/write 函式来存取 <CODE>/dev/port</CODE> 
+字元装置档案. 这个方法的执行速度或许比前面所讲的一般方法还慢, 但是不需要编译器
+的最佳化功能也不需要使用函式 <CODE>ioperm()</CODE> . 如果你允许非 root 使用者或群组存取
+<CODE>/dev/port</CODE> 字元设装置案, 操作时就不需拥有 root 权限 -- 但是对於系统安全而言
+是个非常糟糕的事情, 因为他可能伤害到你的系统, 或许会有人因而取的 root 的权限,
+利用 <CODE>/dev/port</CODE> 字元装置档案直接存取硬碟, 网路卡, 等设备.
+<P>
+<HR>
+<A HREF="IO-Port-Programming-3.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="IO-Port-Programming-1.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="IO-Port-Programming.html#toc2"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

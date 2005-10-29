@@ -1,0 +1,138 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux/MIPS HOWTO: Installation of Linux/MIPS and common problems.</TITLE>
+ <LINK HREF="MIPS-HOWTO-7.html" REL=next>
+ <LINK HREF="MIPS-HOWTO-5.html" REL=previous>
+ <LINK HREF="MIPS-HOWTO.html#toc6" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="MIPS-HOWTO-7.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="MIPS-HOWTO-5.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="MIPS-HOWTO.html#toc6"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s6">6. Installation of Linux/MIPS and common problems.</A></H2>
+
+<P>
+<P>
+<H2><A NAME="ss6.1">6.1 NFS booting fails.</A>
+</H2>
+
+<P>Usually, the reason for this is that people have unpacked the tar archive
+under IRIX, not Linux.  Since the representation of device files over
+NFS is not standardized between various Unices, this fails.  The symptom
+is that the system dies with the error message ``Warning: unable to open
+an initial console.'' right after mounting the NFS filesystem.
+<P>
+<P>For now, the workaround is to use a Linux system (doesn't need to be MIPS)
+to unpack the installation archive onto the NFS server.  The NFS server
+itself may be any type of UNIX.
+<P>
+<P>
+<H2><A NAME="ss6.2">6.2 Self-compiled kernels crash when booting.</A>
+</H2>
+
+<P>When I build my own kernel, it crashes.  On an Indy the crash message
+looks like the following (the same problem hits other machines as well
+but may look completely different):
+<P>
+<PRE>
+   Exception: &lt;vector=UTLB Miss>
+   Status register: 0x300004803&lt;CU1,CU0,IM4,IPL=???,MODE=KERNEL,EXL,IE>
+   Cause register: 0x8008&lt;CE=0,IP8,EXC=RMISS>
+   Exception PC: 0x881385cc, Exception RA: 0x88002614
+   exception, bad address: 0x47c4
+   Local I/O interrupt register 1: 0x80 &lt;VR/GIO2>
+   Saved user regs in hex (&amp;gpda 0xa8740e48, &amp;_regs 0xa8741048):
+     arg: 7 8bfff938 8bfffc4d 880025dc
+     tmp: 8818c14c 8818c14c 10 881510c4 14 8bfad9e0 0 48
+     sve: 8bfdf3e8 8bfffc40 8bfb2720 8bfff938 a8747420 9fc56394 0 9fc56394
+     t8 48 t9 8bfffee66 at 1 v0 0 v1 8bfff890 k1 bad11bad
+     gp 881dfd90 fp 9fc4be88 sp 8bfff8b8 ra 88002614
+
+   PANIC: Unexpected exception
+  
+</PRE>
+<P>This problem is caused by a still unfixed bug in Binutils newer than
+version 2.7.  As a workaround, change the following line in arch/mips/Makefile
+from:
+<P>
+<PRE>
+   LINKFLAGS       = -static -N
+ 
+</PRE>
+<P>to:
+<P>
+<PRE>
+   LINKFLAGS       = -static
+ 
+</PRE>
+<P>
+<H2><A NAME="ss6.3">6.3 Booting the kernel on the Indy fails with PROM error messages</A>
+</H2>
+
+<P>
+<PRE>
+   >> boot bootp()/vmlinux
+   73264+592+11520+331680+27848d+3628+5792 entry: 0x8df9a960
+   Setting $netaddres to 192.168.1.5 (from server deadmoon)
+   Obtaining /vmlinux from server deadmoon
+
+   Cannot load bootp()/vmlinux
+   Illegal f_magic number 0x7f45, expected MIPSELMAGIC or MIPSEBMAGIC.
+  
+</PRE>
+<P>This problem only happens for Indys with very old PROM versions which cannot
+handle the ELF binary format which Linux uses.  A solution for this problem
+is in the works.
+<P>
+<H2><A NAME="ss6.4">6.4 Where can I get the little endian firmware for my SNI?</A>
+</H2>
+
+<P>
+<P>SNI's system can be operated in both big and little endian modes.  At this
+time, Linux/MIPS only supports the little endian firmware.  This is somewhat
+unlucky since SNI hasn't shipped that firmware for quite some time, since
+they dropped Windows&nbsp;NT.
+<P>When running in big endian mode, the firmware looks
+similar to an SGI Indy which is already supported, therefore fixing the
+SNI support will be relatively easy.  Interested hackers should contact
+<A HREF="mailto:ralf@gnu.org">Ralf B&auml;chle (ralf@gnu.org)</A>.
+<P>
+<H2><A NAME="ss6.5">6.5 ld dies with signal 6</A>
+</H2>
+
+<P>
+<PRE>
+   collect2: ld terminated with signal 6 [Aborted]
+ 
+</PRE>
+
+This is a known bug in older binutils versions.  You will have to upgrade to
+binutils 2.8.1 plus very current patches.
+<P>
+<H2><A NAME="ss6.6">6.6 My machine doesn't download the kernel when I try to netboot</A>
+</H2>
+
+<P>
+<P>Your machine is replying to the BOOTP packets (you may verify this
+using a packet sniffer like tcpdump or ethereal), but doesn't download the
+kernel from your BOOTP server. This happens if your boot server is 
+running a kernel of the 2.3 series or higher. The problem may be circumvented
+by doing a "echo 1 > /proc/sys/net/ipv4/ip_no_pmtu_disc" as root on your
+boot server.
+<P>
+<H2><A NAME="ss6.7">6.7 Bug in DHCP version 2</A>
+</H2>
+
+<P>When using DHCP version 2 you might see the following problem:
+Your machines receives it's BOOTP reply 3 times but refuses to start TFTP.
+You can fix this by doing a "unsetenv netaddr" in the PROM command monitor before you boot your
+system. DHCP version 3 fixes that problem.
+<P>
+<HR>
+<A HREF="MIPS-HOWTO-7.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="MIPS-HOWTO-5.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="MIPS-HOWTO.html#toc6"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

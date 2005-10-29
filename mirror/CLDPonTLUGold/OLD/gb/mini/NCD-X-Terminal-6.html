@@ -1,0 +1,125 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE> NCD X terminal mini HOWTO: 字型以及 X 终端机</TITLE>
+ <LINK HREF="NCD-X-Terminal-7.html" REL=next>
+ <LINK HREF="NCD-X-Terminal-5.html" REL=previous>
+ <LINK HREF="NCD-X-Terminal.html#toc6" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+<A HREF="NCD-X-Terminal-7.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="NCD-X-Terminal-5.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="NCD-X-Terminal.html#toc6"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s6">6. 字型以及 X 终端机</A></H2>
+
+<P>X 终端机一开始是使用小型字的。在 X 终端机的设定选单还有设定档里面
+这些字型都是内建可供使用的。
+终端机能够使用单独使用这些字型，但是我们希望能够使用更多的字型。
+字型能被在 X 终端机的设定选单中经由指定的路径中被使用，或是使用 xset 来作设定。
+<P>
+<P>当 X server 的软体在 X 终端机上执行时，你能使用 xset 来指定字型。
+<P>查询 X server ：
+<PRE>
+xset -q
+</PRE>
+
+将字型的路径加入：
+<PRE>
+xset +fp &lt;path>
+</PRE>
+
+移除字型项目：
+<PRE>
+xset -fp &lt;path>
+</PRE>
+<P>
+<H2><A NAME="ss6.1">6.1 字型伺服器</A>
+</H2>
+
+<P>这个字型伺服器在一部网路主机上执行，其工作是帮忙 X 终端机还有其他在网路上的客服端取得字型。
+使用字型伺服器能够让 X server 的软体允许使用除了点阵字型以外可变动的字型。
+在取得的过程中，这个字型伺服器能够帮 X server 解压缩，缩放以及转换字型，
+并且更容易的帮助一群的 X 终端机以及网路上的客服端管理字型。
+字型伺服器的软体被包含在许多的 Linux 发行版中，并且已被整合在 X 设群所发布的软体中，你可以自
+<A HREF="ftp://ftp.x.org">ftp.x.org</A>取得。
+<P>要注意的是，使用字型伺服器，在 X 终端机的设定档或是设定选单中，
+一个 tcp 的服务要用来取代字型路径。
+<P>tcp 服务的格式：
+<PRE>
+tcp/&lt; 字型伺服器的 IP 位址 >:&lt; 字型伺服器所使用的接口 >
+</PRE>
+<P>例子：
+<PRE>
+tcp/10.0.0.1:7100
+</PRE>
+<P>
+<P>一笔存放於开机主机的 X 终端机设定档的例子：
+<P>
+<PRE>
+xserver-default-font-path = {
+        { "tcp/10.0.0.1:7100" }
+        { "built-ins" }
+}
+</PRE>
+<P>由 xset 附加上 tcp 参数也能将自行伺服器加入路径之中：
+<P>
+<PRE>
+xset +fp tcp/10.0.0.1:7100
+</PRE>
+<P>
+<P>警告：某些版本的 NCD 软体要求自型伺服器的资讯为 X 终端机的第一项内建自型。
+这是和 NCD 命名为 "System Administrator's Guide for UNIX Systems" 的文件所相违背的。
+用 ' xset q ' 这道命令确定字型的路径的顺序。
+<P>
+<P>在自型伺服器这边，这个伺服器的起始工作是 rc.local 这个启动命令稿中。
+( 译注：现在大多数的发行版本都包含这个字形伺服器，并拥有自己的启动命令稿，其名称为 xfs )
+字形伺服器以下列的命令开始工作：
+<P>
+<PRE>
+xfs -config &lt; 设定档路径 > -port &lt; 字形伺服器接口 >
+</PRE>
+<P>一般而言字形伺服器的接口为 7100。
+<P>例子：
+<P>
+<PRE>
+xfs -config /usr/X11/lib/X11/fs/config -port 7100
+</PRE>
+<P>
+<P>字形伺服器的设定档例子：
+<P>
+<PRE>
+   # 字形伺服器的设定档
+
+   # 允所最多 10 个客户端连接至字形伺服器
+   client-limit = 10
+
+   # 当字形伺服器客户端的负载达它的极限时，将启动另一个字形伺服器。
+   clone-self = on
+
+   # 利用 UNIX 的 syslog 纪录错误的讯息。
+   use-syslog = on
+
+   # 可用字型的目录
+   catalogue = /usr/X11R6/lib/X11/fonts/misc/,
+      /usr/X11R6/lib/X11/fonts/Speedo/,
+      /usr/X11R6/lib/X11/fonts/Type1/,
+      /usr/X11R6/lib/X11/fonts/75dpi/,
+      /usr/X11R6/lib/X11/fonts/100dpi/
+
+   # 如果 syslog 没有被使用，所要存放的错误讯息位置
+   error-file = /usr/X11R6/lib/X11/fs/fs-errors
+
+   # 预设的字型大小为 12 pt
+   default-point-size = 120
+
+   # 100 x 100 以及 75 x 75
+   default-resolutions = 75,75,100,100
+</PRE>
+<P>
+<HR>
+<A HREF="NCD-X-Terminal-7.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="NCD-X-Terminal-5.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="NCD-X-Terminal.html#toc6"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

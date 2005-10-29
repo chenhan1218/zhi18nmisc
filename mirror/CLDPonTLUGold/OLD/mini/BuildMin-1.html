@@ -1,0 +1,133 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>從源代碼打造一個最小化的Linux系統實作篇: 您所需要具備的條件</TITLE>
+ <LINK HREF="BuildMin-2.html" REL=next>
+
+ <LINK HREF="BuildMin.html#toc1" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+<A HREF="BuildMin-2.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<IMG SRC="../img/prev.gif" ALT="Previous">
+<A HREF="BuildMin.html#toc1"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s1">1. 您所需要具備的條件</A></H2>
+
+<P>我們首先要安裝一個Linux發行套件比如小紅帽(RedHat)到一個分區上，然后
+使用它來在另一個分區上打造一個新的Linux系統．我將我們所要打造的系統
+稱為目標(target)而把我們所使用來打造新系統的系統稱為源頭(source)．
+可別把這個源頭(source)同我們同時使用的<EM>源碼(source code)</EM>相
+混淆了哦．:)
+<P>
+<P>因此，您得需要一台具有兩個獨立分區的機器．如果可能，請盡量使用一台
+沒有重要資料在里頭的機器，以免數據受損．您可以使用一個已經存在的
+Linux系統作為源頭系統，但是我并不推荐這種方式．如果您不慎遺漏了我們
+打造的指令的某些參數，您有可能會意外地在這個系統上安裝了一些沒有必要
+的東西，有可能會導致不兼容和沖突．
+<P>
+<P>舊型的PC機硬件，大部分的486機器或者更早的機型，其BIOS都有一些極其
+煩人的限制．它們沒有辦法讀取硬盤超過前512兆之后的空間．當然，這個
+對于Linux來說并不是什么大問題，因為只要Linux能夠引導啟動了，將使用
+Linux自己的磁盤IO，略過BIOS的調用．但是為了能夠讓這些舊型機器能夠
+引導Linux，那么Linux內核必須存放在硬盤的前512兆之前的某個位置．如果您
+正好有這么個舊型機器，您得准備好一個獨立的且完全在前512兆范圍內的
+硬盤分區，并將其挂載為<CODE>/boot</CODE>．其它的分區就可以在任何位置，
+可以任意處理而不必擔心是在硬盤的什么位置了．
+<P>
+<P>上一次我打造這個系統時，所使用的源頭系統是小紅帽6.1(RedHat 6.1)，
+我安裝了基本系統，附加有以下軟件包︰
+<P>
+<UL>
+<LI>cpp                 (C++編譯器)</LI>
+<LI>egcs                        (增強型C編譯器)</LI>
+<LI>egcs-c++            (增強型C++語言編譯器)</LI>
+<LI>patch               (打補丁程序)</LI>
+<LI>make                        (編譯批處理解釋器)</LI>
+<LI>dev86               (設備文件包)</LI>
+<LI>ncurses-devel       (ncurses庫開發包)</LI>
+<LI>glibc-devel         (glibc庫開發包)</LI>
+<LI>kernel-headers(內核源碼頭文件包)</LI>
+</UL>
+ 
+<P>我還安裝了X Window視窗系統和Mozilla網絡瀏覽器以便更輕松地閱讀文檔，
+而實際上這兩個東東并不是必要的．在我竣工之時，這個源頭系統大概使用
+了350兆的磁盤空間(看起來是多了一些，可是我還在納悶為什么呢)．
+<P>
+<P>竣工之時的目標系統占用了650兆磁盤空間，但是這個數值包含了所有的源碼
+以及中途打造出來的文件．如果空間比較緊湊，您應該在每個軟件包都打造
+完畢之后執行一下<CODE>make clean</CODE>來清除臨時文件．當然了，我對這個
+也是有點吃驚的．
+<P>
+<P>最后，您的准備好我們所要用來打造系統的源碼包．這些就是我在本文所討論
+的軟件包．這些軟件包都可以從源碼盤里面找到，或者從國際互聯網上找到．
+我會給出美國的站點和位于澳大利亞的鏡像站點的地址．
+<P>
+<P>
+<A NAME="downloads"></A> 
+<UL>
+<LI>MAKEDEV (設備生成器包)
+<A HREF="ftp://tsx-11.mit.edu/pub/linux/sources/sbin">美國</A>
+另一個是
+<A HREF="ftp://sunsite.unc.edu/pub/Linux/system/admin">美國</A></LI>
+<LI>Lilo (Linux引導器包)
+<A HREF="ftp://lrcftp.epfl.ch/pub/linux/local/lilo/">美國</A>,
+<A HREF="ftp://mirror.aarnet.edu.au/pub/linux/metalab/system/boot/lilo/">澳大利亞</A>.</LI>
+<LI>Linux內核包(Kernel)
+使用
+<A HREF="http://www.kernel.org">主頁</A>上所列舉的鏡像站點
+而最好不要使用
+<A HREF="ftp://ftp.kernel.org/pub/linux/kernel">美國</A>
+站點下載，因為這些地方通常是超負荷運轉的．
+<A HREF="ftp://kernel.mirror.aarnet.edu.au/pub/linux/kernel/">澳大利亞</A> </LI>
+<LI>GNU libc庫包
+其本身，以及liuxthreads線程附加庫可在以下地址下載到︰
+<A HREF="ftp://ftp.gnu.org/pub/gnu/glibc">美國</A>和 
+<A HREF="ftp://mirror.aarnet.edu.au/pub/gnu/glibc">澳大利亞</A> </LI>
+<LI>GNU libc附加庫包
+您可能還會需要linuxthreads線程附加庫和libcrypt加密附加庫．
+如果libcrypt沒在那個地方找到，那就是因為美國出口法律限制的原因，
+那么您就可以從這里弄到
+<A HREF="ftp://ftp.gwdg.de/pub/linux/glibc">libcrypt加密附加庫</A>．
+通常linuxthreads線程附加庫跟libc庫是放在同一個地方的．</LI>
+<LI>GNU ncurses
+<A HREF="ftp://ftp.gnu.org/gnu/ncurses">美國</A>
+<A HREF="ftp://mirror.aarnet.edu.au/pub/gnu/ncurses">澳大利亞</A></LI>
+<LI>SysVinit (初始化腳本包)
+<A HREF="ftp://sunsite.unc.edu/pub/Linux/system/daemons/init">美國</A> 
+<A HREF="ftp://mirror.aarnet.edu.au/pub/linux/metalab/system/daemons/init">澳大利亞</A> </LI>
+<LI>GNU Bash (命令解釋器包)
+<A HREF="ftp://ftp.gnu.org/gnu/bash">美國</A> 
+<A HREF="ftp://mirror.aarnet.edu.au/pub/gnu/bash">澳大利亞</A> </LI>
+<LI>GNU sh-utils (命令解釋器工具包)
+<A HREF="ftp://ftp.gnu.org/gnu/sh-utils">美國</A> 
+<A HREF="ftp://mirror.aarnet.edu.au/pub/gnu/sh-utils">澳大利亞</A> </LI>
+<LI>util-linux (Linux常用工具包)
+<A HREF="ftp://ftp.win.tue.nl/pub/linux/utils/util-linux/">另外某個地方</A>
+<A HREF="ftp://mirror.aarnet.edu.au/pub/linux/metalab/system/misc">澳大利亞</A>本軟件包包含有<CODE>agetty</CODE>和<CODE>login</CODE>．
+</LI>
+</UL>
+<P>
+<P>總結一下，您所需要的就是︰
+<UL>
+<LI>一台具有兩個分別是400兆和700兆獨立分區的機器，或許您可能會需要少一些．</LI>
+<LI>一個Linux發行套件(譬如一個Red Hat光盤)和安裝方式(譬如一個光驅)</LI>
+<LI>以上所列舉的源碼的tar包．</LI>
+</UL>
+<P>
+<P>我假定您可以自己安裝源頭系統，而用不著我來幫忙．從這里開始，我假定源頭
+系統已經安裝好了．
+<P>
+<P>本小項目的第一個里程碑就是使得內核啟動起來然后死翹翹，因為它沒找到
+<CODE>init</CODE>初始化程序．也就是說我們得安裝一個內核和安裝lilo．為了
+順利安裝lilo，我們要用上在目標系統上<CODE>/dev</CODE>目錄下的設備文件．
+lilo需要它們來實現底層必需的磁盤存取來寫入引導扇區．MAKEDEV正是用來
+創建這些設備文件的腳本程序(您當然可以只需要從源頭系統當中復制出來，
+不過這可是作弊不勞而獲哦)．但是最重要的事情就是，我們需要一個文件
+系統來放置所有的這些東西．
+<P>
+<HR>
+<A HREF="BuildMin-2.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<IMG SRC="../img/prev.gif" ALT="Previous">
+<A HREF="BuildMin.html#toc1"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

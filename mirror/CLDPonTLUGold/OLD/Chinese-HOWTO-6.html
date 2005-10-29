@@ -1,0 +1,249 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="LinuxDoc-Tools 0.9.16">
+ <TITLE>Linux Chinese HOWTO 中文版: 中文列印</TITLE>
+ <LINK HREF="Chinese-HOWTO-7.html" REL=next>
+ <LINK HREF="Chinese-HOWTO-5.html" REL=previous>
+ <LINK HREF="Chinese-HOWTO.html#toc6" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Chinese-HOWTO-7.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="Chinese-HOWTO-5.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="Chinese-HOWTO.html#toc6"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s6">6.</A> <A HREF="Chinese-HOWTO.html#toc6">中文列印</A></H2>
+
+<P>這一節教你怎麼列印中文文件。但我不會教你如何設定印表機，你必須自行設定妥當。
+這一節介紹的工具都是將文件轉換成 PostScript 格式，因此你還要讓你的印表機能列印 PostScript 檔案。如果你的印表機不直接支援 PostScript, 你可以安裝 <CODE>
+<A HREF="http://www.cs.wisc.edu/~ghost/index.html">ghostscript</A></CODE>.
+請參考 
+<A HREF="http://sunsite.unc.edu/LDP/HOWTO/Printing-HOWTO.html">Printing HOWTO</A> 的說明。</P>
+
+<H2><A NAME="ss6.1">6.1</A> <A HREF="Chinese-HOWTO.html#toc6.1">cnprint</A>
+</H2>
+
+<P><CODE>cnprint</CODE> 是一個將中文文章轉換為 PostScript 檔案以供列印的工具。使用上就和標準的列印指令一樣。它同時支援 GB, HZ 與 BIG5 編碼。</P>
+
+<H3>何處取得</H3>
+
+<P>你可在
+<CODE>
+<A HREF="ftp://ftp.ifcss.org/pub/software/unix/print">ftp://ftp.ifcss.org/pub/software/unix/print</A></CODE>
+找到 <CODE>cnprint280.tar.gz</CODE>。</P>
+
+<H3>安裝 cnprint</H3>
+
+<P><CODE>cnprint280.tar.gz</CODE> 只包含了五個檔案
+<BLOCKQUOTE><CODE>
+<PRE>
+# ls
+cnprint.1          cnprint.cmd        cnprint280.README
+cnprint.c          cnprint.help
+</PRE>
+</CODE></BLOCKQUOTE>
+
+用下法編譯
+<BLOCKQUOTE><CODE>
+<PRE>
+# gcc cnprint.c -o cnprint
+# mv cnprint /usr/local/bin
+# mv cnprint.1 /usr/local/man/man1
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+
+<H3><A NAME="hbf"></A> 安裝 HBF 字型</H3>
+
+<P>HBF 字型包括了標頭檔與字型圖檔: <CODE>.hbf</CODE> 是描述字型的標頭檔，這是一個文字檔，裡面記載了它的字型圖檔名稱。
+兩種檔案你都必須安裝。你可在 <CODE>
+<A HREF="ftp://ftp.ifcss.org/pub/software/fonts/">ftp://ftp.ifcss.org/pub/software/fonts/</A></CODE> 找到 HBF 字型。</P>
+<P>例如你想使用 <CODE>ccfs24.hbf</CODE>, 一種仿宋簡體字型，你必須取得這三個檔案: <CODE>ccfs24.hbf</CODE>, <CODE>cclib.n24</CODE> 與 <CODE>ccsym.24</CODE>。
+在 ifcss 的字型目錄下的 <CODE>00index.txt</CODE> 列出了所有 HBF 字型的檔案名稱。</P>
+<P>建一個目錄專門來放 HBF 字型，例如 <CODE>/usr/local/lib/chinese/HBF/</CODE>。將你取回來的 HBF 標頭檔與字型圖檔都放到這個目錄下。
+然後在環境變數中指定 HBF 字型的完整目錄。
+<BLOCKQUOTE><CODE>
+<PRE>
+# export HBFPATH="/usr/local/lib/chinese/HBF/"
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>檔案 <CODE>cnprint.cmd</CODE> 中包含了 <CODE>cnprint</CODE> 的一些預設值。
+你必須修改它，讓它指向你安裝的 HBF 字型。然後將它放到 <CODE>$HBFPATH</CODE>
+<BLOCKQUOTE><CODE>
+<PRE>
+# cp cnprint.cmd $HBFPATH
+</PRE>
+</CODE></BLOCKQUOTE>
+
+現在你可用 ``<CODE>cnprint -w FILENAME</CODE>'' 將中文文章轉換為 PostScript 檔案。詳細的用法請參考 <CODE>man cnprint</CODE>.</P>
+
+<H3>編碼轉換</H3>
+
+<P><CODE>cnprint 2.80</CODE> 還增加了許多<EM>特異功能</EM>，例如，各種編碼格式的轉換，BIG5 &lt;=> GB &lt;=> HZ.
+不過 BIG5 &lt;=> GB 必須另外安裝轉換表格，這個表格可以從下面地點取得:
+<BLOCKQUOTE>
+<A HREF="ftp://ftp.ifcss.org/pub/software/unix/convert/hc.tab">ftp://ftp.ifcss.org/pub/software/unix/convert/hc.tab</A></BLOCKQUOTE>
+
+取回後放到 HBF 字型目錄下，然後修改 <CODE>cnprint.cmd</CODE>, 加上
+<BLOCKQUOTE><CODE>
+<PRE>
+DEFAULT_GBB5_TABLEFILE: /usr/local/lib/chinese/HBF/hc.tab
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P><CODE>cnprint 2.80</CODE> 的 BIG5 到 GB 轉換不僅能做到一般的<B>字對字</B>轉換，還能做到<B>詞對詞</B>的轉換。
+然而 <CODE>cnprint</CODE> 本身也未提供轉換的字典，你必須自行建立。詳情請參考 <CODE>man cnprint</CODE>.</P>
+
+<H2><A NAME="ss6.2">6.2</A> <A HREF="Chinese-HOWTO.html#toc6.2">ps2cps</A>
+</H2>
+
+<P>這個小程式的功能是將原本無法以中文輸出的 PostScript 檔轉換成可以以中文輸出。
+例如 Netscape 在列印時是先將檔案轉成 PostScript，但其輸出的 PostScript 卻不包含中文字型，這使得原來是中文的部分變成亂碼印出。
+這個程式可以讀入 PostScript 檔，將其亂碼的部分改以中文字取代之，並將結果送到標準輸出，則其輸出結果便可送到任何可以印 PostScript 文件的印表機列印。</P>
+<P>在下面地點取得:
+<BLOCKQUOTE>
+<A HREF="ftp://linux.cis.nctu.edu.tw/packages/chinese/misc/ps2cps-0.1.tgz">ftp://linux.cis.nctu.edu.tw/packages/chinese/misc/ps2cps-0.1.tgz</A></BLOCKQUOTE>
+</P>
+<P>解開後視你的需要修改 Makefile:
+<BLOCKQUOTE><CODE>
+<PRE>
+        BINPATH    : 可執行檔 (ps2cps) 的安裝路徑
+        PS2CPSPATH : PS2CPS 的資源檔路徑
+        PS2CPSRC   : PS2CPS 資源檔的名稱
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>再來 <CODE>make all install</CODE> 即可。</P>
+<P>你必須按照上節的方法先安裝好 HBF 中文字型。再來修改你的 <CODE>ps2cpsrc</CODE> 檔案:
+<BLOCKQUOTE><CODE>
+<PRE>
+        HBF_PATH:      定義 HBF 字型所在目路
+        HBF_NAME:      定義 HBF 字型的名稱 ( .hbf ，不含路徑 )
+        CH_WORD_SHIFT: 定義中文字型位移。
+</PRE>
+</CODE></BLOCKQUOTE>
+
+其中最後一項是用來調整中文字型的位置用的。由於有些中文字型與原本的英文字型可能不在同一水平線上，故可以設此變數以做上下調整。其值為 -1.0 至 +1.0 之間。</P>
+<P>然後你就可以用作者附的範例來測試:
+<BLOCKQUOTE><CODE>
+<PRE>
+# ps2cps thhsieh.ps > c-thhsieh.ps
+</PRE>
+</CODE></BLOCKQUOTE>
+
+用 <CODE>ghostview</CODE> 來試試能否看到中文字型。</P>
+<P>然而這個程式尚在測試階段，有許多問題待解決。若你有任何問題或是建議可直接向作者反應:
+台大物研所謝東翰 &lt;
+<A HREF="mailto:thhsieh@twclx.phys.ntu.edu.tw">thhsieh@twclx.phys.ntu.edu.tw</A>&gt;.</P>
+
+<H2><A NAME="ss6.3">6.3</A> <A HREF="Chinese-HOWTO.html#toc6.3">bg2ps</A>
+</H2>
+
+<P>這也是一個將 BIG5 中文檔案轉成可列印的 PostScript 檔，功能和 cnprint 類似。
+但是它使用 TrueType 字型因此輸出結果比較漂亮。它還另外附一個可將 Netscape 輸出的 PostScript 轉換成可列印中文的 script.
+作者是 
+<A HREF="http://weber.u.washington.edu/~cschin/chinhome.html">Chen-Shan Chin</A> 
+&lt;
+<A HREF="mailto:cschin@u.washington.edu">cschin@u.washington.edu</A>&gt;.</P>
+<P>你可以從這裡取得軟體:
+<BLOCKQUOTE>
+<A HREF="http://weber.u.washington.edu/~cschin/bg2ps/">http://weber.u.washington.edu/~cschin/bg2ps/</A></BLOCKQUOTE>
+</P>
+
+<H3>安裝 bg2ps</H3>
+
+<P>解開壓縮檔並編譯:
+<BLOCKQUOTE><CODE>
+<PRE>
+# mkdir bg2ps
+# cd bg2ps
+# tar xzvf bg5ps.tgz 
+# gcc -O2 ttf2psm.c -o ttf2psm
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>再來安裝 TrueType 字型。你可將它安裝在 bg2ps 同一目錄，或另外指定目錄。請參考 
+<A HREF="Chinese-HOWTO-11.html#ntuttf">安裝 TTF 字型</A> 的說明。
+然後在你的目錄下建一 <CODE>.bg5ps.conf</CODE> 檔案，你可以直接拿它所附的範例 <CODE>bg5ps.conf</CODE> 來修改。
+其中最重要的是將 <CODE>chineseFontPath</CODE> 指到你安裝 TrueType 字型的目錄，並將 <CODE>fontName</CODE> 改成你使用的字型名稱。</P>
+<P>用它所附的範例來測試，並用 <CODE>ghostview</CODE> 或 <CODE>gv</CODE> 觀看結果:
+<BLOCKQUOTE><CODE>
+<PRE>
+# ./bg5ps -if test.big5 -of test.ps
+# ghostview test.ps
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+
+<H3>安裝 nps2cps</H3>
+
+<P>nps2cps 沒有額外的設定檔。你必須自行修改 <CODE>nps2cps</CODE> script 中的 <CODE>chineseFontPath</CODE> 及 <CODE>fontName</CODE>.</P>
+<P>測試 nps2cps:
+<BLOCKQUOTE><CODE>
+<PRE>
+# nps2cps &lt; netscape.ps > test.ps
+# ghostview test.ps
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+
+
+<H2><A NAME="ss6.4">6.4</A> <A HREF="Chinese-HOWTO.html#toc6.4">gb2ps</A>
+</H2>
+
+<P>gb2ps 是另一種可以列印 GB 與 HZ 編碼的工具程式。</P>
+
+<H3>如何取得 gb2ps</H3>
+
+<P>
+<BLOCKQUOTE><CODE>
+<DL>
+<DT><B>套件:</B><DD><P>
+<PRE>
+gb2ps.2.02.tar.gz       
+</PRE>
+
+<A HREF="ftp://ftp.ifcss.org/pub/software/unix/print">ftp://ftp.ifcss.org/pub/software/unix/print</A></P>
+</DL>
+</CODE></BLOCKQUOTE>
+
+<BLOCKQUOTE><CODE>
+<DL>
+<DT><B>字型:</B><DD><P>
+<PRE>
+csong24.ccf     ckai24.ccf
+cfang24.ccf     chei24.ccf   
+</PRE>
+
+<A HREF="ftp://ftp.ifcss.org/pub/software/fonts/gb/misc/">ftp://ftp.ifcss.org/pub/software/fonts/gb/misc/</A></P>
+</DL>
+</CODE></BLOCKQUOTE>
+
+將字型放在某個目錄下，例如 <CODE>/usr/local/lib/chinese/CFONT</CODE></P>
+
+<H3>安裝 gb2ps</H3>
+
+<P>在編譯 gb2ps 之前先更改 <CODE>Makefile</CODE> 的設定
+<BLOCKQUOTE><CODE>
+<PRE>
+CFONT=/usr/local/lib/chinese/CFONT/
+COVERPAGE=/usr/local/lib/chinese/lib/cover.ps
+</PRE>
+</CODE></BLOCKQUOTE>
+
+然後打
+<BLOCKQUOTE><CODE>
+<PRE>
+# make
+# cp gb2ps /usr/local/bin
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+
+
+<HR>
+<A HREF="Chinese-HOWTO-7.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="Chinese-HOWTO-5.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="Chinese-HOWTO.html#toc6"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

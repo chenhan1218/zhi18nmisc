@@ -1,0 +1,388 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>PPP HOWTO 中譯版: 使你的連結自動化 - 創造連結指令稿</TITLE>
+ <LINK HREF="PPP-HOWTO-16.html" REL=next>
+ <LINK HREF="PPP-HOWTO-14.html" REL=previous>
+ <LINK HREF="PPP-HOWTO.html#toc15" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="PPP-HOWTO-16.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="PPP-HOWTO-14.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="PPP-HOWTO.html#toc15"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="automate"></A> <A NAME="s15">15. 使你的連結自動化 - 創造連結指令稿</A></H2>
+
+<P>一旦你可以用上述的方法用手動方式簽入，更好的做法是建立一些指令稿來自動為你進行這些工作．
+<P>一份 chat 指令稿可以自動化簽入以及起動 PPP  的程序，因此所有你得做的（以 root 或是 ppp 群組組員的身分）只是發出單一個指令來起動你的連線．
+<P>
+<P>
+<H2><A NAME="ss15.1">15.1 以使用者名稱／密碼認證的指令稿</A>
+</H2>
+
+<P>如果你的 ISP  並不要求使用 PAP/CHAP 的話，這些就是為你準備的!
+<P>
+<P>如果 ppp 套件安裝正確，你應該會有兩個範例檔案．
+在 PPP 2.1.2 中是在 <CODE>/usr/sbin</CODE> 而在 PPP 2.2 裡是在 <CODE>/etc/ppp/scripts</CODE>．這些是
+<P>
+<P>在 PPP-2.1.2
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ppp-on
+ppp-off
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>而在 PPP-2.2
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ppp-off
+ppp-on
+ppp-on-dialer
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>現在，如果你正在使用 PPP 2.1.2，我強烈建議你刪除這些範例檔案．
+它們有潛在的問題 - 不要告訴我它們工作得很好 - 我也用了很長一段時間(而且還在這份 HOWTO 的第一版中推薦它們)!
+<P>
+<P>為了 ppp 2.1.2  使用者的權益，這裡有比較好的樣板檔案，這些是從 ppp 2.2 發行套件裡拿來的．
+我建議你拷貝並使用這些指令稿<B>而不要</B>再用舊的 PPP-2.1.2 指令稿．
+<P>
+<H2><A NAME="ss15.2">15.2 <CODE>ppp-on</CODE> 指令稿</A>
+</H2>
+
+<P>這是實際啟動連線的一對指令稿中的第一個．
+<P>
+<HR>
+<PRE>
+#!/bin/sh
+#
+# Script to initiate a PPP connection. This is the first part of the
+# pair of scripts. This is not a secure pair of scripts as the codes
+# are visible with the 'ps' command.  However, it is simple.
+#
+# These are the parameters. Change as needed.
+TELEPHONE=555-1212      # The telephone number for the connection
+ACCOUNT=george          # The account name for logon (as in 'George Burns')
+PASSWORD=gracie         # The password for this account (and 'Gracie Allen')
+LOCAL_IP=0.0.0.0        # Local IP address if known. Dynamic = 0.0.0.0
+REMOTE_IP=0.0.0.0       # Remote IP address if desired. Normally 0.0.0.0
+NETMASK=255.255.255.0   # The proper netmask if needed
+#
+# Export them so that they will be available to 'ppp-on-dialer'
+export TELEPHONE ACCOUNT PASSWORD
+#
+# This is the location of the script which dials the phone and logs
+# in.  Please use the absolute file name as the $PATH variable is not
+# used on the connect option.  (To do so on a 'root' account would be
+# a security hole so don't ask.)
+#
+DIALER_SCRIPT=/etc/ppp/ppp-on-dialer
+#
+# Initiate the connection
+#
+#
+exec /usr/sbin/pppd debug /dev/ttySx 38400 \
+        $LOCAL_IP:$REMOTE_IP \
+        connect $DIALER_SCRIPT
+</PRE>
+<HR>
+<P>
+<P>而這是 <CODE>ppp-on-dialer</CODE> 指令稿:-
+<P>
+<HR>
+<PRE>
+#!/bin/sh
+#
+# This is part 2 of the ppp-on script. It will perform the connection
+# protocol for the desired connection.
+#
+/usr/sbin/chat -v                                       \
+        TIMEOUT         3                               \
+        ABORT           '\nBUSY\r'                      \
+        ABORT           '\nNO ANSWER\r'                 \
+        ABORT           '\nRINGING\r\n\r\nRINGING\r'    \
+        ''              \rAT                            \
+        'OK-+++\c-OK'   ATH0                            \
+        TIMEOUT         30                              \
+        OK              ATDT$TELEPHONE                  \
+        CONNECT         ''                              \
+        ogin:--ogin:    $ACCOUNT                        \
+        assword:        $PASSWORD
+</PRE>
+<HR>
+<P>
+<P>在 PPP-2.2 中，<CODE>ppp-off</CODE> 指令稿看起來像:-
+<P>
+<HR>
+<PRE>
+#!/bin/sh
+######################################################################
+#
+# Determine the device to be terminated.
+#
+if [ "$1" = "" ]; then
+        DEVICE=ppp0
+else
+        DEVICE=$1
+fi
+
+######################################################################
+#
+# If the ppp0 pid file is present then the program is running. Stop it.
+if [ -r /var/run/$DEVICE.pid ]; then
+        kill -INT `cat /var/run/$DEVICE.pid`
+#
+# If the kill did not work then there is no process running for this
+# pid. It may also mean that the lock file will be left. You may wish
+# to delete the lock file at the same time.
+        if [ ! "$?" = "0" ]; then
+                rm -f /var/run/$DEVICE.pid
+                echo "ERROR: Removed stale pid file"
+                exit 1
+        fi
+#
+# Success. Let pppd clean up its own junk.
+        echo "PPP link to $DEVICE terminated."
+        exit 0
+fi
+#
+# The ppp process is not running for ppp0
+echo "ERROR: PPP link is not active on $DEVICE"
+exit 1
+</PRE>
+<HR>
+<P>
+<H2><A NAME="ss15.3">15.3 編輯這裡所提供的起始指令稿</A>
+</H2>
+
+<P>因為這份新的指令稿分成兩部份，我們分別編輯它們．
+<P>
+<H3><CODE>ppp-on</CODE> 指令稿</H3>
+
+<P>你將得編輯這個指令稿以反映你在 ISP 的使用者名稱，你在 ISP 的密碼，你 ISP 的電話號碼．
+<P>
+<P>每一行像是 <CODE>TELEPHONE=</CODE> 實際上設定了這個變數包含在等號右邊的資訊 (當然不包括註解部份)．
+因此編輯每一行使它對你的 ISP 與連線是正確的．
+<P>
+<P>而且，如果你(需要)在 <CODE>/etc/ppp/options</CODE> 檔案裡設定了 IP 號碼，刪除這行
+<P>
+<HR>
+<PRE>
+$LOCAL_IP:$REMOTE_IP \
+</PRE>
+<HR>
+<P>
+<P>還有，確定變數 <CODE>DIALER_SCRIPT</CODE> 指向你將要使用的撥號指令稿的全部路徑名稱．
+因此，如果你移動或改變這個指令稿的名稱，確定你正確地改變 <CODE>ppp-on</CODE> 指令稿裡的這一行．
+<P>
+<H3><CODE>ppp-on-dialer</CODE> 指令稿</H3>
+
+<P>這是第二個指令稿實際建立起我們的 PPP 連結．
+<P>
+<P>注意: 一份 chat 指令稿一般全都放在同一行裡．倒斜線是用來讓一行可以跨過數行的實體行（便於人們閱讀）而並不是指令稿本身組成的一部份．
+<P>
+<P>然而，仔細地看看它的細節部份以便讓我們了解它實際(假設的)要做什麼是非常有用的!
+<P>
+<H2><A NAME="ss15.4">15.4 一份 chat 指令稿其中的含意...</A>
+</H2>
+
+<P>一份 chat 指令稿是一系列<CODE>&ldquo;</CODE>期待字串<CODE>&rdquo;</CODE> <CODE>&ldquo;</CODE>送出字串<CODE>&rdquo;</CODE>的配對．
+特別是，注意到我們<B>總是</B>在送出某些訊息之前先期待<B>某些訊息</B>出現．
+<P>
+<P>如果我們在<B>沒有</B>先接收到任何訊息的情況下要送出某些訊息的話，我們必須使用空的期待字串（藉由 <CODE>&ldquo;</CODE><CODE>&rdquo;</CODE> 指明）而在沒有送出任何訊息的情況下要期待某些訊息作法也類似! 
+而且，如果字串包含好幾個字（例如 NO CARRIER），你必須把字串用引號括住，這樣 chat 會把字串當作是單一個項目．
+<P>
+<P>在我們樣板裡的 chat 指令行是:
+<P>
+<HR>
+<PRE>
+exec /usr/sbin/chat -v
+</PRE>
+<HR>
+<P>起動 chat ，<CODE>-v</CODE> 告訴 chat 將其所有的輸出／入拷貝到系統記錄裡（通常是 /var/log/messages）．
+一旦你覺得 chat 指令稿的運作穩定而可靠，編輯這一行把 <CODE>-v</CODE> 移除以便減少你系統記錄的混雜．
+<P>
+<HR>
+<PRE>
+TIMEOUT         3
+</PRE>
+<HR>
+
+這設定接收所期待的輸入逾時時限為三秒．如果你使用真的是很慢的數據機那麼你可能得要增加這個設定到五秒或是十秒!
+<P>
+<HR>
+<PRE>
+ABORT           '\nBUSY\r'
+</PRE>
+<HR>
+<P>如果接收到 BUSY 字串，中止執行．
+<P>
+<HR>
+<PRE>
+ABORT           '\nNO ANSWER\r'
+</PRE>
+<HR>
+<P>如果接收到 NO ANSWER  字串，中止執行．
+<P>
+<HR>
+<PRE>
+ABORT           '\nRINGING\r\n\r\nRINGING\r'
+</PRE>
+<HR>
+<P>如果接收到（重複的）RINGRING 字串，中止執行．這是因為某人正打電話給你!
+<P>
+<HR>
+<PRE>
+&ldquo;              \rAT
+</PRE>
+<HR>
+<P>不期待數據機傳送任何訊息並且送出 AT 字串．
+<P>
+<HR>
+<PRE>
+OK-+++\c-OK   ATH0
+</PRE>
+<HR>
+<P>這一個比較複雜一點，因為它使用了某些 chat 的錯誤回復功能．
+<P>它所代表的是...期待 OK ，如果沒有收到（因為數據機並不在指令模式下）那麼送出 +++ （使數據機返回指令模式的標準 Hayes 相容數據機字串）並且期待 OK；接著送出 ATH0 （數據機掛斷字串）．
+這讓你的指令稿可以應付你的數據機黏在線上無法斷線的情況．
+<P>
+<HR>
+<PRE>
+TIMEOUT         30
+</PRE>
+<HR>
+<P>設定指令稿其餘部份執行的逾時時限為 30 秒．如果你曾經因為逾時而經驗過 chat 指令稿被終止的問題，把它增加為 45 秒或更久．
+<P>
+<HR>
+<PRE>
+OK              ATDT$TELEPHONE
+</PRE>
+<HR>
+<P>期待 OK （數據機對 ATH0 指令的回應）並且撥接到我們想要呼叫的號碼．
+<P>
+<HR>
+<PRE>
+CONNECT         &rdquo;
+</PRE>
+<HR>
+<P>期待 CONNECT 字串（當遠端數據機有回應時我們的數據機送出的）並且不送出任回覆訊息．
+<P>
+<HR>
+<PRE>
+ogin:--ogin:    $ACCOUNT
+</PRE>
+<HR>
+<P>再一次，這裡面我們有一些錯誤回復設定．期待簽入提示(...ogin:)，但是如果我們在逾時前沒有接收到，送出一個返回字元(return)然後再次找尋簽入提示．
+當接收到提示時，送出使用者名稱（存放在使用者界面的 $ACCOUNT 環境變數裡）．
+<P>
+<HR>
+<PRE>
+assword:        $PASSWORD
+</PRE>
+<HR>
+<P>期待密碼提示並且送出密碼（再一次，存放在使用者界面的一個環境變數裡）．
+<P>
+<P>這個 chat 指令稿有合理的錯誤回復功能． Chat 還有許多重要的特色，比這裡所展示還要更多．
+更詳細的資訊請參閱 chat 的線上使用手冊(<CODE>man 8 chat</CODE>)．
+<P>
+<H3>在伺服器端啟動 PPP</H3>
+
+<P>雖然這份 <CODE>ppp-on-dialer</CODE> 指令稿對於在你簽入後會自動啟動 pppd 的伺服器來說非常的好用，然而某些伺服器需要你明白地在伺服器上啟動 PPP．
+<P>
+<P>如果你需要在伺服器上下指令以啟動 PPP，你必須要編輯 <CODE>ppp-on-dialer</CODE> 指令稿． 
+<P>
+<P> 
+在這指令稿的尾端(在 password 這行後面)加上 <B>期待 送出</B> 字串對 - 這是尋找你的 shell 提示符號
+(特別小心對 Bourne shell 有特殊意義的字元 - 像是 $ 與 [ 或 ] 左右方括號等)．
+<P>
+<P>一旦 chat 找到了 shell 提示符號，chat 必須下指令以啟動你 ISP 的 PPP 伺服器．
+<P>
+<P>以我的例子而言，我的 PPP 伺服器使用標準的 Linux Bash 提示符號
+<HR>
+<PRE>
+[hartr@kepler hartr]$
+</PRE>
+<HR>
+<P>
+<P>而且需要我打
+<P>
+<HR>
+<PRE>
+ppp
+</PRE>
+<HR>
+<P>
+<P>以啟動伺服器上的 PPP．
+<P>
+<P>在此允許一點錯誤回復是個好主意，所以在我的例子中我用
+<HR>
+<PRE>
+        hartr--hartr    ppp
+</PRE>
+<HR>
+<P>
+<P>這就是說，如果我在逾時前沒收到提示符號，送出 return 並且再次等待提示符號．
+<P>
+<P>一旦收到提示符號，就送出 <CODE>ppp</CODE> 字串．
+<P>
+<P>注意: 別忘了在前一行結束前加上 \ 以便讓 chat 認為這整個指令稿是在一行裡!
+<P>
+<P>不幸的是，某些伺服器會產生非常多變的提示符號!
+你可能必須使用 minicom 多簽入幾次以便了解什麼可以用來做為確定的&ldquo;期待&rdquo;字串．
+<P>
+<H2><A NAME="ss15.5">15.5 使用於 PAP/CHAP 驗認連線的 chat 指令稿</A>
+</H2>
+
+<P>如果你的 ISP  使用 PAP/CHAP 驗認，那麼你的 chat 指令稿會簡單得多．
+你的 chat 指令稿所要做的全部只是撥接電話，等待接上線，然後就讓 pppd 去處理簽入事宜!
+<P>
+<HR>
+<PRE>
+#!/bin/sh
+#
+# This is part 2 of the ppp-on script. It will perform the connection
+# protocol for the desired connection.
+#
+exec /usr/sbin/chat -v                                  \
+        TIMEOUT         3                               \
+        ABORT           '\nBUSY\r'                      \
+        ABORT           '\nNO ANSWER\r'                 \
+        ABORT           '\nRINGING\r\n\r\nRINGING\r'    \
+        ''              \rAT                            \
+        'OK-+++\c-OK'   ATH0                            \
+        TIMEOUT         30                              \
+        OK              ATDT$TELEPHONE                  \
+        CONNECT         ''                              \
+</PRE>
+<HR>
+<P>
+<H2><A NAME="ss15.6">15.6 pppd 的 <CODE>debug</CODE> 與 <CODE>file option_file</CODE> 選項</A>
+</H2>
+
+<P>就像我們已經看過的，你可以對 pppd 使用 <CODE>-d</CODE> 選項打開偵錯訊息記錄．
+'<CODE>debug</CODE>' 選項和這個是一樣的．
+<P>
+<P>因為我們正在使用新的指令稿建立新的連線，先放著此選項不管．
+(警告: 如果你的磁碟空間不大夠，記錄 pppd 的訊息可能會大量增加你的系統記錄檔大小並使你遇到麻煩 - 不過在此你必定會連線失敗並嘗試許久)．
+<P>
+<P>一旦你高興地認為一切工作正常，你可以除去此選項．
+<P>
+<P>如果你不是從 <CODE>/etc/ppp/options</CODE> 或 <CODE>/etc/ppp/options.ttySx</CODE> 檔案中叫出 ppp 選項，
+可以在 pppd 上用 <CODE>file</CODE> 選項指定檔案名稱 - 例如
+<P>
+<HR>
+<PRE>
+exec /usr/sbin/pppd debug file options.myserver /dev/ttyS0 38400 \
+</PRE>
+<HR>
+<P>
+<HR>
+<A HREF="PPP-HOWTO-16.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="PPP-HOWTO-14.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="PPP-HOWTO.html#toc15"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

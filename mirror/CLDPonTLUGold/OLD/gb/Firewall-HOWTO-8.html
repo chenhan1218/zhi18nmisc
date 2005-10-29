@@ -1,0 +1,130 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>防火墙和代理伺服器 - HOWTO: SOCKS代理伺服器</TITLE>
+ <LINK HREF="Firewall-HOWTO-9.html" REL=next>
+ <LINK HREF="Firewall-HOWTO-7.html" REL=previous>
+ <LINK HREF="Firewall-HOWTO.html#toc8" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Firewall-HOWTO-9.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Firewall-HOWTO-7.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Firewall-HOWTO.html#toc8"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s8">8. SOCKS代理伺服器</A></H2>
+
+<H2><A NAME="ss8.1">8.1 设定代理伺服器</A>
+</H2>
+
+<P>SOCKS代理伺服器可从
+<B>ftp://sunsite.unc.edu/pub/Linux/system/Network/misc/socks-linux-
+src.tgz</B>取得。该档内也有一个称为&quot;socks-conf&quot;的设置档可作参考。可把该档解压，然後根据其中的说明使用该档。但使用时并不简单，应首先确定Makefile档正确无误。
+在 /etc/inetd.conf中应该增添代理伺服器。因此，应该增加以下一行。
+<PRE>
+  socks  stream  tcp  nowait  nobody  /usr/local/etc/sockd  sockd
+</PRE>
+
+这样伺服器才会在需要时运行。
+<P>
+<H2><A NAME="ss8.2">8.2 设置代理伺服器</A>
+</H2>
+
+<P>SOCKS需要两个设置档进行设定。一个设置档设定进入取用的权限，另一个设置档设定路径，以便找到适当的代理伺服器。权限档应在伺服器上，路径档应在每一台UNIX机上。DOS机和Macintosh机都会确定自行的路径。
+<P>
+<H3>权限档</H3>
+
+<P>在socks4.2（beta）版中，权限档称为&quot;sockd.conf&quot;，应该只有两行，一行允许（permit），一行拒绝（deny）。每行都有三项设定：
+<UL>
+<LI>识别标示行(permit/deny)</LI>
+<LI>IP地址行</LI>
+<LI>修改地址行</LI>
+</UL>
+
+识别标示用于permit或deny。应该有单独的permit行和单独的deny行。
+IP地址使用标准的4byte方式表示，如I.E. 192.168.2.0.。
+修改地址行也是标准的4位元 IP地址，用来作为netmask。将这个地址想成32位元的数字。如果是1，则核对的地址的相应位置应符合IP地址中相应的位元。例如，此行的地址为∶
+<PRE>
+    permit 192.168.2.23  255.255.255.255
+</PRE>
+<P>则只允许每一位元相符的地址，即192.168.2.23。如果地址为∶
+<PRE>
+    permit 192.168.2.0  255.255.255.0
+</PRE>
+
+则会允许192.168.2.0至192.168.2.255之间的每一个地址，即整个C级的地址。不得有下列这种地址出现∶
+<PRE>
+    permit 192.168.2.0  0.0.0.0
+</PRE>
+
+这会允许每一地址使用，不论其地址为何。
+因此，允许每一个应该允许的地址，然後拒绝其余地址。如允许192.168.2.xxx范围中的每一用户，可用下列方式表示∶
+<PRE>
+    permit 192.168.2.0  255.255.255.0
+    deny 0.0.0.0  0.0.0.0
+</PRE>
+<P>注意deny行中的第一个&quot;0.0.0.0&quot;。由于地址以0.0.0.0修改，因此IP为何都没有影响。用0作为IP地址，因为便于打字。 
+特别的用户可以给予或拒绝使用的权限。这可通过iden的查验来实现。由于不是所有系统都支持iden，其中包括Trumpet Winsock，所以此处不预备多加说明。随同socks提供的说明以够使用。
+<H3>路径档</H3>
+
+<P>SOCKS中的路径档称为&quot;socks.conf&quot;，极易与权限档混淆。
+路径档让SOCKS用户知道何时用socks，何时不用。例如，在示□的网路中192.168.2.3并不需要使用socks与192.168.2.1防火墙对话。通过Ethernet，它们之间有直接的连接。又127.0.0.1自动设为loopback。因此也不需要用socks同自己对话。它有三行输入∶
+<P>
+<UL>
+<LI>deny</LI>
+<LI>direct</LI>
+<LI>sockd</LI>
+</UL>
+
+Deny行告诉socks何时拒绝一项请求。在此添入的内容同sockd.conf的内容相同，地址标示行、IP地址和修改地址行。一般而言，权限档sockd.conf也与此有关，修改地址部分则用0.0.0.0。如果不打算连到任何地方，在此可作出修改。
+<P>在direct行下列入不使用sock的地址。所有这些地址都可直接联上网路，无须经过代理伺服器。在这里又有三个位置要填∶identifier、address和modifier。例如∶
+<PRE>
+    direct 192.168.2.0 255.255.255.0
+</PRE>
+<P>Sockd行告诉电脑那一个用户的电脑上有socks server daemon。该行内容如下∶
+<P>
+<PRE>
+  sockd @=&lt;serverlist> &lt;IP address> &lt;modifier>
+</PRE>
+<P>注意@= 填入的内容。利用这种方法可以填入一系列代理伺服器的IP地址。在这里只用一个代理伺服器的地址为例。但可以列上多个伺服器的地址，以便加大容量，并当有伺服器失灵时，有其他的伺服器顶替。
+<P>设定IP地址和modifier域的方法和其他例子相同。
+<P>
+<H3>防火墙後的DNS        从防火墙後设定Domain Name Service是件简单不过的事。只要在作为防火墙的电脑上设定DNS即可。然後在防火墙後的电脑上设定使用这个DNS。</H3>
+
+<H2><A NAME="ss8.3">8.3 代理伺服器</A>
+</H2>
+
+<H3>Unix</H3>
+
+<P>要使应用程序利用代理伺服器，这些应用程序需要&quot;sockified&quot;。在这里需要两个telnet，一个进行直接通讯，一个通过代理伺服器进行通讯。SOCKS软件中有说明sock一个程式的方法，也附有几个已经sock好的程式。如果要直接使用sock好的程式，SOCKS软件会直接设定。因此，应该将保护网路内的所有程式改名，然後再改用已经sock好的程式。例如，&quot;Finger&quot;变为&quot;finger.orig&quot;，&quot;telnet&quot;变为&quot;telnet.orig&quot;。  必须通过include/socks.h档告诉SOCKS这种设定。
+有些程式能自行处理routing和sockifying的问题。Netscape就使其中之一。例如在Netscape下要用用代理伺服器，只要在Proxies下SOCK栏内填入伺服器的地址即可（在此为192.168.2.1）。当然，每种应用程式都得作些小变动，不论其处理代理伺服器的方法为何。
+<P>
+<H3>微软视窗与Trumpet Winsock</H3>
+
+<P>Trumpet Winsock中有自带的代理伺服器功能。在&quot;setup&quot;选单中填入伺服器的IP地址和所有直接可联的电脑的地址。然後，Trumpet就会处理所有外送的数据包。
+<P>
+<H3>使代理伺服器配合UDP数据包</H3>
+
+<P>SOCKS软件只处理TCP数据包，而不处理  UDP。这多少减少了它的用处，因为，许多有用的程式，例如talk和Archie，都利用UDP。有一套软件，称为UDPrelay，由Tom Fitzgerald设计&lt;fitz@wang.com&gt;，主要作为UDP数据包的代理伺服器使用。不过在编写本文时，这套软件不能用于Linux.
+<H2><A NAME="ss8.4">8.4 代理伺服器的缺点</A>
+</H2>
+
+<P>归根结底，代理伺服器是一个<CODE>安全装置</CODE>。在有限的IP地址的情况下，用它使许多用户进入网际网路有许多缺点。代理伺服器可使保护网路内的用户联到网路之外，但使网路之外的用户完全无法同网路之内的用户联系。这表示无法同网路之内的电脑进行talk或archie联网，也无法发送电子邮件。这些缺点看来并不严重，但是如果∶
+<UL>
+<LI>你有一份没有完成的报告留在保护网路防火墙内的电脑上。回家後，你又想看看这份报告。但是没有办法。因为电脑在防火墙後，无法联网。如果首先login <CODE>防火墙</CODE>，但由于每一个人都可进入代理伺服器，因此你在这个伺服器上并没有个别帐户。
+<P>
+</LI>
+<LI>你女儿去了大学。你想写封电子邮件给她。你想谈些私事，因此最好能把电子邮件直接放到自己的电脑上。你当然信得过你的系统管理员，但这倒底与公务无关，是个人的信件。
+<P>
+</LI>
+<LI>不能使用UDP是代理伺服器的一个大缺陷。我想不久之後就会有UDP的功能。</LI>
+</UL>
+<P>FTP是代理伺服器的另一个问题。在取得或使用<CODE>ls</CODE>时，FTP伺服器在客户机上打开一个socket，并通过它传送信息。代理伺服器不允许进行这项工作，因此FTP无法使用。
+此外，代理伺服器运行缓慢。由于需要额外资源较多，几乎任何其他能达成这项作用的伺服器都要比它快。
+一般而言，如果有IP地址联网，而又不必特别顾虑安全问题，那就不要使用防火墙和（或）代理伺服器。如果没有IP地址联网，但也不顾虑安全问题，那就不妨使用IP模拟器，象Term，Slirp或TIA。Term可从<CODE><B>ftp://sunsite.unc.edu</B></CODE>取得，Slirp可从<CODE><B>ftp://blitzen.canberra.edu.au/pub/slirp</B></CODE>取得，TIA可从marketplace.com取得。使用代理伺服器的理想网路是有许多用户需要联网，那只要做一次设定之後就不必再做太多其他的工作。
+<P>
+<HR>
+<A HREF="Firewall-HOWTO-9.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Firewall-HOWTO-7.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Firewall-HOWTO.html#toc8"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

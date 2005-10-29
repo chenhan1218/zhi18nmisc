@@ -1,0 +1,91 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Zip Drive Mini-HOWTO: 建立一个能使用 ZIP 磁碟机的核心</TITLE>
+ <LINK HREF="ZIP-Drive-4.html" REL=next>
+ <LINK HREF="ZIP-Drive-2.html" REL=previous>
+ <LINK HREF="ZIP-Drive.html#toc3" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+<A HREF="ZIP-Drive-4.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="ZIP-Drive-2.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="ZIP-Drive.html#toc3"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s3">3. 建立一个能使用 ZIP 磁碟机的核心</A></H2>
+
+<P>要在 Linux 下使用 ZIP 磁碟机，你必须要有一个支援 SCSI 装置，支援 SCSI 磁碟，以及支援你所用的主配接器（Host Adapter）的核心。
+如果你对於如何建立核心并不熟悉，你可以由 
+<A HREF="http://metalab.unc.edu/mdw/HOWTO/Kernel-HOWTO.html">Linux Kernel HOWTO</A> 获得相关资讯<CODE><B>[译者注]</B></CODE>。
+<P><B><CODE>[译者注] 中文化的 Linux Kernel HOWTO 可以在 
+<A HREF="http://www.linux.org.tw/CLDP/Kernel-HOWTO.html">CLDP Linux Kernel HOWTO</A> 中找到。</CODE></B>
+<P>建立核心的第一步是设定核心组态。下面会告诉你哪些核心设定选项必须要选定。
+首先， <CODE> cd /usr/src/linux</CODE>。有许多方法可以进行组态设定。
+在 X window 下我用 <B>make xconfig</B>。
+此外，在命令列下，还可以用 <CODE>make menuconfig</CODE> 或 <CODE>make config</CODE>。然而，最简单的方法是用 xconfig。
+<P>在 <B>SCSI Support</B> 组态群组中，选定 <B>SCSI support = Y</B>。另外也要选定 <B>SCSI disk support = Y</B>。
+<P>在 <B>SCSI low-level drivers</B> 组态群组中，你要选定 <B>IOMEGA Parallel Port ZIP drive SCSI support = M</B>。 "M" 代表设定成模组。
+<P>在 <B>Character Devices</B> 组态群组中，找到并选定
+<B>Parallell Printer support = M</B>。
+<P>如果你对上面的步骤感到任何一点点的不确定，那麽在编译核心时，请使用 <CODE>make zdisk</CODE> 的编译方式。
+这样会建立并安装核心到软碟机上。如此一来，如果你因为某些原因而搞砸了，在硬碟上你仍然还有一个可以正常开机的系统。
+<P>现在，以下列的步骤建立核心：
+<UL>
+<LI> make dep</LI>
+<LI> make clean</LI>
+<LI> make zImage 或 zlilo 或 zdisk </LI>
+<LI> make modules</LI>
+<LI> make mdoules_install</LI>
+</UL>
+<P><B>[小提示]</B> 如果你想记录在 make zImage 过程中的萤幕输出的话，你可以用下列指令：
+<BLOCKQUOTE><CODE>
+<PRE>
+   make zImage 2>&amp;1 | tee zImage.out
+  
+</PRE>
+</CODE></BLOCKQUOTE>
+
+十分建议你将编译过程记录下来，尤其是当编译过程有发生错误，或者核心组态设定有错的时候，
+你可以在记录档中找到相关的错误讯息。这样会方便你在向别人求助时能提供相关讯息。
+<P>此外，你必须将模组载入。在我的系统上，我只是在 boot.local 中加了下面几行：
+<UL>
+<LI> insmod ppa</LI>
+<LI> insmod lp</LI>
+</UL>
+
+我的系统是 SuSE 5.3 ，而这个档案在 /etc/rc.d 下。 这个档案的名称和路径在每个发行版本中都会略有不同，但总会有一个这样的档案，用来纪录一些你自己希望在系统启动时，自动执行的命令。
+你应该找到并使用你所安装的发行版本中相对应的档案<CODE><B>[译者注]</B></CODE>。
+<P><B><CODE>[译者注] 在 RedHat 和 Slackware 这两个发行版本中，这个档案是 /etc/rc.d/rc.local。</CODE></B>
+<P>现在，<CODE>关闭系统并重新启动</CODE>。
+<P>你也可以将全部或者部分的 SCSI 装置设定建成模组。
+如果你这样做，在你试著使用 ZIP 磁碟机前，记得要先确定载入 scsi.o ，接下来载入 sd.o ，最後载入你的主配接器的模组。
+<P>
+<H2><A NAME="ss3.1">3.1 SCSI 版本</A>
+</H2>
+
+<P>
+<P>如果你已经有一台 SCSI 硬碟，而且你将 ZIP 磁碟机接在同一个 SCSI 控制器上，那麽你不需要变更核心的组态设定；否则，你很可能必须建立一个新的核心。
+<P>如果你在建立一个可以使用 SCSI ZIP 磁碟机的核心，你应该要开启支援 SCSI 以及 SCSI 磁碟机的设定选项。
+此外，你也必须选择一个支援你所用的 SCSI 配接卡的驱动程式。如果你有 ZIP Zoom SCSI 配接卡，请选择 aha152x 这个驱动程式。
+<P>请务必读过在 SCSI HOWTO 文件中，有关你所使用的 SCSI 配接卡的相关资讯，并且务必读过在 Linux 核心原始程式码目录下，drivers/scsi 目录下所有的 README 档。
+请特别注意是否有必须传给核心以驱动你的 SCSI 配接卡的相关核心启动参数。
+<P>例如，如果你是用 ZIP Zoom 介面卡，你将必须在开机出现 boot: 提示符号时，输入类似
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+          aha152x=0x340,11,7,1
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>的核心参数（或者将这段参数加在你的 /etc/lilo.conf 中的 append 命令中）。
+这列参数告诉驱动程式有关你的 ZIP Zoom 卡的输出入埠位址以及中断（IRQ）- 务必确定所用的数值与你卡上的硬体跳线器（Jumper）设定相符。
+<P>你也该看看 Paul Gortmaker 的
+<A HREF="http://metalab.unc.edu/mdw/HOWTO/BootPrompt-HOWTO.html">BootPrompt HOWTO</A> 以获得更多有关如何设定与使用 LILO 或 LOADLIN<CODE><B>[译者注]</B></CODE>。
+<P><B><CODE>[译者注] 中文化的 BootPrompt HOWTO 可以在 
+<A HREF="http://www.linux.org.tw/CLDP/BootPrompt-HOWTO.html">CLDP BootPrompt HOWTO</A> 中找到。</CODE></B>
+<P>
+<P>
+<HR>
+<A HREF="ZIP-Drive-4.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="ZIP-Drive-2.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="ZIP-Drive.html#toc3"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

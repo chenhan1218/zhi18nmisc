@@ -1,0 +1,44 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Linux 2.4 NAT HOWTO: 在同一網路上的 Destination NAT </TITLE>
+ <LINK HREF="NAT-HOWTO-11.html" REL=next>
+ <LINK HREF="NAT-HOWTO-9.html" REL=previous>
+ <LINK HREF="NAT-HOWTO.html#toc10" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="NAT-HOWTO-11.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="NAT-HOWTO-9.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="NAT-HOWTO.html#toc10"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s10">10. 在同一網路上的 Destination NAT </A></H2>
+
+<P>如果您要做 portforwarding 回到同一個網路﹐您要確定前向和回應封包雙方都經過該 NAT 主機(這樣它們才能被修改)。NAT 程式從現在開始(2.4.0-test6以後)﹐會擋掉後面情形所產生的傳出 ICMP 重導向﹕那些已經 NAT 的封包以它所進入的相同界面傳出﹐而接收端伺服器仍嘗試直接回應到客戶端(不認可該回應)。
+<P>
+<P>經典的情形是內部人員嘗試連接到您的 `公有(public)' 網站伺服器﹐實際上是從公有地址(1.2.3.4) DNAT 到一個內部的機器(192.168.1.1)去﹐就像這樣﹕
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# iptables -t nat -A PREROUTING -d 1.2.3.4 \
+        -p tcp --dport 80 -j DNAT --to 192.168.1.1
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>一個方法是跑一台內部 DNS 伺服器﹐它知道您的公有網站的真正(內部) IP 地址﹐而將其它請求轉傳給外部的 DNS 伺服器。換而言之﹐關於您網站伺服器的記錄會正確地顯示為內部 IP 地址。
+<P>
+<P>而另一個方法是同時讓這台 NAT 主機將該等連線之來源 IP 地址映對為它自己的地址﹐我們可以像如下那樣做(假設 NAT 主機之內部 IP 地址為 192.168.1.250)﹕
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# iptables -t nat -A POSTROUTING -d 192.168.1.1 -s 192.168.1.0/24 \
+        -p tcp --dport 80 -j SNAT --to 192.168.1.250
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>因為 <B>PREROUTING</B> 規則是最先執行的﹐對內部網站伺服器而言﹐封包就已經被定向好了﹕我們可以內定好哪個為來源 IP 地址。
+<P>
+<HR>
+<A HREF="NAT-HOWTO-11.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="NAT-HOWTO-9.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="NAT-HOWTO.html#toc10"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

@@ -1,0 +1,72 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Linux以太网-HOWTO: 软件设置与网卡诊断</TITLE>
+ <LINK HREF="Ethernet-HOWTO-7.html" REL=next>
+ <LINK HREF="Ethernet-HOWTO-5.html" REL=previous>
+ <LINK HREF="Ethernet-HOWTO.html#toc6" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Ethernet-HOWTO-7.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Ethernet-HOWTO-5.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Ethernet-HOWTO.html#toc6"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="utils"></A> <A NAME="s6">6. 软件设置与网卡诊断</A></H2>
+
+<P>
+<P>大多数情况下，如果用软件进行配置并把配置保存在EEPROM里，一般需要重新启动DOS，使用销售商提供的DOS程序来设置网卡的中断IRQ、I/O、内存地址和其它东西。此外，希望这是只要设置一次的东西。如果没有网卡的DOS软件，试著在网卡制造商的WWW站点上找找。如果不知道站点名称，可以猜一下，如“www.my_vendor.com”，其中“my_vendor”是网卡制造商的名称。这种方法对SMC、3Com和许多<EM>许多</EM>其它制造商都有效。
+<P>有些网卡有Linux版本的配置工具，并在本文中列出。Donald编写了几个运行在Linux下的小的网卡诊断程序，其中大部分都是他在编写驱动程序时使用的诊错工具。不要指望有花哨的菜单驱动界面。在使用绝大部分工具时，你需要阅读源码。即使你所用的网卡没有相应的诊断工具，你还是可以通过<CODE>cat /proc/net/dev</CODE>获得一些信息——假设至少在启动时你的网卡被检测到了。
+<P>随便哪种情况下，都得在启动时运行这些程序（允许对端口进行I/O操作），而且可能在这么做之前要先用<CODE>ifconfig eth0 down</CODE>关闭以太网卡。
+<P>
+<H2><A NAME="config"></A> <A NAME="ss6.1">6.1 以太网卡的配置程序</A>
+</H2>
+
+<P>
+<P>
+<H3>WD80x3网卡</H3>
+
+<P>
+<P>对于使用wd80x3网卡的人，在Linux的FTP站点上可以找到的<CODE>wdsetup-0.6a.tar.gz</CODE>里有一个程序<CODE>wdsetup</CODE>。它的维护不是很好，有一段时间没有更新了。如果能用，那么很好；如果不行，那么只好使用应当和网卡一起拿到的DOS版本程序。如果没有这样的DOS版本程序，还是可以很高兴地告诉你，从SMC的FTP站点上可以获取设置/驱动程序磁盘。当然，你<EM>必须</EM>有一个带EEPROM的网卡才能使用该工具。很老<EM>很老</EM>的wd8003网卡和一些wd8013兼容网卡使用跳线来设置网卡。
+<P>
+<H3>Digital/DEC网卡</H3>
+
+<P>
+<P>Digital的EtherWorks 3网卡可以用类似于DOS程序<CODE>NICSETUP.EXE</CODE>的方式进行配置。David C. Davies编写了该工具以及和驱动程序在一起的其它EtherWorks 3工具。查看一下你本地的Linux FTP站点下的目录<CODE>/pub/linux/system/Network/management</CODE>，寻找名为<CODE>ewrk3tools-X.XX.tar.gz</CODE>的文件。
+<P>
+<H3>NE2000+或AT/LANTIC网卡</H3>
+
+<P>
+<P>有些Nat Semi的DP83905产品（如AT/LANTIC和NE2000+）是可以用软件配置的。（注意，这些网卡也可以仿真wd8013网卡！）你可以从Donald的FTP服务器<CODE>www.scyld.com</CODE>下载文件<CODE>/pub/linux/setup/atlantic.c</CODE>来配置此网卡。另外，Kingston的DP83905网卡配置程序看起来可以用在所有网卡上，因为在允许使用网卡前，它们并不检查销售商指定的地址。按照如下URL：
+<A HREF="http://www.kingston.com/download/etherx/etherx.htm">Kingston Software</A>
+下载<CODE>20XX12.EXE</CODE>和<CODE>INFOSET.EXE</CODE>。
+<P>在配置NE2000+网卡时要格外小心，因为设定的值有错误会带来麻烦。一个典型的错误是启用EEPROM里的启动ROM（即使没有安装ROM）会和VGA卡发生冲突。其结果就是开机后屏幕没有显示，计算机只是发出一些叫声。
+<P>通常如下操作就可以解决问题：拔出机器里的卡，然后启动进入CMOS设置。把“Display Adapter”改为“Not Installed”并把缺省的启动驱动器改为“A:”（软盘驱动器）。同时把“Wait for F1 if any Error”改为“Disabled”。这样，计算机就无需用户干预可以启动了。现在创建一个可启动的DOS软盘（“format a: /s /u”），把上述档案文件<CODE>20XX12.EXE</CODE>里的程序<CODE>default.exe</CODE>拷贝到软盘上。再键入<CODE>echo default > a:autoexec.bat</CODE>，这样在用这张软盘启动时，该程序会自动运行，把网卡设置为正常的缺省值。关闭机器，重新安装ne2000+网卡，插入新的启动软盘，再开机。可能机器还会发出叫声，但最后你会看到机器从软盘启动时软驱的灯亮了。等一两分钟，软驱会停下来，表示<CODE>default.exe</CODE>程序运行结束，再关闭机器电源。再次启动时，可能你的显式器就又工作正常了，这时就可以把CMOS设置改回去，并把网卡EEPROM设置改回到希望的值。
+<P>注意，如果手头没有DOS，你可以用一张自动运行Donald的<CODE>atlantic</CODE>程序（使用正确的命令行开关）的Linux启动软盘来完成上面的工作，代替自动运行<CODE>default.exe</CODE>程序的DOS启动软盘。
+<P>
+<H3>3Com网卡</H3>
+
+<P>
+<P>3Com的Etherlink III系列网卡（如3c5x9）可以用Donald的另一个配置工具进行配置。你可以从Donald的FTP服务器<CODE>www.scyld.com</CODE>上获取文件<CODE>/pub/linux/setup/3c5x9setup.c</CODE>来配置这些网卡。（注意，DOS下的3c5x9B配置工具可能有一些属于Etherlink III的新“B”系列的额外选项。）
+<P>
+<P>
+<H2><A NAME="diag"></A> <A NAME="ss6.2">6.2 以太网卡的诊断程序</A>
+</H2>
+
+<P>
+<P>Donald编写的诊断程序都可以从以下URL获取。
+<P>
+<A HREF="http://www.scyld.com/network">Ethercard Diagnostics</A><P>Allied Telesis AT1700——<CODE>at1700.c</CODE> 
+<P>Cabletron E21XX——<CODE>e21.c</CODE> 
+<P>HP PCLAN+——<CODE>hp+.c</CODE> 
+<P>Intel EtherExpress——<CODE>eexpress.c</CODE>
+<P>PCI NE2000网卡——<CODE>ne2k-pci-diag.c</CODE>
+<P>ISA NE2000网卡——<CODE>ne2k.c</CODE>
+<P>RealTek (ATP)袖珍适配器——<CODE>atp-diag.c</CODE>
+<P>所有其它网卡——试著用<CODE>cat /proc/net/dev</CODE>和<CODE>dmesg</CODE>来看看内核里有关所说网卡的有用信息。
+<P>
+<HR>
+<A HREF="Ethernet-HOWTO-7.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Ethernet-HOWTO-5.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Ethernet-HOWTO.html#toc6"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

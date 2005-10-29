@@ -1,0 +1,181 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>RedHat Linux KickStart HOWTO: Appendix A - Configuring BOOTP/DHCP and NFS</TITLE>
+ <LINK HREF="KickStart-HOWTO-13.html" REL=next>
+ <LINK HREF="KickStart-HOWTO-11.html" REL=previous>
+ <LINK HREF="KickStart-HOWTO.html#toc12" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="KickStart-HOWTO-13.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="KickStart-HOWTO-11.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="KickStart-HOWTO.html#toc12"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s12">12. Appendix A - Configuring BOOTP/DHCP and NFS</A></H2>
+
+<P>
+<P>If you're wondering what on earth this BOOTP and DHCP stuff is, more
+information is available at 
+<A HREF="http://www.dhcp.org/">the DHCP WWW site</A>.  NFS is documented separately in detail
+in the NFS HOWTO, and there's a DHCP mini-HOWTO too.  I've tried to
+provide enough details here to help you get started, whilst not
+treating the topics in depth - let me know if you think this is
+overkill.
+<P>
+<P>In the BOOTP/DHCP + NFS configuration we're discussing, the KickStart
+config file should be NFS mountable by the machine being installed
+from <EM>/kickstart/IPADDR-kickstart</EM> on the BOOTP/DHCP server,
+where <EM>IPADDR</EM> is the IP address of the new machine, e.g.
+<EM>/kickstart/198.168.254.254-kickstart</EM> for the machine
+<EM>198.168.254.254</EM>.
+<P>
+<P>You should be able to override this location by returning
+the <CODE>bf</CODE> parameter (boot file) in your BOOTP/DHCP response.  It
+may even be possible to have this NFS mounted off another machine
+entirely.
+<P>
+<P>To NFS export some directories from an existing Linux box, create the
+file <EM>/etc/exports</EM> with contents something like:
+<P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+/kickstart *.swedish-chef.org(ro,no_root_squash)
+/mnt/cdrom *.swedish-chef.org(ro,no_root_squash)
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>Note that if you didn't register the IP addresses you're going to be
+using in the DNS, you may be told to get lost by the NFS server and/or
+the RPC portmapper.  In this you can probably get away with putting
+IP address/netmask pairs in the config files, e.g.
+<P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+/kickstart 198.168.254.0/255.255.255.0(ro,no_root_squash)
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>and in <EM>/etc/hosts.allow</EM>:
+<P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ALL: 194.82.103.0/255.255.255.0: ALLOW
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>This is because most Linux distributions use TCP wrappers to do
+access control for some or all of the NFS related daemons.  Be aware
+that the <EM>/etc/exports</EM> syntax tends to be different on other
+Unix variants - the NFS servers bundled with Linux distributions
+tend to offer a much wider range of options than the ones shipped
+with other versions of Unix.
+<P>Be aware that if you include a root password in your KickStart config
+file, or NFS export directories containing sensitive information, you
+should take care to expose this information to as few people as
+possible.  This can be done by making the NFS export permissions as
+fine grained as you can, e.g. by specifying a particular host or
+subnet to export to rather than a whole domain.  If you keep a special
+IP address free for KickStart installations, everything's nice and
+simple, but you'll have to change it later - or reconfigure the
+machine to get its IP address via BOOTP/DHCP.
+<P>
+<P>Most NFS servers require you to tell <CODE>mountd</CODE> and <CODE>nfsd</CODE>
+(on some versions of Unix they're prefixed with a <CODE>rpc.</CODE>) that
+the <EM>/etc/exports</EM> file has changed - usually by sending a
+<CODE>SIGHUP</CODE>.  There's often a program or script called
+<CODE>exportfs</CODE>, which will do this for you, e.g.
+<P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# exportfs -a
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>If you didn't have NFS up and running when this machine was booted,
+the directories may not be exported automatically.  Try rebooting, or
+running the following programs as root:
+<P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# portmap
+# rpc.nfsd
+# rpc.mountd
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>As noted, on some systems the <CODE>rpc.</CODE> prefix isn't used.  In
+most modern Unix distributions, these programs can be found in the
+<EM>/usr/sbin</EM> or <EM>/usr/libexec</EM> directories.  These might
+not be in your path already, e.g. if you used <CODE>su</CODE> to become
+<EM>root</EM>.  The <CODE>portmap</CODE> program is also sometimes called
+<CODE>rpcbind</CODE>, e.g. on Solaris, some versions of <CODE>nfsd</CODE>
+require a command line argument specifying the number of instances of
+the server to run, and you may find you also need to run another
+daemon called <CODE>biod</CODE>.  The above should suffice on most (all?)
+Linux systems.
+<P>
+<P>If you're using the CMU BOOTP server with DHCP and dynamic addressing
+extensions referred to earlier, a sample <EM>/etc/bootptab</EM> entry
+(<EM>/etc/bootptab</EM> is the normal location of the BOOTP/DHCP
+configuration file) would look something like this:
+<P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+  .dynamic-1:ip=198.168.254.128:T254=0x30:T250="ds=198.168.254.2:
+  dn=swedish-chef.org:sm=255.255.255.0:gw=198.168.254.1:
+  dl=0xFFFFFFFF":
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>(wrapped for clarity)
+<P>
+<P>This says to allocate IP addresses dynamically on encountering new
+machines, starting at <EM>198.168.254.128</EM> and continuing for the
+next 48 (the hexadecimal value <EM>30</EM>) addresses.  Each client
+will be passed back the value of <EM>T250</EM>.  In this case that
+sets:
+<P>
+<P>
+<UL>
+<LI> the DNS server <CODE>ds</CODE> to <EM>198.168.254.2</EM></LI>
+<LI> the domain name <CODE>dn</CODE> to <EM>swedish-chef.org</EM></LI>
+<LI> the subnet mask <CODE>sm</CODE> to <EM>255.255.255.0</EM></LI>
+<LI> the default gateway <CODE>gw</CODE> to <EM>198.168.254.1</EM></LI>
+<LI> the lease length <CODE>dl</CODE> (how long the address is
+valid for) to "forever"</LI>
+</UL>
+<P>
+<P>There seem to be a number of other versions of this server kicking
+around which do not support dynamic addressing.  For these, you would
+have to list the hardware (typically Ethernet MAC) address of each
+to-be-installed machine in <EM>/etc/bootptab</EM>, and the entries
+would look something like this:
+<P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+bork.swedish-chef.org:ip=198.168.254.128:ha=0000E8188E56:
+  ds=198.168.254.2:dn=swedish-chef.org:sm=255.255.255.0:
+  gw=198.168.254.1:dl=0xFFFFFFFF":
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>(wrapped for clarity)
+<P>
+<P>Note that the parameter <CODE>ha</CODE> corresponds to the hardware
+address of the machine being installed.
+<P>
+<P>
+<P>
+<HR>
+<A HREF="KickStart-HOWTO-13.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="KickStart-HOWTO-11.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="KickStart-HOWTO.html#toc12"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

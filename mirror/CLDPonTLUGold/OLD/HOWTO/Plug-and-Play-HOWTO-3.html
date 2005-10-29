@@ -1,0 +1,210 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE> Plug-and-Play-HOWTO : The Plug-and-Play (PnP) Solution</TITLE>
+ <LINK HREF="Plug-and-Play-HOWTO-4.html" REL=next>
+ <LINK HREF="Plug-and-Play-HOWTO-2.html" REL=previous>
+ <LINK HREF="Plug-and-Play-HOWTO.html#toc3" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Plug-and-Play-HOWTO-4.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Plug-and-Play-HOWTO-2.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Plug-and-Play-HOWTO.html#toc3"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s3">3. The Plug-and-Play (PnP) Solution</A></H2>
+
+<H2><A NAME="ss3.1">3.1 Introduction to PnP</A>
+</H2>
+
+<P> The term Plug-and-Play (PnP) has various meanings.  In the broad
+sense it is just auto-configuration where one just plugs in a device
+and it configures itself.  In the sense used in this HOWTO, the
+configuration is only that of configuring PnP bus-resources and letting
+the device drivers know about it.  In a narrower sense it is just
+setting bus-resources in the hardware devices.  For the case of Linux,
+it is often just a driver detecting how the bus-resources have been
+set in its device by the BIOS, etc.  "PnP' may just mean the PnP
+specifications which (among other things).  There are long specs for
+PnP on the resource the ISA bus.  The standard PCI specifications
+(which are not called "PnP") do the same for the PCI bus.
+<P>PnP matches up devices with their device drivers and specifies their
+communication channels.  On the ISA bus before Plug-and-Play the
+bus-resources were formerly set in hardware devices by jumpers.
+Software drivers were assigned bus-resources by configuration files
+(or the like) or by probing the for the device at addresses where it's
+expected to reside.  The PCI bus was PnP-like from the beginning but
+at first it wasn't called PnP.  While the PCI bus specifications don't
+use the term PnP it supports in hardware what today is called PnP.
+<P>
+<H2><A NAME="ss3.2">3.2 How It Works (simplified)</A>
+</H2>
+
+<P> Here's an oversimplified view of how PnP should work.  The PnP
+configuration program (in Linux only the BIOS  does this) finds all PnP
+devices and asks each what bus-resources it needs.  Then it checks what
+bus-resources (IRQs, etc.) it has to give away.  Of course, if it has
+reserved bus-resources used by non-PnP (legacy) devices (if it knows about
+them) it doesn't give these away.  Then it uses some criteria (not
+specified by PnP specifications) to give out the bus-resources so that
+there are no conflicts and so that all devices get what they need (if
+possible).  It then tells each physical device what bus-resources are
+assigned to it and the devices set themselves up to use only the
+assigned bus-resources.  Then the device drivers somehow find out what
+bus-resources their devices use and are thus able to communicate
+effectively with the devices they control.  
+<P>For example, suppose a card needs one interrupt (IRQ number) and 1 MB
+of shared memory.  The PnP program reads this request from the card.
+It then assigns the card IRQ5 and 1 MB of memory addresses space,
+starting at address 0xe9000000.  It's not always this simple as the
+card may specify that it can only use certain IRQ numbers (ISA only)
+or that the 1 MB of memory must lie within a certain range of
+addresses.  The details are different for the PCI and ISA buses with
+more complexity on the ISA bus.
+<P>There are some shortcuts that PnP software may use.  One is to keep
+track of how it assigned bus-resources at the last configuration (when the
+computer was last used) and reuse this.   Windows9x and PnP BIOSs do
+this but standard Linux doesn't.  Windows9x stores this info in its
+"Registry" on the hard disk and a PnP BIOS stores it in non-volatile
+memory in your PC (known as ESCD; see 
+<A HREF="Plug-and-Play-HOWTO-5.html#escd_">The BIOS's ESCD Database</A>).
+<P>While MS Windows is a PnP OS, Linux isn't.  But PnP still often works
+in Linux due to the BIOS doing the configuring of bus-resources and the
+device drivers finding out (using programs supplied by the Linux
+kernel) what the BIOS has done.  Drivers can also change bus-resource
+assignments using such programs (but they might take a bus-resource
+needed by another device).  Some device drivers store the last
+configuration they used and use it the next time the computer is
+powered on.
+<P>If the device hardware remembered their previous configuration, then
+there wouldn't be any hardware to configure at the next boot-time, but
+they seem to forget their configuration when the power is turned off.
+Some devices contain a default configuration (but not necessarily the
+last one used).  Thus a PnP configuration program needs to be run each
+time the PC is powered on.  Also, if a new device has been added, then
+it too needs to be configured.  Allocating bus-resources to this new
+device might involve taking some bus-resources away from an existing
+device and assigning the existing device alternative bus-resources
+that it can use instead.  At present, Linux can't do this.
+<P>
+<H2><A NAME="ss3.3">3.3 Starting Up the PC</A>
+</H2>
+
+<P> When the PC is first turned on the BIOS chip runs its program to
+get the computer started (the first step is to check out the
+hardware).  If the operating system is stored on the hard-drive (as it
+normally is) then the BIOS must know about the hard-drive.  If the
+hard-drive is PnP then the BIOS may use PnP methods to find it.  Also,
+in order to permit the user to manually configure the BIOS's CMOS and
+respond to error messages when the computer starts up, a screen (video
+card) and keyboard are also required.  Thus the BIOS must always
+PnP-configure these devices on its own.
+<P>Once the BIOS has identified the hard-drive, the video card, and the
+keyboard it is ready to start booting (loading the operating system
+into memory from the hard-disk).  If you've told the BIOS that you
+have a PnP operating system (PnP OS), it should start booting the PC
+as above and let the operating system finish the PnP configuring.
+Otherwise, a PnP-BIOS will (prior to booting) likely try to do the
+rest of the PnP configuring of devices (but not informing their
+drivers).  This is what usually happens when running Linux.
+<P>
+<H2><A NAME="ss3.4">3.4 Buses</A>
+</H2>
+
+<P> ISA is the old bus of the old IBM PCs while PCI is a newer and
+faster bus from Intel.  The PCI bus was designed for what is today
+called PnP.  It makes it easy (as compared to the ISA bus) to find out
+how PnP bus-resources have been assigned to hardware devices.  To see
+what has happened use the commands <CODE>lspci</CODE> or scanpci (Xwindows)
+and/or look at <CODE>/proc/pci</CODE> or <CODE>/proc/bus/pci</CODE>.  The
+boot-up messages on your display are useful (use shift-PageUp to back
+up thru them).  See 
+<A HREF="Plug-and-Play-HOWTO-7.html#boot_time_msgs">Boot-time Messages</A><P>For the ISA bus there was a real problem with implementing PnP since no
+one had PnP in mind when the ISA bus was designed and there are almost
+no I/O addresses available for PnP to use for sending configuration info
+to physical device.  As a result, the way PnP was shoehorned onto the
+ISA bus is very complicated.  Whole books have been written about it.
+See 
+<A HREF="Plug-and-Play-HOWTO-5.html#pnp_book">PnP Book</A>.  Among other things, it
+requires that each PnP device be assigned a temporary "handle" by the
+PnP program so that one may address it for PnP configuring.  Assigning
+these "handles" is call "isolation".  See 
+<A HREF="Plug-and-Play-HOWTO-8.html#isolation_">ISA Isolation</A> for the complex details.
+<P>Eventually, the ISA bus should become extinct.  When it does, PnP will
+be easier since it will be easy to find out how the BIOS has
+configured the hardware.  There will still be the need to match up
+device drivers with devices and also a need to configure devices that
+are added when the PC is up and running.  These needs would be better
+satisfied if Linux was a PnP operating system.
+<P>
+<H2><A NAME="how_linux_pnps"></A> <A NAME="ss3.5">3.5 How Linux Does PnP </A>
+ </H2>
+
+<P> Linux has had a serious problem dealing with PnP and still has a
+problem but it's not as severe as it once was.  Linux still is not
+really a PnP operating system and seems to mainly rely on and device
+drivers and the PnP BIOS to configure bus-resources for devices.  But
+the kernel provides help for the drivers in the form of PnP programs
+they may call on.  In many cases the device driver does all the needed
+configuring.  In other cases the BIOS may configure and then the device
+driver may find out how the BIOS has configured it.  The kernel
+provides the drivers with some functions (program code) that the
+drivers may use to find out if their device exists, how it's been
+configured, and functions to modify the configuration.  Kernel 2.2
+could do this only for the PCI bus but Kernel 2.4 has this feature for
+both the ISA and PCI buses (provided that the PNP options have been
+selected when compiling the kernel).  This by no means guarantees that
+all drivers will fully and correctly use these features.
+<P>In addition, the kernel helps avoid resource conflicts by not allowing
+two devices to use the same bus-resources at the same time.
+Originally this was only for IRQs, and DMAs but now it's for address
+resources as well.
+<P>Prior to Kernel 2.4, the standalone program: isapnp was often run to
+configure and/or get info from PnP devices on the ISA bus.  isapnp is
+still needed for cases where the device driver is not fully PnP for
+the ISA bus..  There was at least one attempt to make Linux a true PnP
+operating system.  See 
+<A HREF="http://www.astarte.free-online.co.uk">http://www.astarte.free-online.co.uk</A>.  But it never was put
+into the kernel.
+<P>To see what help the kernel may provide to device drivers see the
+kernel documentation.   This documentation (if you have it) is a
+directory /usr/.../.../Documentation where one of the ... contains the
+word "kernel".  Use the "locate" command to find it.  In this
+documentation directory see pci.txt ("How to Write Linux PCI Drivers")
+and the file: /usr/include/linux/pci.h.  Unless you are a driver guru
+and know C Programming, these files are written so tersely that they
+will not actually teach you how to write a driver.  But it will give
+you some idea of what PnP type functions are available for drivers to
+use.  For the ISA bus see isapnp.txt and possibly (for kernel 2.4)
+/usr/include/linux/isapnp.h.
+<P>When the PC starts up you may note from the messages on the screen
+that some Linux device drivers often find their hardware devices (and
+the bus-resources the BIOS has assigned them).  But there are
+situations that a real PnP operating system could handle better: 
+<P>
+<UL>
+<LI>A shortage of bus-resources</LI>
+<LI>More than one driver for a physical device  </LI>
+<LI>Finding a driver for a detected device (instead of making
+drivers do the searching)</LI>
+<LI>Saving a lot of work for the programmers of device drivers</LI>
+</UL>
+<P>The "shortage of bus-resources" problem is becoming less of a problem
+for two reasons:  One reason is that the PCI bus is replacing the ISA
+bus.  Under PCI there is no shortage of IRQs since IRQs may be shared
+(even though sharing is less efficient).  Also, PCI doesn't use DMA
+resources (although it does the equivalent of DMA without needing such
+resources).
+<P>The second reason is that more and more physical devices
+are using main memory addresses instead of IO address space.  On
+32-bit PCs there is 4GB of main memory address space and much of this
+bus-resource is available for device IO (unless you had 4GB of main
+memory installed).  Compare this to the IO address space which is
+limited to 64KB.  So the memory space for device IO is not (yet ?) in
+short supply.
+<P>
+<HR>
+<A HREF="Plug-and-Play-HOWTO-4.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Plug-and-Play-HOWTO-2.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Plug-and-Play-HOWTO.html#toc3"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

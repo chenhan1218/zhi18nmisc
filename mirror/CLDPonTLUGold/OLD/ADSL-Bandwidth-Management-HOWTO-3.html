@@ -1,0 +1,99 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="LinuxDoc-Tools 0.9.16">
+ <TITLE>ADSL Bandwidth Management HOWTO: 工作原理</TITLE>
+ <LINK HREF="ADSL-Bandwidth-Management-HOWTO-4.html" REL=next>
+ <LINK HREF="ADSL-Bandwidth-Management-HOWTO-2.html" REL=previous>
+ <LINK HREF="ADSL-Bandwidth-Management-HOWTO.html#toc3" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="ADSL-Bandwidth-Management-HOWTO-4.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="ADSL-Bandwidth-Management-HOWTO-2.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="ADSL-Bandwidth-Management-HOWTO.html#toc3"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s3">3.</A> <A HREF="ADSL-Bandwidth-Management-HOWTO.html#toc3">工作原理</A></H2>
+
+<P>有幾個步驟可以優化upstream bandwidth(向上傳輸的帶寬).第一是將Linux路由器至ADSL modem的傳輸帶寬降低到
+ADSL modem至Internet的帶寬以下.在 Linux 路由器形成數據包隊列.</P>
+<P>第二,在路由器設定隊列的優先權和組織方法.</P>
+<P>我們將從telnet , 多人連線遊戲以及交互軟體來考查隊列的優先權.</P>
+
+<P>使用 HTB 控制隊列,我們可以同時設定帶寬控制和隊列優先權,並且優先級別不會相互制約.</P>
+
+<P>第三,設定防火牆使用fwmark區分數據包的次序.</P>
+
+<H2><A NAME="ss3.1">3.1</A> <A HREF="ADSL-Bandwidth-Management-HOWTO.html#toc3.1">Throttling Outbound Traffic with Linux HTB(使用HTB控制出站通訊)</A>
+</H2>
+
+<P>我們將使用HTP控制數據包到達 ADSL modem 的速率, 為了縮短反應時間,我們必需保證不在 
+ADSL modem 形成哪怕是只有一個數據包的隊列.</P>
+<P>Note: previous claims in this section (originally named N-band priority queuing) were later 
+found to be incorrect. It actually WAS possible to classify packets into the individual 
+bands of the priority queue by only using the fwmark field, 
+however it was poorly documented at the writing of version 0.1 of this document</P>
+<H2><A NAME="ss3.2">3.2</A> <A HREF="ADSL-Bandwidth-Management-HOWTO.html#toc3.2">Priority Queuing with HTB(使用 HTB 設定隊列優先權)</A>
+</H2>
+
+<P>現在,我們仍不知如何完善性能, 我們只是將隊列從ADSL modem 轉移到Linux路由器上而巳. 如果現在有100個
+數據包的普通隊列出現在當前的設定中,我將不敢想像它的結果, 但這只是一時的危機而巳.</P>
+<P>HTB當中每個相鄰的隊列可以分配到一個優先權.在不同的級別當中設定不同的類型.自從我們可以為每個級別設定一個最小保證值,
+我們就擁有了控制數據包的出列和發送次序能力.
+HTB可以很好地做到這點並且不會讓優先級相互制約..</P>
+<P>設定了級別以後,我們使用過濾器將通信進行級別劃分.有幾種方法可以實現,但我們只介紹常用的iptables/ipchains.
+我們將使用iptables設定一些規則將不同的通信劃入到不同的級別當中.</P>
+
+<H2><A NAME="ss3.3">3.3</A> <A HREF="ADSL-Bandwidth-Management-HOWTO.html#toc3.3">使用iptables 劃分出站的通訊</A>
+</H2>
+
+<P>Note: originally this document used ipchains to classify packets. The newer iptables is now used.</P>
+<P>這裡有一個簡單的描述,出站的數據包如何從0x00的等級開始,劃入4個不同的等級當中:
+<UL>
+<LI>將所有數據包的級別設為0x03,這是最低的級別.
+</LI>
+<LI>將ICMP的數據包級別設為0x00, 想讓ping的反應更快,就必需得到最高級別的優先權.</LI>
+<LI>將所有發往目標端口為25的數據包級別設定為0x03,如果有誰發送的e-mail
+帶有一個很大的附件, 我們的通訊就會像陷入沼澤一樣寸步難行, 當然,我們並不想那樣.</LI>
+<LI>將所有發往遊戲服務器的數據包級別設定為0x02,這將給遊戲一個適中的反應時間.
+but will keep them from swamping out the system applications that require low latency.</LI>
+<LI>將所有發往目標端口為1024或更低的數據包級別設定為0x01,表示給telnet,SSH等類型的系統服務提供優先權.
+Ftp的端口也在這個範圍之內.</LI>
+</UL>
+</P>
+<P>將任何"較小"的數據包級別設定為0x02,Outbound ACK packets from inbound downloads should be sent
+promptly to assure efficient downloads. This is possible using the iptables length module.</P>
+<P>當然,它還可以依據您的需求來設定.</P>
+<H2><A NAME="ss3.4">3.4</A> <A HREF="ADSL-Bandwidth-Management-HOWTO.html#toc3.4">還可以再挖掘一下</A>
+</H2>
+
+<P>要加快反應您至少要做兩件以上的事情. 首先, 將最大傳輸單元(MTU)設定在1500bytes以下, 
+降低這個值就會縮短平均等待時間, 這會減輕網絡的負載(恢復了實際可用的吞吐量),因為每個數據包中有40bytes的IP和TCP資訊.
+另外加快反應的方法是將隊列長度縮短至100以下,這可以省去ADSL10秒相當於清空一個1500byteMTU的時間.</P>
+
+<H2><A NAME="ss3.5">3.5</A> <A HREF="ADSL-Bandwidth-Management-HOWTO.html#toc3.5">Attempting to Throttle Inbound Traffic(控制入站的通訊)</A>
+</H2>
+
+<P>通過使用 Intermediate Queuing Device (IMQ)隊列中間件, 
+我們可以像處理出站數據包一樣將入站數據包送入隊列當中. 這個案例中的數據包優先權非常簡單.
+將不屬於TCP範圍內的通訊級別設定為 0x00, 屬於TCP範圍內的通訊級別設定為 0x01,
+也可以將"較小"的TCP數據包通訊級別設定為 0x00,我們將把標準的FIFO隊列級別設定為 0x00 ,
+我們把Random Early Drop (RED) 隊列級別設定為0x01 RED將在數據包看起來失去控制的時候(隊列將要溢出),
+減慢傳輸或將數據包丟棄. 我們將最大化入站速率(速率小於實際能夠達到的).We'll also rate-limit both classes to some
+maximum inbound rate which is less than your true inbound speed over the ADSL modem.</P>
+
+<H2><A NAME="ss3.6">3.6</A> <A HREF="ADSL-Bandwidth-Management-HOWTO.html#toc3.6">為什麼入站的通訊限制看起來不怎麼樣</A>
+</H2>
+
+<P>我們必需限制入站的通訊,以防止ISP的隊列飽和, 這樣相當於緩衝5秒的數據,
+問題是現在唯一的控制途徑是將數據包丟棄.這些數據包以經從ADSL modedm那裡得到了一些帶寬.
+但是這些數據包卻被丟棄了,這些被丟棄的數據包最終會吃掉更多的帶寬. 當我們限制通訊的時候,
+我們限制了來自本地網絡的數據包傳送比率. 因為因為我們丟棄的那些數據包所以實際入站的傳送比率在此之上.
+我們實際上限制的入站比ADSL modem實際能達到的比率還要低. 在實際當中, 我將自己的1.5mbit/s downstream ADSL 
+限制在700kbit/sec ,使它能並發5個下載的連結. TCP會話越多,浪費在丟棄數據包的帶寬就越多,並且數率比您的限制還要低.</P>
+<P>更好的途徑來控制TCP通訊是操作 TCP window, 但是這個好像離題了(我知道有一種...) </P>
+
+<HR>
+<A HREF="ADSL-Bandwidth-Management-HOWTO-4.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="ADSL-Bandwidth-Management-HOWTO-2.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="ADSL-Bandwidth-Management-HOWTO.html#toc3"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

@@ -1,0 +1,193 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>PHP HOW-TO: Appendix A PHP examples </TITLE>
+ <LINK HREF="PHP-HOWTO-17.html" REL=next>
+ <LINK HREF="PHP-HOWTO-15.html" REL=previous>
+ <LINK HREF="PHP-HOWTO.html#toc16" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="PHP-HOWTO-17.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="PHP-HOWTO-15.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="PHP-HOWTO.html#toc16"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="Appendix A"></A> <A NAME="s16">16. Appendix A PHP examples </A></H2>
+
+<H2><A NAME="ss16.1">16.1 PostgreSQL large object Example</A>
+</H2>
+
+<P>Submitted by: 
+PHP code exchange 
+<A HREF="mailto: px@sklar.com    "> px@sklar.com   </A>
+To get this file, in the web-browser, save this file as 'Text' type
+as pgsql_largeobj.lib
+<HR>
+<PRE>
+
+PX: PHP Code Exchange - 
+&lt;url name="PostgreSQL" url="http://www.geocities.com/alavoor/HOWTO/pgsql/PostgreSQL-HOWTO.html">
+large object access
+
+&lt;?
+        $database = pg_Connect ( "",  "",  "",  "",  "jacarta");
+        pg_exec ($database,  "BEGIN");
+        $oid = pg_locreate ($database);
+        echo ( "$oid\n");
+        $handle = pg_loopen ($database, $oid,  "w");
+        echo ( "$handle\n");
+        pg_lowrite ($handle,  "foo");
+        pg_loclose ($handle);
+        pg_exec ($database,  "COMMIT");
+        pg_close ($database);
+?>
+</PRE>
+<HR>
+<H2><A NAME="ss16.2">16.2 User authentication Example</A>
+</H2>
+
+<P>To get this file, in the web-browser, save this file as 'Text' type
+as user_pw.lib
+<P>From the PHP 3 Manual:
+Works only if PHP is an Apache module.
+Instead of simply printing out the $PHP_AUTH_USER and $PHP_AUTH_PW, 
+you would probably want to check the username and password for 
+validity. Perhaps by sending a query to a
+database, or by looking up the user in a dbm file.
+<P>
+<HR>
+<PRE>
+&lt;?php
+        if (!$PHP_AUTH_USER)
+        {
+                Header("WWW-authenticate: basic realm=\"My Realm\"");
+                Header("HTTP/1.0 401 Unauthorized");
+                echo "Text to send if user hits Cancel button\n";
+                exit;
+        }
+        else
+        {
+                echo "Hello $PHP_AUTH_USER.&lt;P>";
+                echo "You entered $PHP_AUTH_PW as your password.&lt;P>";
+        }
+?>
+</PRE>
+<HR>
+<H2><A NAME="ss16.3">16.3 Network admin Example</A>
+</H2>
+
+<P>To get this file, in the web-browser, save this file as 'Text' type
+as network.lib
+<P>PHP: network adminstrator's best friend from 
+<A HREF="http://www.phpWizard.net">http://www.phpWizard.net</A><P>As a web-developer, you're probably used to such lovely tools as ping,
+whois, nslookup etc. But what when you need one of those utilities at a
+client's office and have no access to telnet? Good guess. Time to look
+up the functions in the "Network" section of the PHP manual.
+<P><B>Socket operations: </B>
+<P>The most important function there is fsockopen(). Using this function,
+you can connect to any open port on a server and establish a socket
+connection with it. The function's syntax is as following:
+<HR>
+<PRE>
+        int fsockopen(string hostname, int port, int [errno], string [errstr]);
+</PRE>
+<HR>
+
+The first two arguments are obvious, the next two are optional and used
+for error handling. The "errno" and "errstr" should be passed by reference.
+"Passing by reference" means that the original variable will get
+modified. Normally, the content of a variable passed to a function
+wouldn't be modified.
+<P>So, you could use this function to open a connection to a webserver and
+print out the headers:
+<HR>
+<PRE>
+function get_headers($host, $path = "/")
+{
+        $fp = fsockopen ("$host", 80, &amp;$errnr, &amp;$errstr) or die("$errno: $errstr");
+        fputs($fp,"GET $path HTTP/1.0\n\n");
+        while (!$end)
+        {
+                $line = fgets($fp, 2048);
+                if (trim($line) == "")
+                        $end = true;
+                else
+                        echo $line;
+        }
+        fclose($fp);
+}
+</PRE>
+<HR>
+
+In this example you see that you can apply any file operations (fread,
+fwrite etc) to the the pointer you got using the fsockopen() call. Note
+that the example realizes a HTTP/1.0 client - it won't work with
+name-based virtual hosts.
+<P><B>Finger: </B>
+Naturally, you can also open connections to other ports. Writing a
+small finger client with PHP is trivial therefore. Let's change the
+example from above to query a finger daemon:
+<HR>
+<PRE>
+function finger ($host, $user)
+{
+        $fp = fsockopen($host, 79, &amp;$errno, &amp;$errstr) or die("$errno: $errstr");
+        fputs($fp, "$user\n");
+        while (!feof($fp))
+                echo fgets($fp, 128);
+        fclose($fp);
+}
+</PRE>
+<HR>
+<P><B>Whois: </B>
+Querying a whois server uses the same concept:
+<HR>
+<PRE>
+// domain is like "phpwizard.net"
+function whois($domain, $server="whois.internic.net")
+{
+        $fp = fsockopen ($server, 43, &amp;$errnr, &amp;$errstr) or die("$errno: $errstr");
+        fputs($fp, "$domain\n");
+        while (!feof($fp))
+                echo fgets($fp, 2048);
+        fclose($fp);
+}
+</PRE>
+<HR>
+<P><B>Blocking and non-blocking operations: </B>
+But there's a problem with all those functions. They work fine if 
+<OL>
+<LI> You have a connection with low latency and </LI>
+<LI> If the server you're connecting to is up and 
+running. </LI>
+</OL>
+
+If not, your script will be busy until
+it times out. The reason for this is that default socket connections
+are blocking and don't time out. You can avoid these "hanging scripts"
+by switching to non-blocking socket operations. The function
+set_socket_blocking() does just that: it set all operations on a socket
+(first parameter: socket pointer) to either blocking (second parameter:
+true) or false (second parameter: false). Using non-blocking
+operations, the finger function would like like this:
+<P>
+<HR>
+<PRE>
+        $fp = fsockopen($host, 79, &amp;$errno, &amp;$errstr) or die("$errno: [ ] $errstr");
+        set_socket_blocking($fp, 0);
+        fputs($fp, "$user\n");
+
+        $stop = time() + $timeout;
+        while (!feof($fp) &amp;&amp; time() &lt; $stop )
+                echo fgets($fp, 128);
+        fclose($fp);
+</PRE>
+<HR>
+
+Modifying these 3 functions to use non-blocking socket calls is left as
+an exercise for you. 
+<HR>
+<A HREF="PHP-HOWTO-17.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="PHP-HOWTO-15.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="PHP-HOWTO.html#toc16"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

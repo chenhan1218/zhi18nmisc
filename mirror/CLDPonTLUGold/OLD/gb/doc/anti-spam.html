@@ -1,0 +1,258 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" content="text/html; charset=gb2312">
+<TITLE>如何拒收垃圾广告信?</TITLE>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 4, 1);</SCRIPT>
+<pre>
+QuickStart: 
+
+Sendmail 8.8.x contains new sendmail rulesets to prevent spam.
+To use this feature, you have to modify /etc/sendmail.cf
+to add these rulesets to S98 (local additions) section, 
+create database files containing the spammers, and then
+restart the sendmail daemon. This package simplify these 
+procedures.
+
+For more information, refer to Red Hat Linux 5.0 User's Guide
+<a href="http://www.redhat.com/support/docs/rhl/manual/manual/">http://www.redhat.com/support/docs/rhl/manual/manual/</a>
+
+(1) Modify /etc/sendmail.cf. Add the file check.m4 to S98 section.
+    If you use Red Hat 5.0, you can SKIP this step.
+
+(2) Modify /etc/mail/ip_allow, this is a flat text file that contains 
+    the IP addresses or networks of hosts that are allowed to use your
+    host as a relay. The format for this file is: 
+
+    hhh.hhh.hhh.hhh
+    ccc.ccc.ccc
+    bbb.bbb
+    aaa
+
+(3) Modify /etc/mail/name_allow, this is a flat text file that contains 
+    the hostnames or domain names of hosts that are allowed to use
+    your host as a relay. The format for this file is: 
+
+    hostname.domain.com
+    domain.com
+
+(4) Compile the program makedb by
+
+    gcc -lstdc++ -ffor-scope makedb.cc -o makedb
+
+    You need not to do this step if you use Red Hat 5.0.
+
+(5) Modify /etc/mail/spammers, add the email addresses that send junk mails 
+    to you.
+
+(6) Modify /etc/mail/banned, add the domains that usually send junk mails 
+    to you.
+
+(7) /etc/mail/makedb -s. It will create the hash database files that contain
+    all spammers and domains and the restart sendmail daemon.
+
+(8) Once you get new spammers emails or domains, repeat step (5)-(7). 
+    That's all!
+
+
+The package alse contains two perl scripts cnt-spam.pl & smreject.pl, 
+that count the rejected messages out of the mail log file.
+
+The following texts are big5 code. Just ignore if you cannot read.
+
+
+*-----------------------------------------------------------------------------*
+如何使用 sendmail.cf 来挡广告信  --  快速入门
+
+Sendmail 8.8.x 已加入新的规则可以用来抵挡广告信。要使用此一特性，你必须:
+1. 将新的规则加入 /etc/sendmail.cf 的 S98 (local additions) section.
+2. 建立包含专门寄发广告信的名单(spammers)资料库。
+3. 重新启动 sendmail daemon.
+本程式套件让你简化这些过程。
+
+想得到更多的资讯，请参考 Red Hat Linux 5.0 User's Guide:
+<a href="http://www.redhat.com/support/docs/rhl/manual/manual/">http://www.redhat.com/support/docs/rhl/manual/manual/</a>
+
+(1) 修改 /etc/sendmail.cf, 将本程式套件所附的档案 check.m4 加到 S98 section
+    中。如果你使用 Red Hat 5.0, 可以略过本步骤，因为它已包含。
+
+(2) 修改 /etc/mail/ip_allow, 将允许使用你的机器做为 mail relay 的 IP addresses
+    加入此档案中。这是个纯文字档，格式为:
+
+    hhh.hhh.hhh.hhh
+    ccc.ccc.ccc
+    bbb.bbb
+    aaa
+
+(3) 修改 /etc/mail/name_allow, 将允许使用你的机器做为 mail relay 的领域名称
+    加入此档案中。这是个纯文字档，格式为:
+
+    hostname.domain.com
+    domain.com
+
+(4) 编译 makedb
+
+    gcc -lstdc++ -ffor-scope makedb.cc -o makedb
+
+    如果你使用 Red Hat 5.0 或是用 glibc2, 可以略过本步骤。
+
+(5) 修改 /etc/mail/spammers, 将专门送垃圾信给你的 email addresses 加入此档。
+
+(6) Modify /etc/mail/banned, 将专门送垃圾信给你的机器的 FQDN 或 domain
+    name 加入此档。
+
+(7) 执行/etc/mail/makedb -s. 它会产生包含所有 spammers 的 hash database,
+    并重新启动 sendmail daemon.
+
+(8) 如果你有新的 spammers 名单，重覆 (5)-(7) 步骤即可。就这样了!
+
+
+本程式另含两个 perl 程式稿 cnt-spam.pl & smreject.pl 可以统计被拒绝的
+垃圾信件次数。
+
+
+*-----------------------------------------------------------------------------*
+如何使用 sendmail.cf 来挡广告信  --  原理说明
+
+Red Hat 5.0 使用 Claus Abetamann 所撰写的 sendmail rulesets 来挡广告信。
+请参考 Claus 的网页说明:
+<a href="http://www.informatik.uni-kiel.de/~ca/email/check.html">http://www.informatik.uni-kiel.de/~ca/email/check.html</a>
+
+
+它使用了如下的 rulesets:
+
+    junk 
+    check_mail 
+    check_rcpt 
+    remove_local 
+    junkIP 
+    check_relay 
+
+并由下列位於 /etc/mail 目录下的档案来控制:
+
+    ip_allow 
+    name_allow 
+    relay_allow 
+    deny 
+
+
+* 什麽是 mail relay ?
+
+Mail relay 就是邮件中继站。简单的说，如果有人透过 smtp port 连上你的 
+sendmail daemon, 并命令你的 sendmail 发信给某人，你的机器就成了 mail
+relay. 在早期，或许网际网路的连接不像现在这麽发达，邮件寄到远方往往
+需要经过多部主机的中继转寄才能到达对方手中。因此，大部份的 UNIX 主机
+的 sendmail 都预设可以成为任何其它机器的 mail relay. (这个原因是我猜
+的啦! 如果有人知道真正原因，请告诉我。)
+
+这样的设定固然很方便，但是却是造成今日垃圾广告信件满天飞的最大原因。
+因为，任何人都可以连上你的机器，乱填一个 FROM 的位址，并将信件寄到任
+何人手中。你的机器就成了滥发广告信的帮凶。
+
+如果这个情况愈来愈严重，你的机器可能会被大家列为拒绝往来户，到时你的
+机器寄发的信件就没人敢收! 因此，对 mail relay 设限是绝对必要的。
+
+Red Hat 5.0 采用 /etc/mail 下的 ip_allow, name_allow, relay_allow 来
+控制 mail relay. 也就是说，只有列在这些档案中的 IP addresses 或
+domain names 才可以拿你的机器来做为 mail relay host. 这些档案的格式，
+请参考上面的"快速入门"的说明，或是 Red Hat Linux 5.0 User's Guide.
+
+那些 IP 或 domain names 应该加到这些档案中? 例如如果有台受你信任的主
+机，它可以是跑 DOS, Win95/NT, OS/2 或其它 UNIX based 的机器，上面有
+使用者使用 Netscape 之类的 MUA, 并将 Outgoing mail server 填为你的主
+机，那麽，你就应该将这台机器的 IP 或 domain names 加入上面几个档案中。
+一般来说，你的 LAN 上的 IP addresses 都可以加入(除非有人从你的 LAN 里
+发广告信)。除此之外，其它的 IP 或 domain names 最好都不要加入!
+
+如果某台未列於名单中的机器想用你的主机做为 mail relay, 会得到
+"we do not relay" 的讯息，并在你的 maillog 中留下记录:
+
+Nov 25 05:28:28 dns sendmail[4448]: FAA04448: ruleset=check_rcpt, arg1=&lt;chuckd@w
+eirdness.com&gt;, relay=a23.pm3-16.theriver.com [206.26.123.215], reject=550 &lt;chuck
+d@weirdness.com&gt;... we do not relay
+
+
+* Spammers ?
+
+专门滥发垃圾信件的 bad users 是也。很多时候这种垃圾信件所使用的 FROM
+栏位都是假造的，或是专门申请用来发广告信的 domain names 或 email 
+addresses. Red Hat 5.0 采用这样的规则来拒收垃圾信:
+
+1. FROM 的主机名称无法 resolved 的。maillog 会有如下的讯息:
+
+Jan 21 01:12:45 dns sendmail[6750]: BAA06750: ruleset=check_mail, arg1=&lt;3w@bbcal
+l.060169070&gt;, relay=root@ms1.hinet.net [168.95.4.10], reject=451 &lt;3w@bbcall.0601
+69070&gt;... unresolvable host name bbcall.060169070, see RFC 1123, sections 5.2.2
+and 5.2.18.
+
+2. FROM email addresses 或 domain names 列於 /etc/mail/deny 中的。
+   拒收的讯息如:
+
+Jan 21 02:08:16 dns sendmail[6785]: CAA06785: ruleset=check_mail, arg1=&lt;ftp@ms2.
+hinet.net&gt;, relay=root@ms2.hinet.net [168.95.4.20], reject=501 &lt;ftp@ms2.hinet.ne
+t&gt;... You are banned, contact your local admin.
+
+/etc/mail/deny 的格式是:
+
+junk.domain "Error-Code Error-Text"
+spammer@address.domain "Error-Code Error-Text"
+junk.domain JUNK
+spammer@address.domain SPAMMER
+
+
+* makedb
+
+因为 /etc/mail/deny 的格式是两栏位: "拒收的 email 或 domain"&lt;tab&gt;"拒收理由".
+这样多少有些不便，因为你可以从容易从网路上取得的 spammer lists 往往只包
+含第一个栏位。而且编辑完这个档案後你还要用 makemap 产生 hash database file,
+并重新启动 sendmail daemon. 所以我写了个程式 makedb 来简化这个过程。
+
+除非你也用 Red Hat 5.0 或有 glibc2, 不然你就要自己编译 makedb, 因为本套件
+附的执行档需要 libc.so.6.
+
+    gcc -lstdc++ -ffor-scope makedb.cc -o makedb
+
+你要用 gcc 2.7.x 来编译才行，因为我用了 C++ STL :)
+
+makedb 的用法是:
+
+  makedb [-o outputfile] [-s] [file1 file2 file3...]
+
+         -o:  specify the output file   Default: /etc/mail/deny
+         -s:  restart sendmail
+
+file1, file2 是你拒收的 email 或 domain 的列表。每行只包含一个栏位就行了。
+如果你未指定来源档，则 makedb 会读入 /etc/mail/deny.conf, 根据里面的内容
+来读入来源档案。
+
+然後 makedb 会将结果写入 -o 参数指定的档案中。若未指定，预设为 
+/etc/mail/deny, 产生的 hash file 为 /etc/mail/deny.db.
+
+如果加上 -s 参数，makedb 会重新启动 sendmail daemon.
+
+请参考本套件附的□例在 /etc/mail 下的 deny.conf, spammers, banned
+等档案。其中 spammers 包含了拒收的 email addresses 列表，banned 包含
+了拒收的 domain names 列表。
+
+请记住: 一旦你更改过这些设定档 ip_allow, name_allow, deny 等等，一定要
+重新启动 sendmail 才会生效，可用 /etc/mail/makedb -s, 或是用
+
+kill -HUP `head -1 /var/run/sendmail.pid`
+
+
+本说明虽是针对 Red Hat 5.0, 但事实上可适用於任何跑 sendmail 8.8.x
+的 UNIX based OS 上。只要按照"快速入门"一节修改 /etc/sendmail.cf,
+并编辑所需的档案即可。
+
+本套件可自此取得:
+<a href="ftp://ftp.phys.ntu.edu.tw/pub/os/linux/packages/sendmail-antispam-0.1.tar.gz">ftp://ftp.phys.ntu.edu.tw/pub/os/linux/packages/sendmail-antispam-0.1.tar.gz</a>
+<a href="ftp://ftp.phys.ntu.edu.tw/pub/os/linux/packages/sendmail-antispam-0.1-1.i386.rpm">ftp://ftp.phys.ntu.edu.tw/pub/os/linux/packages/sendmail-antispam-0.1-1.i386.rpm</a>
+
+--
+C.W.Huang        <a href="mailto:cwhuang@phys.ntu.edu.tw">mailto:cwhuang@phys.ntu.edu.tw</a>
+Coordinator of Linux HOWTOs Chinese Translation
+<a href="http://www.phys.ntu.edu.tw/~cwhuang/pub/os/linux/CLDP/">http://www.phys.ntu.edu.tw/~cwhuang/pub/os/linux/CLDP/</a>
+CLDP mailing list: <a href="mailto:ldp-trans@linux.org.tw">ldp-trans@linux.org.tw</a>
+
+</pre>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

@@ -1,0 +1,242 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE> Linux 的 Database-SQL-RDBMS HOWTO 文件 (PostgreSQL 物件關聯資料庫系統): 移植 PostgreSQL 到視窗 95 / 視窗 NT</TITLE>
+ <LINK HREF="PostgreSQL-HOWTO-27.html" REL=next>
+ <LINK HREF="PostgreSQL-HOWTO-25.html" REL=previous>
+ <LINK HREF="PostgreSQL-HOWTO.html#toc26" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="PostgreSQL-HOWTO-27.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="PostgreSQL-HOWTO-25.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="PostgreSQL-HOWTO.html#toc26"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s26">26. 移植 PostgreSQL 到視窗 95 / 視窗 NT</A></H2>
+
+<P>視窗 NT 版的 PostgreSQL 二元檔可在以下地方找到︰
+<UL>
+<LI> 視窗 NT PostgreSQL 二元檔 
+<A HREF="http://www.askesis.nl">http://www.askesis.nl</A></LI>
+<LI> 
+<A HREF="http://www.postgresql.org">http://www.postgresql.org</A></LI>
+</UL>
+
+下載可執行檔，將它解壓，並從第十三步開始跟從
+<A HREF="#installpgsql">安裝 PostgreSQL</A>。
+<P>如果你想重新編譯原程式碼，請跟從以下指示。移植到視窗 NT 要使用 Cygnus 
+cygwin32 套件，它包括視窗 NT/95 的 gcc、gmake。
+<UL>
+<LI> Cygwin 32 套件在 
+<A HREF="http://www.cygnus.com/misc/gnu-win32">http://www.cygnus.com/misc/gnu-win32</A>
+找到</LI>
+</UL>
+
+到此網頁取得 cdk.exe 檔（gnu-win32 的自我解壓檔）
+（譯按︰此工具已改名為 cygwin，網址為 
+<A HREF="http://sourceware.cygnus.com">http://sourceware.cygnus.com</A>。）
+<H2><A NAME="ss26.1">26.1 NT 版的作者</A>
+</H2>
+
+<P>PostgreSQL NT 版的作者為—
+<UL>
+<LI> Daniel Horak 
+<A HREF="mailto:horak@mmp.plzen-city.cz">horak@mmp.plzen-city.cz</A></LI>
+<LI> Joost Kraaijeveld
+<A HREF="mailto:JKraaijeveld@askesis.nl">JKraaijeveld@askesis.nl</A></LI>
+<LI> Kevin Lo
+<A HREF="mailto:kevlo@FreeBSD.org">kevlo@FreeBSD.org</A></LI>
+<LI> NT 版的網頁在 
+<A HREF="http://www.freebsd.org/~kevlo/postgres/portNT.html">http://www.freebsd.org/~kevlo/postgres/portNT.html</A></LI>
+</UL>
+<H2><A NAME="ss26.2">26.2 安裝 Cygwin 套件</A>
+</H2>
+
+<P>
+<OL>
+<LI> 下載 
+<A HREF="ftp://go.cygnus.com/pub/sourceware.cygnus.com/cygwin/latest/full.exe">ftp://go.cygnus.com/pub/sourceware.cygnus.com/cygwin/latest/full.exe</A></LI>
+<LI> 執行 full.exe，安裝到 c:\Unix\Root 目錄。</LI>
+<LI> 執行 Cygwin，鍵入‘mount --help’以閱讀文件。你可用 -f
+選項強制掛上。之後執行“umount / " 和“mount c:\Unix\Root /”</LI>
+</OL>
+<H2><A NAME="ss26.3">26.3 設定 Bash 視窗</A>
+</H2>
+
+<P>安裝 Cygwin 套件後，請進行以下工作以設定工作環境︰
+<P>1. 安裝 Vi 編輯器‘Vim’。請參閱
+<A HREF="http://metalab.unc.edu/LDP/HOWTO/Vim-HOWTO.html">http://metalab.unc.edu/LDP/HOWTO/Vim-HOWTO.html</A><P>2. cygwin bash 的預定視窗是一個廿四行，底色為黑色的視窗。要設定 bash
+視窗的底色和大小，按開始->控制台->MS DOS 主控台，把底色設定為黑色，
+大小改為七十行。
+<P>（或）右擊視窗標題列，改變內容。
+<P>3. 編輯 c:\cygnus\cywinb20 中的 cygnus.bat 和作以下設定—
+<HR>
+<PRE>
+set HOME=c:\cygnus\cygwinb20
+bash --login
+</PRE>
+<HR>
+<P>及編輯 &nbsp;/.bash_profile 加上這幾行
+<HR>
+<PRE>
+set -o vi
+PATH=$PATH:/usr/local/bin:/usr/bin
+export PATH
+</PRE>
+<HR>
+<P>4. 要啟用指令列歷史編輯，鍵入—
+<P>bash$ set -o vi
+<P>使用 l、k、j、h，你可用 vi
+指令編輯指令列歷史。你可重覆和修改之前的指令，以節省打字時間。
+<P>5. 你可用以下指令掛上磁碟機 / 目錄—
+<P>
+<HR>
+<PRE>
+bash$ umount /
+bash$ mount "c:\cygnus"  /
+bash$ mount "c:\cygnus\cygwin-b20\postgres" /usr/local/pgsql
+</PRE>
+<HR>
+<P>6. 用以下指令閱讀線上求助訊息—
+<HR>
+<PRE>
+bash$ mount --help
+bash$ ls --help
+</PRE>
+<HR>
+<P>
+<H2><A NAME="ss26.4">26.4 安裝 Andy Piper 工具</A>
+</H2>
+
+<P>
+<OL>
+<LI>到 
+<A HREF="ftp://ftp.xemacs.org/pub/xemacs/aux/">ftp://ftp.xemacs.org/pub/xemacs/aux/</A> 下載 
+cygwin-b20-local.tar.bz2 到 
+c:/Unix/Root 目錄。 </LI>
+<LI> cd c:/Unix/Root; bunzip2 cygwin-b20-local.tar.bz2 </LI>
+<LI> tar -xvf cygwin-b20-local.tar </LI>
+<LI> cd /local/bin; sh check_cygwin_setup.sh </LI>
+<LI> 完成第四步後，你會看到以下訊息︰
+<HR>
+<PRE>
+You don't have /bin would you like to mount cygwin as /bin?" 
+[ y/n ]   
+選‘n’，其他問題則選‘y’。
+</PRE>
+<HR>
+</LI>
+<LI> mount c:/Unix/Root/cygwin-b20/H-i586-cygwin32/i586-cygwin32/bin 
+/bin </LI>
+<LI> cd c:/Unix/Root/cygwin-b20/H-i586-cygwin32/i586-cygwin32; mkdir 
+libexec share 
+man etc sbin info </LI>
+<LI> cp -R /local/{ bin,libexec,share,man,etc,sbin,info,include }</LI>
+</OL>
+<H2><A NAME="ss26.5">26.5 安裝 Ludovic Lange 的 Cygwin32 IPC 套件</A>
+</H2>
+
+<P>
+<OL>
+<LI> 到 
+<A HREF="http://www.multione.capgemini.fr/tools/pack_ipc">http://www.multione.capgemini.fr/tools/pack_ipc</A> 下載 
+cygwin32_ipc-1.03.tgz 到 c:/Unix/Root 目錄。</LI>
+<LI> tar -zxvf cygwin32_ipc-1.03.tgz </LI>
+<LI> cd cygwin32_ipc-1.03/src and run 'make' </LI>
+<LI> mkdir -p c:/usr/local/{bin,include,lib,include/sys} 
+<HR>
+<PRE>
+cp /cygwin32_ipc-1.03/bin/* c:/usr/local/bin 
+cp /cygwin32_ipc-1.03/include/sys/* c:/usr/local/include/sys 
+cp /cygwin32_ipc-1.03/lib/* c:/usr/local/lib 
+cp c:/usr/local/bin/* /bin 
+cp c:/Unix/Root/cygwin-b20/H-i586-cygwin32/bin/* /bin 
+</PRE>
+<HR>
+</LI>
+<LI> mount c:/usr/local/bin /usr/local/bin 
+<HR>
+<PRE>
+mount c:/usr/local/include /usr/local/include 
+mount c:/usr/local/lib /usr/local/lib 
+cp /local/lib/* /usr/local/lib 
+</PRE>
+<HR>
+</LI>
+</OL>
+<H2><A NAME="installpgsql"></A> <A NAME="ss26.6">26.6 安裝 PostgreSQL </A>
+</H2>
+
+<P>
+<OL>
+<LI> 下載最新的 PostgreSQL 源程式碼</LI>
+<LI> Postgres 把所有檔案當作二元檔，所以會遇到 lf/cf 
+問題，我們要做第二至五步︰
+<HR>
+<PRE>
+mkdir -p c:/Postgres/{Source,Binary} 
+mkdir c:/Postgres/Binary/pgsql 
+mkdir -p /usr/src/pgsql 
+mkdir -p /usr/local/pgsql 
+</PRE>
+<HR>
+</LI>
+<LI> 把 Postgres 源程式碼拷貝到 c:/Postgres/Source 目錄，之後
+tar -zxvf postgresql-6.5.3.tar.gz </LI>
+<LI> mv postgresql-6.5.3 pgsql </LI>
+<LI> 現在掛上各個目錄—
+<HR>
+<PRE>
+mount -b c:/Postgres/Binary/pgsql /usr/local/pgsql 
+mount c:/Postgres/Source/pgsql /usr/src/pgsql 
+mount c:/Unix/Root/cygwin-b20/share /sw/cygwin-b20/share 
+</PRE>
+<HR>
+</LI>
+<LI> mkdir -p /usr/local/pgsql/{bin,include,lib,data} </LI>
+<LI> cd /usr/src/pgsql/src/win32 </LI>
+<LI> 拷貝標頭檔—
+<HR>
+<PRE>
+cp un.h c:/Unix/Root/cygwin-b20/H-i586-cygwin32/i586-cygwin32/include/sys 
+cp endian.h c:/Unix/Root/cygwin-b20/H-i586-cygwin32/i586-cygwin32/include 
+cp tcp.h c:/Unix/Root/cygwin-b20/H-i586-cygwin32/i586-cygwin32/include/netinet 
+</PRE>
+<HR>
+</LI>
+<LI> ln -s /usr/local/lib /usr/src/pgsql/src/backend/libpostgres.a </LI>
+<LI> cd /usr/src/pgsql/src, 之後執行 './configure' </LI>
+<LI> make > make.txt 2>&amp;1 </LI>
+<LI> make install  > make.install.txt 2>&amp;1 </LI>
+<LI> cp /usr/local/pgsql/lib/pq.dll /usr/local/pgsql/bin </LI>
+<LI> 在 make install 之後你要把 bin 和 lib 目錄中的文字檔轉換，以清除 cr/lf 
+和 eof 之類東西。</LI>
+<LI> 在 / 目錄使用任何編輯器產生 .bashrc 如下︰
+<HR>
+<PRE>
+PATH=$PATH:/usr/local/pgsql/bin:/usr/local/bin 
+PGDATA=/usr/local/pgsql/data 
+PGLIB=/usr/local/pgsql/lib 
+LD_LIBRARY_PATH=/usr/local/pgsql/lib:/usr/local/lib 
+export LD_LIBRARY_PATH PATH PGDATA PGLIB 
+</PRE>
+<HR>
+</LI>
+<LI> source /.bashrc, 之後執行 'initdb --username=xxxx' 
+要注意資料庫系統的擁有人不可以是 root/administrator。</LI>
+<LI> 編輯 /usr/local/pgsql/data/pg_hba.conf 檔，如︰
+<HR>
+<PRE>
+host        all     163.17.11.109   255.255.255.0   trust 
+</PRE>
+<HR>
+</LI>
+<LI> ipc-daemon.exe&amp; </LI>
+<LI> postmaster -i&amp; </LI>
+<LI> 執行 ' psql -h host_name template1'</LI>
+</OL>
+<HR>
+<A HREF="PostgreSQL-HOWTO-27.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="PostgreSQL-HOWTO-25.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="PostgreSQL-HOWTO.html#toc26"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

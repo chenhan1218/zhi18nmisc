@@ -1,0 +1,504 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Beowulf HOWTO : System Design</TITLE>
+ <LINK HREF="Beowulf-HOWTO-5.html" REL=next>
+ <LINK HREF="Beowulf-HOWTO-3.html" REL=previous>
+ <LINK HREF="Beowulf-HOWTO.html#toc4" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Beowulf-HOWTO-5.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Beowulf-HOWTO-3.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Beowulf-HOWTO.html#toc4"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s4">4. System Design</A></H2>
+
+<P>Before you purchase any hardware, it may be a good idea to consider
+the design of your system.  There are basically two hardware issues
+involved with design of a Beowulf system: the type of nodes or
+computers you are going to use; and way you connect the computer
+nodes.  There is one software issue that may effect your hardware
+decisions; the communication library or API. A more detailed
+discussion of hardware and communication software is provided later in
+this document.
+<P>While the number of choices is not large, there are some important
+design decisions that must be made when constructing a Beowulf
+systems.  Because the science (or art) of "parallel computing" has
+many different interpretations, an introduction is provided below.  If
+you do not like to read background material, you may skip this
+section, but it is advised that you read section  
+<A HREF="#suitability">Suitability</A> before you make you final hardware decisions.
+<P>
+<H2><A NAME="ss4.1">4.1 A brief background on parallel computing.</A>
+</H2>
+
+<P>This section provides background on parallel computing concepts.  It
+is NOT an exhaustive or complete description of parallel computing
+science and technology. It is a brief description of the issues that
+may be important to a Beowulf designer and user.
+<P>As you design and build your Beowulf, many of these issues described
+below will become important in your decision process. Due to its
+component nature, a Beowulf Supercomputer requires that we consider
+many factors carefully because they are now under our control. In
+general, it is not all that difficult to understand the issues
+involved with parallel computing.  Indeed, once the issues are
+understood, your expectations will be more realistic and success will
+be more likely. Unlike the "sequential world" where processor speed is
+considered the single most important factor, processor speed in the
+"parallel world" is just one of several factors that will determine
+overall system performance and efficiency.
+<P>
+<P>
+<H2><A NAME="ss4.2">4.2 The methods of parallel computing</A>
+</H2>
+
+<P>Parallel computing can take many forms.  From a user's perspective, it is 
+important to consider the advantages and disadvantages of each methodology.  
+The following section attempts to provide some perspective on the methods of 
+parallel computing and indicate where the Beowulf machine falls on this 
+continuum.
+<P>
+<H3>Why more than one CPU?</H3>
+
+<P>Answering this question is important.  Using 8 CPUs to run your word
+processor sounds a little like "over-kill" -- and it is.  What about a
+web server, a database, a rendering program, or a project scheduler?
+Maybe extra CPUs would help.  What about a complex simulation, a fluid
+dynamics code, or a data mining application.  Extra CPUs definitely
+help in these situations.  Indeed, multiple CPUs are being used to
+solve more and more problems.
+<P>The next question usually is: "Why do I need two or four CPUs, I will
+just wait for the 986 turbo-hyper chip." There are several reasons:
+<OL>
+<LI> Due to the use of multi-tasking Operating Systems, it is
+possible to do several things at once.  This is a natural
+"parallelism" that is easily exploited by more than one low cost CPU.
+</LI>
+<LI> Processor speeds have been doubling every 18 months, but what
+about RAM speeds or hard disk speeds? Unfortunately, these speeds are
+not increasing as fast as the CPU speeds.  Keep in mind most
+applications require "out of cache memory access" and hard disk
+access.  Doing things in parallel is one way to get around some of
+these limitations.
+</LI>
+<LI> Predictions indicate that processor speeds will not continue to double 
+every 18 months after the year 2005. There are some very serious obstacles to 
+overcome in order to maintain this trend.
+</LI>
+<LI> Depending on the application, parallel computing can speed things up by any 
+where from 2 to 500 times faster (in some cases even faster). Such performance 
+is not available using a single processor.  Even supercomputers that at one 
+time used very fast custom processors are now built from multiple "commodity-
+off-the-shelf" CPUs.</LI>
+</OL>
+<P>If you need speed - either due to a compute bound problem and/or an I/O bound 
+problem, parallel is worth considering.  Because parallel computing is 
+implemented in a variety of ways, solving your problem in parallel will 
+require some very important decisions to be made.  These decisions may 
+dramatically effect portability, performance, and cost of your application.
+<P>Before we get technical, let's look take a look at a real "parallel computing 
+problem" using an example with which we are familiar - waiting in long lines 
+at a store. 
+<P>
+<H3>The Parallel Computing Store</H3>
+
+<P>Consider a big store with 8 cash registers grouped together in the front of 
+the store.  Assume each cash register/cashier is a CPU and each customer is a 
+computer program.  The size of the computer program (amount of work) is the 
+size of each customer's order. The following analogies can be used to 
+illustrate parallel computing concepts.
+<P>
+<H3>Single-tasking Operating System</H3>
+
+<P>One cash register open (is in use) and must process each customer one at a 
+time. 
+<P>Computer Example: MS DOS
+<P>
+<H3>Multi-tasking Operating System:</H3>
+
+<P>One cash register open, but now we process only a part of each order at a 
+time, move to the next person and process some of their order. Everyone 
+"seems" to be moving through the line together, but if no one else is in the 
+line, you will get through the line faster.
+<P>Computer Example: UNIX, NT using a single CPU
+<P>
+<H3>Multitasking Operating Systems with Multiple CPUs:</H3>
+
+<P>Now we open several cash registers in the store. Each order can be  processed 
+by a separate cash register and the line can move much faster.  This is called 
+SMP - Symmetric Multi-processing.  Although there are extra cash registers 
+open, you will still never get through the line any faster than just you and a 
+single cash register.  
+<P>Computer Example: UNIX and NT with multiple CPUs
+<P>
+<P>
+<H3>Threads on a Multitasking Operating Systems extra CPUs</H3>
+
+<P>If you "break-up" the items in your order, you might be able to move through 
+the line faster by using several cash registers at one time.  First, we must 
+assume you have a large amount of goods, because the time you invest "breaking 
+up your order" must be regained by using multiple cash registers.   In theory, 
+you should be able to move through the line "n" times faster than before*; 
+where "n" is the number of cash registers.  When the cashiers need to get sub-
+totals, they can exchange information quickly by looking and talking to all 
+the other "local" cash registers. They can even snoop around the other cash 
+registers to find information they need to work faster. There is a limit, 
+however, as to how many cash registers the store can effectively locate in any 
+one place.
+<P>Amdals law will also limit the application speed-up to the slowest 
+sequential portion of the program. 
+<P>Computer Example: UNIX or NT with extra CPU on the same motherboard running 
+multi-threaded programs.
+<P>
+<P>
+<H3>Sending Messages on Multitasking Operating Systems with extra CPUs:</H3>
+
+<P>In order to improve performance, the store adds 8 cash registers at the back 
+of the store.  Because the new cash registers are far away from the front cash 
+registers, the cashiers must call on the phone to send their sub-totals to the 
+front of the store. This distance adds extra overhead (time) to communication 
+between cashiers, but if communication is minimized, it is not a problem.   If 
+you have a really big order, one that requires all the cash registers, then as 
+before your speed can be improved by using all cash registers at the same 
+time, the extra overhead must be considered. In some cases, the store may have 
+single cash registers (or islands of cash registers) located all over the 
+store - each cash register (or island) must communicate by phone.  Since all 
+the cashiers working the cash registers can talk to each other by phone, it 
+does not matter too much where they are.  
+<P>Computer Example: One or several copies of UNIX or NT with extra CPUs on the 
+same or different motherboard communicating through messages.
+<P>The above scenarios, although not exact, are a good representation of 
+constraints placed on parallel systems.  Unlike a single CPU (or cash 
+register) communication is an issue.
+<P>
+<H2><A NAME="ss4.3">4.3 Architectures for parallel computing</A>
+</H2>
+
+<P>The common methods and architectures of parallel computing are presented 
+below.  While this description is by no means exhaustive, it is enough to 
+understand the basic issues involved with Beowulf design. 
+<P>
+<H3>Hardware Architectures</H3>
+
+<P>
+<P>There are basically two ways parallel computer hardware is put together:
+<P>
+<OL>
+<LI> Local memory machines that communicate by messages (Beowulf Clusters)</LI>
+<LI> Shared memory machines that communicate through memory (SMP machines)</LI>
+</OL>
+<P>A typical Beowulf is a collection of single CPU machines connected using fast 
+Ethernet and is, therefore, a local memory machine.  A 4 way SMP box is a 
+shared memory machine and can be used for parallel computing - parallel 
+applications communicate using shared memory.  Just as in the computer store 
+analogy, local memory machines (individual cash registers) can be scaled up to 
+large numbers of CPUs, while the number of CPUs shared memory machines (the 
+number of cash registers you can place in one spot) can have is limited due to 
+memory contention.  
+<P>It is possible, however, to connect many shared memory machines to create a 
+"hybrid" shared memory machine.  These hybrid machines "look" like a single 
+large SMP machine to the user and are often called NUMA (non uniform memory 
+access) machines because the global memory seen by the programmer and shared 
+by all the CPUs can have different latencies.  At some level, however, a NUMA 
+machine must "pass messages" between local shared memory pools.
+<P>It is also possible to connect SMP machines as local memory compute nodes.  
+Typical CLASS I motherboards have either 2 or 4 CPUs and are often used as a 
+means to reduce the overall system cost. The Linux internal scheduler 
+determines how these CPUs get shared.  The user cannot (at this point) assign 
+a specific task to a specific SMP processor.  The user can however, start two 
+independent processes or a threaded processes and expect to see a performance 
+increase over a single CPU system.
+<P>
+<H3>Software API Architectures</H3>
+
+<P>There basically two ways to "express" concurrency in a program:
+<OL>
+<LI> Using Messages sent between processors</LI>
+<LI> Using operating system Threads</LI>
+</OL>
+<P>Other methods do exist, but these are the two most widely used. It is 
+important to remember that the expression of concurrency is not necessary 
+controlled by the underlying hardware.  Both Messages and Threads can be 
+implemented on SMP, NUMA-SMP, and clusters - although as explained below 
+efficiently and portability are important issues.  
+<P>
+<H3>Messages</H3>
+
+<P>Historically, messages passing technology reflected the
+design of early local memory parallel computers. Messages require
+copying data while Threads use data in place.  The latency and speed
+at which messages can be copied are the limiting factor with message
+passing models. A Message is quite simple: some data and a destination
+processor.  Common message passing APIs are 
+<A HREF="http://www.epm.ornl.gov/pvm">PVM</A> or 
+<A HREF="http://www.mcs.anl.gov/Projects/mpi/index.html">MPI</A>. Message
+passing can be efficiently implemented using Threads and Messages work
+well both on SMP machine and between clusters of machines.  The
+advantage to using messages on an SMP machine, as opposed to Threads,
+is that if you decided to use clusters in the future it is easy to add
+machines or scale your application.
+<P>
+<H3>Threads</H3>
+
+<P>Operating system Threads were developed because shared memory SMP
+(symmetrical multiprocessing) designs allowed very fast shared memory
+communication and synchronization between concurrent parts of a
+program.  Threads work well on SMP systems because communication is
+through shared memory.  For this reason the user must isolate local
+data from global data, otherwise programs will not work properly. In
+contrast to messages, a large amount of copying can be eliminated with
+threads because the data is shared between processes (threads). Linux
+supports POSIX threads. The problem with threads is that it is
+difficult to extend them beyond one SMP machine and because data is
+shared between CPUs, cache coherence issues can contribute to
+overhead. Extending threads beyond the SMP boundary efficiently
+requires NUMA technology which is expensive and not natively
+supported by Linux. Implementing threads on top of messages has been
+done (
+<A HREF="http://syntron.com/ptools/ptools_pg.htm">(http://syntron.com/ptools/ptools_pg.htm)</A>), but Threads are often
+inefficient when implemented using messages.
+<P>The following can be stated about performance:
+<PRE>
+          SMP machine     cluster of machines  scalability
+          performance        performance
+          -----------     -------------------  -----------
+messages    good                best              best
+
+threads     best               poor*              poor*
+
+* requires expensive NUMA technology.
+</PRE>
+<P>
+<H3>Application Architecture</H3>
+
+<P>In order to run an application in parallel on multiple CPUs, it must be 
+explicitly broken in to concurrent parts.  A standard single CPU application 
+will run no faster than a single CPU application on multiple processors. 
+There are some tools and compilers that can break up programs, but 
+parallelizing codes is not a "plug and play" operation.  Depending on the 
+application, parallelizing code can be easy, extremely difficult, or in some 
+cases impossible due to algorithm dependencies.  
+<P>Before the software issues can be addressed the concept of Suitability 
+needs to be introduced.
+<P>
+<H2><A NAME="suitability"></A> <A NAME="ss4.4">4.4 Suitability</A>
+</H2>
+
+<P>Most questions about parallel computing have the same answer:
+<P>"It all depends upon the application."
+<P>Before we jump into the issues, there is one very important distinction that 
+needs to be made - the difference between CONCURRENT and PARALLEL.  For the 
+sake of this discussion we will define these two concepts as follows:
+<P>CONCURRENT parts of a program are those that can be computed independently.
+<P>PARALLEL parts of a program are those CONCURRENT parts that are executed on 
+separate processing elements at the same time.
+<P>The distinction is very important, because CONCURRENCY is a property of the 
+program and efficient PARALLELISM is a property of the machine.  Ideally, 
+PARALLEL execution should result in faster performance.  The limiting factor 
+in parallel performance is the communication speed and latency between compute 
+nodes. (Latency also exists with threaded SMP applications due to cache 
+coherency.) Many of the common parallel benchmarks are highly parallel and 
+communication and latency are not the bottle neck. This type of problem can be 
+called  "obviously parallel".  Other applications are not so simple and 
+executing CONCURRENT parts of the program in PARALLEL may actually cause the 
+program to run slower, thus offsetting any performance gains in other 
+CONCURRENT parts of the program.   In simple terms, the cost of communication 
+time must pay for the savings in computation time, otherwise the PARALLEL 
+execution of the CONCURRENT part is inefficient.   
+<P>The task of the programmer is to determining what CONCURRENT parts of the 
+program SHOULD be executed in PARALLEL and what parts SHOULD NOT.  The answer 
+to this will determine the EFFICIENCY of application.  The following graph 
+summarizes the situation for the programmer:
+<P>
+<PRE>
+
+
+
+         | *
+         | *
+         | *
+ % of    | *
+ appli-  |  *
+ cations |  *
+         |  *
+         |  *
+         |    *
+         |     *
+         |      *
+         |        ****
+         |            ****
+         |                ********************
+         +-----------------------------------
+          communication time/processing time
+</PRE>
+<P>In a perfect parallel computer, the ratio of communication/processing would be 
+equal and anything that is CONCURRENT could be implemented in PARALLEL.  
+Unfortunately, Real parallel computers, including shared memory machines, are 
+subject to the effects described in this graph.  When designing a Beowulf, the 
+user may want to keep this graph in mind because parallel efficiency depends 
+upon ratio of communication time and processing time for A SPECIFIC PARALLEL 
+COMPUTER.  Applications may be portable between parallel computers, but there 
+is no guarantee they will be efficient on a different platform.
+<P>IN GENERAL, THERE IS NO SUCH THING AS A PORTABLE AND EFFICIENT PARALLEL 
+PROGRAM
+<P>There is yet another consequence to the above graph.  Since efficiency depends 
+upon the comm./process. ratio, just changing one component of the ratio does 
+not necessary mean a specific application will perform  faster.  A change in 
+processor speed, while keeping the communication speed that same may have non-
+intuitive effects on your program.   For example, doubling or tripling the CPU 
+speed, while keeping the communication speed the same, may now make some 
+previously efficient PARALLEL portions of your program, more efficient if they 
+were executed SEQUENTIALLY.  That is, it may now be faster to run the 
+previously PARALLEL parts as SEQUENTIAL.  Furthermore, running inefficient 
+parts in parallel will actually keep your application from reaching its 
+maximum speed. Thus, by adding faster processor, you may actually slowed down 
+your application (you are keeping the new CPU from running at its maximum 
+speed for that application)
+<P>UPGRADING TO A FASTER CPU MAY ACTUALLY SLOW DOWN YOUR APPLICATION
+<P>So, in conclusion, to know whether or not you can use a parallel hardware 
+environment, you need to have some insight into the suitability of a 
+particular machine to your application.  You need to look at a lot of issues 
+including CPU speeds, compiler, message passing API, network, etc.  Please 
+note, just profiling an application, does not give the whole story.  You may 
+identify a computationally heavy portion of your program, but you do not 
+know the communication cost for this portion.  It may be that for a given 
+system, the communication cost as do not make parallelizing this code 
+efficient.
+<P>   
+A final note about a common misconception. It is often stated that "a program 
+is PARALLELIZED", but in reality only the CONCURRENT parts of the program have 
+been located. For all the reasons given above, the program is not 
+PARALLELIZED.   Efficient PARALLELIZATION is a property of the machine.   
+<P>
+<P>
+<H2><A NAME="ss4.5">4.5 Writing and porting parallel software</A>
+</H2>
+
+<P>Once you decide that you need parallel computing and would like to design and 
+build a Beowulf, a few moments considering your application with respect to 
+the previous discussion may be a good idea. 
+<P>In general there are two things you can do:
+<OL>
+<LI>Go ahead and construct a CLASS I Beowulf and then "fit" your
+application to it.  Or run existing parallel applications that
+you know work on your Beowulf (but beware of the portability and
+efficiently issues mentioned above)
+</LI>
+<LI>Look at the applications you need to run on your Beowulf and
+make some estimations as to the type of hardware and software you
+need.</LI>
+</OL>
+<P>In either case, at some point you will need to look at the efficiency issues. 
+In general, there are three things you need to do:
+<OL>
+<LI> Determine concurrent parts of your program</LI>
+<LI> Estimate parallel efficiently</LI>
+<LI> Describing the concurrent parts of your program</LI>
+</OL>
+<P>Let's look at these one at a time.
+<P>
+<H3>Determine concurrent parts of your program</H3>
+
+<P>This step is often considered "parallelizing your program".  Parallelization 
+decisions will be made in step 2.  In this step, you need to determine data 
+dependencies.  
+<P>>From a practical standpoint, applications may exhibit two types of 
+concurrency: compute (number crunching) and I/O (database). Although in many 
+cases compute and I/O concurrency are orthogonal, there are application that 
+require both. There are tools available that can perform concurrency analysis 
+on existing applications.  Most of these tools are designed for FORTRAN.  
+There are two reasons FORTRAN is used: historically most number crunching 
+applications were written in FORTRAN and it is easier to analyze.  If no tools 
+are available, then this step can be some what difficult for existing 
+applications. 
+<P>
+<H3>Estimate parallel efficiency</H3>
+
+<P>Without the help of tools, this step may require trial and error tests or just 
+a plain old educated guess.  If you have a specific application in mind, try 
+to determine if it is CPU limited (compute bound) or hard disk limited (I/O 
+bound).  The requirements of your Beowulf may be quite different depending 
+upon your needs.  For example, a compute bound problem may need a few very 
+fast CPUs and high speed low latency network, while an I/O bound problem may 
+work better with more slower CPUs and fast Ethernet.
+<P>This recommendation often comes as a surprise to most people because, the 
+standard assumption is that faster processor are always better.  While this is 
+true if your have an unlimited budget, real systems may have cost constraints 
+that should be maximized.  For I/O bound problems, there is a little known 
+rule (called the Eadline-Dedkov Law) that is quite helpful:
+<P>For two given parallel computers with the same cumulative CPU performance
+index, the one which has slower processors (and a probably correspondingly 
+slower interprocessor communication network) will have better performance
+for I/O-dominant applications.
+<P>While the proof of this rule is beyond the scope of this document, you
+find it interesting to download the paper <I>Performance
+Considerations for I/O-Dominant Applications on Parallel
+Computers</I> (Postscript format 109K ) 
+<A HREF="ftp://www.plogic.com/pub/papers/exs-pap6.ps">(ftp://www.plogic.com/pub/papers/exs-pap6.ps)</A><P>Once you have determined what type of concurrency you have in your
+application, you will need to estimate how efficient it will be in
+parallel.  See Section 
+<A HREF="Beowulf-HOWTO-5.html#software">Software</A> for a
+description of Software tools.
+<P>In the absence of tools, you may try to guess your way through this step.  If 
+a compute bound loop measured in minutes and the data can be transferred in 
+seconds, then it might be a good candidate for parallelization.  But remember, 
+if you take a 16 minute loop and break it into 32 parts, and your data 
+transfers require several seconds per part, then things are going to get 
+tight.  You will reach a point of diminishing returns. 
+<P>
+<H3>Describing the concurrent parts of your program</H3>
+
+<P>There are several ways to describe concurrent parts of your program:
+<OL>
+<LI> Explicit parallel execution </LI>
+<LI> Implicit parallel execution</LI>
+</OL>
+<P>The major difference between the two is that explicit parallelism is 
+determined by the user where implicit parallelism is determined by the 
+compiler.
+<P>
+<H3>Explicit Methods</H3>
+
+<P>These are basically method where the user must modify source code
+specifically for a parallel computer.  The user must either add
+messages using 
+<A HREF="http://www.epm.ornl.gov/pvm">PVM</A> or
+<A HREF="http://www.mcs.anl.gov/Projects/mpi/index.html">MPI</A> or
+add threads using POSIX threads. (Keep in mind however, threads can
+not move between SMP motherboards).
+<P>Explicit methods tend to be the most difficult to implement and debug.  Users 
+typically embed explicit function calls in standard FORTRAN 77 or C/C++ source 
+code.  The MPI library has added some functions to make some standard parallel 
+methods easier to implement (i.e. scatter/gather functions).  In addition, it 
+is also possible to use standard libraries that have been written for parallel 
+computers.  Keep in mind, however, the portability vs. efficiently trade-off)
+<P>  
+For historical reasons, most number crunching codes are written in FORTRAN. 
+For this reasons, FORTRAN has the largest amount of support (tools, 
+libraries, etc.) for parallel computing.  Many programmers now use C or re-
+write existing FORTRAN applications in C with the notion the C will allow 
+faster execution.  While this may be true as C is the closest thing to a 
+universal machine code, it has some major drawbacks.  The use of pointers in C 
+makes determining data dependencies extremely difficult.  Automatic analysis 
+of pointers is extremely difficult. If you have an existing FORTRAN program 
+and think that you might want to parallelize it in the future - DO NOT CONVERT 
+IT TO C!
+<P>
+<H3>Implicit Methods</H3>
+
+<P>Implicit methods are those where the user gives up some (or all) of the 
+parallelization decisions to the compiler.  Examples are FORTRAN 90, High 
+Performance FORTRAN (HPF), Bulk Synchronous Parallel (BSP), and a whole 
+collection of other methods that are under development.
+<P>Implicit methods require the user to provide some information about the 
+concurrent nature of their application, but the compiler will then make many 
+decisions about how to execute this concurrency in parallel.  These methods 
+provide some level of portability and efficiency, but there is still no "best 
+way" to describe a concurrent problem for a parallel computer. 
+<P>
+<HR>
+<A HREF="Beowulf-HOWTO-5.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Beowulf-HOWTO-3.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Beowulf-HOWTO.html#toc4"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

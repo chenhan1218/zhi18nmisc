@@ -1,0 +1,264 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux Italian-HOWTO: Altre localizzazioni    </TITLE>
+ <LINK HREF="Italian-HOWTO-5.html" REL=next>
+ <LINK HREF="Italian-HOWTO-3.html" REL=previous>
+ <LINK HREF="Italian-HOWTO.html#toc4" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Italian-HOWTO-5.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Italian-HOWTO-3.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Italian-HOWTO.html#toc4"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s4">4. Altre localizzazioni    </A></H2>
+
+<P>
+<P>
+<P>
+<P>
+<P>Qui si vogliono trattare quelle localizzazioni che sono un po' piú
+hardware-dipendenti, meno standard e in particolar modo che riguardano
+i PC compatibili.
+Molto probabilmente molte di queste cose non si applicano alle altre
+piattaforme su cui gira Linux, ne chiedo venia.
+Ma o mi regalate un PPC, una Sparc, un Alpha, un A4000, un
+MAC, ... oppure se avete altre note per queste piattaforme da aggiungere
+fatemelo sapere. ;-)
+<P>
+<P>
+<H2><A NAME="ss4.1">4.1 Font in console </A>
+</H2>
+
+<P>
+<P>Linux permette di cambiare il font standard presente nella <EM>ROM</EM> della
+scheda video, in modo da avere il set di caratteri ISO-8859-1 completo a
+disposizione. La cosa può essere semplicemente ottenuta con uno script
+del genere, da eseguire al boot (in Debian basta copiarlo nella
+directory <CODE>/etc/rc.boot</CODE> e renderlo eseguibile):
+<P>
+<HR>
+<PRE>
+        #!/bin/sh
+
+        # qualche variabile...
+        #
+        # font Latin1 (ISO-8859-1)
+        CONSOLE_FONT=lat1u-16.psf
+        # mappa nulla
+        CONSOLE_MAP=trivial
+
+        if [ -x /usr/bin/setfont ]; then
+                echo -n "Setting up ISO 8859-1 font"
+                setfont /usr/share/consolefonts/$CONSOLE_FONT
+                echo -n "."
+                mapscrn /usr/share/consoletrans/$CONSOLE_MAP
+                echo -n "."
+                for do
+                        echo -ne '\033(B' > /dev/tty$N
+                done
+                echo ". done."
+        fi
+</PRE>
+<HR>
+<P>Il primo comando carica un nuovo set di caratteri, il secondo permette di
+eseguire una traduzione ``al volo'' tra caratteri richiesti e voluti e il
+terzo rende attiva la nuova coppia tabella-tavola di traslazione in
+ogni console.
+<P>Ad esempio di default non viene caricata nessuna tabella e viene eseguita la
+traduzione da Latin1 (quello che Linux vuole) a CP437 (quello che il PC ha).
+Ovviamente le manpages di <B>setfont(1)</B> e <B>mapscrn(1)</B> sono utili letture.
+<P>
+<P>
+<H3>Debian  </H3>
+
+<P>
+<P>Se si ha un sistema Debian 2.0 semplicemente il file
+<CODE>/etc/kbd/config</CODE> è il posto dove mettere la mappa dei caratteri
+ed il font da utilizzare: per l'italiano, la scelta giusta è:
+<P>
+<HR>
+<PRE>
+        CONSOLE_FONT=lat1u-16.psf
+        CONSOLE_MAP=trivial
+</PRE>
+<HR>
+<P>(da Lorenzo Maria Catucci).
+<P>
+<P>
+<H3>SVGATextMode    </H3>
+
+<P>
+<P>Ma c'è una soluzione piú elegante. Esiste un programma che si chiama
+<B>SVGATextMode(8)</B> che fa tutta una serie di operazioni sulla console testo
+molto simpatiche.
+<P>Permette di definire dimensioni ``non standard'' per la console (diverse da
+80x25, insomma), permette di alzare la frequenza di refresh del video di modo
+da stancare meno gli occhi, gestisce chipset avanzati...
+<P>Ha un file di configurazione, <CODE>/etc/TextConfig</CODE> che ha una sintassi
+molto simile al file di configurazione di XFree e che permette in un sol colpo
+di definire il font da caricare. Ci penserà poi il programma stesso ad
+attivare il font e renderlo disponibile.
+<P>Basta modificare leggermente il file, facendo in modo che si presenti
+all'incirca come:
+<P>
+<HR>
+<PRE>
+        [...]
+
+        Option "LoadFont"
+        FontProg "/usr/bin/setfont"
+        FontPath "/usr/share/consolefonts"
+        FontSelect "lat1u-16.psf"   8x16 9x16 8x15 9x15
+        FontSelect "lat1u-14.psf"   8x14 9x14 8x13 9x13
+        FontSelect "lat1u-12.psf"   8x12 9x12 8x11 9x11
+        FontSelect "lat1u-08.psf"   8x8  9x8  8x7  9x7
+        FontSelect "lat1u-08.psf"   8x32 9x32 8x31 9x31
+
+        [...]
+</PRE>
+<HR>
+<P>e si ottengono magicamente i caratteri Latin1, e molto di piú.
+<P>
+<P>
+<H2><A NAME="ss4.2">4.2 Font in X </A>
+</H2>
+
+<P>
+<P>Buona parte dei caratteri installati con X seguono lo standard Latin1, e
+idem i font PostScript normalmente reperibili (come quelli dell'ATM).
+<P>Inoltre sta facendo la sua comparsa il primo font server TrueType;
+I font TrueType sono organizzati secondo un set di caratteri che è un
+superset del Latin1 (MicroSoft chiaramente fa sempre di testa sua, e
+mette caratteri dove lo standard lo vieta esplicitamente...), e quindi
+non dovrebbero dare problemi neanche loro.
+<P>
+<P>
+<H2><A NAME="ss4.3">4.3 Stampante e DOS </A>
+</H2>
+
+<P>
+<P>Se stampate file DVI, PostScript o comunque in grafica, non ci sono problemi.
+Ci penserà il vostro programma per la stampa a convertire il vostro file nel
+formato matrice-di-punti più consono alla vostra stampante.
+Ma se volete stampare in puro testo, senza formattazioni? Resta, soprattutto
+per le stampanti ad aghi, il metodo più veloce. Ma quanto è standard il set
+ISO-8859-1?
+<P>ISO-8859-1 è il set di caratteri di Unix in generale, di Windows,
+Amiga, OS/2. Mancano all'appello il DOS e Macintosh. Ma in DOS la CP850 è in
+pratica il set Latin1, con i caratteri rimescolati un po' per essere
+compatibile verso il basso con la CP437.
+Sentitevi liberi quindi da qualsiasi ``sindrome da 8 bit'', e usate
+tranquillamente questo set di caratteri.
+Se dovete importare dei testi Linux in Macintosh, semplicemente usate il
+filtro per ``puro testo Windows'' o cose simili.
+<P>Se volete stampare puro testo con le accentate da Linux, a questo punto non vi
+resta che provare una delle soluzioni seguenti:
+<P>
+<UL>
+<LI>    Se la vostra stampante supporta il set di caratteri ISO-8859-1,
+mettetela in quella modalità, e fatela finita una volta per tutte con
+le diatribe tra set di caratteri.
+</LI>
+<LI>    Se la vostra stampante supporta la CP819, siete a cavallo visto
+che ``CP819'' è il nome DOS del set di caratteri Latin1.
+        </LI>
+<LI>    Se la stampante supporta la CP850, mettetela in quella modalità e
+cercate il programma <B>recode(1)</B>.
+Si può usare come <CODE>recode&nbsp;latin1:cp850&nbsp;file</CODE> dove
+<CODE>file</CODE> è il file da convertire, che viene sovrascritto.
+Per automatizzare la procedura si può anche installare come filtro
+per la stampa.
+        </LI>
+<LI>    Se la stampante supporta solo CP437, o non volete/potete modificarla,
+non preoccupatevi, tanto comunque riuscite a stampare le cose
+``normali'', come tutte le lettere accentate che trovate sulla tastiera
+e la lettera ``È'' (questo perché, come già detto CP850 e CP437
+coincidono in corrispondenza di quei caratteri).
+        </LI>
+</UL>
+<P>Chiaramente, per le ultime tre soluzioni, è il caso di utilizzare anche
+da DOS (se avete un sistema dual boot) la CP819 o in mancanza d'altro
+la CP850; per configurare la gestione del set di caratteri DOS, leggete
+le manpage, hem (la forza dell'abitudine! O;) il manuale dei comandi
+<B>COUNTRY</B> e <B>MODE CON</B>.
+<P>Inoltre se la confusione attorno alle sigle dei vari set di caratteri
+sale, potete anche leggere le man page <B>ascii(7)</B> e <B>latin1(7)</B>.
+<P>
+<P>
+<H3>Un esempio di filtro    </H3>
+
+<P>
+<P>Per avere automaticamente la conversione, si può utilizzare questo filtro:
+<P>
+<HR>
+<PRE>
+        #!/bin/sh
+        if /usr/local/bin/recode latin1:cp850
+        then
+                exit 0
+        else
+                exit -1
+        fi
+</PRE>
+<HR>
+<P>potete salvare questo filtro come <CODE>/usr/local/bin/iso2850</CODE> e poi dargli
+i permessi di esecuzione (<CODE>chmod ugo+x /usr/local/bin/iso2850</CODE>). ora
+non vi resta che aggiungere nel file di configurazione delle stampanti
+<CODE>/etc/printcap</CODE>:
+<P>
+<HR>
+<PRE>
+        # esempio di filtro, sostituire ``lp2'' con il device corretto
+        # i file log e acct vanno creati se utilizzati, nei contesti
+        # normali non serve sapere chi usa e quante pagine stampa ogni
+        # utente! ;)
+        #
+        cp850|dos:\
+        :lp=/dev/lp2:\
+        :sd=/var/spool/lp2:\
+        :lf=/var/spool/lp2/log:\
+        :af=/var/spool/lp2/acct:\
+        :if=/var/local/bin/iso2850:\
+        :sh:
+</PRE>
+<HR>
+<P>Ora, se la stampante è impostata per usare la codepage 850, basta un bel
+<CODE>lpr -Pcp850 nomefile</CODE> per stampare un file latin1 con tutte le accentate
+al loro posto.
+<P>
+<P>
+<H2><A NAME="ss4.4">4.4 libpaper       </A>
+</H2>
+
+<P>
+<P>Libpaper è una piccola libreria e un programmino che dovrebbe
+``standardizzare'' la gestione dei formati di carta sotto linux.
+In pratica fornisce delle funzioni da linkare al proprio programma che
+permettono di usare delle informazioni sul formato di carta centralizzate
+(prese da <CODE>/etc/papersize</CODE> o dalla variabile d'ambiente PAPERSIZE.
+<P>In Debian è installata di default e gs la usa. Potrebbe essere una cosa utile,
+e va incentivata.
+<P>Maggiori informazioni le potete trovare alla manpage di <B>paperconf(1)</B>,
+ovviamente se avete libpaper installata nel vostro sistema.
+<P>
+<P>
+<H2><A NAME="ss4.5">4.5 Per maggiori informazioni      </A>
+</H2>
+
+<P>
+<P>
+<UL>
+<LI>    Tocca ripetermi, e citare nuovamente le pagine di Michael
+Gschwind, ovvero 
+<A HREF="http://www.vlsivie.tuwien.ac.at/mike/i18n.html">http://www.vlsivie.tuwien.ac.at/mike/i18n.html</A>.
+</LI>
+</UL>
+<P>
+<P>
+<HR>
+<A HREF="Italian-HOWTO-5.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Italian-HOWTO-3.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Italian-HOWTO.html#toc4"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

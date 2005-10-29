@@ -1,0 +1,335 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="LinuxDoc-Tools 0.9.16">
+ <TITLE>Linux IPv6 HOWTO: 设定IPv6路由</TITLE>
+ <LINK HREF="Linux-IPv6-HOWTO-8.html" REL=next>
+ <LINK HREF="Linux-IPv6-HOWTO-6.html" REL=previous>
+ <LINK HREF="Linux-IPv6-HOWTO.html#toc7" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Linux-IPv6-HOWTO-8.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="Linux-IPv6-HOWTO-6.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="Linux-IPv6-HOWTO.html#toc7"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s7">7.</A> <A HREF="Linux-IPv6-HOWTO.html#toc7">设定IPv6路由</A></H2>
+
+<H2><A NAME="ss7.1">7.1</A> <A HREF="Linux-IPv6-HOWTO.html#toc7.1">列印现有的路由</A>
+</H2>
+
+<H3>使用"ip"</H3>
+
+<P>使用方法:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# /sbin/ip -6 route show [dev &lt;device>]
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<P>例子:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# /sbin/ip -6 route show dev eth0
+3ffe:ffff:0:f101::/64 proto kernel metric 256 mtu 1500 advmss 1440
+fe80::/10             proto kernel metric 256 mtu 1500 advmss 1440
+ff00::/8              proto kernel metric 256 mtu 1500 advmss 1440
+default               proto kernel metric 256 mtu 1500 advmss 1440
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+
+<H3>使用 "route"</H3>
+
+<P>使用方法:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# /sbin/route -A inet6 
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<P>例子:在同一个界面上不同的IPv6路由.</P>
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# /sbin/ip -6 route show dev eth0
+# /sbin/route -A inet6 |grep -w "eth0"
+3ffe:ffff:0:f101 ::/64 :: UA  256 0 0 eth0 &lt;- Interface route for global
+? address
+fe80::/10        ::       UA  256 0 0 eth0 &lt;- Interface route for link-local
+? address
+ff00::/8         ::       UA  256 0 0 eth0 &lt;- Interface route for all multicast
+? addresses
+::/0             ::       UDA 256 0 0 eth0 &lt;- Automatic default route
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+
+<H2><A NAME="ss7.2">7.2</A> <A HREF="Linux-IPv6-HOWTO.html#toc7.2">设定IPv6路由通过闸道</A>
+</H2>
+
+<H3>使用"ip"</H3>
+
+<P>使用方法:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# /sbin/ip -6 route add &lt;ipv6network>/&lt;prefixlength> via &lt;ipv6address>
+? [dev &lt;device>]
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<P>例子:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# /sbin/ip -6 route add 2000::/3 via 3ffe:ffff:0:f101::1
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+
+<H3>使用 "route"</H3>
+
+<P>使用方法:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# /sbin/route -A inet6 add &lt;ipv6network>/&lt;prefixlength> gw
+? &lt;ipv6address> [dev &lt;device>] 
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+
+<P>例子:为当前所有的(全局地址global addresses 2000::/3)址通过闸道3ffe:ffff:0:f101::1</P>
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# /sbin/route -A inet6 add 2000::/3 gw 3ffe:ffff:0:f101::1
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+
+
+<H2><A NAME="ss7.3">7.3</A> <A HREF="Linux-IPv6-HOWTO.html#toc7.3">移除 IPv6路由通过闸道</A>
+</H2>
+
+<H3>使用"ip"</H3>
+
+<P>使用方法:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# /sbin/ip -6 route del &lt;ipv6network>/&lt;prefixlength> via &lt;ipv6address>
+? [dev &lt;device>]
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<P>例子:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# /sbin/ip -6 route del 2000::/3 via 3ffe:ffff:0:f101::1
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+
+<H3>使用 "route"</H3>
+
+<P>使用方法:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# /sbin/route -A inet6 del &lt;network>/&lt;prefixlength> [dev &lt;device>]
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+
+<P>例子:移除前所有的(全局地址global addresses 2000::/3)址通过闸道3ffe:ffff:0:f101::1</P>
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# /sbin/route -A inet6 del 2000::/3 gw 3ffe:ffff:0:f101::1
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+
+
+
+
+
+<H2><A NAME="ss7.4">7.4</A> <A HREF="Linux-IPv6-HOWTO.html#toc7.4">增加IPv6路由至interface(界面)</A>
+</H2>
+
+<H3>使用 "ip"</H3>
+
+<P>使用方法:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# /sbin/ip -6 route add &lt;ipv6network>/&lt;prefixlength> dev &lt;device>
+? metric 1
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<P>例子:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# /sbin/ip -6 route add 2000::/3 dev eth0 metric 1
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+
+<H3>使用 "route"</H3>
+
+<P>使用方法:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# /sbin/route -A inet6 add &lt;network>/&lt;prefixlength> dev &lt;device>
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<P>例子:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# /sbin/route -A inet6 add 2000::/3 dev eth0
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+
+
+
+<H2><A NAME="ss7.5">7.5</A> <A HREF="Linux-IPv6-HOWTO.html#toc7.5">从interface(界面)移除IPv6路由</A>
+</H2>
+
+<H3>使用 "ip"</H3>
+
+<P>使用方法:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# /sbin/ip -6 route del &lt;ipv6network>/&lt;prefixlength> dev &lt;device>
+? metric 1
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<P>例子:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# /sbin/ip -6 route del 2000::/3 dev eth0 
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+
+<H3>使用 "route"</H3>
+
+<P>使用方法:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# /sbin/route -A inet6 del &lt;network>/&lt;prefixlength> dev &lt;device>
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<P>例子:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# /sbin/route -A inet6 del 2000::/3 dev eth0
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<H2><A NAME="ss7.6">7.6</A> <A HREF="Linux-IPv6-HOWTO.html#toc7.6">FAQ for IPv6 routes(IPv6 路由的经常问答)</A>
+</H2>
+
+<H3>Support of an IPv6 default route</H3>
+
+<P>IPv6的一个方法是hierachical routing(分级路由).因此,分级当中最少需要一个路由.</P>
+<P>在目前的核心中有一些问题:</P>
+<H3>Clients (not routing any packet!)没有任何数据包被路由.</H3>
+
+<P>Clinets 可以设定一个缺省的prefix "::/0"(前缀为 ::/0 的路由).
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+# ip -6 route show | grep ^default
+default via fe80::212:34ff:fe12:3450 dev eth0 proto kernel metric 1024 expires
+? 29sec mtu 1500 advmss 1440
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<H3>Routers on packet forwarding (路由包转寄)</H3>
+
+<P>目前主流的Linux核心(最少是 &lt;=2.4.17) 不支持缺省路由. 您可以设定它们,但在发送数据包时环绕会失败.
+所以,目前的缺省路由可以被设定成 前缀为"2000::/3"的 global (全局地址).
+USAGI 对这个有著良好的支持.</P>
+<P>注意: 注意没有地址筛选的边缘路由器的缺省路由, 不然会有多馀的multicast 或 site-local 传输从边缘溢出.</P>
+
+<HR>
+<A HREF="Linux-IPv6-HOWTO-8.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="Linux-IPv6-HOWTO-6.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="Linux-IPv6-HOWTO.html#toc7"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

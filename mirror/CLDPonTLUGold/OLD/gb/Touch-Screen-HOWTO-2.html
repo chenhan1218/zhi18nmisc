@@ -1,0 +1,111 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="LinuxDoc-Tools 0.9.16">
+ <TITLE>Linux Touch Screen HOWTO: 设定device</TITLE>
+ <LINK HREF="Touch-Screen-HOWTO-3.html" REL=next>
+ <LINK HREF="Touch-Screen-HOWTO-1.html" REL=previous>
+ <LINK HREF="Touch-Screen-HOWTO.html#toc2" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Touch-Screen-HOWTO-3.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="Touch-Screen-HOWTO-1.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="Touch-Screen-HOWTO.html#toc2"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s2">2.</A> <A HREF="Touch-Screen-HOWTO.html#toc2">设定device</A></H2>
+
+<P>Touch screen 的设定是通过XF86Config文档中的Xinput部分来完成.
+(通常是 /etc/X11/XF86Config 或者是 /etc/XF86Config). 
+首先检查硬体的驱动模组是否存在.
+它们应该在 /usr/X11R6/lib/modules/ (我使用的模组是 xf86Elo.so 和 xf86MuTouch.so ,
+它们分别是两个不同产商的模组).现在看一下XF86Config,应有一部分看起来像这样:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+Section "Files"
+...
+ModulePath "/usr/X11R6/lib/modules"
+...
+EndSection
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+<P>如果要将模组挂进 X server ,应有一部分像这样: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+
+Section "Module"
+Load "xf86Elo.so"
+EndSection
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+<P>现在到了最关建的时候了.
+X 需要设备的一些参数. 
+这部分看起来像是这样(想了解更多的细节请参照 "man XF86Config" ): </P>
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+Section "Xinput"
+ SubSection "Elographics"  
+#the entry for a MicroTouch device would be SubSection "MicrotouchFinger"
+  Port "/dev/ttyS1" # for a device at serial port 2
+  DeviceName "TouchScreen" #可以随意设定名称could be any unambiguous name
+  MinimumXPosition 300
+  MaximumXPosition 3700
+  MinimumYPosition 300
+  MaximumYPosition 3700
+  UntouchDelay 10 #not supported with MuTouch
+  ReportDelay 10  #not supported with MuTouch
+  AlwaysCore #activates the device on startup
+ EndSubSection
+EndSection
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+<P>MinimumXPosition 等等是硬体的细节设定(
+设定touch screen 在显示设备上的位置). 数值将显示座标 (0,0) 和 (xmax,ymax) 映射到 Touch screen 设备上(xmax 和 ymax 取决于 Xserver
+的莹幕区域, 比如 1024x768).图例:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+ --------------touch screen 区域-----------------
+ I                                              I
+ I  ########### 莹幕的可视区域 ###############  I
+ I  #x                                       #  I
+ I  # (0,0)                                  #  I
+ I  # (MinimumXPosition,MinimumYPosition)    #  I
+ I  #                                        #  I
+ I  #                                        #  I
+ I  #                                        #  I
+ I  #                                        #  I
+ I  #                                        #  I
+ I  #                                        #  I
+ I  #                                        #  I
+ I  #     (MaximumXPosition,MaximumYPosition)#  I
+ I  #                             (xmax,ymax)#  I
+ I  #                                       x#  I
+ I  ##########################################  I
+ I                                              I
+ ------------------------------------------------
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+<P>这个映射可以通过反覆试验,或者参照硬体输出的数据完成 (需要写一些在 serial port 方面的程式programming, 
+参照: "The Linux Serial Programming HOWTO").
+作者写了一个EloTouch 和 MicroTouch 产品的校准程式, 可在这里下载:</P>
+<P>
+<A HREF=" ftp://metalab.unc.edu/pub/linux/X11/xutils/touchcal-0.1.tar.gz"> ftp://metalab.unc.edu/pub/linux/X11/xutils/touchcal-0.1.tar.gz</A></P>
+<HR>
+<A HREF="Touch-Screen-HOWTO-3.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="Touch-Screen-HOWTO-1.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="Touch-Screen-HOWTO.html#toc2"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

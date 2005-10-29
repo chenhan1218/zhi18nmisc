@@ -1,0 +1,204 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Leased line Mini HOWTO: Modem</TITLE>
+ <LINK HREF="Leased-Line-3.html" REL=next>
+ <LINK HREF="Leased-Line-1.html" REL=previous>
+ <LINK HREF="Leased-Line.html#toc2" REL=contents>
+<SCRIPT src="../../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(2, 8, 2);</SCRIPT>
+<A HREF="Leased-Line-3.html"><IMG SRC="../../img/next.gif" ALT="Next"></A>
+<A HREF="Leased-Line-1.html"><IMG SRC="../../img/prev.gif" ALT="Previous"></A>
+<A HREF="Leased-Line.html#toc2"><IMG SRC="../../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s2">2. Modem</A></H2>
+
+<P>A leased line is not connected to a telephone exchange and does not provide
+DC power, dial tone, busy tone or ring signal. This means that your modems
+are on their own and have to be able to deal with this situation.
+<P>
+You should have 2 identical (including firmware version) <B>external</B>
+modems supporting both leased line and dumb mode. Make sure your modems can
+actually do this! Also make sure your modem is properly documented.
+You also need:
+
+<UL>
+<LI>2 fully wired shielded RS232 cables. The shield should be connected to
+the connector shell (not pin 1) at both ends (not at one end).</LI>
+<LI>A RS232 test plug may be handy for test purposes.</LI>
+<LI>2 RJ11 cords, one for each end of the leased line.</LI>
+<LI>A basic understanding of `AT' commands.</LI>
+</UL>
+
+<H2><A NAME="ss2.1">2.1 Modem Configuration</A>
+</H2>
+
+<P>A note on modem configuration and init strings in general:
+Configure your modem software such as minicom or (m)getty to use the
+highest possible speed; 57600 bps for 14k4 and 115200 bps for 28k8 or
+faster modems.
+Lots of people use very long and complicated init strings, often starting
+with AT&amp;F and containing lots of modem brand and -type specific
+commands. This however is needlessly complicated.
+Most programs feel happy with the same modem settings, so why not write
+these settings in the non volatile memory of all your modems, and only use
+`ATZ' as an init string in all your programs. This way you can swap or
+upgrade your modems without ever having to reconfigure any of your
+software.
+<P>
+Most programs require you to use the following settings;
+
+<UL>
+<LI>Fixed baud rate (no auto baud)</LI>
+<LI>Hardware bidirectional RTS-CTS flow control (no x-on/x-off)</LI>
+<LI>8 Bits, no parity, 1 stopbit</LI>
+<LI>The modem should produce the <B>TRUE</B> DCD status (&amp;C1)</LI>
+<LI>The modem should <B>NOT</B> ignore the DTR status (&amp;D2 or &amp;D3)</LI>
+</UL>
+
+
+Check this with AT&amp;V or AT&amp;Ix (consult your modem documentation)
+<P>
+These settings are not necessarily the same as the default factory profile
+(&amp;F), so starting an init string with AT&amp;F is probably not a good
+idea in the first place. The smart thing to do is probably to use AT&amp;F
+only when you have reason to believe that the modem setup stored in the non
+volatile memory is really screwed up.
+If you think you have found the right setup for your modems, write it to
+non volatile memory with AT&amp;W and test it thoroughly with Z-modem file
+transfers of both ASCII text and binary files.
+Only if all of this works perfectly should you configure your modems for
+leased line.
+<P>
+Find out how to put your modem into dumb mode and, more importantly, how to
+get it out of dumb mode; The modem can only be reconfigured when it is not
+in dumb mode.
+Make sure you actually configure your modems at the highest possible speed.
+Once in dumb mode it will ignore all `AT' commands and consequently will
+not adjust its speed to that of the COM port, but will use the speed at
+which it was configured instead (this speed is stored in a S-register by
+the AT&amp;W command).
+<P>
+Now configure your modem as follows;
+
+<UL>
+<LI>Reset on DTR toggle (&amp;D3, this is sometimes a S register). This
+setting is required by some ISP's!</LI>
+<LI>Leased line mode (&amp;L1 or &amp;L2, consult your modem documentation)</LI>
+<LI>The remote modem auto answer (S0=1), the local originate (S0=0)</LI>
+<LI>Disable result codes (Q1, sometimes the dumb mode does this for you)</LI>
+<LI>Dumb mode (\D1 or %D1, this is sometimes a jumper)
+In dumb mode the modem will ignore all AT commands (sometimes you need
+to disable the ESC char as well).</LI>
+</UL>
+
+
+Write the configuration to non-volatile memory (&amp;W).
+<H2><A NAME="ss2.2">2.2 Test</A>
+</H2>
+
+<P>Now connect the modems to 2 computers using the RS232 cables and connect
+the modems to each other using a RJ11 lead. Use a modem program such as
+Minicom (Linux), procom or telix (DOS) on both computers to test the
+modems.
+You should be able to type text from one computer to the other and vice
+versa. If the screen produces garbage check your COM port speed and other
+settings.
+Now disconnect and reconnect the RJ11 cord. Wait for the connection to
+reestablish itself. Disconnect and reconnect the RS232 cables, switch the
+modems on and off, stop and restart Minicom.
+The modems should always reconnect at the highest possible speed (some
+modems have speed indicator leds).
+Check whether the modems actually ignores the ESC (+++) character. If
+necessary disable the ESC character.
+<P>
+If all of this works you may want to reconfigure your modems;
+Switch off the sound at the remote modem (M0) and put the local modem at
+low volume (L1).
+<H2><A NAME="ss2.3">2.3 Examples</A>
+</H2>
+
+<H3>Hi-Tech</H3>
+
+<P>This is a rather vague `no name clone modem'. Its config string is however
+typical and should work on most modems.
+
+<DL>
+<P>
+<DT><B>Originate (local):</B><DD><P>ATL1&amp;C1&amp;D3&amp;L2%D1&amp;W&amp;W1
+<P>
+<DT><B>Answer (remote):</B><DD><P>ATM0L1&amp;C1&amp;D3&amp;L2%D1S0=1&amp;W&amp;W1
+</DL>
+
+<H3>Tornado FM 228 E</H3>
+
+<P>This is what should work;
+
+<DL>
+<P>
+<DT><B>Originate (local):</B><DD><P>ATB15L1Q1&amp;C1&amp;D3&amp;L2&amp;W&amp;W1
+<P>
+<DT><B>Answer (remote):</B><DD><P>ATM0B15M0Q1&amp;C1&amp;D3&amp;L2S0=1&amp;W&amp;W1
+</DL>
+
+
+Move the dumb jumper from position 2-3 to 1-2.
+<P>
+Due to a firmware bug, the modems will only connect after being hard reset
+(power off and on) while DTR is high. I designed a
+<A HREF="http://www.sput.nl/hardware/modem-reset.html#l2h">circuit</A>
+which hard resets the modem on the low to high transition of DTR.
+The FreeBSD pppd however, isn't very happy about this. By combining the
+setting &amp;D0 with a
+<A HREF="http://www.sput.nl/hardware/modem-reset.html#h2l">circuit</A>
+which resets on the high to low transition instead, this problem can be
+avoided. 
+<H3>Tron DF</H3>
+
+<P>The ESC char should be disabled by setting S2 &gt; 127;
+
+<DL>
+<P>
+<DT><B>Originate:</B><DD><P>ATL1&amp;L1Q1&amp;C1&amp;D3S2=171\D1&amp;W
+<P>
+<DT><B>Answer:</B><DD><P>ATM0&amp;L2Q1&amp;C1&amp;D3S0=1S2=171\D1&amp;W
+</DL>
+
+<H3>US Robotics Courier V-Everything</H3>
+
+<P>The USR Sportster and USR Courier-I do not support leased line. You need
+the Courier V-everything version for this job.
+There is a webpage on the USR site `explaining' how to set-up your Courier
+for leased line. However, if you follow these instructions you will end up
+with a completely brain dead modem, which can not be controlled or
+monitored by your pppd.
+<P>
+The USR Courier can be configured with dip switches, however you need to
+feed it the config string first.
+First make sure it uses the right factory profile. Unlike most other modems
+it has three; &amp;F0, &amp;F1 and &amp;F2. The default, which is also the
+one you should use, is &amp;F1. If you send it an AT&amp;F, however it will
+load the factory profile &amp;F0!
+For the reset on DTR toggle you set bit 0 of S register 13. This means you
+have to set S13 to 1. Furthermore you need set it to leased line mode with
+&amp;L1;
+ATS13=1&amp;L1&amp;W
+The dip switches are all default except for the following:
+
+<DL>
+<P>
+<DT><B>3</B><DD><P>OFF Disable result codes
+<P>
+<DT><B>4</B><DD><P>ON  Disable offline commands
+<P>
+<DT><B>5</B><DD><P>ON  For originate, OFF For answer
+<P>
+<DT><B>8</B><DD><P>OFF Dumb mode
+</DL>
+
+<HR>
+<A HREF="Leased-Line-3.html"><IMG SRC="../../img/next.gif" ALT="Next"></A>
+<A HREF="Leased-Line-1.html"><IMG SRC="../../img/prev.gif" ALT="Previous"></A>
+<A HREF="Leased-Line.html#toc2"><IMG SRC="../../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

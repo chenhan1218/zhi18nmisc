@@ -1,0 +1,76 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>在 Linux 下建立軟體套件: 使用 Make</TITLE>
+ <LINK HREF="Software-Building-HOWTO-4.html" REL=next>
+ <LINK HREF="Software-Building-HOWTO-2.html" REL=previous>
+ <LINK HREF="Software-Building-HOWTO.html#toc3" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Software-Building-HOWTO-4.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Software-Building-HOWTO-2.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Software-Building-HOWTO.html#toc3"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s3">3. 使用 Make</A></H2>
+
+<P><CODE>Makefile</CODE> 是建立過程的重點. 在它的最簡單的形式, Makefile 
+就是個 script ,它是用來編譯或建立"二元碼",套件的可執行部分.
+Makefile也可以提供軟體套件升級的工具,而不需要重新編譯每一個在套件中的原始檔案,
+但其有不同的情況(或是不同的約定).
+<P>某些特點是, Makefile 開啟 <CODE>cc</CODE> 或 <CODE>gcc</CODE>.
+這實際上是個前處理器, C (or C++) 編譯器, 和 連結器, 按照那個順序.
+這過程轉換原始碼(source)為可真正去執行的二元碼(binaries).
+<P>下指令 <EM>make</EM> 通常只要鍵入 <B>make</B>.
+這通常建立討論中的套件所有需要的可執行檔.
+然而, <EM>make</EM> 也做其他工作,像是安裝檔案至合適的目錄 (<B>make install</B>)
+而且刪除舊的 object 檔案 (<B>make clean</B>). 
+執行 <B>make -n</B> 允許預覽建立過程, 就是列出所有 make 
+所喚起的(triggered)所有命令, 但沒有真的去執行它們.
+<P>只有在最簡單的軟體使用一般性的 Makefile. 較複雜的安裝需要根據函式庫(libraries),
+include 檔案以及你個別機器資源所在目錄來量身定製.
+這特別是當需要 <CODE>X11</CODE> libraries 來安裝建立時.
+<EM>Imake</EM> 和 <EM>xmkmf</EM> 可完成這樣的工作.
+<P>引用自 man page,Imakefile 是個"模板(template)"的 Makefile.
+imake 工具參考 Imakefile 根據你的系統造出合適的 Makefile.
+然而,幾乎在所有的情況下,你要執行 xmkmf, 它是要下 imake 指令用的 shell script,
+也就是個前端介面(front end). 察閱一下內附在軟體檔案間的 README 或 INSTALL 
+檔案以取得特別的指示. 至於更詳細的步驟分析,請閱讀 imake 和 xmkmf 的 man pages.
+<P>要知道的是 <EM>xmkmf</EM> 和 <EM>make</EM> 可能需要以 root 身分來下指令,
+特別是當 <B>make install</B> 來搬移二元碼到 <CODE>/usr/bin</CODE> 
+或 <CODE>/usr/local/bin</CODE> 目錄. 以一般使用者的身分而不具 root 權力
+來使用 make 將可能會導致 <CODE>write access denied</CODE> 的錯誤訊息,
+因為你缺少寫入(write)至系統目錄的權限. 也檢查一下,
+所造出來的二元碼對你與任何其他適用的使用者有適合的執行(execute)權限.
+<P>下指令 <B>xmkmf</B> 來使用 <EM>Imake</EM> 檔案, 
+建立一個新的而且適合你系統的 Makefile. 正常地下指令 <B>xmkmf</B> 都會附加
+<B>-a</B> 引數, 因而自動地做 <EM>make Makefiles, make includes,</EM>
+和 <EM>make depend</EM> 的動作. 這會設定變數(variables)和給定函式庫(library)
+位置給編譯器和連結器. 有時會沒有 <EM>Imake</EM> 檔案, 引而代之的是有
+<EM>INSTALL</EM> 和 <EM>configure</EM> 的 script, 也會到這樣的目的. 
+注意的是如果你要執行  <EM>configure</EM>, 那要下指令 <B>./configure</B>
+以確保在目前目錄下正確的 script <EM>configure</EM> 是被呼叫.
+在大部分的情況, 在發行套件中的 <EM>README</EM> 檔案會說明安裝步驟.
+<P>通常一個好的方法是從外觀檢視一下 <CODE>Makefile</CODE> 是 <CODE>xmkmf</CODE> 或
+其中一個安裝的 scripts 所造出來的.  Makefile 正常下會為你的系統而修正,
+但你偶而可能需要"旋扭(tweak)"或手動地修正錯誤.
+<P>
+<P>你的一般安裝步驟將會是:
+<UL>
+<LI>讀一下 <EM>README</EM> 檔案和其它合用的文件.</LI>
+<LI>執行 <B>xmkmf -a</B>, 還是 <EM>INSTALL</EM> 或 <EM>configure</EM> 
+script.</LI>
+<LI>檢查一下 <CODE>Makefile</CODE>.</LI>
+<LI>如果需要, 執行一下 <B>make clean</B>, <B>make Makefiles</B>,  
+<B>make includes</B>, and <B>make depend</B>.</LI>
+<LI>執行 <B>make</B>.</LI>
+<LI>檢查一下權限.</LI>
+<LI>如果需要, 執行一下 <B>make install</B>.</LI>
+</UL>
+<P>
+<P>
+<HR>
+<A HREF="Software-Building-HOWTO-4.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Software-Building-HOWTO-2.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Software-Building-HOWTO.html#toc3"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

@@ -1,0 +1,122 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="LinuxDoc-Tools 0.9.16">
+ <TITLE>ADSL Bandwidth Management HOWTO: 背景</TITLE>
+ <LINK HREF="ADSL-Bandwidth-Management-HOWTO-3.html" REL=next>
+ <LINK HREF="ADSL-Bandwidth-Management-HOWTO-1.html" REL=previous>
+ <LINK HREF="ADSL-Bandwidth-Management-HOWTO.html#toc2" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="ADSL-Bandwidth-Management-HOWTO-3.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="ADSL-Bandwidth-Management-HOWTO-1.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="ADSL-Bandwidth-Management-HOWTO.html#toc2"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s2">2.</A> <A HREF="ADSL-Bandwidth-Management-HOWTO.html#toc2">背景</A></H2>
+
+<H2><A NAME="ss2.1">2.1</A> <A HREF="ADSL-Bandwidth-Management-HOWTO.html#toc2.1">必要条件</A>
+</H2>
+
+<P>要点: 这些方法尽管没有在其它的发行版中试验过,我想它正常工作大概没什么问题.下面是运行的环境:
+<UL>
+<LI>Red Hat Linux 7.3</LI>
+<LI>2.4.18-5 完全支持 QoS 的核心版本 (模组也可以) 包含以下的patches (补丁)(可能会最终加入到最新的核心当中): </LI>
+<LI>HTB queue -  
+<A HREF="http://luxik.cdi.cz/~devik/qos/htb/">http://luxik.cdi.cz/~devik/qos/htb/</A>
+
+注意: Mandrake(曼德莱克8.1, 8.2)的核心自 2.4.18-3 起就有了HTB 的 patches. </LI>
+<LI>IMQ device - 
+<A HREF="http://luxik.cdi.cz/~patrick/imq/">IMQ device - http://luxik.cdi.cz/~patrick/imq/</A>         </LI>
+<LI>iptables 版本v1.2.6a 或更新的(version of iptables distributed with Red 
+Hat 7.3 is missing the length module)</LI>
+</UL>
+</P>
+
+<P>Note: Previous versions of this document specified a method of bandwidth control 
+that involved patching the existing sch_prio queue. 
+It was found later that this patch was entirely unnecessary. 
+Regardless, the newer methods outlined in this document will give you 
+better results (although at the writing of this document 2 kernel patches are now necessary. 
+:) Happy patching.)</P>
+<H2><A NAME="ss2.2">2.2</A> <A HREF="ADSL-Bandwidth-Management-HOWTO.html#toc2.2">布局</A>
+</H2>
+
+<P>化繁为简,所有的设定依照下面这个布局进行:
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+  &lt;-- 128kbit/s      --------------     &lt;-- 10Mbit -->
+  Internet &lt;--------------------> | ADSL Modem | &lt;--------------------
+                1.5Mbit/s -->     --------------                     |
+                                                                     | eth0
+                                                                     V
+                                                         -----------------
+                                                         |               |
+                                                         | Linux Router  |
+                                                         |               |
+                                                         -----------------
+                                                          | .. | eth1..ethN
+                                                          |    |
+                                                          V    V
+                   
+                                                       Local Network
+      
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+<H2><A NAME="ss2.3">2.3</A> <A HREF="ADSL-Bandwidth-Management-HOWTO.html#toc2.3">Packet Queues(数据包队列)</A>
+</H2>
+
+<P>Packet Queues是一个容器, 当数据不能被网络设备立既送走的时候, Packet Queues 负责暂时收留它们.
+除非被设定成另外一种方式,否则数据包是按 FIFO (first in, first out 最早进入Queues的数据将被最快发送走)
+进行排队.</P>
+<H3>The Upstream(向上传输)</H3>
+
+<P>ADSL的带宽由不对称的 1.5Mbit/s downstream(向下传输)和128kbit/sec upstream(向上传输)组成.
+Linux 路由器(主机)同ADSL modem的连结速率在10Mbits/s左右.如果 Linux 路由器同 Local Network(本地网络)
+的连结速率也在10Mbits/s左右,路由器和Local Network(本地网络)的Queues(队列)就不会存在.但以10Mbits/s到达ADSL modem的数据包却要以128kbit/sec 
+传输到Internet.因此数据包将在ADSL modem形成Queues,ADSL modem将不能应付而产生数据包丢失现象.
+TCP就是用来控制类似这样的情况,它调整传输窗口的大小以达到利用带宽的最佳效果.</P>
+
+<P>TCP控制Queues(队列)以利用带宽. 较大的FIFO Queues将延长数据包的传送时间.</P>
+
+<P>另一种同FIFO有点相似的Queues(队列)是 n-band priority queue, 它取代FIFO只有一个队列的做法,
+数据包分级别排出多个FIFO Queues(队列), 每一个Queues都有优先级别的设定, 
+总是从级别高的Queues将数据dequeued(出列). 使用这种方法,FTP和telnet同时上载数据包的时候,
+telnet的数据包将得到更高的优先级别.单独的telnet数据包将被立既发送.</P>
+
+<P>Linux 使用一种新的Queues:  Hierarchical Token Bucket (HTB 译为分级型式的队列容器).
+它有点像n-band priority queue, 但n-band priority queue在每个级别中只有限制数据通讯的能力.
+HTB有一项更加先进的功能:在已有的级别之上能够建立一个新的级别通讯.更多的资讯请参照:
+<A HREF="http://www.lartc.org/">http://www.lartc.org/</A></P>
+
+<H3>The Downstream(向下传输)</H3>
+
+<P>从Internet发送至ADSL modem的数据包入站和数据包出站的Queues大至相同.
+不管怎样, queue 会集在您的ISP那里. 因为这样您大概不能直接控制数据包如何排队或以哪种形式分配优先权.
+只有一种方法来缩短这里的反应时间:期望向您发送数据包的时候不要太快.
+不幸的是,您无法直接控制数据包的到达速度.
+这里有一些方法将发送者的速度减慢:
+<UL>
+<LI>故意将入站数据包丢弃. TCP is designed to take full advantage of the available bandwidth
+while also avoiding congestion of the link. This means that during a 
+bulk data transfer TCP will send more and more data until eventually a packet is dropped.
+TCP detects this and reduces it's transmission window. 
+This cycle continues throughout the transfer and assures data is moved as quickly as possible.
+</LI>
+<LI>操纵advertised receive window(广告接收窗)- During a TCP transfer, the receiver sends back
+a continuous stream of acknowledgment (ACK) packets. 
+Included in the ACK packets is a window size advertisement 
+which states the maximum amount of unacknowledged data the receiver should send. 
+By manipulating the window size of outbound ACK packets we can intentionally slow down the sender. 
+At the moment there is no (free) implementation for this type of flow-control on 
+Linux (however I may be working on one!). </LI>
+</UL>
+</P>
+
+<HR>
+<A HREF="ADSL-Bandwidth-Management-HOWTO-3.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="ADSL-Bandwidth-Management-HOWTO-1.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="ADSL-Bandwidth-Management-HOWTO.html#toc2"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

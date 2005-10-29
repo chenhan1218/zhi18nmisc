@@ -1,0 +1,178 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>XFree86 Font Deuglification Mini HOWTO: TrueType Fonts (One of the few things Windows is good for)</TITLE>
+ <LINK HREF="FDU-5.html" REL=next>
+ <LINK HREF="FDU-3.html" REL=previous>
+ <LINK HREF="FDU.html#toc4" REL=contents>
+<SCRIPT src="../../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(2, 8, 2);</SCRIPT>
+<A HREF="FDU-5.html"><IMG SRC="../../img/next.gif" ALT="Next"></A>
+<A HREF="FDU-3.html"><IMG SRC="../../img/prev.gif" ALT="Previous"></A>
+<A HREF="FDU.html#toc4"><IMG SRC="../../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s4">4. TrueType Fonts (One of the few things Windows is good for)</A></H2>
+
+<P>Because the boys at Redmond are very concerned with the appearance of
+their software (as opposed to the internal workings ;) they built
+TrueType font support into Windows.  Windows 95 and nearly every other
+variety of Windows comes with Arial, Times New Roman, and Courier New,
+which are roughly equivalant to Helvetica, Times and Courier.  TrueType
+fonts are scalable, so they look good in large sizes, and they are well
+hinted, so they are readable at small sizes.  Many windows applications
+come with dozens of TrueType fonts.  Don't microwave your Windows CD
+yet, you'll want to get the fonts first.
+<H2><A NAME="ss4.1">4.1 xfstt</A>
+</H2>
+
+<P>Unfortunately, XFree86 does not come with built in TrueType support, so
+you'll have to add it yourself.  The easiest way of doing this is with
+xfstt, a free TrueType font server.
+<H3>Installation</H3>
+
+<P>xfstt is very easy to install.  First, you'll want to download the
+tarball from the web.  The most current version is at
+<A HREF="http://metalab.unc.edu/pub/Linux/X11/fonts/Xfstt-0.9.10.tgz">http://metalab.unc.edu/pub/Linux/X11/fonts/Xfstt-0.9.10.tgz</A><P>Once you have the tarball, untar it.
+<P>
+<PRE>
+tar -zxvf Xfstt-0.9.10.tgz
+</PRE>
+<P>Then build it and install it.  Read the INSTALL file for quick
+instructions, but it's a no brainer.  <CODE>make; make install</CODE> is
+all you have to do.  Once that's done, copy the TrueType fonts you've
+managed to get from various sources to <CODE>/usr/ttfonts</CODE>, and
+you're ready to go.  Start xfstt by typing
+<P>
+<PRE>
+xfstt --sync        # updates xfstt's font database
+xfstt &amp;             # runs xfstt in the background.
+</PRE>
+<P>Then type
+<P>
+<PRE>
+xset +fp unix/:7100 # tells X about xfstt.
+</PRE>
+<P>or add
+<P>
+<PRE>
+FontPath "unix/:7100"
+</PRE>
+<P>to your <CODE>XF86Config</CODE> to tell X about the font service.
+<H3>Adjusting the default font size</H3>
+
+<P>If your TrueType fonts appear to be very tiny, the following commands
+help.
+<P>Add the <CODE>-dpi</CODE> switch to your X server command line (see section
+3 to do this.)
+<P> Use the <CODE>--res</CODE> switch to tell xfstt to increase the default
+resolution.  Use the following command line.
+<P>
+<PRE>
+xfstt --res 120
+</PRE>
+<H2><A NAME="ss4.2">4.2 xfs</A>
+</H2>
+
+<P>xfs is an alternative font server that is now being included with
+RedHat based distributions. xfs is based on the FreeType Font library
+and provides similar functionality to xfstt. xfs is able to serve both
+TrueType and Type 1 fonts, as well as legacy X fonts.
+<H3>Installation</H3>
+
+<P>First step is to add TrueType Fonts to your linux filesystem. Su to
+root, and make a directory to hold the fonts:
+<P>
+<PRE>
+mkdir /usr/share/fonts/ttfonts
+</PRE>
+<P>Then, add fonts to this directory, either by copying them from your
+Windows system:
+<P>
+<PRE>
+cp /mnt/win/path_to_fonts/*ttf  /usr/share/fonts/ttfonts/
+</PRE>
+<P>or by downloading those available directly from 
+<A HREF="http://www.microsoft.com/typography/fontpack/default.htm">Microsoft</A>.
+<P>These fonts are in self-extracting zip archives. You can still install
+them though in linux
+<P>
+<PRE>
+unzip &lt;TTFONT.EXE&gt;
+</PRE>
+<P>Note that the font file names must be lower case. One quick and easy
+way to convert them is to copy them to a DOS (FAT16) filesystem and
+then copy them back. DOS doesn't do upper case. For a more linuxian
+way, go to the directory containing the fonts and type this:
+<P>
+<PRE>
+ls *TTF | while read f
+do
+ [ -f "$f" ] &amp;&amp; mv -f "$f" "`echo \"$f\" | tr A-Z a-z`"
+done
+</PRE>
+<P>You'll get the ">" prompt as you type each line, hit return at the end
+of each line above.  Note the punctuation -- those "backquotes" are
+important!  Once the TrueType fonts are properly installed, as root:
+<P>
+<PRE>
+ttmkfdir -o fonts.scale
+mkfontdir
+</PRE>
+<P>Rerun these commands anytime the contents of your font directory
+changes.  Next, edit the xfs font config file, /etc/X11/fs/config, to
+add your TrueType fonts to the server's font list:
+<P>
+<PRE>
+catalogue = /usr/X11R6/lib/X11/fonts/misc:unscaled,
+            /usr/X11R6/lib/X11/fonts/100dpi:unscaled,
+            /usr/X11R6/lib/X11/fonts/75dpi:unscaled,
+            /usr/X11R6/lib/X11/fonts/misc,
+            /usr/X11R6/lib/X11/fonts/Type1,
+            /usr/X11R6/lib/X11/fonts/Speedo,
+            /usr/share/fonts/default/Type1,
+            /usr/share/fonts/ttfonts,
+            /usr/X11R6/lib/X11/fonts/100dpi,
+            /usr/X11R6/lib/X11/fonts/75dpi
+</PRE>
+<P>Alternately, you can use the 'chkfontpath --add &lt;font&gt;' command
+to add fonts. While you're at it, you may want to change the default
+point size too.
+<P>
+<PRE>
+default-point-size = 140
+</PRE>
+<P>This gives me 14 point, instead of the default 12. Some X apps use
+this, some won't.  Next, make sure the FontPath line in
+/etc/X11/XF86Config is:
+<P>
+<PRE>
+FontPath "unix/:-1"
+</PRE>
+<P>Note that "unix/:7100" may also do the trick, but did not work with the
+initial release. Comment out any existing FontPath with '#' since you
+no longer need it.  The xfs package itself should be installed already
+with the other XFree packages. To make sure it runs as one of the
+default services either use 'ntsysv' or
+<P>
+<PRE>
+chkconfig --add xfs
+</PRE>
+<P>Now xfs will start every time you boot.  Now restart X to force the new
+FontPath and start/restart xfs
+<P>
+<PRE>
+/etc/rc.d/init.d/xfs restart
+</PRE>
+<P>You should now have a functioning font server. You can check which
+fonts are being served:
+<P>
+<PRE>
+xlsfonts | less
+</PRE>
+<P>or check them out further with xfontsel, and even better, gfontsel!
+<HR>
+<A HREF="FDU-5.html"><IMG SRC="../../img/next.gif" ALT="Next"></A>
+<A HREF="FDU-3.html"><IMG SRC="../../img/prev.gif" ALT="Previous"></A>
+<A HREF="FDU.html#toc4"><IMG SRC="../../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

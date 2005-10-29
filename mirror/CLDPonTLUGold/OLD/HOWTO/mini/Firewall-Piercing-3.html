@@ -1,0 +1,113 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Firewall Piercing mini-HOWTO: Understanding the problem</TITLE>
+ <LINK HREF="Firewall-Piercing-4.html" REL=next>
+ <LINK HREF="Firewall-Piercing-2.html" REL=previous>
+ <LINK HREF="Firewall-Piercing.html#toc3" REL=contents>
+<SCRIPT src="../../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(2, 8, 2);</SCRIPT>
+<A HREF="Firewall-Piercing-4.html"><IMG SRC="../../img/next.gif" ALT="Next"></A>
+<A HREF="Firewall-Piercing-2.html"><IMG SRC="../../img/prev.gif" ALT="Previous"></A>
+<A HREF="Firewall-Piercing.html#toc3"><IMG SRC="../../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s3">3. Understanding the problem</A></H2>
+
+<P>Understanding a problem is the first half of the path to solving it.
+<P>
+<H2><A NAME="ss3.1">3.1 Giving names to things</A>
+</H2>
+
+<P>If you want this hack to work for you,
+you'll have to get an idea of how it works,
+so that in case anything breaks,
+you know where to look for.
+<P>The first step toward understanding the problem
+is to give a name to relevant concepts.
+<P>As usual, we'll herein call "local" the client machine
+that decides to initiate the connection,
+as well as programs and files on that machine;
+conversely, we'll call "remote" what's on the other side of the connection,
+where a server runs that waits for connections.
+<H2><A NAME="ss3.2">3.2 The main problem</A>
+</H2>
+
+<P>The main problem with firewall piercing is to create a tunnel:
+a continuous connection from the local machine to a remote machine
+on the other side of the firewall,
+that allows for bidirectional exchange of information.
+Optionally, this connection should be a secure one.
+The secondary problem is to transform this connection
+into a full IP access for normal programs to use transparently.
+<P>For the main problem, we'll assume that
+either (1) you can establish normal TCP/IP connections
+from the local side of the firewall to some port on a remote machine
+where a sshd runs or can be set to run, or
+(2) you can somehow establish a telnet connection through a telnet proxy.
+In case you cannot, we give you pointers to other software that allows you
+to pierce a tunnel accross a firewall.
+Although we only give a secure solution in the first case,
+you can hack your own secure solution in the other cases,
+if you understand the principle
+(if you don't, someone, e.g. I, can do it for you in exchange for money).
+<H2><A NAME="ss3.3">3.3 The secondary problem</A>
+</H2>
+
+<P>For the secondary problem,
+IP emulators (<CODE>pppd</CODE> or <CODE>SLiRP</CODE>)
+are run on each side of the tunnel.
+<P>On the side that wants full IP access to the other side,
+you'll want to run <CODE>pppd</CODE>.
+On the other side, you want to run <CODE>pppd</CODE>
+if you also want full IP access to the first side,
+or <CODE>SLiRP</CODE> if you want to prevent any access.
+Go to your usual pppd or SLiRP documentation for more information,
+if you have specific needs not covered by the examples given below.
+<P>Although this is conceptually trivial,
+it nonetheless requires a few silly tricks, so as to work, since
+(a) in case you're using some kind of programmed interactive shell session
+to start the remote IP emulator on either side, you need to correctly
+synchronize the start of the IP emulator on the other side,
+so as not to send garbage into the shell session,
+and
+(b) IP emulators are designed to be run on a "tty" interface
+so you have to convert your tunnel's interface into a tty one.
+<P>Issue (a) is just your usual synchronization problem,
+and doesn't even exist if you use <CODE>ssh</CODE>,
+that transparently handles remote command launching.
+<P>Issue (b) requires the use of a simple external utility.
+We wrote one, <CODE>cotty</CODE> just for that purpose.
+<P>&lt;FLAME ON&gt;
+<P>Among the silly problems caused by <CODE>pppd</CODE> maintainers' shortmindedness,
+you can only run it through
+either a device in <CODE>/dev</CODE> or the current tty.
+You cannot run it through a pair of pipe
+(which would be the obvious design).
+This is fine for the remote <CODE>pppd</CODE> if any,
+as it can use the <CODE>telnet</CODE> or <CODE>ssh</CODE> session's tty;
+but for the local <CODE>pppd</CODE>, this conflicts with
+the possible use of <CODE>telnet</CODE> as a way to establish a connection.
+<P>Indeed, <CODE>telnet</CODE>, too wants to be on a tty;
+it behaves <EM>almost</EM> correctly with a pair of pipe,
+except that it will still insist on doing ioctl's to the current tty,
+with which it will interfere;
+using <CODE>telnet</CODE> without a tty also causes race conditions,
+so that the whole connection will fail on "slow" computers
+(<CODE>fwprc</CODE> 0.1 worked perfectly on a P/MMX 233,
+one time out of 6 on a 6x86-P200+, and never on a 486dx2/66).
+All in all, when using <CODE>telnet</CODE>, you need <CODE>cotty</CODE>
+to run as a daemon to copy output from one tty on which runs <CODE>pppd</CODE>
+into another tty on which runs <CODE>telnet</CODE>, and conversely.
+<P>If I find the sucker (probably a MULTICS guy,
+though there must have been UNIX people stupid enough to copy the idea)
+who invented the principle of "tty" devices
+by which you read and write from a "same" pseudo-file,
+instead of having clean pairs of pipes,
+I strangle him!
+<P>&lt;/FLAME&gt;
+<HR>
+<A HREF="Firewall-Piercing-4.html"><IMG SRC="../../img/next.gif" ALT="Next"></A>
+<A HREF="Firewall-Piercing-2.html"><IMG SRC="../../img/prev.gif" ALT="Previous"></A>
+<A HREF="Firewall-Piercing.html#toc3"><IMG SRC="../../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

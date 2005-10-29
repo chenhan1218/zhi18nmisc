@@ -1,0 +1,161 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE> Modem-HOWTO : Appendix G: Antique Modems </TITLE>
+ <LINK HREF="Modem-HOWTO-25.html" REL=previous>
+ <LINK HREF="Modem-HOWTO.html#toc26" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<IMG SRC="../img/next.gif" ALT="Next">
+<A HREF="Modem-HOWTO-25.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Modem-HOWTO.html#toc26"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s26">26. Appendix G: Antique Modems </A></H2>
+
+<H2><A NAME="ss26.1">26.1 Obsolete CCITT (ITU) and Bell Protocols </A>
+</H2>
+
+<P> This section compares the antique modems with the modern ones.
+You should read it if you are interested in modem history or are
+intending to actually use an antique modem.  
+<P>
+<UL>
+<LI> Bell 103   300 bps; frequency shift keying = FSK</LI>
+<LI> v.21       300 bps; frequency shift keying (used a different
+frequency than Bell 103) </LI>
+<LI> v.23      1200/75 bps and 600/75 bps asymmetric; 75 bps is the reverse 
+channel; frequency shift keying = FSK</LI>
+<LI> Bell 212A 1200 bps; quadrature differential phase shift keying 
+= QDPSK = DPSK</LI>
+<LI> v.22      1200 bps; fallback to 600 bps ; QDPSK = DPSK</LI>
+<LI> v.22bis   2400 bps; QAM</LI>
+<LI> v.32      9600 bps; QAM (1988)</LI>
+<LI> v.32bis  14400 bps; QAM</LI>
+</UL>
+
+QAM= Quadrature Amplitude Modulation.  The word "Quadrature" is short
+for "quadrature differential phase shift keying" =QDPSK
+<P>
+<H2><A NAME="ss26.2">26.2 Overview</A>
+</H2>
+
+<P> Before v.32  modems typically had speeds of 300 to 2400 bps.  Some
+super fast ones had much higher speeds (such as 19.2k bps) and used
+non-standard protocols.  To utilize these "fast" ones, both modems for
+a connection usually needed to be of the same brand.
+<P>Prior to the v.42 standard for error correction and the v.42bis (1990)
+standard for data compression, the MNP standards were usually used for
+both error correction and data compression.  An X.PC error correction
+standard was used on some commercial data networks.  Compression and
+error correction were available on some 2400 bps modems.
+<P>Around 1980 many modems only had a speed of 300 bps (which was also
+300 baud).  This is only 0.3kbps.  Modern modems are over 100 times
+faster.  Some old-slow modems are still in use so they are not really
+"antique" quite yet.  
+<P>
+<H2><A NAME="autobaud_"></A> <A NAME="ss26.3">26.3 Autobauding </A>
+</H2>
+
+<H3>Various meanings</H3>
+
+<P>This term has a few different meanings.  In general it means the
+automatic adjustment of modem-to-modem speed or modem-to-serial_port
+speed.
+<P>
+<H3>Modem-to-modem speed</H3>
+
+<P>Modern modems negotiate the modem-to-modem speed and protocol when
+they first connect to each other.  If one side can't negotiate, the
+other side should accept whatever speed and protocol that the antique
+modem has available.  Sometimes this is called "autobauding".  When
+both modems automatically lower their speed due to a noisy line it's
+called "fallback".  Thus users of modern modems (or computer programs
+in your PC) don't need to deal with this (unless the S37 register has
+been set so as to disable autobauding).  
+<P>But many old modems didn't have such autobauding (although many had
+fallback).  If you have such a modem, it will likely work OK if the
+other modem you connect to is a modern one that can adjust it's speed
+and protocol to yours.  But a problem arises if both modems which want
+to communicate with each other are both antique and don't support
+autobauding.  How was this done?
+<P>In olden days, a computer dial-in site might have a number of phone
+lines, each of which would have a specific speed modem on it.  For
+example, if you had a 1200 bps modem then you simply only dialed in
+to certain telephone numbers that supported that speed.  Once a site
+obtained modems that could support various speeds on the same modem
+and automatically detect the callers speed (do autobauding) then
+people could call in using modems that didn't do this autobauding
+(providing that their speed and protocol was supported).
+<P>
+<H3>Modem-to-serial_port speed</H3>
+
+<P> When a modem modem is sent an init string (or a dial command),
+the modem detects the speed of the serial port and sets it's
+modem-to-serial_port speed to this value.  It does this by sensing the
+speed of the "AT" at the beginning of the string.
+<P>Old modems couldn't do this and one would need to set the computer's
+serial port speed (with stty or the like) to the same exact value as
+the modem-to-modem speed (such as 1200 bps).  If the modem had a
+choice of speeds one could use the AT register S37 to select one.  But
+for dial-in when there was a choice of speeds (via autobauding), if a
+connection was made at say 2400 bps, then the modem-to-serial_port
+speed would change to 2400 bps.  Then one would need to start getty
+at 2400 bps.  Thus getty needed to adjust to whatever speed was
+coming from the modem.  Since the serial port doesn't have any way to
+detect what speed is being sent to it, getty would set the serial port
+to a different speed (as specified in a getty configuration file) if
+it couldn't communicate at the current speed.  Today it's the other
+way around: the modem adjusts its modem-to-serial_port speed to
+whatever speed the serial port is using.
+<P>In Linux, there's a problem if the speed is set to a speed not
+supported by Linux's serial port (for example 7200 bps).  You
+may dial out and connect at 7200 bps (both modem-to-modem and
+modem-to-serial_port speed) but you only see garbage since Linux
+doesn't support 7200 on the serial port.  Once you connect there is no
+simple way to hang up because even the +++ escape sequence can't be
+sent to the modem over a 7200 baud interface.  
+<P>To dial out by the antique method using a modern modem set &amp;Q0 N0
+and S17=5 (for 1200 bps).  Some of the S17 settings vary with the make
+of modem except that S17=0 is the default that connects the modern way
+at the highest speed supported.
+<P>The original getty program configuration file /etc/gettydefs has an
+optional autobauding feature (see "next-label" in the manual) which
+will change the speed of the serial port.  The agetty program has a
+similar baud rate detection feature.  This was used to adjust the speed
+of the serial port to the modem-to-modem speed of an incoming dial-in
+call.
+<P>Modern modems can use almost any serial port speed.  To do this they
+employ speed buffering and flow control.  Speed buffering means that
+modems have buffers so that there can be a difference between the
+modem-to-modem speed and the modem-to-serial_port speed.  If the flow
+entering the modem is faster than the flow exiting it, the excess flow
+is simply stored in a buffer in the modem.  Then to prevent the buffer
+from overflowing, the modem sends a flow control signal to stop the
+input flow to the modem.  This is true for either direction of flow.
+See 
+<A HREF="Modem-HOWTO-4.html#flow_control">Flow Control</A> for more details.
+<P>
+<H2><A NAME="ss26.4">26.4 Before AT Commands</A>
+</H2>
+
+<P> Hayes introduced the AT command set and other modem manufacturers
+adopted it as a standard.  Before the AT commands, many modems used
+dip switches to configure the modem.  Another command set is the CCITT
+V.25bis command set.  Some modems supported both CCITT and AT
+commands.  The CCITT V.25bis also specifies how Synchronous
+modem-to-serial_port communication is to take place using either the
+ASCII or 8-bit EBCDIC character sets.
+<P>
+<H2><A NAME="ss26.5">26.5 Data Compression and Error Correction</A>
+</H2>
+
+<P> MNP 2, 3, or 4 were used for error correction.  MNP 5 was
+compression.  Modern modems generally use V42 (error correction) and
+V42bis (compression).  Many modems support both MNP and V42.
+<P>END OF Modem-HOWTO
+<HR>
+<IMG SRC="../img/next.gif" ALT="Next">
+<A HREF="Modem-HOWTO-25.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Modem-HOWTO.html#toc26"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

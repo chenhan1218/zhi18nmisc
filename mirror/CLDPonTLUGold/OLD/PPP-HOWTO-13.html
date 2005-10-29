@@ -1,0 +1,191 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>PPP HOWTO 中譯版: 如果你的 PPP 伺服器使用 PAP 認證(Password Authentication Protocol)</TITLE>
+ <LINK HREF="PPP-HOWTO-14.html" REL=next>
+ <LINK HREF="PPP-HOWTO-12.html" REL=previous>
+ <LINK HREF="PPP-HOWTO.html#toc13" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="PPP-HOWTO-14.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="PPP-HOWTO-12.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="PPP-HOWTO.html#toc13"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="pap"></A> <A NAME="s13">13. 如果你的 PPP 伺服器使用 PAP 認證(Password Authentication Protocol)</A></H2>
+
+<P>如果你連接的伺服器需要 PAP 或 CHAP 認證，你需要多一點的工作．
+<P>
+<P>在上面的選項檔案中，加上下面幾行
+<HR>
+<PRE>
+#
+# 告訴 pppd 使用你的 ISP 名稱做為認證過程中的"主機名稱"
+name &lt;your ISP user name>    # 你需要改變這一行
+#
+# 如果你執行 PPP *伺服器* 並且需要使用 PAP 或 CHAP 認證，適當除去下面的
+# 註解．不要在你做為客戶端連上伺服器時使用此選項(即使它使用 PAP 或 CHAP)
+# 因為這是告訴伺服器必須為它自己在你的機器上提供認證(這幾乎是不可能的，
+# 所以連結會失敗)．
+#+chap
+#+pap
+#
+# 如果你使用在 /etc/ppp/pap-secrets 檔案中經編碼的密碼，除去下面一行的註解．
+# 注意: 這和 Windows NT 上的遠端存取服務裡的微軟編碼密碼是不同的．
+#+papcrypt
+</PRE>
+<HR>
+<P>
+<H2><A NAME="ss13.1">13.1 使用 MSCHAP</A>
+</H2>
+
+<P>微軟的 Windows NT 遠端存取服務(RAS)可以被設定為使用一種 CHAP(Challenge/Handshake Authentication Protocol) 的變種．
+在你的 PPP 原始程式碼中，你可以找到一個叫 <CODE>README.MSCHAP80</CODE> 的檔案討論這件事．
+<P>
+<P>你可以開啟 pppd 的偵錯功能判斷伺服器是否要求使用此認證協定．
+如果伺服器使用 MS CHAP 認證，你會看到這樣的一行
+<HR>
+<PRE>
+rcvd [LCP ConfReq id=0x2 &lt;asyncmap 0x0> &lt;auth chap 80> &lt;magic 0x46a3>]
+</PRE>
+<HR>
+<P>
+<P>關鍵的訊息是 <B>auth chap 80</B>．
+<P>
+<P>為了使用 MS CHAP，你必須重新編譯 pppd 以支援此協定．
+請參見 PPP 原始程式碼中的 <CODE>README.MSCHAP80</CODE> 說明如何編譯以使用此變種協定．
+<P>
+<P>你還要注意這裡的程式碼只是讓 Linux PPP 做為客戶端連接上 MS Windows NT 伺服器用的．
+它<B>並不</B>支援將 Linux 設立為讓客戶端使用 MSCHAP80 認證 PPP 伺服器．
+<P>
+<H2><A NAME="ss13.2">13.2 PAP/CHAP 密碼檔案</A>
+</H2>
+
+<P>如果你使用 PAP 或 CHAP 認證，你必須建立這些密碼檔案．它們是:
+<HR>
+<PRE>
+/etc/ppp/pap-secrets
+/etc/ppp/chap-secrets
+</PRE>
+<HR>
+<P>
+<P>這些檔案擁有者必須為 root，群組為 root，同時為了安全檔案權限應為 740．
+<P>
+<P>關於 PAP 與 CHAP 第一點要指出的是它們是設計用來認證<B>電腦系統</B>而不是<B>使用者</B>的．
+<P>
+<P>"嗯? 有什麼不同呢?" 我聽到你在問．
+<P>
+<P>哦，一旦你的電腦建立與伺服器建立 PPP 連線，你系統上的<B>任何</B>使用者都可以使用此連線 - 不只是你而已．
+這也是為何你可以使用 PPP 將兩個區域網路(LAN)連接起來建立一廣域網路(WAN)的原因．
+<P>
+<P>PAP (還有 CHAP <B>也是</B>)需要<B>雙向</B>認證 - 也就是每一電腦需要一個合法的名稱與密碼在另一電腦上．
+然而，這<B>並不是</B>大部份提供撥接式 PAP 認證連接的 PPP 伺服器運作的方式．
+<P>
+<P>也就是說，你的 ISP 可能會給你一個使用者名稱與密碼以允許你連接到他們的系統進而連接到網際網路上．
+你的 ISP 對於你電腦的名稱一點也不感興趣，因此你可能必須使用你在 ISP 上的使用者名稱做為你電腦的名稱．
+<P>
+<P>這點要使用 pppd 選項的 <CODE>name user name</CODE> 來達成．
+因此，如果你使用你 ISP 給你的使用者名稱，加上這一行
+<HR>
+<PRE>
+name your_user name_at_your_ISP
+</PRE>
+<HR>
+<P>到你的 <CODE>/etc/ppp/options</CODE> 檔案中．
+<P>
+<P>從技術上來說，PAP 其實應該要使用 <CODE>user our_user name_at_your_ISP</CODE> 這個選項，但是如果使用到 PAP 的話那麼 pppd 聰明的足以把 <CODE>name</CODE> 解譯為 <CODE>user</CODE>．
+使用 <CODE>name</CODE> 這個選項的好處是這對於 CHAP 也是有效的．
+<P>
+<P>因為 PAP/CHAP 是用來驗認<B>電腦</B>的，在技術上你也需要指定遠端電腦的名稱．
+然而，大部分的人只接一家 ISP  所以你可以在密碼檔裡的遠端主機名稱使用通用字元(*) ．
+<P>
+<P>許多 ISP 有多個數據機撥接中心連接到不同的終端機伺服器 － 每個終端機伺服器都有不同的名稱，但都從單一的（自動轉線）號碼撥接．
+在某些情形下可能因此而很不容易預先知道遠端電腦的名稱!
+<P>
+<H2><A NAME="ss13.3">13.3 PAP 密碼檔</A>
+</H2>
+
+<P><CODE>/etc/ppp/pap-secrets</CODE> 這個檔案看起來像
+<HR>
+<PRE>
+# Secrets for authentication using PAP
+# client        server       secret     acceptable_local_IP_addresses
+</PRE>
+<HR>
+<P>
+<P>這四個欄位是以空白分界而且最後一項可以是空白(如果你使用動態 IP 或由你的 ISP 所提供的靜態 IP)．
+<P>
+<P>假定你的 ISP 給你的使用者名稱是 <CODE>fred</CODE> 而密碼是 <CODE>flintstone</CODE> 的話那麼你應該在 <CODE>/etc/ppp/options[.ttySx]</CODE> 裡設定 <CODE>name fred</CODE> 這個選項並且把你的 <CODE>/etc/ppp/pap-secrets</CODE> 檔案設成下面這樣
+<P>
+<HR>
+<PRE>
+# Secrets for authentication using PAP
+# client        server  secret          acceptable local IP addresses
+fred            *       flintstone
+</PRE>
+<HR>
+<P>
+<P>這是說對於 <CODE>fred</CODE> 這個本地機器名稱（我們已經告訴過 pppd 使用這個名稱，即使這不是我們本地機器的名稱也一樣）以及<B>任何</B>的伺服器，都使用 <CODE>flintstone</CODE> 這個密碼（暗碼）．
+<P>
+<P>注意到我們並不需要指定本地的 IP 位址，除非有要求要我們使用一個特定的，固定的 IP 位址．
+即使你試著用一固定的 IP，這也不大可能行得通因為對於大部份的 PPP 伺服器(為了安全的理由)不允許遠端系統自行指定 IP 號碼．
+<P>
+<H2><A NAME="ss13.4">13.4 CHAP 密碼檔</A>
+</H2>
+
+<P>目前的 pppd 版本要求你要有互相驗認的方法 － 這是說你必須能夠讓從你的機器到遠端伺服器<B>以及</B>從遠端伺服器到你的機器這兩種驗認都能進行．
+<P>
+<P>所以，如果你的機器是 <CODE>fred</CODE> 而遠端是 <CODE>barney</CODE> 的話，則在它們個別的 <CODE>/etc/ppp/options.ttySx</CODE> 裡你的設為 <CODE>name fred remotename barney</CODE> 而遠端機器應設為 <CODE>name barney remotename fred</CODE>．
+<P>
+<P>fred 這台機器的 <CODE>/etc/ppp/chap-secrets</CODE> 檔案看起來會像
+<HR>
+<PRE>
+# Secrets for authentication using CHAP
+# client        server  secret            acceptable local IP addresses
+fred            barney  flintstone
+barney          fred    wilma
+</PRE>
+<HR>
+<P>
+<P>而 barney 的是
+<P>
+<HR>
+<PRE>
+# Secrets for authentication using CHAP
+# client        server  secret            acceptable local IP addresses
+barney          fred    flintstone
+fred            barney  wilma
+</PRE>
+<HR>
+<P>
+<P>特別要注意的是雙方機器都必須具有雙向認證的項目．這允許本地的機器向遠端機器認證它自己<B>並且</B>讓遠地機器向本地機器認證它自己．
+<P>
+<H2><A NAME="ss13.5">13.5 處理多重 PAP 認證連接</A>
+</H2>
+
+<P>一些使用者擁有多於一部使用 PAP 的伺服器可連線．
+如果你的使用者名稱在每部你想連接的機器上都不同，這並不是問題．
+<P>
+<P>然而，許多使用者在兩個系統(或者甚至是全部)上具有相同的使用者名稱．
+這在從 <CODE>/etc/ppp/pap-secrets</CODE> 中正確地選擇適當一行時會有問題．
+<P>
+<P>如你所料地，PPP 提供一種機制以克服此因難．
+PPP 允許你使用 <B>remotename</B> 選項為遠端伺服器設定一個"假想名稱"．
+<P>
+<P>假設你連接到兩部 PPP 伺服器都使用名稱 fred．你以此方式建立 <CODE>/etc/ppp/pap-secrets</CODE> 檔案
+<HR>
+<PRE>
+fred    pppserver1      barney
+fred    pppserver2      wilma
+</PRE>
+<HR>
+<P>
+<P>如此，在與 pppserver1 連線時你在 pppd 選項中使用 <CODE>name fred remotename pppserver1</CODE> 並在連線 pppserver2 時使用 <CODE>name fred remotename pppserver2</CODE>．
+<P>
+<P>因為你可以使用在 pppd 使用 <CODE>file filename</CODE> 以指定 ppp 選項，你可以建立一指令稿以連接到每部 PPP 伺服器，正確地取用選項檔案並且選擇正確的 <CODE>remotename</CODE> 選項．
+<P>
+<HR>
+<A HREF="PPP-HOWTO-14.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="PPP-HOWTO-12.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="PPP-HOWTO.html#toc13"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

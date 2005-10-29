@@ -1,0 +1,171 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>The Linux 3Dfx HOWTO: FAQ: Glide and XFree86?</TITLE>
+ <LINK HREF="3Dfx-HOWTO-9.html" REL=next>
+ <LINK HREF="3Dfx-HOWTO-7.html" REL=previous>
+ <LINK HREF="3Dfx-HOWTO.html#toc8" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="3Dfx-HOWTO-9.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="3Dfx-HOWTO-7.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="3Dfx-HOWTO.html#toc8"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s8">8. FAQ: Glide and XFree86?</A></H2>
+
+<P>
+<H2><A NAME="ss8.1">8.1 Does it run with XFree86?</A>
+</H2>
+
+<P>Basically, the Voodoo Graphics (tm) hardware does not care about X. The
+X server will not even notice that the video signal generated
+by the VGA hardware does not reach the display in single screen
+configurations. If your application is not written X aware,
+Glide switching to full screen mode might cause problems
+(see troubleshooting section). If you do not want the overhead
+of writing an X11-aware application, you might want to use
+SVGA console mode instead.
+<P>So yes, it does run with XFree86, but no, it is not cooperating
+if you don't write your application accordingly. You can use
+the Mesa "window hack", which will be significantly slower
+than fullscreen, but still a lot faster than software rendering
+(see section below).
+<P>
+<P>
+<H2><A NAME="ss8.2">8.2 Does it only run full screen?</A>
+</H2>
+
+<P>See above. The Voodoo Graphics (tm) hardware is not window environment
+aware, neither is Linux Glide. Again, the experimental
+Mesa "window hack" covered below will allow for pasting
+the Voodoo Graphics (tm) board framebuffer's content into an X11 window.
+<P>
+<P>
+<H2><A NAME="ss8.3">8.3 What is the problem with AT3D/Voodoo Rush (tm) boards?</A>
+</H2>
+
+<P>There is an inherent problem when using
+Voodoo Rush (tm) boards with Linux: Basically, these
+boards are meant to be VGA 2D/3D accelerator
+boards, either as a single board solution,
+or with a Voodoo Rush (tm) based daughterboard used
+transparently. The VGA component tied to the
+Voodoo Rush (tm) is a Alliance Semiconductor's
+ProMotion-AT3D multimedia accelerator.
+To use this e.g. with XFree86 at all, you need
+a driver for the AT3D chipset.
+<P>There is a mailing list on this, and a web site
+with FAQ at 
+<A HREF="http://www.frozenwave.com/linux-stingray128">www.frozenwave.com/linux-stingray128</A>.
+Look there for most current info.
+There is a SuSE maintained driver at
+<A HREF="ftp://ftp.suse.com/suse_update/special/xat3d.tgz">ftp.suse.com/suse_update/special/xat3d.tgz</A>.
+Reportedly, the XFree86 SVGA server also
+works, supporting 8, 16 and 32 bpp. 
+Official support will probably be in XFree86 4.0.
+XFree86 decided to prepare an intermediate XFree86 3.3.2
+release as well, which might already address the issues.
+<P>The
+following <CODE>XF86Config</CODE> settings reportedly work.
+<HR>
+<PRE>
+# device section settings
+Chipset "AT24"
+Videoram 4032
+
+# videomodes tested by Oliver Schaertel
+#  25.18  28.32  for 640 x 480   (70hz)
+#  61.60         for 1024 x 786  (60hz) 
+#  120           for 1280 x 1024 (66hz)  
+</PRE>
+<HR>
+
+In summary, there is nothing prohibiting this except
+for the fact that the drivers in XFree86 are not yet
+finished.
+<P>If you want a more technical explanation: Voodoo Rush (tm) support 
+requires X server changes to support grabbing a buffer
+area in the video memory on the AT3D board, as the Voodoo Rush (tm)
+based boards need to store their back buffer and z buffer
+there. This  memory allocation and locking requirement is not
+a 3Dfx specific problem, it is also needed e.g. for 
+support of TV capture cards, and is thus under active
+development for XFree86. This means changes at the
+device dependend X level (thus XAA), which are currently
+implemented as an extension to XFree86 DGA (Direct Graphics
+Access, an X11 extension proposal implemented in different ways
+by Sun and XFree86, that is not part of the final X11R6.1
+standard and thus not portable). It might be part of an
+XFree86 GLX implementation later on. The currently distributed
+X servers assume they have full control of the framebuffer,
+and use anything that is not used by the visual region of the
+framebuffer as pixmap cache, e.g. for caching fonts.
+<P>
+<P>
+<H2><A NAME="ss8.4">8.4 What about GLX for XFree86?</A>
+</H2>
+
+<P>There are a couple of problems.
+<P>The currently supported Voodoo Graphics (tm) hardware and the available
+revision of Linux Glide are full screen only, and not set up
+to share a framebuffer with a window environment. Thus GLX
+or other integration with X11 is not yet possible.
+<P>The Voodoo Rush (tm) might be capable of cooperating with XFree86
+(that is, an SVGA compliant board will work with the
+XFree86 SVGA server),
+but it is not yet supported by Linux Glide, nor do
+S3 or other XFree86 servers support these boards yet.  
+<P>In addition, GLX is tied to OpenGL or, in the Linux case, to Mesa.
+The XFree86 team is currently working on integrating Mesa with
+their X Server. GLX is in beta, XFree86 3.3 has the hooks for GLX.
+See Steve Parker's GLX pages at
+<A HREF="http://www.cs.utah.edu/~sparker/xfree86-3d/">www.cs.utah.edu/~sparker/xfree86-3d/</A>
+for the most recent information.
+Moreover, there is a joint effort by XFree86 and
+SuSe, which includes a GLX, see 
+<A HREF="http://www.suse.de/~sim/">www.suse.de/~sim/</A>.
+Currently, Mesa still uses its GLX emulation with Linux.
+<P>
+<P>
+<H2><A NAME="ss8.5">8.5 Glide and commerical X Servers?</A>
+</H2>
+
+<P>I have not received any mail regarding use
+of Glide and/or Mesa with commercial X Servers.
+I would be interested to get confirmation on this,
+especially on Mesa and Glide with a commercial
+X Server that has GLX support.
+<P>
+<P>
+<H2><A NAME="ss8.6">8.6 Glide and SVGA?</A>
+</H2>
+
+<P>You should have no problems running Glide based applications
+either single or dual screen using VGA modes. It might be a good
+idea to set up the 640x480 resolution in the SVGA modes, too,
+if you are using a single screen setup.
+<P>
+<H2><A NAME="ss8.7">8.7 Glide and GGI?</A>
+</H2>
+
+<P>A GGI driver for Glide is under development by Jon
+M. Taylor, but has not officially been released and was put
+on hold till completion of GGI 0.0.9. For information about
+GGI see
+<A HREF="http://synergy.caltech.edu/~ggi/">synergy.caltech.edu/~ggi/</A>.
+If you are adventurous,
+you might find the combination of XGGI (a GGI based
+X Server for XFree86) and GGI for Glide an interesting
+prospect. There is also a GGI driver interfacing the
+OpenGL API; tested with unaccelerated Mesa. Essentially,
+this means X11R6 running on a Voodoo Graphics (tm), using
+either Mesa or Glide directly.
+<P>
+<P>
+<P>
+<HR>
+<A HREF="3Dfx-HOWTO-9.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="3Dfx-HOWTO-7.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="3Dfx-HOWTO.html#toc8"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

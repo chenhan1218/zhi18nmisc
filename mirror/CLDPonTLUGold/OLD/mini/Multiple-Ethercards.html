@@ -1,0 +1,148 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" content="text/html; charset=big5">
+<TITLE>如何在 Linux 使用多片乙太網路卡</TITLE>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+
+
+<h1>Mini-HowTo on using multiple Ethercards with Linux </h1>
+<center>
+<p>v2.00
+</center>
+<hr>
+<p>作者：Author:<a href="http://www.scyld.com/corporate.html#becker">Donald Becker</a>
+<p>譯者：林嘉翔 <a href="mailto:cslin@ms2.url.com.tw">c s l i n@ m s 2 . u r l . c o m 
+. t w</a>
+
+<hr>
+
+<P>這篇短文的目的，是要說明如何設定讓Linux能抓到多張網路卡．<hr>
+<dir>
+  <li><a href="#driver-modules">1.1簡便的方式：驅動程式模組(Driver Modules)</a></li>
+  <li><a href="#built-in">1.2簡便的方式：內建的驅動程式 </a></li>
+  <li><a href="#driver-modules-detail">2.1驅動程式模組的詳細說明</a></li>
+  <li><a href="#built-in-detail">2.2預先連結之驅動程式的詳細說明</a></li>
+  <li><a href="#kernel-modify">3.1特殊情況</a> </li>
+  <li><a href="#card-note">3.2採取不同做法的網路卡配接卡</a><dir>
+    <li>搭配 ISA 介面驅動程式的 PCI NE2000
+    </li>
+    <li>ISA 介面之3c509 </li>
+  </dir>
+  </li>
+</dir>
+<h2><a name="driver-modules">1.1 簡便的方式：驅動程式模組(Driver Modules)</a></h2>
+
+<h3>PCI drivers</h3><p>
+PCI裝置有安全的偵測機制，所以我們只要把合適的偵測準則加入<tt>/etc/conf.modules</tt>之中：  
+<listing>
+alias eth0 tulip
+alias eth1 tulip
+</listing>
+
+將 'tulip' 用適當的驅動程式名稱取代．&nbsp; <p>
+但有一點須注意：上述方法，是參考我們給予的裝置名稱來決定要載入的驅動程式，但並未指定載入系統後，在系統中所使用的名稱．舉例來說如果僅給予一行<tt> alias 
+eth5 tulip</tt>，執行 <tt>ifconfig eth5</tt>後，就會載入<tt>tulip</tt>的驅動程式．但如果成功偵測到了網路卡，系統會把他命為&quot;eth0&quot;，不是&quot;eth5&quot;．<h3>ISA 驅動程式</h3><p>
+ISA的偵測方式較不安全，我們一定要指定網路卡的I/O位址．如果是多張使用相同驅動程式的網路卡，則必須個別指定每一張卡的I/O位址．以下是一個載入NE2000的驅動程式-'ne'，將三張網路卡各指定一個ISA的I/O位址：<p>
+<listing>
+/etc/conf.modules: 
+
+alias eth0 ne 
+alias eth1 ne 
+alias eth2 ne 
+options ne io=0x280,0x300,0x220
+</listing>
+<h2><a name="built-in">1.2便捷的方式：內建的驅動程式</a></h2>
+<p>對於使用配有內建驅動程式的Linux套件，只要把<tt>/etc/lilo.conf</tt>的頂端加入這行內容：<p>
+<listing>append = &quot;ether=0,0,eth1 ether=0,0,eth2 ether=0,0,eth3&quot;</listing>
+<p>&nbsp;然後重新執行'lilo'，僅需如此，下次Linux啟動時即可偵測到四張乙太網路卡．（&quot;eth0&quot;會一直都存在） 
+<h2><a name="driver-modules-detail">2.1驅動程式模組</a></h2>
+<p>對於如RedHat等使用可載入驅動程式模組的Linux套件，情況反而較複雜些，而且會因套件而有所不同．我們可以從/proc/modules中看是否有'network'這個模組存在，來辨別我們所使用的系統是否為採取驅動程式模組的方式．/proc/modules中會列出所有已載入系統的模組．
+
+
+<p>驅動程式模組可透過兩種方式載入：一為由'kerneld'處理作業系統核心對網路裝置的請求；另一為用'modprobe'嘗試載入每一驅動程式，以找到一正確的裝置．<p>'kerneld'行程會讀取<tt>/etc/conf.modules</tt>來決定要載入的驅動程式．
+<h2><a name="built-in-detail">2.2 內建驅動程式：我們做了什麼，還有是怎麼達成目的的．</a></h2>
+<p>
+在Linux系統核心的預設狀態下，多數都會偵測系統中是否有存在一乙太網路卡，如果偵測到了，就停止了偵測動作．有三種已定義好的辦法，可以讓系統繼續再偵測電腦裡頭的其他網路卡，依難度與效率之順序為：
+<ul>
+  <li>在系統啟動時將參數傳遞給系統核心．</li>
+  <li>設定啟動載入程式(boot loader)，使在每次開機時都把參數傳遞出去．</li>
+  <li>更改系統核心的網路卡偵測表，<b>drivers/net/Space.c</b>．</li>
+</ul>
+<p>第二種方法最適合大部分的使用者，這也是以上我們所描述的方式．
+<h2>2.3 藉由啟動載入程式來傳遞參數</h2>
+<p>在下面的步驟當中，將假設我們用的是標準的Linux啟動載入程式，LILO．
+<p>
+Linux的核心可辨別出一在啟動時傳遞過來的參數，這些參數大多數是用來指定無法在啟動過程中(boot-time)已先確定的設定．以下是針對網路卡而來，可以被辨識出之參數：
+<p>
+<listing>ether=,,,, </listing>
+<p>
+有效的數字型態引數，可用的表示方式有十進位，八進位(引數以'0'為開端)，或是十六進位(開端是'0x')。非數字型態的第一個引數，是用來對裝置名稱做命名．空白的引數將被當成
+是零，而任何在裝置名稱前漏掉的引數值則不會做改變．
+<p>IRQ
+<blockquote>
+  <p>這個項目是用來指定我們要設定成的IRQ值(網路卡上，可透過軟體更改設定的IRQs)，或是必須得使用的IRQ值(透過jumper設定的IRQs)。如果為'0'則表示系統將從網路卡上讀取應設定的IRQ值(如果可成功讀取
+  到的話)．或者在網路卡無法提供給系統IRQ時，用自動分配方式得到IRQ值．
+</blockquote>
+<p>IO-ADDR
+<blockquote>
+<p>
+這個項目項是用來指定單一I/O位址，提示給系統做偵測，如果為'0'，則提示系統偵測所有合法範圍內的I/O位址．一般而言，系統會依照一I/O位址的保留範圍列表，來決定是否該位址能被成功偵測
+．除非有另作指定，包括利用&quot;reserve=,&quot;參數把其他裝置的I/O位址排除在偵測範圍之中．
+</blockquote>
+<p>PARAM1,PARAM2
+<blockquote>
+<p>這幾個項目原本是用來指定像 WD8013 等網路卡所須要的共用記憶體(shared 
+memory)之記憶體位址，但現在則是用來提供給其他特殊驅動程式所需要的資訊．
+</blockquote>
+<p>NAME
+<blockquote>
+<p>
+預先定義的裝置名稱．系統核心至少定義了&quot;eth0&quot;，&quot;eth1&quot;，&quot;eth2&quot;，和&quot;eth3&quot;．其他的裝置名稱(例如：PPP，SLIP，或是攜帶式的乙太網路裝置)也可能存在，不過名稱可能會不太一樣．
+</blockquote>
+<p>LILO 提供兩種方法，來在啟動系統時傳遞參數給系統核心．最常見的方式是是在指定啟動影像(boot image)的後頭接著輸入，下面是個可偵測四個網路卡的例子
+：
+<p>
+<listing>linux ether=0,0,eth1 ether=0,0,eth2 ether=0,0,eth3 </listing>
+<p>如果每次開機都得這樣做，當然會很麻煩，而且未考慮到日後系統無預警重新啟動的情況．我們可以藉由在LILO的設定檔/etc/lilo.conf中增加一行&quot;append&quot;的指令，然後執行lilo來更新設定．
+<p>
+<listing>append = &quot;ether=0,0,eth1 ether=0,0,eth2 ether=0,0,eth3&quot;
+</listing>
+<h2><a name="kernel-modify">3.1 修改你的的系統核心</a></h2>
+<p>
+如果可以不需要更改系統的核心程式碼，就能成功設定你的系統，我建議你就這麼做．修改系統核心碼，可不像是做些文字的修改而已，並且會使日後升級時增加一些額外困擾．但還是有少數幾種狀況適合這麼做：
+<ul>
+  <li>要使超過四張的網路卡運作時．(drivers/net/Space.c 在比較舊的核心中只有 eth0...eth3幾個項目)</li>
+  <li>要使偵測的網卡種類限制在一個特定範圍內．例如，偵測時會把幾種網卡的種類搞混的情況下．</li>
+  <li>要使用除了ethN之外的裝置名稱．</li>
+</ul>
+<p>如果你決定了要走這條路，編輯在drivers/net/Space.c中的device list，在裡面加入你需要的值．如果需要增加新的裝置，小心有無考量到
+連鎖反應：參考已存在的項目來進行工作．
+<h2><a name="card-note">3.2偵測特殊特定網路卡的說明</a></h2>
+<h3>PCI 介面網路卡</h3>
+<p>PCI 介面(以及 EISA介面)的網路卡，可以比較正確安全的被偵測到．所以大部分的PCI裝置驅動程式，可以在不提供額外參數下抓到其支援的網路卡．但在同時支援ISA與PCI介面的驅動程式時例外：NE2000和舊型的 
+LANCE/PCnet 驅動程式．
+<h3>LANCE/PCnet 網路卡</h3>
+<p>v1.2.13版的核心與舊版的 LANCE 驅動程式須要特殊的低層記憶體的 DMA buffers，所以 LANCE 
+網路卡的偵測動作會在其他網路卡之前，這樣的優點是我們可以忽略對這個區域的偵測，多張的 LANCE 網路卡舊會自動的被偵測到．缺點是舊版的 LANCE 
+驅動程式不能在 LILO 使用 IRQ 之類的參數．
+<h3>ISA 介面的 3c509 </h3>
+<p>3c509 有個特殊功能，可以在 ISA 介面下完全的被正確偵測到，這是一個類似 ISA 隨插即用的自動機制．雖然好，但不幸的是與其他的偵測動作無法配合運作．
+<p>
+最常見的問題是難以去辨別網路卡的順序．哪一張該做為第一張，其順序是依照乙太網路卡的實體位址，這表示有最低實體位址之網路卡會被指定成為&quot;eth0&quot;，次低的則為&quot;eth1&quot;，依
+此次序而變．如果&quot;eth0&quot;網路卡移除了，全部的編號將自動往下更動．
+<p>有個相關的議題是不可能將一張舊的網路卡保持為關閉狀態，在與 EEPROM 不同設定的 IRQ 或 I/O 
+位址下啟動一張卡，或者是在特定的位址下啟動一張卡．
+
+<hr>
+<p><a href="http://www.scyld.com/index.html">Scyld Computing Corporation</a>
+<address>
+  <i>Author:</i><a href="http://www.scyld.com/corporate.html#becker">Donald 
+  Becker</a></address>
+
+The HowTo right-to-copy is given in
+<a href="http://metalab.unc.edu/mdw/HOWTO/HOWTO-INDEX-6.html">
+http://metalab.unc.edu/mdw/HOWTO/HOWTO-INDEX-6.html</a>
+
+
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

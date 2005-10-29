@@ -1,0 +1,100 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Linux 2.4 NAT HOWTO: 從 2.0 到 2.2 核心的快速轉變</TITLE>
+ <LINK HREF="NAT-HOWTO-5.html" REL=next>
+ <LINK HREF="NAT-HOWTO-3.html" REL=previous>
+ <LINK HREF="NAT-HOWTO.html#toc4" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="NAT-HOWTO-5.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="NAT-HOWTO-3.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="NAT-HOWTO.html#toc4"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s4">4. 從 2.0 到 2.2 核心的快速轉變</A></H2>
+
+<P>非常抱歉﹐假如您仍然忙於從 2.0(ipfwadm) 到 2.2(ipchains) 的轉型的話。不過﹐這也是個喜憂參半的消息啦。
+<P>
+<P>首先﹐您可以輕易的一如往昔地使用 ipchains 和 ipfwadm。要這樣做的話﹐您需要將最新的 netfilter 套件中的  `ipchains.o' 或 `ipfwadm.o' 核心模組載入。它們是相互排斥的(您應已獲警告了)﹐同時也不能和其它 netfilter 模組同時整合在一起。
+<P>
+<P>一旦其中一個模組被載入﹐您就可以如常使用 ipchains 和 ipfwadm 了﹐但也有如下一些變化啦﹕
+<P>
+<UL>
+<LI> 用 ipchains -M -S﹐或是 ipfwadm -M -s 作偽裝逾時將不再有效。因為逾時設定已經移至新的 NAT 架構中﹐所以這裡也就沒什麼所謂了。
+</LI>
+<LI> 在偽裝列表中顯示的 ini_seq﹑delte﹑和 previous_delta 欄位﹐將永遠為零。
+</LI>
+<LI> 同時歸零(zeroing)和列示記數器(counter)的 `-Z -L' 已無作用﹕記數器將不能再歸零了。</LI>
+</UL>
+<P>Hacker 們仍要留意之處﹕
+<P>
+<UL>
+<LI> 您現在可以捆綁 61000-65095 之間的埠口﹐而無需理會您是否使用封包偽裝技術。在過去﹐封包偽裝程式會把此值域內的所有東西捕獲進來﹐所以其它程式就不可用之了。
+</LI>
+<LI> 至於(尚未成文之) getsockname 破解﹐在過去﹐透明代理程式可以找出那些不再有效連線之真正目的地。
+</LI>
+<LI> 至於(尚未成文之) bind-to-foreign-address 破解﹐同樣尚未實作﹔這在過去用以完善透明代理的構想。</LI>
+</UL>
+<P>
+<H2><A NAME="ss4.1">4.1 救命啊﹗我只想要封包偽裝而已﹗</A>
+</H2>
+
+<P>沒錯﹐這也是大多數朋友之需。如果您用 PPP 撥接獲得的動態 IP (如果您不了解的話﹐那您應該是了)﹐您或許只想單純告訴您的主機讓所有來自您內部網路的封包﹐看起來如來自該 PPP 撥接主機一樣。
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# Load the NAT module (this pulls in all the others).
+modprobe iptable_nat
+
+# In the NAT table (-t nat), Append a rule (-A) after routing
+# (POSTROUTING) for all packets going out ppp0 (-o ppp0) which says to
+# MASQUERADE the connection (-j MASQUERADE).
+iptables -t nat -A POSTROUTING -o ppp0 -j MASQUERADE
+
+# Turn on IP forwarding
+echo 1 > /proc/sys/net/ipv4/ip_forward
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>註﹕您這裡並沒做任何封包過濾﹕如要的話﹐請參考 Packet Filtering HOWTO﹕將 NAT 和封包過濾合併起來就是了。
+<P>
+<H2><A NAME="ss4.2">4.2 那 ipmasqadm 怎麼了﹖</A>
+</H2>
+
+<P>這個其實取決於使用者而已﹐所以我並不是很為向後兼容問題而擔心。您可以單純使用 iptables -t nat 做 port forwarding 的動作。例如﹐在 Linux 2.2 您或許已經這樣做了﹕
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# Linux 2.2
+# Forward TCP packets going to port 8080 on 1.2.3.4 to 192.168.1.1's port 80
+ipmasqadm portfw -a -P tcp -L 1.2.3.4 8080 -R 192.168.1.1 80
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>而現在﹐如此則可﹕
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# Linux 2.4
+# Append a rule pre-routing (-A PREROUTING) to the NAT table (-t nat) that
+# TCP packets (-p tcp) going to 1.2.3.4 (-d 1.2.3.4) port 8080 (--dport 8080)
+# have their destination mapped (-j DNAT) to 192.168.1.1, port 80
+# (--to 192.168.1.1:80).
+iptables -A PREROUTING -t nat -p tcp -d 1.2.3.4 --dport 8080 \
+        -j DNAT --to 192.168.1.1:80
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>假如您想讓這條規則同時修改本機連線的話(如﹐即使在 NAT 主機本身﹐要連接 1.2.3.4 的 8080 埠口之 telnet 連線﹐會幫您連接至 192.168.1.1 的 80 埠口)﹐您就可以插入相同的規則至 OUTPUT 鏈中(它只適用於本機傳出的封包)﹕
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# Linux 2.4
+iptables -A OUTPUT -t nat -p tcp -d 1.2.3.4 --dport 8080 \
+        -j DNAT --to 192.168.1.1:80
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<HR>
+<A HREF="NAT-HOWTO-5.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="NAT-HOWTO-3.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="NAT-HOWTO.html#toc4"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

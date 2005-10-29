@@ -1,0 +1,141 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>sendmail address rewriting mini-HOWTO: 配置 sendmail </TITLE>
+ <LINK HREF="Sendmail-Address-Rewrite-4.html" REL=next>
+ <LINK HREF="Sendmail-Address-Rewrite-2.html" REL=previous>
+ <LINK HREF="Sendmail-Address-Rewrite.html#toc3" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+<A HREF="Sendmail-Address-Rewrite-4.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Sendmail-Address-Rewrite-2.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Sendmail-Address-Rewrite.html#toc3"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s3">3. 配置 sendmail </A></H2>
+
+<H2><A NAME="ss3.1">3.1 主要的配置文件</A>
+</H2>
+
+<P>sendmail 在它的配置中使用相當復雜的規則系統。在你掌握許多配置竅門之前，通過手工寫一個 <CODE>sendmail.cf</CODE> 文件很不常見并且耗費大量時間。如果你對此感興趣，你可以停止閱讀本文而去看 O'Reilly 的 "Bat Book" 。
+<P>
+<P>取代使用手工配置的方法，我們使用 <CODE>m4</CODE> 宏處理器將預定義好的文件生成你的配置文件，這些預定義文件隨 sendmail 的發行版本一并提供。
+<P>
+<P>請看文件 <CODE>sendmail.mc</CODE> 的第一行：
+<P>
+<HR>
+<PRE>
+include(/usr/lib/sendmail.cf/m4/cf.m4)
+VERSIONID(`sendmail.mc - roessler@guug.de')
+OSTYPE(debian)
+define(`ALIAS_FILE',`/etc/mail/aliases')
+</PRE>
+<HR>
+<P>在第一行， <CODE>cf.m4</CODE> 被包含進來。這個 m4 宏文件包含了其它部分將用到的許多宏定義。 確定你提供的路徑是正確的 － 
+在我們這個例子中提供的這個路徑是Debian GNU/Linux的典型路徑。 <CODE>OSTYPE</CODE> 宏被用來給出一些非常有用的當前配置的缺省值。
+如果你不是使用Debian系統，你可以將這里的 "debian" 換成 "linux" 。 <CODE>ALIAS_FILE</CODE> 告訴 sendmail 到哪里去找到 aliases 文件。
+<P>
+<P>以下几行告訴 sendmail 使用 <CODE>genericstable</CODE> 特點和到哪里去找到使用該特點的配置文件：
+<HR>
+<PRE>
+FEATURE(masquerade_envelope) FEATURE(genericstable, `hash
+-o /etc/mail/genericstable')
+GENERICS_DOMAIN_FILE(`/etc/mail/genericsdomain') 
+</PRE>
+<HR>
+<P><CODE>masquerade_envelope</CODE> 特點告訴 sendmail 去實現郵頭重寫到郵件的<EM>信封</EM> 傳送者。
+這是一個外部郵件投遞系統將用來直接投遞失敗報告和警告郵件的郵件地址。<CODE>generics*</CODE> 文件將在下面解釋。
+<P>
+<P>現在，我們必須定義一個所謂 smart 主機，就是將要負責為你的系統傳送外部郵件的主機。
+注意：這台主機有可能不是你的ISP的POP和IMAP服務器。 如果對此不太清楚，聯系你的ISP供應商。
+主配置文件的代碼如下：
+<HR>
+<PRE>
+define(`SMART_HOST',`mail-out.your.provider')
+</PRE>
+<HR>
+<P>請替換 <EM>mail-out.your.provider</EM> 成你的ISP的主機地址。
+<P>
+<P>最后兩行包含 "mailer" 定義，sendmail 根據這些定義才能知道如何處理不同類型的郵件：
+<HR>
+<PRE>
+MAILER(local)
+MAILER(smtp)
+</PRE>
+<HR>
+<P>
+<P>為了從這個 <CODE>sendmail.mc</CODE> 生成 <CODE>sendmail.cf</CODE> 文件，輸入以下命令 (作為 root 用戶)：
+<HR>
+<PRE>
+# m4 sendmail.mc > _sendmail.cf
+# mv -f _sendmail.cf sendmail.cf
+</PRE>
+<HR>
+<P>注意我們使用的技朮：將 <CODE>m4</CODE>  的輸出寫入一個臨時文件，再轉移到合適的地方。這將幫助我們避免sendmail讀入只寫了一部分的配置文件。
+<P>
+<H2><A NAME="ss3.2">3.2 地址重寫</A>
+</H2>
+
+<P>首先，我們必須告訴sendmail哪些地址將被認為是本地地址(然后將被重寫)。這很簡單：只要將你的機器的完整主機名放入文件 <CODE>&sol;etc&sol;mail&sol;genericsdomain</CODE>。
+為了取得你的機器的完整主機名，輸入以下命令：
+<HR>
+<PRE>
+ $ hostname -f 
+</PRE>
+<HR>
+<P>
+<P>現在，讓我們看一下重寫表：
+<CODE>&sol;etc&sol;mail&sol;genericstable</CODE> 。這個文件由被空格分開的兩列組成。第一列包含本地地址，第二列包含替換后的郵件地址。
+文件看起來如下：
+<P>
+<HR>
+<PRE>
+harry   harryx@your.isp
+maude   maudey@her.isp
+root    fredx@your.isp
+news    fredx@your.isp
+</PRE>
+<HR>
+<P>注意<EM>每一個</EM>本地機器上的賬號都要有一行，這樣自動生成的外發郵件能帶上正確的頭信息。 
+<P>
+<P>為了性能的考慮， sendmail 并不直接使用這個文本文件，而是用“哈希”版本替代。為了生成這個版本，輸入以下命令：
+<P>
+<HR>
+<PRE>
+# makemap -r hash genericstable.db &lt; genericstable
+</PRE>
+<HR>
+<P>
+<P>注意： <CODE>genericstable</CODE> 指定的重寫規則將<EM>不</EM> 作用在本地郵件或你從外部接收到的郵件 - 這種轉換只使用在從你本地機器通過你的ISP主機發往外部的郵件。
+<P>
+<H2><A NAME="ss3.3">3.3 別名</A>
+</H2>
+
+<P>別名文件包含只對你本地郵件有效的附加本地名字。這對管理員賬號象 <CODE>root</CODE> 非常有用，從你的系統接收自動轉換來的郵件。
+<P>
+<P><CODE>&sol;etc&sol;mail&sol;aliases</CODE> 可能如下所示：
+<P>
+<HR>
+<PRE>
+root: fred
+news: root
+postmaster: root
+mail: root
+www: root
+
+nobody: &sol;dev&sol;null
+MAILER-DAEMON: nobody
+</PRE>
+<HR>
+<P>這個例子將路由送往 <CODE>root</CODE>, <CODE>news</CODE>, <CODE>postmaster</CODE>, <CODE>mail</CODE>, 和 <CODE>www</CODE> 用戶的本地郵件到 <CODE>fred</CODE> ， 
+而送往 <CODE>nobody</CODE> 和 <CODE>MAILER-DAEMON</CODE> 的郵件將重定向到 <CODE>&sol;dev&sol;null</CODE> 。
+<P>
+<P>就象 <CODE>genericstable</CODE>, <CODE>aliases</CODE> 可能包含<EM>許多</EM> 項。因此，就象我們上面所說的，sendmail直接使用文本文件將效率低下。
+<CODE>aliases</CODE> 采用和 <CODE>genericstable</CODE>  同樣的機制：生成一個哈希數據庫。
+取代直接使用 <CODE>makemap</CODE> ，這次你可以輸入命令 <CODE>newaliases</CODE> 。它將自動處理所需的一切。
+<P>
+<HR>
+<A HREF="Sendmail-Address-Rewrite-4.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Sendmail-Address-Rewrite-2.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Sendmail-Address-Rewrite.html#toc3"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

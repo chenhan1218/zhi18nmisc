@@ -1,0 +1,247 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Glibc 2 HOWTO 中文版: 安装成测试用的函式库</TITLE>
+ <LINK HREF="Glibc2-HOWTO-5.html" REL=next>
+ <LINK HREF="Glibc2-HOWTO-3.html" REL=previous>
+ <LINK HREF="Glibc2-HOWTO.html#toc4" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Glibc2-HOWTO-5.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Glibc2-HOWTO-3.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Glibc2-HOWTO.html#toc4"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="test-install"></A> <A NAME="s4">4. 安装成测试用的函式库</A></H2>
+
+<P>
+<P>这一节的内容是关於如何将 glibc 2 安装成测试用的函式库。
+所有编译的程式都连结到你目前的函式库，
+除非你给了某些额外的参数才会连结到新的函式库。
+由於路径被编译到某些档案中，你需要由原始码来安装这函式库。
+<P>
+<H2><A NAME="ss4.1">4.1 编译与安装</A>
+</H2>
+
+<P>
+<P>
+<H3>需求</H3>
+
+<P>
+<P>
+<UL>
+<LI>约 150 MB 的磁碟空间</LI>
+<LI>GNU make 3.75</LI>
+<LI>gcc &gt;= 2.7.2 (最好是 2.7.2.1)</LI>
+<LI>binutils 2.8.1 (假如是 alpha 你还需要 snapshot)</LI>
+<LI>bash 2.0</LI>
+<LI>autoconf 2.12 (假如你更动了 configure.in)</LI>
+<LI>texinfo 3.11</LI>
+</UL>
+<P>在一台安装有 64MB 记忆体 i586@133 的机器上，
+编译完整的函式库 (包括附加套件) 大约须要 3 小时。
+而在 i686@200 则须约一个半小时。
+<P>
+<H3>解开原始码</H3>
+
+<P>
+<P>你必需由 archive 中取出原始码。如此才能编译它，最好的方式如下：
+<BLOCKQUOTE><CODE>
+<PRE>
+ tar xzf glibc-2.0.6.tar.gz
+ cd glibc-2.0.6
+ tar xzf ../glibc-linuxthreads-2.0.6.tar.gz
+ tar xzf ../glibc-crypt-2.0.6.tar.gz
+ tar xzf ../glibc-localedata-2.0.6.tar.gz
+ 
+</PRE>
+</CODE></BLOCKQUOTE>
+
+这会将 linuxthreads、 crypt 与 localedata 等目录放至 glibc-2.0.6 的目录底下，
+如此 configure 才可以找到这些 add-ons。
+<P>
+<H3>设定组态</H3>
+
+<P>
+<P>在 glibc-2.0.6 的目录底下，建立一个新的目录 compile，并且 cd 到 compile 底下，
+所有的工作都会在这个目录中完成，这会简化後续的清除工作。
+(发展者似乎并未让 'make clean' 作得很好)
+<BLOCKQUOTE><CODE>
+<PRE>
+ mkdir compile
+ cd compile
+ 
+</PRE>
+</CODE></BLOCKQUOTE>
+
+执行 <CODE>../configure</CODE>。
+要使用父加套件，你必需用 --enable-add-ons 指定，
+例如说 --enable-add-ons=linuxthreads,crypt,localedata。
+<P>你也必需指定要安装的目录，/usr/i486-linuxglibc2 是个不错的选择，
+这样的 configure 命令如下：
+<BLOCKQUOTE><CODE>
+<PRE>
+ ../configure --enable-add-ons=linuxthreads,crypt,localedata --prefix=/usr/i486-linuxglibc2
+ 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H3>编译与安装</H3>
+
+<P>
+<P>要编译与验证，执行
+<BLOCKQUOTE><CODE>
+<PRE>
+ make
+ make check
+ 
+</PRE>
+</CODE></BLOCKQUOTE>
+
+假如 'make check' 成功了，安装函式库：
+<BLOCKQUOTE><CODE>
+<PRE>
+ make install
+ 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss4.2">4.2 更新 dynamic loader</A>
+</H2>
+
+<P>
+<P>
+<OL>
+<LI>建立连结，
+从 <CODE>ld.so</CODE> 到 <CODE>/lib/ld-linux.so.2</CODE>：
+<BLOCKQUOTE><CODE>
+<PRE>
+ ln -s /usr/i486-linuxglibc2/lib/ld-linux.so.2 /lib/ld-linux.so.2
+ 
+</PRE>
+</CODE></BLOCKQUOTE>
+
+当一个档案连结时，这个函式库是唯一一个位置固定的。
+当稳定的版本出现的时候，
+在 /lib 使用连结也会使得将 glibc 升级为主要函式库时更为轻松。
+</LI>
+<LI>修改 <CODE>/etc/ld.so.conf</CODE>。
+你需要增加新的函式库所在的路径到档案的最後，
+这路径应该是 <CODE>&lt;prefix&gt;/lib</CODE>。
+假如用以上的选择就应该是 <CODE>/usr/i486-linuxglibc2/lib</CODE>。
+在你修改了 <CODE>/etc/ld.so.conf</CODE> 之後，执行：
+<BLOCKQUOTE><CODE>
+<PRE>
+ ldconfig -v
+ 
+</PRE>
+</CODE></BLOCKQUOTE>
+</LI>
+</OL>
+<P>
+<H2><A NAME="ss4.3">4.3 设定 gcc</A>
+</H2>
+
+<P>
+<P>安装的最後一步是更新 <CODE>/usr/lib/gcc-lib</CODE>
+以使 gcc 知道如何使用新的函式库。
+首先，你需要复制目前的组态，要知道目前的组态，使用 gcc 的 -v 选项：
+<BLOCKQUOTE><CODE>
+<PRE>
+ % gcc -v
+ Reading specs from /usr/lib/gcc-lib/i486-unknown-linux/2.7.2.2/specs
+ gcc version 2.7.2.2
+ 
+</PRE>
+</CODE></BLOCKQUOTE>
+
+这里，i486-unknown-linux 是目前所用的系统，2.7.2.2 则是目前版本。
+你需要将 <CODE>/usr/lib/gcc-lib/&lt;系统&gt;</CODE> 复制到新的测试系统目录：
+<BLOCKQUOTE><CODE>
+<PRE>
+ cd /usr/lib/gcc-lib/
+ cp -r i486-unknown-linux i486-linuxglibc2
+ 
+</PRE>
+</CODE></BLOCKQUOTE>
+
+到你的新系统目录以及版本目录下：
+<BLOCKQUOTE><CODE>
+<PRE>
+ cd /usr/lib/gcc-lib/i486-linuxglibc2/2.7.2.2
+ 
+</PRE>
+</CODE></BLOCKQUOTE>
+
+修改目录下的 <CODE>specs</CODE>。在这档案中，
+将 <CODE>/lib/ld-linux.so.1</CODE> 换成 <CODE>/lib/ld-linux.so.2</CODE>，
+你也必需要移去档案中所有的 <CODE>%{...:-lgmon}</CODE> 表示式，
+因为 glibc 不使用 gmon 函式库来做 profile。
+你可以在
+<A HREF="Glibc2-HOWTO-9.html#specs">Specs 档□例</A>找到一个□例。
+<P>
+<H2><A NAME="ss4.4">4.4 更新标头档连结</A>
+</H2>
+
+<P>
+<P>你需要在你的 include 目录下建立连结到其它的 include 目录：
+<BLOCKQUOTE><CODE>
+<PRE>
+ cd /usr/i486-linuxglibc2/include
+ ln -s /usr/src/linux/include/linux
+ ln -s /usr/src/linux/include/asm
+ ln -s /usr/X11R6/include/X11
+ 
+</PRE>
+</CODE></BLOCKQUOTE>
+
+也许你有其它的函式库，例如说 ncurse，
+而这些函式库会需要它们自己的标头档，
+你应该从 <CODE>/usr/include</CODE> 复制或连结这些档案。
+(有些函式库需要重新用 glibc2 来 compile，在这种情形下，
+只要编译并且安装到 <CODE>/usr/i486-linuxglibc2</CODE>)
+<P>
+<H2><A NAME="ss4.5">4.5 测试你的安装</A>
+</H2>
+
+<P>
+<P>要测试安装是否成功，建立一档案 glibc.c 如下：
+<BLOCKQUOTE><CODE>
+<PRE>
+ #include &lt;stdio.h&gt;
+
+ main()
+ {
+     printf("hello world!\n");
+ }
+ 
+</PRE>
+</CODE></BLOCKQUOTE>
+
+用 &quot;-b &lt;安装目录&gt; -nostdinc -I&lt;安装目录&gt;/include -I/usr/lib/gcc-lib/&lt;新系统目录&gt;/&lt;gcc 版本&gt;/include&quot; 的选项编译：
+<BLOCKQUOTE><CODE>
+<PRE>
+ % gcc -b i486-linuxglibc2 -nostdinc -I/usr/i486-linuxglibc2/include -I/usr/lib/gcc-lib/i486-linuxglibc2/2.7.2.2/include glibc.c -o glibc
+ 
+</PRE>
+</CODE></BLOCKQUOTE>
+
+使用 ldd 确定程式是用 glibc2 连结，而非旧有的 libc：
+<BLOCKQUOTE><CODE>
+<PRE>
+ % ldd glibc
+ libc.so.6 => /usr/i486-linuxglibc2/lib/libc-2.0.5.so (0x4000d000)
+ /lib/ld-linux.so.2 => /lib/ld-linux.so.2 (0x40000000)
+ 
+</PRE>
+</CODE></BLOCKQUOTE>
+
+如果通过编译，连结也确定，
+并且执行时也产生 &quot;hello world!&quot; 的输出，那麽安装就成功了。
+<P>
+<P>
+<HR>
+<A HREF="Glibc2-HOWTO-5.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Glibc2-HOWTO-3.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Glibc2-HOWTO.html#toc4"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

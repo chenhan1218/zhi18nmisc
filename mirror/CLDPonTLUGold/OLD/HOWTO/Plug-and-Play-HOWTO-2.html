@@ -1,0 +1,343 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE> Plug-and-Play-HOWTO : What PnP Should Do: Allocate "Bus-Resources"</TITLE>
+ <LINK HREF="Plug-and-Play-HOWTO-3.html" REL=next>
+ <LINK HREF="Plug-and-Play-HOWTO-1.html" REL=previous>
+ <LINK HREF="Plug-and-Play-HOWTO.html#toc2" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Plug-and-Play-HOWTO-3.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Plug-and-Play-HOWTO-1.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Plug-and-Play-HOWTO.html#toc2"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s2">2. What PnP Should Do: Allocate "Bus-Resources"</A></H2>
+
+<H2><A NAME="ss2.1">2.1 What is Plug-and-Play (PnP)?</A>
+</H2>
+
+<P> If you don't understand this section, read the next section
+<A HREF="#find_dev">How a Computer Finds Devices (and  conversely)</A><P>
+<P> Oversimplified, Plug-and-Play automatically tells the software
+(device drivers) where to find various pieces of hardware (devices)
+such as modems, network cards, sound cards, etc.  Plug-and-Play's task
+is to match up physical devices with the software (device drivers)
+that operates them and to establish channels of communication between
+each physical device and its driver.  In order to achieve this, PnP
+allocates the following "bus-resources" to both drivers and hardware:
+I/O addresses, IRQs, DMA channels (ISA bus only), and memory regions.
+These 4 things are sometimes called 1st order resources.  If you don't
+understand what these 4 bus-resources are, read the following
+subsections of this HOWTO: I/O Addresses, IRQs, DMA Channels, Memory
+Regions.  An article in Linux Gazette about 3 of these bus-resources
+is 
+<A HREF="http://www.linuxgazette.com/issue38/blanchard.html">Introduction to IRQs, DMAs and Base Addresses</A>.  Once these
+bus-resources have been assigned (and if the correct driver is
+installed), the "files" for such devices in the /dev directory are
+ready to use.
+<P>This PnP assignment of bus-resources is sometimes called "configuring"
+but it is only a low level type of configuring.  Even with PnP fully
+utilized, much configuring of devices is done by other than PnP.  For
+example, for modem configuration an "init string" is sent to the modem
+over the I/0 address "channel".  This "init string" has nothing to do
+with PnP although the "channel" used to send it to the modem was
+allocated by PnP.  Setting the speed (and many other parameters) of a
+serial port is done by sending messages to the device driver from
+programs run by the user, application programs, or by start-up scripts
+at boot-time.  This configuring also has nothing to do with PnP.  Thus
+when talking about PnP, "configuring" means only a certain type of
+configuring.  While other documentation (such a for MS Windows) simply
+calls bus-resources "resources",  I have used the term "bus-resources"
+so as to distinguish it from the multitude of other kinds of
+resources.
+<P>
+<H2><A NAME="find_dev"></A> <A NAME="ss2.2">2.2 How a Computer Finds Devices (and conversely) </A>
+</H2>
+
+<P> A computer consists of a CPU/processor to do the computing and RAM
+memory to store programs and data (for fast access).  In addition,
+there are a number of devices such as various kinds of disk-drives, a
+video card, a keyboard, network cards, modem cards, sound cards, the
+USB bus, serial and parallel ports, etc.  There is also a power supply
+to provide electric energy, various buses on a motherboard to connect
+the devices to the CPU, and a case to put all this into.  
+<P>In olden days most all devices had their own plug-in cards (printed
+circuit boards).  Today, in addition to plug-in cards, many "devices"
+are small chips permanently mounted on the "motherboard".  Cards which
+plug into the motherboard may contain more than one device.  Memory
+chips are also sometimes considered to be devices but are not
+plug-and-play in the sense used in this HOWTO.
+<P>For the computer system to work right, each device must be under the
+control of its "device driver".  This is software which is a part of
+the operating system (perhaps loaded as a module) and runs on the CPU.
+Device drivers are associated with "special files" in the /dev
+directory although they are not really files.  They have names such as
+hda1 (first partition on hard drive a), ttyS0 (the first serial port),
+eth1 (the second ethernet card), etc.  To make matters more
+complicated, the particular device driver selected, say for eth1, will
+depend on the type of ethernet card you have.  Thus eth1 can't just be
+assigned to any ethernet driver.  It must be assigned to a certain
+driver that will work for the type of ethernet card you have
+installed.  For modules, some of these assignments might be found in
+/etc/modules.conf (called "alias") while others may reside in an
+internal kernel table.
+<P>To control a device, the CPU (under the control of the device driver)
+sends commands (and data) to and reads info from the various devices.
+In order to do this each device driver must know the address of the
+device it controls.  Knowing such an address is equivalent to setting
+up a communication channel, even though the physical "channel" is
+actually the data bus inside the PC which is shared with almost
+everything else.
+<P>This communication channel is actually a little more complex than
+described above.  An "address" is actually a range of addresses so
+that sometimes the word "range" is used instead of "address".  There
+could even be more that one range (with no overlapping) for a single
+device.  Also, there is a reverse part of the channel (known as
+interrupts) which allows devices to send an urgent "help" request to
+their device driver.
+<P>
+<H2><A NAME="ss2.3">2.3 Addresses </A>
+</H2>
+
+<P> PCs have 3 address spaces: I/O, main memory, and configuration
+(except that the old ISA bus lacks a "configuration" address space).
+All of these 3 types of addresses share the same bus inside the PC.
+But the voltage on certain dedicated wires on the PC's bus tells which
+"space" an address is in: I/O, main memory, (see 
+<A HREF="#mem_">Memory Ranges</A>),  or configuration.  See 
+<A HREF="Plug-and-Play-HOWTO-8.html#address_details">Address Details</A> for more details.
+Only two of these 3 address spaces are used for device I/O: I/0 and
+main memory.
+<P>
+<H2><A NAME="ss2.4">2.4 I/O Addresses and Allocating Them</A>
+</H2>
+
+<P> Devices were originally located in I/O address space but today
+they may use space in main memory.  An I/0 address is sometimes just
+called "I/O", "IO", "i/o" or "io".  The terms "I/O port" or "I/O
+range" are also used.  There are two main steps to allocate the I/O
+addresses (or other bus-resources such as interrupts):
+<P>
+<OL>
+<LI> Set the I/O address, etc. on the card (in one of its registers) </LI>
+<LI> Let its device driver know what this I/O address, etc. is</LI>
+</OL>
+ 
+<P>The two step process above is something like the two part problem of
+finding someone's house number on a street.  Someone must install a
+number on the front of the house so that it may be found and then you
+must obtain (and write down) this house number.  In computers the
+device hardware must first set the address it will use in  a special
+register and then the device driver must obtain this address.  Both of
+these must be done, either automatically by software or by entering
+the data manually into some file.  Problems occur when only one of
+them gets done (or is attempted).
+<P>For manual PnP configuration some people make the mistake of doing
+only one of these and then wonder why the computer can't find the
+device.  For example, they may use "setserial" to assign an address
+to a serial port without realizing that this only tells the driver an
+address.  It doesn't set the address in the serial port hardware
+itself.  If the serial port hardware doesn't have the address you told
+setserial (or doesn't have any address set in it) then you're in
+trouble.  
+<P>An obvious requirement is that before the device driver can use an
+address it must be first set on the physical device (such as a card).
+Since device drivers often start up soon after you start the computer,
+they sometimes try to access a card (to see if it's there, etc.)
+before the address has been set in the card by a PnP configuration
+program.  Then you see an error message that they can't find the card
+even though it's there (but doesn't yet have an address).
+<P>What was said in the last few paragraphs regarding I/O addresses applies
+with equal force to other bus-resources: 
+<A HREF="#mem_">Memory Ranges</A>, 
+<A HREF="#interrupt_over">IRQs --Overview</A> and 
+<A HREF="#dma_">DMA Channels</A>.  What these are will be explained in
+the next 3 sections.
+<P>
+<H2><A NAME="mem_"></A> <A NAME="ss2.5">2.5 Memory Ranges </A>
+</H2>
+
+<P> Many devices are assigned address space in main memory.  It's
+sometimes called "shared memory" or "memory-mapped I/O".  This memory
+is physically located on the device.  When discussing bus-resources
+it's often just called "memory".  In addition to using such "memory",
+such a device might also use conventional I/O address space.  
+<P>When you plug in such a card, you are in effect also plugging in a
+memory module for main memory.  A high address is selected for it by
+PnP so that it doesn't conflict with main memory chips.  This memory
+can either be ROM (Read Only Memory) or shared memory.  Shared memory
+is shared between the device and the CPU (running the device driver)
+just as IO address space is shared between the device and the CPU.
+This shared memory serves as a means of data "transfer" between the
+device and main memory. It's IO but it's not done in IO space.  Both
+the card and the device driver need to know where it is. 
+<P>ROM is different.  It is likely a program (perhaps a device driver)
+which will be used with the device.  It could be initialization code
+so that a device driver is still required.  Hopefully, it will work
+with Linux and not just MS Windows ??  It may need to be shadowed
+which means that it is copied to your main memory chips in order to
+run faster.  Once it's shadowed it's no longer "read only".
+<H2><A NAME="interrupt_over"></A> <A NAME="ss2.6">2.6 IRQs --Overview </A>
+ </H2>
+
+<P> After reading this you may read 
+<A HREF="Plug-and-Play-HOWTO-8.html#interrupt_detail">Interrupts --Details</A> for some more details.  The following is
+intentionally oversimplified:  Besides the address, there is also an
+interrupt number to deal with (such as IRQ 5).  It's called an IRQ
+(Interrupt ReQuest) number.  We already mentioned above that the
+device driver must know the address of a card in order to be able to
+communicate with it.  But what about communication in the opposite
+direction?  Suppose the device needs to tell its device driver
+something immediately?  For example, the device may have just received
+a lot of bytes destined for main memory and the device needs to tell
+its driver to fetch these bytes at once and transfer them from the
+device's nearly full buffer into main memory.  Another example is to
+signal the driver that the device has finished sending out a bunch of
+bytes and is now waiting for some more bytes from the driver so it can
+send them too.
+<P>How should the device rapidly signal its driver?  It may not be able
+to use the main data bus since it's likely already in use.  Instead it
+puts a voltage on a dedicated interrupt wire (part of the bus) which
+is often reserved for that device alone.  This voltage signal is
+called an Interrupt ReQuest (IRQ) or just an "interrupt" for short.
+There are the equivalent of 16 such wires in a PC and each wire leads
+(indirectly) to a certain device driver.  Each wire has a unique IRQ
+(Interrupt ReQuest) number.  The device must put its interrupt on the
+correct wire and the device driver must listen for the interrupt on
+the correct wire.  Which wire the device sends help requests on is
+determined by the IRQ number stored in the device.  This same IRQ
+number must be known to the device driver so that the device driver
+knows which IRQ line to listen on.
+<P>Once the device driver gets the interrupt from the device it must find
+out why the interrupt was issued and take appropriate action to
+service the interrupt.  On the ISA bus each device usually needs its
+own unique IRQ number.  For the PCI bus and other special cases the
+sharing of IRQs is allowed.
+<P>
+<H2><A NAME="dma_"></A> <A NAME="ss2.7">2.7 DMA Channels </A>
+</H2>
+
+<P> DMA channels are only for the ISA bus.  DMA stands for "Direct Memory
+Access".  This is where a device is allowed to take over the main
+computer bus from the CPU and transfer bytes directly to main memory.
+Normally the CPU would make such a transfer in a two step process: 
+<OL>
+<LI>reading from the I/O memory space of the device and putting these
+bytes into the CPU itself</LI>
+<LI> writing these bytes from the CPU to main memory</LI>
+</OL>
+
+<OL>
+<LI> With DMA it's usually a one step process of sending the bytes
+directly from the device to memory  </LI>
+</OL>
+
+The device must have such capabilities built into its hardware and
+thus not all devices can do DMA.  While DMA is going on the CPU can't
+do too much since the main bus is being used by the DMA transfer.
+<P>The PCI bus doesn't really have any DMA but instead it has something
+even better: bus mastering.  It works something like DMA and is
+sometimes called DMA (for example, hard disk drives that call
+themselves "UltraDMA").  It allows devices to temporarily become bus
+masters and to transfer bytes almost like the bus master was the CPU.
+It doesn't use any channel numbers since the organization of the PCI
+bus is such that the PCI hardware knows which device is currently the
+bus master and which device is requesting to become a bus master.
+Thus there is no allocation of DMA channels for the PCI bus.
+<P>When a device on the ISA bus wants to do DMA it issues a DMA-request
+using dedicated DMA request wires much like an interrupt request.  DMA
+actually could have been handled by using interrupts but this would
+introduce some delays so it's faster to do it by having a special type
+of interrupt known as a DMA-request.  Like interrupts, DMA-requests
+are numbered so as to identify which device is making the request.
+This number is called a DMA-channel.  Since DMA transfers all use the
+main bus (and only one can run at a time) they all actually use the
+same channel but the "DMA channel" number serves to identify who is
+using the "channel".  Hardware registers exist on the motherboard
+which store the current status of each "channel".  Thus in order to
+issue a DMA-request, the device must know its DMA-channel number which
+must be stored in a special register on the physical device.
+<P>
+<P>
+<H2><A NAME="ss2.8">2.8 "Resources" for both Device and Driver</A>
+</H2>
+
+<P> Thus device drivers must be "attached" in some way to the hardware
+they control.  This is done by allocating bus-resources (I/O, Memory,
+IRQ's, DMA's) to both the physical device and the device driver
+software.  For example, a serial port uses only 2 (out of 4 possible)
+resources: an IRQ and an I/O address.  Both of these values must be
+supplied to the device driver and the physical device.  The driver
+(and its device) is also given a name in the /dev directory (such as
+ttyS1).  The address and IRQ number is stored by the physical device
+in configuration registers on its card (or in a chip on the
+motherboard).  For the case of jumpers, it's the location of the
+jumpers themselves that store the bus-resource configuration in the
+device hardware (on the card, etc.).  For the case of PnP, the
+configuration register data is usually lost when the PC is powered
+down (turned off) so that the bus-resource data must be supplied to
+each device anew each time the PC is powered on.
+<P>
+<H2><A NAME="ss2.9">2.9 The Problem </A>
+</H2>
+
+<P> The architecture of the PC provides only a limited number of
+IRQ's, DMA channels, I/O address, and memory regions.  If there were
+only several devices and they all had standardized bus-resource (such
+as unique I/O addresses and IRQ numbers) there would be no problem of
+attaching device drivers to devices.  Each device would have a fixed
+resources which would not conflict with any other device on your
+computer.  No two devices would have the same addresses, there would
+be no IRQ conflicts, etc.  Each driver would be programmed with the
+unique addresses, IRQ, etc. hard-coded into the program.  Life would
+be simple.
+<P>But it's not.  Not only are there so many different devices today that
+conflicts are frequent, but one sometimes needs to have more than one of
+the same type of device.  For example, one may want to have a few
+different disk-drives, a few network cards, etc.  For these reasons
+devices need to have some flexibility so that they can be set to
+whatever address, IRQ, etc. is needed to avoid conflicts.  But some
+IRQ's and addresses are pretty standard such as the ones for the clock
+and keyboard.  These don't need such flexibility.
+<P>Besides the problem of conflicting allocation of bus-resources, there
+is a problem of making a mistake in telling the device driver what the
+bus-resources are.  For example, suppose that you enter IRQ 4 in a
+configuration file when the device is actually set at IRQ 5.  This is
+another type of bus-resource allocation error.
+<P>The allocation of bus-resources, if done correctly, establishes
+channels of communication between physical hardware and their device
+drivers.  For example, if a certain I/O address range (resource) is
+allocated to both a device driver and a piece of hardware, then this
+has established a one-way communication channel between them.  The
+driver may send commands and info to the device.  It's actually a
+little more than one-way since the driver may get information from the
+device by reading its registers.  But the device can't initiate any
+communication this way.  To initiate communication the device needs an
+IRQ so it can send interrupts to its driver.  This creates a two-way
+communication channel where both the driver and the physical device
+can initiate communication.
+<P>
+<H2><A NAME="ss2.10">2.10 PnP Finds Devices Plugged Into Serial Ports</A>
+</H2>
+
+<P> External devices that connect to the serial port via a cable (such
+as external modems) can also be called Plug-and-Play.  Since only the
+serial port itself needs bus-resources (an IRQ and I/O address) there are
+no bus-resources to allocate to such plug-in devices.  Thus PnP is not
+really needed for them.  Even so, there is a PnP specification for
+such external serial devices.
+<P>A PnP operating system will find such an external device and read its
+model number, etc.  Then it may be able to find a device driver for it
+so that you don't have to tell an application program that you have a
+certain device on say /dev/ttyS1.  Since you should be able to
+manually inform your application program (via a configuration file,
+etc.) what serial port the device is on (and possibly what model
+number it is) you should not really need this "serial port" feature of
+PnP.  I don't think Linux supports it ??
+<P>
+<HR>
+<A HREF="Plug-and-Play-HOWTO-3.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Plug-and-Play-HOWTO-1.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Plug-and-Play-HOWTO.html#toc2"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

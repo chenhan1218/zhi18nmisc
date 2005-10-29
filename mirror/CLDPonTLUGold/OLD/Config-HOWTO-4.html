@@ -1,0 +1,1055 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="LinuxDoc-Tools 0.9.16">
+ <TITLE>系統設置-HOWTO: 軟件設置</TITLE>
+ <LINK HREF="Config-HOWTO-5.html" REL=next>
+ <LINK HREF="Config-HOWTO-3.html" REL=previous>
+ <LINK HREF="Config-HOWTO.html#toc4" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Config-HOWTO-5.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="Config-HOWTO-3.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="Config-HOWTO.html#toc4"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<HR>
+<H2><A NAME="config"></A> <A NAME="s4">4.</A> <A HREF="Config-HOWTO.html#toc4">軟件設置</A></H2>
+
+
+<P>下列設置檔必需加以設定：/etc/profile /etc/bashrc <CODE>.bashrc</CODE>
+<CODE>.bashrc .bash_profile .bash_logout .inputrc .less .lessrc .xinitrc </CODE>
+<CODE>.fvwmrc .fvwm2rc95 .Xmodmap .Xmodmap.num .Xdefaults .jedrc </CODE>
+<CODE>.abbrevs.sl .joerc .emacs </CODE>.
+在完成系統設定以前不要增添用戶；需要將點文檔(dot files)放入/etc/skel。</P>
+
+<H2><A NAME="ss4.1">4.1</A> <A HREF="Config-HOWTO.html#toc4.1">bash(1)</A>
+</H2>
+
+<P>有人認為，這個軟件是除內核之外最重要的軟件。要使<CODE>bash</CODE>適合個人口味，
+可修改下列文檔：</P>
+<P>
+<UL>
+<LI> /etc/bashrc 存有整個系統的別名和功能；
+</LI>
+<LI> /etc/profile 存有整個系統的環境參數和啟動程式；
+</LI>
+<LI> <CODE>$HOME/.bashrc</CODE> 存有用戶的的別名和功能；
+</LI>
+<LI> <CODE>$HOME/.bash_profile</CODE> 存有用戶的環境參數和啟動程式；
+</LI>
+<LI> <CODE>$HOME/.inputrc</CODE> 存有主要綁定數值和其他位元數值；
+</LI>
+</UL>
+</P>
+<P>下文例舉對這些文檔的修改。首先，最重要的文檔是：<CODE>/etc/profile</CODE>。以下几節中可以看到，
+修改這個文檔可以設定 Linux 的各種功能。</P>
+<P>
+<HR>
+<PRE>
+# /etc/profile
+
+# System wide environment and startup programs
+# --整個系統環境和啟動程式
+#
+# Functions and aliases go in /etc/bashrc
+# --/etc/bashhrc中包含功能和別名
+#
+# This file sets up the following features and programs:
+# --這個文檔設定下列功能：
+#
+#   o path --路徑
+#   o prompts  --提示符
+#   o a few environment variables  --几個環境變數
+#   o colour ls --ls 的顏色
+#   o less behaviour    --設定less的功能 
+#   o rxvt
+#
+# Users can override these settings and/or add others in their
+# $HOME/.bash_profile
+# 用戶可在 $HOME/.bash_profile 中取消這些設定和（或）增加其他設定
+
+
+# set a decent path
+# 設定可行的路徑
+
+PATH="$PATH:/usr/X11R6/bin:$HOME/bin:."
+
+# notify the user: login or non-login shell. If login, the prompt is
+# coloured in blue; otherwise in magenta. Root's prompt is red.
+# See the Colour-ls mini  HOWTO  for an explanation of the escape codes.
+# 通知用戶：登錄（login）或不登錄（non-login）的外圍程序（shell）。
+# 如果登錄，則提示符為藍色，否則為紫紅色。Root的提示符為紅色。
+# 參閱Colour-ls mini  HOWTO 中對換碼符(escape codes)的使用解釋。
+
+USER=`whoami`
+if [ $LOGNAME = $USER ] ; then
+  COLOUR=44  # blue --藍色
+else
+  COLOUR=45  # magenta --紫紅色
+fi
+
+if [ $USER = 'root' ] ; then
+  COLOUR=41  # red --紅色
+  PATH="$PATH:/usr/local/bin"
+fi
+
+ESC="\033"
+PROMPT='\h'    # hostname --主機名
+STYLE=';1m'    # bold --粗體
+# PROMPT='\u'  # username --用戶名
+# STYLE='m'    # plain --一般字體
+PS1="\[$ESC[$COLOUR;37$STYLE\]$PROMPT:\[$ESC[37;40$STYLE\]\w\\$ "
+PS2="> "
+
+# no core dumps, please
+# 請勿轉儲內存信息
+
+ulimit -c 0
+
+# set umask
+# 設定umask
+
+if [ `id -gn` = `id -un` -a `id -u` -gt 14 ]; then
+  umask 002
+else
+  umask 022
+fi
+
+# a few variables
+# 几項變數
+
+USER=`id -un`
+LOGNAME=$USER
+MAIL="/var/spool/mail/$USER"  # sendmail, postfix, smail 
+# MAIL="$HOME/Mailbox"        # qmail
+NNTPSERVER=news.myisp.it      # put your own here 
+VISUAL=jed
+EDITOR=jed
+HOSTNAME=`/bin/hostname`
+HISTSIZE=1000
+HISTFILESIZE=1000
+export PATH PS1 PS2 USER LOGNAME MAIL NNTPSERVER
+export VISUAL EDITOR HOSTNAME HISTSIZE HISTFILESIZE
+
+# enable colour ls
+# 設定ls的顏色
+
+eval `dircolors /etc/DIR_COLORS -b`
+export LS_OPTIONS='-s -F -T 0 --color=yes'
+
+# customize less
+# 設定less
+
+LESS='-M-Q'
+LESSEDIT="%E ?lt+%lt. %f"
+LESSOPEN="| lesspipe.sh %s"
+LESSCHARDEF=8bcccbcc13b.4b95.33b. # show colours in ls -l | less
+# LESSCHARSET=latin1
+PAGER=less
+export LESS LESSEDIT LESSOPEN VISUAL LESSCHARDEF
+
+# fix the backspace key in rxvt/xterm
+# 設定rxvt/xterm中的退後鍵
+
+CTRL_H="\010"
+NULL_STRING=" $CTRL_H" # space + backspace
+if [ "$NULL_STRING" != "" ] ; then
+  stty erase ^?
+else
+  stty erase ^H
+fi
+
+# set xterm title: full path
+case $TERM in
+  xterm*)
+    PROMPT_COMMAND='echo -ne "\033]0;${USER}@${HOSTNAME}: ${PWD}\007"'
+    ;;
+esac
+
+for i in /etc/profile.d/*.sh ; do
+  if [ -x $i ]; then
+    . $i # beware - variables and aliases might get overridden!
+  fi
+done
+
+# call fortune, if available  --如有fortune
+if [ -x /usr/games/fortune ] ; then
+  echo ; /usr/games/fortune ; echo
+fi
+</PRE>
+<HR>
+</P>
+<P>此處為 /etc/bashrc：</P>
+<P>
+<HR>
+<PRE>
+# /etc/bashrc
+
+# System wide functions and aliases
+# 整個系統的功能和別名
+#
+# Environment stuff goes in /etc/profile
+# /etc/profile中的環境參數
+#
+# Insert PS1 definitions here if you experience problems.
+# 如有問題可將PS1的參數放在此處
+
+export CDPATH="$CDPATH:
+
+# common aliases --共同別名
+
+alias cp='cp -i'
+alias l=less
+alias ls="ls $LS_OPTIONS"
+alias mv='mv -i'
+alias rm='rm -i'
+alias rmbk='/bin/rm -f .*
+alias u='cd ..'
+alias which="type -path"
+alias x=startx
+
+# A few useful functions --几項有用的功能
+
+c ()    # cd to the new directory and list its contents
+{
+  cd $1 ; ls
+}
+
+inst()  # Install a .tar.gz archive in current directory --在當前目錄中建立.tar.gz儲存庫
+{
+  if [ $# != 0 ]; then tar zxvf $1; fi
+}
+
+cz()    # List the contents of a .zip archive --列出.zip的內容
+{
+  if [ $# != 0 ]; then unzip -l $*; fi
+}
+
+ctgz()  # List the contents of a .tar.gz archive --列出.tar.gz的內容
+{
+  for file in $* ; do
+    tar ztf ${file}
+  done
+}
+
+tgz()   # Create a .tgz archive a la zip. --建立壓縮檔.tgz
+{
+  if [ $# != 0 ]; then
+    name=$1.tar; shift; tar -rvf ${name} $* ; gzip -9 ${name}
+  fi
+}
+
+crpm()  # list information on an .rpm file --列出.rpm檔的內容
+{
+  if [ $# != 0 ]; then rpm -qil $1 | less; fi
+}
+</PRE>
+<HR>
+</P>
+<P>此處為 <CODE>.bashrc</CODE>：</P>
+<P>
+<HR>
+<PRE>
+# $HOME/.bashrc
+# Source global definitions
+
+if [ -f /etc/bashrc ]; then
+  . /etc/bashrc
+fi
+
+# this is needed to notify the user that they are in non-login shell
+# 需要以下設定，以便通知處於不登錄（non-login）外圍程序（shell）中的用戶
+
+if [ "$GET_PS1" = "" ] ; then
+  COLOUR=45; ESC="\033"; STYLE=';1m';  # STYLE='m'
+  USER=`whoami`
+  export PS1="\[$ESC[$COLOUR;37$STYLE\]$USER:\[$ESC[37;40$STYLE\]\w\\$ "
+fi
+
+# personal aliases
+# 個人別名
+
+alias backup='tar -Mcvf /dev/fd0'
+alias dial='eznet up myisp'
+alias f='cd 
+alias hangup='eznet down'
+alias lyx='lyx -width 580 -height 450'
+alias restore='tar -M -xpvf /dev/fd0'
+
+# personal functions
+# 几個個人使用的功能
+
+xj()    # Launch xjed and a file in background --在背景啟動xjed和文檔
+{
+  xjed $1 &amp;
+}
+</PRE>
+<HR>
+</P>
+<P>此處為<CODE>.bash_profile</CODE>：</P>
+<P>
+<HR>
+<PRE>
+# $HOME/.bash_profile
+
+# User specific environment and startup programs
+# 用戶特定的環境參數和啟動程式
+#
+# This file contains user-defined settings that override
+# those in /etc/profile
+# 這個文檔中存有用戶自訂的設置，可取代/etc/profile 中的數值
+#
+# Get aliases and functions
+# 設定別名和功能
+#
+if [ -f  then
+  GET_PS1="NO"  # don't change the prompt colour --不改變提示符的顏色
+  . 
+fi
+
+# set a few `default' directories
+# 設定几個“默認”目錄
+
+export CDPATH="$CDPATH:$HOME:$HOME/text:$HOME/text/geology"
+</PRE>
+<HR>
+</P>
+<P>此處為 <CODE>.inputrc</CODE>：</P>
+<P>
+<HR>
+<PRE>
+# $HOME/.inputrc
+
+# key bindings
+# 主要綁定
+
+"\e[1
+"\e[3
+"\e[4
+# (F1 .. F5) are "\e[[A" ... "\e[[E"
+# (F1 .. F5) 分別為 "\e[[A" ... "\e[[E"
+
+"\e[[A": "info \C-m"
+
+set bell-style visible          # please don't beep
+                                # 喇叭不發聲
+set meta-flag On                # allow 8-bit input (i.e, accented letters)
+                                # 允許8-位元輸入（例如重音字符）譯註：用于歐洲
+
+set convert-meta Off            # don't strip 8-bit characters
+                                # 不取消8-位元字符
+set output-meta On              # display 8-bit characters correctly
+                                # 正確顯示8-位元字符
+set horizontal-scroll-mode On   # scroll long command lines
+                                # 長指令行自動翻轉
+set show-all-if-ambiguous On    # after TAB is pressed
+                                # 按TAB鍵
+</PRE>
+<HR>
+</P>
+<P>設定下列參數使 backspace 和 delete 兩鍵在<CODE>xterm</CODE> 和其他X11應用中運作正常：
+<UL>
+<LI> 在<CODE>.xinitrc</CODE>中添加：
+
+<BLOCKQUOTE><CODE>
+<PRE>
+usermodmap=$HOME/.Xmodmap
+xmodmap $usermodmap
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI> 在<CODE>.Xmodmap</CODE>中添加：
+
+<BLOCKQUOTE><CODE>
+<PRE>
+keycode 22 = BackSpace
+keycode 107 = Delete
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+以上就設定了主控台的參數。要修改<CODE>xterm</CODE>，則更改如下：
+</LI>
+<LI> 在<CODE>.Xdefaults</CODE>中增添：
+
+<BLOCKQUOTE><CODE>
+<PRE>
+xterm*VT100.Translations: #override &lt;Key>BackSpace: string(0x7F)\n\
+        &lt;Key>Delete:        string(0x1b) string("[3
+        &lt;Key>Home:          string(0x1b) string("[1
+        &lt;Key>End:           string(0x1b) string("[4
+        Ctrl&lt;Key>Prior:     string(0x1b) string("[40
+        Ctrl&lt;Key>Next:      string(0x1b) string("[41
+
+nxterm*VT100.Translations: #override &lt;Key>BackSpace: string(0x7F)\n\
+        &lt;Key>Delete:        string(0x1b) string("[3
+        &lt;Key>Home:          string(0x1b) string("[1
+        &lt;Key>End:           string(0x1b) string("[4
+        Ctrl&lt;Key>Prior:     string(0x1b) string("[40
+        Ctrl&lt;Key>Next:      string(0x1b) string("[41
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+</UL>
+</P>
+<P><CODE>rxvt</CODE>的問題比較複雜，因為在編輯時的一些設定會影響它的功能。參看上文
+/etc/profile部分。</P>
+<P>在<CODE>bash</CODE>(1) 和 <CODE>readline</CODE>(3) 的 man 說明中有更多這方面的資料。</P>
+<P>不要以為這些設定在每種應用中都可正常運作。例如，在<CODE>xterm</CODE>中運行<CODE>joe</CODE>，
+有些鍵位就不起作用；運行<CODE>rxvt</CODE>也有相同的問題。</P>
+
+<H2><A NAME="ss4.2">4.2</A> <A HREF="Config-HOWTO.html#toc4.2">ls(1)</A>
+</H2>
+
+<P><CODE>ls</CODE>可用顏色顯示目錄，突出不同種類的文檔。如上文所示，要使用這項功能，只要在
+/etc/profile 增加几行內容即可。不過，這對有些版本的<CODE>rxvt</CODE>不起作用；
+得使用 <CODE>xterm</CODE> 替代。看來一些老版本的<CODE>rxvt</CODE>有設計不全之處，以致在有些情況下無法正確使用環境參數。</P>
+<P>Caldera版本的<CODE>ls</CODE>不顯示顏色，但它有一個類似的<CODE>color-ls</CODE>。
+將以下內容加到 /etc/bashrc：</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+alias ls="color-ls $LS_OPTIONS"
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+
+<H2><A NAME="ss4.3">4.3</A> <A HREF="Config-HOWTO.html#toc4.3">less(1)</A>
+</H2>
+
+
+<P>利用這個優越的頁面調度程序不僅能瀏覽一般文字文檔，也能觀看壓縮的 gzip 文檔和以 tar 和 zip 格式儲存的檔案文檔和 man 文檔，其設置如下：</P>
+<P>
+<UL>
+<LI> 如要配合使用方向鍵，則將以下以ASCII編寫的一般文字檔<CODE>.lesskey</CODE> 置于home目錄內：
+
+<BLOCKQUOTE><CODE>
+<PRE>
+^[[A   back-line
+^[[B   forw-line
+^[[C   right-scroll
+^[[D   left-scroll
+^[OA   back-line
+^[OB   forw-line
+^[OC   right-scroll
+^[OD   left-scroll
+^[[6
+^[[5
+^[[1
+^[[4
+^[[7
+^[[8
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+然後運行指令<CODE>lesskey</CODE>。（這是類似vt100型終端機的換碼符）。
+這會生成綁定鍵位的二進制文檔 <CODE>.less</CODE>。
+
+</LI>
+<LI> 編制下列稱為w /usr/local/bin/lesspipe.sh的文檔：
+
+<HR>
+<PRE>
+#!/bin/sh
+# This is a preprocessor for 'less'.  It is used when this environment
+# variable is set:   LESSOPEN="|lesspipe.sh %s"
+# 此為‘less’的預處理器。當環境參數定為LESSOPEN="|lesspipe.sh %s"
+# 時，便起用這個預處理器。
+
+lesspipe() {
+  case "$1" in
+  *.tar) tar tf $1 2>/dev/null ;; # View contents of .tar and .tgz files
+                                  # 閱讀.tar和.tgz檔的內容
+   *.tgz|*.tar.gz|*.tar.Z|*.tar.z) tar ztf $1 2>/dev/null ;;
+  *.Z|*.z|*.gz) gzip -dc $1  2>/dev/null ;; # View compressed files
+correctly
+                                                # 正確閱讀壓縮文檔
+  *.zip) unzip -l $1 2>/dev/null ;; # View archives
+                                    # 閱讀檔案文檔
+  *.arj) unarj -l $1 2>/dev/null ;;
+  *.rpm) rpm -qpil $1 2>/dev/null ;;
+  *.cpio) cpio --list -F $1 2>/dev/null ;;
+  *.1|*.2|*.3|*.4|*.5|*.6|*.7|*.8|*.9|*.n|*.l|*.man) FILE=`file -L $1`
+    FILE=`echo $FILE | cut -d ' ' -f 2`
+    if [ "$FILE" = "troff" ]; then
+      groff -s -p -t -e -Tascii -mandoc $1
+    fi ;;
+  *) file $1 | grep text > /dev/null ;
+    if [ $? = 1 ] ; then # it's not some kind of text
+      strings $1
+    fi ;;
+  esac
+}
+
+lesspipe $1
+</PRE>
+<HR>
+
+
+然後運行<CODE>chmod 755 lesspipe.sh</CODE>，使其成為可執行檔。
+</LI>
+<LI> 按照上文將必要的變數放入/etc/profile。
+</LI>
+</UL>
+</P>
+
+<H2><A NAME="ss4.4">4.4</A> <A HREF="Config-HOWTO.html#toc4.4">emacs(1) 文本編輯器</A>
+</H2>
+
+<P>由于我不太用<CODE>emacs</CODE>，因此心得不多。有些<CODE>emacs</CODE> 版本沒有預先設置顏色和語法標示。可在<CODE>.emacs</CODE>中增添：</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+(global-font-lock-mode t)
+(setq font-lock-maximum-decoration t)
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>這只對X11有用。如需使用重音符號，可增加此行：</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+(standard-display-european 1)
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>我讓您自己從關於<CODE>emacs</CODE>的文件資料中尋找設定符合您的需要的方法，有時這需要几個月的時間。
+點文檔產生器（
+<A HREF="Config-HOWTO-5.html#Config sw">設置軟件</A>）可以幫些忙。</P>
+
+<H2><A NAME="ss4.5">4.5</A> <A HREF="Config-HOWTO.html#toc4.5">joe(1) 文本編輯器</A>
+</H2>
+
+
+<P>有些<CODE>joe</CODE>的版本不在主控台顯示顏色，並且有些特殊鍵位不起作用。解決這項問題的最快方法是：</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+   (譯註：原文似乎有漏)
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>要使特殊鍵位發生作用，只要修改<CODE>.joerc</CODE>、<CODE>.jstarrc</CODE>或喜愛的仿真設定；
+首先改變/usr/lib/joe中的設置文檔。利用第四部分（鍵位梆定）設定Home和 End兩鍵。</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+bol ^[ [ 1 
+eol ^[ [ 4 
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>找出ESC的次序，鍵入<CODE>cat</CODE>，然後再鍵入特殊鍵。</P>
+
+<H2><A NAME="ss4.6">4.6</A> <A HREF="Config-HOWTO.html#toc4.6">jed(1) 文本編輯器</A>
+</H2>
+
+<P>這是相當好用的編輯器：比<CODE>emacs</CODE>短小精悍，也宜於設定，使用方式也與其他編輯器十分類似。
+我們大學的許多用戶都用<CODE>jed</CODE>替代VMS的系統編輯器<CODE>EDT</CODE>。</P>
+<P><CODE>jed</CODE>的設置文檔為 <CODE>.jedrc</CODE>和/usr/lib/jed/lib/*；前者可從後者目錄中的<CODE>jed.rc</CODE>修改而得。</P>
+<P>
+<UL>
+<LI>要使<CODE>jed</CODE>的特殊鍵位設置正確，編制/usr/lib/jed/lib/defaults.sl檔，
+其內容如下：
+
+<BLOCKQUOTE><CODE>
+<PRE>
+() = evalfile(" Linux ");
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>如果<CODE>xjed</CODE>不識別DEL鍵，則在<CODE>.jedrc</CODE>中增加下列內容：
+
+<BLOCKQUOTE><CODE>
+<PRE>
+#ifdef XWINDOWS
+  x_set_keysym (0xFFFF, 0, "\e[3
+  setkey (``delete_char_cmd'', "\e[3
+#endif
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI> 編輯/usr/lib/jed/lib/ Linux .sl，設定<CODE>Info_Directory = "/usr/info";</CODE>并在<CODE>/UCB_Mailer = "/bin/mail";</CODE>后添加<CODE>/bin/mail</CODE>；
+
+</LI>
+<LI> 設置<CODE>jed</CODE>模擬<CODE>EDT</CODE>（或其他編輯器）的工作不難：只須編輯
+<CODE>.jedrc</CODE> 中的几行內容。 如果要用小鍵盤中的‘+’鍵刪字，而不只刪一個字母，則在<CODE>.jedrc</CODE>中<CODE>() = evalfile("edt")</CODE>（或類似的設定）之後增添下列內容：
+
+<BLOCKQUOTE><CODE>
+<PRE>
+unsetkey("\eOl");
+unsetkey("\eOP\eOl");
+setkey("edt_wdel", "\eOl");
+setkey("edt_uwdel", "\eOP\eOl");
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+</LI>
+<LI> 在<CODE>EDT</CODE>模擬中，要使<CODE>xjed</CODE>使用數字小鍵盤，則須在 <CODE>.Xmodmap</CODE> 中添加下列內容：
+
+<BLOCKQUOTE><CODE>
+<PRE>
+keycode 77  = KP_F1
+keycode 112 = KP_F2
+keycode 63  = KP_F3
+keycode 82  = KP_F4
+keycode 86  = KP_Separator
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI> 在<CODE>.Xdefaults</CODE>中增加以下內容可以更改<CODE>xjed</CODE>的顏色：
+
+<BLOCKQUOTE><CODE>
+<PRE>
+xjed*Geometry: 80x32+150+50
+xjed*font: 10x20
+xjed*background: midnight blue
+# and so on...
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI> 設定“簡稱表”可節省許多時間。編輯一個稱為 <CODE>$HOME/.abbrevs.sl</CODE>
+的程序（如要改變名稱，可在<CODE>.jedrc</CODE>中插入<CODE>variable Abbrev_File = "/usr/lib/jed/abbrev.sl";</CODE>）：
+
+<BLOCKQUOTE><CODE>
+<PRE>
+create_abbrev_table ("Global", "0-9A-Za-z");
+define_abbrev ("Global", "GG", "Guido Gonzato");
+create_abbrev_table ("TeX", "\\A-Za-z0-9");
+define_abbrev ("TeX", "\\beq", "\\begin{equation}");
+define_abbrev ("TeX", "\\eeq", "\\end{equation}");
+% and so on...
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+並鍵入<CODE>ESC x abbrev_mode</CODE>使其運行。如要自動運行簡稱功能，將下列內容加入
+
+<CODE>.jedrc</CODE>：
+<BLOCKQUOTE><CODE>
+<PRE>
+define text_mode_hook ()
+{
+  set_abbrev_mode (1);
+}
+%
+define fortran_hook ()
+{
+  set_abbrev_mode (1);
+  use_abbrev_table ("Fortran");
+}
+% and so on...
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+</UL>
+</P>
+
+<H2><A NAME="ss4.7">4.7</A> <A HREF="Config-HOWTO.html#toc4.7">pine(1) 郵件閱讀器</A>
+</H2>
+
+<P>修改/usr/lib/pine.conf中涉及整個系統的設置，特別注意：
+<CODE>user-domain</CODE>、<CODE>smtp-server</CODE>和<CODE>nntp-server</CODE>。同時注意
+<CODE>inbox-path</CODE>取決于使用何種 MTA：如使用 <CODE>sendmail</CODE> 或
+<CODE>postfix</CODE>，則為 <CODE>var/spool/mail/$USER</CODE>；如使用 Qmail，則為
+/home/$USER/Mailbox （但 root 使用 /usr/lib/pine.conf）。</P>
+
+<H2><A NAME="ss4.8">4.8</A> <A HREF="Config-HOWTO.html#toc4.8">minicom(1)</A>
+</H2>
+
+<P>除非 root 修改影響整個系統的設置，否則用戶無法使用 <CODE>minicom</CODE>。記住修改。</P>
+
+<H2><A NAME="ss4.9">4.9</A> <A HREF="Config-HOWTO.html#toc4.9">efax(1) 軟件</A>
+</H2>
+
+
+<P>可能這是一套最容易收發傳真（fax）的軟件。只要修改 /usr/bin/fax 內的指令即可；修改不難，但有些小地方卻需注意：</P>
+<P>
+<UL>
+<LI> 利用 <CODE>at+fclass=?</CODE> 指令找出系統內的數據機的級別為 class 1、2或2.0型。
+系統的回覆可能為 <CODE>0,1,2</CODE>；1 和 2 表示數據機支持的級別；
+</LI>
+<LI> DIALPREFIX: 單單使用“<CODE>T</CODE>”或“<CODE>P</CODE>”可能不適用于有些國家（至少不適用于義大利）。改用
+“<CODE>ATDT</CODE>”或“<CODE>ATDP</CODE>”撥號；
+</LI>
+<LI> INIT and RESET: <CODE>efax</CODE> 需要起始參數 “<CODE>-i</CODE>”和 “<CODE>-k</CODE>”。
+如需使用 AT 指令，則將其從指令中消除，並以 “<CODE>-i</CODE>” 或 “<CODE>-k</CODE>”替代。例如：在
+INIT 中使用 “<CODE>ATX3</CODE>” 指令，則加入 “<CODE>-iX3</CODE>”即可。
+</LI>
+</UL>
+</P>
+<P>完成這項設置後，還要設置几項使用者的權限設定，這樣非 root 的使用者才能收發傳真。首先要使 /var/lock 和 /var/spool/fax 成為可寫目錄。要完成這項工作，
+不妨設立 <CODE>faxusers</CODE> 群組，將使用者加入其中，然後以下列指令改變屬性：</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ chmod g+w /var/spool/fax
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+
+<H2><A NAME="ss4.10">4.10</A> <A HREF="Config-HOWTO.html#toc4.10">Ghostscript</A>
+</H2>
+
+<P>這個有用的軟件有點小問題。因為美國的出口限制，<CODE>pdf2ps</CODE> 不能在加密的 .pdf 文檔上使用。解決辦法是將瀏覽器接上
+<A HREF="http://www.ozemail.com.au/">http://www.ozemail.com.au/</A>， 把 <CODE>pdf_sec.ps</CODE> 文檔取代 Ghostscript 中的同名文檔即可。</P>
+
+<H2><A NAME="ss4.11">4.11</A> <A HREF="Config-HOWTO.html#toc4.11">TeX 的使用</A>
+</H2>
+
+
+<P>假設 Linux 機上已安裝了LeTeX。</P>
+<P>
+<UL>
+<LI>從最近的鏡像站下載其他與LaTeX有關的軟件，例如
+<A HREF="ftp://ftp.dante.de/pub/tex">ftp://ftp.dante.de/pub/tex</A>。將這些文檔放在 /usr/share/texmf/tex/latex
+目錄下，然後運行指令<CODE>texhash</CODE>，使 teTeX知道新軟件的存在；
+</LI>
+<LI> 設置連字符（hyphenation），則可修改
+/usr/share/texmf/tex/generic/config/language.dat檔，然後運行：
+
+<BLOCKQUOTE><CODE>
+<PRE>
+ texconfig hyphen
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI> 如要設定<CODE>dvips</CODE>，則需編輯
+/usr/share/texmf/dvips/config/config.ps檔。 注意：有關默認分辨率的參數也影響 <CODE>xdvi</CODE>的運行；如果每次運行時發現都要創造字體，則可改動 <CODE>.Xdefault</CODE>的內容如下：
+
+<BLOCKQUOTE><CODE>
+<PRE>
+XDvi*mfmode:
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+這應有所幫助。
+        </LI>
+<LI> 擴大TeX的尋找範圍可將子目錄中的PostScript數字包括再內。將下列指令放入
+.bash_profile：
+
+<BLOCKQUOTE><CODE>
+<PRE>
+export TEXINPUTS="$HOME/figures::./figures"
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+這使TeX在查找默認目錄之前先查找<CODE>$HOME/figures</CODE>，并在查找默認目錄之後查找
+<CODE>./figures</CODE>。
+</LI>
+</UL>
+</P>
+
+<H2><A NAME="ss4.12">4.12</A> <A HREF="Config-HOWTO.html#toc4.12">避免PPP的問題</A>
+</H2>
+
+
+<P>目前 Linux 的內核幾乎都已編入了 PPP + TCP/IP 功能，設定了回送地址（loopback）和正確安裝了<CODE>pppd</CODE>軟件和作為suid root。當然，ISP 得支持PPP。
+目前有兩種方式可使 PPP 正常運作：（a）手動設定；和（b）利用一個程式自動設定。不論採用何種方式，均請收集下列資料：</P>
+<P>
+<UL>
+<LI> ISP的電話號碼
+</LI>
+<LI> ISP的名字、郵件和新聞服務器的地址
+</LI>
+<LI> ISP的域名
+</LI>
+<LI> 用戶名字和密碼
+</LI>
+</UL>
+</P>
+<P>手動設置是件單調無聊、十分乏味的事。雖然涉及的工作無非是修改文檔和編輯腳本，並不麻煩，
+但極易出錯，新手往往不敢輕易嚐試。幸好有 PPP  HOWTO 可以參考。此外，也有工具可以使用，輸入上述資料，然後自動為您設置。
+Gnome和KDE兩套軟件中分別包括了<CODE>gnome-ppp</CODE>和<CODE>kppp</CODE>兩個工具，方便安裝PPP，
+令人十分感激。此外，也不妨使用在主控台上操作的工具<CODE>wvdial</CODE>和<CODE>eznet</CODE>。
+只要提供ISP的電話號碼、用戶姓名、密碼，就聯網上路了。它們的網頁是
+<A HREF="http://www.worldvisions.ca/wvdial">http://www.worldvisions.ca/wvdial</A>和
+<A HREF="http://www.hwaci.com/sw/eznet">http://www.hwaci.com/sw/eznet</A>，不妨試用。這兩個工具都十分好用，也需後者更方便一些。</P>
+
+<H3>使用eznet</H3>
+
+
+<P>首先，建立一個文檔/etc/resolv.conf，內容如下：</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+nameserver w.x.y.z
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>其中填入您使用的ISP的域名伺服器（nameserver）的地址。要利用<CODE>eznet</CODE>建立帳戶，
+可使用下列指令：</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#（譯註：原文有漏）
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>這會產生一個屬於root的文檔/var/eznet/eznet.conf，使用權限為600；
+如要讓大家都能使用，用chmod將其改為666。利用<CODE>eznet up YOUR_ISP</CODE>撥號給ISP。如果數據機一直等待電話的接撥信號，無法接通，試試下列指令：</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#（譯註：原文有漏）
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>要掛斷電話，只要發出<CODE>eznet down</CODE>指令。不是十分簡單嗎！</P>
+
+<H3>使用wvdial</H3>
+
+
+<P><CODE>wvdial</CODE>的設置甚至更短。鍵入<CODE>wvdialconf /etc/wvdial.conf</CODE>，然後修改這個文檔使其列入用戶姓名、密碼和電話號碼。
+用<CODE>wvdial</CODE>試撥，希望一切順利。要斷線，用 Ctrl-C即可。</P>
+
+<H2><A NAME="ss4.13">4.13</A> <A HREF="Config-HOWTO.html#toc4.13">POP用戶端程序</A>
+</H2>
+
+<P>要從POP伺服器收取郵件，可使用POP用戶端程序，如<CODE>fetchpop</CODE>或 <CODE>fetchmail</CODE>等；後者比較先進，但需要運行<CODE>sendmail</CODE>。這對低檔電腦而言，
+似乎是多此一舉。這些軟件可從
+<A HREF="ftp://metalab.unc.edu/pub/ Linux /system/mail/pop">ftp://metalab.unc.edu/pub/ Linux /system/mail/pop</A>得到。</P>
+<P>設置用戶端的程式如下：</P>
+<P>
+<UL>
+<LI><CODE>fetchpop</CODE>：在第一次運行這個軟件時會要求輸入一些資料。只要回答所有問題即可。
+如果ISP的POP3伺服器不能正確執行LAST指令，在使用<CODE>fetchpop</CODE>時必需加附參數<CODE>-r</CODE>
+</LI>
+<LI><CODE>fetchmail</CODE>：修改<CODE>.fetchmailrc</CODE>如下：
+
+<BLOCKQUOTE><CODE>
+<PRE>
+# $HOME/.fetchmailrc
+poll mbox.myisp.com with protocol pop3;
+  user john there with password _Loo%ny is john here
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+有個用戶指出在第二行中增加“smtphost localhost”能大大改善運行速度。
+
+必須運行<CODE>chmod 600 .fetchmailrc</CODE>設定此檔的使用權限，否則<CODE>fetchmail</CODE>會完全拒絕運行。
+這個例子只是一種非常基本的設定，還有其他各種可能設定的辦法， 可參看
+<A HREF="http://www.ccil.org/">http://www.ccil.org/</A>。
+</LI>
+</UL>
+</P>
+
+<H2><A NAME="ss4.14">4.14</A> <A HREF="Config-HOWTO.html#toc4.14">X 視窗系統 (XFree86)</A>
+</H2>
+
+
+
+<H3>設定X伺服器</H3>
+
+
+<P>歸根結底，設定X伺服器已經沒有以前那麼困難。所有版本的 Linux 現在都包括了設定X11的工具（<CODE>XConfigurator</CODE>、<CODE>sax</CODE>、<CODE>XF86Setup</CODE>
+或至少有<CODE>xf86config</CODE>）。目前X伺服器的設置幾乎完全自動，
+只是有少數几種視像卡可能拒絕工作。在設定X伺服器時如遭遇困難，可用下列簡單的方法解決：</P>
+<P>
+<UL>
+<LI>確定安裝了通用的VGA伺服器；
+</LI>
+<LI>連接到
+<A HREF="ftp://ftp.XFree86.org/pub/XFree86/current/binaries">ftp://ftp.XFree86.org/pub/XFree86/current/binaries</A>，cd到適當的 Linux 子目錄，下載<CODE>X_version_bin.tgz</CODE>、<CODE>X_version_set.tgz</CODE>和所有伺服器。
+在其他軟件中，第一個存檔軟件內載有最新的<CODE>SuperProbe</CODE>；
+
+
+</LI>
+<LI>將<CODE>X_version_bin.tgz</CODE>打開到一個臨時目錄，cd到該目錄，然後運行
+<CODE>./SuperProbe</CODE>。如果這個程式測得視像卡，那就有可能設定視像卡。否則就沒有希望；
+</LI>
+<LI>從/usr/X11R6/安裝各個伺服器和<CODE>X_version_set.tgz</CODE>，然後運行
+<CODE>XF86Setup</CODE>。
+</LI>
+</UL>
+</P>
+<P>這種方法一般都萬無一失，但各人的情況可能不同。X11不開始運行的多數原因是視像器的參數選擇過高。
+不妨從比較低的參數開始，例如選800x600和256色，然後逐步上升。<EM>注意</EM>：
+這些操作應謹慎小心，可能會損壞視像器！</P>
+
+
+<H3>數字小鍵盤</H3>
+
+
+<P>上文已經示範如何設定几個特別鍵位。如果使用Xjed，示範文檔<CODE>.Xmodmap</CODE>就符合需要，
+但缺點是無法使用數字小鍵盤（keypad）。因此需要<CODE>.Xmodmap.num</CODE>另作設定：</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+! Definitions can be found in &lt;X11/keysymdef.h>
+! 在&lt;X11/keysymdef.h>中可找到各項定義
+keycode 77  = Num_Lock
+keycode 112 = KP_Divide
+keycode 63  = KP_Multiply
+keycode 82  = KP_Subtract
+keycode 86  = KP_Add
+keycode 79  = KP_7
+keycode 80  = KP_8
+keycode 81  = KP_9
+keycode 83  = KP_4
+keycode 84  = KP_5
+keycode 85  = KP_6
+keycode 87  = KP_1
+keycode 88  = KP_2
+keycode 89  = KP_3
+keycode 90  = KP_0
+keycode 91  = KP_Decimal
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>確定/etc/X11/XF86Config中不得有下列三行：</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+  ServerNumLock
+  Xleds
+  XkbDisable
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>否則用#註銷。要重新使用數字小鍵盤，運行指令<CODE>xmodmap .Xmodmap.num</CODE>。</P>
+
+<H3>用xdm圖像登錄</H3>
+
+
+<P>要使用圖像登錄，不妨修改/etc/inittab，使其包含下列內容：</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+x:5:respawn:/usr/bin/X11/xdm -nodaemon
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>其中5是X11的運行級別（runlevel）（S.u.S.E. 用4）。按照下列方法修改默認運行級別（通常為2或3）：</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+id:5:initdefault:
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>顏色的數值設定于/etc/X11/xdm/Xserver：</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+:0 local /usr/X11R6/bin/X :0 -bpp 16 vt07  # first X server, 65k colours
+:1 local /usr/X11R6/bin/X :1 -bpp 32 vt08  # second X server, true colour
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>如果已有<CODE>.xinitrc</CODE>，將其複製成<CODE>.xsession</CODE>，并運行<CODE>chmod +x .xsession</CODE>使其成為可執行檔。然後運行指令<CODE>telinit 5</CODE>，那就大功告成了。</P>
+
+<H3>視窗管理器</H3>
+
+
+<P>一旦X伺服器能夠無誤地工作，那就有各種組合的設置；當然，這得看用哪種視窗管理器(window manager)，目前就有几十種可選。多數設置都是修改一、兩個主目錄內的文本文件(ASCII files)；也有根本不需作任何修改的視窗管理器，而用一個小程式或甚至菜單來管理。</P>
+
+<P>舉例如下：</P>
+<P>
+<UL>
+<LI> <B>屬於fvwm家族</B>: 拷貝
+/etc/X11/fvwm/system.fvwmrc
+(或類似的程式)到主目錄， 打開試用。用這種方法可能會浪費不少時間，不過這樣才會真正知道它的特性，並了解是否投你所好；
+</LI>
+<LI> <B>WindowMaker</B>: 它有几個設置文檔，都在
+<CODE>$HOME/GNUstep</CODE>內，并有一個相當不錯的小程式(applet)；
+</LI>
+<LI> <B>KDE</B> 和 <B>Gnome</B>: 沒有任何修改之處：任何設定都通過菜單進行。
+</LI>
+</UL>
+</P>
+<P>簡言之，如果不在乎修改設置文檔，可選用<CODE>icewm</CODE>、<CODE>fvwm*</CODE>、<CODE>blackbox</CODE>等；
+否則就選用目前常見的KDE、Gnome、WindowMaker和XFCE。</P>
+<P>應該要有一個好的<CODE>.xinitrc</CODE>。舉例如下：</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#!/bin/sh
+# $HOME/.xinitrc
+
+usermodmap=$HOME/.Xmodmap
+xmodmap $usermodmap
+
+xset s noblank  # turn off the screen saver -- 關閉屏幕保護軟件
+xset s 300 2    # screen saver start after 5 min -- 5分鐘之後啟動屏幕保護
+xset m 10 5     # set mouse acceleration -- 設定鼠標的速度
+
+rxvt -cr green -ls -bg black -fg white -fn 7x14 \
+  -geometry 80x30+57+0 &amp;
+
+if [ "$1" = "" ] ; then  # default
+  WINMGR=wmaker
+else
+  WINMGR=$1
+fi
+
+$WINMGR
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>雖然並非必需，但將其變成可執行檔<CODE>chmod +x .xinitrc</CODE>。</P>
+<P>這個 <CODE>.xinitrc</CODE> 讓你選用視窗管理器：</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ startx startkde # or other w.m. -- 或其他視窗管理器
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>(不過它不適用于有些版本的 S.u.S.E.)</P>
+
+<H3>X11 應用軟件的默認值</H3>
+
+
+<P>找出app-defaults的所在位置(應該在/usr/X11R6/lib/X11/app-defaults)。
+有几個應用軟件的設置文檔都在這個目錄內。</P>
+
+<H2><A NAME="ss4.15">4.15</A> <A HREF="Config-HOWTO.html#toc4.15">使用者的設置文檔</A>
+</H2>
+
+
+<P>完成 Dot 文檔的編輯後，將這些設置文檔按 
+<A HREF="#config">軟件設置</A>的方法抄到 /etc/skel。</P>
+<H2><A NAME="ss4.16">4.16</A> <A HREF="Config-HOWTO.html#toc4.16">製作 .rpm</A>
+</H2>
+
+<P><CODE>rpm</CODE>是一種管理整套軟件的好方法，除非在特殊情況下(安全理由)，
+一般我都不太願意安裝.tar.gz軟件。要安裝.tar.gz軟件時，不妨將其轉換成.rpm檔，
+然後再安裝；參考RPM  HOWTO。此外，在使用比較新的<CODE>gcc</CODE>版本時，例如
+<CODE>egcs</CODE>或<CODE>pgcc</CODE>，
+不妨將下列內容加入<CODE>/etc/rpmrc</CODE>：</P>
+
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+optflags: i386 -O2 -mpentium
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+
+<H2><A NAME="ss4.17">4.17</A> <A HREF="Config-HOWTO.html#toc4.17">Upgrading</A>
+</H2>
+
+
+<P>在機器升級時，應首先製作備份，並保存一些重要文檔，其中應包括
+/etc/X11/XF86Config、/usr/bin/fax和/usr/local
+中的所有文檔以及內核設置、全套/etc和/var/spool/mail中的所有郵件。</P>
+<P>然後應該升級（極少降級）軟件版本附帶的應用軟件，和增加應用軟件。</P>
+
+<HR>
+<A HREF="Config-HOWTO-5.html"><IMG SRC="img/next.png" ALT="Next"></A>
+<A HREF="Config-HOWTO-3.html"><IMG SRC="img/prev.png" ALT="Previous"></A>
+<A HREF="Config-HOWTO.html#toc4"><IMG SRC="img/toc.png" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

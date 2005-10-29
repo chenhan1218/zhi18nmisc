@@ -1,0 +1,643 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Draft//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" content="text/html; charset=big5">
+<TITLE>Linux High Availability HOWTO: Linux-HA 的整體結構</TITLE>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 5);</SCRIPT>
+<A HREF="High-Availability-HOWTO-5.html"><IMG SRC="prev.gif" ALT="Previous"></A>
+<A HREF="High-Availability-HOWTO-7.html"><IMG SRC="next.gif" ALT="Next"></A>
+<A HREF="High-Availability-HOWTO.html#toc6"><IMG SRC="toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s6">6. Linux-HA 的整體結構</A></H2>
+
+<P>
+<P>
+<H2><A NAME="ss6.1">6.1 硬體方面</A>
+</H2>
+
+<P>
+<P>
+<H3>PCI 插槽方面</H3>
+
+<P>
+<P>
+用於具備 Linux-HA 伺服器的主機板應該要有足夠的 I/O 插槽數量，
+以確保網路和磁碟配接卡的數量足夠冗餘所需。
+更詳細的說，你將可能需要至少兩張磁碟配接卡和兩張網路配接卡。
+如果所有的卡都是 PCI 的，總共至少需 4 個 PCI 插槽。
+對更複雜的設定而言，可能需要更多的 PCI 插槽。
+對於低速網路（ 10 MBit/s Ethernet, 16 MBit/s Token Ring ），
+也許可用 ISA 的卡來釋放給磁碟配接卡的 PCI 插槽。 
+<A NAME="chg-pci-slots"></A> 也有些多功能的卡可能潛在地節省插槽，例如
+<P>
+<UL>
+<LI>
+<A HREF="http://www.transform.co.uk/znyx.html">Zynx</A>
+的 4-way 乙太網路卡
+</LI>
+<LI>Buslogic 製造的
+<A HREF="http://www.mylex.com/products/prodinfo/bt952.html">BT952 dual wide SCSI boards</A> （它似乎不是差動式的）
+</LI>
+<LI>Adaptec 有 
+<A HREF="http://www.adaptec.com/serialio/d_sheets/AHA8945Features.html">AHA-8945 Firewire/SCSI dual card</A> 和
+<A HREF="http://www.adaptec.com/fastether/cogentquartet.html">Quartet 4-way</A> 乙太網路配接卡。
+</LI>
+<LI>Intraserver 製造的 
+<A HREF="http://www.intraserver.com/products/">Series 4000</A> SCSI/ 乙太網路配接卡。 
+一個變體是具備 2 個外部的 68-pin 連接器和一個 10/100 埠乙太網路的 dual-SCSI Ultra/Wide/Differential 配接卡。
+並且它有官方的 Linux/Alpha 支援（應該以 53c8xx 驅動程式執行）。
+
+
+</LI>
+</UL>
+<P>然而全部的卡都是 SPOF 。
+<P>
+<P>
+<H3>對稱式多重處理器</H3>
+
+<P>
+<P>對稱式多重處理器的機器非常適合高效能計算 -- 代價是每當有一個 CPU 失效就必須重開機。
+統計上，一台四顆 CPU 的機器失效的機率比單一 CPU 的機器失效的機率高四倍。
+統計上...
+<P>
+<H3><A NAME="chg-ecc"></A> 主記憶體</H3>
+
+<P>
+<P>建議使用具備 ECC 功能的主機板與位元檢查記憶體模組。
+Gabriel Paubert (<CODE>
+<A HREF="mailto:paubert@iram.es">paubert@iram.es</A></CODE>) 將開始致力於
+Linux 核心的 ECC handler。
+<P>
+<H3>顯示卡</H3>
+
+<P>
+<P>既然我們談論的是伺服器系統，就不需要 PCI 的顯示卡
+-- 便宜的 ISA 卡搭配普通的 14 吋黑白螢幕即可。
+串列終端機可能也適用，不過需要一個串列埠。 
+<P>
+<H2><A NAME="ss6.2">6.2 軟體的考量</A>
+</H2>
+
+<P>
+<P>
+<H3><A NAME="standard-dist"></A> 需要一個標準的發行套件</H3>
+
+<P>
+<P>既然我們正在談論企業關鍵性系統，可能無法讓顧客選擇他們想要的 Linux 發行版本。
+各發行版本在穩定性和管理方面太過於不同而無法顧慮及此。
+主要的 Linux 發行版本製造者受邀來告訴我們如何做。
+<P>一個有趣的新發展是 
+<A HREF="http://www.freelinux.de">FreeLinux Project</A>
+，它可能適合 Linux-HA 的需求。另一個有趣的想法是 
+<A HREF="http://dspace.dial.pipex.com/town/plaza/aan01/linnet/">LINNET</A> 的提議。
+<P>VAR 所提供給終端顧客的系統應該只支援有限範圍的核心版本。
+這也配合了 Pathlight 不釋出原始碼的考量（參閱
+<A HREF="High-Availability-HOWTO-7.html#pathlight">Pathlight Technology Inc.</A>一節）。 
+<P>另一可能的方法如下：
+主要的 Linux 發行版本製造者提供了他們發行版本的修訂以確保 Linux-HA 平順的整合。
+這需要一些更多的協調但讓使用者和系統整合者更容易使用。
+或是他們整合 Linux-HA 到他們的發行本版並提供組態設定與安裝服務。
+<P>
+<P>
+<P>
+<P>
+<H3>軟體結構</H3>
+
+<P>
+<P><B>注意：</B> 在以下幾節，主要以一個具備兩個節點的叢集來解釋這些概念。
+請記住我們希望開放更多的節點，這意味著失效接管的概念必須提供一些比這些簡化的範例更具邏輯的概念。
+<P>
+<P>
+<P>主要的目標是最小化應用程式停工時間並維持整體的叢集於一致的狀態。
+因此， Linux-HA 軟體將由執行於所有機器上的許多模組所構成：
+<P>
+<UL>
+<LI>一個處理事件，監督網路和發出錯誤訊息的中央 "叢集管理程式" 監控程式。
+叢集管理監控程式將透過以 <CODE>syslogd</CODE> 或其他方式寫入的具名管線接收錯誤訊息。
+這個監控程式將和其他叢集節點上的相應物通訊並送出/接收 SNMP traps 。
+基於效能與完整性的理由，叢集管理監控程式將以編譯的語言（例如 C ）撰寫。<BR>
+將有三種事件型態：
+
+<UL>
+<LI>網路配接卡事件
+</LI>
+<LI>網路事件
+</LI>
+<LI>節點事件
+
+</LI>
+<LI>加上相關的完整事件
+</LI>
+</UL>
+
+
+關於叢集管理監控程式如何決定怎麼做的一些基本準則：
+
+<UL>
+<LI>直到所有 active 的叢集管理程式都同意它已經失效後，才會被視為失效。
+</LI>
+<LI>直到所有 active 的叢集管理程式都同意它可以加入後，才可加入叢集。
+</LI>
+<LI>當一個新的節點加入，所有先前 active 的叢集管理程式必須在新的節點被允許執行它的事件 
+命令稿之前成功的執行它們的相關事件命令稿。
+</LI>
+<LI>當一個節點被關閉時，它將和緩地（ gracefully ）離開叢集。它將於離開前執行相關的事件命令稿。
+</LI>
+</UL>
+
+</LI>
+<LI>
+<A NAME="chg-watchdog"></A>不論有沒有硬體看門狗卡， Linux-HA 將使用核心看門狗計時器
+（閱讀 <CODE>Documentation/watchdog.txt</CODE> 以取得進一步的資訊）。
+
+為了更具有彈性，我要求 Alan Cox 改變看門狗功能以允許使用者得以寫入秒數和做什麼到
+<CODE>/dev/watchdog</CODE>, 像
+
+<BLOCKQUOTE><CODE>
+<PRE>
+echo &quot;60 H&quot; &gt; /dev/watchdog
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+將會在60秒後停止 (不是重新啟動) 機器﹐或
+
+<BLOCKQUOTE><CODE>
+<PRE>
+echo &quot;10 R&quot; &gt; /dev/watchdog
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+將會在10秒後重新啟動機器。
+
+這個改變請求的理由是，我希望 Linux-HA 能夠依照 HA 組態設定而重開機或停止機器。
+在一些情況下，停止機器是有意義的
+（例如有些地方出毛病但網路卡依然 active 而阻止一個乾淨的 IP 地址由另一張卡接管）。
+停止機器將確認所有的資源都被釋放。
+另一方面，當我們有輪替資源時，我們可能想要重新啟動機器並自動地啟動 HA ，
+例如在 web 伺服器或防火牆上的組態設定。
+而且逾時也將需要個別地被設定。
+
+這個機制可能似乎有點粗略但是目標是很清楚的。
+整體的叢集必須保持在一個一致的狀態，而且如果節點上的其中一個零碎的東西失效，
+就不清楚如果發生其他事件這個節點是否將行為正常。
+因此最好儘快使它無效以確保另一節點能夠接管。
+</LI>
+<LI>以網路特定方法執行實際 heartbeat 的網路模組
+（ RS232 和 IP 不同，ATM 和 Ethernet 不同，因為它無法執行 IP Multicast 等）。
+網路模組將與叢集管理監控程式有個標準的介面。
+RS232 網路模組將初始化串列裝置（/dev/ttySX）以標準參數執行（例如 9600 8N1 ）。 
+
+</LI>
+<LI>一組將執行真正事件工作的事件命令稿，
+例如置換失效的網路或磁碟配接卡，取得磁碟，啟動應用程式等。
+詳細列表將於日後發表，並個別地於開發人員的通信論壇上討論。
+這些命令稿基本上可以以任意的 script 語言（ shell, Perl, Python ）撰寫，
+但我們必須確認客戶能夠客製化為他們所希望的命令稿
+（致使特殊的命令稿語言不可使用），
+並且在安全方面可以依情況處理。
+例如，在一個防火牆機器上執行 Perl 直譯程式就是個糟糕的主意，
+因為 Perl 太過強大了!
+在上述情形可以用 Perl-to-C 編譯器編譯 Perl scripts 並於生產機器上執行可執行檔。
+也將和事件處理有所連結以使本地端事前和事後處理更為容易而無須竄改真正的事件命令稿。
+這在 IBM 的術語是 "事前和事後命令稿"。
+</LI>
+<LI>連結到作業系統以確保所有的裝置驅動程式和核心相關的事件可以被相應的處理。
+這也牽涉到擴充或重寫一些裝置驅動程式以確保他們可以以標準化格式報告錯誤並易於被叢集管理監控程式解析。
+</LI>
+<LI>一個 X 和/或 curses 基礎的設定與管理工具以允許容易且無差錯的設定和管理。
+這也包括一個於所有叢集節點上執行一致性檢查的工具。
+也將會有一些運作時動態地更新 / 改變叢集的方法，即不需關閉應用程式。
+這將包括加入或移除節點，資源群組和磁碟，更新事件命令稿等。
+</LI>
+<LI>一種持有所有組態設定資料的 "組態設定資料庫"。
+這個資料庫將被所有的命令稿和叢集管理監控程式本身所使用，
+並且將透過設定&amp; 管理工具同步於所有節點，
+而且將由驗證工具作確認。
+與商用的軟體不同的是， remote shell 公用程式
+將<EM>不會</EM>被用於資料同步，因為它造成系統本身地不安全（ <CODE>.rhosts</CODE> ）。
+取而代之的，一個安全的協定將被使用，例如 DCE RPC 或
+<A HREF="http://www.cs.hut.fi/ssh">Secure Shell</A>。
+設定 &amp; 管理工具可能偏好在所有節點之一做適當設定。
+</LI>
+</UL>
+<P>
+<P>
+<P>
+<H3>啟動 Linux-HA</H3>
+
+<P>
+<P>商業上的解決方案允許於重開機時啟動 HA 監控程式
+（例如經由 <CODE>rc</CODE> script 或從 <CODE>/etc/inittab</CODE>）或手動的啟動。
+在生產環境中，你不會想要於重開機時啟動 HA 。
+考量到主要伺服器可能因為某些原因而當機。
+備援節點將接管，而主要節點可能重開機。
+如果 HA 自動的啟動，主要節點重新要求資源群組並且非常可能再次當機等等。
+再加上，再次於生產環境上安置當機的節點前你會想要調查當機原因。
+因此，對顧客展示而言，於重開機時自動啟動 HA 是很好，
+但是必定不被建議用於生產環境。
+<P>X/curses 和命令列介面將允許設定下次系統啟動的啟動模式，
+即在
+<CODE>/etc/inittab</CODE> 中插入適當的一列。
+<P>
+<A NAME="chg-startup"></A> Linux-HA
+將使用同屬於一個叢集的所有節點都共用的叢集 ID 號碼。
+屬於不同叢集的節點將/需要有不同的叢集 ID 。
+這是經由 SNMP 來處理。
+當一個節點啟動時，
+它將查詢網路上是否有相同叢集 ID 號碼的任一其他現存節點。
+如果有現存的節點或具有相同叢集 ID 的叢集存在，
+這個新的節點將試圖加入這個叢集，
+但將只有在所有現存的節點同意時才被允許。
+如果沒有現存節點回應，這個新的節點將假設它是第一個節點，
+並將取得身為主要節點所需的資源群組。
+<P>
+<P>
+<P>
+<H3>停止 Linux-HA</H3>
+
+<P>
+<P>將有三種停止 Linux-HA 的方法:
+<P>
+<DL>
+<P>
+<DT><B>強迫的停止</B><DD><P>Linux-HA 被強迫地停止，資源未被釋放。
+<P>
+<DT><B>和緩的停止</B><DD><P>Linux-HA 被和緩地停止，
+資源被釋放但未被另一節點接管。
+<P>
+<DT><B>和緩的停止並被接管</B><DD><P>Linux-HA 被和緩地停止，
+資源被釋放並由另一節點接管。
+<P>
+</DL>
+<P>
+<P>
+<H3>整合應用程式</H3>
+
+<P>
+<P>Linux-HA 最初將是完全通用的，也就是沒有應用程式被特別的支援。
+經驗顯示特定的改編使得如此的 HA 解決方案無彈性。
+Linux-HA 和應用程式間唯一的介面將是各自由
+<CODE>start_server</CODE> 和 <CODE>stop_server</CODE> 事件執行的啟動與停止命令稿或可執行檔的名稱。
+<P>由於你不會知道那些應用程式需要那些權限，
+一切都必須以 root 執行（牢記安全性方面! ），
+意思是啟動和停止命令稿可以做任何我們要他們做的事情。
+原則上，我們可以在啟動時啟動任何不需使用者干涉的應用程式。
+任何可以被安全地置於背景執行的事可以因此達成高可用性。
+<P>停止應用程式可以經由呼叫應用程式特定的指令，
+送出適當的信號給行程等等來完成。
+<P>這樣，應用程式將不會由 Linux-HA 軟體本身來監督，使它保持簡單和有彈性。
+然而啟動命令稿可以啟動一個監督應用程式的行程，
+並執行不是嘗試著重新啟動它就是起始一個受控制而和緩的失效接管到一個依次重新啟動應用程式的備援節點之所需。
+<P>這意味著，簡化整合一個應用程式為撰寫可以在背景執行的啟動和停止命令稿。
+底線是如果你可以從 <CODE>cron</CODE> 執行這些命令稿的話，
+他們也將運作於 Linux-HA 之內。
+<P>在往後的時間，
+可被應用程式使用以某種方式來控制叢集或與其他叢集管理監控程式溝通的叢集 API 可能會成為有用的。
+<P>
+<P>
+<H3><A NAME="chg-syslog"></A> Syslog 方面</H3>
+
+<P>
+<P><CODE>syslogd</CODE> 將被用來報告與偵測錯誤。
+在現實生活中的設定中，確認 <CODE>syslog</CODE> 被設定於每台主機以在本地端紀錄並寫入遠端的紀錄主機。
+否則當失效的主機無法重新開機時你可能無法找出那裡出錯。
+<P>最好有一個像 AIX 錯誤記錄器的通用錯誤紀錄介面。
+這樣子，就可以更容易地從核心處理錯誤。
+目前，每個裝置驅動程式或核心錯誤訊息的改變都需要更新 Linux-HA 。
+<P>
+<H3>登入到一個叢集節點</H3>
+
+<P>
+<P>讓使用者直接登入到一個叢集節點通常是個糟糕的主意。
+如果你經由 TCP/IP 登入（例如 <CODE>telnet</CODE>），萬一發生失效接管，連線將會遺失。
+如果你經由串列埠登入，連線也會遺失因為無法接管串列埠，
+除非你使用第一條規則要求的網路連結終端配接卡。
+<P>
+<H3>網路組態設定與報告</H3>
+
+<P>
+<P>SNMP 將被用來使遠端代理程式能夠監督和/或控制叢集。
+所使用的套件將是 CMU SNMP 工具包。 
+<P>
+<H3>時間的同步</H3>
+
+<P>
+<P>將使用 NTP 協定來確保於一個叢集中所有節點時間的一致性。
+否則，事件和錯誤的除錯將會非常困難。
+理想上，多重無線電接收機將連接到一些叢集節點，
+而且 NTP 組態配置檔將被建立來從多重來源同步時間。
+這樣子，時間紀錄將沒有 SPOF 。
+也以可使用在 Intranet 或 Internet 上的公眾 NTP 伺服器。
+<P>
+<P>
+<H2><A NAME="chg-conf-file"></A> <A NAME="ss6.3">6.3 設定檔內容</A>
+</H2>
+
+<P>
+<P>這裡是我做的配置檔的骨架。
+可能漏掉一些 Linux 特定的部份，但這正是我將開始的地方。
+我們現在所需的是一個用來讀/寫這些物件的函式庫。  也許 KConfig 的
+<A HREF="http://www.kde.org">KDE</A> （ Kool Desktop
+Environment ） C++ 類別是合適的。Samba 使用相同的格式但不是用 C++ 所寫的
+（我對 C++ 並不十分了解）。 
+<P>這個組態設定工具將於組態設定時寫入 ASCII 檔案。
+組態設定將只會在一個節點上完成然後散佈（同步）到其他節點。
+每次更新將需要另外的同步。
+如此一來，將不會有不一致。
+同步期間，設定工具也將轉換 ASCII 檔（為了可讀性可能含有註解）為 GDBM ，
+而為了效率的緣故，所有的 HA 工具將只會使用 GDBM 版本。
+<P>請注意到 Linux-HA 將只會在啟動時解析設定檔。
+這樣，這個檔案將只持有啟動叢集管理監控程式時所需的靜態資訊。
+執行時期資訊將動態地存於記憶體（例如 節點，配接卡與網路狀態），並以 SNMP 變數呈現。
+<P>井字號開始的是註解。
+<P>
+<P>
+<HR>
+<PRE>
+# 第一個類別是 &quot;配接卡&quot;。 這個類別儲存關於各種網路配接卡的資訊
+# （ethernet, rs232, fddi, tokenring 等）
+
+[adapter]
+# 型態 -- 決定使用那個網路 heartbeat 模組
+type = &quot;ether&quot;
+# 所連結的網路
+network = &quot;ether1&quot;
+# 所附屬的節點
+nodename = &quot;seneca&quot;
+# 它的 IP 地址/名稱 （ i.a.w. /etc/hosts ）
+ip_label = &quot;seneca&quot;
+# 它的功能 (service, boot, standby)
+function = &quot;service&quot;
+# MAC 地址，如果有合適的話
+haddr = &quot;0xdeadbeef0123&quot;
+
+[adapter]
+type = &quot;ether&quot;
+network = &quot;ether1&quot;
+nodename = &quot;seneca&quot;
+ip_label = &quot;seneca_stby&quot;
+function = &quot;standby&quot;
+haddr = &quot;&quot;
+
+[adapter]
+type = &quot;ether&quot; 
+network = &quot;ether1&quot;
+nodename = &quot;seneca&quot;
+ip_label = &quot;seneca_boot&quot;
+function = &quot;boot&quot;
+haddr = &quot;&quot;
+
+# 叢集類別儲存這個叢集的資訊
+
+[cluster]
+# 叢集 ID - 在一個邏輯網路或子網路中必須是唯一的。
+# 部份的資訊在每個 heartbeat 封包中。
+id = 1
+# 叢集名稱 - 一段字串
+name = &quot;linuxtest&quot;
+# 此節點名稱
+nodename = &quot;seneca&quot;
+# 節點個數 - 從 &quot;1&quot 開始;
+highest_node_id = 2
+# 網路個數 - 從 &quot;0&quot 開始;
+highest_network_id = 1
+
+
+# 這是自實際的 HACMP 叢集殘留的。 
+# 我並不十分確定是否我可以使用這。HACMP 自動的啟動一些監控程式，
+# clinfo, the cluster info daemon （一個 SNMP client ），
+# the cluster smux peer daemon clsmuxpd ，等。
+
+[daemons]
+nodename = &quot;hawww1&quot;
+daemon = &quot;clinfo&quot;
+type = &quot;start&quot;
+object = &quot;time&quot;
+value = &quot;true&quot;
+
+# 事件類別持有所有的事件 （參閱這份 HOWTO 中的事件一節）
+
+[event]
+# 事件名稱
+name = &quot;node_up_local&quot;
+# 一段描述
+desc = &quot;Script run when it is the local node which is joining the clust&quot;
+# 一些實際的 HACMP 資料，不知道我們是否需要它。
+setno = 0
+msgno = 0
+# 來自 NLS 訊息型錄的訊息號碼
+catalog = &quot;&quot;
+# 可執行檔
+cmd = &quot;/usr/sbin/cluster/events/node_up_local&quot;
+# 通知的事件命令稿，如果有合適的話
+notify = &quot;&quot;
+# 事前的事件命令稿，如果有合適的話
+pre = &quot;&quot;
+# 事後的事件命令稿，如果有合適的話
+post = &quot;&quot;
+
+# 群組類別持有關於資源群組的資訊
+
+[group]
+# 群組名稱
+group = &quot;linuxtest&quot;
+# 型態 cascading, rotating, (concurrent)
+type = &quot;cascading&quot;
+# 參與的節點和他們的優先權
+nodes = &quot;seneca linha&quot;
+
+# 網路類別描述網路
+[network]
+# 網路名稱
+name = &quot;rs232&quot;
+# 型態 （串列的，公開的，私有的） (&quot;網路屬性&quot;)
+attr = &quot;serial&quot;
+# 叢集軟體所知的網路號碼
+network_id = 0
+
+[network]
+name = &quot;ether&quot;
+attr = &quot;public&quot;
+network_id = 1
+
+# nim 類別描述網路模組。以網路特定方法處理 heartbeat
+# （ RS232 不同於 IP ， ATM 不同於
+# 乙太網路，因為它無法做 Multicast 等）
+
+[nim]
+name = &quot;ether&quot;
+desc = &quot;Ethernet Protocol&quot;
+addrtype = 0
+path = &quot;/usr/sbin/cluster/nims/nim_ether&quot;
+para = &quot;&quot;
+grace = 30
+# 以百萬分之一秒為單位的 heartbeat rate ， well ... 
+hbrate = 500000
+# 如果錯過 12 次，就會產生警報。
+cycle = 12
+
+# 節點類別描述個別的節點
+[node]
+# 節點名稱
+name = &quot;seneca&quot;
+# 以冗長的方式紀錄（例如是否在事件命令稿中加入 &quot;set -x&quot; ）
+verbose_logging = &quot;high&quot;
+# 節點編號
+node_id = 1
+
+[node]
+name = &quot;linha&quot;
+verbose_logging = &quot;high&quot;
+node_id = 2
+
+
+# 資源類別描述甚麼附屬於一個資源群組
+
+[resource]
+# 名稱
+group = &quot;linuxtest&quot;
+# 資源群組中的服務 IP 標記
+service_label = &quot;seneca&quot;
+# 所有檔案系統成一列可能造成更新上的麻煩 ...
+# 所有在本地端掛載的檔案系統
+filesystem= &quot;/usr/local/ftp /usr/local/etc/httpd&quot;
+# 所有明確地匯出（  export ）的檔案系統
+export_filesystem = &quot;/usr/local/ftp /usr/local/etc/httpd&quot;
+# 要啟動/停止那個應用程式（各別的類別）
+applications = &quot;linuxtest&quot;
+# 如果主要節點不在，是否要取得備援節點上的資源群組
+# not = false, yes = true. 
+inactive_takeover = &quot;false&quot;
+# 只對於同步存取。 disk fencing 確認只有 active 節點
+# 可以存取共享磁碟 
+ssa_disk_fencing = &quot;false&quot;
+
+# 伺服器類別描述應用程式伺服器
+[server ]
+# 名稱 （引用的，例如在資源類別中）
+name = &quot;linuxtest&quot;
+# 啟動和停止命令稿的名稱。將以 root 於背景執行。
+start = &quot;/usr/local/cluster/start_linuxtest&quot;
+stop = &quot;/usr/local/cluster/stop_linuxtest&quot;
+</PRE>
+<HR>
+<P>
+<P>
+<H2><A NAME="chg-events"></A> <A NAME="ss6.4">6.4 事件結構與次序</A>
+</H2>
+
+<P>
+<P>
+<H3>事件和它們的意義</H3>
+
+<P>
+<P>我提出以下的事件結構:
+<P>
+<DL>
+<P>
+<DT><B>acquire_service_addr</B><DD><P>當本地的節點加入叢集或遠端節點離開叢集時就呼叫這個命令稿。
+執行開機 -> 服務置換。 
+由 node_up_local, node_down_remote 命令稿呼叫。
+<P>
+<DT><B>acquire_takeover_addr</B><DD><P>當遠端節點離開叢集時呼叫這個命令稿。
+如果 standby_address 被設定並開啟，執行 standby_address -> takeover_address 。
+由 node_down_remote, node_up_local 命令稿呼叫。
+<P>
+<DT><B>config_too_long</B><DD><P>當目前的事件花費太多時間，這個事件命令稿就被視為逾時而定期地呼叫。
+主要用於通知操作員。
+由叢集管理監控程式呼叫。
+<P>
+<DT><B>event_error</B><DD><P>當執行的事件命令稿傳回一個 != 0 的錯誤碼時呼叫這個命令稿。
+由叢集管理監控程式呼叫。
+<P>
+<DT><B>fail_standby</B><DD><P>當備援配接卡關閉時呼叫這個事件命令稿。
+由叢集管理監控程式呼叫。
+<P>
+<DT><B>get_disk_fs</B><DD><P>這個命令稿啟動磁碟並掛載檔案系統。
+由 node_up_local ， node_down_remote 命令稿呼叫。
+<P>
+<DT><B>join_standby</B><DD><P>當備援配接卡開啟時呼叫這個事件命令稿。
+由叢集管理監控程式呼叫。
+<P>
+<DT><B>network_down</B><DD><P>當網路關閉時呼叫這個事件命令稿（實體網路上的所有網路配接卡都是關閉的或封包無法抵達的）。
+由叢集管理監控程式呼叫。 
+有一個相關的<B>完整</B>命令稿。
+<P>
+<DT><B>network_up</B><DD><P>當網路起動時呼叫這個事件命令稿。
+由叢集管理監控程式呼叫。有一個相關的<B>完整</B>命令稿。
+<P>
+<DT><B>node_down</B><DD><P>當有節點離開叢集時呼叫這個命令稿。
+由叢集管理監控程式呼叫。
+為本地端或遠端呼叫各別的子事件命令稿。
+有一個相關的<B>完整</B>命令稿。
+<P>
+<DT><B>node_down_local</B><DD><P>當本地端節點離開叢集時呼叫這個命令稿。
+由 node_down 呼叫。
+有一個相關的<B>完整</B>命令稿。
+<P>
+<DT><B>node_down_remote</B><DD><P>當遠端節點離開叢集時呼叫這個命令稿。
+由 node_down 呼叫。有一個相關的<B>完整</B>命令稿。
+<P>
+<DT><B>node_up</B><DD><P>當有節點加入叢集時呼叫這個命令稿。
+由叢集管理監控程式呼叫。
+為本地端或遠端呼叫各自的子事件命令稿。
+有一個相關的<B>完整</B>命令稿。
+<P>
+<DT><B>node_up_local</B><DD><P>當本地端節點加入叢集時呼叫這個命令稿。
+由 node_down 呼叫。有一個相關的<B>完整</B>命令稿。
+<P>
+<DT><B>node_up_remote</B><DD><P>當一個遠端節點加入叢集時呼叫這個命令稿。
+由 node_down 呼叫。有一個相關的<B>完整</B>命令稿。
+<P>
+<DT><B>release_service_addr</B><DD><P>
+當本地端節點離開叢集時呼叫這個命令稿。
+由 node_down_local 呼叫。
+<P>
+<DT><B>release_takeover_addr</B><DD><P>當本地端節點的備援配接卡擁有遠端節點的服務地址，
+並且不是遠端節點重新加入叢集就是本地端節點和緩的離開叢集時呼叫這個命令稿。
+由 node_down_local, node_up_remote 呼叫。
+<P>
+<DT><B>release_disk_fs</B><DD><P>這個命令稿卸載檔案系統並釋放磁碟。
+<P>
+<DT><B>start_server</B><DD><P>這個命令稿啟動伺服應用程式。
+當本地端節點被完全啟動或遠端的節點完成離開節點時呼叫。
+由 node_up_local_complete ， node_down_remote_complete 呼叫。
+參數： server_name 。
+<P>
+<DT><B>stop_server</B><DD><P>當本地端節點離開叢集或遠端節點加入叢集時呼叫這個命令稿以停止應用程式伺服器。
+由 node_down_local ， node_up_remote 呼叫。
+<P>
+<DT><B>swap_adapter</B><DD><P>當一個節點的服務地址關閉時呼叫這個事件命令稿。
+然後叢集管理程式以備援配接卡置換服務配接卡。
+由叢集管理監控程式呼叫。有一個相關的<B>完整</B> 命令稿。
+<P>
+</DL>
+<P>此外，有許多子事件命令稿 ，一些最重要的如
+<P>
+<DL>
+<P>
+<DT><B>cl_swap_IP_address</B><DD><P>
+當置換配接卡和接管 IP 地址時使用這個命令稿。
+置換單一配接卡的地址（第一種形式）或兩張配接卡同時置換（第二種形式）。 
+<P>
+<DT><B>cl_swap_HW_address</B><DD><P>這個命令稿被用來置換配接卡的 MAC 地址。 
+<P>
+<P>
+<P>
+</DL>
+<P>
+<P>
+<H3>事件次序</H3>
+
+<P>
+<P>這小節留待以後填寫。
+<P>
+<P>
+<HR>
+<A HREF="High-Availability-HOWTO-5.html"><IMG SRC="prev.gif" ALT="Previous"></A>
+<A HREF="High-Availability-HOWTO-7.html"><IMG SRC="next.gif" ALT="Next"></A>
+<A HREF="High-Availability-HOWTO.html#toc6"><IMG SRC="toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

@@ -1,0 +1,153 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Large Disk HOWTO: Consequences</TITLE>
+ <LINK HREF="Large-Disk-HOWTO-10.html" REL=next>
+ <LINK HREF="Large-Disk-HOWTO-8.html" REL=previous>
+ <LINK HREF="Large-Disk-HOWTO.html#toc9" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Large-Disk-HOWTO-10.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Large-Disk-HOWTO-8.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Large-Disk-HOWTO.html#toc9"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s9">9. Consequences</A></H2>
+
+<P>
+<!--
+disk!consequences of translation
+-->
+
+What does all of this mean?  For Linux users only one thing:
+that they must make sure that LILO and <CODE>fdisk</CODE> use the right
+geometry where `right' is defined for <CODE>fdisk</CODE> as the geometry
+used by the other operating systems on the same disk, and for
+LILO as the geometry that will enable successful interaction
+with the BIOS at boot time.  (Usually these two coincide.)
+<P>How does <CODE>fdisk</CODE> know about the geometry?
+It asks the kernel, using the <CODE>HDIO_GETGEO</CODE> ioctl.
+But the user can override the geometry interactively
+or on the command line.
+<P>How does LILO know about the geometry?
+It asks the kernel, using the <CODE>HDIO_GETGEO</CODE> ioctl.
+But the user can override the geometry using the `<CODE>disk=</CODE>' option
+in <CODE>/etc/lilo.conf</CODE> (see lilo.conf(5)).
+One may also give the <CODE>linear</CODE> option to LILO, and it will store
+LBA addresses instead of CHS addresses in its map file,
+and find out of the geometry to use at boot time (by using
+INT 13 Function 8 to ask for the drive geometry).
+<P>How does the kernel know what to answer?
+Well, first of all, the user may have specified an explicit geometry
+with a `<CODE>hda=</CODE><I>cyls</I><CODE>,</CODE><I>heads</I><CODE>,</CODE><I>secs</I>'
+kernel command line option (see bootparam(7)), perhaps by hand, or by
+asking the boot loader to supply such an option to the kernel.
+For example, one can tell LILO to supply such an option by adding
+an `<CODE>append = "hda=</CODE><I>cyls</I><CODE>,</CODE><I>heads</I><CODE>,</CODE><I>secs</I><CODE>"</CODE>'
+line in <CODE>/etc/lilo.conf</CODE> (see lilo.conf(5)).
+And otherwise the kernel will guess, possibly using values
+obtained from the BIOS or the hardware.
+<P>It is possible (since Linux 2.1.79) to change the kernel's ideas
+about the geometry by using the <CODE>/proc</CODE> filesystem.
+For example
+<BLOCKQUOTE><CODE>
+<PRE>
+# sfdisk -g /dev/hdc
+/dev/hdc: 4441 cylinders, 255 heads, 63 sectors/track
+# cd /proc/ide/ide1/hdc
+# echo bios_cyl:17418 bios_head:128 bios_sect:32 > settings
+# sfdisk -g /dev/hdc
+/dev/hdc: 17418 cylinders, 128 heads, 32 sectors/track
+#
+</PRE>
+</CODE></BLOCKQUOTE>
+
+This is especially useful if you need so many boot parameters
+that you overflow LILO's (very limited) command line length.
+<P>How does the BIOS know about the geometry?
+The user may have specified it in the CMOS setup.
+Or the geometry is read from the disk, and possibly translated
+as specified in the setup. In the case of SCSI disks, where no
+geometry exists, the geometry that the BIOS has to invent can
+often be specified by jumpers or setup options. (For example,
+Adaptec controllers have the possibility to choose between
+the usual H=64, S=32 and the `extended translation' H=255, S=63.)
+Sometimes the BIOS reads the partition table to see with what
+geometry the disk was last partitioned - it will assume that
+a valid partition table is present when the 55aa signature
+is present. This is good, in that it allows moving disks to
+a different machine. But having the BIOS behaviour depend on
+the disk contents also causes strange problems.
+(For example, it has been 
+<A HREF="http://www.heise.de/ct/faq/hotline/98/07/hotline9807_11.shtml">reported</A>
+that a 2.5 GB disk was seen as having 528 MB because the BIOS read
+the partition table and concluded that it should use untranslated
+CHS. Another effect is found in the 
+<A HREF="http://www.heise.de/ct/faq/hotline/98/19/hotline9819_11.shtml">report</A>
+that unpartitioned disks were slower than partitioned ones,
+because the BIOS tested 32-bit mode by reading the MBR and
+seeing whether it correctly got the 55aa signature.)
+<P>How does the disk know about the geometry?
+Well, the manufacturer invents a geometry that multiplies out
+to approximately the right capacity. Many disks have jumpers
+that change the reported geometry, in order to avoid BIOS bugs.
+For example, all IBM disks allow the user to choose between
+15 and 16 heads, and many manufacturers add jumpers to make
+the disk seem smaller than 2.1 GB or 33.8 GB. See also
+<A HREF="Large-Disk-HOWTO-11.html#jumpers">below</A>.
+Sometimes there are utilities that change the disk firmware.
+<P>
+<H2><A NAME="ss9.1">9.1 Computing LILO parameters</A>
+</H2>
+
+<P>Sometimes it is useful to force a certain geometry
+by adding `<CODE>hda=</CODE><I>cyls</I><CODE>,</CODE><I>heads</I><CODE>,</CODE><I>secs</I>'
+on the kernel command line. Almost always one wants <I>secs</I>=63,
+and the purpose of adding this is to specify <I>heads</I>.
+(Reasonable values today are <I>heads</I>=16 and <I>heads</I>=255.)
+What should one specify for <I>cyls</I>? Precisely that number
+that will give the right total capacity of C*H*S sectors.
+For example, for a drive with 71346240 sectors (36529274880 bytes)
+one would compute C as 71346240/(255*63)=4441 (for example using
+the program <CODE>bc</CODE>), and give boot parameter <CODE>hdc=4441,255,63</CODE>.
+How does one know the right total capacity? For example,
+<BLOCKQUOTE><CODE>
+<PRE>
+# hdparm -g /dev/hdc | grep sectors
+ geometry     = 4441/255/63, sectors = 71346240, start = 0
+# hdparm -i /dev/hdc | grep LBAsects
+ CurCHS=16383/16/63, CurSects=16514064, LBA=yes, LBAsects=71346240
+</PRE>
+</CODE></BLOCKQUOTE>
+
+gives two ways of finding the total number of sectors 71346240.
+The kernel output
+<BLOCKQUOTE><CODE>
+<PRE>
+# dmesg | grep hdc
+...
+hdc: Maxtor 93652U8, 34837MB w/2048kB Cache, CHS=70780/16/63
+ hdc: [PTBL] [4441/255/63] hdc1 hdc2 hdc3! hdc4 &lt; hdc5 > ...
+</PRE>
+</CODE></BLOCKQUOTE>
+
+tells us about (at least) 34837*2048=71346176 and about (at least)
+70780*16*63=71346240 sectors. In this case the second value happens
+to be precisely correct, but in general both may be rounded down.
+This is a good way to approximate the disk size when <CODE>hdparm</CODE>
+is unavailable. Never give a too large value for <I>cyls</I>!
+In the case of SCSI disks the precise number of sectors is given
+in the kernel boot messages:
+<BLOCKQUOTE><CODE>
+<PRE>
+SCSI device sda: hdwr sector= 512 bytes. Sectors= 17755792 [8669 MB] [8.7 GB]
+</PRE>
+</CODE></BLOCKQUOTE>
+
+(and MB, GB are rounded, not rounded down, and `binary').
+<P>
+<HR>
+<A HREF="Large-Disk-HOWTO-10.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Large-Disk-HOWTO-8.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Large-Disk-HOWTO.html#toc9"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

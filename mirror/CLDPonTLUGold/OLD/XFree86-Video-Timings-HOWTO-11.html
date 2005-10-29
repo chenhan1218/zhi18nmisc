@@ -1,0 +1,65 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>XFree86 Video Timings HOWTO 中文版: 匯總以上討論</TITLE>
+ <LINK HREF="XFree86-Video-Timings-HOWTO-12.html" REL=next>
+ <LINK HREF="XFree86-Video-Timings-HOWTO-10.html" REL=previous>
+ <LINK HREF="XFree86-Video-Timings-HOWTO.html#toc11" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="XFree86-Video-Timings-HOWTO-12.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="XFree86-Video-Timings-HOWTO-10.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="XFree86-Video-Timings-HOWTO.html#toc11"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="synth"></A> <A NAME="s11">11. 匯總以上討論</A></H2>
+
+<P>
+<P>Xconfig文件的視頻模式表包含多行數字,每一行都是與X服務器的某一種模式對應的一份完整的技術規格.各個域歸類為四段,名稱段,時鐘頻率段,水平段和垂直段.
+<P>名稱段包含一個域,是該行其余內容要說明的顯示模式的名稱.該名稱在Xconfig文件中圖形驅動程序設置段的"Modes"行中被引用.如果前面一行的名稱與當前行一樣,名稱域可以忽略.
+<P>點時鐘段僅包含顯示模式行的點時鐘(我們前面稱作DCF)域.該域中的數字指出用於生成隨後各段中數字的點時鐘值.
+<P>水平段由四個域組成,指出顯示器上每一水平行如何生成.本段的第一個域包含每行被照亮形成圖象的點數(我們前面叫作HR).本段的第二個域(SH1)指出行同步脈沖在哪個點開始.第三個域(SH2)指出行同步脈沖在哪個點結束.第四個域指出水平幀總長(HFL).
+<P>垂直段也包含四個域.第一個域包含在顯示器上看到的可視行數(VR).第二個域(SV1)指出場同步脈沖在哪行開始.第三個域(SV2)指出場同步脈沖在哪行結束.第四個域包含垂直幀總長(VFL).
+<P>例子:
+<BLOCKQUOTE><CODE>
+<PRE>
+     #模式名稱    時鐘       水平時序           垂直時序
+
+     "752x564"     40    752 784  944 1088  564 567 569 611
+                   44.5  752 792  976 1240  564 567 570 600
+</PRE>
+</CODE></BLOCKQUOTE>
+
+(注意:以前的X11R5不支持帶小數的點時鐘值.)
+<P>對Xconfig而言,剛才提及的所有數字 --- 行中發亮的點數,把發亮點與同步脈沖的起始處分隔開的點數,代表脈沖持續時間的點數,和在同步脈沖結束處之後的點數 --- 加起來生成每行的點數.水平點數必須能被8整除.
+<P>水平值示例: 800 864 1024 1088
+<P>示例行中首先是發亮點數(800),跟著是同步脈沖起始點位置(864),跟著是同步脈沖結束點位置(1024),跟著是水平行最後一點的位置(1088).
+<P>再次提醒注意,所有水平值(800,864,1024,和1088)要能被8整除!垂直值不需要這樣.
+<P>顯示器從上到下的行數構成了幀.行是一幀的基本時序信號.許多行組成了圖象.在發亮的最後一行顯示了之後和場同步脈沖產生之前,有若幹行的延遲.然後同步脈沖會持續若幹行,最後本幀的末尾幾行將被生成,以作為脈沖之後必須的延遲.特定顯示模式運行時要指定的數字值會以一種與下述例子類似的方式被輸入.
+<P>垂直值示例: 600 603 609 630
+<P>該例子指出在顯示器上有600可視行,場同步脈沖開始於第603行,結束於第609行,以及總計有630行.
+<P>注意垂直數字值不需要能被8整除!
+<P>讓我們回到原先討論的例子.綜上所述,現在我們要做的就是把我們的結果按下面格式寫到Xconfig中:
+<BLOCKQUOTE><CODE>
+<PRE>
+&lt;名稱>   DCF     HR  SH1 SH2   HFL   VR  SV1 SV2 VFL
+</PRE>
+</CODE></BLOCKQUOTE>
+
+其中SH1是行同步脈沖的開始點而SH2是結束點;同樣地,SV1是場同步脈沖的開始點而SV2是結束點.
+<P>要輸入這些值,回憶一下上面關於巫術和同步脈沖的討論.SH1是行同步脈沖上升沿的開始點;因此, SH1 = HR + HGT1 .SH2是下降沿的結束點;因此, SH2 = SH1 + HSP .同樣地, SV1 = VR + VGT (隻是VGT通常為0)而 SV2 = SV1 + VSP .
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# 名稱    時鐘        水平時序            垂直時序     標志
+ 936x702  65      936 968 1200 1232   702 702 710 737
+</PRE>
+</CODE></BLOCKQUOTE>
+
+不需要特殊標志;因為這是一種逐行模式.現在我們真正地做完了.
+<P>
+<HR>
+<A HREF="XFree86-Video-Timings-HOWTO-12.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="XFree86-Video-Timings-HOWTO-10.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="XFree86-Video-Timings-HOWTO.html#toc11"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

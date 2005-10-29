@@ -1,0 +1,122 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Draft//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" content="text/html; charset=big5">
+<TITLE>Linux High Availability HOWTO: 高可用性專門用語</TITLE>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 5);</SCRIPT>
+<A HREF="High-Availability-HOWTO-4.html"><IMG SRC="prev.gif" ALT="Previous"></A>
+<A HREF="High-Availability-HOWTO-6.html"><IMG SRC="next.gif" ALT="Next"></A>
+<A HREF="High-Availability-HOWTO.html#toc5"><IMG SRC="toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s5">5. 高可用性專門用語</A></H2>
+
+<P>
+<P>一個高可用性叢集由以下元件構成 :
+<P>
+<UL>
+<LI>兩個或更多的叢集伺服器（節點），每個節點所連結的實體網路都至少裝備兩張網路卡。
+active 的介面將被稱為服務介面，inactive 介面為備援介面。
+開機期間，每台機器也需要一個啟動 IP 地址以避免 IP 地址和潛在的 active 地址衝突。
+開機地址通常位於服務介面。
+</LI>
+<LI>一組只可被 active 節點存取的共享磁碟。（除了同步存取之外，請看下文）。
+</LI>
+<LI>網路連結（ ethernet, token ring, FDDI, ATM, whatever）。
+最初我們將只支援 IP，但未來可能支援 IPX 。
+</LI>
+<LI>客戶端機器透過網路存取 active 節點上的應用程式。 
+</LI>
+<LI>一個或更多的 "資源群組" 是由企業關鍵性應用程式，
+客戶端機器所知道與存取的 IP 地址，潛在的 MAC 地址（參閱以下
+<A HREF="High-Availability-HOWTO-8.html#mac-addr-takeover">MAC 地址接管</A> 一節），
+應用程式所使用的外部儲存體（檔案系統，磁碟分割區，或整個磁碟），
+匯出的（ export ）或被掛載的 NFS 檔案系統，以及可能更多的特性組成的邏輯上的實體。
+一個資源群組一次只能由叢集中的一個節點（ "active" 節點）所擁有，
+並且萬一故障時將遵循以下描述的基本失效接管策略之一以單一的實體作失效接管。
+由於失效或人力的介入而移動資源群組將包括重新啟動應用程式。
+如果應用程式能夠寫入 check point 並使用 check point 的資訊重新啟動，就太棒了!
+順便提及，資源群組在 HP 的 MC/ServiceGuard 中被稱為"軟體套件"。
+</LI>
+</UL>
+<P>
+<P>
+<P>市場上有五種基本的資源群組失效接管策略，這些策略名稱因供應廠商的不同而異。
+<P>
+<DL>
+<P>
+<DT><B>閒置備援（ Idle Standby ）</B><DD><P>主要節點擁有資源群組；
+備援節點閒置著，僅監督著主要節點。 
+萬一主要主機故障，則由備援主機接管。
+這些節點是有優先次序的，意指有最高優先權的存活節點將取得資源群組。
+有較高優先權的節點加入叢集時將造成短暫的服務中斷。
+這些節點可以是不一樣強大的， 
+備援節點只要夠強大到足以確保降級的運作。
+<P>
+<DT><B>輪替備援（ Rotating Standby ）</B><DD><P>兩個節點如同閒置備援一樣，但是沒有優先權之分。
+先進入叢集的節點將擁有資源群組，第二個節點則以備援節點加入。
+如果因為較高優先權的節點加入而導致短暫的服務中斷是不必要的，
+這樣的失效接管策略顯得特別令人感興趣。
+如果叢集中存在多於兩個節點，輪替資源群組會變得相當混淆，加上這些節點在能力上必須大約同等。
+<P>
+<DT><B>簡易退卻（ Simple Fallover ）</B><DD><P>主要節點擁有資源群組。
+備援節點執行非關鍵性的應用程式（例如 web 或 FTP 伺服器，開發或測試環境）
+並將接管關鍵性的資源群組，但反之不然。 
+如果備援節點不夠強大到能夠同時執行企業關鍵性的資源群組和非關鍵性的應用程式，
+後者可能被停止。
+一旦重新整合失效的節點，備援節點將釋放企業關鍵性應用程式的資源，
+並且潛在地重新啟動非關鍵性的負載。
+重新整合的主要節點接著重新要求企業關鍵性的資源群組。
+<P>
+<DT><B>相互接管（ Mutual Takeover ）</B><DD><P>基本上這是雙向的閒置備援：
+兩個伺服器被設定為兩者都能接管另一節點的資源群組。
+兩者都必須有足夠強大的 CPU 以足夠的速度執行雙方的應用程式
+ -- 或者效能的損失必須列入考量直到失效的節點重新整合。 
+這在三個或更多的節點設定中也運作良好。
+<P>
+<DT><B>同步存取（ Concurrent Access ）</B><DD><P>所有的節點執行相同的資源群組
+（同步的資源群組中可以沒有 IP 或 MAC 地址! ）並同時存取外部儲存體。
+目前市場上僅有一個應用程式使用到這個特徵：Oracle Parallel Server 。
+這需要一個非常有效率而可能作為未來延伸的選項的鎖定管理程式。 
+這裡的失效接管策略基本上是無效（ null ）的：如果一個應用程式實例失效，
+失效節點的 IP 地址可能會也可能不會被接管，取決於客戶端的理解力和適應性。
+<P>
+</DL>
+<P>
+<P>應用程式本身通常不是隸屬於 HA 軟體代理程式的監督。
+Linux-HA 應該是完全通用的，允許每個能夠在背景執行的應用程式 HA 而無須操作員介入
+ (例如透過 <CODE>cron</CODE>)。 
+可選擇地，可能有叢集 API &amp; 函式庫作為未來的延伸，
+讓應用程式容易的和 HA 軟體代理程式溝通。
+<P>
+<H2><A NAME="sample-config"></A> <A NAME="ss5.1">5.1 樣本設定</A>
+</H2>
+
+<P>
+<P>
+<P>
+企業關鍵性應用程式的使用者資料必須位於萬一故障能夠由備援節點接管的外部儲存裝置。
+這通常以 "twin-tailed" 方式連結儲存裝置來完成(看圖示)。
+由於 SCSI 纜線的長度限制（ fast/wide/differential SCSI 是 25 公尺），
+多重主機（ multi-host ）連結一般限制在每個儲存裝置有四個節點。
+串列式儲存架構（ SSA ） （參閱
+<A HREF="High-Availability-HOWTO-7.html#ssa">串列式儲存架構</A>一節）每個 SSA 迴圈支援最多到 8 個節點。
+兩種技術都考慮到非常有彈性並具備處理多點失效接管的失效接管策略。
+例如多個備援節點支援一個伺服節點，一個備援節點支援多個伺服節點或甚至多個備援節點支援多個伺服節點。
+<P>
+<CENTER>
+<EPS FILE="sample.eps">
+<IMG SRC="sample.gif">
+<BR>
+<CENTER>具備乙太網路和 twin-tailed SCSI 匯流排的樣本設定。
+ㄚ型電纜將於 
+<A HREF="High-Availability-HOWTO-7.html#disk-scsi">磁碟技術 -- SCSI</A> 一節解釋。</CENTER>
+</CENTER>
+<P>
+<P>
+<P>
+<HR>
+<A HREF="High-Availability-HOWTO-4.html"><IMG SRC="prev.gif" ALT="Previous"></A>
+<A HREF="High-Availability-HOWTO-6.html"><IMG SRC="next.gif" ALT="Next"></A>
+<A HREF="High-Availability-HOWTO.html#toc5"><IMG SRC="toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

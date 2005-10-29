@@ -1,0 +1,143 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=gb2312">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Linux PCMCIA HOWTO 中文版: 使用未被支援的卡片</TITLE>
+ <LINK HREF="PCMCIA-HOWTO-7.html" REL=next>
+ <LINK HREF="PCMCIA-HOWTO-5.html" REL=previous>
+ <LINK HREF="PCMCIA-HOWTO.html#toc6" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="PCMCIA-HOWTO-7.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="PCMCIA-HOWTO-5.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="PCMCIA-HOWTO.html#toc6"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s6">6. 使用未被支援的卡片</A></H2>
+
+<P>
+<P>
+<H2><A NAME="new-card"></A> <A NAME="ss6.1">6.1 建构无法被辨视的卡片</A>
+</H2>
+
+<P>
+<P>现在我们假设你的卡片已被现有的驱动程式所支援，我们所需要做的是在
+<CODE>/etc/pcmcia/config</CODE> 中加入一个条目来告诉 <CODE>cardmgr</CODE> 如何
+来辨视这张卡，哪些驱动程式需要连结到这张卡片上。建构档案的格式细节
+请查看  <CODE>pcmcia</CODE>  的  man  页。  如果你插入一张不被认得的卡片，
+<CODE>cardmgr</CODE> 正常来说会记录一些辨视资讯到系统日志上， 我们可以利用
+这些资讯来建造它的建构条目。
+<P>以下是个 cardmgr 如何将未支援卡的报告到 <CODE>/usr/adm/messages</CODE>
+内的例子。
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+cardmgr[460]: unsupported card in socket 1
+cardmgr[460]: version info: "MEGAHERTZ", "XJ2288", "V.34 PCMCIA MODEM"
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>相对应到<CODE>/etc/pcmcia/config</CODE> 的条目可以是:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+card "Megahertz XJ2288 V.34 Fax Modem"
+  version "MEGAHERTZ", "XJ2288", "V.34 PCMCIA MODEM"
+  bind "serial_cs"
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>你可以使用 ``*'' 来代替不晓得的字串，像版本号码啦。 当你写新的建构
+条目时，请小心地把完整的字串拷贝过去，保持原有的大小写体以及空白字
+元。还有，请确认建构条目与被报告到日志档案□的资料有同样数目的字串
+。
+<P>请牢记您几乎可以指定任何的驱动程式给一张卡使用，但如果你只是胡乱地
+乱弄，并不是个很有生产效率的作法。你也可能很幸运地发现现有的驱动程
+式已支援了你的卡片。然而，大部份的结果是那些驱动程式并无法工作，也
+有可能会产生边际效应像锁死你的系统了。不像一般的设备驱动程式只探测
+适当的卡片，探测 PCMCIA 设备的工作是由 <CODE>cardmgr</CODE> 所执行，驱动程
+式本身在试著与设备沟通前并不会做啥麽确认动作的。
+<P>在编修 <CODE>/etc/pcmcia/config</CODE>  之後， 你可以暗示 <CODE>cardmgr</CODE>
+重新载入该档案，使用:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+kill -HUP `cat /var/run/cardmgr.pid`
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>如果你设定好了一张新的卡片，请寄一份设定给我，这样子我就可以把它包
+含进标准建构档案□。
+<P>
+<H2><A NAME="ss6.2">6.2 增列对 NE2000相容乙太网路卡的支援</A>
+</H2>
+
+<P>首先， 先查看看这张卡是否已被 <CODE>cardmgr</CODE> 所辨识。 有些没有被列在
+<CODE>SUPPORTED.CARDS</CODE> 内的卡片事实上是有些被支援的卡的 OEM 版本。如
+果你发现了像这样的卡片，请让我知道，这样才能把它加到列表内。
+<P>如果你的卡片没被辨别到， 请依照 
+<A HREF="#new-card">3.6</A> 内
+的步骤为你的卡片建立一个建构条目，并把这张卡片连系上 <CODE>pcnet_cs</CODE>
+驱动程式。 重新执行 <CODE>cardmgr</CODE> 即可使用被更新的建构档案了。
+<P>如果 <CODE>pcnet_cs</CODE>  驱动程式说它无法决定你的卡片之硬体乙太网路位址
+，那麽请编修你的新建构条目将这张卡片连系上记忆体卡片驱动程式
+<CODE>memory_cs</CODE> 上。 重新执行 <CODE>cardmgr</CODE> 即可使用被更新的建构档案
+了。你需要知道你的卡片的硬体乙太网路位址的值。这个位址是个以二个十
+六位元字元号码所排成的六个数字，通常它会被印在卡片上。如果它没有印
+在卡片上，你可以使用 DOS 的驱动程式来显示这个位址。 只要你一知道这
+个值，请执行:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+dd if=/dev/mem0a count=20 | od -Ax -t x1
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>然後寻找你的位址之输出。只有偶数位元组被定义了，因此可以忽略倾印资
+料内的奇数位元组。记下位址的第一个位元组的十六位元位移。现在，编修
+<CODE>modules/pcnet_cs.c</CODE> 并寻找 <CODE>hw_info</CODE> 构造。你需要为你的
+卡片建立一个新的条目。第一个栏位就是记忆体位移。接著的三个栏位就第
+硬体位址的前三个位元组。最後一栏位含有卡片的特别功能的旗标; 开始时
+请试著将它设为 0。
+<P>编修完   <CODE>pcnet_cs.c</CODE>    後，   编译与安装新的模组。   再次修改
+<CODE>/etc/pcmcia/config</CODE>， 然後改变卡片的连系从  <CODE>memory_cs</CODE>
+换成 <CODE>pcnet_cs</CODE>。顺著指示重新载入建构档案後就完成了。请您寄给我
+一份你的新<CODE>hw_info</CODE> 档案以及建构的条目内容。
+<P>如果你没有在十六进位倾印内找到你的卡片的硬体位址。最後的一个方法，
+当 <CODE>pcnet_cs</CODE> 模组初始化时想要 ``hard-wire( 硬体接合 )'' 是有可
+能的。请编修 <CODE>/etc/pcmcia/config.opts</CODE> 并加入 <CODE>hw_addr=</CODE>
+选项，像这样:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+module "pcnet_cs" opts "hw_addr=0x00,0x80,0xc8,0x01,0x02,0x03"
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>在适宜的地方代换掉你自己的卡片之硬体位址。当然，请小心如果你已经做
+了那麽多了，那你的卡片就不太像是个 NE2000 相容卡了。事实上，我并不
+确定是否有  <EM> 任何 </EM> 卡片在经过了前面两种方法之一後还不能用的了
+。
+<P>
+<H2><A NAME="ss6.3">6.3 PCMCIA 软碟机介面卡</A>
+</H2>
+
+<P>在 Compaq Aero 及少数一些笔记型电脑所使用的  PCMCIA 软碟机介面卡目
+前尚未被支援。 主要障碍在於 Aero 似乎使用自订的  PCMCIA 控制器来使
+DMA 支援软碟机。在不晓得这是如何办到的情况下，我们就无法找出解决的
+方法。
+<P>如果在 Aero 被开启时软碟机介面卡是插著的， Aero 的 BIOS 就会建构该
+卡，此时 Linux 会把它视为一般的软碟机。当 Linux 的 PCMCIA 驱动程式
+被载入时， 它们会查察到这卡已被建构并已附著在 Linux 的驱动程式上，
+而这插槽也会被忽略不管了。所以，如果在开机时卡片即插著了那就可以使
+用，但它不具备热机交换的功能。
+<P>
+<H2><A NAME="ss6.4">6.4 支援 Xircom 卡到底怎麽了？</A>
+</H2>
+
+<P>在目前的 PCMCIA 套件中有含了一个古援  Xircom 乙太网路及乙太网路  /
+数据机的驱动程式。 这要感谢 Werner Koch 先生。我有设立一个专门讨论
+Xircom 驱动程式论□的超媒体新闻，在 
+<A HREF="http://hyper.stanford.edu/hypernews/get/pcmcia/xircom.html">http://hyper.stanford.edu/hypernews/get/pcmcia/xircom.html</A>。
+<P>以前 Xircom 卡并没被支援是因为 Xircom 公司有不能□露他们的卡片之技
+术资讯。後来，他们放松这些规定，现在主动提供驱动程式的资讯。
+<P>
+<HR>
+<A HREF="PCMCIA-HOWTO-7.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="PCMCIA-HOWTO-5.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="PCMCIA-HOWTO.html#toc6"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

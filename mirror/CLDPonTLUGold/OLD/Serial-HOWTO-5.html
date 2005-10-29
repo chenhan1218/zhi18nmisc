@@ -1,0 +1,152 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Linux Serial HOWTO 中譯版: 我怎麼用數據機撥號出去?</TITLE>
+ <LINK HREF="Serial-HOWTO-6.html" REL=next>
+ <LINK HREF="Serial-HOWTO-4.html" REL=previous>
+ <LINK HREF="Serial-HOWTO.html#toc5" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="Serial-HOWTO-6.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Serial-HOWTO-4.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Serial-HOWTO.html#toc5"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="dialout"></A> <A NAME="s5">5. 我怎麼用數據機撥號出去?</A></H2>
+
+<H2><A NAME="ss5.1">5.1 硬體需求</A>
+</H2>
+
+<P>首先，要確定你擁有正確的連接線．你的數據機需要一條直接的 (straight through) 連接線，沒有任何跳線 (no pins crossed)．
+任何一家電腦商店都有．要確定接頭的形式是對的．如果你使用的是 DB25 串列埠，它應該是公的 DB25 接頭．
+把你的數據機接到其中一個串列埠上．如果你需要關於這個動作的輔助說明請參考你的數據機手冊．
+<P>
+<H3>內接式數據機注意事項</H3>
+
+<P>對於內接式數據機而言，你不需要連接線．內接式數據機不需要串列埠，它自己有內建一個．
+你只要配置一個沒有被使用的硬體中斷給它，並且配置該埠的輸出入位址．如果你卡在某個問題上請參考你的數據機手冊．
+同樣，如果你需要關於選擇中斷以及位址上的幫助，參閱 
+<A HREF="Serial-HOWTO-8.html#irqaddr">我能使用超過兩個的串列裝置嗎?</A> 一節的說明．
+<P>在某些主機板上你必須關掉被數據機取代的串列埠以避免衝突．
+這可經由跳線或 BIOS 的設定來辦到，視你的主機板而定．查閱你的主機板手冊．
+<P>由於 IBM8514 視訊卡的一個錯誤，如果你想要將你的內接式數據機設在 <CODE>ttyS3</CODE> 的話可能會遭遇一些問題．
+如果 Linux 沒有偵測到你設在 <CODE>ttyS3</CODE> 上的內接式數據機，你可以使用 <CODE>setserial</CODE> 程式來設定然後數據機將會正常運作．
+設在 <CODE>ttyS{0-2}</CODE> 上的內接式數據機在偵測上應該不會有任何問題．
+由於此視訊卡的錯誤 Linux 在 <CODE>ttyS3</CODE> 沒有任何自動偵測的動作．
+<P>
+<H2><A NAME="ss5.2">5.2 與你的數據機交談</A>
+</H2>
+
+<P>在你使用複雜的通訊程式如 SLIP 或 PPP 之前先以 <CODE>kermit</CODE> 或其它簡單的通訊程式來測試這些設定．
+你可以從 <CODE>
+<A HREF="http://www.columbia.edu/kermit/">http://www.columbia.edu/kermit/</A></CODE> 以及映射節點上找到最新的 <CODE>kermit</CODE> 版本．
+例如，要是你的數據機設在 <CODE>ttyS3</CODE> 上，而且可以接受 115200 bps 的話，你可以這樣做:
+<BLOCKQUOTE><CODE>
+<PRE>
+linux# kermit
+C-Kermit 6.0.192, 6 Sep 96, for Linux
+ Copyright (C) 1985, 1996,
+  Trustees of Columbia University in the City of New York.
+Default file-transfer mode is BINARY
+Type ? or HELP for help.
+C-Kermit>set line /dev/ttyS3
+C-Kermit>set carrier-watch off
+C-Kermit>set speed 115200
+/dev/ttyS3, 115200 bps
+C-Kermit>c
+Connecting to /dev/ttyS3, speed 115200.
+The escape character is Ctrl-\ (ASCII 28, FS)
+Type the escape character followed by C to get back,
+or followed by ? to see other options.
+ATE1Q0V1                           ; 這是你鍵入的並按下 Enter 鍵
+OK                                 ; 數據機應該回應這個
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>如果你的數據機對 <CODE>AT</CODE> 指令群有回應，那麼你可以假定你的數據機在 Linux 這一端能正確運作．
+現在試著撥給另一台數據機:
+<BLOCKQUOTE><CODE>
+<PRE>
+ATDT7654321
+</PRE>
+</CODE></BLOCKQUOTE>
+
+其中 7654321 是一個電話號碼．如果你的是脈衝線路(pulse line)的話用 ATDP 而不是 ATDT．
+如果可以撥得出去，你的數據機就可正常運作．
+<P>
+<P>回到 <CODE>kermit</CODE> 的提示符號下，按住 Ctrl 鍵，按下 \ (backslash) 錄，然後放開 Ctrl 錄，再按下 C 鍵:
+<BLOCKQUOTE><CODE>
+<PRE>
+Ctrl-\-C
+(Back at linux)
+C-Kermit>quit
+linux#
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>這個不過是用"手動"方式的撥號測試．正常的方法是讓 <CODE>kermit</CODE> 用它內建的數據機資料庫自動為你撥號，例如，使用 US Robotics (USR) modem:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+linux# kermit
+C-Kermit 6.0.192, 6 Sep 1997, for Linux
+ Copyright (C) 1985, 1996,
+  Trustees of Columbia University in the City of New York.
+Default file-transfer mode is BINARY
+Type ? or HELP for help
+C-Kermit>set modem type usr        ; 選擇數據機型式
+C-Kermit>set line /dev/ttyS3       ; 選擇通訊裝置
+C-Kermit>set speed 115200          ; 設定通訊速度
+C-Kermit>dial 7654321              ; 撥號
+ Number: 7654321
+ Device=/dev/ttyS3, modem=usr, speed=115200
+ Call completed.&lt;BEEP>
+Connecting to /dev/ttyS3, speed 115200
+The escape character is Ctrl-\ (ASCII 28, FS).
+Type the escape character followed by C to get back,
+or followed by ? to see other options.
+
+Welcome to ...
+
+login:
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>如果你需要一些指引，查閱有關 
+<A HREF="Serial-HOWTO-10.html#comms">通訊軟體</A> 一節說明．
+<P>
+<P>當你用你的數據機撥號出去時，將你的數據機設到它所能支援的最高速度．
+Linux 的 <CODE>libc</CODE> 5.x 版以上已經支援到 115200 bps．
+<CODE>libc</CODE> 通常放在 <CODE>/lib</CODE>，因此到那裡看一下你用什麼版本．
+如果 Linux 無法認得 57600 或 115200 bps，那麼你必須用 <CODE>setserial</CODE> 程式來將你的串列埠設到更高的速度．
+關於要怎麼設定參閱 
+<A HREF="Serial-HOWTO-9.html#spdhi">如何將我的串列埠設定為更高速度?</A> 該節說明．
+然後在通訊程式裡將速度設到 38400 bps．
+<P>
+<H2><A NAME="ss5.3">5.3 撥出用的數據機配置</A>
+</H2>
+
+<P>只要撥號出去的話，你可以任意以你想要的方式配置你的數據機．
+如果你計畫用你的數據機來接受撥接，那麼你<EM>必須</EM>將你的數據機配置成與你想要執行的 <CODE>getty</CODE> 在相同速度設定下．
+所以，如果你想要在 38400 bps 的速度下執行 <CODE>getty</CODE> 的話，在配置你數據機的時候將速度設成 38400 bps．
+這樣做是為了避免你的電腦與數據機之間的速度無法配合．
+一般來說，開啟錯誤校正及硬體流量控制的出廠設定值是最適合撥出用的數據機，這些設定值可查閱你的數據機手冊．
+<P>
+<H2><A NAME="ss5.4">5.4 硬體流量控制</A>
+</H2>
+
+<P>如果你的數據機支援硬體流量控制(RTS/CTS)的話， 我強烈地建議你去使用它．
+這對於支援資料壓縮的數據機將格外重要．首先，你必須在串列埠本身上面啟動 RTS/CTS 流量控制功能．
+這最好是在啟動系統的時候做，像是放在 <CODE>/etc/rc.d/rc.local</CODE> 或是 <CODE>/etc/rc.d/rc.serial</CODE> 裡面．
+要確定這些檔案會被主要的 <CODE>rc.sysinit</CODE> 檔案執行！你需要對每一個你想要啟動硬體流量控制的串列埠執行下列操作：
+<BLOCKQUOTE><CODE>
+<PRE>
+stty crtscts &lt; /dev/ttyS3
+</PRE>
+</CODE></BLOCKQUOTE>
+ 
+你也必須在你的數據機上啟動 RTC/CTS  流量控制．要怎麼做請參考你的數據機手冊，因為這在不同的數據機製造商之間是不同的．
+如果你的數據機支援設定儲存的話則要確定將配置存入你的數據機．
+<P>
+<HR>
+<A HREF="Serial-HOWTO-6.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="Serial-HOWTO-4.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="Serial-HOWTO.html#toc5"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

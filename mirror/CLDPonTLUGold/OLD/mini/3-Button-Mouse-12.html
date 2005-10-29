@@ -1,0 +1,72 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>The 3 Button Serial Mouse mini-HOWTO: 各種的問題及設定 </TITLE>
+ <LINK HREF="3-Button-Mouse-13.html" REL=next>
+ <LINK HREF="3-Button-Mouse-11.html" REL=previous>
+ <LINK HREF="3-Button-Mouse.html#toc12" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+<A HREF="3-Button-Mouse-13.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="3-Button-Mouse-11.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="3-Button-Mouse.html#toc12"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="misc"></A> <A NAME="s12">12. 各種的問題及設定 </A></H2>
+
+<P>
+<UL>
+<LI>    如果你在 X 或控制台模式關於你的滑鼠有任何問題，檢查你沒有執行 getty 在串列埠線上，或任何     像數據機這類的東西。並且確定 IRQ 的相衝與否。</LI>
+<LI>    當在載入 X windows 時，你有可能需要去按著左鍵。因為當 X 啟動時，某些系統需要送出某種類      的信號或使滑鼠失效</LI>
+<LI>    串列設備的問題也許起因於串列埠在啟動時並未設定初值。這可藉由 <CODE>setserial</CODE> 指令來做，執行啟動命令稿的 <CODE>/etc/rc.d/rc.serial</CODE>。檢查<CODE>setserial</CODE>這個主頁，另從 Serial-HOWTO 獲得更多的細節。它也許值得一些小小類型的實驗，例如試著將<CODE>setserial /dev/mouse uart 16550</CODE> 或 <CODE>16550a</CODE>有關於你實際擁有埠的問題不顧(例如，滑鼠並不相似 16c550AF)。</LI>
+<LI> <CODE>ClearDTR</CODE> 旗標並不能正常運作在某些系統，除非你利用如下的命令關掉 RTS/CTS handshaking
+<BLOCKQUOTE><CODE>
+stty -crtscts &lt; /dev/mouse
+</CODE></BLOCKQUOTE>
+
+(測試平台為 UART 16450/Pentium 由 Vladimir Geogjaev
+<A HREF="mailto:geogjaev&commat;wave.sio.rssi.ru">geogjaev&commat;wave.sio.rssi.ru</A>)</LI>
+<LI>Logitech 滑鼠也許需要加入一行 <CODE>ChordMiddle</CODE> 去讓三鍵式滑鼠中的中鍵能作用。用這一行在 config 中替代<CODE>Emulate3Buttons</CODE> 或加入在 <CODE>/dev/mouse</CODE> 這行之後。你也許需要 <CODE>ClearDTR</CODE> 與 <CODE>ClearRTS</CODE> 這些行在你的 Xconfig。某些 Logitech 滑鼠絕對不需要 <CODE>ChordMiddle</CODE> 這行 ──  關於這個問題的一種症狀是選單似乎隨著滑鼠移動，替代了捲軸向下的作用。
+(出自 
+<A HREF="mailto:chang&commat;platform.com">chang&commat;platform.com</A>)</LI>
+<LI>交換按鍵：使用 <CODE>xmodmap</CODE> 指令去改變每個按鍵按下的自然按鍵設定。例：<CODE> xmodmap -e "pointer = 3 2 1" </CODE> 將會完全改成慣用左手模式。如果你採用兩鍵式滑鼠，那只需要列出 1 和 2 。</LI>
+<LI>加速：使用 <CODE>xset m</CODE> 命令去改變滑鼠的設定。例：<CODE>xset m 2 </CODE> 將設定加速為 2 。注意主頁中所有有關的詳細敘述。</LI>
+<LI>指標偏移：如果按下時滑鼠的指標出現左右晃動的情形，這意味著你的螢幕沒有被定位。這個問題一般出現在 S3 的設備上，你可以利用 xvidtune 來固定它。試著 <CODE>Invert_VCLK/InvertVCLK,
+或 EarlySC.</CODE>
+這個訊息出自 Bill Lavender 
+(
+<A HREF="mailto:lavender&commat;MCS.COM">lavender&commat;MCS.COM</A>) 及 Simon Hargrave。
+在 XF86Config 中，它也許看來像這樣：<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+Subsection "Display"
+    Modes       "1024x768" "800x600" "640x480" "1280x1024"
+    Invert_VCLK "*" 1
+    ...
+</PRE>
+</CODE></BLOCKQUOTE>
+</LI>
+<LI>如果你有一個"跳躍"的滑鼠鍵﹝例如你想要點一下，它卻點兩下﹞，這也許是你的滑鼠有問題了。這個 Logitech 滑鼠的問題被 Bob Nichols (
+<A HREF="mailto:rnichols&commat;interaccess.com">rnichols&commat;interaccess.com</A>)解決了。包括焊接某些滑鼠中的電阻與晶片來消除微小位移的彈跳現象。
+</LI>
+<LI>如果某些使用者不能用滑鼠，但在某些﹝例如 root ﹞可以。那也許是使用者並沒有執行正好相同的東西 ── 例如不同版本的 X 或不同的 Xconfig 。檢查 X 啟動訊息，仔細的去確認。
+</LI>
+<LI>如果你發現滑鼠指標會抹去妳螢幕上的東西，你的伺服器 config 可能有問題了。試著增加選項<CODE>linear</CODE> 或者是 <CODE>nolinear</CODE> 到你的繪圖卡部分。或者如果是 PCI 主機板，則選項為
+<CODE>tgui_pci_write_off</CODE> 及 <CODE>tgui_pci_read_off</CODE>。
+(這似乎是 Trident 卡的問題)
+</LI>
+<LI>如果滑鼠游標並未顯示在螢幕上，但是它似乎能使用。試試在 config 檔案中設備部分的選項 <CODE>"sw_cursor"</CODE> 。
+</LI>
+<LI>如果你的滑鼠當它在閃爍時或在你打開電源時會停止工作。造成這種情況也許是因為感測器 ( sensor ) 被光所淹沒。你能夠試著在較暗的室內，或將一些卡放於頂上。
+</LI>
+<LI>Microsoft 商標滑鼠通常是問題的主因。最新的 ``Microsoft 串列滑鼠 2.1A'' 顯示，在很多的系統上並不能使用，雖然拔起再重插一次可能會有助於此一情況。<CODE>gpm</CODE> 版本 1.13 以及其後的版本，應該也支援
+2.1A 滑鼠，當你使用 <CODE>pnp</CODE> 滑鼠模式時。 (參照 
+<A HREF="#gpm">gpm section</A> 中 how to 重新輸出這個項目。)
+``Microsoft Intellimouse'' 也會引起問題，雖然它目前應該能被 XFree 版本3.3及 以後的版本所支援。</LI>
+</UL>
+<P>
+<HR>
+<A HREF="3-Button-Mouse-13.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="3-Button-Mouse-11.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="3-Button-Mouse.html#toc12"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

@@ -1,0 +1,345 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE> Linux 的 Database-SQL-RDBMS HOWTO 文件 (PostgreSQL 物件關聯資料庫系統): PostgreSQL 快速安裝指引 </TITLE>
+ <LINK HREF="PostgreSQL-HOWTO-7.html" REL=next>
+ <LINK HREF="PostgreSQL-HOWTO-5.html" REL=previous>
+ <LINK HREF="PostgreSQL-HOWTO.html#toc6" REL=contents>
+<SCRIPT src="menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(0, 2, 5);</SCRIPT>
+<A HREF="PostgreSQL-HOWTO-7.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="PostgreSQL-HOWTO-5.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="PostgreSQL-HOWTO.html#toc6"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="Quick-Installation"></A> <A NAME="s6">6. PostgreSQL 快速安裝指引 </A></H2>
+
+<P>這節會幫你在小於五分鐘內快速安裝和啟動這資料庫。
+<P>
+<H2><A NAME="ss6.1">6.1 安裝和測試</A>
+</H2>
+
+<P>安裝、測試、確認和執行 PostgreSQL 的步驟
+以 root 身份簽入
+<HR>
+<PRE>
+# cd /mnt/cdrom/RedHat/RPMS
+# man rpm
+# ls postgre*.rpm
+# rpm -qpl postgre*.rpm | less （觀看檔案名單）
+# rpm -qpi postgre*.rpm （觀看套件資料）
+# cat /etc/passwd | grep postgres
+</PRE>
+<HR>
+
+注意︰如果你看到一個‘postgres’使用者，你可能要備份和清除 postgres 的家目錄 
+&nbsp;postgres 和刪除這名用者，或把他改名為‘postgres2’之類。安裝時需要乾乾淨淨。
+<HR>
+<PRE>
+:
+# rpm -i postgre*.rpm （必須安裝所有套件，即客戶端、開發、資料和主套件來使 
+pgaccess 正常工作）
+# man chkconfig
+# chkconfig --add postgresql  （用來在開機時開始 pg。）
+# /etc/rc.d/init.d/postgresql start （啟動 postgresql）
+# man xhost
+# xhost +  （讓 pgaccess 使用顯示裝置）
+# su - postgres
+bash$ man createdb
+bash$ createdb mydatabase
+bash$ man psql
+bash$ psql mydatabase
+……在 psql 中可按上 / 下箭咀來編輯歷史記錄或 \s
+
+bash$ export DISPLAY=&lt;主機名>:0.0
+bash$ man pgaccess
+bash$ pgaccess mydatabase
+</PRE>
+<HR>
+
+現在你可以在 pgaccess 或 psql <B>高速下達</B>各種 SQL 指令了！！
+<HR>
+<PRE>
+bash$ cd /usr/doc/postgresql*
+</PRE>
+<HR>
+
+在此閱讀所有 FAQ，使用者、程式設計員、管理手冊和指引。
+<H2><A NAME="ss6.2">6.2 PostgreSQL RPMs</A>
+</H2>
+
+<P>此外，請看 
+<A HREF="http://www.ramifordistat.net/postgres">http://www.ramifordistat.net/postgres</A> 的 
+<I>"Installation Steps"</I>。
+<P>PostgreSQL RPM 由 Lamar Owen 維護，位於
+<A HREF="mailto:lamar.owen@wgcr.org">lamar.owen@wgcr.org</A>
+在 
+<A HREF="http://www.postgresql.org">http://www.postgresql.org</A> 可找到更多 PostgreSQL 的資料。
+<H2><A NAME="ss6.3">6.3 Maximum RPM</A>
+</H2>
+
+<P>熟習 RedHat RPM 套件管理員以管理 PostgreSQL 安裝。在 
+<A HREF="http://www.RPM.org">http://www.RPM.org</A> 下載‘Maximum RPM’一書，找尋檔名
+maximum-rpm.ps.gz。
+在 Linux 使用 gv 指令閱讀它—
+<HR>
+<PRE>
+# gv maximum-rpm.ps.gz
+</PRE>
+<HR>
+
+有一個 rpm2deb 可把 RPM 套件轉換為 Debian Linux 套件
+<H2><A NAME="Examples RPM"></A> <A NAME="ss6.4">6.4 例子 RPM </A>
+</H2>
+
+<P>測試 PostgreSQL 的各種介面需要例子。從以下地方安裝 PostgreSQL 例子目錄—
+<UL>
+<LI> Linux 光碟 - postgresql-*examples.rpm</LI>
+<LI> postgresql-*examples.rpm  
+<A HREF="http://www.aldev.8m.com">http://www.aldev.8m.com</A> 
+或 
+<A HREF="http://aldev.webjump.com">http://aldev.webjump.com</A></LI>
+<LI> PostgreSQL 原程式碼 postgresql*.src.rpm，在 examples、testing 或 
+tutorial 目錄尋找。</LI>
+</UL>
+<H2><A NAME="Testing PyGreSQL"></A> <A NAME="ss6.5">6.5 測試 PyGreSQL—Python 介面 </A>
+</H2>
+
+<P>安裝 examples 套件，請參閱 
+<A HREF="#Examples RPM">例子 RPM</A>，之後—
+<HR>
+<PRE>
+bash$ cd /usr/lib/pgsql/python
+bash$ createdb thilo
+bash$ psql thilo
+thilo=> create table test (aa char(30), bb char(30) );
+thilo=> \q
+bash$ /usr/bin/python
+>>> import _pg
+>>> db = _pg.connect('thilo', 'localhost')
+>>> db.query("INSERT INTO test VALUES ('ping', 'pong')")
+>>> db.query("SELECT * FROM test")
+eins|zwei
+----+----
+ping|pong
+(1 row)
+>>>CTRL+D
+bash$
+……好像行了—現在正式安裝它
+bash$ su - root
+# cp /usr/lib/pgsql/python/_pg.so /usr/lib/python1.5/lib-dynload
+</PRE>
+<HR>
+<H2><A NAME="Testing Perl"></A> <A NAME="ss6.6">6.6 測試 Perl—Perl 介面 </A>
+</H2>
+
+<P>安裝 examples 套件，請參閱 
+<A HREF="#Examples RPM">例子 RPM</A>，之後—
+<HR>
+<PRE>
+root# chown -R postgres.postgres /var/lib/pgsql/examples
+bash$ cd /var/lib/pgsql/examples/perl5
+bash$ perl ./example.pl
+</PRE>
+<HR>
+
+注意︰如果以上指令失敗了請做如此做︰全域變數 @INC 要在包括 site_perl 目錄中的 
+Pg.pm 模組，所以要如下使用
+-I 選項。
+<HR>
+<PRE>
+bash$ perl -I/usr/lib/perl5/site_perl/5.004/i386-linux-thread ./example.pl
+</PRE>
+<HR>
+
+……你的 perl 已在存取 PostgreSQL 資料庫！！
+<P>要使用 perl 介面，請參閱 example.pl 檔。
+<H2><A NAME="Testing libpq"></A> <A NAME="ss6.7">6.7 測試 libpq, libpq++ 介面 </A>
+</H2>
+
+<P>安裝 examples 套件，請參閱 
+<A HREF="#Examples RPM">例子 RPM</A>，之後—
+<HR>
+<PRE>
+root# chown -R postgres.postgres /var/lib/pgsql/examples
+bash$ cd /var/lib/pgsql/examples/libpq
+bash$ gcc testlibpq.c -I/usr/include/pgsql -lpq
+bash$ export PATH=$PATH:.
+bash$ a.out
+
+bash$ cd /var/lib/pgsql/examples/libpq++
+bash$ g++ testlibpq0.cc -I/usr/include/pgsql -I/usr/include/pgsql/libpq++
+-lpq++ -lpq -lcrypt
+bash$ ./a.out （注意︰不須理會錯誤訊息—如下）
+> create table foo (aa int, bb char(4));
+No tuples returned...
+status = 1
+Error returned: fe_setauthsvc: invalid name: , ignoring...
+> insert into foo values ('4535', 'vasu');
+No tuples returned...
+status = 1
+Error returned: fe_setauthsvc: invalid name: , ignoring...
+> select * from foo;
+aa   |bb   |
+-----|-----|
+4535 |vasu |
+Query returned 1 row.
+>
+>CTRL+D
+bash$
+</PRE>
+<HR>
+
+……你直接用 C/C++ 介面來存取 PostgreSQL 資料庫！！
+<H2><A NAME="Testing Java"></A> <A NAME="ss6.8">6.8 測試 Java 介面 </A>
+</H2>
+
+<P>安裝 examples 套件，請參閱 
+<A HREF="#Examples RPM">例子 RPM</A> 
+和安裝以下東西。
+<UL>
+<LI> 從 
+<A HREF="ftp://ftp.redhat.com/pub/contrib/i386">ftp://ftp.redhat.com/pub/contrib/i386</A> 或 
+<A HREF="http://www.blackdown.org">http://www.blackdown.org</A> 取得 JDK jdk-*glibc*.rpm </LI>
+<LI> 從 
+<A HREF="ftp://ftp.redhat.com/pub/contrib/i386">ftp://ftp.redhat.com/pub/contrib/i386</A> 取得 
+postgresql-jdbc-*.rpm</LI>
+</UL>
+
+<HR>
+<PRE>
+root# chown -R postgres.postgres /var/lib/pgsql/examples
+bash$ cd /var/lib/pgsql/examples/jdbc
+bash$ echo $CLASSPATH
+ --> 應顯示 CLASSPATH=/usr/lib/pgsql/jdbc7.0-1.2.jar:.:/home/java/jdk1.2.2/lib:/usr/lib/pgsql:/usr/lib/pgsql/classes.zip:/usr/lib/pgsql/pg.jar
+
+而 jdbc*.jar 的版本號碼要正確。
+*.jar 檔要放在 /usr/lib/pgsql 和  /usr/libjdk*/lib 目錄中。
+
+bash$ export CLASSPATH=/usr/lib/pgsql/jdbc7.0-1.2.jar:.:/home/java/jdk1.2.2/lib:/usr/lib/pgsql:/usr/lib/pgsql/classes.zip:/usr/lib/pgsql/pg.jar
+
+編輯所有 psql.java 檔，把‘package’的行變為評論。
+bash$ javac psql.java
+bash$ java psql jdbc:postgresql:template1 postgres &lt; password &gt;[1] select * from pg_tables;
+tablename       tableowner      hasindexes      hasrules
+pg_type postgres        true    false   false
+pg_attribute    postgres        true    false   false
+[2]
+CTRL+C
+bash$
+</PRE>
+<HR>
+
+……你直接用 Java 介面來存取 PostgreSQL 資料庫！
+<H2><A NAME="Testing ecpg"></A> <A NAME="ss6.9">6.9 測試 ecpg 介面 </A>
+</H2>
+
+<P>安裝 examples 套件，請參閱 
+<A HREF="#Examples RPM">例子 RPM</A>，之後—
+<HR>
+<PRE>
+root# chown -R postgres.postgres /var/lib/pgsql/examples
+bash$ cd /var/lib/pgsql/examples/ecpg
+bash$ ecpg test1.pgc -I/usr/include/pgsql
+bash$ cc test1.c -I/usr/include/pgsql -lecpg -lpq -lcrypt
+bash$ createdb mm
+bash$ ./a.out
+</PRE>
+<HR>
+
+……你直接用嵌入式 SQL 來存取 PostgreSQL 資料庫！
+<H2><A NAME="Testing SQL"></A> <A NAME="ss6.10">6.10 測試 SQL 的例子—自訂資料型態和函數 </A>
+</H2>
+
+<P>安裝 examples 套件，請參閱 
+<A HREF="#Examples RPM">例子 RPM</A>，之後—
+<HR>
+<PRE>
+root# chown -R postgres.postgres /var/lib/pgsql/examples
+bash$ cd /var/lib/pgsql/examples/sql
+未寫好…
+</PRE>
+<HR>
+<H2><A NAME="ss6.11">6.11 測試 Tcl/TK 介面</A>
+</H2>
+
+<P>Tck/Tk 的例子是 pgaccess 程式。
+使用一個文字編輯器閱讀 /usr/bin/pgaccess 檔案—
+<HR>
+<PRE>
+bash$ view /usr/bin/pgaccess
+bash$ export DISPLAY=&lt;你電腦的主機名>:0.0
+bash$ createdb mydb
+bash$ pgaccess mydb
+</PRE>
+<HR>
+<H2><A NAME="ss6.12">6.12 測試 ODBC 介面</A>
+</H2>
+
+<P>
+<OL>
+<LI> 在 
+<A HREF="http://www.insightdist.com/psqlodbc/">http://www.insightdist.com/psqlodbc/</A> 取得 win32 pgsql 
+odbc 驅動程式</LI>
+<LI> 另外請參閱 /usr/lib/libpsqlodbc.a</LI>
+</OL>
+<H2><A NAME="ss6.13">6.13 測試 MPSQL Motif-worksheet 介面</A>
+</H2>
+
+<P>在 
+<A HREF="http://www.mutinybaysoftware.com">http://www.mutinybaysoftware.com</A> 取得 RPM。
+<H2><A NAME="ss6.14">6.14 確認</A>
+</H2>
+
+<P>要確認 PostgreSQL 的高品質，執行 Regression 測試套件︰
+以 root 身份簽入
+<HR>
+<PRE>
+# rpm -i postgresql*test.rpm
+閱讀 README 檔或安裝源程式，它已有 regress 目錄
+# rpm -i postgresql*.src.rpm
+# cd /usr/src/redhat/SPECS
+# more postgresql*.spec （以察看需要安裝哪些 RPM 套件）
+# rpm -bp postgresql*.spec （…這樣會準備該套件）
+
+Regression 測試需要 Makefiles 和類似 *fmgr*.h 的標頭檔，可用以下指令
+產生—
+# rpm --short-circuit -bc postgresql*.spec （走捷徑！）
+看到‘make -C common  SUBSYS.o’後按 CTRL-C 終止工作。這時候 configure 
+已經成功，所有 Makefiles 和標頭檔也已產生。你不再需要讓它繼續下去。
+# cd /usr/src/redhat/BUILD
+# chown -R postgres postgresql*
+# su - postgres
+bash$ cd /usr/src/redhat/BUILD/postgresql-6.5.3/src/test/regress
+bash$ more README
+bash$ make clean; make all runtest
+bash$ more regress.out
+</PRE>
+<HR>
+<H2><A NAME="ss6.15">6.15 緊急除錯</A>
+</H2>
+
+<P>有時除錯嵌補會在主要的推出 PostgreSQL 
+的主要版本之後出現。你可依據自己需要，自行進行修補。請跟從以下步驟︰
+到 postgresql 程式碼的目錄
+<BLOCKQUOTE><CODE>
+<PRE>
+                # rpm -i postgresql*.src.rpm
+                # cd /usr/src/postgresql6.5.3
+                # man patch
+                # patch -p0 &lt; patchfile
+                # make clean
+                # make
+</PRE>
+</CODE></BLOCKQUOTE>
+
+嵌補檔是在
+<UL>
+<LI>PostgreSQL 嵌補︰
+<A HREF="ftp://ftp.postgresql.org/pub/patches">ftp://ftp.postgresql.org/pub/patches</A></LI>
+</UL>
+<HR>
+<A HREF="PostgreSQL-HOWTO-7.html"><IMG SRC="img/next.gif" ALT="Next"></A>
+<A HREF="PostgreSQL-HOWTO-5.html"><IMG SRC="img/prev.gif" ALT="Previous"></A>
+<A HREF="PostgreSQL-HOWTO.html#toc6"><IMG SRC="img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

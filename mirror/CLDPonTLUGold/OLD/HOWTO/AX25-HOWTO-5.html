@@ -1,0 +1,166 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux AX25-HOWTO, Amateur Radio.: A note on callsigns, addresses and things before we start.</TITLE>
+ <LINK HREF="AX25-HOWTO-6.html" REL=next>
+ <LINK HREF="AX25-HOWTO-4.html" REL=previous>
+ <LINK HREF="AX25-HOWTO.html#toc5" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="AX25-HOWTO-6.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="AX25-HOWTO-4.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="AX25-HOWTO.html#toc5"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s5">5. A note on callsigns, addresses and things before we start.</A></H2>
+
+<P>Each AX.25 and NetRom port on your system must have a callsign/ssid allocated
+to it. These are configured in the configuration files that will be described
+in detail later on.
+<P>Some AX.25 implementations such as NOS and BPQ will allow you to configure
+the same callsign/ssid on each AX.25 and NetRom port. For somewhat complicated
+technical reasons Linux does not allow this. This isn't as big a problem in
+practise as it might seem.
+<P>This means that there are things you should be aware of and take into
+consideration when doing your configurations.
+<P>
+<OL>
+<LI>Each AX.25 and NetRom port must be configured with a unique callsign/ssid.</LI>
+<LI>TCP/IP will use the callsign/ssid of the AX.25 port it is being
+transmitted or received by, ie the one you configured for the AX.25 interface
+in point 1.</LI>
+<LI>NetRom will use the callsign/ssid specified for it in its configuration
+file, but this callsign is only used when your NetRom is speaking to another
+NetRom, this is <B>not</B> the callsign/ssid that AX.25 users who wish to use
+your NetRom `node' will use. More on this later.</LI>
+<LI>Rose will, by default, use the callsign/ssid of the AX.25 port, unless
+the Rose callsign has been specifically set using the `<EM>rsparms</EM>' command.
+If you set a callsign/ssid using the `<EM>rsparms</EM>' command then Rose will
+use this callsign/ssid on all ports.</LI>
+<LI>Other programs, such as the `<EM>ax25d</EM>' program can listen using
+any callsign/ssid that they wish and these may be duplicated across different
+ports.</LI>
+<LI>If you are careful with routing you can configure the same IP address on
+all ports if you wish.</LI>
+</OL>
+<P>
+<H2><A NAME="ss5.1">5.1 What are all those T1, T2, N2 and things ?</A>
+</H2>
+
+<P>Not every AX.25 implementation is a TNC2. Linux uses nomenclature that
+differs in some respects from that you will be used to if your sole
+experience with packet is a TNC. The following table should help you
+interpret what each of the configurable items are, so that when you come
+across them later in this text you'll understand what they mean.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+-------------------------------------------------------------------
+Linux  | TAPR TNC | Description
+-------------------------------------------------------------------
+T1     | FRACK    | How long to wait before retransmitting an
+       |          | unacknowledged frame.
+-------------------------------------------------------------------
+T2     | RESPTIME | The minimum amount of time to wait for another
+       |          | frame to be received before transmitting
+       |          | an acknowledgement.
+-------------------------------------------------------------------
+T3     | CHECK    | The period of time we wait between sending
+       |          | a check that the link is still active.
+-------------------------------------------------------------------
+N2     | RETRY    | How many times to retransmit a frame before
+       |          | assuming the connection has failed.
+-------------------------------------------------------------------
+Idle   |          | The period of time a connection can be idle
+       |          | before we close it down.
+-------------------------------------------------------------------
+Window | MAXFRAME | The maximum number of unacknowledged
+       |          | transmitted frames.
+-------------------------------------------------------------------
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss5.2">5.2 Run time configurable parameters</A>
+</H2>
+
+<P>The <CODE>2.1.*</CODE> and <CODE>2.0.* +moduleXX</CODE> kernels have a new feature that allows
+you to change many previously unchangable parameters at run time. If you take a
+careful look at the <CODE>/proc/sys/net/</CODE> directory structure you will see
+many files with useful names that describe various parameters for the network
+configuration. The files in the <CODE>/proc/sys/net/ax25/</CODE> directory each
+represents one configured AX.25 port. The name of the file relates to the
+name of the port.
+<P>The structure of the files in <CODE>/proc/sys/net/ax25/&lt;portname>/</CODE>
+is as follows:
+<PRE>
+FileName              Meaning              Values                  Default
+ip_default_mode       IP Default Mode      0=DG 1=VC               0
+ax25_default_mode     AX.25 Default Mode   0=Normal 1=Extended     0
+backoff_type          Backoff              0=Linear 1=Exponential  1
+connect_mode          Connected Mode       0=No 1=Yes              1
+standard_window_size  Standard Window      1  &lt;= N &lt;= 7            2
+extended_window_size  Extended Window      1  &lt;= N &lt;= 63           32
+t1_timeout            T1 Timeout           1s &lt;= N &lt;= 30s          10s
+t2_timeout            T2 Timeout           1s &lt;= N &lt;= 20s          3s
+t3_timeout            T3 Timeout           0s &lt;= N &lt;= 3600s        300s
+idle_timeout          Idle Timeout         0m &lt;= N                 20m
+maximum_retry_count   N2                   1  &lt;= N &lt;= 31           10
+maximum_packet_length AX.25 Frame Length   1  &lt;= N &lt;= 512          256
+</PRE>
+
+In the table T1, T2 and T3 are given in seconds, and the Idle Timeout
+is given in minutes. But please note that the values used in the sysctl
+interface are given in internal units where the time in seconds is
+multiplied by 10, this allows resolution down to 1/10 of a second. With
+timers that are allowed to be zero, eg T3 and Idle, a zero value indicates
+that the timer is disabled. 
+<P>
+<P>The structure of the files in <CODE>/proc/sys/net/netrom/</CODE>
+is as follows:
+<PRE>
+FileName                       Values                  Default
+default_path_quality                                   10
+link_fails_count                                       2
+network_ttl_initialiser                                16
+obsolescence_count_initialiser                         6
+routing_control                                        1
+transport_acknowledge_delay                            50
+transport_busy_delay                                   1800
+transport_maximum_tries                                3
+transport_requested_window_size                        4
+transport_timeout                                      1200
+</PRE>
+<P>
+<P>The structure of the files in <CODE>/proc/sys/net/rose/</CODE>
+is as follows:
+<PRE>
+FileName                       Values                  Default
+acknowledge_hold_back_timeout                          50
+call_request_timeout                                   2000
+clear_request_timeout                                  1800
+link_fail_timeout                                      1200
+maximum_virtual_circuits                               50
+reset_request_timeout                                  1800
+restart_request_timeout                                1800
+routing_control                                        1
+window_size                                            3
+</PRE>
+<P>
+<P>To set a parameter all you need to do is write the desired value to the file
+itself, for example to check and set the Rose window size you'd use something
+like:
+<BLOCKQUOTE><CODE>
+<PRE>
+# cat /proc/sys/net/rose/window_size
+3
+# echo 4 >/proc/sys/net/rose/window_size
+# cat /proc/sys/net/rose/window_size
+4
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<HR>
+<A HREF="AX25-HOWTO-6.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="AX25-HOWTO-4.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="AX25-HOWTO.html#toc5"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

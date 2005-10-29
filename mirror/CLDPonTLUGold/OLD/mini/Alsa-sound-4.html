@@ -1,0 +1,296 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=big5">
+ <META NAME="GENERATOR" CONTENT="ZH-SGML-Tools 1.0.9">
+ <TITLE>Alsa-sound-mini-HOWTO: 載入驅動程式</TITLE>
+ <LINK HREF="Alsa-sound-5.html" REL=next>
+ <LINK HREF="Alsa-sound-3.html" REL=previous>
+ <LINK HREF="Alsa-sound.html#toc4" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 2, 6);</SCRIPT>
+<A HREF="Alsa-sound-5.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Alsa-sound-3.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Alsa-sound.html#toc4"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s4">4. 載入驅動程式</A></H2>
+
+<P>有兩種使用 ALSA 音效模組的方法. 筆者個人比較喜歡使用手動的方法, 也就是在開機
+時安插驅動程式. ALSA 驅動程式是以可載入/卸除模組為目標來設計 -- 
+例如說它們不會在載入後重設音量 -- 所以您可以簡單地使用 kerneld 的方法.
+<P>(譯注: 原文直譯為 ALSA 驅動程式設計成可載入/卸除模組, 但譯者認為 OSS 也可以
+這麼做(只差它會重設音量, 對模組使用者來說較不方便, 雖然解決辦法是有(見 Sound
+HOWTO)), 這麼翻無法凸顯 ALSA 的優點, 故翻成上面的意思. 希望沒誤解...)
+<P>請一定要閱讀
+<A HREF="#backw-compat">向前相容</A>這節, 
+如果您想要和以前的程式相容的話.
+<P>
+<H2><A NAME="ss4.1">4.1 用 modprobe 安插驅動程式</A>
+</H2>
+
+<P>請注意: 如果您有 PnP 音效卡, 您首先要設定正確的(或至少是已知的) IO/IRQ/DMA.
+請讀 Plug-and-Play-HOWTO. 您已經設定過您的 隨插即用 音效卡了嗎? 好,
+那麼請繼續讀下去. 主要部份是 "modprobe snd-&lt;soundcard>", 這樣應該就可以. 
+不過並非所有安裝套件都把 /sbin 包含在您的 PATH 環境變數下. 如果您得到 "bash:
+modprobe: command not found" 這樣的回應, 可能是由於 modprobe 沒有在 path 中.
+試著用 "/sbin/modprobe snd-sb16", 或想辦法找出 modprobe 公用程式在哪.
+<P>對 Crystal 晶片組的卡來說可能最困難. ALSA 驅動程式不對這些卡進行自動偵測.
+更進一步的資訊記載在驅動程式目錄下的 INSTALL 檔中. 接下來筆者舉兩個例子, 
+然後接著是個列表:
+<P>Gravis UltraSound (GUS) 及相容卡:
+<BLOCKQUOTE><CODE>
+<PRE>
+/sbin/modprobe snd-gusclassic
+</PRE>
+</CODE></BLOCKQUOTE>
+
+對完全 16 位元的 SoundBlaster 卡 (SoundBlaster 16 (PnP), SoundBlaster
+AWE 32 (PnP), SoundBlaster AWE 64 (PnP):
+<BLOCKQUOTE><CODE>
+<PRE>
+/sbin/modprobe snd-sb16
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss4.2">4.2 那張卡應該用哪個驅動程式?</A>
+</H2>
+
+<P>
+<H3>Gravis UltraSound Extreme</H3>
+
+<P>
+<P><CODE>modprobe snd-gusextreme</CODE>
+<H3>Gravis UltraSound MAX</H3>
+
+<P>
+<P><CODE>modprobe snd-gusmax</CODE>
+<P>
+<P>
+<P>
+<H3>ESS AudioDrive</H3>
+
+<P>ESS AudioDrive ES-1688 及 ES-688 音效卡
+<P><CODE>modprobe snd-audiodrive1688</CODE>
+<P>
+<H3>Gravis UltraSound PnP</H3>
+
+<P>Gravis UltraSound PnP, Dynasonic 3-D/Pro, STB Sound Rage 32 以及其它用
+AMD InterWave (tm) 晶片的音效卡.
+<P><CODE>modprobe snd-interwave</CODE>
+<H3>UltraSound 32-Pro</H3>
+
+<P>UltraSound 32-Pro (STB 製 Compaq 使用) 及其它使用
+AMD InterWave (tm) 晶片以及用 TEA6330T 電路來做 bass, treble 及主音量控制的卡.
+<P><CODE>modprobe snd-interwave-stb</CODE>
+<H3>Soundblaster</H3>
+
+<P>8-bit Soundblaster 卡 (SoundBlaster 1.0, SoundBlaster 2.0, SoundBlaster
+Pro)
+<P><CODE>modprobe snd-sb8</CODE>
+<H3>Soundblaster 16</H3>
+
+<P>16-bit SoundBlaster 卡 (SoundBlaster 16 (PnP), SoundBlaster AWE
+32 (PnP), SoundBlaster AWE 64 (PnP). 
+請注意本模組不支援 SoundBlaster VibraX16 音效卡.
+<P><CODE>modprobe snd-sb16</CODE>
+<H3>Yamaha OPL3-SA2/SA3 音效卡</H3>
+
+<P>光是 "modprobe snd-opl3sa" 是無效的, 驅動程式不會自動偵測. 請看後面.
+<P>
+<H3>S3 SonicVibes</H3>
+
+<P>S3 SonicVibes PCI 音效卡. (PINE Schubert 32 PCI)
+<P><CODE>modprobe snd-sonicvibes</CODE>
+<P>
+<H3>Ensoniq/Soundblaster PCI64</H3>
+
+<P>Ensoniq AudioPCI ES1370/1371 PCI 音效卡. (SoundBlaster PCI 64)
+<P><CODE>modprobe snd-audiopci</CODE>
+<P>
+<H3>CS4232/4232A</H3>
+
+<P>所有使用 CS4232/CS4232A 晶片的音效卡.
+光是 "modprobe snd-card-cs4232" 沒用, 不自動偵測, 看後面. 
+<P>
+<H3>4235 以及其後的</H3>
+
+<P>所有使用 CS4235/CS4236/CS4236B/CS4237B/CS4238B/CS4239 晶片的. 
+光是 "modprobe snd-card-cs4236" 沒用, 不自動偵測, 看後面. 
+<P>
+<H2><A NAME="ss4.3">4.3 不自動偵測時怎麼載入驅動程式</A>
+</H2>
+
+<P>如果您要用的驅動程式不自動偵測, 您必須在讓驅動程式運作前先提供額外資訊.
+更多資訊可在驅動程式目錄下的 INSTALL 檔中找到.
+<H3>OPL3-SA2 及 OPL3-SA3</H3>
+
+<P>根據 INSTALL 檔, 您需要提供驅動程式一切資訊. 如果您用 isapnp-tools
+來初始化您的卡, 也許可以在 /etc/isapnp.conf 檔中看到像下面的值:
+<BLOCKQUOTE><CODE>
+<PRE>
+snd_port - control port # for OPL3-SA chip
+snd_wss_port - WSS port # for OPL3-SA chip (0x530,0xe80,0xf40,0x604)
+snd_midi_port - port # for MPU-401 UART (0x300,0x330), -1 = disable
+snd_fm_port - FM port # for OPL3-SA chip (0x388), -1 = disable
+snd_irq - IRQ # for OPL3-SA chip (5,7,9,10)
+snd_dma1 - first DMA # for Yamaha OPL3-SA chip (0,1,3)
+snd_dma1_size - max first DMA size in kB (4-64kB)
+snd_dma2 - second DMA # for Yamaha OPL3-SA chip (0,1,3), -1 = disable
+snd_dma2_size - max second DMA size in kB (4-64kB)
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>您要用
+"modprobe snd-opl3sa snd_port=0xNNN snd_wss_port=0x530 snd_midi_port=-1
+snd_fm_port=0x388 snd_irq=5 snd_dma1=0 snd_dma1_size=NN snd_dma2=1 snd_dma2_size=NN"
+命令來載入驅動程式(沒有 midi 支援, 我仍然相信如果您有合成器之類想連上 Linux
+主機, 您需要它. 如果只是聽 MIDI 檔就不必了.)
+<P>上例的 "NN" 值您要給真正的值, 我不曉得合理值是多少, 所以才這麼寫. 
+我不曉得 dma 大小的參數是不是非要不可.
+<H3>CS4232/CS4232A 晶片</H3>
+
+<P>根據 INSTALL 檔所言, 對這些卡您要提供 midi port 的資訊. 
+注意對下面例中的卡, 它使用給 3235/6/7/8/9 的驅動程式, 
+我給了所有資訊(除了 DMA 大小), 不然它不會動. 所以您也許就用這整段命令列來載
+入驅動程式吧! 如果您用了 isapnp-tools, 您可能在 /etc/isapnp.conf
+中看到這些值:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+snd_port - port # for CS4232 chip (PnP setup - 0x534)
+snd_cport - control port # for CS4232 chip (PnP setup - 0x120)
+snd_mpu_port - port # for MPU-401 UART (PnP setup - 0x300), -1 = disable
+snd_fm_port - FM port # for CS4232 chip (PnP setup - 0x388), -1 = disable
+snd_jport - joystick port for CS4232 chip (PnP setup - 0x200), -1 =
+disable
+snd_irq - IRQ # for CS4232 chip (5,7,9,11,12,15)
+snd_mpu_irq - IRQ # for MPU-401 UART (9,11,12,15)
+snd_dma1 - first DMA # for CS4232 chip (0,1,3)
+snd_dma1_size - max first DMA size in kB (4-64kB)
+snd_dma2 - second DMA # for Yamaha CS4232 chip (0,1,3), -1 = disable
+snd_dma2_size - max second DMA size in kB (4-64kB)
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>對標準設定值的卡, 您要用
+"modprobe snd-card-cs4232 snd_port=0x534 snd_cport=0x120
+snd_mpu_port=-1 snd_fm_port=0x388 snd_jport=-1 snd_irq=5 snd_dma1=0 snd_dma1_size=NN
+snd_dma2=1 snd_dma2_size=NN"
+命令來載入驅動程式(沒有 midi 支援, 請看 Yamaha OPL-3 的注意事項, 又,
+沒有支援搖桿). 如果您的 /etc/isapnp.conf 中的值不同, 那麼這裡的值也該變一下.
+(用用您的頭腦想想比較好 ;)
+<P>上例的 "NN" 值您要給真正的值, 我不曉得合理值是多少, 所以才這麼寫. 
+我不曉得 dma 大小的參數是不是非要不可.
+<H3>CS4235/CS4236/CS4236B/CS4237B/CS4238B/CS4239 chips</H3>
+
+<P>根據 INSTALL 檔所言, 對這些卡您要提供 midi port 以及 control port 的資訊. 
+注意對 CS4237B 的卡,
+我給了所有資訊(除了 DMA 大小), 不然它不會動. 所以您也許就用這整段命令列來載
+入驅動程式, 不只是有 snd_port 及 snd_cport 而已. 
+如果您用了 isapnp-tools, 您可能在 /etc/isapnp.conf 中看到這些值:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+snd_port - port # for CS4232 chip (PnP setup - 0x534)
+snd_cport - control port # for CS4232 chip (PnP setup - 0x120)
+snd_mpu_port - port # for MPU-401 UART (PnP setup - 0x300), -1 = disable
+snd_fm_port - FM port # for CS4232 chip (PnP setup - 0x388), -1 = disable
+snd_jport - joystick port for CS4232 chip (PnP setup - 0x200), -1 = disable
+snd_irq - IRQ # for CS4232 chip (5,7,9,11,12,15)
+snd_mpu_irq - IRQ # for MPU-401 UART (9,11,12,15)
+snd_dma1 - first DMA # for CS4232 chip (0,1,3)
+snd_dma1_size - max first DMA size in kB (4-64kB)
+snd_dma2 - second DMA # for Yamaha CS4232 chip (0,1,3), -1 = disable
+snd_dma2_size - max second DMA size in kB (4-64kB)
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>您要用
+"modprobe snd-card-cs4232 snd_port=0x534 snd_cport=0x120
+snd_mpu_port=-1 snd_fm_port=0x388 snd_jport=-1 snd_irq=5 snd_dma1=0 snd_dma1_size=NN
+snd_dma2=1 snd_dma2_size=NN"
+命令來載入驅動程式(沒有 midi 支援, 請看 Yamaha OPL-3 的注意事項, 又,
+沒有支援搖桿). 
+<P>注意事項:
+<UL>
+<LI>"NN" 值要給真正的, 我不知道合理值是多少才這麼寫.</LI>
+<LI>我的 CS4237B 卡沒有明白指定 DMA 大小也用得很好.</LI>
+</UL>
+<H2><A NAME="ss4.4">4.4 使用 kerneld 來載入</A>
+</H2>
+
+<P><CODE>kerneld</CODE> 是個在需要時插入模組,
+並在不再使用時卸除它們的服務程式(daemon). 由於筆者沒用過 kerneld, 不曉得下
+面的資訊準不準確. 以下資訊來自 ALSA 驅動程式套件的 INSTALL 檔. 關於 kerneld
+的詳盡資訊可在 kerneld-mini-HOWTO 中找到.
+<P>照以下步驟做:
+<UL>
+<LI>編輯 /etc/conf.modules(後有範例)</LI>
+<LI>執行 'modprobe snd-card', 其中 snd-card 是您的音效卡名稱 [ 我覺得奇怪,
+kerneld 應該負責載入它不是嗎? VS]</LI>
+</UL>
+
+這是 Gravis UltraSound PnP 音效卡的 /etc/conf.modules 範例:
+<BLOCKQUOTE><CODE>
+<PRE>
+alias char-major-14 snd
+alias snd-minor-oss-0 snd-interwave
+alias snd-minor-oss-3 snd-pcm1-oss
+alias snd-minor-oss-4 snd-pcm1-oss
+alias snd-minor-oss-5 snd-pcm1-oss
+alias snd-minor-oss-12 snd-pcm1-oss
+alias snd-card-0 snd-interwave
+options snd snd_major=14 snd_cards_limit=1
+options snd-interwave snd_index=1 snd_id="guspnp" snd_port=0x220 snd_irq=5
+snd_dma1=5 snd_dma2=6
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>如果您想插更多卡, 這兒有範例(是同時有 Gravis UltraSound Classic 及 Sound
+Blaster 16 的情形)
+<BLOCKQUOTE><CODE>
+<PRE>
+alias char-major-14 snd
+alias snd-minor-oss-0 snd-mixer
+alias snd-minor-oss-3 snd-pcm1-oss
+alias snd-minor-oss-4 snd-pcm1-oss
+alias snd-minor-oss-5 snd-pcm1-oss
+alias snd-minor-oss-12 snd-pcm1-oss
+alias snd-card-0 snd-sb16
+alias snd-card-1 snd-gusclassic
+options snd snd_major=14 snd_cards_limit=2
+options snd-sb16 snd_index=1 snd_port=0x220 snd_irq=5 snd_dma8=1 snd_dma16=5
+options snd-gusclassic snd_index=2 snd_irq=11 snd_dma1=6 snd_dma2=7
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>如果有兩片 Gravis UltraSound Classic 音效卡, 就像下例:
+<BLOCKQUOTE><CODE>
+<PRE>
+alias char-major-14 snd
+alias snd-minor-oss-0 snd-mixer
+alias snd-minor-oss-3 snd-pcm1-oss
+alias snd-minor-oss-4 snd-pcm1-oss
+alias snd-minor-oss-5 snd-pcm1-oss
+alias snd-minor-oss-12 snd-pcm1-oss
+alias snd-card-0 snd-gusclassic
+alias snd-card-1 snd-gusclassic
+options snd snd_major=14 snd_cards_limit=2
+options snd-gusclassic snd_index=1,2 snd_port=0x220,0x260 snd_irq=5,11
+snd_dma1=5,6 snd_dma2=7,3
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="backw-compat"></A> <A NAME="ss4.5">4.5 向前相容</A>
+</H2>
+
+<P>如果您想保留 OSS/Free 或 OSS/Linux 的相容性, 您還要再加一個驅動程式:
+snd-pcm1-oss 驅動程式, 提供 OSS 相容性. 下
+<BLOCKQUOTE><CODE>
+<PRE>
+modprobe snd-pcm1-oss
+</PRE>
+</CODE></BLOCKQUOTE>
+
+命令. 這將提供 /dev/audio 及 /dev/dsp 的支援, 就像 OSS/Free (核心)驅動程式及
+OSS/Linux (要 25 美金的)所做的一樣. 注意這只是模擬而已.
+<P>
+<HR>
+<A HREF="Alsa-sound-5.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Alsa-sound-3.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Alsa-sound.html#toc4"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>

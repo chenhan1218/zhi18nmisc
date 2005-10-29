@@ -1,0 +1,342 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux 2.4 Advanced Routing HOWTO: More classifiers</TITLE>
+ <LINK HREF="Adv-Routing-HOWTO-12.html" REL=next>
+ <LINK HREF="Adv-Routing-HOWTO-10.html" REL=previous>
+ <LINK HREF="Adv-Routing-HOWTO.html#toc11" REL=contents>
+<SCRIPT src="../menu.js"> function BeginPage() {} function EndPage() {} </SCRIPT> </HEAD> <BODY bgcolor=#EEEEFF MARGINHEIGHT=0 MARGINWIDTH=0> <SCRIPT>BeginPage(1, 8, 1);</SCRIPT>
+<A HREF="Adv-Routing-HOWTO-12.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Adv-Routing-HOWTO-10.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Adv-Routing-HOWTO.html#toc11"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<HR>
+<H2><A NAME="s11">11. More classifiers</A></H2>
+
+<P>
+<P>Classifiers are the way by which the kernel decides which queue a packet
+should be placed into. There are various different classifiers, each of
+which can be used for different purposes.
+<P>
+<DL>
+<DT><B>fw</B><DD><P>Bases the decision on how the firewall has marked the packet.
+<P>
+<DT><B>u32</B><DD><P>Bases the decision on fields within the packet (i.e. source IP address, etc)
+<P>
+<DT><B>route</B><DD><P>Bases the decision on which route the packet will be routed by.
+<P>
+<DT><B>rsvp, rsvp6</B><DD><P>Bases the decision on the target (destination,protocol) and optionally the source as well. (I think)
+<P>
+<DT><B>tcindex</B><DD><P>FIXME: Fill me in
+</DL>
+<P>Note that in general there are many ways in which you can classify packet
+and that it generally comes down to preference as to which system you wish
+to use.
+<P>Classifiers in general accept a few arguments in common. They are listed here for convenience:
+<P>
+<DL>
+<DT><B>protocol</B><DD><P>The protocol this classifier will accept. Generally you will only be
+accepting only IP traffic. Required.
+<P>
+<DT><B>parent</B><DD><P>The handle this classifier is to be attached to. This handle must be
+an already existing class. Required.
+<P>
+<DT><B>prio</B><DD><P>The priority of this classifier. Higher numbers get tested first.
+<P>
+<DT><B>handle</B><DD><P>This handle means different things to different filters.
+<P>FIXME: Add more
+</DL>
+<P>All the following sections will assume you are trying to shape the traffic
+going to <CODE>HostA</CODE>. They will assume that the root class has been
+configured on 1: and that the class you want to send the selected traffic to
+is 1:1.
+<P>
+<H2><A NAME="ss11.1">11.1 The "fw" classifier</A>
+</H2>
+
+<P>  The "fw" classifier relies on the firewall tagging the packets to be shaped. So,
+first we will setup the firewall to tag them:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# iptables -I PREROUTING -t mangle -p tcp -d HostA \
+ -j MARK --set-mark 1
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Now all packets to that machine are tagged with the mark 1. Now we build
+the packet shaping rules to actually shape the packets.  Now we just need
+to indicate that we want the packets that are tagged with the mark 1 to go
+to class 1:1. This is accomplished with the command:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# tc filter add dev eth1 protocol ip parent 1:0 prio 1 handle 1 fw classid 1:1
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>This should be fairly self-explanatory. Attach to the 1:0 class a filter
+with priority 1 to filter all packet marked with 1 in the firewall to
+class 1:1. Note how the handle here is used to indicate what the mark
+should be.
+<P>That's all there is to it! This is the (IMHO) easy way, the other ways are
+I think harder to understand. Note that you can apply the full power of
+the firewalling code with this classifier, including matching MAC
+addresses, user IDs and anything else the firewall can match.
+<P>
+<H2><A NAME="ss11.2">11.2 The "u32" classifier</A>
+</H2>
+
+<P>The U32 filter is the most advanced filter available in the current
+implementation. It entirely based on hashing tables, which make it
+robust when there are many filter rules.
+<P>In its simplest form the U32 filter is a list of records, each
+consisting of two fields: a selector and an action. The selectors,
+described below, are compared with the currently processed IP packet
+until the first match and the associated action is performed. The
+simplest type of action would be directing the packet into defined
+CBQ class.
+<P>The commandline of <CODE>tc filter</CODE> program, used to configure the filter,
+consists of three parts: filter specification, a selector and an action.
+The filter specification can be defined as:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+tc filter add dev IF [ protocol PROTO ]
+                     [ (preference|priority) PRIO ]
+                     [ parent CBQ ]
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>The <CODE>protocol</CODE> field describes protocol that the filter will be
+applied to. We will only discuss case of <CODE>ip</CODE> protocol. The
+<CODE>preference</CODE> field (<CODE>priority</CODE> can be used alternatively)
+sets the priority of currently defined filter. This is important, since
+you can have several filters (lists of rules) with different priorities.
+Each list will be passed in the order the rules were added, then list with
+lower priority (higher preference number) will be processed. The <CODE>parent</CODE>
+field defines the CBQ tree top (e.g. 1:0), the filter should be attached
+to.
+<P>The options decribed apply to all filters, not only U32.
+<P>
+<H3>U32 selector</H3>
+
+<P>The U32 selector contains definition of the pattern, that will be matched
+to the currently processed packet. Precisely, it defines which bits are
+to be matched in the packet header and nothing more, but this simple
+method is very powerful. Let's take a look at the following examples,
+taken directly from a pretty complex, real-world filter:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# filter parent 1: protocol ip pref 10 u32 fh 800::800 order 2048 key ht 800 bkt 0 flowid 1:3 \
+  match 00100000/00ff0000 at 0
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>For now, leave the first line alone - all these parameters describe
+the filter's hash tables. Focus on the selector line, containing
+<CODE>match</CODE> keyword. This selector will match to IP headers, whose
+second byte will be 0x10 (0010). As you can guess, the 00ff number is
+the match mask, telling the filter exactly which bits to match. Here
+it's 0xff, so the byte will match if it's exactly 0x10. The <CODE>at</CODE>
+keyword means that the match is to be started at specified offset (in
+bytes) -- in this case it's beginning of the packet.  Translating all
+that to human language, the packet will match if its Type of Service
+field will have `low delay' bits set. Let's analyze another rule:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# filter parent 1: protocol ip pref 10 u32 fh 800::803 order 2051 key ht 800 bkt 0 flowid 1:3 \
+  match 00000016/0000ffff at nexthdr+0
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>The <CODE>nexthdr</CODE> option means next header encapsulated in the IP packet,
+i.e. header of upper-layer protocol. The match will also start here
+at the beginning of the next header. The match should occur in the
+second, 32-bit word of the header. In TCP and UDP protocols this field
+contains packet's destination port. The number is given in big-endian
+format, i.e. older bits first, so we simply read 0x0016 as 22 decimal,
+which stands for SSH service if this was TCP. As you guess, this match
+is ambigous without a context, and we will discuss this later.
+<P>
+<P>Having understood all the above, we will find the following selector
+quite easy to read: <CODE>match c0a80100/ffffff00 at 16</CODE>. What we
+got here is a three byte match at 17-th byte, counting from the IP
+header start. This will match for packets with destination address
+anywhere in 192.168.1/24 network. After analyzing the examples, we
+can summarize what we have learnt.
+<P>
+<H3>General selectors</H3>
+
+<P>General selectors define the pattern, mask and offset the pattern
+will be matched to the packet contents. Using the general selectors
+you can match virtually any single bit in the IP (or upper layer)
+header. They are more difficult to write and read, though, than
+specific selectors that described below. The general selector syntax
+is:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+match [ u32 | u16 | u8 ] PATTERN MASK [ at OFFSET | nexthdr+OFFSET]
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>One of the keywords <CODE>u32</CODE>, <CODE>u16</CODE> or <CODE>u8</CODE> specifies
+length of the pattern in bits. PATTERN and MASK should follow, of length
+defined by the previous keyword. The OFFSET parameter is the offset,
+in bytes, to start matching. If <CODE>nexthdr+</CODE> keyword is given,
+the offset is relative to start of the upper layer header.
+<P>
+<P>Some examples:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# tc filter add dev ppp14 parent 1:0 prio 10 u32 \
+     match u8 64 0xff at 8 \
+     flowid 1:4
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>Packet will match to this rule, if its time to live (TTL) is 64.
+TTL is the field starting just after 8-th byte of the IP header.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# tc filter add dev ppp14 parent 1:0 prio 10 u32 \
+     match u8 0x10 0xff at nexthdr+13 \
+     protocol tcp \
+     flowid 1:3 \
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>This rule will only match TCP packets with ACK bit set. Here we can see
+an example of using two selectors, the final result will be logical AND
+of their results. If we take a look at TCP header diagram, we can see
+that the ACK bit is second older bit (0x10) in the 14-th byte of the TCP
+header (<CODE>at nexthdr+13</CODE>).  As for the second selector, if we'd like
+to make our life harder, we could write <CODE>match u8 0x06 0xff at 9</CODE>
+instead if using the specific selector <CODE>protocol tcp</CODE>, because
+6 is the number of TCP protocol, present in 10-th byte of the IP header.
+On the other hand, in this example we couldn't use any specific selector
+for the first match - simply because there's no specific selector to match
+TCP ACK bits.
+<P>
+<H3>Specific selectors</H3>
+
+<P>The following table contains a list of all specific selectors 
+the author of this section has found in the <CODE>tc</CODE> program
+source code. They simply make your life easier and increase readability
+of your filter's configuration.
+<P>FIXME: table placeholder - the table is in separate file ,,selector.html''
+<P>FIXME: it's also still in Polish :-(
+<P>FIXME: must be sgml'ized
+<P>Some examples:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# tc filter add dev ppp0 parent 1:0 prio 10 u32 \
+     match ip tos 0x10 0xff \
+     flowid 1:4
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>The above rule will match packets, which have the TOS field set to 0x10.
+The TOS field starts at second byte of the packet and is one byte big,
+so we coul write an equivalent general selector: <CODE>match u8 0x10 0xff
+at 1</CODE>. This gives us hint to the internals of U32 filter -- the
+specific rules are always translated to general ones, and in this
+form they are stored in the kernel memory. This leads to another conclusion
+-- the <CODE>tcp</CODE> and <CODE>udp</CODE> selectors are exactly the same
+and this is why you can't use single <CODE>match tcp dst 53 0xffff</CODE>
+selector to match TCP packets sent to given port -- they will also
+match UDP packets sent to this port. You must remember to also specify
+the protocol and end up with the following rule:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# tc filter add dev ppp0 parent 1:0 prio 10 u32 \
+        match tcp dst 53 0xffff \
+        match ip protocol 0x6 0xff \
+        flowid 1:2
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>
+<H2><A NAME="ss11.3">11.3 The "route" classifier</A>
+</H2>
+
+<P>
+<P>This classifier filters based on the results of the routing tables. When a
+packet that is traversing through the classes reaches one that is marked
+with the "route" filter, it splits the packets up based on information in
+the routing table.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# tc filter add dev eth1 parent 1:0 protocol ip prio 100 route
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Here we add a route classifier onto the parent node 1:0 with priority 100. 
+When a packet reaches this node (which, since it is the root, will happen
+immediately) it will consult the routing table and if one matches will
+send it to the given class and give it a priority of 100. Then, to finally
+kick it into action, you add the appropriate routing entry:
+<P>The trick here is to define 'realm' based on either destination or source. 
+The way to do it is like this:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# ip route add Host/Network via Gateway dev Device realm RealmNumber
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>For instance, we can define our destination network 192.168.10.0 with a realm
+number 10:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# ip route add 192.168.10.0/24 via 192.168.10.1 dev eth1 realm 10
+</PRE>
+</CODE></BLOCKQUOTE>
+  
+<P>When adding route filters, we can use realm numbers to represent the
+networks or hosts and specify how the routes match the filters.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# tc filter add dev eth1 parent 1:0 protocol ip prio 100 \
+  route to 10 classid 1:10
+</PRE>
+</CODE></BLOCKQUOTE>
+  
+<P>The above rule says packets going to the network 192.168.10.0 match class id
+1:10.
+<P>Route filter can also be used to match source routes. For example, there is 
+a subnetwork attached to the Linux router on eth2.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# ip route add 192.168.2.0/24 dev eth2 realm 2
+# tc filter add dev eth1 parent 1:0 protocol ip prio 100 \
+  route from 2 classid 1:2
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Here the filter specifies that packets from the subnetwork 192.168.2.0
+(realm 2) will match class id 1:2.
+<P>
+<P>
+<P>
+<P>
+<H2><A NAME="ss11.4">11.4 The "rsvp" classifier</A>
+</H2>
+
+<P>FIXME: Fill me in
+<P>
+<H2><A NAME="ss11.5">11.5 The "tcindex" classifier</A>
+</H2>
+
+<P>FIXME: Fill me in
+<P>
+<HR>
+<A HREF="Adv-Routing-HOWTO-12.html"><IMG SRC="../img/next.gif" ALT="Next"></A>
+<A HREF="Adv-Routing-HOWTO-10.html"><IMG SRC="../img/prev.gif" ALT="Previous"></A>
+<A HREF="Adv-Routing-HOWTO.html#toc11"><IMG SRC="../img/toc.gif" ALT="Contents"></A>
+<SCRIPT>EndPage();</SCRIPT>  </BODY>
+</HTML>
